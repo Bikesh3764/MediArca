@@ -66,9 +66,11 @@ class MediarcaQueueEngine {
 
     let waitMins = 0;
     let peopleAhead = 0;
-    if (yourToken && yourToken > currentToken) {
-      peopleAhead = yourToken - currentToken;
-      waitMins = peopleAhead * queue.avgConsultTimeMins;
+    if (yourToken && yourToken !== currentToken) {
+      // Calculate actual number of waiting patients ahead in the queue line
+      const activeAhead = (queue.tokens || []).filter(t => t.tokenNumber < yourToken && (t.status === 'waiting' || t.status === 'in-consultation'));
+      peopleAhead = activeAhead.length;
+      waitMins = peopleAhead * (queue.avgConsultTimeMins || 12);
     }
 
     // Sound chime trigger on token update

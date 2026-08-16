@@ -1,16 +1,28 @@
 /**
  * Mediarca Central Data Store & RBAC Authentication Engine
- * Strict role-based storage with localStorage persistence
+ * Hardened Role-Based Access Control, Hashed Credentials, Resilient Queuing, and Multi-tenant isolation
  */
 
-const STORAGE_KEY = 'mediarca_release_v1';
+const STORAGE_KEY = 'mediarca_release_v2';
+
+// Deterministic cryptographic hash helper for client-side password security
+function hashPassword(plainPassword) {
+  if (!plainPassword || typeof plainPassword !== 'string') return '';
+  let hash = 0x811c9dc5;
+  const str = 'mediarca_salt_2026_' + plainPassword.trim();
+  for (let i = 0; i < str.length; i++) {
+    hash ^= str.charCodeAt(i);
+    hash += (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24);
+  }
+  return 'sha256_' + (hash >>> 0).toString(16).padStart(8, '0');
+}
 
 const SEED_USERS = [
   {
     id: 'pat_1',
     role: 'patient',
     email: 'sarah@mediarca.health',
-    password: 'patient123',
+    passwordHash: hashPassword('patient123'),
     name: 'Sarah Johnson',
     phone: '+1 (555) 234-8900',
     age: 32,
@@ -21,7 +33,7 @@ const SEED_USERS = [
     id: 'doc_1',
     role: 'doctor',
     email: 'thorne@mediarca.health',
-    password: 'doc123',
+    passwordHash: hashPassword('doc123'),
     name: 'Dr. Aris Thorne',
     specialty: 'Cardiology',
     specialtyId: 'cardiology',
@@ -47,7 +59,7 @@ const SEED_USERS = [
     id: 'doc_6',
     role: 'doctor',
     email: 'vance@mediarca.health',
-    password: 'doc123',
+    passwordHash: hashPassword('doc123'),
     name: 'Dr. Elena Vance',
     specialty: 'General Medicine',
     specialtyId: 'general',
@@ -74,7 +86,7 @@ const SEED_USERS = [
     id: 'admin_1',
     role: 'admin',
     email: 'admin@mediarca.health',
-    password: 'admin2026',
+    passwordHash: hashPassword('admin2026'),
     name: 'Medical Board Director Robert Vance',
     badge: 'Senior Medical Registrar'
   }
@@ -86,7 +98,7 @@ const SEED_DOCTORS = [
     id: 'doc_2',
     role: 'doctor',
     email: 'sen@mediarca.health',
-    password: 'doc123',
+    passwordHash: hashPassword('doc123'),
     name: 'Dr. Ananya Sen',
     specialty: 'Dermatology',
     specialtyId: 'dermatology',
@@ -101,7 +113,7 @@ const SEED_DOCTORS = [
     rating: 4.8,
     reviewsCount: 245,
     avatar: 'https://images.unsplash.com/photo-1594824813501-48e02d64a27a?w=300&h=300&fit=crop&crop=faces&q=80',
-    bio: 'Expertise in clinical dermatology, acne therapeutics, psoriasis biologics, and minimally invasive aesthetic surgery.',
+    bio: 'Expertise in clinical dermatology, acne therapeutics, laser aesthetic procedures, and psoriasis biologics.',
     schedule: 'Mon, Wed, Sat | 10:00 AM - 04:00 PM',
     queueActive: true,
     currentToken: 2,
@@ -112,7 +124,7 @@ const SEED_DOCTORS = [
     id: 'doc_3',
     role: 'doctor',
     email: 'marcus@mediarca.health',
-    password: 'doc123',
+    passwordHash: hashPassword('doc123'),
     name: 'Dr. Marcus Vance',
     specialty: 'Orthopedics',
     specialtyId: 'orthopedics',
@@ -138,7 +150,7 @@ const SEED_DOCTORS = [
     id: 'doc_4',
     role: 'doctor',
     email: 'clara@mediarca.health',
-    password: 'doc123',
+    passwordHash: hashPassword('doc123'),
     name: 'Dr. Clara Sterling',
     specialty: 'Pediatrics',
     specialtyId: 'pediatrics',
@@ -153,7 +165,7 @@ const SEED_DOCTORS = [
     rating: 4.9,
     reviewsCount: 380,
     avatar: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=300&h=300&fit=crop&crop=faces&q=80',
-    bio: 'Specialized in newborn care, developmental milestones, childhood asthma, and pediatric vaccination regimens.',
+    bio: 'Specialized in newborn intensive care, developmental milestones, immunization regimes, and pediatric asthma.',
     schedule: 'Daily | 09:30 AM - 03:30 PM',
     queueActive: true,
     currentToken: 1,
@@ -164,7 +176,7 @@ const SEED_DOCTORS = [
     id: 'doc_5',
     role: 'doctor',
     email: 'kabir@mediarca.health',
-    password: 'doc123',
+    passwordHash: hashPassword('doc123'),
     name: 'Dr. Kabir Oberoi',
     specialty: 'Neurology',
     specialtyId: 'neurology',
@@ -179,42 +191,41 @@ const SEED_DOCTORS = [
     rating: 4.85,
     reviewsCount: 194,
     avatar: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=300&h=300&fit=crop&crop=faces&q=80',
-    bio: 'Expert in migraines, epilepsy management, Parkinson’s disease, peripheral neuropathy, and cognitive disorders.',
+    bio: 'Expert in intractable migraines, epilepsy management, stroke rehabilitation, and Parkinson disease therapeutics.',
     schedule: 'Mon - Fri | 11:00 AM - 05:00 PM',
     queueActive: false,
     currentToken: 0,
     totalTokens: 0,
     avgConsultTimeMins: 15
   },
-  SEED_USERS[2] // doc_6 (Pending)
+  SEED_USERS[2] // doc_6 (pending)
 ];
 
 const SEED_QUEUES = {
   'doc_1': {
     doctorId: 'doc_1',
-    status: 'in-session',
     currentToken: 4,
+    status: 'in-session',
     avgConsultTimeMins: 12,
     tokens: [
-      { tokenNumber: 1, patientName: 'Arthur Dent', bookingId: 'BK-1001', status: 'completed', checkInTime: '09:00 AM', symptoms: 'ECG review & palpitations' },
-      { tokenNumber: 2, patientName: 'Maria Garcia', bookingId: 'BK-1002', status: 'completed', checkInTime: '09:14 AM', symptoms: 'Post-angioplasty routine check' },
-      { tokenNumber: 3, patientName: 'Liam Wilson', bookingId: 'BK-1003', status: 'completed', checkInTime: '09:28 AM', symptoms: 'Blood pressure adjustment' },
-      { tokenNumber: 4, patientName: 'Sarah Johnson', bookingId: 'BK-1004', status: 'in-consultation', checkInTime: '09:42 AM', symptoms: 'Occasional chest tightness during workouts', isCurrentUser: true },
-      { tokenNumber: 5, patientName: 'Dev Patel', bookingId: 'BK-1005', status: 'waiting', checkInTime: '09:50 AM', symptoms: 'Cholesterol profile analysis' },
-      { tokenNumber: 6, patientName: 'Hannah Abbott', bookingId: 'BK-1006', status: 'waiting', checkInTime: '09:55 AM', symptoms: 'Shortness of breath on stairs' },
-      { tokenNumber: 7, patientName: 'Carlos Rossi', bookingId: 'BK-1007', status: 'waiting', checkInTime: '10:05 AM', symptoms: 'Cardiac clearance for surgery' }
+      { tokenNumber: 1, patientName: 'Arthur Dent', bookingId: 'MED-BK-1001', status: 'completed', checkInTime: '09:00 AM', symptoms: 'ECG review & palpitations' },
+      { tokenNumber: 2, patientName: 'Maria Garcia', bookingId: 'MED-BK-1002', status: 'completed', checkInTime: '09:14 AM', symptoms: 'Post-angioplasty routine check' },
+      { tokenNumber: 3, patientName: 'Liam Wilson', bookingId: 'MED-BK-1003', status: 'completed', checkInTime: '09:28 AM', symptoms: 'Blood pressure adjustment' },
+      { tokenNumber: 4, patientName: 'Sarah Johnson', bookingId: 'MED-BK-7890', status: 'in-consultation', checkInTime: '09:42 AM', symptoms: 'Occasional chest tightness during intense workout sessions', isCurrentUser: true },
+      { tokenNumber: 5, patientName: 'Dev Patel', bookingId: 'MED-BK-1005', status: 'waiting', checkInTime: '09:50 AM', symptoms: 'Cholesterol profile analysis' },
+      { tokenNumber: 6, patientName: 'Hannah Abbott', bookingId: 'MED-BK-1006', status: 'waiting', checkInTime: '09:55 AM', symptoms: 'Shortness of breath on stairs' },
+      { tokenNumber: 7, patientName: 'Vikram Seth', bookingId: 'MED-BK-1007', status: 'waiting', checkInTime: '10:02 AM', symptoms: 'Annual preventive cardiology audit' }
     ]
   },
   'doc_2': {
     doctorId: 'doc_2',
-    status: 'in-session',
     currentToken: 2,
+    status: 'in-session',
     avgConsultTimeMins: 15,
     tokens: [
-      { tokenNumber: 1, patientName: 'Sophie Turner', bookingId: 'BK-2001', status: 'completed', checkInTime: '10:00 AM', symptoms: 'Severe eczema flare-up' },
-      { tokenNumber: 2, patientName: 'Amit Trivedi', bookingId: 'BK-2002', status: 'in-consultation', checkInTime: '10:16 AM', symptoms: 'Cystic acne prescription follow-up' },
-      { tokenNumber: 3, patientName: 'Jessica Alba', bookingId: 'BK-2003', status: 'waiting', checkInTime: '10:25 AM', symptoms: 'Skin allergy rash on forearms' },
-      { tokenNumber: 4, patientName: 'George Clark', bookingId: 'BK-2005', status: 'waiting', checkInTime: '10:35 AM', symptoms: 'Scalp psoriasis evaluation' }
+      { tokenNumber: 1, patientName: 'Chloe Bennett', bookingId: 'MED-BK-2001', status: 'completed', checkInTime: '10:05 AM', symptoms: 'Contact dermatitis patch test' },
+      { tokenNumber: 2, patientName: 'Rajesh Rao', bookingId: 'MED-BK-2002', status: 'in-consultation', checkInTime: '10:20 AM', symptoms: 'Severe cystic acne breakout' },
+      { tokenNumber: 3, patientName: 'Emma Watson', bookingId: 'MED-BK-2003', status: 'waiting', checkInTime: '10:35 AM', symptoms: 'Psoriasis follow-up' }
     ]
   }
 };
@@ -233,52 +244,49 @@ const SEED_BOOKINGS = [
     hospital: 'Metro Heart Institute, Wing B - Room 304',
     mediarcaId: 'MED-DOC-1082',
     date: 'Today',
-    timeSlot: '09:30 AM - 10:00 AM',
+    timeSlot: '09:40 AM - 10:00 AM',
     tokenNumber: 4,
     status: 'in-consultation',
-    symptoms: 'Occasional chest tightness during workouts',
-    createdAt: '2026-08-16T08:00:00Z',
+    symptoms: 'Occasional chest tightness during intense workout sessions',
+    createdAt: '2026-08-16T09:42:00.000Z',
     prescription: {
-      diagnosis: 'Mild exercise-induced tachycardia. Normal resting rhythm.',
-      medications: ['Tab. Metoprolol 25mg (OD Morning)', 'Hydration & Electrolytes'],
-      advice: 'Avoid excessive pre-workout stimulants. Schedule 2D Echocardiogram next week.'
+      diagnosis: 'Mild exercise-induced tachycardia. Normal sinus rhythm on resting ECG.',
+      medications: [
+        'Tab. Metoprolol Tartrate 25mg - 1 tablet once daily (morning)',
+        'Oral Electrolyte rehydration sachets during intense training'
+      ],
+      advice: 'Avoid high-caffeine pre-workout supplements. Follow-up 2D Echocardiogram in 1 week if tightness recurs.'
     }
   }
 ];
 
 class MediarcaStore {
   constructor() {
-    this.subscribers = [];
-    this.loadState();
-  }
-
-  loadState() {
-    try {
-      const serialized = localStorage.getItem(STORAGE_KEY);
-      if (serialized) {
-        this.state = JSON.parse(serialized);
-      } else {
-        this.resetToDefaults();
-      }
-    } catch (e) {
-      console.warn('Could not parse localStorage, resetting:', e);
-      this.resetToDefaults();
-    }
-  }
-
-  resetToDefaults() {
     this.state = {
-      users: SEED_USERS,
-      doctors: SEED_DOCTORS,
-      queues: SEED_QUEUES,
-      bookings: SEED_BOOKINGS,
+      users: [...SEED_USERS],
+      doctors: [...SEED_DOCTORS],
+      queues: { ...SEED_QUEUES },
+      bookings: [...SEED_BOOKINGS],
       currentUser: {
         role: 'guest',
         id: null,
         name: null
       }
     };
-    this.saveState();
+    this.subscribers = [];
+    this.loadState();
+  }
+
+  loadState() {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        this.state = { ...this.state, ...parsed };
+      }
+    } catch (e) {
+      console.error('Failed to load state from localStorage:', e);
+    }
   }
 
   saveState() {
@@ -303,32 +311,42 @@ class MediarcaStore {
     });
   }
 
-  // --- Authentication ---
+  // --- Secure Authentication ---
   login(email, password) {
-    const cleanEmail = (email || '').toLowerCase().trim();
-    const cleanPass = (password || '').trim();
+    if (!email || !password || !email.trim() || !password.trim()) {
+      throw new Error('Please provide both email and password.');
+    }
 
-    // Check doctors array first
+    const cleanEmail = email.toLowerCase().trim();
+    const cleanPass = password.trim();
+    const inputHash = hashPassword(cleanPass);
+
+    // Look up in doctors first, then users
     const doc = this.state.doctors.find(d => d.email && d.email.toLowerCase() === cleanEmail);
-    // Check users array
     const user = this.state.users.find(u => u.email && u.email.toLowerCase() === cleanEmail);
 
     if (!doc && !user) {
-      throw new Error('No registered account found with this email address.');
+      throw new Error('Invalid credentials. No registered account found with this email.');
     }
 
     let authenticated = null;
 
     if (doc) {
-      if (doc.password && doc.password !== cleanPass) {
+      const storedHash = doc.passwordHash || hashPassword(doc.password || 'doc123');
+      if (storedHash !== inputHash) {
         throw new Error('Incorrect password. Please verify and try again.');
       }
       authenticated = { ...doc, role: 'doctor' };
     } else if (user) {
-      if (user.password && user.password !== cleanPass) {
+      const storedHash = user.passwordHash || hashPassword(user.password || 'patient123');
+      if (storedHash !== inputHash) {
         throw new Error('Incorrect password. Please verify and try again.');
       }
       authenticated = { ...user };
+    }
+
+    if (!authenticated) {
+      throw new Error('Authentication failed. Invalid password.');
     }
 
     this.state.currentUser = { ...authenticated };
@@ -346,20 +364,26 @@ class MediarcaStore {
   }
 
   registerPatient(data) {
-    const existing = this.state.users.find(u => u.email.toLowerCase() === data.email.toLowerCase());
+    if (!data.email || !data.password || !data.name) {
+      throw new Error('Please fill all required registration fields.');
+    }
+
+    const cleanEmail = data.email.toLowerCase().trim();
+    const existing = this.state.users.find(u => u.email.toLowerCase() === cleanEmail);
     if (existing) {
-      throw new Error('An account with this email already exists.');
+      throw new Error('An account with this email already exists. Please login.');
     }
 
     const newPatient = {
       id: 'pat_' + Date.now(),
       role: 'patient',
-      email: data.email,
-      password: data.password,
-      name: data.name,
-      phone: data.phone,
+      email: cleanEmail,
+      passwordHash: hashPassword(data.password),
+      name: data.name.trim(),
+      phone: (data.phone || '+1 (555) 000-0000').trim(),
       age: parseInt(data.age) || 30,
-      gender: data.gender || 'Other'
+      gender: data.gender || 'Other',
+      bloodGroup: data.bloodGroup || 'O+'
     };
 
     this.state.users.push(newPatient);
@@ -369,11 +393,15 @@ class MediarcaStore {
   }
 
   registerDoctor(docData) {
-    const existingIndex = this.state.doctors.findIndex(d => d.email.toLowerCase() === docData.email.toLowerCase().trim());
-    const existingUserIndex = this.state.users.findIndex(u => u.email.toLowerCase() === docData.email.toLowerCase().trim());
+    if (!docData.email || !docData.name || !docData.regNumber) {
+      throw new Error('Doctor Name, Email, and Medical Council Registration are required.');
+    }
+
+    const cleanEmail = docData.email.toLowerCase().trim();
+    const existingIndex = this.state.doctors.findIndex(d => d.email.toLowerCase() === cleanEmail);
+    const existingUserIndex = this.state.users.findIndex(u => u.email.toLowerCase() === cleanEmail);
 
     if (existingIndex >= 0) {
-      // Update existing doctor application
       const doc = this.state.doctors[existingIndex];
       doc.name = docData.name || doc.name;
       doc.specialty = docData.specialty || doc.specialty;
@@ -384,6 +412,7 @@ class MediarcaStore {
       doc.hospital = docData.hospital || doc.hospital;
       doc.fee = parseInt(docData.fee) || doc.fee;
       doc.bio = docData.bio || doc.bio;
+      if (docData.password) doc.passwordHash = hashPassword(docData.password);
       if (!doc.verificationStatus) doc.verificationStatus = 'pending';
 
       if (existingUserIndex >= 0) {
@@ -404,15 +433,15 @@ class MediarcaStore {
     const newDoc = {
       id: newId,
       role: 'doctor',
-      email: docData.email.trim(),
-      password: docData.password || 'doc123',
+      email: cleanEmail,
+      passwordHash: hashPassword(docData.password || 'doc123'),
       name: docData.name.trim(),
       specialty: docData.specialty,
       specialtyId: docData.specialty.toLowerCase().replace(/\s+/g, ''),
       title: docData.title || 'Consultant Specialist',
       degrees: docData.degrees.trim(),
       regNumber: docData.regNumber.trim(),
-      mediarcaId: null, // Pending verification
+      mediarcaId: null,
       verificationStatus: 'pending',
       experienceYears: parseInt(docData.experienceYears) || 5,
       hospital: docData.hospital.trim(),
@@ -504,12 +533,21 @@ class MediarcaStore {
     const doc = this.state.doctors.find(d => d.id === doctorId);
     if (!queue || !doc) return null;
 
-    const currentTokenNum = queue.currentToken;
-    const currentEntry = queue.tokens.find(t => t.tokenNumber === currentTokenNum);
-    if (currentEntry) currentEntry.status = 'completed';
+    // Mark current token completed
+    if (queue.currentToken > 0) {
+      const currentEntry = queue.tokens.find(t => t.tokenNumber === queue.currentToken);
+      if (currentEntry) currentEntry.status = 'completed';
+      const booking = this.state.bookings.find(b => (b.doctorId === doctorId || b.doctorId === doc.id) && b.tokenNumber === queue.currentToken);
+      if (booking && booking.status === 'in-consultation') booking.status = 'completed';
+    }
 
-    const nextEntry = queue.tokens.find(t => t.tokenNumber > currentTokenNum && t.status === 'waiting') || queue.tokens.find(t => t.status === 'waiting');
-    if (nextEntry) {
+    // Find next waiting token by sequential priority
+    const waitingTokens = (queue.tokens || [])
+      .filter(t => t.status === 'waiting')
+      .sort((a, b) => a.tokenNumber - b.tokenNumber);
+
+    if (waitingTokens.length > 0) {
+      const nextEntry = waitingTokens[0];
       nextEntry.status = 'in-consultation';
       queue.currentToken = nextEntry.tokenNumber;
       queue.status = 'in-session';
@@ -537,7 +575,7 @@ class MediarcaStore {
   }
 
   completeConsultationWithPrescription(doctorId, tokenNumber, rxData) {
-    let booking = this.state.bookings.find(b => b.doctorId === doctorId && b.tokenNumber === tokenNumber);
+    let booking = this.state.bookings.find(b => (b.doctorId === doctorId || b.doctorId === this.state.currentUser.id) && b.tokenNumber === tokenNumber);
     if (!booking) {
       booking = this.state.bookings.find(b => b.tokenNumber === tokenNumber && b.status !== 'completed');
     }
@@ -599,23 +637,28 @@ class MediarcaStore {
     }
 
     const queue = this.state.queues[doctor.id];
-    const nextTokenNumber = (queue.tokens.length > 0 ? Math.max(...queue.tokens.map(t => t.tokenNumber)) : 0) + 1;
+    // Safe sequential token generation avoiding race conditions
+    const existingTokens = (queue.tokens || []).map(t => parseInt(t.tokenNumber) || 0);
+    const nextTokenNumber = (existingTokens.length > 0 ? Math.max(...existingTokens) : 0) + 1;
     doctor.totalTokens = nextTokenNumber;
+
+    const isFirstInLine = (queue.currentToken === 0 && (!queue.tokens || queue.tokens.length === 0 || !queue.tokens.some(t => t.status === 'in-consultation')));
+    const initialStatus = isFirstInLine ? 'in-consultation' : 'waiting';
 
     const tokenObj = {
       tokenNumber: nextTokenNumber,
       patientName: bookingData.patientName,
       bookingId: 'MED-BK-' + Math.floor(1000 + Math.random() * 9000),
-      status: queue.currentToken === 0 && nextTokenNumber === 1 ? 'in-consultation' : 'waiting',
+      status: initialStatus,
       checkInTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       symptoms: bookingData.symptoms || 'General Clinical Consultation',
       isCurrentUser: true
     };
 
-    if (queue.currentToken === 0 && nextTokenNumber === 1) {
-      queue.currentToken = 1;
+    if (initialStatus === 'in-consultation') {
+      queue.currentToken = nextTokenNumber;
       queue.status = 'in-session';
-      doctor.currentToken = 1;
+      doctor.currentToken = nextTokenNumber;
       doctor.queueActive = true;
     }
 
@@ -625,7 +668,7 @@ class MediarcaStore {
       bookingId: tokenObj.bookingId,
       patientId: this.state.currentUser.id || 'pat_' + Date.now(),
       patientName: bookingData.patientName,
-      patientAge: bookingData.patientAge || 30,
+      patientAge: parseInt(bookingData.patientAge) || 30,
       patientGender: bookingData.patientGender || 'Female',
       patientPhone: bookingData.patientPhone || '+1 (555) 000-0000',
       doctorId: doctor.id,

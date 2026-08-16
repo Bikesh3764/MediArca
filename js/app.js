@@ -380,34 +380,94 @@ class MediarcaApp {
   }
 
   // --- Auth Handlers (Patient, Doctor, Admin) ---
+  togglePatientAuthMode(mode) {
+    const loginForm = document.getElementById('patientLoginForm');
+    const registerForm = document.getElementById('patientRegisterForm');
+    const loginBtn = document.getElementById('patientTabLoginBtn');
+    const registerBtn = document.getElementById('patientTabRegisterBtn');
+    const title = document.getElementById('patientAuthTitle');
+    const desc = document.getElementById('patientAuthDesc');
+
+    if (mode === 'register') {
+      if (loginForm) loginForm.style.display = 'none';
+      if (registerForm) registerForm.style.display = 'block';
+      if (loginBtn) {
+        loginBtn.className = 'btn btn-sm btn-secondary';
+        loginBtn.style.background = 'transparent';
+        loginBtn.style.border = 'none';
+      }
+      if (registerBtn) {
+        registerBtn.className = 'btn btn-sm btn-primary';
+        registerBtn.style.background = '';
+        registerBtn.style.border = '';
+      }
+      if (title) title.innerText = 'Create Patient Account';
+      if (desc) desc.innerText = 'Register for digital OPD passes, instant doctor booking, and medical advice records.';
+    } else {
+      if (loginForm) loginForm.style.display = 'block';
+      if (registerForm) registerForm.style.display = 'none';
+      if (loginBtn) {
+        loginBtn.className = 'btn btn-sm btn-primary';
+        loginBtn.style.background = '';
+        loginBtn.style.border = '';
+      }
+      if (registerBtn) {
+        registerBtn.className = 'btn btn-sm btn-secondary';
+        registerBtn.style.background = 'transparent';
+        registerBtn.style.border = 'none';
+      }
+      if (title) title.innerText = 'Patient Portal Access';
+      if (desc) desc.innerText = 'Sign in to view your appointments, medical records, and live queue passes.';
+    }
+  }
+
   handlePatientLoginSubmit(e) {
-    e.preventDefault();
-    const form = e.target;
+    if (e) e.preventDefault();
+    const form = e.target || document.getElementById('patientLoginForm');
+    const email = (form.querySelector('[name="email"]')?.value || document.getElementById('patientLoginEmail')?.value || '').trim();
+    const password = (form.querySelector('[name="password"]')?.value || document.getElementById('patientLoginPassword')?.value || '').trim();
+
     try {
-      window.mediarcaStore.login(form.email.value, form.password.value);
-      this.showToast('Welcome back, Sarah!', 'success');
+      const user = window.mediarcaStore.login(email, password);
+      this.showToast(`Welcome back, ${user.name || 'Patient'}!`, 'success');
       this.switchView('patient-portal');
     } catch (err) {
-      this.showToast(err.message, 'warning');
+      this.showToast(err.message || 'Authentication failed', 'warning');
     }
   }
 
   handlePatientRegisterSubmit(e) {
-    e.preventDefault();
-    const form = e.target;
+    if (e) e.preventDefault();
+    const form = e.target || document.getElementById('patientRegisterForm');
+    const formData = new FormData(form);
+
+    const name = (formData.get('name') || form.querySelector('[name="name"]')?.value || '').trim();
+    const email = (formData.get('email') || form.querySelector('[name="email"]')?.value || '').trim();
+    const password = (formData.get('password') || form.querySelector('[name="password"]')?.value || '').trim();
+    const phone = (formData.get('phone') || form.querySelector('[name="phone"]')?.value || '').trim();
+    const age = formData.get('age') || form.querySelector('[name="age"]')?.value || 30;
+    const gender = formData.get('gender') || form.querySelector('[name="gender"]')?.value || 'Other';
+    const bloodGroup = formData.get('bloodGroup') || form.querySelector('[name="bloodGroup"]')?.value || 'O+';
+
+    if (!name || !email || !password) {
+      this.showToast('Please fill out all required fields.', 'warning');
+      return;
+    }
+
     try {
-      window.mediarcaStore.registerPatient({
-        name: form.name.value.trim(),
-        email: form.email.value.trim(),
-        password: form.password.value,
-        phone: form.phone.value.trim(),
-        age: form.age.value,
-        gender: form.gender.value
+      const newPatient = window.mediarcaStore.registerPatient({
+        name,
+        email,
+        password,
+        phone,
+        age,
+        gender,
+        bloodGroup
       });
-      this.showToast('Account registered successfully!', 'success');
+      this.showToast(`Account created! Welcome ${newPatient.name}.`, 'success');
       this.switchView('patient-portal');
     } catch (err) {
-      this.showToast(err.message, 'warning');
+      this.showToast(err.message || 'Registration failed.', 'warning');
     }
   }
 
@@ -434,7 +494,7 @@ class MediarcaApp {
 
     const docName = (formData.get('docName') || form.querySelector('[name="docName"]')?.value || '').trim();
     const docEmail = (formData.get('docEmail') || form.querySelector('[name="docEmail"]')?.value || '').trim();
-    const docPassword = (formData.get('docPassword') || form.querySelector('[name="docPassword"]')?.value || 'doc123').trim();
+    const docPassword = (formData.get('docPassword') || form.querySelector('[name="docPassword"]')?.value || '').trim();
     const docSpecialty = formData.get('docSpecialty') || form.querySelector('[name="docSpecialty"]')?.value || 'Cardiology';
     const docRegNumber = (formData.get('docRegNumber') || form.querySelector('[name="docRegNumber"]')?.value || '').trim();
     const docDegrees = (formData.get('docDegrees') || form.querySelector('[name="docDegrees"]')?.value || '').trim();
@@ -443,8 +503,8 @@ class MediarcaApp {
     const docFee = parseInt(formData.get('docFee') || form.querySelector('[name="docFee"]')?.value || 60);
     const docBio = (formData.get('docBio') || form.querySelector('[name="docBio"]')?.value || '').trim();
 
-    if (!docName || !docEmail || !docRegNumber) {
-      this.showToast('Please fill out all required fields marked with *', 'warning');
+    if (!docName || !docEmail || !docRegNumber || !docPassword) {
+      this.showToast('Please fill out all required fields including password.', 'warning');
       return;
     }
 
@@ -505,20 +565,29 @@ class MediarcaApp {
     }
   }
 
-  // --- Patient Dashboard ---
+  // --- Patient Dashboard (Strict Multi-tenant Isolation) ---
   renderPatientDashboard() {
     const container = document.getElementById('patientPortalContainer');
     if (!container) return;
 
     const user = window.mediarcaStore.state.currentUser;
-    const bookings = window.mediarcaStore.state.bookings;
+    const allBookings = window.mediarcaStore.state.bookings || [];
+
+    // Strictly isolate patient's own bookings
+    const patientBookings = allBookings.filter(b => {
+      if (user.id && b.patientId === user.id) return true;
+      if (user.phone && b.patientPhone && b.patientPhone === user.phone) return true;
+      if (user.email && b.email && b.email.toLowerCase() === user.email.toLowerCase()) return true;
+      if (user.name && b.patientName && b.patientName.toLowerCase() === user.name.toLowerCase()) return true;
+      return false;
+    });
 
     container.innerHTML = `
       <div class="container" style="padding-top: 2rem; padding-bottom: 4rem;">
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
           <div>
             <span class="badge badge-role" style="margin-bottom: 0.5rem;">Patient Account</span>
-            <h2 style="font-size: 1.75rem; font-weight: 800; color: var(--text-primary);">Hello, ${user.name}</h2>
+            <h2 style="font-size: 1.75rem; font-weight: 800; color: var(--text-primary);">Hello, ${user.name || 'Patient'}</h2>
             <p style="color: var(--text-secondary); font-size: 0.875rem;">Manage your active appointments, digital queue tokens, and physician advice.</p>
           </div>
           <button class="btn btn-primary" onclick="window.mediarcaApp.switchView('home')">
@@ -528,13 +597,13 @@ class MediarcaApp {
 
         <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem;">
           <div>
-            <h3 style="font-size: 1.125rem; font-weight: 800; color: var(--text-primary); margin-bottom: 1rem;">Active Consultation Tickets (${bookings.length})</h3>
+            <h3 style="font-size: 1.125rem; font-weight: 800; color: var(--text-primary); margin-bottom: 1rem;">My Consultation Tickets (${patientBookings.length})</h3>
             
-            ${bookings.length === 0 ? `
+            ${patientBookings.length === 0 ? `
               <div style="padding: 2.5rem; text-align: center; background: var(--bg-surface); border: 1px dashed var(--border-strong); border-radius: var(--radius-md);">
-                <p style="color: var(--text-secondary);">No appointments scheduled.</p>
+                <p style="color: var(--text-secondary);">No appointments scheduled yet. Find a doctor on the home page to book a slot.</p>
               </div>
-            ` : bookings.map(b => `
+            ` : patientBookings.map(b => `
               <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.5rem; margin-bottom: 1.25rem; box-shadow: var(--shadow-sm);">
                 <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.75rem; margin-bottom: 1rem;">
                   <div>
@@ -563,7 +632,7 @@ class MediarcaApp {
                   <div style="margin-top: 1rem; padding: 1rem; background: var(--status-verified-bg); border-radius: var(--radius-sm); border: 1px solid var(--status-verified-border);">
                     <div style="font-size: 0.75rem; font-weight: 700; color: #166534; text-transform: uppercase; margin-bottom: 0.25rem;">Doctor Prescription & Advice</div>
                     <div style="font-size: 0.875rem; color: #14532d; font-weight: 600;">Diagnosis: ${b.prescription.diagnosis}</div>
-                    <div style="font-size: 0.8125rem; color: #166534; margin-top: 0.25rem;">Medications: ${b.prescription.medications.join(', ')}</div>
+                    <div style="font-size: 0.8125rem; color: #166534; margin-top: 0.25rem;">Medications: ${Array.isArray(b.prescription.medications) ? b.prescription.medications.join(', ') : b.prescription.medications}</div>
                     <div style="font-size: 0.75rem; color: #15803d; margin-top: 0.25rem;">Advice: ${b.prescription.advice}</div>
                   </div>
                 ` : ''}
@@ -575,9 +644,9 @@ class MediarcaApp {
             <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.5rem;">
               <h3 style="font-size: 1.0625rem; font-weight: 800; color: var(--text-primary); margin-bottom: 1rem;">Patient Profile</h3>
               <div style="display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.875rem;">
-                <div><span style="color: var(--text-muted);">Full Name:</span> <strong>${user.name}</strong></div>
-                <div><span style="color: var(--text-muted);">Email:</span> <strong>${user.email}</strong></div>
-                <div><span style="color: var(--text-muted);">Phone:</span> <strong>${user.phone}</strong></div>
+                <div><span style="color: var(--text-muted);">Full Name:</span> <strong>${user.name || 'Patient'}</strong></div>
+                <div><span style="color: var(--text-muted);">Email:</span> <strong>${user.email || 'N/A'}</strong></div>
+                <div><span style="color: var(--text-muted);">Phone:</span> <strong>${user.phone || 'N/A'}</strong></div>
                 <div><span style="color: var(--text-muted);">Blood Group:</span> <strong>${user.bloodGroup || 'O+'}</strong></div>
               </div>
             </div>

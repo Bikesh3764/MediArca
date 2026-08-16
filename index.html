@@ -171,8 +171,8 @@
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
               <div class="form-group">
-                <label class="form-label">Password *</label>
-                <input type="password" name="docPassword" class="form-input" value="doc123" required>
+                <label class="form-label">Create Secure Password *</label>
+                <input type="password" name="docPassword" class="form-input" placeholder="Min. 6 characters" minlength="6" required>
               </div>
               <div class="form-group">
                 <label class="form-label">Specialty *</label>
@@ -235,22 +235,22 @@
       <div class="auth-page-wrap">
         <div class="auth-card-container">
           <div class="auth-card-header">
-            <h2 class="auth-card-title">Patient Portal Access</h2>
-            <p class="auth-card-desc">Sign in to view your appointments, medical records, and live queue passes.</p>
+            <h2 class="auth-card-title" id="patientAuthTitle">Patient Portal Access</h2>
+            <p class="auth-card-desc" id="patientAuthDesc">Sign in to view your appointments, medical records, and live queue passes.</p>
           </div>
 
-          <!-- Quick Fill Credentials Box for Testing -->
-          <div class="demo-credentials-hint-box">
-            <div style="font-weight: 700; color: var(--text-primary); margin-bottom: 0.25rem;">
-              <i data-lucide="key" style="width: 12px; height: 12px; display: inline-block;"></i> Registered Patient Account:
-            </div>
-            <div>Email: <code>sarah@mediarca.health</code> | Password: <code>patient123</code></div>
-            <button type="button" class="btn btn-sm btn-secondary" style="margin-top: 0.5rem; width: 100%; font-size: 0.75rem;" onclick="window.mediarcaApp.quickFillAuth('sarah@mediarca.health', 'patient123', 'patient')">
-              Auto-Fill Patient Credentials
+          <!-- Tab Switcher: Sign In vs Create Account -->
+          <div style="display: flex; background: var(--bg-surface-subtle); border-radius: var(--radius-sm); padding: 4px; margin-bottom: 1.5rem; border: 1px solid var(--border-subtle);">
+            <button type="button" id="patientTabLoginBtn" class="btn btn-sm btn-primary" style="flex: 1; border-radius: 4px; padding: 0.5rem;" onclick="window.mediarcaApp.togglePatientAuthMode('login')">
+              Sign In
+            </button>
+            <button type="button" id="patientTabRegisterBtn" class="btn btn-sm btn-secondary" style="flex: 1; border-radius: 4px; padding: 0.5rem; background: transparent; border: none;" onclick="window.mediarcaApp.togglePatientAuthMode('register')">
+              Create Account
             </button>
           </div>
 
-          <form onsubmit="window.mediarcaApp.handlePatientLoginSubmit(event)">
+          <!-- Sign In Form -->
+          <form id="patientLoginForm" onsubmit="window.mediarcaApp.handlePatientLoginSubmit(event)">
             <div class="form-group">
               <label class="form-label">Email Address</label>
               <input type="email" id="patientLoginEmail" name="email" class="form-input" placeholder="sarah@mediarca.health" required>
@@ -261,6 +261,56 @@
             </div>
             <button type="submit" class="btn btn-block btn-primary" style="margin-top: 1rem;">
               <i data-lucide="log-in" style="width: 15px; height: 15px;"></i> Sign In to Patient Portal
+            </button>
+          </form>
+
+          <!-- Create Account Form -->
+          <form id="patientRegisterForm" style="display: none;" onsubmit="window.mediarcaApp.handlePatientRegisterSubmit(event)">
+            <div class="form-group">
+              <label class="form-label">Full Name *</label>
+              <input type="text" name="name" class="form-input" placeholder="e.g. John Doe" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Email Address *</label>
+              <input type="email" name="email" class="form-input" placeholder="john.doe@example.com" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Create Password *</label>
+              <input type="password" name="password" class="form-input" placeholder="Min. 6 characters" minlength="6" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Phone Number *</label>
+              <input type="tel" name="phone" class="form-input" placeholder="+1 (555) 000-0000" required>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem;">
+              <div class="form-group">
+                <label class="form-label">Age</label>
+                <input type="number" name="age" class="form-input" value="30" min="1" max="120">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Gender</label>
+                <select name="gender" class="form-select">
+                  <option value="Female">Female</option>
+                  <option value="Male">Male</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Blood Group</label>
+                <select name="bloodGroup" class="form-select">
+                  <option value="O+">O+</option>
+                  <option value="A+">A+</option>
+                  <option value="B+">B+</option>
+                  <option value="AB+">AB+</option>
+                  <option value="O-">O-</option>
+                  <option value="A-">A-</option>
+                  <option value="B-">B-</option>
+                  <option value="AB-">AB-</option>
+                </select>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-block btn-teal" style="margin-top: 1rem;">
+              <i data-lucide="user-plus" style="width: 15px; height: 15px;"></i> Create Patient Account
             </button>
           </form>
         </div>
@@ -278,29 +328,10 @@
             <p class="auth-card-desc">Sign in to manage your daily patient queue, consultations, and prescriptions.</p>
           </div>
 
-          <!-- Quick Fill Credentials Box for Testing -->
-          <div class="demo-credentials-hint-box">
-            <div style="font-weight: 700; color: var(--text-primary); margin-bottom: 0.25rem;">
-              <i data-lucide="key" style="width: 12px; height: 12px; display: inline-block;"></i> Practitioner Accounts:
-            </div>
-            <div style="margin-bottom: 0.25rem;">
-              1. <strong>Verified Doctor</strong>: <code>thorne@mediarca.health</code> / <code>doc123</code>
-              <button type="button" class="btn btn-sm btn-secondary" style="display:block; margin: 0.25rem 0; width: 100%; font-size: 0.75rem;" onclick="window.mediarcaApp.quickFillAuth('thorne@mediarca.health', 'doc123', 'doctor')">
-                Auto-Fill Verified Doctor (Dr. Thorne)
-              </button>
-            </div>
-            <div>
-              2. <strong>Pending Doctor</strong>: <code>vance@mediarca.health</code> / <code>doc123</code>
-              <button type="button" class="btn btn-sm btn-secondary" style="display:block; margin: 0.25rem 0; width: 100%; font-size: 0.75rem;" onclick="window.mediarcaApp.quickFillAuth('vance@mediarca.health', 'doc123', 'doctor')">
-                Auto-Fill Pending Doctor (Dr. Vance)
-              </button>
-            </div>
-          </div>
-
           <form onsubmit="window.mediarcaApp.handleDoctorLoginSubmit(event)">
             <div class="form-group">
-              <label class="form-label">Doctor Email</label>
-              <input type="email" id="doctorLoginEmail" name="email" class="form-input" placeholder="thorne@mediarca.health" required>
+              <label class="form-label">Doctor Registered Email</label>
+              <input type="email" id="doctorLoginEmail" name="email" class="form-input" placeholder="e.g. thorne@mediarca.health" required>
             </div>
             <div class="form-group">
               <label class="form-label">Password</label>
@@ -312,9 +343,9 @@
           </form>
 
           <div style="text-align: center; margin-top: 1.5rem; font-size: 0.8125rem;">
-            <span style="color: var(--text-muted);">New doctor?</span>
+            <span style="color: var(--text-muted);">New practitioner?</span>
             <a onclick="window.mediarcaApp.switchView('doctor-onboarding')" style="color: var(--clinical-teal); font-weight: 700; cursor: pointer; text-decoration: underline;">
-              Apply for Mediarca verification
+              Apply for Medical Board Accreditation
             </a>
           </div>
         </div>
@@ -331,17 +362,6 @@
             <span class="badge" style="background:#b91c1c; color:#fff; margin-bottom:0.5rem;">Restricted Access</span>
             <h2 class="auth-card-title">Medical Board Administration</h2>
             <p class="auth-card-desc">Audit credentials, review medical registrations, and issue certified Mediarca IDs.</p>
-          </div>
-
-          <!-- Quick Fill Credentials Box for Testing -->
-          <div class="demo-credentials-hint-box">
-            <div style="font-weight: 700; color: var(--text-primary); margin-bottom: 0.25rem;">
-              <i data-lucide="shield-alert" style="width: 12px; height: 12px; display: inline-block;"></i> Admin Credentials:
-            </div>
-            <div>Email: <code>admin@mediarca.health</code> | Password: <code>admin2026</code></div>
-            <button type="button" class="btn btn-sm btn-secondary" style="margin-top: 0.5rem; width: 100%; font-size: 0.75rem;" onclick="window.mediarcaApp.quickFillAuth('admin@mediarca.health', 'admin2026', 'admin')">
-              Auto-Fill Admin Credentials
-            </button>
           </div>
 
           <form onsubmit="window.mediarcaApp.handleAdminLoginSubmit(event)">

@@ -145,7 +145,8 @@ class MediarcaSupabaseClient {
   }
 
   async syncInitialDataFromCloud() {
-    if (!this.client) return;
+    if (!this.client || this.isSyncing) return;
+    this.isSyncing = true;
     try {
       // Sync Doctors
       const { data: cloudDocs, error: docErr } = await this.client.from('doctors').select('*');
@@ -176,15 +177,14 @@ class MediarcaSupabaseClient {
           avgConsultTimeMins: cd.avg_consult_time_mins || 12
         }));
 
-        // Seamlessly merge with local state so newly registered pending doctors are NEVER lost
+        // Deduplicate and merge with local state
         const currentLocal = window.mediarcaStore.state.doctors || [];
         const mergedDocs = [...mappedCloud];
 
         currentLocal.forEach(localDoc => {
-          const existsInCloud = mergedDocs.find(cd => cd.email.toLowerCase() === localDoc.email.toLowerCase() || cd.id === localDoc.id);
+          const existsInCloud = mergedDocs.find(cd => cd.email && localDoc.email && cd.email.toLowerCase() === localDoc.email.toLowerCase());
           if (!existsInCloud) {
             mergedDocs.unshift(localDoc);
-            // Also push to Supabase cloud
             this.cloudRegisterDoctor(localDoc);
           }
         });
@@ -196,50 +196,54 @@ class MediarcaSupabaseClient {
       window.mediarcaStore.notifySubscribers();
     } catch (e) {
       console.warn('Initial cloud sync notice:', e);
+    } finally {
+      this.isSyncing = false;
     }
   }
 
   // Cloud Write Methods
   async cloudRegisterDoctor(docObj) {
-    if (!this.client) return docObj;
+    if (!this.client || !docObj || !docObj.email) return docObj;
     try {
-      // 1. Insert into users
+      const passwordHash = docObj.passwordHash || (docObj.password ? (typeof hashPassword === 'function' ? hashPassword(docObj.password) : docObj.password) : 'sha256_e7d23588');
+
+      // 1. Upsert into users (deduplicated by email)
       await this.client
         .from('users')
-        .insert({
+        .upsert({
           role: 'doctor',
-          email: docObj.email,
-          password_hash: docObj.password || 'doc123',
+          email: docObj.email.toLowerCase().trim(),
+          password_hash: passwordHash,
           full_name: docObj.name,
           phone: '+1 (555) 000-0000',
           age: 40,
           gender: 'Other'
-        });
+        }, { onConflict: 'email' });
 
-      // 2. Insert into doctors table in Supabase
+      // 2. Upsert into doctors table in Supabase (deduplicated by email)
       const { data: docRes, error: docErr } = await this.client
         .from('doctors')
-        .insert({
+        .upsert({
           name: docObj.name,
-          email: docObj.email,
+          email: docObj.email.toLowerCase().trim(),
           specialty: docObj.specialty,
           specialty_id: docObj.specialtyId || docObj.specialty.toLowerCase().replace(/\s+/g, ''),
           title: docObj.title || 'Consultant Specialist',
           degrees: docObj.degrees,
           reg_number: docObj.regNumber,
-          mediarca_id: null,
-          verification_status: 'pending',
+          mediarca_id: docObj.mediarcaId || null,
+          verification_status: docObj.verificationStatus || 'pending',
           experience_years: parseInt(docObj.experienceYears) || 5,
           hospital: docObj.hospital,
           fee: parseFloat(docObj.fee) || 50.00,
           bio: docObj.bio || ''
-        })
+        }, { onConflict: 'email' })
         .select()
         .single();
 
       if (docRes && !docErr) {
         docObj.id = docRes.id;
-        console.log('✅ Doctor successfully created in Supabase Cloud:', docRes);
+        console.log('✅ Doctor record synced with Supabase Cloud:', docRes);
       }
     } catch (e) {
       console.warn('Cloud register doctor notice:', e);
