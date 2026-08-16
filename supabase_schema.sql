@@ -425,11 +425,16 @@ DECLARE
 BEGIN
     v_actor_id := auth.uid();
     
-    -- Verify that caller owns the doctor profile or doctor is verified
+    -- C-07 Resolution: Require non-null authenticated physician identity
+    IF v_actor_id IS NULL THEN
+        RAISE EXCEPTION 'Authentication required. Anonymous users cannot advance clinical queues.';
+    END IF;
+    
+    -- Verify that caller strictly owns the verified doctor profile
     SELECT EXISTS (
         SELECT 1 FROM doctors
         WHERE id = p_doctor_id 
-          AND (user_id = v_actor_id OR v_actor_id IS NULL)
+          AND user_id = v_actor_id
           AND verification_status = 'verified'
     ) INTO v_is_authorized;
 
@@ -492,7 +497,7 @@ BEGIN
 END;
 $$;
 
--- 10. ATOMIC TRANSACTIONAL PRESCRIPTION & CONSULTATION COMPLETION RPC (H-06 & Q-07 Resolution)
+-- 10. ATOMIC TRANSACTIONAL PRESCRIPTION & CONSULTATION COMPLETION RPC (C-08 Resolution)
 CREATE OR REPLACE FUNCTION complete_consultation_rx_atomic(
     p_doctor_id UUID,
     p_token_number INT,
@@ -515,15 +520,21 @@ DECLARE
 BEGIN
     v_actor_id := auth.uid();
 
-    -- Check physician authorization
+    -- C-08 Resolution: Require authenticated attending physician identity
+    IF v_actor_id IS NULL THEN
+        RAISE EXCEPTION 'Authentication required. Anonymous users cannot complete consultations or issue prescriptions.';
+    END IF;
+
+    -- Check physician authorization and ownership
     SELECT EXISTS (
         SELECT 1 FROM doctors
         WHERE id = p_doctor_id 
-          AND (user_id = v_actor_id OR v_actor_id IS NULL)
+          AND user_id = v_actor_id
+          AND verification_status = 'verified'
     ) INTO v_is_authorized;
 
     IF NOT v_is_authorized THEN
-        RAISE EXCEPTION 'Not authorized. Only the attending physician can issue prescriptions.';
+        RAISE EXCEPTION 'Not authorized. Only the attending, verified physician can issue prescriptions.';
     END IF;
 
     -- Update appointment with clinical prescription strictly scoped to CURRENT_DATE
@@ -594,7 +605,7 @@ BEGIN
 END;
 $$;
 
--- 11. ATOMIC NO-SHOW / SKIPPED / STATUS OVERRIDE RPC (Q-06 Resolution)
+-- 11. ATOMIC NO-SHOW / SKIPPED / STATUS OVERRIDE RPC (C-09 Resolution)
 CREATE OR REPLACE FUNCTION mark_appointment_status_atomic(
     p_doctor_id UUID,
     p_token_number INT,
@@ -616,6 +627,11 @@ DECLARE
 BEGIN
     v_actor_id := auth.uid();
 
+    -- C-09 Resolution: Require authenticated attending physician or admin
+    IF v_actor_id IS NULL THEN
+        RAISE EXCEPTION 'Authentication required. Anonymous users cannot update appointment status.';
+    END IF;
+
     IF p_status NOT IN ('no-show', 'skipped', 'cancelled') THEN
         RAISE EXCEPTION 'Invalid status transition: %', p_status;
     END IF;
@@ -624,11 +640,11 @@ BEGIN
     SELECT EXISTS (
         SELECT 1 FROM doctors
         WHERE id = p_doctor_id 
-          AND (user_id = v_actor_id OR v_actor_id IS NULL)
+          AND user_id = v_actor_id
     ) INTO v_is_authorized;
 
-    IF NOT v_is_authorized THEN
-        RAISE EXCEPTION 'Not authorized. Only the attending physician can update consultation status.';
+    IF NOT v_is_authorized AND NOT is_admin(v_actor_id) THEN
+        RAISE EXCEPTION 'Not authorized. Only the attending physician or admin can update consultation status.';
     END IF;
 
     -- Update the specified appointment
@@ -719,14 +735,18 @@ DECLARE
 BEGIN
     v_actor_id := auth.uid();
 
+    IF v_actor_id IS NULL THEN
+        RAISE EXCEPTION 'Authentication required. Anonymous users cannot flag emergency triage priority.';
+    END IF;
+
     -- Check physician authorization
     SELECT EXISTS (
         SELECT 1 FROM doctors
         WHERE id = p_doctor_id 
-          AND (user_id = v_actor_id OR v_actor_id IS NULL)
+          AND user_id = v_actor_id
     ) INTO v_is_authorized;
 
-    IF NOT v_is_authorized THEN
+    IF NOT v_is_authorized AND NOT is_admin(v_actor_id) THEN
         RAISE EXCEPTION 'Not authorized. Only medical personnel can flag emergency triage priority.';
     END IF;
 
@@ -777,6 +797,10 @@ DECLARE
     v_appointment appointments%ROWTYPE;
 BEGIN
     v_actor_id := auth.uid();
+
+    IF v_actor_id IS NULL THEN
+        RAISE EXCEPTION 'Authentication required. Reception scanner or staff must be authenticated to check in patients.';
+    END IF;
 
     -- Look up appointment strictly by checkin token
     SELECT * INTO v_appointment
@@ -833,6 +857,10 @@ DECLARE
     v_new_token INT;
 BEGIN
     v_actor_id := auth.uid();
+
+    IF v_actor_id IS NULL THEN
+        RAISE EXCEPTION 'Authentication required to transfer patients between queues.';
+    END IF;
 
     SELECT * INTO v_appointment
     FROM appointments
@@ -896,16 +924,20 @@ DECLARE
 BEGIN
     v_actor_id := auth.uid();
 
+    IF v_actor_id IS NULL THEN
+        RAISE EXCEPTION 'Authentication required to reschedule appointments.';
+    END IF;
+
     UPDATE appointments
     SET scheduled_date = p_new_date,
         appointment_date = p_new_date,
         scheduled_slot = p_new_slot,
         status = 'booked'
-    WHERE id = p_appointment_id
+    WHERE id = p_appointment_id AND (patient_id = v_actor_id OR is_admin(v_actor_id))
     RETURNING * INTO v_appointment;
 
     IF v_appointment.id IS NULL THEN
-        RAISE EXCEPTION 'Appointment record not found.';
+        RAISE EXCEPTION 'Appointment record not found or unauthorized to reschedule.';
     END IF;
 
     INSERT INTO audit_logs (actor_id, action, entity, entity_id, metadata)
@@ -943,9 +975,13 @@ DECLARE
 BEGIN
     v_admin_id := auth.uid();
     
+    IF v_admin_id IS NULL THEN
+        RAISE EXCEPTION 'Authentication required. Only authenticated administrators can verify doctor credentials.';
+    END IF;
+
     -- Verify admin role authorization
     SELECT is_admin(v_admin_id) INTO v_is_admin;
-    IF NOT v_is_admin AND v_admin_id IS NOT NULL THEN
+    IF NOT v_is_admin THEN
         RAISE EXCEPTION 'Access Denied: Only authenticated Medical Board Administrators can verify practitioner licenses.';
     END IF;
 
@@ -989,33 +1025,33 @@ BEGIN
 END;
 $$;
 
--- 12. EXPLICIT RPC EXECUTE PERMISSION ENFORCEMENT (C-06 Resolution)
-REVOKE EXECUTE ON FUNCTION issue_next_opd_token(UUID, TEXT) FROM PUBLIC;
+-- 12. EXPLICIT RPC EXECUTE PERMISSION ENFORCEMENT (C-06 Resolution: Privileged RPCs Granted ONLY to Authenticated Role)
+REVOKE ALL ON FUNCTION issue_next_opd_token(UUID, TEXT) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION issue_next_opd_token(UUID, TEXT) TO authenticated, anon;
 
-REVOKE EXECUTE ON FUNCTION advance_doctor_queue_atomic(UUID) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION advance_doctor_queue_atomic(UUID) TO authenticated, anon;
+REVOKE ALL ON FUNCTION advance_doctor_queue_atomic(UUID) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION advance_doctor_queue_atomic(UUID) TO authenticated;
 
-REVOKE EXECUTE ON FUNCTION complete_consultation_rx_atomic(UUID, INT, TEXT, TEXT[], TEXT) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION complete_consultation_rx_atomic(UUID, INT, TEXT, TEXT[], TEXT) TO authenticated, anon;
+REVOKE ALL ON FUNCTION complete_consultation_rx_atomic(UUID, INT, TEXT, TEXT[], TEXT) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION complete_consultation_rx_atomic(UUID, INT, TEXT, TEXT[], TEXT) TO authenticated;
 
-REVOKE EXECUTE ON FUNCTION mark_appointment_status_atomic(UUID, INT, VARCHAR, TEXT) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION mark_appointment_status_atomic(UUID, INT, VARCHAR, TEXT) TO authenticated, anon;
+REVOKE ALL ON FUNCTION mark_appointment_status_atomic(UUID, INT, VARCHAR, TEXT) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION mark_appointment_status_atomic(UUID, INT, VARCHAR, TEXT) TO authenticated;
 
-REVOKE EXECUTE ON FUNCTION flag_priority_appointment_atomic(UUID, INT, TEXT) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION flag_priority_appointment_atomic(UUID, INT, TEXT) TO authenticated, anon;
+REVOKE ALL ON FUNCTION flag_priority_appointment_atomic(UUID, INT, TEXT) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION flag_priority_appointment_atomic(UUID, INT, TEXT) TO authenticated;
 
-REVOKE EXECUTE ON FUNCTION verify_doctor_admin_atomic(UUID, BOOLEAN, TEXT) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION verify_doctor_admin_atomic(UUID, BOOLEAN, TEXT) TO authenticated, anon;
+REVOKE ALL ON FUNCTION verify_doctor_admin_atomic(UUID, BOOLEAN, TEXT) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION verify_doctor_admin_atomic(UUID, BOOLEAN, TEXT) TO authenticated;
 
-REVOKE EXECUTE ON FUNCTION check_in_patient_qr_atomic(VARCHAR) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION check_in_patient_qr_atomic(VARCHAR) TO authenticated, anon;
+REVOKE ALL ON FUNCTION check_in_patient_qr_atomic(VARCHAR) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION check_in_patient_qr_atomic(VARCHAR) TO authenticated;
 
-REVOKE EXECUTE ON FUNCTION transfer_patient_queue_atomic(UUID, UUID, TEXT) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION transfer_patient_queue_atomic(UUID, UUID, TEXT) TO authenticated, anon;
+REVOKE ALL ON FUNCTION transfer_patient_queue_atomic(UUID, UUID, TEXT) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION transfer_patient_queue_atomic(UUID, UUID, TEXT) TO authenticated;
 
-REVOKE EXECUTE ON FUNCTION reschedule_appointment_atomic(UUID, DATE, VARCHAR) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION reschedule_appointment_atomic(UUID, DATE, VARCHAR) TO authenticated, anon;
+REVOKE ALL ON FUNCTION reschedule_appointment_atomic(UUID, DATE, VARCHAR) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION reschedule_appointment_atomic(UUID, DATE, VARCHAR) TO authenticated;
 
 -- 13. STRICT RESTRICTIVE ROW LEVEL SECURITY (RLS) POLICIES (C-07 & C-08 Resolution)
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
