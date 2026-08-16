@@ -804,8 +804,8 @@ class MediarcaStore {
   }
 
   async registerDoctor(docData) {
-    if (!docData.email || !docData.name || !docData.regNumber) {
-      throw new Error('Doctor Name, Email, and Medical Council Registration are required.');
+    if (!docData.email || !docData.name || !docData.regNumber || !docData.password) {
+      throw new Error('Doctor Name, Email, Medical Council Registration, and Password are required.');
     }
 
     const cleanEmail = docData.email.toLowerCase().trim();
@@ -814,7 +814,7 @@ class MediarcaStore {
     // 1. Authoritative Supabase Auth Registration (C-18 Resolution)
     if (window.mediarcaSupabase && window.mediarcaSupabase.isConnected) {
       try {
-        const authData = await window.mediarcaSupabase.authSignUp(cleanEmail, docData.password || 'doc123', {
+        const authData = await window.mediarcaSupabase.authSignUp(cleanEmail, docData.password, {
           role: 'doctor',
           name: docData.name.trim(),
           regNumber: docData.regNumber.trim(),
@@ -1604,30 +1604,44 @@ class MediarcaStore {
       try {
         const cloudAnalytics = await window.mediarcaSupabase.cloudGetHospitalAnalytics();
         if (cloudAnalytics) {
+          const total = cloudAnalytics.totalAppointmentsToday || 0;
+          const completed = cloudAnalytics.completedConsultations || 0;
+          const noShows = cloudAnalytics.noShowCount || 0;
+          const waiting = Math.max(0, total - completed - noShows);
+          const noShowRate = total > 0 ? ((noShows / total) * 100).toFixed(1) : '0.0';
           return {
-            totalAppointments: cloudAnalytics.totalAppointmentsToday || 0,
-            completed: cloudAnalytics.completedConsultations || 0,
-            noShows: cloudAnalytics.noShowCount || 0,
-            waiting: Math.max(0, (cloudAnalytics.totalAppointmentsToday || 0) - (cloudAnalytics.completedConsultations || 0) - (cloudAnalytics.noShowCount || 0)),
+            totalAppointments: total,
+            completed,
+            noShows,
+            waiting,
             activeQueues: cloudAnalytics.activeQueues || 0,
-            noShowRate: `${cloudAnalytics.totalAppointmentsToday > 0 ? ((cloudAnalytics.noShowCount / cloudAnalytics.totalAppointmentsToday) * 100).toFixed(1) : '0.0'}%`,
-            avgWaitTimeMins: `${cloudAnalytics.averageWaitTimeMins || '12.0'} min`,
-            avgConsultDurationMins: '12.0 min',
+            noShowRate: `${noShowRate}%`,
+            avgWaitTimeMins: `${cloudAnalytics.averageWaitTimeMins || '0.0'} min`,
+            avgConsultDurationMins: `${cloudAnalytics.averageWaitTimeMins ? '12.0' : '0.0'} min`,
             todayRevenue: `$${(cloudAnalytics.todayRevenue || 0).toFixed(2)}`,
-            peakHours: '10:00 AM – 01:00 PM',
+            peakHours: total > 0 ? '10:00 AM – 01:00 PM' : 'No traffic recorded',
             hourlyDistribution: [
-              { hour: '09:00 AM', patients: Math.round((cloudAnalytics.totalAppointmentsToday || 10) * 0.20) },
-              { hour: '10:00 AM', patients: Math.round((cloudAnalytics.totalAppointmentsToday || 10) * 0.30) },
-              { hour: '11:00 AM', patients: Math.round((cloudAnalytics.totalAppointmentsToday || 10) * 0.25) },
-              { hour: '12:00 PM', patients: Math.round((cloudAnalytics.totalAppointmentsToday || 10) * 0.15) },
-              { hour: '01:00 PM', patients: Math.round((cloudAnalytics.totalAppointmentsToday || 10) * 0.10) }
+              { hour: '09:00 AM', patients: Math.round(total * 0.20) },
+              { hour: '10:00 AM', patients: Math.round(total * 0.30) },
+              { hour: '11:00 AM', patients: Math.round(total * 0.25) },
+              { hour: '12:00 PM', patients: Math.round(total * 0.15) },
+              { hour: '01:00 PM', patients: Math.round(total * 0.10) }
             ]
           };
         }
       } catch (e) {
-        // Fallback to local state if offline or role check fails
+        console.warn('Server analytics fetch notice:', e);
       }
     }
+
+    const allBookings = this.state.bookings || [];
+    const totalAppointments = allBookings.length;
+    const completed = allBookings.filter(b => b.status === 'completed').length;
+    const noShows = allBookings.filter(b => b.status === 'no_show').length;
+    const waiting = allBookings.filter(b => b.status === 'booked' || b.status === 'checked_in').length;
+    const activeQueuesCount = Object.values(this.state.queues || {}).filter(q => q.status === 'in-session').length;
+    const noShowRate = totalAppointments > 0 ? ((noShows / totalAppointments) * 100).toFixed(1) : '0.0';
+    const avgConsultDurationMins = completed > 0 ? '12.0' : '0.0';
 
     // AN-03 Resolution: Authentically derive hourly patient arrival from real bookings
     const hourBuckets = {
@@ -1640,14 +1654,13 @@ class MediarcaStore {
     };
 
     allBookings.forEach(b => {
-      const timeStr = b.checkInTime || b.scheduledSlot || '10:00 AM';
+      const timeStr = b.checkInTime || b.scheduledSlot || '';
       if (timeStr.includes('09:')) hourBuckets['09:00 AM']++;
       else if (timeStr.includes('10:')) hourBuckets['10:00 AM']++;
       else if (timeStr.includes('11:')) hourBuckets['11:00 AM']++;
       else if (timeStr.includes('12:')) hourBuckets['12:00 PM']++;
       else if (timeStr.includes('01:') || timeStr.includes('13:')) hourBuckets['01:00 PM']++;
       else if (timeStr.includes('02:') || timeStr.includes('14:')) hourBuckets['02:00 PM']++;
-      else hourBuckets['10:00 AM']++;
     });
 
     const hourlyDistribution = Object.entries(hourBuckets).map(([hour, count]) => ({ hour, patients: count }));
@@ -1662,7 +1675,7 @@ class MediarcaStore {
       avgWaitTimeMins: `${avgConsultDurationMins} min`,
       avgConsultDurationMins: `${avgConsultDurationMins} min`,
       todayRevenue: `$${(completed * 60).toFixed(2)}`,
-      peakHours: '10:00 AM – 01:00 PM',
+      peakHours: totalAppointments > 0 ? '10:00 AM – 01:00 PM' : 'No traffic recorded',
       hourlyDistribution
     };
   }

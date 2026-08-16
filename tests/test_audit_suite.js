@@ -1,14 +1,14 @@
 /**
- * MediArca - Automated Regression & Audit Test Suite (Latest Release Recheck Edition)
+ * MediArca - Automated Regression & Audit Test Suite (Final Line-by-Line Release Audit Edition)
  * Validates store logic, queue algorithms, slot collisions, stage transitions, cloud sync, RLS immutability triggers, 
- * zero demo credentials in store, persistent hospitalSettings serialization, server-authoritative reports, 
- * zero cross-user seed ID fallbacks, and security headers.
+ * zero demo credentials in store, zero hardcoded passwords in app, persistent hospitalSettings serialization, 
+ * server-authoritative reports, zero cross-user seed ID fallbacks, patient billing authorization, dynamic notifications, and security headers.
  */
 
 const fs = require('fs');
 const path = require('path');
 
-console.log('--- Starting MediArca Automated Regression Suite (Latest Release Recheck) ---');
+console.log('--- Starting MediArca Automated Regression Suite (Final Line-by-Line Release Audit) ---');
 
 let passCount = 0;
 let failCount = 0;
@@ -68,6 +68,13 @@ assert(!appContent.includes('O+ Positive</strong></div>'), 'Hardcoded patient de
 assert(!appContent.includes('tl.patientId === \'a0000000-0000-0000-0000-000000000001\''), 'Cross-user seed ID timeline fallback eliminated from patient portal (P0 Privacy)');
 assert(!appContent.includes('d.patientId === \'a0000000-0000-0000-0000-000000000001\''), 'Cross-user seed ID document fallback eliminated from patient portal (P0 Privacy)');
 assert(!appContent.includes('<div style="font-weight: 700; color: #b91c1c;">Penicillin (Severe)</div>'), 'Hardcoded allergy removed from doctor consultation card (P0)');
+assert(!appContent.includes('|| store.state.bookings[0]'), 'Billing payment strictly disallows fallback to first unowned booking in local state (P0)');
+assert(appContent.includes('booking.patientId !== currentUserId'), 'Billing payment enforces authenticated patient appointment ownership (P0)');
+assert(!appContent.includes('showBillingModal(\'bk_live\')'), 'Patient portal billing button bound to dynamic active appointment (P0)');
+assert(!storeContent.includes('docData.password || \'doc123\''), 'Doctor registration strictly disallows hardcoded doc123 password fallback (P0)');
+assert(!appContent.includes('receptionLoginPassword\')?.value.trim() || \'reception123\''), 'Receptionist login strictly disallows hardcoded reception123 password fallback (P0)');
+assert(!appContent.includes('Token #2 is confirmed for Today 10:30 AM in Suite 402'), 'Hardcoded static notifications replaced with dynamic patient appointment telemetry (P0)');
+assert(!appContent.includes('BP 124/82 ↘ 120/80 mmHg'), 'Doctor consultation card vitals trend replaced with dynamic clinical records (P0)');
 assert(storeContent.includes('Clinical Document Vault upload failed'), 'Store throws on vault upload failure');
 assert(storeContent.includes('Billing transaction could not be settled'), 'Store fails closed on cloud billing settlement failure (BI-03)');
 assert(storeContent.includes('Appointment booking could not be completed on the hospital server'), 'Store fails closed on cloud booking failure (P0)');
@@ -92,5 +99,5 @@ console.log(`\nTest Summary: ${passCount} Passed, ${failCount} Failed.`);
 if (failCount > 0) {
   process.exit(1);
 } else {
-  console.log('--- All Latest Release Recheck Regression Checks Passed Successfully! ---');
+  console.log('--- All Final Line-by-Line Release Audit Regression Checks Passed Successfully! ---');
 }

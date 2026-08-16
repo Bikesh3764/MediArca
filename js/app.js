@@ -760,6 +760,9 @@ class MediarcaApp {
     const patientTimeline = window.mediarcaStore.state.medicalTimeline.filter(tl => tl.patientId === user.id);
     const patientDocs = window.mediarcaStore.state.clinicalDocuments.filter(d => d.patientId === user.id);
 
+    const activeAppointment = patientBookings.find(b => b.status === 'booked' || b.status === 'checked_in') || patientBookings[0];
+    const activeBookingId = activeAppointment ? (activeAppointment.bookingId || activeAppointment.id) : '';
+
     container.innerHTML = `
       <div class="container" style="padding-top: 2rem; padding-bottom: 4rem;">
         <!-- Patient Header Banner -->
@@ -773,7 +776,7 @@ class MediarcaApp {
             <p style="font-size: 0.8125rem; color: #e0f2fe;">Manage your upcoming visits, active queue tokens, electronic prescriptions, and diagnostic vault.</p>
           </div>
           <div style="display: flex; gap: 0.5rem;">
-            <button class="btn btn-secondary" onclick="window.mediarcaApp.showBillingModal('bk_live')" style="background: #fff; color: #0369a1; font-size:0.8125rem;">
+            <button class="btn btn-secondary" onclick="window.mediarcaApp.showBillingModal('${activeBookingId}')" style="background: #fff; color: #0369a1; font-size:0.8125rem;">
               <i data-lucide="receipt" style="width: 14px; height: 14px;"></i> Invoices & Pay
             </button>
             <button class="btn btn-secondary" onclick="window.mediarcaApp.showUploadDocModal()" style="background: rgba(255,255,255,0.2); color: #fff; border: 1px solid rgba(255,255,255,0.4); font-size:0.8125rem;">
@@ -970,25 +973,27 @@ class MediarcaApp {
           </div>
         ` : ''}
 
-        <!-- TAB 7: NOTIFICATIONS -->
+        <!-- TAB 7: NOTIFICATIONS (Audit Final Resolution: Dynamic Patient Telemetry Notifications) -->
         ${activeTab === 'notifications' ? `
           <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.5rem;">
             <h3 style="font-size: 1.0625rem; font-weight: 800; color: var(--text-primary); margin-bottom: 1rem;">Clinical Notifications Stream</h3>
             <div style="display:flex; flex-direction:column; gap:0.75rem;">
-              <div style="background:#f0fdf4; border:1px solid #86efac; padding:0.875rem; border-radius:var(--radius-sm); display:flex; gap:0.75rem; align-items:center;">
-                <i data-lucide="check-circle-2" style="width:18px;height:18px; color:#15803d;"></i>
-                <div>
-                  <div style="font-size:0.8125rem; font-weight:700; color:#166534;">Appointment Confirmed: Dr. Bikesh Ray</div>
-                  <div style="font-size:0.75rem; color:#15803d;">Token #2 is confirmed for Today 10:30 AM in Suite 402.</div>
+              ${patientBookings.length > 0 ? patientBookings.map(b => {
+                const isCurrent = b.status === 'in-consultation' || b.status === 'checked_in';
+                return `
+                  <div style="background:${isCurrent ? '#f0fdf4' : '#f0f9ff'}; border:1px solid ${isCurrent ? '#86efac' : '#bae6fd'}; padding:0.875rem; border-radius:var(--radius-sm); display:flex; gap:0.75rem; align-items:center;">
+                    <i data-lucide="${isCurrent ? 'check-circle-2' : 'calendar-check'}" style="width:18px;height:18px; color:${isCurrent ? '#15803d' : '#0369a1'};"></i>
+                    <div>
+                      <div style="font-size:0.8125rem; font-weight:700; color:${isCurrent ? '#166534' : '#0c4a6e'};">Appointment: ${escapeHtml(b.doctorName)}</div>
+                      <div style="font-size:0.75rem; color:${isCurrent ? '#15803d' : '#0369a1'};">Token #${b.tokenNumber} (${escapeHtml(b.status.toUpperCase())}) scheduled for ${escapeHtml(b.date || b.scheduledDate || 'Today')} at ${escapeHtml(b.timeSlot || b.scheduledSlot || '09:00 AM')}.</div>
+                    </div>
+                  </div>
+                `;
+              }).join('') : `
+                <div style="padding: 1.5rem; text-align: center; color: var(--text-secondary); background: var(--bg-surface-subtle); border-radius: var(--radius-sm);">
+                  No new clinical notifications.
                 </div>
-              </div>
-              <div style="background:#f0f9ff; border:1px solid #bae6fd; padding:0.875rem; border-radius:var(--radius-sm); display:flex; gap:0.75rem; align-items:center;">
-                <i data-lucide="bell" style="width:18px;height:18px; color:#0369a1;"></i>
-                <div>
-                  <div style="font-size:0.8125rem; font-weight:700; color:#0c4a6e;">Queue Approaching Alert</div>
-                  <div style="font-size:0.75rem; color:#0369a1;">You are 1 token away. Please proceed towards Consultation Suite 402.</div>
-                </div>
-              </div>
+              `}
             </div>
           </div>
         ` : ''}
@@ -1131,7 +1136,7 @@ class MediarcaApp {
                         <i data-lucide="heart-pulse" style="width:14px;height:14px; color:#ef4444;"></i> Pre-Consultation Vitals & Biometrics
                       </div>
                       <div style="font-size:0.7rem; color:var(--text-muted);">
-                        Repeat Visit Trend: <strong style="color:#15803d;">BP 124/82 ↘ 120/80 mmHg</strong>
+                        Repeat Visit Trend: <strong>${escapeHtml(currentPatient.clinicalProfile?.vitals_trend || 'No prior visit vitals on record')}</strong>
                       </div>
                     </div>
                     
@@ -2300,8 +2305,13 @@ class MediarcaApp {
 
   async handleReceptionLoginSubmit(e) {
     if (e) e.preventDefault();
-    const email = document.getElementById('receptionLoginEmail')?.value.trim() || 'reception@mediarca.health';
-    const password = document.getElementById('receptionLoginPassword')?.value.trim() || 'reception123';
+    const email = document.getElementById('receptionLoginEmail')?.value.trim();
+    const password = document.getElementById('receptionLoginPassword')?.value.trim();
+
+    if (!email || !password) {
+      this.showToast('Please enter both reception email and password.', 'warning');
+      return;
+    }
 
     try {
       const user = await window.mediarcaStore.login(email, password);
@@ -2932,14 +2942,22 @@ class MediarcaApp {
 
   async handleProcessPayment(bookingIdentifier) {
     const store = window.mediarcaStore;
-    const booking = store.state.bookings.find(b => b.bookingId === bookingIdentifier || b.id === bookingIdentifier) || store.state.bookings[0];
+    const currentUserId = store.state.currentUser?.id;
+    const currentUserRole = store.state.currentUser?.role;
+
+    const booking = store.state.bookings.find(b => b.bookingId === bookingIdentifier || b.id === bookingIdentifier);
     if (!booking) {
       this.showToast('Appointment record not found for billing settlement.', 'warning');
       return;
     }
 
-    const doctor = store.state.doctors.find(d => d.id === booking.doctorId);
-    const fee = doctor?.fee || 50.00;
+    if (currentUserRole === 'patient' && booking.patientId && booking.patientId !== currentUserId) {
+      this.showToast('Access Denied: You cannot settle invoices for another patient.', 'warning');
+      return;
+    }
+
+    const doctor = store.state.doctors.find(d => d.id === booking.doctorId || d.name === booking.doctorName);
+    const fee = doctor?.consultFee || doctor?.fee || 60.00;
     const hasInsurance = document.getElementById('billingInsuranceCheck')?.checked ?? true;
     const couponCode = document.getElementById('billingCouponInput')?.value?.trim() || '';
 
@@ -2947,7 +2965,7 @@ class MediarcaApp {
       this.showToast('Processing secure transaction & settling invoice...', 'info');
       const invoice = await store.processBillingInvoice({
         appointmentId: booking.id || booking.bookingId,
-        patientName: booking.patientName || 'Sarah Johnson',
+        patientName: booking.patientName || store.state.currentUser?.name || 'Verified Patient',
         doctorName: booking.doctorName || (doctor?.name || 'Attending Physician'),
         fee: fee,
         couponCode: couponCode,
