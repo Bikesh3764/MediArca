@@ -815,7 +815,6 @@ body {
 .doc-book-btn:active {
   transform: translateY(0);
 }
-}
 
 /* Authentication Screen Layout (Split Clean View) */
 .auth-page-wrap {
