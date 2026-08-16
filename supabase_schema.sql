@@ -1547,6 +1547,13 @@ BEGIN
         RAISE EXCEPTION 'Access Denied: Administrative or clinical staff privileges required.';
     END IF;
 
+    -- H-11: State transition workflow validation
+    IF COALESCE(v_appointment.current_stage, 'triage') = 'discharged' AND p_stage != 'discharged' THEN
+        RAISE EXCEPTION 'Cannot transition stage: Patient has already concluded clinical episode and been discharged.';
+    ELSIF COALESCE(v_appointment.current_stage, 'triage') = 'triage' AND p_stage = 'discharged' THEN
+        RAISE EXCEPTION 'Invalid clinical workflow transition: Patient in triage must undergo physician consultation or evaluation prior to discharge.';
+    END IF;
+
     -- H-10: Persist current_stage directly to appointment domain record
     UPDATE appointments
     SET current_stage = p_stage

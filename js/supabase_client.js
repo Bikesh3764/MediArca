@@ -448,10 +448,21 @@ class MediarcaSupabaseClient {
     const user = (await this.client.auth.getUser())?.data?.user;
     if (!user) throw new Error('Authentication required to upload medical documents.');
 
-    const fileExt = file.name ? file.name.split('.').pop() : 'pdf';
-    const cleanFileName = file.name || `document_${Date.now()}.${fileExt}`;
+    // H-13 & H-14: Strict MIME Type allowlist and File Size verification
+    const allowedMimes = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
+    const mimeType = (file.type || 'application/pdf').toLowerCase();
+    if (!allowedMimes.includes(mimeType)) {
+      throw new Error(`Invalid file format '${mimeType}'. Only PDF and image records (JPEG, PNG, WebP) are permitted.`);
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      throw new Error('File size exceeds maximum permitted 10MB limit.');
+    }
+
+    const fileExt = file.name ? file.name.split('.').pop().toLowerCase() : 'pdf';
+    const sanitizedBase = (file.name || 'document').replace(/[^a-zA-Z0-9._-]/g, '_');
     const docUuid = crypto.randomUUID ? crypto.randomUUID() : (Date.now().toString(36) + Math.random().toString(36).substring(2, 6));
-    const storagePath = `${user.id}/${docUuid}_${cleanFileName.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+    const storagePath = `${user.id}/${docUuid}_${sanitizedBase}`;
 
     // 1. Upload raw bytes to private Supabase Storage bucket
     const { error: uploadError } = await this.client.storage
@@ -459,7 +470,7 @@ class MediarcaSupabaseClient {
       .upload(storagePath, file, {
         cacheControl: '3600',
         upsert: false,
-        contentType: file.type || 'application/pdf'
+        contentType: mimeType
       });
 
     if (uploadError) {
