@@ -98,8 +98,8 @@ class MediarcaSupabaseClient {
   async authSignUp(email, password, metadata = {}) {
     if (!this.client) throw new Error('Supabase client unavailable');
 
-    // C-03 Resolution: Never allow client-requested admin privilege escalation on signup
-    const assignedRole = metadata.role === 'doctor' ? 'doctor' : (metadata.role === 'receptionist' ? 'receptionist' : 'patient');
+    // Audit v8 Resolution: Public signup strictly creates 'patient' (or 'doctor' with pending accreditation). Block any self-assignment of 'receptionist' or 'admin'!
+    const assignedRole = metadata.role === 'doctor' ? 'doctor' : 'patient';
     const cleanEmail = email.toLowerCase().trim();
 
     const { data, error } = await this.client.auth.signUp({
@@ -594,7 +594,13 @@ class MediarcaSupabaseClient {
       .single();
 
     if (dbError) {
-      console.error('Document metadata insert error:', dbError);
+      console.error('Document metadata insert error, rolling back storage object:', dbError);
+      // Audit v8 Resolution: Clean up orphaned storage object if metadata row insert fails
+      try {
+        await this.client.storage.from('clinical_documents').remove([storagePath]);
+      } catch (cleanupErr) {
+        console.warn('Storage cleanup warning:', cleanupErr);
+      }
       throw dbError;
     }
 

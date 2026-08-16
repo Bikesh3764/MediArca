@@ -1219,35 +1219,35 @@ class MediarcaApp {
                       </div>
                     </div>
 
-                    <input type="text" id="docDiagnosisInput" class="form-input" placeholder="Primary Diagnosis" value="Acute Upper Respiratory Tract Infection" style="margin-bottom: 0.75rem;">
+                    <input type="text" id="docDiagnosisInput" class="form-input" placeholder="Primary Diagnosis (or select Clinical Protocol Template above)" value="" style="margin-bottom: 0.75rem;">
                     
                     <div style="font-size: 0.8125rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.5rem;">Structured Prescription Regimen (Itemized Drugs):</div>
                     <div id="docPrescriptionItemsContainer" style="background: #fff; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 0.75rem; margin-bottom: 0.75rem;">
                       <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 0.5rem; margin-bottom: 0.5rem;">
-                        <input type="text" id="docMed1Drug" class="form-input" value="Tab. Azithromycin 500mg" placeholder="Medicine Name">
-                        <input type="text" id="docMed1Freq" class="form-input" value="OD (1-0-0)" placeholder="Frequency">
+                        <input type="text" id="docMed1Drug" class="form-input" value="" placeholder="Medicine 1 Name (e.g. Tab. Metoprolol 25mg)">
+                        <input type="text" id="docMed1Freq" class="form-input" value="" placeholder="Frequency (e.g. OD)">
                         <input type="text" id="docMed1Route" class="form-input" value="Oral" placeholder="Route">
-                        <input type="text" id="docMed1Dur" class="form-input" value="5 Days" placeholder="Duration">
+                        <input type="text" id="docMed1Dur" class="form-input" value="" placeholder="Duration (e.g. 5 Days)">
                       </div>
                       <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 0.5rem; margin-bottom: 0.5rem;">
-                        <input type="text" id="docMed2Drug" class="form-input" value="Tab. Paracetamol 650mg" placeholder="Medicine Name">
-                        <input type="text" id="docMed2Freq" class="form-input" value="TID (1-1-1)" placeholder="Frequency">
+                        <input type="text" id="docMed2Drug" class="form-input" value="" placeholder="Medicine 2 Name (Optional)">
+                        <input type="text" id="docMed2Freq" class="form-input" value="" placeholder="Frequency">
                         <input type="text" id="docMed2Route" class="form-input" value="Oral" placeholder="Route">
-                        <input type="text" id="docMed2Dur" class="form-input" value="3 Days" placeholder="Duration">
+                        <input type="text" id="docMed2Dur" class="form-input" value="" placeholder="Duration">
                       </div>
                       <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 0.5rem;">
-                        <input type="text" id="docMed3Drug" class="form-input" value="Tab. Levocetirizine 5mg" placeholder="Medicine Name">
-                        <input type="text" id="docMed3Freq" class="form-input" value="HS (0-0-1)" placeholder="Frequency">
+                        <input type="text" id="docMed3Drug" class="form-input" value="" placeholder="Medicine 3 Name (Optional)">
+                        <input type="text" id="docMed3Freq" class="form-input" value="" placeholder="Frequency">
                         <input type="text" id="docMed3Route" class="form-input" value="Oral" placeholder="Route">
-                        <input type="text" id="docMed3Dur" class="form-input" value="5 Days" placeholder="Duration">
+                        <input type="text" id="docMed3Dur" class="form-input" value="" placeholder="Duration">
                       </div>
                     </div>
 
                     <div style="font-size: 0.8125rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.5rem;">Diagnostic Lab Orders & Imaging:</div>
-                    <input type="text" id="docLabOrderInput" class="form-input" placeholder="Ordered Tests (e.g. Complete Blood Count CBC, Chest X-Ray PA View)" value="Complete Blood Count (CBC), Serum Ferritin" style="margin-bottom: 0.75rem;">
+                    <input type="text" id="docLabOrderInput" class="form-input" placeholder="Ordered Tests (e.g. CBC, Lipid Profile, Chest X-Ray)" value="" style="margin-bottom: 0.75rem;">
 
                     <div style="font-size: 0.8125rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.5rem;">Treatment Plan, Clinical Advice & Follow-Up:</div>
-                    <textarea id="docAdviceInput" class="form-textarea" placeholder="Clinical Advice, Dietary Precautions & Follow-up Timeline..." style="margin-bottom: 0.75rem; min-height: 55px;">Hydrate adequately (3L water daily). Complete full 5-day antibiotic course. Review after 5 days if fever persists.</textarea>
+                    <textarea id="docAdviceInput" class="form-textarea" placeholder="Clinical Advice, Dietary Precautions & Follow-up Timeline..." style="margin-bottom: 0.75rem; min-height: 55px;"></textarea>
 
                     <div style="display: flex; gap: 0.75rem; align-items: center; margin-bottom: 1rem;">
                       <span style="font-size: 0.8125rem; color: var(--text-secondary); font-weight: 600;">Scheduled Follow-up:</span>
@@ -1760,37 +1760,41 @@ class MediarcaApp {
           </div>
         ` : ''}
 
-        <!-- TAB 8: REPORTS -->
+        <!-- TAB 8: REPORTS (Audit v8 Resolution: Real Dynamic Data Export) -->
         ${activeTab === 'reports' ? `
           <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 2rem; text-align:center;">
             <i data-lucide="file-spreadsheet" style="width:36px;height:36px; color:var(--clinical-blue); margin:0 auto 1rem;"></i>
             <h3 style="font-size: 1.25rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.5rem;">Hospital Analytics & Compliance Reports</h3>
-            <p style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 1.5rem;">Download certified monthly patient throughput, physician billing audits, and queue metrics.</p>
+            <p style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 1.5rem;">Export live certified throughput registers and append-only audit trails.</p>
             <div style="display:flex; justify-content:center; gap:0.75rem;">
-              <button class="btn btn-primary" onclick="window.mediarcaApp.showToast('Monthly Throughput Report Downloaded.', 'success')">Download Throughput CSV</button>
-              <button class="btn btn-secondary" onclick="window.mediarcaApp.showToast('Clinical Audit Summary Exported.', 'success')">Export Audit PDF</button>
+              <button class="btn btn-primary" onclick="window.mediarcaApp.handleDownloadThroughputCsv()">
+                <i data-lucide="download" style="width:14px;height:14px;"></i> Download Throughput CSV
+              </button>
+              <button class="btn btn-secondary" onclick="window.mediarcaApp.handleExportAuditCsv()">
+                <i data-lucide="download" style="width:14px;height:14px;"></i> Export Audit CSV
+              </button>
             </div>
           </div>
         ` : ''}
 
-        <!-- TAB 9: SETTINGS -->
+        <!-- TAB 9: SETTINGS (Audit v8 Resolution: Persistent Configuration Engine) -->
         ${activeTab === 'settings' ? `
           <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.5rem; max-width:600px;">
             <h3 style="font-size: 1.125rem; font-weight: 800; color: var(--text-primary); margin-bottom: 1rem;">Hospital System Configuration</h3>
             <div style="display:flex; flex-direction:column; gap:1rem;">
               <div class="form-group">
                 <label class="form-label">Default Consultation Slot Buffer (Minutes)</label>
-                <input type="number" class="form-input" value="12">
+                <input type="number" id="adminSettingSlotBuffer" class="form-input" value="${window.mediarcaStore.state.hospitalSettings?.slotBufferMins || 12}">
               </div>
               <div class="form-group">
                 <label class="form-label">Hospital Group Name</label>
-                <input type="text" class="form-input" value="Apex Healthcare Network International">
+                <input type="text" id="adminSettingGroupName" class="form-input" value="${escapeHtml(window.mediarcaStore.state.hospitalSettings?.hospitalName || 'Apex Healthcare Network International')}">
               </div>
               <div class="form-group">
                 <label class="form-label">Statutory Compliance Standard</label>
                 <input type="text" class="form-input" value="HIPAA / NABH Certified EMR Protocol" disabled>
               </div>
-              <button class="btn btn-teal" onclick="window.mediarcaApp.showToast('Hospital configuration parameters saved!', 'success')">Save Settings</button>
+              <button class="btn btn-teal" onclick="window.mediarcaApp.handleSaveAdminSettings()">Save Settings</button>
             </div>
           </div>
         ` : ''}
@@ -1798,6 +1802,73 @@ class MediarcaApp {
     `;
 
     if (window.lucide) window.lucide.createIcons();
+  }
+
+  handleDownloadThroughputCsv() {
+    const bookings = window.mediarcaStore.state.bookings || [];
+    const headers = ['Booking ID', 'Date', 'Time Slot', 'Doctor', 'Specialty', 'Token', 'Status', 'Symptoms', 'Stage'];
+    const rows = bookings.map(b => [
+      b.bookingId || b.id || '',
+      b.date || b.scheduledDate || '',
+      b.timeSlot || b.scheduledSlot || '',
+      `"${(b.doctorName || '').replace(/"/g, '""')}"`,
+      `"${(b.specialty || '').replace(/"/g, '""')}"`,
+      b.tokenNumber || '',
+      b.status || '',
+      `"${(b.symptoms || '').replace(/"/g, '""')}"`,
+      b.stage || 'triage'
+    ]);
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `MediArca_Throughput_Report_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    this.showToast('Throughput CSV report exported successfully.', 'success');
+  }
+
+  handleExportAuditCsv() {
+    const logs = window.mediarcaStore.state.auditLogs || [];
+    const headers = ['Timestamp', 'Action', 'Entity', 'Entity ID', 'Actor ID'];
+    const rows = logs.map(l => [
+      l.timestamp || '',
+      l.action || '',
+      l.entity || '',
+      l.entityId || '',
+      l.actorId || ''
+    ]);
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `MediArca_Audit_Log_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    this.showToast('Compliance Audit CSV exported successfully.', 'success');
+  }
+
+  handleSaveAdminSettings() {
+    const buffer = parseInt(document.getElementById('adminSettingSlotBuffer')?.value) || 12;
+    const name = document.getElementById('adminSettingGroupName')?.value?.trim() || 'Apex Healthcare Network International';
+    
+    if (!window.mediarcaStore.state.hospitalSettings) {
+      window.mediarcaStore.state.hospitalSettings = {};
+    }
+    window.mediarcaStore.state.hospitalSettings.slotBufferMins = buffer;
+    window.mediarcaStore.state.hospitalSettings.hospitalName = name;
+
+    window.mediarcaStore.recordAuditLog({
+      action: 'ADMIN_HOSPITAL_SETTINGS_SAVED',
+      entity: 'system_settings',
+      entityId: 'global_config',
+      afterState: { slotBufferMins: buffer, hospitalName: name }
+    });
+
+    window.mediarcaStore.saveState();
+    this.showToast('Hospital configuration parameters saved and audited!', 'success');
   }
 
   async handleAdminVerify(doctorId, approved) {

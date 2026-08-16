@@ -1914,27 +1914,51 @@ ALTER TABLE clinic_queues ENABLE ROW LEVEL SECURITY;
 ALTER TABLE appointments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
 
--- USERS TABLE POLICIES (Strict identity linkage: id = auth.uid() - C-04 Resolution)
+-- USERS TABLE POLICIES (Strict identity linkage: id = auth.uid() - C-04 & Audit v8 Resolution)
 DROP POLICY IF EXISTS "Users can read own profile" ON users;
 CREATE POLICY "Users can read own profile" ON users FOR SELECT USING (
-    auth.uid() = id
+    auth.uid() = id OR is_admin(auth.uid())
 );
 
 DROP POLICY IF EXISTS "Users can create own profile" ON users;
 DROP POLICY IF EXISTS "Public can register user profile" ON users;
 CREATE POLICY "Users can create own profile" ON users FOR INSERT WITH CHECK (
-    auth.uid() = id
+    auth.uid() = id AND role IN ('patient', 'doctor')
 );
 
 DROP POLICY IF EXISTS "Users can update own record" ON users;
 CREATE POLICY "Users can update own record" ON users FOR UPDATE USING (
     auth.uid() = id
+) WITH CHECK (
+    auth.uid() = id
 );
 
--- DOCTORS TABLE POLICIES (Practitioners insert ONLY for own user_id as pending - C-05 Resolution)
+-- Audit v8 Resolution: Immutable Role Trigger on Users
+CREATE OR REPLACE FUNCTION prevent_user_role_escalation()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+    IF NEW.role IS DISTINCT FROM OLD.role THEN
+        IF NOT is_admin(auth.uid()) THEN
+            RAISE EXCEPTION 'Access Denied: User role is immutable and cannot be self-modified.';
+        END IF;
+    END IF;
+    RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_prevent_user_role_escalation ON users;
+CREATE TRIGGER trg_prevent_user_role_escalation
+BEFORE UPDATE ON users
+FOR EACH ROW
+EXECUTE FUNCTION prevent_user_role_escalation();
+
+-- DOCTORS TABLE POLICIES (Practitioners insert ONLY for own user_id as pending - C-05 & Audit v8 Resolution)
 DROP POLICY IF EXISTS "Public can view verified doctors" ON doctors;
 CREATE POLICY "Public can view verified doctors" ON doctors FOR SELECT USING (
-    verification_status = 'verified' OR auth.uid() = user_id
+    verification_status = 'verified' OR auth.uid() = user_id OR is_admin(auth.uid())
 );
 
 DROP POLICY IF EXISTS "Practitioners can submit accreditation application" ON doctors;
@@ -1944,8 +1968,32 @@ CREATE POLICY "Practitioners can submit accreditation application" ON doctors FO
 
 DROP POLICY IF EXISTS "Doctor can update own practitioner profile" ON doctors;
 CREATE POLICY "Doctor can update own practitioner profile" ON doctors FOR UPDATE USING (
-    auth.uid() = user_id
+    auth.uid() = user_id OR is_admin(auth.uid())
 );
+
+-- Audit v8 Resolution: Doctor Self-Verification Prevention Trigger
+CREATE OR REPLACE FUNCTION prevent_doctor_self_verification()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+    IF (NEW.verification_status IS DISTINCT FROM OLD.verification_status 
+        OR NEW.mediarca_id IS DISTINCT FROM OLD.mediarca_id 
+        OR NEW.verified_at IS DISTINCT FROM OLD.verified_at) THEN
+        IF NOT is_admin(auth.uid()) THEN
+            RAISE EXCEPTION 'Access Denied: Verification status and official Mediarca credentials can only be granted by Medical Board Administrators.';
+        END IF;
+    END IF;
+    RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_prevent_doctor_self_verification ON doctors;
+CREATE TRIGGER trg_prevent_doctor_self_verification
+BEFORE UPDATE ON doctors
+FOR EACH ROW
+EXECUTE FUNCTION prevent_doctor_self_verification();
 
 -- CLINIC QUEUES TABLE POLICIES (M-01 & DB-05 Resolution: Verified Doctor Daily Queue Management)
 DROP POLICY IF EXISTS "Public can read live queue telemetry" ON clinic_queues;

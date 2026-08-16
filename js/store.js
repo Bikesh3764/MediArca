@@ -1006,7 +1006,8 @@ class MediarcaStore {
           });
         }
       } catch (cloudErr) {
-        console.warn('Cloud appointment RPC notice (falling back to synchronized local queue):', cloudErr);
+        console.error('Cloud appointment RPC error:', cloudErr);
+        throw new Error(`Appointment booking could not be completed on the hospital server: ${cloudErr.message || 'Server rejected booking request'}`);
       }
     }
 
@@ -1294,7 +1295,12 @@ class MediarcaStore {
 
     let cloudRes = null;
     if (window.mediarcaSupabase && window.mediarcaSupabase.isConnected) {
-      cloudRes = await window.mediarcaSupabase.cloudMarkAppointmentStatus(doctorId, tokenNumber, status, reason);
+      try {
+        cloudRes = await window.mediarcaSupabase.cloudMarkAppointmentStatus(doctorId, tokenNumber, status, reason);
+      } catch (cloudErr) {
+        console.error('Cloud appointment status error:', cloudErr);
+        throw new Error(`Failed to update clinical consultation status on server: ${cloudErr.message || 'Status transition rejected'}`);
+      }
     }
 
     const booking = this.state.bookings.find(b => b.doctorId === doctorId && b.tokenNumber === tokenNumber);
@@ -1643,7 +1649,8 @@ class MediarcaStore {
       try {
         await window.mediarcaSupabase.cloudUpdatePatientStage(booking.id, newStage, reason);
       } catch (e) {
-        console.warn('Cloud patient stage sync warning:', e);
+        console.error('Cloud patient stage sync error:', e);
+        throw new Error(`Patient stage routing update failed on server: ${e.message || 'Routing transition rejected'}`);
       }
     }
 
@@ -1843,7 +1850,8 @@ class MediarcaStore {
           signedAt: new Date().toISOString()
         });
       } catch (e) {
-        console.warn('Cloud consent record warning:', e);
+        console.error('Cloud consent record error:', e);
+        throw new Error(`Digital consent signature could not be recorded on server: ${e.message || 'Consent storage rejected'}`);
       }
     }
 
