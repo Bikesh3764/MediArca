@@ -1192,13 +1192,17 @@ class MediarcaStore {
     };
   }
 
-  // 2. CRYPTOGRAPHIC CHECK-IN TOKEN GENERATOR (Section 11 Resolution)
+  // 2. CRYPTOGRAPHIC CHECK-IN TOKEN GENERATOR (C-24 Resolution: CSPRNG 128-bit Cryptographic Random Token)
   generateSignedCheckInToken(bookingId, patientId) {
-    const expiry = Date.now() + 24 * 60 * 60 * 1000; // 24hr valid
-    const salt = 'MED_CHK_SEC_';
-    const raw = `${salt}${bookingId}_${patientId}_${expiry}`;
-    // Zero clinical PII included in the payload
-    return `MED-CHK-${btoa(raw).replace(/=/g, '').substring(0, 24)}`;
+    // Generate high-entropy 128-bit CSPRNG token (16 bytes = 32 hex chars)
+    const randomBuffer = new Uint8Array(16);
+    if (typeof window !== 'undefined' && window.crypto && window.crypto.getRandomValues) {
+      window.crypto.getRandomValues(randomBuffer);
+    } else {
+      for (let i = 0; i < 16; i++) randomBuffer[i] = Math.floor(Math.random() * 256);
+    }
+    const tokenHex = Array.from(randomBuffer).map(b => b.toString(16).padStart(2, '0')).join('');
+    return `MED-QR-${tokenHex}`;
   }
 
   // 3. RECEPTIONIST FRONT-DESK CHECK-IN

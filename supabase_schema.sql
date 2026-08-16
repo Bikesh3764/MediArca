@@ -323,6 +323,7 @@ DECLARE
     v_clinical patient_clinical_profiles%ROWTYPE;
     v_next_token INT;
     v_booking_id VARCHAR;
+    v_checkin_token VARCHAR;
     v_initial_status VARCHAR;
     v_current_token INT;
     v_appointment appointments%ROWTYPE;
@@ -379,6 +380,9 @@ BEGIN
 
     v_next_token := COALESCE(v_next_token, 0) + 1;
     v_booking_id := 'MED-BK-' || upper(to_hex(extract(epoch from now())::bigint)) || '-' || upper(substring(md5(random()::text) from 1 for 4));
+    
+    -- C-24: Server-side cryptographic 128-bit check-in token generation
+    v_checkin_token := 'MED-QR-' || lower(encode(gen_random_bytes(16), 'hex'));
 
     -- 7. All new bookings start in 'waiting' queue line until called by doctor (H-11 Resolution)
     UPDATE clinic_queues 
@@ -391,10 +395,10 @@ BEGIN
 
     INSERT INTO appointments (
         booking_id, patient_id, doctor_id, patient_name, patient_phone, patient_age, patient_gender,
-        token_number, status, check_in_time, appointment_date, scheduled_date, start_at, end_at, timezone, symptoms
+        token_number, status, checkin_token, check_in_time, appointment_date, scheduled_date, start_at, end_at, timezone, symptoms
     ) VALUES (
         v_booking_id, v_actor_id, p_doctor_id, v_patient.full_name, COALESCE(v_patient.phone, 'Not specified'),
-        v_clinical.age, v_clinical.gender, v_next_token, 'waiting', NOW(), CURRENT_DATE, CURRENT_DATE,
+        v_clinical.age, v_clinical.gender, v_next_token, 'waiting', v_checkin_token, NOW(), CURRENT_DATE, CURRENT_DATE,
         NOW(), NOW() + interval '15 minutes', 'UTC', p_symptoms
     ) RETURNING * INTO v_appointment;
 
@@ -1338,7 +1342,90 @@ CREATE POLICY "Attending doctors can view clinical documents" ON clinical_docume
         ) OR is_admin(auth.uid())
     );
 
--- 14. PUBLIC DIRECTORY VIEW (P-02 & Q-04 Resolution: Single Source of Truth via clinic_queues)
+-- 14. MULTI-HOSPITAL & FACILITY RLS POLICIES (P0 Resolution: Mandatory RLS across all infrastructure tables)
+ALTER TABLE organizations ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public can view organizations" ON organizations;
+DROP POLICY IF EXISTS "Admins can manage organizations" ON organizations;
+CREATE POLICY "Public can view organizations" ON organizations FOR SELECT USING (true);
+CREATE POLICY "Admins can manage organizations" ON organizations FOR ALL TO authenticated
+    USING (is_admin(auth.uid())) WITH CHECK (is_admin(auth.uid()));
+
+ALTER TABLE facilities ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public can view facilities" ON facilities;
+DROP POLICY IF EXISTS "Admins can manage facilities" ON facilities;
+CREATE POLICY "Public can view facilities" ON facilities FOR SELECT USING (true);
+CREATE POLICY "Admins can manage facilities" ON facilities FOR ALL TO authenticated
+    USING (is_admin(auth.uid())) WITH CHECK (is_admin(auth.uid()));
+
+ALTER TABLE hospital_departments ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public can view hospital departments" ON hospital_departments;
+DROP POLICY IF EXISTS "Admins can manage hospital departments" ON hospital_departments;
+CREATE POLICY "Public can view hospital departments" ON hospital_departments FOR SELECT USING (true);
+CREATE POLICY "Admins can manage hospital departments" ON hospital_departments FOR ALL TO authenticated
+    USING (is_admin(auth.uid())) WITH CHECK (is_admin(auth.uid()));
+
+ALTER TABLE clinic_rooms ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public can view clinic rooms" ON clinic_rooms;
+DROP POLICY IF EXISTS "Admins can manage clinic rooms" ON clinic_rooms;
+CREATE POLICY "Public can view clinic rooms" ON clinic_rooms FOR SELECT USING (true);
+CREATE POLICY "Admins can manage clinic rooms" ON clinic_rooms FOR ALL TO authenticated
+    USING (is_admin(auth.uid())) WITH CHECK (is_admin(auth.uid()));
+
+-- 15. STATUTORY DIGITAL CONSENT RLS POLICIES (Immutable patient audit artifacts)
+ALTER TABLE patient_consents ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Patients can view own consents" ON patient_consents;
+DROP POLICY IF EXISTS "Patients can record consents" ON patient_consents;
+DROP POLICY IF EXISTS "Admins can view consents" ON patient_consents;
+CREATE POLICY "Patients can view own consents" ON patient_consents FOR SELECT TO authenticated USING (user_id = auth.uid());
+CREATE POLICY "Patients can record consents" ON patient_consents FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
+CREATE POLICY "Admins can view consents" ON patient_consents FOR SELECT TO authenticated USING (is_admin(auth.uid()));
+
+-- 16. PATIENT INVOICES & BILLING RLS POLICIES (Strict financial data isolation)
+ALTER TABLE patient_invoices ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Patients can view own invoices" ON patient_invoices;
+DROP POLICY IF EXISTS "Doctors can view relevant invoices" ON patient_invoices;
+DROP POLICY IF EXISTS "Staff and Admins can manage invoices" ON patient_invoices;
+CREATE POLICY "Patients can view own invoices" ON patient_invoices FOR SELECT TO authenticated USING (patient_id = auth.uid());
+CREATE POLICY "Doctors can view relevant invoices" ON patient_invoices FOR SELECT TO authenticated USING (doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid()));
+CREATE POLICY "Staff and Admins can manage invoices" ON patient_invoices FOR ALL TO authenticated
+    USING (
+        is_admin(auth.uid()) OR EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role IN ('receptionist', 'admin'))
+    )
+    WITH CHECK (
+        is_admin(auth.uid()) OR EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role IN ('receptionist', 'admin'))
+    );
+
+-- 17. TELEMEDICINE ROOMS RLS POLICIES (Encrypted session room token isolation)
+ALTER TABLE telemedicine_rooms ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Participants can access telemedicine room" ON telemedicine_rooms;
+DROP POLICY IF EXISTS "Doctors can create telemedicine room" ON telemedicine_rooms;
+DROP POLICY IF EXISTS "Participants can update room status" ON telemedicine_rooms;
+
+CREATE POLICY "Participants can access telemedicine room" ON telemedicine_rooms FOR SELECT TO authenticated
+    USING (
+        appointment_id IN (
+            SELECT id FROM appointments 
+            WHERE patient_id = auth.uid() OR doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid())
+        ) OR is_admin(auth.uid())
+    );
+
+CREATE POLICY "Doctors can create telemedicine room" ON telemedicine_rooms FOR INSERT TO authenticated
+    WITH CHECK (
+        appointment_id IN (
+            SELECT id FROM appointments 
+            WHERE doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid())
+        ) OR is_admin(auth.uid())
+    );
+
+CREATE POLICY "Participants can update room status" ON telemedicine_rooms FOR UPDATE TO authenticated
+    USING (
+        appointment_id IN (
+            SELECT id FROM appointments 
+            WHERE patient_id = auth.uid() OR doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid())
+        ) OR is_admin(auth.uid())
+    );
+
+-- 18. PUBLIC DIRECTORY VIEW (P-02 & Q-04 Resolution: Single Source of Truth via clinic_queues)
 CREATE OR REPLACE VIEW public_doctor_directory AS
 SELECT 
     d.id,
