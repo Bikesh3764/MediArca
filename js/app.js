@@ -757,8 +757,8 @@ class MediarcaApp {
     }
 
     const patientBookings = window.mediarcaStore.state.bookings.filter(b => b.patientId === user.id);
-    const patientTimeline = window.mediarcaStore.state.medicalTimeline.filter(tl => tl.patientId === user.id || tl.patientId === 'a0000000-0000-0000-0000-000000000001');
-    const patientDocs = window.mediarcaStore.state.clinicalDocuments.filter(d => d.patientId === user.id || d.patientId === 'a0000000-0000-0000-0000-000000000001');
+    const patientTimeline = window.mediarcaStore.state.medicalTimeline.filter(tl => tl.patientId === user.id);
+    const patientDocs = window.mediarcaStore.state.clinicalDocuments.filter(d => d.patientId === user.id);
 
     container.innerHTML = `
       <div class="container" style="padding-top: 2rem; padding-bottom: 4rem;">
@@ -767,9 +767,9 @@ class MediarcaApp {
           <div>
             <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
               <span class="badge" style="background: rgba(255,255,255,0.2); color: #fff;"><i data-lucide="user" style="width:12px;height:12px"></i> PATIENT EMR PORTAL</span>
-              <span style="font-size: 0.75rem; color: #e0f2fe;">Medical ID: <strong>MED-PAT-9082</strong></span>
+              <span style="font-size: 0.75rem; color: #e0f2fe;">Medical ID: <strong>${escapeHtml(user.mediarcaId || ('MED-PAT-' + user.id.substring(0, 4).toUpperCase()))}</strong></span>
             </div>
-            <h2 style="font-size: 1.4rem; font-weight: 800;">Welcome, ${escapeHtml(user.name || 'Sarah Johnson')}</h2>
+            <h2 style="font-size: 1.4rem; font-weight: 800;">Welcome, ${escapeHtml(user.name || 'Patient')}</h2>
             <p style="font-size: 0.8125rem; color: #e0f2fe;">Manage your upcoming visits, active queue tokens, electronic prescriptions, and diagnostic vault.</p>
           </div>
           <div style="display: flex; gap: 0.5rem;">
@@ -1104,23 +1104,23 @@ class MediarcaApp {
                     </div>
                   </div>
 
-                  <!-- Medical Background & Allergy Alert (Section 10 Resolution) -->
+                  <!-- Medical Background & Allergy Alert (Section 10 & Audit Recheck Resolution) -->
                   <div style="background: #fff; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 0.875rem; margin-bottom: 1rem; display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; font-size: 0.75rem;">
                     <div>
                       <span style="color: var(--text-muted);">Blood Group:</span>
-                      <div style="font-weight: 700; color: #b91c1c;">O+ Positive</div>
+                      <div style="font-weight: 700; color: #b91c1c;">${escapeHtml(currentPatient.clinicalProfile?.blood_group || currentPatient.bloodGroup || 'Not Recorded')}</div>
                     </div>
                     <div>
                       <span style="color: var(--text-muted);">Known Allergies:</span>
-                      <div style="font-weight: 700; color: #b91c1c;">Penicillin (Severe)</div>
+                      <div style="font-weight: 700; color: #b91c1c;">${escapeHtml(currentPatient.clinicalProfile?.allergies || 'None Documented')}</div>
                     </div>
                     <div>
                       <span style="color: var(--text-muted);">Chronic Conditions:</span>
-                      <div style="font-weight: 700; color: var(--text-primary);">Hypertension (Stage 1)</div>
+                      <div style="font-weight: 700; color: var(--text-primary);">${escapeHtml(currentPatient.clinicalProfile?.chronic_conditions || 'None Documented')}</div>
                     </div>
                     <div>
                       <span style="color: var(--text-muted);">Emergency Contact:</span>
-                      <div style="font-weight: 700; color: var(--text-primary);">+1 (555) 987-6543</div>
+                      <div style="font-weight: 700; color: var(--text-primary);">${escapeHtml(currentPatient.clinicalProfile?.emergency_contact || currentPatient.emergencyContact || 'On file')}</div>
                     </div>
                   </div>
 
@@ -2843,11 +2843,21 @@ class MediarcaApp {
       document.body.appendChild(modal);
     }
 
-    const booking = window.mediarcaStore.state.bookings.find(b => b.bookingId === bookingId) || {
-      patientName: 'Sarah Jenkins',
-      doctorName: 'Dr. Bikesh Ray',
-      tokenNumber: 2
+    const currentUserId = window.mediarcaStore.state.currentUser?.id;
+    const user = window.mediarcaStore.state.currentUser;
+    const booking = window.mediarcaStore.state.bookings.find(b => b.bookingId === bookingId || b.id === bookingId || (b.patientId && b.patientId === currentUserId)) || {
+      bookingId: bookingId || 'bk_live',
+      patientName: user?.name || 'Verified Patient',
+      doctorName: 'Attending Practitioner',
+      tokenNumber: 1
     };
+
+    const doc = window.mediarcaStore.state.doctors.find(d => d.id === booking.doctorId || d.name === booking.doctorName);
+    const consultFee = doc?.consultFee || 60;
+    const insurancePolicy = user?.clinicalProfile?.insurance_policy || user?.insurancePolicy || 'Standard Patient Co-Pay';
+    const discount = (consultFee * 0.10);
+    const insuranceCover = ((consultFee - discount) * 0.80);
+    const netCoPay = (consultFee - discount - insuranceCover).toFixed(2);
 
     modal.innerHTML = `
       <div class="modal-box" style="max-width: 520px;">
@@ -2873,7 +2883,7 @@ class MediarcaApp {
             </div>
             <div style="display:flex; justify-content:space-between; font-size:0.8125rem;">
               <span style="color:var(--text-secondary);">OPD Consultation Fee:</span>
-              <strong class="text-mono">$60.00</strong>
+              <strong class="text-mono">$${consultFee.toFixed(2)}</strong>
             </div>
           </div>
 
@@ -2887,30 +2897,30 @@ class MediarcaApp {
 
           <label style="display:flex; gap:0.5rem; align-items:center; font-size:0.8125rem; margin-bottom:1rem; cursor:pointer;">
             <input type="checkbox" id="billingInsuranceCheck" checked>
-            <span>Pre-Authorize with <strong>MediShield Global Insurance (#POL-99214)</strong> [80% Co-pay Cover]</span>
+            <span>Pre-Authorize with <strong>${escapeHtml(insurancePolicy)}</strong> [80% Co-pay Cover]</span>
           </label>
 
           <div style="background:#f0fdf4; border:1px solid #86efac; border-radius:var(--radius-sm); padding:0.875rem; margin-bottom:1.25rem;">
             <div style="display:flex; justify-content:space-between; font-size:0.8125rem; color:#166534; margin-bottom:0.25rem;">
               <span>Subtotal:</span>
-              <span>$60.00</span>
+              <span>$${consultFee.toFixed(2)}</span>
             </div>
             <div style="display:flex; justify-content:space-between; font-size:0.8125rem; color:#166534; margin-bottom:0.25rem;">
               <span>Voucher Discount (10%):</span>
-              <span>-$6.00</span>
+              <span>-$${discount.toFixed(2)}</span>
             </div>
             <div style="display:flex; justify-content:space-between; font-size:0.8125rem; color:#166534; margin-bottom:0.5rem;">
               <span>Insurance Settlement (80%):</span>
-              <span>-$43.20</span>
+              <span>-$${insuranceCover.toFixed(2)}</span>
             </div>
             <div style="display:flex; justify-content:space-between; font-size:1rem; font-weight:800; color:#14532d; border-top:1px dashed #86efac; padding-top:0.5rem;">
               <span>Net Patient Co-Pay:</span>
-              <span class="text-mono">$10.80</span>
+              <span class="text-mono">$${netCoPay}</span>
             </div>
           </div>
 
           <button class="btn btn-teal btn-block" onclick="window.mediarcaApp.handleProcessPayment('${booking.bookingId}')">
-            <i data-lucide="credit-card" style="width: 15px; height: 15px;"></i> Pay $10.80 & Generate Official Invoice
+            <i data-lucide="credit-card" style="width: 15px; height: 15px;"></i> Pay $${netCoPay} & Generate Official Invoice
           </button>
         </div>
       </div>
