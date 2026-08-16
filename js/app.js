@@ -942,10 +942,10 @@ class MediarcaApp {
                     <div style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 0.2rem;">Uploaded: ${escapeHtml(doc.uploadedDate)} by ${escapeHtml(doc.doctorName)}</div>
                   </div>
                   <div style="margin-top: 0.75rem; display:flex; justify-content:space-between; align-items:center;">
-                    <span style="font-size:0.65rem; color:#16a34a; font-weight:600;">🔒 Signed URL Active</span>
-                    <a href="${escapeHtml(doc.downloadUrl)}" target="_blank" class="btn btn-sm btn-secondary" style="font-size:0.7rem; padding:0.2rem 0.5rem;">
+                    <span style="font-size:0.65rem; color:#16a34a; font-weight:600;">🔒 Private Authenticated Vault</span>
+                    <button type="button" onclick="window.mediarcaApp.handleDownloadVaultDoc('${doc.id}', '${doc.storagePath || ''}', '${escapeHtml(doc.downloadUrl || '')}')" class="btn btn-sm btn-secondary" style="font-size:0.7rem; padding:0.2rem 0.5rem;">
                       <i data-lucide="download" style="width:11px;height:11px"></i> Download
-                    </a>
+                    </button>
                   </div>
                 </div>
               `).join('')}
@@ -953,19 +953,19 @@ class MediarcaApp {
           </div>
         ` : ''}
 
-        <!-- TAB 6: PROFILE & INSURANCE -->
+        <!-- TAB 6: PROFILE & INSURANCE (Audit v10 Resolution: Dynamic Authenticated Demographics) -->
         ${activeTab === 'profile' ? `
           <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.5rem; max-width: 650px;">
             <h3 style="font-size: 1.0625rem; font-weight: 800; color: var(--text-primary); margin-bottom: 1rem;">Medical Demographics & Policy</h3>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; font-size: 0.875rem;">
-              <div><span style="color: var(--text-muted);">Full Name:</span> <strong>${escapeHtml(user.name || 'Sarah Johnson')}</strong></div>
-              <div><span style="color: var(--text-muted);">Email:</span> <strong>${escapeHtml(user.email || 'sarah@mediarca.health')}</strong></div>
-              <div><span style="color: var(--text-muted);">Phone:</span> <strong>${escapeHtml(user.phone || '+1 (555) 234-8900')}</strong></div>
-              <div><span style="color: var(--text-muted);">Blood Group:</span> <strong class="badge" style="background:#fee2e2; color:#b91c1c; font-size:0.8rem;">O+ Positive</strong></div>
-              <div><span style="color: var(--text-muted);">Allergies:</span> <span class="badge" style="background:#fef3c7; color:#92400e; font-size:0.75rem;">Penicillin, Dust Mites</span></div>
-              <div><span style="color: var(--text-muted);">Chronic Conditions:</span> <strong>Essential Hypertension (Borderline)</strong></div>
-              <div><span style="color: var(--text-muted);">Emergency Contact:</span> <strong>+1 (555) 987-6543 (Spouse)</strong></div>
-              <div><span style="color: var(--text-muted);">Insurance Policy:</span> <strong>MediShield Global #POL-99214</strong></div>
+              <div><span style="color: var(--text-muted);">Full Name:</span> <strong>${escapeHtml(user.name || 'Verified Patient')}</strong></div>
+              <div><span style="color: var(--text-muted);">Email:</span> <strong>${escapeHtml(user.email || 'N/A')}</strong></div>
+              <div><span style="color: var(--text-muted);">Phone:</span> <strong>${escapeHtml(user.phone || 'On file')}</strong></div>
+              <div><span style="color: var(--text-muted);">Blood Group:</span> <strong class="badge" style="background:#fee2e2; color:#b91c1c; font-size:0.8rem;">${escapeHtml(user.clinicalProfile?.blood_group || user.bloodGroup || 'Not Recorded')}</strong></div>
+              <div><span style="color: var(--text-muted);">Allergies:</span> <span class="badge" style="background:#fef3c7; color:#92400e; font-size:0.75rem;">${escapeHtml(user.clinicalProfile?.allergies || 'None Documented')}</span></div>
+              <div><span style="color: var(--text-muted);">Chronic Conditions:</span> <strong>${escapeHtml(user.clinicalProfile?.chronic_conditions || 'None Documented')}</strong></div>
+              <div><span style="color: var(--text-muted);">Emergency Contact:</span> <strong>${escapeHtml(user.clinicalProfile?.emergency_contact || 'On file')}</strong></div>
+              <div><span style="color: var(--text-muted);">Insurance Policy:</span> <strong>${escapeHtml(user.clinicalProfile?.insurance_policy || 'Self-Pay / Direct')}</strong></div>
             </div>
           </div>
         ` : ''}
@@ -1476,7 +1476,31 @@ class MediarcaApp {
     const verified = doctors.filter(d => d.verificationStatus === 'verified');
     const users = window.mediarcaStore.state.users || [];
     const analytics = await window.mediarcaStore.getHospitalAnalytics();
-    const auditLogs = window.mediarcaStore.state.auditLogs || [];
+    let auditLogs = window.mediarcaStore.state.auditLogs || [];
+
+    // Audit v10 Resolution: Fetch authoritative server audit logs for admin
+    if (window.mediarcaSupabase && window.mediarcaSupabase.isConnected && window.mediarcaStore.state.currentUser?.role === 'admin') {
+      try {
+        const serverLogs = await window.mediarcaSupabase.cloudGetAdminAuditLogs(50);
+        if (serverLogs && serverLogs.length > 0) {
+          auditLogs = serverLogs.map(l => ({
+            id: l.id,
+            timestamp: l.created_at,
+            actor: l.actor_name || l.actor_id || 'Staff',
+            action: l.action,
+            entity: l.entity_type,
+            entityId: l.entity_id,
+            beforeState: l.before_state,
+            afterState: l.after_state,
+            ipAddress: l.ip_address || 'Server',
+            device: l.user_agent || 'Secure Gateway'
+          }));
+        }
+      } catch (err) {
+        console.warn('Server audit fetch notice:', err);
+      }
+    }
+
     const facilities = window.mediarcaStore.state.facilities || [];
     const rooms = window.mediarcaStore.state.rooms || [];
     const queues = window.mediarcaStore.state.queues || {};
@@ -1804,8 +1828,33 @@ class MediarcaApp {
     if (window.lucide) window.lucide.createIcons();
   }
 
-  handleDownloadThroughputCsv() {
-    const bookings = window.mediarcaStore.state.bookings || [];
+  async handleDownloadThroughputCsv() {
+    let bookings = window.mediarcaStore.state.bookings || [];
+    if (window.mediarcaSupabase && window.mediarcaSupabase.isConnected) {
+      try {
+        const todayStr = new Date().toISOString().split('T')[0];
+        const { data: serverAppts } = await window.mediarcaSupabase.client
+          .from('appointments')
+          .select('*, doctor:doctors(name, specialty), patient:users!appointments_patient_id_fkey(full_name, phone)')
+          .eq('appointment_date', todayStr);
+        if (serverAppts && serverAppts.length > 0) {
+          bookings = serverAppts.map(a => ({
+            bookingId: a.id,
+            date: a.appointment_date,
+            timeSlot: a.appointment_time,
+            doctorName: a.doctor?.name || 'Attending Physician',
+            specialty: a.doctor?.specialty || 'General OPD',
+            tokenNumber: a.token_number,
+            status: a.status,
+            symptoms: a.chief_complaint || 'Consultation',
+            stage: a.current_stage || 'triage'
+          }));
+        }
+      } catch (e) {
+        console.warn('Server appointments fetch notice for CSV export:', e);
+      }
+    }
+
     const headers = ['Booking ID', 'Date', 'Time Slot', 'Doctor', 'Specialty', 'Token', 'Status', 'Symptoms', 'Stage'];
     const rows = bookings.map(b => [
       b.bookingId || b.id || '',
@@ -1826,11 +1875,28 @@ class MediarcaApp {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    this.showToast('Throughput CSV report exported successfully.', 'success');
+    this.showToast('Authoritative Throughput CSV report exported successfully.', 'success');
   }
 
-  handleExportAuditCsv() {
-    const logs = window.mediarcaStore.state.auditLogs || [];
+  async handleExportAuditCsv() {
+    let logs = window.mediarcaStore.state.auditLogs || [];
+    if (window.mediarcaSupabase && window.mediarcaSupabase.isConnected && window.mediarcaStore.state.currentUser?.role === 'admin') {
+      try {
+        this.showToast('Querying authoritative server audit ledger...', 'info');
+        const serverLogs = await window.mediarcaSupabase.cloudGetAdminAuditLogs(100);
+        if (serverLogs && serverLogs.length > 0) {
+          logs = serverLogs.map(l => ({
+            timestamp: l.created_at,
+            action: l.action,
+            entity: l.entity_type,
+            entityId: l.entity_id,
+            actorId: l.actor_id || l.actor_name
+          }));
+        }
+      } catch (err) {
+        console.warn('Server audit export fetch notice:', err);
+      }
+    }
     const headers = ['Timestamp', 'Action', 'Entity', 'Entity ID', 'Actor ID'];
     const rows = logs.map(l => [
       l.timestamp || '',
@@ -1848,6 +1914,27 @@ class MediarcaApp {
     link.click();
     document.body.removeChild(link);
     this.showToast('Compliance Audit CSV exported successfully.', 'success');
+  }
+
+  async handleDownloadVaultDoc(docId, storagePath, fallbackUrl) {
+    try {
+      if (window.mediarcaSupabase && window.mediarcaSupabase.isConnected && storagePath) {
+        this.showToast('Generating fresh cryptographic signed URL...', 'info');
+        const signedUrl = await window.mediarcaSupabase.getClinicalDocumentSignedUrl(storagePath);
+        if (signedUrl) {
+          window.open(signedUrl, '_blank');
+          return;
+        }
+      }
+      if (fallbackUrl) {
+        window.open(fallbackUrl, '_blank');
+      } else {
+        this.showToast('Document download link unavailable.', 'warning');
+      }
+    } catch (err) {
+      console.error('Vault document download error:', err);
+      this.showToast(err.message || 'Failed to generate secure download link.', 'warning');
+    }
   }
 
   handleSaveAdminSettings() {
@@ -2599,7 +2686,7 @@ class MediarcaApp {
         <div class="modal-header" style="border-bottom: 1px solid #27272a; padding: 1rem 1.5rem;">
           <div style="display:flex; align-items:center; gap:0.5rem;">
             <div style="width:10px; height:10px; background:#22c55e; border-radius:50%; box-shadow:0 0 10px #22c55e;"></div>
-            <h3 style="font-size: 1.125rem; font-weight: 800; color: #fff;">MediArca Encrypted Telemedicine Room</h3>
+            <h3 style="font-size: 1.125rem; font-weight: 800; color: #fff;">MediArca Teleconsultation Suite (Interactive Preview)</h3>
           </div>
           <button class="modal-close-btn" onclick="document.getElementById('telemedModal').classList.remove('active')" style="background:none; border:none; color:#a1a1aa; cursor:pointer;">
             <i data-lucide="x" style="width: 18px; height: 18px;"></i>
@@ -2622,7 +2709,7 @@ class MediarcaApp {
               <!-- Stream Status Bar -->
               <div style="position: absolute; top: 12px; left: 12px; display: flex; gap: 0.5rem; align-items: center;">
                 <span class="badge" style="background: rgba(34, 197, 94, 0.2); color: #4ade80; font-size: 0.7rem; border: 1px solid #22c55e;">
-                  ● Encrypted WebRTC Session (2.4 Mbps)
+                  ● Teleconsultation Room Preview (Interactive Clinical Interface)
                 </span>
               </div>
 

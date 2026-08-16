@@ -596,6 +596,9 @@ class MediarcaStore {
             email: parsed.currentUser.email || null
           };
         }
+        if (parsed && parsed.hospitalSettings) {
+          this.state.hospitalSettings = parsed.hospitalSettings;
+        }
       }
     } catch (e) {
       console.error('Failed to load session from localStorage:', e);
@@ -604,7 +607,7 @@ class MediarcaStore {
 
   saveState() {
     try {
-      // Privacy & Security (C-02): Store ONLY minimal UI profile metadata in localStorage.
+      // Privacy & Security (C-02): Store ONLY minimal UI profile metadata & system config in localStorage.
       // NEVER store Supabase JWT / access tokens in application storage.
       const sessionData = {
         currentUser: this.state.currentUser ? {
@@ -612,7 +615,11 @@ class MediarcaStore {
           role: this.state.currentUser.role,
           name: this.state.currentUser.name,
           email: this.state.currentUser.email
-        } : null
+        } : null,
+        hospitalSettings: this.state.hospitalSettings || {
+          slotBufferMins: 12,
+          hospitalName: 'Apex Healthcare Network International'
+        }
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(sessionData));
       this.notifySubscribers();
