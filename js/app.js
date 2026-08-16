@@ -14,6 +14,21 @@ function escapeHtml(str) {
     .replace(/'/g, '&#039;');
 }
 
+// --- Global Image URL Sanitizer & Allowlist (X-02 Resolution) ---
+function sanitizeImageUrl(url) {
+  if (!url || typeof url !== 'string') {
+    return 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=300&h=300&fit=crop&crop=faces&q=80';
+  }
+  const clean = url.trim();
+  try {
+    const parsed = new URL(clean);
+    if (parsed.protocol === 'https:' || (parsed.protocol === 'http:' && (parsed.hostname === '127.0.0.1' || parsed.hostname === 'localhost'))) {
+      return escapeHtml(clean);
+    }
+  } catch (_) {}
+  return 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=300&h=300&fit=crop&crop=faces&q=80';
+}
+
 class MediarcaApp {
   constructor() {
     this.currentView = 'home';
@@ -35,6 +50,30 @@ class MediarcaApp {
   }
 
   bindEvents() {
+    // Delegated Global Action Listener (X-03 Resolution)
+    document.addEventListener('click', (e) => {
+      const target = e.target.closest('[data-action]');
+      if (!target) return;
+
+      const action = target.getAttribute('data-action');
+      const view = target.getAttribute('data-view');
+      const doctorId = target.getAttribute('data-doctor-id');
+      const tokenNum = target.getAttribute('data-token-number');
+
+      if (action === 'switch-view' && view) {
+        this.switchView(view, doctorId ? { doctorId } : null);
+      } else if (action === 'open-booking' && doctorId) {
+        this.openBookingModal(doctorId);
+      } else if (action === 'advance-queue' && doctorId) {
+        this.handleDoctorAdvance(doctorId);
+      } else if (action === 'complete-rx' && doctorId && tokenNum) {
+        this.handleCompleteWithRx(doctorId, parseInt(tokenNum));
+      } else if (action === 'verify-doctor' && doctorId) {
+        const approved = target.getAttribute('data-approved') === 'true';
+        this.handleAdminVerify(doctorId, approved);
+      }
+    });
+
     // Global search input
     const searchInput = document.getElementById('doctorSearchInput');
     if (searchInput) {
@@ -300,7 +339,7 @@ class MediarcaApp {
       return `
         <div class="doctor-card">
           <div class="doctor-card-top">
-            <img src="${escapeHtml(doc.avatar)}" alt="${escapeHtml(doc.name)}" class="doctor-avatar">
+            <img src="${sanitizeImageUrl(doc.avatar)}" alt="${escapeHtml(doc.name)}" class="doctor-avatar">
             <div class="doctor-info-head">
               <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.25rem;">
                 <h4 class="doctor-name">${escapeHtml(doc.name)}</h4>

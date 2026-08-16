@@ -13,6 +13,21 @@ function escapeHtml(str) {
     .replace(/'/g, '&#039;');
 }
 
+// --- Global Image URL Sanitizer & Allowlist (X-02 Resolution) ---
+function sanitizeImageUrl(url) {
+  if (!url || typeof url !== 'string') {
+    return 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=300&h=300&fit=crop&crop=faces&q=80';
+  }
+  const clean = url.trim();
+  try {
+    const parsed = new URL(clean);
+    if (parsed.protocol === 'https:' || (parsed.protocol === 'http:' && (parsed.hostname === '127.0.0.1' || parsed.hostname === 'localhost'))) {
+      return escapeHtml(clean);
+    }
+  } catch (_) {}
+  return 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=300&h=300&fit=crop&crop=faces&q=80';
+}
+
 class MediarcaQueueEngine {
   constructor() {
     this.selectedDoctorId = 'doc_1';
@@ -119,7 +134,7 @@ class MediarcaQueueEngine {
         <div class="radar-hud-box">
           <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.12); padding-bottom: 1.25rem;">
             <div style="display: flex; align-items: center; gap: 1rem;">
-              <img src="${escapeHtml(doctor.avatar)}" style="width: 48px; height: 48px; border-radius: var(--radius-sm); object-fit: cover; border: 1px solid rgba(255,255,255,0.2);">
+              <img src="${sanitizeImageUrl(doctor.avatar)}" style="width: 48px; height: 48px; border-radius: var(--radius-sm); object-fit: cover; border: 1px solid rgba(255,255,255,0.2);">
               <div>
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
                   <h3 style="font-size: 1.25rem; font-weight: 800; color: #ffffff;">${escapeHtml(doctor.name)}</h3>
