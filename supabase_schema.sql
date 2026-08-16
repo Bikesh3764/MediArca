@@ -358,7 +358,7 @@ BEGIN
         RAISE EXCEPTION 'Doctor is not verified or does not accept appointments.';
     END IF;
 
-    -- 4. Check Duplicate Active Appointments (H-06 Resolution: Comprehensive Active Status Set)
+    -- 4. Check Duplicate Active Appointments (H-06 & C-07 Resolution: Comprehensive Active Status Set & Slot Checks)
     IF EXISTS (
         SELECT 1 FROM appointments
         WHERE patient_id = v_actor_id
@@ -367,17 +367,6 @@ BEGIN
           AND status IN ('booked', 'checked_in', 'waiting', 'in-consultation')
     ) THEN
         RAISE EXCEPTION 'You already have an active appointment ticket (Token in progress) with this doctor for today.';
-    END IF;
-
-    -- H-05: Real Slot Collision & Availability Enforcement
-    IF p_symptoms IS NOT NULL AND EXISTS (
-        SELECT 1 FROM appointments
-        WHERE doctor_id = p_doctor_id
-          AND scheduled_date = CURRENT_DATE
-          AND scheduled_slot = '09:00 AM'
-          AND status IN ('booked', 'checked_in', 'waiting', 'in-consultation')
-    ) THEN
-        -- Allow queue progression; if dedicated slot collision occurs, allocate next sequential token
     END IF;
 
     -- 5. Upsert clinic queue with lock to guarantee concurrency safety
@@ -404,7 +393,7 @@ BEGIN
     -- C-24 & C-27: Server-side cryptographic 128-bit check-in token generation
     v_checkin_token := 'MED-QR-' || lower(encode(gen_random_bytes(16), 'hex'));
 
-    -- 7. All new bookings start in 'waiting' queue line until called by doctor (H-11 Resolution)
+    -- 7. All new same-day bookings start in 'waiting' queue line until called by doctor (H-11 Resolution)
     UPDATE clinic_queues 
     SET total_tokens = v_next_token, status = 'in-session', updated_at = NOW()
     WHERE doctor_id = p_doctor_id AND queue_date = CURRENT_DATE;
@@ -543,6 +532,107 @@ BEGIN
             'doctor_id', p_doctor_id,
             'patient_name', p_patient_name,
             'is_priority', p_is_priority
+        )
+    );
+
+    RETURN to_jsonb(v_appointment);
+END;
+$$;
+
+-- 8B. ATOMIC FUTURE APPOINTMENT SCHEDULING & SLOT RESERVATION RPC (C-07, C-08 & C-09 Resolution)
+CREATE OR REPLACE FUNCTION schedule_future_appointment_atomic(
+    p_doctor_id UUID,
+    p_scheduled_date DATE,
+    p_scheduled_slot VARCHAR,
+    p_symptoms TEXT DEFAULT 'General medical consultation',
+    p_timezone VARCHAR DEFAULT 'Asia/Kolkata'
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+    v_actor_id UUID;
+    v_patient users%ROWTYPE;
+    v_clinical patient_clinical_profiles%ROWTYPE;
+    v_booking_id VARCHAR;
+    v_checkin_token VARCHAR;
+    v_appointment appointments%ROWTYPE;
+    v_doctor_verified VARCHAR;
+BEGIN
+    v_actor_id := auth.uid();
+    IF v_actor_id IS NULL THEN
+        RAISE EXCEPTION 'Authentication required. Please sign in to schedule an appointment.';
+    END IF;
+
+    IF p_scheduled_date < CURRENT_DATE THEN
+        RAISE EXCEPTION 'Cannot schedule appointments in the past. Date requested: %', p_scheduled_date;
+    END IF;
+
+    SELECT * INTO v_patient FROM users WHERE id = v_actor_id;
+    IF v_patient.id IS NULL THEN
+        RAISE EXCEPTION 'Patient profile not found.';
+    END IF;
+
+    SELECT * INTO v_clinical FROM patient_clinical_profiles WHERE user_id = v_actor_id;
+
+    SELECT verification_status INTO v_doctor_verified FROM doctors WHERE id = p_doctor_id;
+    IF v_doctor_verified IS NULL OR v_doctor_verified != 'verified' THEN
+        RAISE EXCEPTION 'Doctor is not verified or currently inactive.';
+    END IF;
+
+    -- C-07 & C-08: Real slot collision check
+    IF EXISTS (
+        SELECT 1 FROM appointments
+        WHERE doctor_id = p_doctor_id
+          AND scheduled_date = p_scheduled_date
+          AND scheduled_slot = p_scheduled_slot
+          AND status IN ('booked', 'checked_in', 'waiting', 'in-consultation')
+    ) THEN
+        RAISE EXCEPTION 'Slot collision: Doctor already has an active appointment for % on %. Please select a different slot.', p_scheduled_slot, p_scheduled_date;
+    END IF;
+
+    v_booking_id := 'MED-BK-' || upper(to_hex(extract(epoch from now())::bigint)) || '-' || upper(substring(md5(random()::text) from 1 for 4));
+    v_checkin_token := 'MED-QR-' || lower(encode(gen_random_bytes(16), 'hex'));
+
+    INSERT INTO appointments (
+        booking_id, patient_id, doctor_id, patient_name, patient_phone, patient_age, patient_gender,
+        token_number, status, scheduled_slot, checkin_token, checkin_token_expires_at, check_in_time,
+        appointment_date, scheduled_date, start_at, end_at, timezone, symptoms
+    ) VALUES (
+        v_booking_id,
+        v_actor_id,
+        p_doctor_id,
+        v_patient.full_name,
+        COALESCE(v_patient.phone, 'Not specified'),
+        v_clinical.age,
+        v_clinical.gender,
+        0, -- Token is issued upon day-of check-in
+        'booked',
+        p_scheduled_slot,
+        v_checkin_token,
+        NOW() + interval '48 hours',
+        NULL,
+        p_scheduled_date,
+        p_scheduled_date,
+        NULL,
+        NULL,
+        COALESCE(p_timezone, 'Asia/Kolkata'),
+        p_symptoms
+    ) RETURNING * INTO v_appointment;
+
+    INSERT INTO audit_logs (actor_id, action, entity, entity_id, metadata)
+    VALUES (
+        v_actor_id,
+        'SCHEDULE_FUTURE_APPOINTMENT',
+        'appointments',
+        v_appointment.id,
+        jsonb_build_object(
+            'doctor_id', p_doctor_id,
+            'scheduled_date', p_scheduled_date,
+            'scheduled_slot', p_scheduled_slot,
+            'booking_id', v_booking_id
         )
     );
 
@@ -1463,7 +1553,7 @@ BEGIN
 END;
 $$;
 
--- 18. STATUTORY DIGITAL CONSENT RECORDING RPC (H-24, H-25, H-26 Resolution)
+-- 18. STATUTORY DIGITAL CONSENT RECORDING RPC (C-06 Resolution: Enforce Explicit Consent Affirmation)
 CREATE OR REPLACE FUNCTION record_patient_consent_atomic(
     p_consent_type VARCHAR,
     p_version VARCHAR DEFAULT 'v2026.1',
@@ -1482,6 +1572,11 @@ BEGIN
     v_actor_id := auth.uid();
     IF v_actor_id IS NULL THEN
         RAISE EXCEPTION 'Authentication required to record statutory consent.';
+    END IF;
+
+    -- C-06: Strict validation: Reject false/null terms acceptance
+    IF p_terms_accepted IS NULL OR p_terms_accepted = false THEN
+        RAISE EXCEPTION 'Consent not accepted: Statutory terms and HIPAA policies must be affirmatively accepted.';
     END IF;
 
     INSERT INTO patient_consents (
@@ -1761,6 +1856,9 @@ GRANT EXECUTE ON FUNCTION reschedule_appointment_atomic(UUID, DATE, VARCHAR) TO 
 
 REVOKE ALL ON FUNCTION issue_reception_walkin_token(UUID, VARCHAR, VARCHAR, INT, VARCHAR, TEXT, BOOLEAN, TEXT, VARCHAR) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION issue_reception_walkin_token(UUID, VARCHAR, VARCHAR, INT, VARCHAR, TEXT, BOOLEAN, TEXT, VARCHAR) TO authenticated;
+
+REVOKE ALL ON FUNCTION schedule_future_appointment_atomic(UUID, DATE, VARCHAR, TEXT, VARCHAR) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION schedule_future_appointment_atomic(UUID, DATE, VARCHAR, TEXT, VARCHAR) TO authenticated;
 
 -- 13. STRICT RESTRICTIVE ROW LEVEL SECURITY (RLS) POLICIES (C-07 & C-08 Resolution)
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;

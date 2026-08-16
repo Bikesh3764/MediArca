@@ -892,29 +892,43 @@ class MediarcaStore {
     };
 
     // 3. Enforce Queue Status Rules (H-12 Resolution)
-    if (queue.status === 'paused') {
-      throw new Error('This doctor OPD queue is currently paused. Please wait for the queue to resume.');
-    } else if (queue.status === 'completed') {
-      throw new Error('Doctor consultations are concluded for today.');
+    const todayStr = new Date().toISOString().split('T')[0];
+    const isFutureBooking = bookingData.scheduledDate && bookingData.scheduledDate > todayStr;
+
+    if (!isFutureBooking) {
+      if (queue.status === 'paused') {
+        throw new Error('This doctor OPD queue is currently paused. Please wait for the queue to resume.');
+      } else if (queue.status === 'completed') {
+        throw new Error('Doctor consultations are concluded for today.');
+      }
     }
 
     let cloudBooking = null;
 
-    // 4. Authoritative Cloud Stored Procedure via Supabase RPC (H-01 & H-02 Resolution)
+    // 4. Authoritative Cloud Stored Procedure via Supabase RPC (C-08 & C-09 Resolution)
     if (window.mediarcaSupabase && window.mediarcaSupabase.isConnected) {
-      cloudBooking = await window.mediarcaSupabase.cloudBookAppointment({
-        doctorId: doctor.id,
-        symptoms: bookingData.symptoms
-      });
+      if (isFutureBooking) {
+        cloudBooking = await window.mediarcaSupabase.cloudScheduleFutureAppointment(
+          doctor.id,
+          bookingData.scheduledDate,
+          bookingData.scheduledSlot || '10:00 AM',
+          bookingData.symptoms || 'General Consultation'
+        );
+      } else {
+        cloudBooking = await window.mediarcaSupabase.cloudBookAppointment({
+          doctorId: doctor.id,
+          symptoms: bookingData.symptoms
+        });
+      }
     }
 
     const existingTokens = queue.tokens ? queue.tokens.map(t => t.tokenNumber) : [];
-    const nextTokenNumber = cloudBooking ? cloudBooking.token_number : (existingTokens.length > 0 ? Math.max(...existingTokens) + 1 : (doctor.totalTokens || 0) + 1);
+    const nextTokenNumber = isFutureBooking ? 0 : (cloudBooking ? cloudBooking.token_number : (existingTokens.length > 0 ? Math.max(...existingTokens) + 1 : (doctor.totalTokens || 0) + 1));
 
     const bookingId = cloudBooking ? cloudBooking.booking_id : ('MED-BK-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase());
     
-    // 5. All New Bookings enter 'waiting' queue line until called by doctor (H-11 Resolution)
-    const initialStatus = 'waiting';
+    // 5. Initial Status: 'booked' for future scheduled slots, 'waiting' for active same-day queue tokens
+    const initialStatus = isFutureBooking ? 'booked' : 'waiting';
 
     const newBooking = {
       id: cloudBooking?.id || null,
@@ -929,8 +943,10 @@ class MediarcaStore {
       specialty: doctor.specialty,
       hospital: doctor.hospital,
       mediarcaId: doctor.mediarcaId || 'VERIFIED',
-      date: new Date().toISOString().split('T')[0],
-      timeSlot: 'Live OPD Session',
+      date: bookingData.scheduledDate || todayStr,
+      scheduledDate: bookingData.scheduledDate || todayStr,
+      scheduledSlot: bookingData.scheduledSlot || (isFutureBooking ? '10:00 AM' : 'Live OPD Session'),
+      timeSlot: bookingData.scheduledSlot || (isFutureBooking ? '10:00 AM' : 'Live OPD Session'),
       tokenNumber: nextTokenNumber,
       status: cloudBooking?.status || initialStatus,
       symptoms: bookingData.symptoms,
@@ -939,21 +955,24 @@ class MediarcaStore {
 
     this.state.bookings.unshift(newBooking);
 
-    // Synchronize doctor's live queue
-    if (!queue.tokens) queue.tokens = [];
-    queue.tokens.push({
-      tokenNumber: nextTokenNumber,
-      status: cloudBooking?.status || initialStatus,
-      patientName: newBooking.patientName,
-      checkInTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      bookingId: bookingId,
-      symptoms: bookingData.symptoms
-    });
+    // Synchronize doctor's live queue if same-day booking
+    if (!isFutureBooking) {
+      if (!queue.tokens) queue.tokens = [];
+      queue.tokens.push({
+        tokenNumber: nextTokenNumber,
+        status: cloudBooking?.status || initialStatus,
+        patientName: newBooking.patientName,
+        checkInTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        bookingId: bookingId,
+        symptoms: bookingData.symptoms
+      });
 
-    doctor.totalTokens = nextTokenNumber;
-    doctor.queueActive = true;
-    this.state.queues[doctor.id] = queue;
+      doctor.totalTokens = nextTokenNumber;
+      doctor.queueActive = true;
+      this.state.queues[doctor.id] = queue;
+    }
 
+    this.saveState();
     this.notifySubscribers();
     return newBooking;
   }
@@ -1389,8 +1408,8 @@ class MediarcaStore {
           });
           downloadUrl = cloudDoc.signedUrl;
         } catch (e) {
-          console.warn('Cloud storage upload warning, creating local secure blob:', e);
-          downloadUrl = URL.createObjectURL(file);
+          console.error('Cloud storage upload error:', e);
+          throw new Error(`Clinical Document Vault upload failed: ${e.message || 'Storage transmission error'}`);
         }
       } else {
         downloadUrl = URL.createObjectURL(file);

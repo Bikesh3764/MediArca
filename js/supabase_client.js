@@ -604,6 +604,24 @@ class MediarcaSupabaseClient {
 
     return data;
   }
+
+  async cloudScheduleFutureAppointment(doctorId, scheduledDate, scheduledSlot, symptoms = 'General Consultation') {
+    if (!this.client) throw new Error('Cloud offline');
+
+    const { data, error } = await this.client.rpc('schedule_future_appointment_atomic', {
+      p_doctor_id: doctorId,
+      p_scheduled_date: scheduledDate,
+      p_scheduled_slot: scheduledSlot,
+      p_symptoms: symptoms
+    });
+
+    if (error) {
+      console.error('RPC Schedule Future Appointment Error:', error);
+      throw error;
+    }
+
+    return data;
+  }
 }
 
 // Instantiate Singleton
