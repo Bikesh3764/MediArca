@@ -408,19 +408,25 @@ class MediarcaStore {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        this.state = { ...this.state, ...parsed };
+        if (parsed && parsed.currentUser) {
+          this.state.currentUser = parsed.currentUser;
+        }
       }
     } catch (e) {
-      console.error('Failed to load state from localStorage:', e);
+      console.error('Failed to load session from localStorage:', e);
     }
   }
 
   saveState() {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state));
+      // Privacy Protection: Store ONLY authenticated user session in localStorage
+      const sessionData = {
+        currentUser: this.state.currentUser
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(sessionData));
       this.notifySubscribers();
     } catch (e) {
-      console.error('State save failed:', e);
+      console.error('Session save failed:', e);
     }
   }
 
@@ -543,10 +549,10 @@ class MediarcaStore {
       email: cleanEmail,
       passwordHash: hashPassword(data.password),
       name: data.name.trim(),
-      phone: (data.phone || '+1 (555) 000-0000').trim(),
-      age: parseInt(data.age) || 30,
-      gender: data.gender || 'Other',
-      bloodGroup: data.bloodGroup || 'O+'
+      phone: (data.phone || '').trim() || 'Not specified',
+      age: parseInt(data.age) || null,
+      gender: data.gender || 'Not specified',
+      bloodGroup: data.bloodGroup || 'Not specified'
     };
 
     newPatient.sessionToken = generateSessionSignature(newPatient.id, newPatient.role, newPatient.email);

@@ -241,8 +241,8 @@ class MediarcaQueueEngine {
         <div class="${pillClass}">
           <span style="font-size: 0.65rem; text-transform: uppercase; font-weight: 700; opacity: 0.8;">${statusLabel}</span>
           <span class="text-mono" style="font-size: 1.5rem; font-weight: 800; line-height: 1.2;">#${t.tokenNumber}</span>
-          <span style="font-size: 0.65rem; max-width: 70px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-            ${escapeHtml((t.patientName || '').split(' ')[0])}
+          <span style="font-size: 0.65rem; opacity: 0.75;">
+            Slot #${t.tokenNumber}
           </span>
         </div>
       `;
