@@ -1,6 +1,6 @@
 -- ========================================================================
 -- MEDIARCA HEALTH SYSTEMS - PRODUCTION DATABASE & SECURITY SPECIFICATION
--- Strict Supabase Auth Integration, Role-Based Access Control, Atomic RPCs & Privacy
+-- Strict Supabase Auth Integration, Role-Based Access Control, Atomic RPCs & Date Isolation
 -- ========================================================================
 
 -- 1. EXTENSIONS
@@ -63,7 +63,7 @@ CREATE TABLE IF NOT EXISTS clinic_queues (
     UNIQUE(doctor_id, queue_date)
 );
 
--- 5. APPOINTMENTS, TOKENS & CLINICAL PRESCRIPTIONS TABLE
+-- 5. APPOINTMENTS, TOKENS & CLINICAL PRESCRIPTIONS TABLE (H-09 & H-10 Resolution)
 CREATE TABLE IF NOT EXISTS appointments (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     booking_id VARCHAR(50) UNIQUE NOT NULL,
@@ -74,13 +74,17 @@ CREATE TABLE IF NOT EXISTS appointments (
     patient_age INT CHECK (patient_age IS NULL OR (patient_age >= 0 AND patient_age <= 125)),
     patient_gender VARCHAR(20),
     token_number INT NOT NULL CHECK (token_number > 0),
-    status VARCHAR(20) DEFAULT 'waiting' CHECK (status IN ('waiting', 'in-consultation', 'completed', 'cancelled')),
-    check_in_time VARCHAR(20),
+    status VARCHAR(20) DEFAULT 'waiting' CHECK (status IN ('waiting', 'in-consultation', 'completed', 'cancelled', 'no-show')),
+    check_in_time TIMESTAMPTZ DEFAULT NOW(),
+    appointment_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    start_at TIMESTAMPTZ,
+    end_at TIMESTAMPTZ,
+    timezone VARCHAR(50) DEFAULT 'UTC',
     symptoms TEXT NOT NULL,
     diagnosis TEXT,
     medications TEXT[],
     advice TEXT,
-    scheduled_date DATE DEFAULT CURRENT_DATE,
+    scheduled_date DATE NOT NULL DEFAULT CURRENT_DATE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -183,10 +187,11 @@ BEGIN
 
     INSERT INTO appointments (
         booking_id, patient_id, doctor_id, patient_name, patient_phone, patient_age, patient_gender,
-        token_number, status, check_in_time, symptoms
+        token_number, status, check_in_time, appointment_date, scheduled_date, start_at, end_at, timezone, symptoms
     ) VALUES (
         v_booking_id, v_actor_id, p_doctor_id, v_patient.full_name, COALESCE(v_patient.phone, 'Not specified'),
-        v_patient.age, v_patient.gender, v_next_token, v_initial_status, to_char(NOW(), 'HH12:MI AM'), p_symptoms
+        v_patient.age, v_patient.gender, v_next_token, v_initial_status, NOW(), CURRENT_DATE, CURRENT_DATE,
+        NOW(), NOW() + interval '15 minutes', 'UTC', p_symptoms
     ) RETURNING * INTO v_appointment;
 
     -- Log audit trail
@@ -197,7 +202,7 @@ BEGIN
 END;
 $$;
 
--- 9. ATOMIC QUEUE ADVANCEMENT & CONSULTATION RPC (C-05 & C-06 Resolution)
+-- 9. ATOMIC QUEUE ADVANCEMENT & CONSULTATION RPC (H-07 & H-08 Resolution)
 CREATE OR REPLACE FUNCTION advance_doctor_queue_atomic(
     p_doctor_id UUID
 )
@@ -233,23 +238,23 @@ BEGIN
     WHERE doctor_id = p_doctor_id AND queue_date = CURRENT_DATE
     FOR UPDATE;
 
-    -- Complete currently active appointment
+    -- Complete currently active appointment strictly for CURRENT_DATE
     IF v_current_token > 0 THEN
         UPDATE appointments
-        SET status = 'completed'
-        WHERE doctor_id = p_doctor_id AND token_number = v_current_token AND status = 'in-consultation';
+        SET status = 'completed', end_at = NOW()
+        WHERE doctor_id = p_doctor_id AND scheduled_date = CURRENT_DATE AND token_number = v_current_token AND status = 'in-consultation';
     END IF;
 
-    -- Fetch next waiting patient in line
+    -- Fetch next waiting patient in line strictly for CURRENT_DATE
     SELECT id, token_number INTO v_next_token_id, v_next_token_num
     FROM appointments
-    WHERE doctor_id = p_doctor_id AND status = 'waiting'
+    WHERE doctor_id = p_doctor_id AND scheduled_date = CURRENT_DATE AND status = 'waiting'
     ORDER BY token_number ASC
     LIMIT 1;
 
     IF v_next_token_id IS NOT NULL THEN
         UPDATE appointments
-        SET status = 'in-consultation'
+        SET status = 'in-consultation', start_at = NOW()
         WHERE id = v_next_token_id;
 
         UPDATE clinic_queues
@@ -283,7 +288,7 @@ BEGIN
 END;
 $$;
 
--- 10. ATOMIC TRANSACTIONAL PRESCRIPTION & CONSULTATION COMPLETION RPC (H-05 Resolution)
+-- 10. ATOMIC TRANSACTIONAL PRESCRIPTION & CONSULTATION COMPLETION RPC (H-06, H-07, H-08 Resolution)
 CREATE OR REPLACE FUNCTION complete_consultation_rx_atomic(
     p_doctor_id UUID,
     p_token_number INT,
@@ -317,29 +322,30 @@ BEGIN
         RAISE EXCEPTION 'Not authorized. Only the attending physician can issue prescriptions.';
     END IF;
 
-    -- Update appointment with clinical prescription
+    -- Update appointment with clinical prescription strictly scoped to CURRENT_DATE
     UPDATE appointments
     SET diagnosis = p_diagnosis,
         medications = p_medications,
         advice = p_advice,
-        status = 'completed'
-    WHERE doctor_id = p_doctor_id AND token_number = p_token_number
+        status = 'completed',
+        end_at = NOW()
+    WHERE doctor_id = p_doctor_id AND scheduled_date = CURRENT_DATE AND token_number = p_token_number
     RETURNING id INTO v_appointment_id;
 
     IF v_appointment_id IS NULL THEN
-        RAISE EXCEPTION 'Active consultation record not found for Token #%', p_token_number;
+        RAISE EXCEPTION 'Active consultation record not found for Token #% on %', p_token_number, CURRENT_DATE;
     END IF;
 
-    -- Advance queue to next waiting patient atomically
+    -- Advance queue to next waiting patient atomically strictly for CURRENT_DATE
     SELECT id, token_number INTO v_next_token_id, v_next_token_num
     FROM appointments
-    WHERE doctor_id = p_doctor_id AND status = 'waiting'
+    WHERE doctor_id = p_doctor_id AND scheduled_date = CURRENT_DATE AND status = 'waiting'
     ORDER BY token_number ASC
     LIMIT 1;
 
     IF v_next_token_id IS NOT NULL THEN
         UPDATE appointments
-        SET status = 'in-consultation'
+        SET status = 'in-consultation', start_at = NOW()
         WHERE id = v_next_token_id;
 
         UPDATE clinic_queues
@@ -384,7 +390,7 @@ BEGIN
 END;
 $$;
 
--- 10. PROTECTED ADMIN DOCTOR VERIFICATION RPC (C-09 Resolution)
+-- 11. PROTECTED ADMIN DOCTOR VERIFICATION RPC (C-09 Resolution)
 CREATE OR REPLACE FUNCTION verify_doctor_admin_atomic(
     p_doctor_id UUID,
     p_approved BOOLEAN,
@@ -449,7 +455,7 @@ BEGIN
 END;
 $$;
 
--- 11. EXPLICIT RPC EXECUTE PERMISSION ENFORCEMENT (C-06 Resolution)
+-- 12. EXPLICIT RPC EXECUTE PERMISSION ENFORCEMENT (C-06 Resolution)
 REVOKE EXECUTE ON FUNCTION issue_next_opd_token(UUID, TEXT) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION issue_next_opd_token(UUID, TEXT) TO authenticated, anon;
 
@@ -462,7 +468,7 @@ GRANT EXECUTE ON FUNCTION complete_consultation_rx_atomic(UUID, INT, TEXT, TEXT[
 REVOKE EXECUTE ON FUNCTION verify_doctor_admin_atomic(UUID, BOOLEAN, TEXT) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION verify_doctor_admin_atomic(UUID, BOOLEAN, TEXT) TO authenticated, anon;
 
--- 12. STRICT RESTRICTIVE ROW LEVEL SECURITY (RLS) POLICIES (C-07 & C-08 Resolution)
+-- 13. STRICT RESTRICTIVE ROW LEVEL SECURITY (RLS) POLICIES (C-07 & C-08 Resolution)
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE doctors ENABLE ROW LEVEL SECURITY;
 ALTER TABLE clinic_queues ENABLE ROW LEVEL SECURITY;
@@ -527,7 +533,7 @@ CREATE POLICY "Doctor can update consultation status and prescription" ON appoin
     doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid())
 );
 
--- 13. REALTIME PUBLICATION SETUP (Publish ONLY telemetry, never private clinical tables)
+-- 14. REALTIME PUBLICATION SETUP (Publish ONLY telemetry, never private clinical tables)
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'clinic_queues') THEN
@@ -538,7 +544,7 @@ BEGIN
   END IF;
 END $$;
 
--- 14. INITIAL SEED DATA (Zero Password Hashes - Passwords Authenticated via Supabase Auth)
+-- 15. INITIAL SEED DATA (Zero Password Hashes - Passwords Authenticated via Supabase Auth)
 INSERT INTO users (id, role, email, full_name, phone, age, gender, blood_group) VALUES
 ('a0000000-0000-0000-0000-000000000001', 'patient', 'sarah@mediarca.health', 'Sarah Johnson', '+1 (555) 234-8900', 32, 'Female', 'O+'),
 ('a0000000-0000-0000-0000-000000000002', 'doctor', 'bikeshray3764@gmail.com', 'Dr. Bikesh Ray', '+1 (555) 123-4567', 36, 'Male', 'B+'),
