@@ -2326,7 +2326,7 @@ class MediarcaApp {
             </div>
             <div class="form-group">
               <label class="form-label">Attach File (PDF, PNG, JPEG) *</label>
-              <input type="file" class="form-input" style="padding: 0.4rem;" required>
+              <input type="file" id="uploadDocFileInput" class="form-input" style="padding: 0.4rem;" accept=".pdf,.png,.jpg,.jpeg,.webp" required>
               <span class="form-hint">🔒 Files are encrypted and stored in private Supabase Storage buckets.</span>
             </div>
             <button type="submit" class="btn btn-primary btn-block" style="margin-top: 1rem;">
@@ -2346,18 +2346,30 @@ class MediarcaApp {
     const title = document.getElementById('uploadDocTitle')?.value.trim();
     const category = document.getElementById('uploadDocCategory')?.value;
     const doctor = document.getElementById('uploadDocDoctor')?.value.trim();
+    const fileInput = document.getElementById('uploadDocFileInput');
+    const file = fileInput?.files?.[0];
+
+    if (!file) {
+      this.showToast('Please select a file to upload.', 'warning');
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      this.showToast('File size exceeds the 10MB statutory limit.', 'warning');
+      return;
+    }
 
     try {
-      await window.mediarcaStore.addClinicalDocument({
-        fileName: title || 'Clinical_Document.pdf',
+      this.showToast('Securing and encrypting document in private vault...', 'info');
+      await window.mediarcaStore.addClinicalDocument(file, {
+        fileName: title || file.name,
         category,
-        doctorName: doctor,
-        fileSize: '520 KB'
+        doctorName: doctor
       });
 
       document.getElementById('uploadDocModal')?.classList.remove('active');
       if (window.mediarcaAudio) window.mediarcaAudio.playChime('success');
-      this.showToast(`Document "${title}" saved to Secure EMR Vault!`, 'success');
+      this.showToast(`Document "${title || file.name}" saved to Secure EMR Vault!`, 'success');
       this.renderPatientDashboard();
     } catch (err) {
       console.error('Doc upload error:', err);

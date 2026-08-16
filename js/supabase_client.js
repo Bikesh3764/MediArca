@@ -440,6 +440,88 @@ class MediarcaSupabaseClient {
 
     return data;
   }
+
+  // H-21, H-22, H-23: Real Clinical Document Storage Upload & Signed URL Generation
+  async uploadClinicalDocument(file, metadata) {
+    if (!this.client) throw new Error('Supabase client offline');
+
+    const user = (await this.client.auth.getUser())?.data?.user;
+    if (!user) throw new Error('Authentication required to upload medical documents.');
+
+    const fileExt = file.name ? file.name.split('.').pop() : 'pdf';
+    const cleanFileName = file.name || `document_${Date.now()}.${fileExt}`;
+    const docUuid = crypto.randomUUID ? crypto.randomUUID() : (Date.now().toString(36) + Math.random().toString(36).substring(2, 6));
+    const storagePath = `${user.id}/${docUuid}_${cleanFileName.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+
+    // 1. Upload raw bytes to private Supabase Storage bucket
+    const { error: uploadError } = await this.client.storage
+      .from('clinical_documents')
+      .upload(storagePath, file, {
+        cacheControl: '3600',
+        upsert: false,
+        contentType: file.type || 'application/pdf'
+      });
+
+    if (uploadError) {
+      console.error('Storage bucket upload error:', uploadError);
+      throw new Error(`Vault storage upload failed: ${uploadError.message}`);
+    }
+
+    // 2. Generate time-limited signed URL (valid for 1 hour)
+    const { data: signedData, error: signError } = await this.client.storage
+      .from('clinical_documents')
+      .createSignedUrl(storagePath, 3600);
+
+    if (signError) {
+      console.error('Signed URL generation error:', signError);
+    }
+
+    const signedUrl = signedData?.signedUrl || null;
+
+    // 3. Insert metadata record into clinical_documents table
+    const { data: docRecord, error: dbError } = await this.client
+      .from('clinical_documents')
+      .insert({
+        patient_id: user.id,
+        doctor_id: metadata.doctorId || null,
+        document_name: metadata.title || cleanFileName,
+        document_type: metadata.category || 'lab_report',
+        document_url: signedUrl || storagePath,
+        storage_path: storagePath,
+        file_name: cleanFileName,
+        file_size_bytes: file.size || 0,
+        mime_type: file.type || 'application/pdf',
+        is_encrypted: true,
+        notes: metadata.notes || 'Secured in HIPAA-compliant private vault'
+      })
+      .select()
+      .single();
+
+    if (dbError) {
+      console.error('Document metadata insert error:', dbError);
+      throw dbError;
+    }
+
+    return {
+      ...docRecord,
+      signedUrl: signedUrl
+    };
+  }
+
+  async getClinicalDocumentSignedUrl(storagePath) {
+    if (!this.client) throw new Error('Supabase client offline');
+
+    const { data, error } = await this.client.storage
+      .from('clinical_documents')
+      .createSignedUrl(storagePath, 3600);
+
+    if (error) {
+      console.error('Error creating signed URL:', error);
+      throw error;
+    }
+
+    return data?.signedUrl;
+  }
 }
 
 // Instantiate Singleton

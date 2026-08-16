@@ -177,7 +177,7 @@ CREATE TABLE IF NOT EXISTS lab_results (
     reported_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 10. CLINICAL DOCUMENTS & IMAGING ARCHIVE (Section 10 Resolution: Imaging & Documents)
+-- 10. CLINICAL DOCUMENTS & IMAGING ARCHIVE (Section 15 Resolution: Private Storage Vault & Metadata)
 CREATE TABLE IF NOT EXISTS clinical_documents (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     patient_id UUID REFERENCES users(id) ON DELETE CASCADE,
@@ -185,6 +185,11 @@ CREATE TABLE IF NOT EXISTS clinical_documents (
     document_name VARCHAR(255) NOT NULL,
     document_type VARCHAR(50) NOT NULL CHECK (document_type IN ('lab_report', 'imaging_xray', 'mri_scan', 'discharge_summary', 'prescription_scan', 'other')),
     document_url TEXT NOT NULL,
+    storage_path TEXT,
+    file_name VARCHAR(255),
+    file_size_bytes BIGINT,
+    mime_type VARCHAR(100),
+    is_encrypted BOOLEAN DEFAULT true,
     notes TEXT,
     uploaded_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -1787,6 +1792,53 @@ BEGIN
     ALTER PUBLICATION supabase_realtime DROP TABLE doctors;
   END IF;
 END $$;
+
+-- 16B. PRIVATE SUPABASE STORAGE VAULT CONFIGURATION (H-21, H-22, H-23 Resolution)
+-- Initialize private bucket for patient records & diagnostic imaging
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+    'clinical_documents',
+    'clinical_documents',
+    false,
+    10485760, -- 10MB maximum
+    ARRAY['application/pdf', 'image/jpeg', 'image/png', 'image/webp']
+)
+ON CONFLICT (id) DO UPDATE SET public = false, file_size_limit = 10485760;
+
+-- STORAGE RLS: Authenticated patients can upload files into their own UUID directory
+DROP POLICY IF EXISTS "Patients can upload to own vault directory" ON storage.objects;
+CREATE POLICY "Patients can upload to own vault directory"
+ON storage.objects FOR INSERT TO authenticated
+WITH CHECK (
+    bucket_id = 'clinical_documents'
+    AND (storage.foldername(name))[1] = auth.uid()::text
+);
+
+-- STORAGE RLS: Authenticated patients can read/download their own vault files
+DROP POLICY IF EXISTS "Patients can view own vault documents" ON storage.objects;
+CREATE POLICY "Patients can view own vault documents"
+ON storage.objects FOR SELECT TO authenticated
+USING (
+    bucket_id = 'clinical_documents'
+    AND (storage.foldername(name))[1] = auth.uid()::text
+);
+
+-- STORAGE RLS: Attending physicians and administrators can view patient documents
+DROP POLICY IF EXISTS "Doctors can view patient vault documents" ON storage.objects;
+CREATE POLICY "Doctors can view patient vault documents"
+ON storage.objects FOR SELECT TO authenticated
+USING (
+    bucket_id = 'clinical_documents'
+    AND (
+        EXISTS (
+            SELECT 1 FROM appointments a
+            JOIN doctors d ON d.id = a.doctor_id
+            WHERE d.user_id = auth.uid()
+              AND a.patient_id::text = (storage.foldername(name))[1]
+        )
+        OR is_admin(auth.uid())
+    )
+);
 
 -- 17. INITIAL SEED DATA (Zero Password Hashes - Passwords Authenticated via Supabase Auth)
 INSERT INTO users (id, role, email, full_name, phone) VALUES
