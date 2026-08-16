@@ -186,15 +186,52 @@ CREATE TABLE IF NOT EXISTS clinical_documents (
     uploaded_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 11. AUDIT COMPLIANCE & ACTIVITY LOGS TABLE (D-05 & D-06 Resolution: FK to users + UUID entity_id)
+-- 11. AUDIT COMPLIANCE & ACTIVITY LOGS TABLE (Section 15 Resolution: Append-only ledger with Before/After delta & Device IP)
 CREATE TABLE IF NOT EXISTS audit_logs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     actor_id UUID REFERENCES users(id) ON DELETE SET NULL,
     action VARCHAR(100) NOT NULL,
     entity VARCHAR(50) NOT NULL,
     entity_id UUID,
+    before_state JSONB,
+    after_state JSONB,
+    ip_address VARCHAR(45) DEFAULT '127.0.0.1',
+    user_agent TEXT DEFAULT 'MediArca EMR Web Client',
     metadata JSONB,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 12. MULTI-HOSPITAL & FACILITY HIERARCHY (Section 11 & 12 Resolution)
+CREATE TABLE IF NOT EXISTS organizations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(255) NOT NULL,
+    code VARCHAR(50) UNIQUE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS facilities (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    facility_type VARCHAR(50) DEFAULT 'Tertiary Specialty Hospital',
+    city VARCHAR(100) NOT NULL,
+    address TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS hospital_departments (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    facility_id UUID REFERENCES facilities(id) ON DELETE CASCADE,
+    name VARCHAR(100) NOT NULL,
+    floor_number VARCHAR(20) DEFAULT 'Level 2'
+);
+
+CREATE TABLE IF NOT EXISTS clinic_rooms (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    facility_id UUID REFERENCES facilities(id) ON DELETE CASCADE,
+    room_number VARCHAR(50) NOT NULL,
+    room_type VARCHAR(50) DEFAULT 'Consultation', -- 'Consultation', 'ECG/Triage', 'Lab Suite', 'Pharmacy'
+    is_active BOOLEAN DEFAULT true
 );
 
 -- 12. AUTOMATED UPDATED_AT TRIGGER FUNCTION (D-07 Resolution)

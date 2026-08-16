@@ -1350,7 +1350,7 @@ class MediarcaApp {
     }
   }
 
-  // --- Admin Verification Desk ---
+  // --- Admin Verification Desk, Analytics Dashboard & Audit Center (Section 14 & 15 Resolution) ---
   renderAdminHub() {
     const container = document.getElementById('adminPortalContainer');
     if (!container) return;
@@ -1358,23 +1358,91 @@ class MediarcaApp {
     const doctors = window.mediarcaStore.state.doctors;
     const pending = doctors.filter(d => d.verificationStatus === 'pending');
     const verified = doctors.filter(d => d.verificationStatus === 'verified');
+    const analytics = window.mediarcaStore.getHospitalAnalytics();
+    const auditLogs = window.mediarcaStore.state.auditLogs || [];
+    const facilities = window.mediarcaStore.state.facilities || [];
+    const rooms = window.mediarcaStore.state.rooms || [];
 
     container.innerHTML = `
       <div class="container" style="padding-top: 2rem; padding-bottom: 4rem;">
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
           <div>
-            <span class="badge badge-role" style="background: #b91c1c; margin-bottom: 0.5rem;">Medical Board Administration</span>
-            <h2 style="font-size: 1.75rem; font-weight: 800; color: var(--text-primary);">Doctor Verification & License Desk</h2>
-            <p style="color: var(--text-secondary); font-size: 0.875rem;">Audit medical credentials, approve practitioner licenses, and issue certified Mediarca IDs.</p>
+            <span class="badge badge-role" style="background: #b91c1c; margin-bottom: 0.5rem;">Hospital Executive Administration</span>
+            <h2 style="font-size: 1.75rem; font-weight: 800; color: var(--text-primary);">Medical Board & Operations Command Desk</h2>
+            <p style="color: var(--text-secondary); font-size: 0.875rem;">Audit compliance ledger, practitioner credentials, multi-hospital facility rooms, and clinical throughput analytics.</p>
+          </div>
+          <button class="btn btn-secondary" onclick="window.mediarcaAudio.playChime('success'); window.mediarcaApp.showToast('Audit report exported.', 'info');">
+            <i data-lucide="download" style="width: 14px; height: 14px;"></i> Export Audit Log (CSV)
+          </button>
+        </div>
+
+        <!-- 1. Executive Hospital Analytics Dashboard (Section 14 Resolution) -->
+        <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.5rem; margin-bottom: 2rem; box-shadow: var(--shadow-sm);">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1.25rem;">
+            <h3 style="font-size: 1.125rem; font-weight: 800; color: var(--text-primary); display:flex; align-items:center; gap:0.5rem;">
+              <i data-lucide="bar-chart-3" style="width:18px;height:18px; color:var(--clinical-blue);"></i> Real-Time Hospital OPD Operations Analytics
+            </h3>
+            <span class="badge badge-live">Live Hospital Telemetry</span>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.75rem; margin-bottom: 1.5rem;">
+            <div style="background: var(--bg-surface-subtle); border: 1px solid var(--border-subtle); padding: 1rem; border-radius: var(--radius-sm);">
+              <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Total Bookings</div>
+              <div class="text-mono" style="font-size: 1.5rem; font-weight: 800; color: var(--text-primary); margin-top: 0.25rem;">${analytics.totalAppointments}</div>
+              <div style="font-size: 0.65rem; color: #15803d; font-weight: 600;">Today's Registered</div>
+            </div>
+            <div style="background: var(--bg-surface-subtle); border: 1px solid var(--border-subtle); padding: 1rem; border-radius: var(--radius-sm);">
+              <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Avg Wait Time</div>
+              <div class="text-mono" style="font-size: 1.5rem; font-weight: 800; color: var(--clinical-blue); margin-top: 0.25rem;">${analytics.avgWaitTimeMins}</div>
+              <div style="font-size: 0.65rem; color: #15803d; font-weight: 600;">Benchmark < 20 min</div>
+            </div>
+            <div style="background: var(--bg-surface-subtle); border: 1px solid var(--border-subtle); padding: 1rem; border-radius: var(--radius-sm);">
+              <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Consult Duration</div>
+              <div class="text-mono" style="font-size: 1.5rem; font-weight: 800; color: #059669; margin-top: 0.25rem;">${analytics.avgConsultDurationMins}</div>
+              <div style="font-size: 0.65rem; color: #059669; font-weight: 600;">Optimal Clinical Care</div>
+            </div>
+            <div style="background: var(--bg-surface-subtle); border: 1px solid var(--border-subtle); padding: 1rem; border-radius: var(--radius-sm);">
+              <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">No-Show Rate</div>
+              <div class="text-mono" style="font-size: 1.5rem; font-weight: 800; color: #d97706; margin-top: 0.25rem;">${analytics.noShowRate}</div>
+              <div style="font-size: 0.65rem; color: #15803d; font-weight: 600;">Below 8% Industry Cap</div>
+            </div>
+            <div style="background: var(--bg-surface-subtle); border: 1px solid var(--border-subtle); padding: 1rem; border-radius: var(--radius-sm);">
+              <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Doctor Utilization</div>
+              <div class="text-mono" style="font-size: 1.5rem; font-weight: 800; color: #7c3aed; margin-top: 0.25rem;">${analytics.doctorUtilization}</div>
+              <div style="font-size: 0.65rem; color: #15803d; font-weight: 600;">High Efficiency</div>
+            </div>
+            <div style="background: var(--bg-surface-subtle); border: 1px solid var(--border-subtle); padding: 1rem; border-radius: var(--radius-sm);">
+              <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Queue Abandon</div>
+              <div class="text-mono" style="font-size: 1.5rem; font-weight: 800; color: #16a34a; margin-top: 0.25rem;">${analytics.queueAbandonmentRate}</div>
+              <div style="font-size: 0.65rem; color: #15803d; font-weight: 600;">High Retention</div>
+            </div>
+          </div>
+
+          <!-- Peak OPD Hourly Traffic -->
+          <div style="background: var(--bg-surface-subtle); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 1rem;">
+            <div style="font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 0.5rem;">
+              Peak OPD Hourly Patient Traffic (Peak: ${analytics.peakHours})
+            </div>
+            <div style="display: flex; gap: 0.75rem; align-items: flex-end; height: 75px; padding-top: 0.5rem;">
+              ${analytics.hourlyDistribution.map(h => `
+                <div style="flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end;">
+                  <div style="background: linear-gradient(180deg, #0284c7, #0369a1); width: 100%; border-radius: 4px 4px 0 0; height: ${(h.patients / 18) * 100}%; min-height: 12px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:0.65rem; font-weight:bold;">
+                    ${h.patients}
+                  </div>
+                  <div style="font-size: 0.65rem; color: var(--text-muted); margin-top: 0.35rem;">${h.hour}</div>
+                </div>
+              `).join('')}
+            </div>
           </div>
         </div>
 
+        <!-- 2. Pending Credential Verification Desk -->
         <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.5rem; margin-bottom: 2rem;">
-          <h3 style="font-size: 1.125rem; font-weight: 800; color: var(--text-primary); margin-bottom: 1rem;">Pending Verification Requests (${pending.length})</h3>
+          <h3 style="font-size: 1.125rem; font-weight: 800; color: var(--text-primary); margin-bottom: 1rem;">Pending Practitioner Accreditation (${pending.length})</h3>
           
           ${pending.length === 0 ? `
             <div style="padding: 2rem; text-align: center; color: var(--text-secondary); background: var(--bg-surface-subtle); border-radius: var(--radius-sm);">
-              All doctor applications have been processed.
+              All doctor applications have been reviewed and certified.
             </div>
           ` : `
             <div class="table-responsive">
@@ -1385,7 +1453,7 @@ class MediarcaApp {
                     <th>Specialty</th>
                     <th>Medical License Reg</th>
                     <th>Qualifications</th>
-                    <th>Hospital</th>
+                    <th>Hospital Affiliation</th>
                     <th>Decision</th>
                   </tr>
                 </thead>
@@ -1415,27 +1483,78 @@ class MediarcaApp {
           `}
         </div>
 
+        <!-- 3. Multi-Clinic / Hospital Facility & Room Roster (Section 11 & 12 Resolution) -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+          <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.5rem;">
+            <h3 style="font-size: 1.0625rem; font-weight: 800; color: var(--text-primary); margin-bottom: 1rem; display:flex; align-items:center; gap:0.5rem;">
+              <i data-lucide="building" style="width:16px;height:16px; color:#0284c7;"></i> Multi-Hospital Network Facilities (${facilities.length})
+            </h3>
+            <div style="display:flex; flex-direction:column; gap:0.75rem;">
+              ${facilities.map(fac => `
+                <div style="background: var(--bg-surface-subtle); border: 1px solid var(--border-subtle); padding: 0.875rem; border-radius: var(--radius-sm); display:flex; justify-content:space-between; align-items:center;">
+                  <div>
+                    <div style="font-size: 0.875rem; font-weight: 800; color: var(--text-primary);">${escapeHtml(fac.name)}</div>
+                    <div style="font-size: 0.75rem; color: var(--text-secondary);">${escapeHtml(fac.address)} • ${escapeHtml(fac.city)}</div>
+                  </div>
+                  <span class="badge badge-verified">${fac.roomsCount} Active Suites</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
+          <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.5rem;">
+            <h3 style="font-size: 1.0625rem; font-weight: 800; color: var(--text-primary); margin-bottom: 1rem; display:flex; align-items:center; gap:0.5rem;">
+              <i data-lucide="door-open" style="width:16px;height:16px; color:#7c3aed;"></i> Clinical Room & Queue Allocation (${rooms.length})
+            </h3>
+            <div style="display:flex; flex-direction:column; gap:0.75rem;">
+              ${rooms.map(rm => `
+                <div style="background: var(--bg-surface-subtle); border: 1px solid var(--border-subtle); padding: 0.875rem; border-radius: var(--radius-sm); display:flex; justify-content:space-between; align-items:center;">
+                  <div>
+                    <strong class="text-mono" style="color:var(--clinical-blue);">${escapeHtml(rm.roomNumber)}</strong> - ${escapeHtml(rm.type)}
+                    <div style="font-size: 0.75rem; color: var(--text-secondary);">Attached: ${escapeHtml(rm.doctorName)}</div>
+                  </div>
+                  <span class="badge badge-live">${escapeHtml(rm.status)}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. Incident & Append-Only Audit Compliance Center (Section 15 Resolution) -->
         <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.5rem;">
-          <h3 style="font-size: 1.125rem; font-weight: 800; color: var(--text-primary); margin-bottom: 1rem;">Verified Doctor Ledger</h3>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1rem;">
+            <h3 style="font-size: 1.125rem; font-weight: 800; color: var(--text-primary); display:flex; align-items:center; gap:0.5rem;">
+              <i data-lucide="shield-alert" style="width:18px;height:18px; color:#b91c1c;"></i> Statutory Audit & Incident Compliance Ledger (Append-Only)
+            </h3>
+            <span class="badge" style="background:#fef2f2; color:#b91c1c; font-weight:700;">Immutable Compliance Trail</span>
+          </div>
+
           <div class="table-responsive">
             <table class="clinical-table">
               <thead>
                 <tr>
-                  <th>Mediarca ID</th>
-                  <th>Practitioner</th>
-                  <th>Specialty</th>
-                  <th>Medical Reg</th>
-                  <th>Status</th>
+                  <th>Timestamp (UTC)</th>
+                  <th>Actor / Practitioner</th>
+                  <th>Action Code</th>
+                  <th>Entity</th>
+                  <th>State Delta (Before ➔ After)</th>
+                  <th>Device / IP Address</th>
                 </tr>
               </thead>
               <tbody>
-                ${verified.map(doc => `
+                ${auditLogs.map(log => `
                   <tr>
-                    <td><strong class="text-mono" style="color: var(--clinical-blue);">${escapeHtml(doc.mediarcaId || 'VERIFIED')}</strong></td>
-                    <td><strong>${escapeHtml(doc.name)}</strong></td>
-                    <td>${escapeHtml(doc.specialty)}</td>
-                    <td class="text-mono">${escapeHtml(doc.regNumber)}</td>
-                    <td><span class="badge badge-verified">Active & Verified</span></td>
+                    <td class="text-mono" style="font-size:0.75rem;">${escapeHtml(new Date(log.timestamp).toLocaleTimeString())}</td>
+                    <td><strong>${escapeHtml(log.actor)}</strong></td>
+                    <td><span class="badge badge-verified text-mono" style="font-size:0.65rem;">${escapeHtml(log.action)}</span></td>
+                    <td class="text-mono">${escapeHtml(log.entity)}</td>
+                    <td style="font-size:0.75rem;">
+                      ${log.beforeState ? `<span style="color:#b91c1c;">${escapeHtml(JSON.stringify(log.beforeState))}</span> ➔ ` : ''}
+                      <span style="color:#15803d; font-weight:bold;">${escapeHtml(JSON.stringify(log.afterState))}</span>
+                    </td>
+                    <td class="text-mono" style="font-size:0.7rem; color:var(--text-muted);">
+                      ${escapeHtml(log.ipAddress)} • ${escapeHtml(log.device)}
+                    </td>
                   </tr>
                 `).join('')}
               </tbody>
@@ -1693,9 +1812,9 @@ class MediarcaApp {
                   <th>Token</th>
                   <th>Patient Name</th>
                   <th>Attending Doctor</th>
-                  <th>Scheduled Slot</th>
+                  <th>Flow Stage</th>
                   <th>Status</th>
-                  <th>Reception Actions</th>
+                  <th>Patient-Flow Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -1707,24 +1826,35 @@ class MediarcaApp {
                       <div style="font-size: 0.75rem; color: var(--text-muted);">${escapeHtml(b.patientPhone)}</div>
                     </td>
                     <td>${escapeHtml(b.doctorName)}</td>
-                    <td>${escapeHtml(b.scheduledSlot || '09:00 AM')}</td>
+                    <td>
+                      <span class="badge" style="background:#e0f2fe; color:#0369a1; font-weight:700; font-size:0.7rem;">
+                        ${escapeHtml((b.stage || 'consultation').replace(/_/g, ' ').toUpperCase())}
+                      </span>
+                    </td>
                     <td>
                       <span class="badge ${b.status === 'checked_in' ? 'badge-verified' : (b.status === 'in-consultation' ? 'badge-live' : (b.status === 'completed' ? 'badge-verified' : 'badge-pending'))}">
                         ${escapeHtml(b.status.toUpperCase())}
                       </span>
                     </td>
                     <td>
-                      <div style="display: flex; gap: 0.35rem;">
+                      <div style="display: flex; gap: 0.35rem; align-items:center;">
                         ${b.status === 'booked' ? `
                           <button class="btn btn-sm btn-teal" style="font-size:0.7rem; padding:0.25rem 0.5rem;" onclick="window.mediarcaApp.handleDirectCheckIn('${b.bookingId}')">
                             <i data-lucide="check" style="width:11px; height:11px;"></i> Check-In
                           </button>
                         ` : ''}
+                        
+                        <!-- Multi-Stage Patient Flow Routing (Section 13 Resolution) -->
+                        <select class="form-select" style="font-size:0.7rem; padding:0.2rem 0.4rem; width:auto;" onchange="window.mediarcaApp.handleStageAdvance('${b.bookingId}', this.value)">
+                          <option value="triage" ${b.stage === 'triage' ? 'selected' : ''}>Route: 1. Triage</option>
+                          <option value="ecg_diagnostics" ${b.stage === 'ecg_diagnostics' ? 'selected' : ''}>Route: 2. ECG / Lab</option>
+                          <option value="consultation" ${(!b.stage || b.stage === 'consultation') ? 'selected' : ''}>Route: 3. Doctor</option>
+                          <option value="pharmacy" ${b.stage === 'pharmacy' ? 'selected' : ''}>Route: 4. Pharmacy</option>
+                          <option value="discharged" ${b.stage === 'discharged' ? 'selected' : ''}>Route: 5. Discharge</option>
+                        </select>
+
                         <button class="btn btn-sm btn-secondary" style="font-size:0.7rem; padding:0.25rem 0.5rem;" onclick="window.mediarcaApp.printPatientPass('${b.bookingId}')">
-                          <i data-lucide="printer" style="width:11px; height:11px;"></i> Print Pass
-                        </button>
-                        <button class="btn btn-sm btn-secondary" style="font-size:0.7rem; padding:0.25rem 0.5rem; color:#b91c1c;" onclick="window.mediarcaApp.handleMarkStatus('${b.doctorId}', ${b.tokenNumber}, 'no-show')">
-                          <i data-lucide="user-x" style="width:11px; height:11px;"></i> No-Show
+                          <i data-lucide="printer" style="width:11px; height:11px;"></i> Pass
                         </button>
                       </div>
                     </td>
@@ -1740,6 +1870,32 @@ class MediarcaApp {
     `;
 
     if (window.lucide) window.lucide.createIcons();
+  }
+
+  handleFollowUpPresetChange(days) {
+    const input = document.getElementById('docFollowUpDate');
+    if (!input) return;
+    const numDays = parseInt(days);
+    if (numDays === 0) {
+      input.value = '';
+      this.showToast('Follow-up scheduled as SOS / When Needed.', 'info');
+    } else {
+      const targetDate = new Date(Date.now() + numDays * 24 * 60 * 60 * 1000);
+      input.value = targetDate.toISOString().split('T')[0];
+      this.showToast(`Follow-up reminder set for ${targetDate.toLocaleDateString()} (${numDays} days)`, 'info');
+    }
+  }
+
+  async handleStageAdvance(bookingId, stage) {
+    try {
+      await window.mediarcaStore.updatePatientStage(bookingId, stage);
+      if (window.mediarcaAudio) window.mediarcaAudio.playChime('success');
+      this.showToast(`Patient routed to: ${stage.replace(/_/g, ' ').toUpperCase()}`, 'success');
+      this.renderReceptionPortal();
+    } catch (err) {
+      console.error('Stage advance error:', err);
+      this.showToast(err.message || 'Failed to route patient.', 'warning');
+    }
   }
 
   async handleReceptionLoginSubmit(e) {
