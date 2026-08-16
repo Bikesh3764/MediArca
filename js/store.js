@@ -624,14 +624,14 @@ class MediarcaStore {
     const doctor = this.state.doctors.find(d => d.id === bookingData.doctorId);
     if (!doctor) throw new Error('Doctor not found in accredited directory.');
 
-    let cloudBooking = null;
-
-    // 1. Authoritative Cloud Stored Procedure via Supabase RPC (H-01 & H-02 Resolution)
-    if (window.mediarcaSupabase && window.mediarcaSupabase.isConnected) {
-      cloudBooking = await window.mediarcaSupabase.cloudBookAppointment({
-        doctorId: doctor.id,
-        symptoms: bookingData.symptoms
-      });
+    // 1. Prevent Duplicate Active Appointments for Same Doctor/Day (H-13 Resolution)
+    const hasActiveBooking = this.state.bookings.some(b => 
+      b.patientId === this.state.currentUser.id &&
+      b.doctorId === doctor.id &&
+      (b.status === 'waiting' || b.status === 'in-consultation')
+    );
+    if (hasActiveBooking) {
+      throw new Error('You already have an active appointment ticket (Token in progress) with this doctor for today.');
     }
 
     const queue = this.state.queues[doctor.id] || {
@@ -642,12 +642,30 @@ class MediarcaStore {
       tokens: []
     };
 
+    // 2. Enforce Queue Status Rules (H-12 Resolution)
+    if (queue.status === 'paused') {
+      throw new Error('This doctor OPD queue is currently paused. Please wait for the queue to resume.');
+    } else if (queue.status === 'completed') {
+      throw new Error('Doctor consultations are concluded for today.');
+    }
+
+    let cloudBooking = null;
+
+    // 3. Authoritative Cloud Stored Procedure via Supabase RPC (H-01 & H-02 Resolution)
+    if (window.mediarcaSupabase && window.mediarcaSupabase.isConnected) {
+      cloudBooking = await window.mediarcaSupabase.cloudBookAppointment({
+        doctorId: doctor.id,
+        symptoms: bookingData.symptoms
+      });
+    }
+
     const existingTokens = queue.tokens ? queue.tokens.map(t => t.tokenNumber) : [];
     const nextTokenNumber = cloudBooking ? cloudBooking.token_number : (existingTokens.length > 0 ? Math.max(...existingTokens) + 1 : (doctor.totalTokens || 0) + 1);
 
     const bookingId = cloudBooking ? cloudBooking.booking_id : ('MED-BK-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase());
-    const isFirstInLine = queue.currentToken === 0;
-    const initialStatus = isFirstInLine ? 'in-consultation' : 'waiting';
+    
+    // 4. All New Bookings enter 'waiting' queue line until called by doctor (H-11 Resolution)
+    const initialStatus = 'waiting';
 
     const newBooking = {
       id: cloudBooking?.id || null,
@@ -662,7 +680,7 @@ class MediarcaStore {
       specialty: doctor.specialty,
       hospital: doctor.hospital,
       mediarcaId: doctor.mediarcaId || 'VERIFIED',
-      date: 'Today',
+      date: new Date().toISOString().split('T')[0],
       timeSlot: 'Live OPD Session',
       tokenNumber: nextTokenNumber,
       status: cloudBooking?.status || initialStatus,
@@ -683,12 +701,8 @@ class MediarcaStore {
       symptoms: bookingData.symptoms
     });
 
-    if (isFirstInLine) {
-      queue.currentToken = nextTokenNumber;
-      doctor.currentToken = nextTokenNumber;
-      doctor.queueActive = true;
-    }
     doctor.totalTokens = nextTokenNumber;
+    doctor.queueActive = true;
     this.state.queues[doctor.id] = queue;
 
     this.notifySubscribers();

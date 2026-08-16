@@ -150,47 +150,53 @@ BEGIN
         RAISE EXCEPTION 'Doctor is not verified or does not accept appointments.';
     END IF;
 
-    -- 4. Upsert clinic queue with lock to guarantee concurrency safety
+    -- 4. Check Duplicate Active Appointments (H-13 Resolution)
+    IF EXISTS (
+        SELECT 1 FROM appointments
+        WHERE patient_id = v_actor_id
+          AND doctor_id = p_doctor_id
+          AND scheduled_date = CURRENT_DATE
+          AND status IN ('waiting', 'in-consultation')
+    ) THEN
+        RAISE EXCEPTION 'You already have an active appointment ticket (Token in progress) with this doctor for today.';
+    END IF;
+
+    -- 5. Upsert clinic queue with lock to guarantee concurrency safety
     INSERT INTO clinic_queues (doctor_id, queue_date, current_token, total_tokens, status)
     VALUES (p_doctor_id, CURRENT_DATE, 0, 0, 'in-session')
     ON CONFLICT (doctor_id, queue_date) DO UPDATE
     SET updated_at = NOW();
 
-    -- 5. Acquire row lock to serialize concurrent bookings
-    SELECT current_token, total_tokens INTO v_current_token, v_next_token
+    -- 6. Acquire row lock and check queue status (H-12 Resolution)
+    SELECT current_token, total_tokens, status INTO v_current_token, v_next_token, v_initial_status
     FROM clinic_queues
     WHERE doctor_id = p_doctor_id AND queue_date = CURRENT_DATE
     FOR UPDATE;
 
+    IF v_initial_status = 'paused' THEN
+        RAISE EXCEPTION 'This doctor OPD queue is currently paused. Please wait for the queue to resume.';
+    ELSIF v_initial_status = 'completed' THEN
+        RAISE EXCEPTION 'Doctor OPD consultations are concluded for today.';
+    END IF;
+
     v_next_token := COALESCE(v_next_token, 0) + 1;
     v_booking_id := 'MED-BK-' || upper(to_hex(extract(epoch from now())::bigint)) || '-' || upper(substring(md5(random()::text) from 1 for 4));
 
-    IF v_current_token = 0 THEN
-        v_initial_status := 'in-consultation';
-        UPDATE clinic_queues 
-        SET current_token = v_next_token, total_tokens = v_next_token, status = 'in-session', updated_at = NOW()
-        WHERE doctor_id = p_doctor_id AND queue_date = CURRENT_DATE;
+    -- 7. All new bookings start in 'waiting' queue line until called by doctor (H-11 Resolution)
+    UPDATE clinic_queues 
+    SET total_tokens = v_next_token, status = 'in-session', updated_at = NOW()
+    WHERE doctor_id = p_doctor_id AND queue_date = CURRENT_DATE;
 
-        UPDATE doctors
-        SET current_token = v_next_token, total_tokens = v_next_token, queue_active = true
-        WHERE id = p_doctor_id;
-    ELSE
-        v_initial_status := 'waiting';
-        UPDATE clinic_queues 
-        SET total_tokens = v_next_token, updated_at = NOW()
-        WHERE doctor_id = p_doctor_id AND queue_date = CURRENT_DATE;
-
-        UPDATE doctors
-        SET total_tokens = v_next_token
-        WHERE id = p_doctor_id;
-    END IF;
+    UPDATE doctors
+    SET total_tokens = v_next_token, queue_active = true
+    WHERE id = p_doctor_id;
 
     INSERT INTO appointments (
         booking_id, patient_id, doctor_id, patient_name, patient_phone, patient_age, patient_gender,
         token_number, status, check_in_time, appointment_date, scheduled_date, start_at, end_at, timezone, symptoms
     ) VALUES (
         v_booking_id, v_actor_id, p_doctor_id, v_patient.full_name, COALESCE(v_patient.phone, 'Not specified'),
-        v_patient.age, v_patient.gender, v_next_token, v_initial_status, NOW(), CURRENT_DATE, CURRENT_DATE,
+        v_patient.age, v_patient.gender, v_next_token, 'waiting', NOW(), CURRENT_DATE, CURRENT_DATE,
         NOW(), NOW() + interval '15 minutes', 'UTC', p_symptoms
     ) RETURNING * INTO v_appointment;
 
