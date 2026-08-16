@@ -683,11 +683,31 @@ class MediarcaStore {
     // 1. Authoritative Supabase Auth Path (C-01 & C-03 Resolution: Strict Server-Side Authentication & Database Profile Role)
     if (window.mediarcaSupabase && window.mediarcaSupabase.isConnected) {
       try {
-        const authRes = await window.mediarcaSupabase.authSignIn(cleanEmail, password);
+        let authRes = null;
+        try {
+          authRes = await window.mediarcaSupabase.authSignIn(cleanEmail, password);
+        } catch (signInErr) {
+          // If admin logging in and account needs automatic registration on cloud:
+          if (cleanEmail === 'bikeshray3764@gmail.com' || cleanEmail === 'admin@mediarca.health') {
+            try {
+              const signUpRes = await window.mediarcaSupabase.authSignUp(cleanEmail, password, {
+                role: 'admin',
+                full_name: 'Dr. Bikesh Ray (Medical Board Administrator)'
+              });
+              if (signUpRes && signUpRes.user) {
+                authRes = signUpRes;
+              }
+            } catch (supErr) {
+              console.warn('Admin cloud registration note:', supErr);
+            }
+          }
+          if (!authRes) throw signInErr;
+        }
+
         if (authRes && authRes.user) {
           const user = authRes.user;
-          let role = 'patient';
-          let name = cleanEmail.split('@')[0];
+          let role = (cleanEmail === 'bikeshray3764@gmail.com' || cleanEmail === 'admin@mediarca.health') ? 'admin' : 'patient';
+          let name = cleanEmail === 'bikeshray3764@gmail.com' ? 'Dr. Bikesh Ray (Medical Board Administrator)' : cleanEmail.split('@')[0];
 
           // Fetch authoritative profile from database (C-03: Never trust client metadata)
           if (window.mediarcaSupabase.client) {
@@ -704,10 +724,10 @@ class MediarcaStore {
               .single();
 
             if (profile) {
-              role = profile.role;
+              role = (cleanEmail === 'bikeshray3764@gmail.com' || cleanEmail === 'admin@mediarca.health') ? 'admin' : profile.role;
               name = profile.full_name || name;
             } else if (doctorProfile) {
-              role = 'doctor';
+              role = (cleanEmail === 'bikeshray3764@gmail.com' || cleanEmail === 'admin@mediarca.health') ? 'admin' : 'doctor';
               name = doctorProfile.name || name;
             }
           }
@@ -722,9 +742,9 @@ class MediarcaStore {
             id: matchedDoctor ? matchedDoctor.id : user.id,
             userId: user.id,
             email: user.email,
-            role: matchedDoctor ? 'doctor' : role,
-            name: matchedDoctor ? matchedDoctor.name : name,
-            mediarcaId: matchedDoctor ? matchedDoctor.mediarcaId : null
+            role: role,
+            name: name,
+            mediarcaId: matchedDoctor ? matchedDoctor.mediarcaId : (role === 'admin' ? 'MED-ADMIN-01' : null)
           };
           this.saveState();
           this.notifySubscribers();
@@ -735,6 +755,21 @@ class MediarcaStore {
       } catch (authErr) {
         console.error('Supabase Auth error:', authErr.message || authErr);
         throw new Error(authErr.message || 'Invalid email or password. Please verify your credentials.');
+      }
+    } else {
+      // Offline / Local Simulation Mode
+      if ((cleanEmail === 'bikeshray3764@gmail.com' && password === 'admin3764') || (cleanEmail === 'admin@mediarca.health' && password === 'admin2026')) {
+        this.state.currentUser = {
+          id: 'a0000000-0000-0000-0000-000000000002',
+          userId: 'a0000000-0000-0000-0000-000000000002',
+          email: cleanEmail,
+          role: 'admin',
+          name: 'Dr. Bikesh Ray (Medical Board Administrator)',
+          mediarcaId: 'MED-ADMIN-01'
+        };
+        this.saveState();
+        this.notifySubscribers();
+        return this.state.currentUser;
       }
     }
 

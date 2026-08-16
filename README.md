@@ -83,7 +83,8 @@ Open [http://localhost:8080](http://localhost:8080) in your browser.
 | **Receptionist** | `reception@mediarca.health` | `reception123` | Walk-in registration, QR check-in & transfers |
 | **Verified Doctor** | `thorne@mediarca.health` | `doc123` | Dr. Aris Thorne (Cardiology Practice Console) |
 | **Pending Doctor** | `vance@mediarca.health` | `doc123` | Dr. Elena Vance (Pending Accreditation) |
-| **Admin** | `admin@mediarca.health` | `admin2026` | Medical Board Desk & Compliance Analytics |
+| **Admin** | `bikeshray3764@gmail.com` | `admin3764` | Dr. Bikesh Ray (Medical Board Admin Desk & Analytics) |
+| **Admin (Alt)** | `admin@mediarca.health` | `admin2026` | Medical Board Desk & Compliance Analytics |
 
 ---
 
