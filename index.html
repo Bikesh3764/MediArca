@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mediarca - Modern Clinical Appointments & Live Queue Tracking</title>
+  <meta name="description" content="Mediarca provides transparent doctor appointments with real-time live queue progression tracking, verified physician credentials, and digital token management.">
+  
+  <!-- Clinical CSS Design System -->
+  <link rel="stylesheet" href="css/mediarca.css">
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+
+  <!-- Release Header (Dynamically updates based on authenticated user role) -->
+  <header class="site-header">
+    <div class="container">
+      <div class="nav-wrap">
+        <!-- Brand Logo -->
+        <a class="brand-logo" onclick="window.mediarcaApp.switchView('home')">
+          <div class="brand-icon">
+            <i data-lucide="cross" style="width: 20px; height: 20px;"></i>
+          </div>
+          <span>Mediarca</span>
+          <span class="brand-tag">Health</span>
+        </a>
+
+        <!-- Main Navigation Links (Dynamically populated by RBAC) -->
+        <nav>
+          <ul class="nav-links" id="mainNavLinks">
+            <!-- Rendered by app.js -->
+          </ul>
+        </nav>
+
+        <!-- Right Side Nav Actions (Login / User Profile / Logout) -->
+        <div class="nav-actions" id="navActionsContainer">
+          <!-- Rendered by app.js -->
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- ==========================================
+         VIEW 1: PUBLIC HOME & DOCTOR DIRECTORY
+         ========================================== -->
+    <div id="view-home" class="section-view active">
+      <!-- Clean Hero Section -->
+      <section class="hero-wrapper">
+        <div class="container">
+          <div class="hero-grid">
+            <div>
+              <div class="hero-eyebrow">Real-Time Clinical Queue Management</div>
+              <h1 class="hero-headline">
+                Track your doctor's queue live. Know exactly when to arrive.
+              </h1>
+              <p class="hero-subtitle">
+                Mediarca eliminates crowded hospital waiting rooms. Book verified specialists, receive digital queue tokens, and follow your live turn in real-time.
+              </p>
+              
+              <div class="hero-cta-group">
+                <button class="btn btn-lg btn-primary" onclick="document.getElementById('directorySection').scrollIntoView({behavior: 'smooth'})">
+                  <i data-lucide="search" style="width: 16px; height: 16px;"></i> Find & Book Doctors
+                </button>
+                <button class="btn btn-lg btn-secondary" onclick="window.mediarcaApp.switchView('queue-radar')">
+                  <i data-lucide="radio" style="width: 16px; height: 16px; color: var(--clinical-blue);"></i> Track Live Queue
+                </button>
+              </div>
+
+              <div class="hero-metrics-row">
+                <div>
+                  <div class="hero-metric-val">100%</div>
+                  <div class="hero-metric-lbl">Board-Verified Doctors</div>
+                </div>
+                <div>
+                  <div class="hero-metric-val">~38 min</div>
+                  <div class="hero-metric-lbl">Avg. Clinic Wait Saved</div>
+                </div>
+                <div>
+                  <div class="hero-metric-val">Live</div>
+                  <div class="hero-metric-lbl">Sync Telemetry</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Quick Live Queue Lookup Box -->
+            <div>
+              <div class="queue-lookup-card">
+                <h3 class="lookup-card-title">Live Queue Quick Lookup</h3>
+                <p class="lookup-card-desc">Enter your Booking ID or Doctor Name to check live queue line status:</p>
+
+                <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.25rem;">
+                  <input type="text" id="quickLookupInput" class="form-input" placeholder="e.g. MED-BK-7890 or Dr. Thorne">
+                  <button class="btn btn-clinical" onclick="const val = document.getElementById('quickLookupInput').value; if(val){ window.mediarcaApp.switchView('queue-radar'); window.mediarcaQueueEngine.lookupByQuery(val); }">
+                    <i data-lucide="radio" style="width: 15px; height: 15px;"></i> Lookup Live Token Position
+                  </button>
+                </div>
+
+                <div style="font-size: 0.75rem; color: var(--text-muted); border-top: 1px solid var(--border-subtle); padding-top: 0.75rem;">
+                  Active Clinic Example: Search <code>MED-BK-7890</code> or <code>Dr. Thorne</code> to view live queue #4 in session.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Doctor Discovery Section -->
+      <section id="directorySection" style="padding: 3.5rem 0 4rem;">
+        <div class="container">
+          <div style="margin-bottom: 2rem;">
+            <h2 style="font-size: 1.75rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.35rem;">Verified Medical Specialists</h2>
+            <p style="color: var(--text-secondary); font-size: 0.9rem;">Browse accredited physicians, check live queue status, and book instant consultation tokens.</p>
+          </div>
+
+          <!-- Search & Filter Bar -->
+          <div class="filter-bar">
+            <div class="search-input-wrap">
+              <i data-lucide="search" class="search-icon" style="width: 16px; height: 16px;"></i>
+              <input type="text" id="doctorSearchInput" placeholder="Search doctor name, specialty, or clinic...">
+            </div>
+            <div class="specialty-pills" id="specialtyPillsContainer">
+              <!-- Rendered by JS -->
+            </div>
+          </div>
+
+          <!-- Doctor Cards Grid -->
+          <div class="doctors-grid" id="doctorsDirectoryGrid">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ==========================================
+         VIEW 2: LIVE QUEUE RADAR HUD
+         ========================================== -->
+    <div id="view-queue-radar" class="section-view">
+      <div class="container" id="queueRadarViewContainer">
+        <!-- Rendered by queue.js -->
+      </div>
+    </div>
+
+    <!-- ==========================================
+         VIEW 3: DOCTOR ONBOARDING & CREDENTIAL SUBMISSION
+         ========================================== -->
+    <div id="view-doctor-onboarding" class="section-view">
+      <div class="container" style="max-width: 760px; padding: 3rem 1.5rem 5rem;">
+        <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 2.25rem; box-shadow: var(--shadow-md);">
+          <div style="margin-bottom: 1.75rem;">
+            <span class="badge badge-verified" style="margin-bottom: 0.5rem;"><i data-lucide="shield-check" style="width:12px;height:12px"></i> Medical Practitioner Program</span>
+            <h2 style="font-size: 1.625rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.35rem;">Physician Registration & Credentialing</h2>
+            <p style="color: var(--text-secondary); font-size: 0.875rem;">
+              Join Mediarca to streamline clinic queues. All applications are validated by the Medical Board before issuing an official Mediarca Doctor ID.
+            </p>
+          </div>
+
+          <form onsubmit="window.mediarcaApp.handleDoctorOnboardingSubmit(event)">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+              <div class="form-group">
+                <label class="form-label">Full Name (with Title) *</label>
+                <input type="text" name="docName" class="form-input" placeholder="e.g. Dr. Arthur Miller" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Professional Email *</label>
+                <input type="email" name="docEmail" class="form-input" placeholder="dr.miller@hospital.org" required>
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+              <div class="form-group">
+                <label class="form-label">Password *</label>
+                <input type="password" name="docPassword" class="form-input" value="doc123" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Specialty *</label>
+                <select name="docSpecialty" class="form-select">
+                  <option value="Cardiology">Cardiology</option>
+                  <option value="Dermatology">Dermatology</option>
+                  <option value="Orthopedics">Orthopedics</option>
+                  <option value="Neurology">Neurology</option>
+                  <option value="Pediatrics">Pediatrics</option>
+                  <option value="General Medicine">General Medicine</option>
+                </select>
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 1rem;">
+              <div class="form-group">
+                <label class="form-label">Medical Council Registration No. *</label>
+                <input type="text" name="docRegNumber" class="form-input text-mono" placeholder="e.g. NMC-99412-MED" required>
+                <span class="form-hint">Verified against state/national medical registries.</span>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Clinical Experience (Years) *</label>
+                <input type="number" name="docExperience" class="form-input" value="10" min="1" max="60" required>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Degrees & Post-Graduate Qualifications *</label>
+              <input type="text" name="docDegrees" class="form-input" placeholder="e.g. MBBS, MD (General Medicine), DM" required>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 1rem;">
+              <div class="form-group">
+                <label class="form-label">Hospital / Clinic Affiliation *</label>
+                <input type="text" name="docHospital" class="form-input" placeholder="e.g. St. Jude Hospital, Suite 4" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Consultation Fee ($)</label>
+                <input type="number" name="docFee" class="form-input" value="60" min="10" max="1000">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Clinical Summary</label>
+              <textarea name="docBio" class="form-textarea" placeholder="Brief outline of your clinical practice and sub-specialty interests..."></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-block btn-teal" style="margin-top: 1rem;">
+              <i data-lucide="file-check" style="width: 16px; height: 16px;"></i> Submit for Medical Board Verification
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==========================================
+         VIEW 4: PATIENT AUTH (LOGIN / REGISTER)
+         ========================================== -->
+    <div id="view-auth-patient" class="section-view">
+      <div class="auth-page-wrap">
+        <div class="auth-card-container">
+          <div class="auth-card-header">
+            <h2 class="auth-card-title">Patient Portal Access</h2>
+            <p class="auth-card-desc">Sign in to view your appointments, medical records, and live queue passes.</p>
+          </div>
+
+          <!-- Quick Fill Credentials Box for Testing -->
+          <div class="demo-credentials-hint-box">
+            <div style="font-weight: 700; color: var(--text-primary); margin-bottom: 0.25rem;">
+              <i data-lucide="key" style="width: 12px; height: 12px; display: inline-block;"></i> Registered Patient Account:
+            </div>
+            <div>Email: <code>sarah@mediarca.health</code> | Password: <code>patient123</code></div>
+            <button type="button" class="btn btn-sm btn-secondary" style="margin-top: 0.5rem; width: 100%; font-size: 0.75rem;" onclick="window.mediarcaApp.quickFillAuth('sarah@mediarca.health', 'patient123', 'patient')">
+              Auto-Fill Patient Credentials
+            </button>
+          </div>
+
+          <form onsubmit="window.mediarcaApp.handlePatientLoginSubmit(event)">
+            <div class="form-group">
+              <label class="form-label">Email Address</label>
+              <input type="email" id="patientLoginEmail" name="email" class="form-input" placeholder="sarah@mediarca.health" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Password</label>
+              <input type="password" id="patientLoginPassword" name="password" class="form-input" placeholder="••••••••" required>
+            </div>
+            <button type="submit" class="btn btn-block btn-primary" style="margin-top: 1rem;">
+              <i data-lucide="log-in" style="width: 15px; height: 15px;"></i> Sign In to Patient Portal
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==========================================
+         VIEW 5: DOCTOR AUTH (LOGIN)
+         ========================================== -->
+    <div id="view-auth-doctor" class="section-view">
+      <div class="auth-page-wrap">
+        <div class="auth-card-container">
+          <div class="auth-card-header">
+            <h2 class="auth-card-title">Doctor Practice Portal</h2>
+            <p class="auth-card-desc">Sign in to manage your daily patient queue, consultations, and prescriptions.</p>
+          </div>
+
+          <!-- Quick Fill Credentials Box for Testing -->
+          <div class="demo-credentials-hint-box">
+            <div style="font-weight: 700; color: var(--text-primary); margin-bottom: 0.25rem;">
+              <i data-lucide="key" style="width: 12px; height: 12px; display: inline-block;"></i> Practitioner Accounts:
+            </div>
+            <div style="margin-bottom: 0.25rem;">
+              1. <strong>Verified Doctor</strong>: <code>thorne@mediarca.health</code> / <code>doc123</code>
+              <button type="button" class="btn btn-sm btn-secondary" style="display:block; margin: 0.25rem 0; width: 100%; font-size: 0.75rem;" onclick="window.mediarcaApp.quickFillAuth('thorne@mediarca.health', 'doc123', 'doctor')">
+                Auto-Fill Verified Doctor (Dr. Thorne)
+              </button>
+            </div>
+            <div>
+              2. <strong>Pending Doctor</strong>: <code>vance@mediarca.health</code> / <code>doc123</code>
+              <button type="button" class="btn btn-sm btn-secondary" style="display:block; margin: 0.25rem 0; width: 100%; font-size: 0.75rem;" onclick="window.mediarcaApp.quickFillAuth('vance@mediarca.health', 'doc123', 'doctor')">
+                Auto-Fill Pending Doctor (Dr. Vance)
+              </button>
+            </div>
+          </div>
+
+          <form onsubmit="window.mediarcaApp.handleDoctorLoginSubmit(event)">
+            <div class="form-group">
+              <label class="form-label">Doctor Email</label>
+              <input type="email" id="doctorLoginEmail" name="email" class="form-input" placeholder="thorne@mediarca.health" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Password</label>
+              <input type="password" id="doctorLoginPassword" name="password" class="form-input" placeholder="••••••••" required>
+            </div>
+            <button type="submit" class="btn btn-block btn-teal" style="margin-top: 1rem;">
+              <i data-lucide="stethoscope" style="width: 15px; height: 15px;"></i> Sign In to Practice Console
+            </button>
+          </form>
+
+          <div style="text-align: center; margin-top: 1.5rem; font-size: 0.8125rem;">
+            <span style="color: var(--text-muted);">New doctor?</span>
+            <a onclick="window.mediarcaApp.switchView('doctor-onboarding')" style="color: var(--clinical-teal); font-weight: 700; cursor: pointer; text-decoration: underline;">
+              Apply for Mediarca verification
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==========================================
+         VIEW 6: ADMIN AUTH (LOGIN)
+         ========================================== -->
+    <div id="view-auth-admin" class="section-view">
+      <div class="auth-page-wrap">
+        <div class="auth-card-container">
+          <div class="auth-card-header">
+            <span class="badge" style="background:#b91c1c; color:#fff; margin-bottom:0.5rem;">Restricted Access</span>
+            <h2 class="auth-card-title">Medical Board Administration</h2>
+            <p class="auth-card-desc">Audit credentials, review medical registrations, and issue certified Mediarca IDs.</p>
+          </div>
+
+          <!-- Quick Fill Credentials Box for Testing -->
+          <div class="demo-credentials-hint-box">
+            <div style="font-weight: 700; color: var(--text-primary); margin-bottom: 0.25rem;">
+              <i data-lucide="shield-alert" style="width: 12px; height: 12px; display: inline-block;"></i> Admin Credentials:
+            </div>
+            <div>Email: <code>admin@mediarca.health</code> | Password: <code>admin2026</code></div>
+            <button type="button" class="btn btn-sm btn-secondary" style="margin-top: 0.5rem; width: 100%; font-size: 0.75rem;" onclick="window.mediarcaApp.quickFillAuth('admin@mediarca.health', 'admin2026', 'admin')">
+              Auto-Fill Admin Credentials
+            </button>
+          </div>
+
+          <form onsubmit="window.mediarcaApp.handleAdminLoginSubmit(event)">
+            <div class="form-group">
+              <label class="form-label">Administrator Email</label>
+              <input type="email" id="adminLoginEmail" name="email" class="form-input" placeholder="admin@mediarca.health" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Security Password</label>
+              <input type="password" id="adminLoginPassword" name="password" class="form-input" placeholder="••••••••" required>
+            </div>
+            <button type="submit" class="btn btn-block btn-primary" style="margin-top: 1rem; background: #0f172a;">
+              <i data-lucide="shield-check" style="width: 15px; height: 15px;"></i> Unlock Medical Board Desk
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==========================================
+         VIEW 7: PROTECTED PATIENT PORTAL
+         ========================================== -->
+    <div id="view-patient-portal" class="section-view">
+      <div id="patientPortalContainer">
+        <!-- Rendered by app.js -->
+      </div>
+    </div>
+
+    <!-- ==========================================
+         VIEW 8: PROTECTED DOCTOR CONSOLE
+         ========================================== -->
+    <div id="view-doctor-portal" class="section-view">
+      <div id="doctorPortalContainer">
+        <!-- Rendered by app.js -->
+      </div>
+    </div>
+
+    <!-- ==========================================
+         VIEW 9: PROTECTED ADMIN VERIFICATION PANEL
+         ========================================== -->
+    <div id="view-admin-portal" class="section-view">
+      <div id="adminPortalContainer">
+        <!-- Rendered by app.js -->
+      </div>
+    </div>
+
+    <!-- ==========================================
+         VIEW 10: HOSPITAL OPD FULLSCREEN TV DISPLAY
+         ========================================== -->
+    <div id="view-tv-display" class="section-view" style="background: #09090b; min-height: 100vh; color: #fff; padding: 2rem 0;">
+      <div class="container" id="tvDisplayContainer">
+        <!-- Rendered by app.js -->
+      </div>
+    </div>
+  </main>
+
+  <!-- ==========================================
+       MODALS
+       ========================================== -->
+  <div class="modal-overlay" id="bookingModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 style="font-size: 1.125rem; font-weight: 800; color: var(--text-primary);">Book Doctor Appointment</h3>
+        <button class="modal-close-btn" onclick="window.mediarcaApp.closeAllModals()" style="background:none; border:none; cursor:pointer;">
+          <i data-lucide="x" style="width: 16px; height: 16px;"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div style="background: var(--bg-surface-subtle); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 1rem; margin-bottom: 1.25rem; display: flex; align-items: center; justify-content: space-between;">
+          <div>
+            <div style="font-weight: 800; color: var(--text-primary);" id="bookingModalDoctorName">Dr. Aris Thorne</div>
+            <div style="font-size: 0.8125rem; color: var(--text-secondary);" id="bookingModalSpecialty">Cardiology • Metro Heart Institute</div>
+            <span class="doctor-id-tag text-mono" id="bookingModalDoctorId" style="margin-top: 0.25rem; display: inline-block;">MED-DOC-1082</span>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Est. Token</div>
+            <div class="text-mono" style="font-size: 1.5rem; font-weight: 800; color: var(--clinical-blue);" id="bookingModalEstimatedToken">#5</div>
+            <div style="font-size: 0.75rem; font-weight: 700; color: var(--text-primary);" id="bookingModalFee">$65</div>
+          </div>
+        </div>
+
+        <form id="appointmentBookingForm" onsubmit="window.mediarcaApp.handleBookingSubmit(event)">
+          <input type="hidden" id="bookingDoctorId" name="bookingDoctorId">
+
+          <div class="form-group">
+            <label class="form-label" for="bookingPatientName">Patient Full Name *</label>
+            <input type="text" id="bookingPatientName" name="patientName" class="form-input" placeholder="e.g. Sarah Johnson" required>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+              <label class="form-label" for="bookingPatientAge">Patient Age</label>
+              <input type="number" id="bookingPatientAge" name="patientAge" class="form-input" value="32" min="1" max="120">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="bookingPatientGender">Gender</label>
+              <select id="bookingPatientGender" name="patientGender" class="form-select">
+                <option value="Female">Female</option>
+                <option value="Male">Male</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="bookingPatientPhone">Contact Phone Number *</label>
+            <input type="tel" id="bookingPatientPhone" name="patientPhone" class="form-input" placeholder="+1 (555) 000-0000" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="bookingSymptoms">Reason for Visit / Symptoms *</label>
+            <textarea id="bookingSymptoms" name="symptoms" class="form-textarea" placeholder="Briefly describe your symptoms..." required></textarea>
+          </div>
+
+          <button type="submit" class="btn btn-block btn-primary" style="margin-top: 1rem;">
+            <i data-lucide="check-circle" style="width: 15px; height: 15px;"></i> Confirm & Generate Live Token
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div>
+          <strong>Mediarca Clinical Health Systems</strong> &copy; 2026. All medical credentials verified via National Medical Council registries.
+        </div>
+        <div class="footer-links">
+          <a class="footer-link" onclick="window.mediarcaApp.switchView('home')">Find Doctors</a>
+          <a class="footer-link" onclick="window.mediarcaApp.switchView('queue-radar')">Live Queue Radar</a>
+          <a class="footer-link" onclick="window.mediarcaApp.switchView('tv-display')"><i data-lucide="tv" style="width:13px;height:13px;display:inline-block;vertical-align:middle;"></i> Hospital TV Display</a>
+          <a class="footer-link" onclick="window.mediarcaApp.switchView('doctor-onboarding')">Physician Registration</a>
+          <a class="footer-link" onclick="window.mediarcaApp.switchView('auth-admin')" style="color: var(--text-muted); font-size: 0.75rem;">Medical Board Portal (Admin)</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Supabase Cloud SDK & Core Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/supabase_client.js"></script>
+  <script src="js/queue.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>

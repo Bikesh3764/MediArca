@@ -1,0 +1,820 @@
+/* ==========================================================================
+   PIZZA READY! 3D TYCOON - COMMERCIAL-GRADE ARCADE MASTER STYLESHEET
+   Style: Juicy 3D Mobile Tycoon, Vibrant Glassmorphism, Floating Joystick
+   ========================================================================== */
+
+:root {
+  --ph-red: #d32323;
+  --ph-red-dark: #991b1b;
+  --ph-yellow: #ffb703;
+  --ph-gold: #f59e0b;
+  --ph-cash-green: #10b981;
+  --ph-cyan: #06b6d4;
+  --ph-purple: #8b5cf6;
+  --ph-dark: #0f172a;
+  --ph-dark-card: rgba(15, 23, 42, 0.92);
+  --font-arcade: 'Fredoka One', cursive, system-ui, sans-serif;
+  --font-body: 'Nunito', system-ui, -apple-system, sans-serif;
+  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 8px 28px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 20px rgba(211, 35, 35, 0.6);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+
+html, body {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background-color: #0b0f19;
+  font-family: var(--font-body);
+  color: #ffffff;
+}
+
+#game-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+#webgl-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  z-index: 1;
+}
+
+/* ==========================================================================
+   TOP HUD BAR
+   ========================================================================== */
+#hud-top {
+  position: absolute;
+  top: 14px;
+  left: 0;
+  width: 100%;
+  padding: 0 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 50;
+  pointer-events: none;
+}
+
+.hud-left-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  pointer-events: auto;
+}
+
+.hud-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+  padding: 8px 18px;
+  border-radius: 999px;
+  box-shadow: 0 4px 16px rgba(220, 38, 38, 0.5), inset 0 2px 4px rgba(255, 255, 255, 0.3);
+  border: 2px solid #f87171;
+}
+
+.hud-roof {
+  font-size: 1.2rem;
+  color: #fff;
+  line-height: 1;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.4);
+}
+
+.hud-title {
+  font-family: var(--font-arcade);
+  font-size: 1.25rem;
+  letter-spacing: 0.5px;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+
+.gold-text {
+  color: #fbbf24;
+}
+
+.hud-badge {
+  background: #0f172a;
+  color: #38bdf8;
+  font-size: 0.7rem;
+  font-weight: 900;
+  padding: 2px 8px;
+  border-radius: 6px;
+  letter-spacing: 1px;
+}
+
+/* 20-Step Progress Tracker HUD Pill */
+.tracker-pill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(30, 41, 59, 0.85);
+  backdrop-filter: blur(10px);
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 2px solid rgba(251, 191, 36, 0.4);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.tracker-pill:hover {
+  transform: scale(1.04);
+  border-color: #fbbf24;
+}
+
+.tracker-indicator {
+  font-size: 1.2rem;
+}
+
+.tracker-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.tracker-step-tag {
+  font-size: 0.65rem;
+  color: #fbbf24;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.tracker-step-title {
+  font-family: var(--font-arcade);
+  font-size: 0.85rem;
+  color: #ffffff;
+  max-width: 140px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tracker-arrow {
+  font-size: 0.7rem;
+  color: #94a3b8;
+}
+
+/* HUD STATS */
+.hud-stats {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  pointer-events: auto;
+}
+
+.hud-icon-btn {
+  background: rgba(30, 41, 59, 0.85);
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  font-size: 1.2rem;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: transform 0.15s ease;
+}
+
+.hud-icon-btn:hover {
+  transform: scale(1.1);
+}
+
+.trophy-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(30, 41, 59, 0.85);
+  backdrop-filter: blur(10px);
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 2px solid #fbbf24;
+  font-family: var(--font-arcade);
+  font-size: 1rem;
+  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.3);
+}
+
+.weather-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(30, 41, 59, 0.85);
+  backdrop-filter: blur(10px);
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  font-weight: 800;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.cash-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #ffffff;
+  padding: 6px 18px;
+  border-radius: 999px;
+  border: 2.5px solid #22c55e;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.cash-pill.bounce {
+  transform: scale(1.25);
+}
+
+.cash-icon-badge {
+  font-size: 1.2rem;
+}
+
+.cash-amount {
+  font-family: var(--font-arcade);
+  font-size: 1.35rem;
+  color: #15803d;
+  letter-spacing: 0.5px;
+}
+
+/* ==========================================================================
+   LEFT FLOATING ACTION SIDEBAR (1:1 with Mobile Reference Game)
+   ========================================================================== */
+#hud-action-sidebar {
+  position: absolute;
+  top: 80px;
+  left: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 45;
+  pointer-events: auto;
+}
+
+.sidebar-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  font-family: var(--font-arcade);
+  font-size: 0.82rem;
+  color: #ffffff;
+  cursor: pointer;
+  position: relative;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35), inset 0 2px 4px rgba(255, 255, 255, 0.3);
+  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.sidebar-action-btn:hover {
+  transform: scale(1.08) translateX(4px);
+}
+
+.sidebar-btn-green { background: linear-gradient(135deg, #10b981, #047857); border-color: #6ee7b7; }
+.sidebar-btn-gold  { background: linear-gradient(135deg, #f59e0b, #b45309); border-color: #fde68a; }
+.sidebar-btn-blue  { background: linear-gradient(135deg, #3b82f6, #1d4ed8); border-color: #93c5fd; }
+.sidebar-btn-purple{ background: linear-gradient(135deg, #8b5cf6, #6d28d9); border-color: #c4b5fd; }
+.sidebar-btn-amber { background: linear-gradient(135deg, #ec4899, #be185d); border-color: #fbcfe8; }
+.sidebar-btn-red   { background: linear-gradient(135deg, #ef4444, #b91c1c); border-color: #fca5a5; }
+.sidebar-btn-teal  { background: linear-gradient(135deg, #14b8a6, #0f766e); border-color: #99f6e4; }
+
+.action-icon {
+  font-size: 1.15rem;
+}
+
+.notif-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 900;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: 2px solid #ffffff;
+  animation: pulseBadge 1.2s infinite;
+}
+
+@keyframes pulseBadge {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+
+.hud-btn {
+  background: linear-gradient(135deg, #334155, #1e293b);
+  color: #fff;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  padding: 8px 14px;
+  border-radius: 12px;
+  font-family: var(--font-arcade);
+  font-size: 0.85rem;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s ease;
+}
+
+.hud-btn:hover {
+  transform: translateY(-2px) scale(1.04);
+  box-shadow: var(--shadow-md);
+}
+
+.hud-btn:active {
+  transform: translateY(1px) scale(0.96);
+}
+
+.hud-btn-blue {
+  background: linear-gradient(135deg, #0284c7, #0369a1);
+  border-color: #38bdf8;
+}
+
+.hud-btn-gold {
+  background: linear-gradient(135deg, #d97706, #b45309);
+  border-color: #fbbf24;
+}
+
+.hud-btn-teal {
+  background: linear-gradient(135deg, #0d9488, #0f766e);
+  border-color: #2dd4bf;
+}
+
+.hud-btn-amber {
+  background: linear-gradient(135deg, #ea580c, #c2410c);
+  border-color: #fb923c;
+}
+
+.hud-btn-purple {
+  background: linear-gradient(135deg, #7c3aed, #6d28d9);
+  border-color: #a78bfa;
+}
+
+/* ==========================================================================
+   VIRTUAL JOYSTICK
+   ========================================================================== */
+#joystick-zone {
+  position: absolute;
+  bottom: 30px;
+  left: 30px;
+  width: 140px;
+  height: 140px;
+  z-index: 40;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#joystick-base {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, rgba(0, 0, 0, 0.4) 100%);
+  border: 3px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+#joystick-knob {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ef4444, #991b1b);
+  border: 3px solid #f87171;
+  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.6), inset 0 2px 4px rgba(255, 255, 255, 0.4);
+  position: absolute;
+  transition: transform 0.05s ease-out;
+}
+
+#controls-hint {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(8px);
+  padding: 6px 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #cbd5e1;
+  z-index: 30;
+  pointer-events: none;
+}
+
+/* ==========================================================================
+   WORLD 3D UI OVERLAY & EMOTE BUBBLES
+   ========================================================================== */
+#world-ui-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 40;
+}
+
+.world-order-bubble,
+.order-bubble-3d {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(10px);
+  border: 2.5px solid #38bdf8;
+  border-radius: 14px;
+  padding: 6px 12px;
+  font-size: 0.92rem;
+  font-weight: 900;
+  color: #ffffff;
+  white-space: nowrap;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  animation: floatBubble 1.8s ease-in-out infinite alternate;
+}
+
+.world-order-bubble::after,
+.order-bubble-3d::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 8px 8px 0;
+  border-style: solid;
+  border-color: #38bdf8 transparent transparent transparent;
+}
+
+.world-unlock-tag {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.96), rgba(5, 150, 105, 0.96));
+  backdrop-filter: blur(10px);
+  border: 2.5px solid #a7f3d0;
+  border-radius: 14px;
+  padding: 8px 14px;
+  font-size: 0.9rem;
+  font-weight: 900;
+  color: #ffffff;
+  text-align: center;
+  white-space: nowrap;
+  box-shadow: 0 6px 24px rgba(16, 185, 129, 0.55);
+  animation: pulseUnlock 1.6s ease-in-out infinite alternate;
+}
+
+.world-unlock-tag::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 8px 8px 0;
+  border-style: solid;
+  border-color: #10b981 transparent transparent transparent;
+}
+
+@keyframes pulseUnlock {
+  0% { transform: translate(-50%, -100%) scale(0.95); }
+  100% { transform: translate(-50%, -100%) scale(1.05); }
+}
+
+@keyframes floatBubble {
+  0% { transform: translate(-50%, -100%) translateY(0); }
+  100% { transform: translate(-50%, -100%) translateY(-6px); }
+}
+
+.badge-critic {
+  background: linear-gradient(135deg, #7e22ce, #581c87);
+  color: #fde047;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+}
+
+.badge-feast {
+  background: linear-gradient(135deg, #dc2626, #991b1b);
+  color: #fef08a;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+}
+
+.badge-combo {
+  background: linear-gradient(135deg, #0284c7, #0369a1);
+  color: #e0f2fe;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+}
+
+/* ==========================================================================
+   MODALS & POPUPS
+   ========================================================================== */
+.arcade-modal {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(12px);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.arcade-modal.active {
+  display: flex;
+  opacity: 1;
+}
+
+.arcade-modal-card {
+  background: var(--ph-dark-card);
+  border-radius: 24px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7), 0 0 30px rgba(211, 35, 35, 0.2);
+  width: 90%;
+  max-width: 520px;
+  overflow: hidden;
+  transform: scale(0.9);
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.arcade-modal.active .arcade-modal-card {
+  transform: scale(1);
+}
+
+.modal-lg {
+  max-width: 680px;
+}
+
+.arcade-modal-header {
+  background: linear-gradient(135deg, #ef4444, #b91c1c);
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.arcade-modal-header h2 {
+  font-family: var(--font-arcade);
+  font-size: 1.25rem;
+  letter-spacing: 0.5px;
+}
+
+.blue-header { background: linear-gradient(135deg, #0284c7, #0369a1); }
+.gold-header { background: linear-gradient(135deg, #d97706, #b45309); }
+.purple-header { background: linear-gradient(135deg, #7c3aed, #6d28d9); }
+.teal-header { background: linear-gradient(135deg, #0d9488, #0f766e); }
+.amber-header { background: linear-gradient(135deg, #ea580c, #c2410c); }
+
+.close-btn {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.close-btn:hover {
+  transform: scale(1.1);
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.arcade-modal-body {
+  padding: 20px;
+  max-height: 75vh;
+  overflow-y: auto;
+}
+
+/* UPGRADES LIST */
+.upgrades-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.upgrade-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 12px 16px;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.upgrade-card:hover {
+  transform: translateY(-2px);
+  border-color: #fbbf24;
+}
+
+.upgrade-icon-box {
+  font-size: 2rem;
+  background: rgba(0, 0, 0, 0.3);
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.upgrade-info {
+  flex: 1;
+  margin-left: 14px;
+}
+
+.upgrade-info h4 {
+  font-family: var(--font-arcade);
+  font-size: 1rem;
+  margin-bottom: 2px;
+}
+
+.upgrade-info p {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.upgrade-level-tag {
+  color: #fbbf24;
+  font-weight: 800;
+  font-size: 0.75rem;
+}
+
+.upgrade-buy-btn {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #fff;
+  border: 2px solid #34d399;
+  padding: 8px 16px;
+  border-radius: 12px;
+  font-family: var(--font-arcade);
+  font-size: 0.95rem;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+  transition: transform 0.15s ease;
+}
+
+.upgrade-buy-btn:hover {
+  transform: scale(1.05);
+}
+
+.upgrade-buy-btn:disabled {
+  background: #334155;
+  border-color: #475569;
+  color: #64748b;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* ==========================================================================
+   MINI-GAME CANVAS & LUCKY WHEEL
+   ========================================================================== */
+.wheel-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 0;
+}
+
+#wheel-canvas {
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  box-shadow: 0 0 30px rgba(168, 85, 247, 0.5);
+}
+
+.wheel-pointer {
+  font-size: 2rem;
+  color: #f59e0b;
+  margin-top: -14px;
+  z-index: 10;
+}
+
+.spin-btn {
+  margin-top: 16px;
+  background: linear-gradient(135deg, #a855f7, #7e22ce);
+  color: #fff;
+  border: 2px solid #c084fc;
+  padding: 12px 36px;
+  border-radius: 999px;
+  font-family: var(--font-arcade);
+  font-size: 1.2rem;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(168, 85, 247, 0.5);
+  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.spin-btn:hover {
+  transform: scale(1.06);
+}
+
+/* DOUGH TOSS TIMING BAR */
+.dough-game-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 0;
+}
+
+.dough-visual-box {
+  width: 140px;
+  height: 140px;
+  background: radial-gradient(circle, #fde047 0%, #d97706 100%);
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 4rem;
+  box-shadow: 0 10px 30px rgba(245, 158, 11, 0.5);
+  transition: transform 0.1s ease;
+}
+
+.dough-visual-box.tossing {
+  transform: translateY(-40px) rotate(180deg) scale(1.15);
+}
+
+.timing-bar-track {
+  width: 100%;
+  max-width: 360px;
+  height: 28px;
+  background: #1e293b;
+  border-radius: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.timing-green-zone {
+  position: absolute;
+  left: 42%;
+  width: 16%;
+  height: 100%;
+  background: linear-gradient(135deg, #10b981, #059669);
+  border-left: 2px solid #34d399;
+  border-right: 2px solid #34d399;
+}
+
+.timing-indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 8px;
+  height: 100%;
+  background: #ffffff;
+  box-shadow: 0 0 8px #ffffff;
+}
+
+.toss-btn {
+  background: linear-gradient(135deg, #f97316, #c2410c);
+  color: #fff;
+  border: 2px solid #fdba74;
+  padding: 12px 40px;
+  border-radius: 999px;
+  font-family: var(--font-arcade);
+  font-size: 1.15rem;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(249, 115, 22, 0.5);
+  transition: transform 0.15s ease;
+}
+
+.toss-btn:hover {
+  transform: scale(1.05);
+}
