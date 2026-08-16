@@ -157,6 +157,32 @@ const SEED_USERS = [
     appliedDate: '2026-08-15'
   },
   {
+    id: 'doc_bikesh',
+    role: 'doctor',
+    email: 'bikesh@mediarca.health',
+    passwordHash: 'b65ef545b2a4b7b331c736bd7a1f85e94750a50e49fc30d01af8762fdd73d9df', // doc123
+    name: 'Dr. Bikesh Ray',
+    specialty: 'Cardiology & Critical Care',
+    specialtyId: 'cardiology',
+    title: 'Consultant Interventional Cardiologist',
+    degrees: 'MBBS, MD (Cardiology), FACC',
+    regNumber: 'NMC-98765-IND',
+    mediarcaId: 'MED-DOC-7700',
+    verificationStatus: 'verified',
+    experienceYears: 12,
+    hospital: 'Apex Heart Institute & Research Center, Suite 402',
+    fee: 60,
+    rating: 4.95,
+    reviewsCount: 340,
+    avatar: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=300&h=300&fit=crop&crop=faces&q=80',
+    bio: 'Specialist in clinical cardiology, angioplasty, hypertension therapeutics, and acute cardiovascular interventions.',
+    schedule: 'Mon - Sat | 09:00 AM - 03:00 PM',
+    queueActive: true,
+    currentToken: 3,
+    totalTokens: 8,
+    avgConsultTimeMins: 12
+  },
+  {
     id: 'admin_1',
     role: 'admin',
     email: 'admin@mediarca.health',
@@ -167,6 +193,7 @@ const SEED_USERS = [
 ];
 
 const SEED_DOCTORS = [
+  SEED_USERS[3], // doc_bikesh
   SEED_USERS[1], // doc_1
   {
     id: 'doc_2',
@@ -276,6 +303,19 @@ const SEED_DOCTORS = [
 ];
 
 const SEED_QUEUES = {
+  'doc_bikesh': {
+    doctorId: 'doc_bikesh',
+    currentToken: 3,
+    status: 'in-session',
+    avgConsultTimeMins: 12,
+    tokens: [
+      { tokenNumber: 1, patientName: 'Amit Sharma', bookingId: 'MED-BK-3001', status: 'completed', checkInTime: '09:00 AM', symptoms: 'Coronary artery risk evaluation' },
+      { tokenNumber: 2, patientName: 'Priya Verma', bookingId: 'MED-BK-3002', status: 'completed', checkInTime: '09:15 AM', symptoms: 'Holter monitor report discussion' },
+      { tokenNumber: 3, patientName: 'Rohan Gupta', bookingId: 'MED-BK-3003', status: 'in-consultation', checkInTime: '09:30 AM', symptoms: 'Palpitations and hypertension check' },
+      { tokenNumber: 4, patientName: 'Anil Kapoor', bookingId: 'MED-BK-3004', status: 'waiting', checkInTime: '09:45 AM', symptoms: 'Routine lipid panel review' },
+      { tokenNumber: 5, patientName: 'Sunita Rao', bookingId: 'MED-BK-3005', status: 'waiting', checkInTime: '10:00 AM', symptoms: 'Stress test follow-up' }
+    ]
+  },
   'doc_1': {
     doctorId: 'doc_1',
     currentToken: 4,
