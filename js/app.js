@@ -2152,9 +2152,12 @@ class MediarcaApp {
     }
   }
 
-  async handleDirectCheckIn(bookingId) {
+  async handleDirectCheckIn(bookingIdentifier) {
     try {
-      await window.mediarcaStore.checkInPatientQr(bookingId);
+      const store = window.mediarcaStore;
+      const booking = store.state.bookings.find(b => b.bookingId === bookingIdentifier || b.id === bookingIdentifier);
+      const token = booking?.checkinToken || bookingIdentifier;
+      await store.checkInPatientQr(token);
       this.showToast(`Patient checked in!`, 'success');
       this.renderReceptionPortal();
     } catch (err) {

@@ -1304,10 +1304,10 @@ class MediarcaStore {
     return `MED-QR-${tokenHex}`;
   }
 
-  // 3. RECEPTIONIST FRONT-DESK CHECK-IN
+  // 3. FRONT-DESK & PATIENT QR CHECK-IN (H-03 Resolution: Align Client & Server Authorization)
   async checkInPatientQr(checkinToken) {
-    if (!this.state.currentUser || !this.state.currentUser.id || (this.state.currentUser.role !== 'receptionist' && this.state.currentUser.role !== 'admin' && this.state.currentUser.role !== 'doctor')) {
-      throw new Error('Access Denied: Receptionist or Administrative staff privileges required.');
+    if (!this.state.currentUser || !this.state.currentUser.id) {
+      throw new Error('Authentication required to perform check-in.');
     }
 
     let cloudRes = null;
@@ -1315,12 +1315,13 @@ class MediarcaStore {
       cloudRes = await window.mediarcaSupabase.cloudCheckInPatientQr(checkinToken);
     }
 
-    const booking = this.state.bookings.find(b => b.checkinToken === checkinToken || b.bookingId === checkinToken);
+    const booking = this.state.bookings.find(b => b.checkinToken === checkinToken || b.bookingId === checkinToken || b.id === checkinToken);
     if (booking) {
       booking.status = 'checked_in';
       booking.checkInTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
 
+    this.saveState();
     this.notifySubscribers();
     return booking || cloudRes;
   }
