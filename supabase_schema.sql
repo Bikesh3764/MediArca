@@ -1947,15 +1947,16 @@ CREATE POLICY "Doctor can update own practitioner profile" ON doctors FOR UPDATE
     auth.uid() = user_id
 );
 
--- CLINIC QUEUES TABLE POLICIES (M-01 Resolution: Restrict Public Read to Today's Active Queues)
+-- CLINIC QUEUES TABLE POLICIES (M-01 & DB-05 Resolution: Verified Doctor Daily Queue Management)
 DROP POLICY IF EXISTS "Public can read live queue telemetry" ON clinic_queues;
 CREATE POLICY "Public can read live queue telemetry" ON clinic_queues FOR SELECT USING (
     queue_date = CURRENT_DATE
 );
 
 DROP POLICY IF EXISTS "Doctor can update own queue" ON clinic_queues;
-CREATE POLICY "Doctor can update own queue" ON clinic_queues FOR ALL USING (
-    doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid())
+CREATE POLICY "Doctor can update own queue" ON clinic_queues FOR UPDATE USING (
+    doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid() AND verification_status = 'verified')
+    AND queue_date = CURRENT_DATE
 );
 
 -- 22. MINIMAL PUBLIC QUEUE TELEMETRY VIEW (M-02 Resolution)
@@ -1977,20 +1978,20 @@ WHERE cq.queue_date = CURRENT_DATE AND d.verification_status = 'verified';
 
 GRANT SELECT ON public_queue_telemetry TO anon, authenticated;
 
--- APPOINTMENTS TABLE POLICIES (Strict isolated access between patient & doctor)
+-- APPOINTMENTS TABLE POLICIES (DB-03 & DB-04 Resolution: Strict Verified Isolation)
 DROP POLICY IF EXISTS "Patients and Doctors can access relevant appointments" ON appointments;
 CREATE POLICY "Patients and Doctors can access relevant appointments" ON appointments FOR SELECT USING (
-    patient_id = auth.uid() OR doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid())
+    patient_id = auth.uid() OR doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid()) OR is_admin(auth.uid())
 );
 
 DROP POLICY IF EXISTS "Authenticated patient or doctor can create appointment" ON appointments;
 CREATE POLICY "Authenticated patient or doctor can create appointment" ON appointments FOR INSERT WITH CHECK (
-    patient_id = auth.uid() OR doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid())
+    patient_id = auth.uid() OR doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid() AND verification_status = 'verified')
 );
 
 DROP POLICY IF EXISTS "Doctor can update consultation status and prescription" ON appointments;
 CREATE POLICY "Doctor can update consultation status and prescription" ON appointments FOR UPDATE USING (
-    doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid())
+    doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid() AND verification_status = 'verified') OR is_admin(auth.uid())
 );
 
 -- PATIENT CLINICAL PROFILES RLS (D-02 & D-03 Resolution: Strict Medical Isolation)

@@ -488,6 +488,12 @@ class MediarcaApp {
   async handleBookingSubmit(e) {
     e.preventDefault();
     const form = e.target;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.innerText = 'Generating Token...';
+    }
+
     const doctorId = form.bookingDoctorId.value;
     const scheduledDate = form.bookingDate?.value || new Date().toISOString().split('T')[0];
     const scheduledSlot = form.bookingSlot?.value || '09:00 AM';
@@ -519,6 +525,11 @@ class MediarcaApp {
     } catch (err) {
       console.error('Booking submission error:', err);
       this.showToast(err.message || 'Unable to book appointment.', 'warning');
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerText = 'Confirm & Generate Live Token';
+      }
     }
   }
 
@@ -2410,9 +2421,10 @@ class MediarcaApp {
         </div>
         <div style="font-size:0.75rem; color:var(--text-primary); margin-bottom:0.35rem;">
           <strong>[A] Assessment:</strong> <span style="color:#0284c7; font-weight:bold;">${escapeHtml(draft.assessment)}</span>
+          <span class="badge" style="background:#fef3c7; color:#92400e; font-size:0.65rem; margin-left:0.35rem;">Possible assessment — physician verification required</span>
         </div>
         <div style="font-size:0.75rem; color:var(--text-primary); margin-bottom:0.5rem;">
-          <strong>[P] Recommended Regimen:</strong> ${escapeHtml(draft.medications.join(' • '))}
+          <strong>[P] Recommended Regimen:</strong> ${escapeHtml(draft.medications.length > 0 ? draft.medications.join(' • ') : 'To be prescribed by attending physician')}
         </div>
 
         <div style="display:flex; gap:0.5rem;">

@@ -170,14 +170,21 @@ class MediarcaSupabaseClient {
     if (!this.client) return;
 
     try {
-      // Exclusively listen for Realtime Queue Telemetry (Never subscribe to sensitive internal tables)
+      // PQ-02 Resolution: Exclusively listen for today's live queue changes
+      const todayStr = new Date().toISOString().split('T')[0];
       this.client
-        .channel('public:clinic_queues')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'clinic_queues' }, payload => {
+        .channel('public:clinic_queues_today')
+        .on('postgres_changes', { 
+          event: '*', 
+          schema: 'public', 
+          table: 'clinic_queues',
+          filter: `queue_date=eq.${todayStr}`
+        }, payload => {
           if (payload.new && payload.new.doctor_id) {
             const queue = window.mediarcaStore.state.queues[payload.new.doctor_id];
             if (queue) {
               queue.currentToken = payload.new.current_token;
+              queue.totalTokens = payload.new.total_tokens || queue.totalTokens;
               queue.status = payload.new.status;
             }
             window.mediarcaStore.notifySubscribers();
