@@ -747,8 +747,8 @@ class MediarcaStore {
 
     const cleanEmail = data.email.toLowerCase().trim();
 
-    // 1. Supabase Auth Registration
-    let userId = 'pat_' + Date.now();
+    // 1. Authoritative Supabase Auth Registration (C-18 Resolution)
+    let userId = null;
     if (window.mediarcaSupabase && window.mediarcaSupabase.isConnected) {
       try {
         const authData = await window.mediarcaSupabase.authSignUp(cleanEmail, data.password, {
@@ -761,10 +761,15 @@ class MediarcaStore {
         });
         if (authData && authData.user) {
           userId = authData.user.id;
+        } else {
+          throw new Error('Registration failed: User identity could not be established.');
         }
       } catch (err) {
-        console.warn('Cloud patient sign up notice:', err.message);
+        console.error('Cloud patient registration error:', err);
+        throw new Error(err.message || 'Patient registration failed. Please check your credentials.');
       }
+    } else {
+      throw new Error('Authentication cloud service unavailable. Cannot register account.');
     }
 
     const newPatient = {
@@ -790,8 +795,9 @@ class MediarcaStore {
     }
 
     const cleanEmail = docData.email.toLowerCase().trim();
-    let userId = 'usr_doc_' + Date.now();
+    let userId = null;
 
+    // 1. Authoritative Supabase Auth Registration (C-18 Resolution)
     if (window.mediarcaSupabase && window.mediarcaSupabase.isConnected) {
       try {
         const authData = await window.mediarcaSupabase.authSignUp(cleanEmail, docData.password || 'doc123', {
@@ -802,10 +808,15 @@ class MediarcaStore {
         });
         if (authData && authData.user) {
           userId = authData.user.id;
+        } else {
+          throw new Error('Registration failed: Doctor identity could not be established.');
         }
       } catch (err) {
-        console.warn('Cloud doctor signup notice:', err.message);
+        console.error('Cloud doctor registration error:', err);
+        throw new Error(err.message || 'Doctor registration failed. Please check your credentials.');
       }
+    } else {
+      throw new Error('Authentication cloud service unavailable. Cannot register doctor.');
     }
 
     const docId = 'd_' + Date.now();

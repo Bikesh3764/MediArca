@@ -1213,46 +1213,130 @@ CREATE POLICY "Attending doctors can view patient clinical profile" ON patient_c
     )
 );
 
--- CLINICAL ENCOUNTERS & PRESCRIPTIONS RLS (Section 10 Resolution)
+-- CLINICAL ENCOUNTERS RLS (C-19 Resolution: Patients Read-Only; Attending Physicians Manage)
 ALTER TABLE clinical_encounters ENABLE ROW LEVEL SECURITY;
-ALTER TABLE clinical_prescriptions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE prescription_items ENABLE ROW LEVEL SECURITY;
-ALTER TABLE lab_orders ENABLE ROW LEVEL SECURITY;
-ALTER TABLE lab_results ENABLE ROW LEVEL SECURITY;
-ALTER TABLE clinical_documents ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS "Encounter access" ON clinical_encounters;
-CREATE POLICY "Encounter access" ON clinical_encounters FOR ALL USING (
-    patient_id = auth.uid() OR doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid())
-);
+DROP POLICY IF EXISTS "Patients can view own encounters" ON clinical_encounters;
+DROP POLICY IF EXISTS "Attending doctors can manage encounters" ON clinical_encounters;
 
+CREATE POLICY "Patients can view own encounters" ON clinical_encounters
+    FOR SELECT TO authenticated
+    USING (patient_id = auth.uid());
+
+CREATE POLICY "Attending doctors can manage encounters" ON clinical_encounters
+    FOR ALL TO authenticated
+    USING (doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid()) OR is_admin(auth.uid()))
+    WITH CHECK (doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid()) OR is_admin(auth.uid()));
+
+-- CLINICAL PRESCRIPTIONS RLS (C-20 Resolution: Patients Read-Only; Licensed Doctors Prescribe)
+ALTER TABLE clinical_prescriptions ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Prescription access" ON clinical_prescriptions;
-CREATE POLICY "Prescription access" ON clinical_prescriptions FOR ALL USING (
-    patient_id = auth.uid() OR doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid())
-);
+DROP POLICY IF EXISTS "Patients can view own prescriptions" ON clinical_prescriptions;
+DROP POLICY IF EXISTS "Doctors can manage prescriptions" ON clinical_prescriptions;
 
+CREATE POLICY "Patients can view own prescriptions" ON clinical_prescriptions
+    FOR SELECT TO authenticated
+    USING (patient_id = auth.uid());
+
+CREATE POLICY "Doctors can manage prescriptions" ON clinical_prescriptions
+    FOR ALL TO authenticated
+    USING (doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid()) OR is_admin(auth.uid()))
+    WITH CHECK (doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid()) OR is_admin(auth.uid()));
+
+-- PRESCRIPTION ITEMS RLS (C-21 Resolution: Patients Read-Only; Doctors Mutate Items)
+ALTER TABLE prescription_items ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Prescription items access" ON prescription_items;
-CREATE POLICY "Prescription items access" ON prescription_items FOR ALL USING (
-    prescription_id IN (
-        SELECT id FROM clinical_prescriptions 
-        WHERE patient_id = auth.uid() OR doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid())
+DROP POLICY IF EXISTS "Patients can view own prescription items" ON prescription_items;
+DROP POLICY IF EXISTS "Doctors can manage prescription items" ON prescription_items;
+
+CREATE POLICY "Patients can view own prescription items" ON prescription_items
+    FOR SELECT TO authenticated
+    USING (
+        prescription_id IN (
+            SELECT id FROM clinical_prescriptions WHERE patient_id = auth.uid()
+        )
+    );
+
+CREATE POLICY "Doctors can manage prescription items" ON prescription_items
+    FOR ALL TO authenticated
+    USING (
+        prescription_id IN (
+            SELECT id FROM clinical_prescriptions 
+            WHERE doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid())
+        ) OR is_admin(auth.uid())
     )
-);
+    WITH CHECK (
+        prescription_id IN (
+            SELECT id FROM clinical_prescriptions 
+            WHERE doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid())
+        ) OR is_admin(auth.uid())
+    );
 
+-- LAB ORDERS & RESULTS RLS (C-22 Resolution: Patients Read-Only; Doctors/Labs Manage)
+ALTER TABLE lab_orders ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Lab orders access" ON lab_orders;
-CREATE POLICY "Lab orders access" ON lab_orders FOR ALL USING (
-    patient_id = auth.uid() OR doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid())
-);
+DROP POLICY IF EXISTS "Patients can view own lab orders" ON lab_orders;
+DROP POLICY IF EXISTS "Doctors can manage lab orders" ON lab_orders;
 
+CREATE POLICY "Patients can view own lab orders" ON lab_orders
+    FOR SELECT TO authenticated
+    USING (patient_id = auth.uid());
+
+CREATE POLICY "Doctors can manage lab orders" ON lab_orders
+    FOR ALL TO authenticated
+    USING (doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid()) OR is_admin(auth.uid()))
+    WITH CHECK (doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid()) OR is_admin(auth.uid()));
+
+ALTER TABLE lab_results ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Lab results access" ON lab_results;
-CREATE POLICY "Lab results access" ON lab_results FOR ALL USING (
-    patient_id = auth.uid() OR order_id IN (SELECT id FROM lab_orders WHERE doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid()))
-);
+DROP POLICY IF EXISTS "Patients can view own lab results" ON lab_results;
+DROP POLICY IF EXISTS "Doctors and lab techs can manage results" ON lab_results;
 
+CREATE POLICY "Patients can view own lab results" ON lab_results
+    FOR SELECT TO authenticated
+    USING (
+        order_id IN (SELECT id FROM lab_orders WHERE patient_id = auth.uid())
+    );
+
+CREATE POLICY "Doctors and lab techs can manage results" ON lab_results
+    FOR ALL TO authenticated
+    USING (
+        order_id IN (
+            SELECT id FROM lab_orders 
+            WHERE doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid())
+        ) OR is_admin(auth.uid())
+    )
+    WITH CHECK (
+        order_id IN (
+            SELECT id FROM lab_orders 
+            WHERE doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid())
+        ) OR is_admin(auth.uid())
+    );
+
+-- CLINICAL DOCUMENTS RLS (Patients Upload Own & View; Attending Doctors View)
+ALTER TABLE clinical_documents ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Clinical documents access" ON clinical_documents;
-CREATE POLICY "Clinical documents access" ON clinical_documents FOR ALL USING (
-    patient_id = auth.uid() OR doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid())
-);
+DROP POLICY IF EXISTS "Patients can view own documents" ON clinical_documents;
+DROP POLICY IF EXISTS "Patients can upload own documents" ON clinical_documents;
+DROP POLICY IF EXISTS "Attending doctors can view clinical documents" ON clinical_documents;
+
+CREATE POLICY "Patients can view own documents" ON clinical_documents
+    FOR SELECT TO authenticated
+    USING (patient_id = auth.uid());
+
+CREATE POLICY "Patients can upload own documents" ON clinical_documents
+    FOR INSERT TO authenticated
+    WITH CHECK (patient_id = auth.uid());
+
+CREATE POLICY "Attending doctors can view clinical documents" ON clinical_documents
+    FOR SELECT TO authenticated
+    USING (
+        doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid())
+        OR patient_id IN (
+            SELECT patient_id FROM appointments 
+            WHERE doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid())
+        ) OR is_admin(auth.uid())
+    );
 
 -- 14. PUBLIC DIRECTORY VIEW (P-02 & Q-04 Resolution: Single Source of Truth via clinic_queues)
 CREATE OR REPLACE VIEW public_doctor_directory AS
