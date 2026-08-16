@@ -717,7 +717,7 @@ BEGIN
 END;
 $$;
 
--- 12. ATOMIC EMERGENCY / PRIORITY OVERRIDE RPC (Q-07 Resolution)
+-- 12. ATOMIC EMERGENCY / PRIORITY OVERRIDE RPC (C-10 Resolution: Strict Physician/Admin Authentication)
 CREATE OR REPLACE FUNCTION flag_priority_appointment_atomic(
     p_doctor_id UUID,
     p_token_number INT,
@@ -735,19 +735,21 @@ DECLARE
 BEGIN
     v_actor_id := auth.uid();
 
+    -- C-10: Require non-null authenticated identity
     IF v_actor_id IS NULL THEN
         RAISE EXCEPTION 'Authentication required. Anonymous users cannot flag emergency triage priority.';
     END IF;
 
-    -- Check physician authorization
+    -- Check physician authorization or admin
     SELECT EXISTS (
         SELECT 1 FROM doctors
         WHERE id = p_doctor_id 
           AND user_id = v_actor_id
+          AND verification_status = 'verified'
     ) INTO v_is_authorized;
 
     IF NOT v_is_authorized AND NOT is_admin(v_actor_id) THEN
-        RAISE EXCEPTION 'Not authorized. Only medical personnel can flag emergency triage priority.';
+        RAISE EXCEPTION 'Not authorized. Only the attending physician or medical administrators can flag emergency triage priority.';
     END IF;
 
     UPDATE appointments
@@ -783,7 +785,7 @@ BEGIN
 END;
 $$;
 
--- 13. ATOMIC QR CODE CHECK-IN RPC (Section 11 Resolution: Cryptographic Token Check-in)
+-- 13. ATOMIC QR CODE CHECK-IN RPC (C-13 Resolution: Role-Based Check-in Authorization)
 CREATE OR REPLACE FUNCTION check_in_patient_qr_atomic(
     p_checkin_token VARCHAR
 )
@@ -794,15 +796,18 @@ SET search_path = public, pg_temp
 AS $$
 DECLARE
     v_actor_id UUID;
+    v_actor_role VARCHAR;
     v_appointment appointments%ROWTYPE;
+    v_is_authorized BOOLEAN;
 BEGIN
     v_actor_id := auth.uid();
 
+    -- C-13: Require non-null authenticated identity
     IF v_actor_id IS NULL THEN
-        RAISE EXCEPTION 'Authentication required. Reception scanner or staff must be authenticated to check in patients.';
+        RAISE EXCEPTION 'Authentication required. Reception staff, attending doctors, or the patient must be authenticated to check in.';
     END IF;
 
-    -- Look up appointment strictly by checkin token
+    -- Look up appointment strictly by checkin token or booking reference
     SELECT * INTO v_appointment
     FROM appointments
     WHERE checkin_token = p_checkin_token
@@ -814,6 +819,20 @@ BEGIN
 
     IF v_appointment.status IN ('completed', 'cancelled') THEN
         RAISE EXCEPTION 'Cannot check-in. Consultation status is already %', v_appointment.status;
+    END IF;
+
+    -- C-13: Authorize only receptionists, admins, attending physicians, or the patient who owns the booking
+    SELECT role INTO v_actor_role FROM users WHERE id = v_actor_id;
+
+    v_is_authorized := (
+        v_actor_role IN ('receptionist', 'admin')
+        OR v_appointment.patient_id = v_actor_id
+        OR v_appointment.doctor_id IN (SELECT id FROM doctors WHERE user_id = v_actor_id)
+        OR is_admin(v_actor_id)
+    );
+
+    IF NOT v_is_authorized THEN
+        RAISE EXCEPTION 'Access Denied: You are not authorized to perform check-in for this appointment pass.';
     END IF;
 
     UPDATE appointments
@@ -832,6 +851,7 @@ BEGIN
         jsonb_build_object(
             'booking_id', v_appointment.booking_id,
             'token_number', v_appointment.token_number,
+            'actor_role', COALESCE(v_actor_role, 'patient'),
             'timestamp', NOW()
         )
     );
@@ -1203,7 +1223,7 @@ FROM doctors d
 LEFT JOIN clinic_queues cq ON cq.doctor_id = d.id AND cq.queue_date = CURRENT_DATE
 WHERE d.verification_status = 'verified';
 
--- 15. AUDIT LOG ACCESS POLICIES & ADMIN RETRIEVAL RPC (P-05 Resolution)
+-- 15. AUDIT LOG ACCESS POLICIES & ADMIN RETRIEVAL RPC (C-12 Resolution: Administrator Authentication Required)
 DROP POLICY IF EXISTS "Admins can view audit logs" ON audit_logs;
 CREATE POLICY "Admins can view audit logs" ON audit_logs FOR SELECT USING (
     is_admin(auth.uid())
@@ -1221,8 +1241,15 @@ DECLARE
     v_logs JSONB;
 BEGIN
     v_admin_id := auth.uid();
+
+    -- C-12: Require non-null authenticated identity
+    IF v_admin_id IS NULL THEN
+        RAISE EXCEPTION 'Authentication required. Only authenticated administrators can retrieve system audit logs.';
+    END IF;
+
+    -- Verify administrator authorization
     SELECT is_admin(v_admin_id) INTO v_is_admin;
-    IF NOT v_is_admin AND v_admin_id IS NOT NULL THEN
+    IF NOT v_is_admin THEN
         RAISE EXCEPTION 'Access Denied: Medical Board Administrator privileges required.';
     END IF;
 
@@ -1237,8 +1264,8 @@ BEGIN
 END;
 $$;
 
-REVOKE EXECUTE ON FUNCTION get_system_audit_logs(INT) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION get_system_audit_logs(INT) TO authenticated, anon;
+REVOKE ALL ON FUNCTION get_system_audit_logs(INT) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION get_system_audit_logs(INT) TO authenticated;
 
 -- 16. REALTIME TELEMETRY PUBLICATION (P-03 Resolution: Exclusively publishes queue counters, never doctors PII table)
 DO $$
