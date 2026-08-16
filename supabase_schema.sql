@@ -7,11 +7,11 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
--- 2. USERS & IDENTITY PROFILES TABLE (Linked directly to Supabase auth.users - D-01 & D-02 Resolution)
+-- 2. USERS & IDENTITY PROFILES TABLE (Linked directly to Supabase auth.users - Section 11 Resolution: Receptionist Role)
 -- Password security is managed 100% by Supabase Auth (bcrypt/argon2) - NO password_hash in application schema
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    role VARCHAR(20) NOT NULL CHECK (role IN ('patient', 'doctor', 'admin')),
+    role VARCHAR(20) NOT NULL CHECK (role IN ('patient', 'doctor', 'admin', 'receptionist')),
     email VARCHAR(255) UNIQUE NOT NULL,
     full_name VARCHAR(255) NOT NULL,
     phone VARCHAR(50),
@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS patient_clinical_profiles (
 -- 4. ACCREDITED PRACTITIONERS TABLE (D-04 Resolution: Canonical User Relationship)
 CREATE TABLE IF NOT EXISTS doctors (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    user_id REFERENCES users(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     specialty VARCHAR(100) NOT NULL,
@@ -79,7 +79,7 @@ CREATE TABLE IF NOT EXISTS clinic_queues (
     UNIQUE(doctor_id, queue_date)
 );
 
--- 6. APPOINTMENTS & TOKENS TABLE (Q-06, Q-07, D-08 & D-09 Resolution)
+-- 6. APPOINTMENTS & TOKENS TABLE (Section 11 Resolution: Real Scheduler & Cryptographic Check-in Token)
 CREATE TABLE IF NOT EXISTS appointments (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     booking_id VARCHAR(50) UNIQUE NOT NULL,
@@ -90,9 +90,11 @@ CREATE TABLE IF NOT EXISTS appointments (
     patient_age INT CHECK (patient_age IS NULL OR (patient_age >= 0 AND patient_age <= 125)),
     patient_gender VARCHAR(20),
     token_number INT NOT NULL CHECK (token_number > 0),
-    status VARCHAR(20) DEFAULT 'waiting' CHECK (status IN ('waiting', 'in-consultation', 'completed', 'cancelled', 'no-show', 'skipped')),
+    status VARCHAR(20) DEFAULT 'booked' CHECK (status IN ('booked', 'checked_in', 'waiting', 'in-consultation', 'completed', 'cancelled', 'no-show', 'skipped')),
     is_priority BOOLEAN DEFAULT false,
     priority_reason TEXT,
+    scheduled_slot VARCHAR(50) DEFAULT '09:00 AM',
+    checkin_token VARCHAR(255),
     check_in_time TIMESTAMPTZ DEFAULT NOW(),
     appointment_date DATE NOT NULL DEFAULT CURRENT_DATE,
     start_at TIMESTAMPTZ,
@@ -683,7 +685,168 @@ BEGIN
 END;
 $$;
 
--- 11. PROTECTED ADMIN DOCTOR VERIFICATION RPC (C-09 Resolution)
+-- 13. ATOMIC QR CODE CHECK-IN RPC (Section 11 Resolution: Cryptographic Token Check-in)
+CREATE OR REPLACE FUNCTION check_in_patient_qr_atomic(
+    p_checkin_token VARCHAR
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+    v_actor_id UUID;
+    v_appointment appointments%ROWTYPE;
+BEGIN
+    v_actor_id := auth.uid();
+
+    -- Look up appointment strictly by checkin token
+    SELECT * INTO v_appointment
+    FROM appointments
+    WHERE checkin_token = p_checkin_token
+       OR booking_id = p_checkin_token;
+
+    IF v_appointment.id IS NULL THEN
+        RAISE EXCEPTION 'Invalid or expired QR check-in token.';
+    END IF;
+
+    IF v_appointment.status IN ('completed', 'cancelled') THEN
+        RAISE EXCEPTION 'Cannot check-in. Consultation status is already %', v_appointment.status;
+    END IF;
+
+    UPDATE appointments
+    SET status = 'checked_in',
+        check_in_time = NOW()
+    WHERE id = v_appointment.id
+    RETURNING * INTO v_appointment;
+
+    -- Log reception audit event
+    INSERT INTO audit_logs (actor_id, action, entity, entity_id, metadata)
+    VALUES (
+        v_actor_id,
+        'RECEPTION_QR_CHECKIN',
+        'appointments',
+        v_appointment.id,
+        jsonb_build_object(
+            'booking_id', v_appointment.booking_id,
+            'token_number', v_appointment.token_number,
+            'timestamp', NOW()
+        )
+    );
+
+    RETURN to_jsonb(v_appointment);
+END;
+$$;
+
+-- 14. ATOMIC QUEUE TRANSFER RPC (Section 11 Resolution: Receptionist Doctor-to-Doctor Transfer)
+CREATE OR REPLACE FUNCTION transfer_patient_queue_atomic(
+    p_appointment_id UUID,
+    p_target_doctor_id UUID,
+    p_reason TEXT DEFAULT 'Physician referral transfer'
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+    v_actor_id UUID;
+    v_appointment appointments%ROWTYPE;
+    v_new_token INT;
+BEGIN
+    v_actor_id := auth.uid();
+
+    SELECT * INTO v_appointment
+    FROM appointments
+    WHERE id = p_appointment_id;
+
+    IF v_appointment.id IS NULL THEN
+        RAISE EXCEPTION 'Appointment record not found.';
+    END IF;
+
+    -- Allocate next token on target doctor queue
+    SELECT total_tokens INTO v_new_token
+    FROM clinic_queues
+    WHERE doctor_id = p_target_doctor_id AND queue_date = CURRENT_DATE
+    FOR UPDATE;
+
+    v_new_token := COALESCE(v_new_token, 0) + 1;
+
+    UPDATE clinic_queues
+    SET total_tokens = v_new_token, updated_at = NOW()
+    WHERE doctor_id = p_target_doctor_id AND queue_date = CURRENT_DATE;
+
+    UPDATE appointments
+    SET doctor_id = p_target_doctor_id,
+        token_number = v_new_token,
+        status = 'waiting'
+    WHERE id = p_appointment_id
+    RETURNING * INTO v_appointment;
+
+    -- Audit log transfer
+    INSERT INTO audit_logs (actor_id, action, entity, entity_id, metadata)
+    VALUES (
+        v_actor_id,
+        'QUEUE_PATIENT_TRANSFER',
+        'appointments',
+        p_appointment_id,
+        jsonb_build_object(
+            'target_doctor_id', p_target_doctor_id,
+            'new_token_number', v_new_token,
+            'reason', p_reason
+        )
+    );
+
+    RETURN to_jsonb(v_appointment);
+END;
+$$;
+
+-- 15. ATOMIC APPOINTMENT RESCHEDULING RPC (Section 11 Resolution: Calendar Scheduler)
+CREATE OR REPLACE FUNCTION reschedule_appointment_atomic(
+    p_appointment_id UUID,
+    p_new_date DATE,
+    p_new_slot VARCHAR
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+    v_actor_id UUID;
+    v_appointment appointments%ROWTYPE;
+BEGIN
+    v_actor_id := auth.uid();
+
+    UPDATE appointments
+    SET scheduled_date = p_new_date,
+        appointment_date = p_new_date,
+        scheduled_slot = p_new_slot,
+        status = 'booked'
+    WHERE id = p_appointment_id
+    RETURNING * INTO v_appointment;
+
+    IF v_appointment.id IS NULL THEN
+        RAISE EXCEPTION 'Appointment record not found.';
+    END IF;
+
+    INSERT INTO audit_logs (actor_id, action, entity, entity_id, metadata)
+    VALUES (
+        v_actor_id,
+        'RESCHEDULE_APPOINTMENT',
+        'appointments',
+        p_appointment_id,
+        jsonb_build_object(
+            'new_date', p_new_date,
+            'new_slot', p_new_slot
+        )
+    );
+
+    RETURN to_jsonb(v_appointment);
+END;
+$$;
+
+-- 16. PROTECTED ADMIN DOCTOR VERIFICATION RPC (C-09 Resolution)
 CREATE OR REPLACE FUNCTION verify_doctor_admin_atomic(
     p_doctor_id UUID,
     p_approved BOOLEAN,
@@ -766,6 +929,15 @@ GRANT EXECUTE ON FUNCTION flag_priority_appointment_atomic(UUID, INT, TEXT) TO a
 
 REVOKE EXECUTE ON FUNCTION verify_doctor_admin_atomic(UUID, BOOLEAN, TEXT) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION verify_doctor_admin_atomic(UUID, BOOLEAN, TEXT) TO authenticated, anon;
+
+REVOKE EXECUTE ON FUNCTION check_in_patient_qr_atomic(VARCHAR) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION check_in_patient_qr_atomic(VARCHAR) TO authenticated, anon;
+
+REVOKE EXECUTE ON FUNCTION transfer_patient_queue_atomic(UUID, UUID, TEXT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION transfer_patient_queue_atomic(UUID, UUID, TEXT) TO authenticated, anon;
+
+REVOKE EXECUTE ON FUNCTION reschedule_appointment_atomic(UUID, DATE, VARCHAR) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION reschedule_appointment_atomic(UUID, DATE, VARCHAR) TO authenticated, anon;
 
 -- 13. STRICT RESTRICTIVE ROW LEVEL SECURITY (RLS) POLICIES (C-07 & C-08 Resolution)
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
@@ -972,7 +1144,8 @@ INSERT INTO users (id, role, email, full_name, phone) VALUES
 ('a0000000-0000-0000-0000-000000000002', 'doctor', 'bikeshray3764@gmail.com', 'Dr. Bikesh Ray', '+1 (555) 123-4567'),
 ('a0000000-0000-0000-0000-000000000003', 'doctor', 'thorne@mediarca.health', 'Dr. Aris Thorne', '+1 (555) 345-6789'),
 ('a0000000-0000-0000-0000-000000000004', 'doctor', 'vance@mediarca.health', 'Dr. Elena Vance', '+1 (555) 456-7890'),
-('a0000000-0000-0000-0000-000000000005', 'admin', 'admin@mediarca.health', 'Medical Board Director Robert Vance', '+1 (555) 999-0000')
+('a0000000-0000-0000-0000-000000000005', 'admin', 'admin@mediarca.health', 'Medical Board Director Robert Vance', '+1 (555) 999-0000'),
+('a0000000-0000-0000-0000-000000000006', 'receptionist', 'reception@mediarca.health', 'Front Desk Officer Maya Singh', '+1 (555) 777-0000')
 ON CONFLICT (email) DO NOTHING;
 
 INSERT INTO patient_clinical_profiles (user_id, age, gender, blood_group, allergies, emergency_contact) VALUES

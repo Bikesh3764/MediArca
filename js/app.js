@@ -159,6 +159,25 @@ class MediarcaApp {
           </button>
         </div>
       `;
+    } else if (user.role === 'receptionist') {
+      // Authenticated Reception Navigation (Section 11 Resolution)
+      navLinksContainer.innerHTML = `
+        <li><button class="nav-link-btn active" onclick="window.mediarcaApp.switchView('reception-portal')"><i data-lucide="user-check" style="width:15px;height:15px"></i> Reception Desk</button></li>
+        <li><button class="nav-link-btn" onclick="window.mediarcaApp.switchView('tv-display')"><i data-lucide="tv" style="width:15px;height:15px"></i> OPD TV Screen</button></li>
+        <li><button class="nav-link-btn" onclick="window.mediarcaApp.switchView('queue-radar')"><i data-lucide="radio" style="width:15px;height:15px"></i> Live Radar</button></li>
+      `;
+
+      navActionsContainer.innerHTML = `
+        <div style="display:flex; align-items:center; gap:0.75rem;">
+          <div style="text-align:right;">
+            <div style="font-size:0.8125rem; font-weight:700; color:var(--text-primary);">${user.name || 'Front Desk Staff'}</div>
+            <div style="font-size:0.7rem; color:#0284c7; font-weight:700;">Reception Desk</div>
+          </div>
+          <button class="btn btn-sm btn-secondary" onclick="window.mediarcaApp.handleLogout()">
+            <i data-lucide="log-out" style="width:14px;height:14px"></i> Logout
+          </button>
+        </div>
+      `;
     } else {
       // Public / Guest Navigation
       navLinksContainer.innerHTML = `
@@ -170,6 +189,9 @@ class MediarcaApp {
       navActionsContainer.innerHTML = `
         <button class="btn btn-sm btn-secondary" onclick="window.mediarcaApp.switchView('auth-patient')">
           <i data-lucide="user" style="width:14px;height:14px"></i> Patient Login
+        </button>
+        <button class="btn btn-sm btn-secondary" onclick="window.mediarcaApp.switchView('auth-reception')">
+          <i data-lucide="user-check" style="width:14px;height:14px"></i> Front Desk
         </button>
         <button class="btn btn-sm btn-primary" onclick="window.mediarcaApp.switchView('auth-doctor')">
           <i data-lucide="stethoscope" style="width:14px;height:14px"></i> Doctor Portal
@@ -213,6 +235,18 @@ class MediarcaApp {
         this.showToast('Medical Board administrator authorization required.', 'warning');
         document.querySelectorAll('.section-view').forEach(view => view.classList.remove('active'));
         const targetView = document.getElementById('view-auth-admin');
+        if (targetView) targetView.classList.add('active');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        this.updateHeaderNav();
+        return;
+      }
+    }
+    if (viewName === 'reception-portal') {
+      if (!window.mediarcaStore.isAuthorized('receptionist') && !window.mediarcaStore.isAuthorized('admin')) {
+        this.currentView = 'auth-reception';
+        this.showToast('Front Desk / Receptionist staff authentication required.', 'warning');
+        document.querySelectorAll('.section-view').forEach(view => view.classList.remove('active'));
+        const targetView = document.getElementById('view-auth-reception');
         if (targetView) targetView.classList.add('active');
         window.scrollTo({ top: 0, behavior: 'smooth' });
         this.updateHeaderNav();
@@ -418,6 +452,9 @@ class MediarcaApp {
     document.getElementById('bookingPatientName').value = currentUser.name || '';
     document.getElementById('bookingPatientPhone').value = currentUser.phone || '';
     document.getElementById('bookingPatientAge').value = currentUser.age || '30';
+    
+    const dateInput = document.getElementById('bookingDateInput');
+    if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
 
     modal.classList.add('active');
     if (window.lucide) window.lucide.createIcons();
@@ -427,6 +464,8 @@ class MediarcaApp {
     e.preventDefault();
     const form = e.target;
     const doctorId = form.bookingDoctorId.value;
+    const scheduledDate = form.bookingDate?.value || new Date().toISOString().split('T')[0];
+    const scheduledSlot = form.bookingSlot?.value || '09:00 AM';
     const patientName = form.patientName.value.trim();
     const patientAge = form.patientAge.value;
     const patientGender = form.patientGender.value;
@@ -436,6 +475,8 @@ class MediarcaApp {
     try {
       const newBooking = await window.mediarcaStore.bookAppointment({
         doctorId,
+        scheduledDate,
+        scheduledSlot,
         patientName,
         patientAge,
         patientGender,
@@ -443,9 +484,12 @@ class MediarcaApp {
         symptoms
       });
 
+      // Smart Wait-Time Prediction calculation
+      const waitEst = window.mediarcaStore.calculateSmartWaitTime(doctorId, newBooking.tokenNumber);
+
       this.closeAllModals();
       if (window.mediarcaAudio) window.mediarcaAudio.playChime('success');
-      this.showToast(`Token #${newBooking.tokenNumber} issued successfully!`, 'success');
+      this.showToast(`Token #${newBooking.tokenNumber} confirmed for ${scheduledSlot}! Est. Wait: ${waitEst.rangeText} (Confidence: ${waitEst.confidence})`, 'success');
       this.switchView('queue-radar', { doctorId });
     } catch (err) {
       console.error('Booking submission error:', err);
@@ -1357,6 +1401,282 @@ class MediarcaApp {
     `;
 
     if (window.lucide) window.lucide.createIcons();
+  }
+
+  // --- Receptionist / Front Desk Portal (Section 11 Resolution) ---
+  renderReceptionPortal() {
+    const container = document.getElementById('receptionPortalContainer');
+    if (!container) return;
+
+    const doctors = window.mediarcaStore.state.doctors.filter(d => d.verificationStatus === 'verified');
+    const allBookings = window.mediarcaStore.state.bookings || [];
+
+    container.innerHTML = `
+      <div class="container" style="padding-top: 2rem; padding-bottom: 4rem;">
+        <div style="background: linear-gradient(135deg, #0369a1, #0284c7); color: #fff; border-radius: var(--radius-md); padding: 1.75rem; display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; box-shadow: var(--shadow-md);">
+          <div>
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+              <span class="badge" style="background: rgba(255,255,255,0.2); color: #fff;"><i data-lucide="building" style="width:12px;height:12px"></i> HOSPITAL OPERATIONS</span>
+              <span style="font-size: 0.75rem; color: #e0f2fe;">Central OPD Reception Desk</span>
+            </div>
+            <h2 style="font-size: 1.4rem; font-weight: 800;">Hospital Front Desk & Triage Console</h2>
+            <p style="font-size: 0.8125rem; color: #e0f2fe;">Scan QR check-in passes, register walk-in patients, manage queue transfers, and print tokens.</p>
+          </div>
+          <div style="display: flex; gap: 0.75rem;">
+            <button class="btn btn-secondary" onclick="window.mediarcaApp.switchView('tv-display')" style="background: #fff; color: #0369a1;">
+              <i data-lucide="tv" style="width: 14px; height: 14px;"></i> Open TV Screen
+            </button>
+            <button class="btn btn-secondary" onclick="window.mediarcaAudio.playChime('queue-call')" style="background: rgba(255,255,255,0.2); color: #fff; border: 1px solid rgba(255,255,255,0.4);">
+              <i data-lucide="volume-2" style="width: 14px; height: 14px;"></i> Public Announcement
+            </button>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+          <!-- 1. Quick QR Check-in Box -->
+          <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.5rem; box-shadow: var(--shadow-sm);">
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+              <div style="width: 32px; height: 32px; background: #e0f2fe; color: #0284c7; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center;">
+                <i data-lucide="qr-code" style="width: 16px; height: 16px;"></i>
+              </div>
+              <div>
+                <h3 style="font-size: 1rem; font-weight: 800; color: var(--text-primary);">Instant QR Check-In Scanner</h3>
+                <p style="font-size: 0.75rem; color: var(--text-secondary);">Scan or paste patient's encrypted check-in pass token</p>
+              </div>
+            </div>
+
+            <div style="display: flex; gap: 0.5rem;">
+              <input type="text" id="receptionQrInput" class="form-input text-mono" placeholder="Scan or enter token (e.g. MED-CHK-... or MED-BK-...)" style="flex: 1;">
+              <button class="btn btn-teal" onclick="window.mediarcaApp.handleReceptionCheckIn()">
+                <i data-lucide="check" style="width: 14px; height: 14px;"></i> Check In
+              </button>
+            </div>
+            <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.5rem;">
+              🔒 Encrypted Token: Contains zero clinical PII. Verification is authorized via cryptographic signature.
+            </div>
+          </div>
+
+          <!-- 2. Walk-in Patient Rapid Registration -->
+          <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.5rem; box-shadow: var(--shadow-sm);">
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+              <div style="width: 32px; height: 32px; background: #f0fdf4; color: #16a34a; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center;">
+                <i data-lucide="user-plus" style="width: 16px; height: 16px;"></i>
+              </div>
+              <div>
+                <h3 style="font-size: 1rem; font-weight: 800; color: var(--text-primary);">Walk-in Patient Token Issuance</h3>
+                <p style="font-size: 0.75rem; color: var(--text-secondary);">Issue instant paper/digital token at reception desk</p>
+              </div>
+            </div>
+
+            <form onsubmit="window.mediarcaApp.handleWalkInRegister(event)">
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.5rem;">
+                <select id="walkinDoctorSelect" class="form-select" required>
+                  ${doctors.map(d => `<option value="${d.id}">${escapeHtml(d.name)} (${escapeHtml(d.specialty)})</option>`).join('')}
+                </select>
+                <input type="text" id="walkinPatientName" class="form-input" placeholder="Patient Full Name" required>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.75rem;">
+                <input type="tel" id="walkinPatientPhone" class="form-input" placeholder="Phone Number" required>
+                <input type="text" id="walkinSymptoms" class="form-input" placeholder="Chief Complaint / Reason" value="OPD Walk-in Checkup">
+              </div>
+              <button type="submit" class="btn btn-primary btn-block">
+                <i data-lucide="ticket" style="width: 14px; height: 14px;"></i> Issue Walk-in Token & Print Pass
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- 3. Active Hospital Registered Patients Table -->
+        <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.5rem;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+            <h3 style="font-size: 1.0625rem; font-weight: 800; color: var(--text-primary);">Today's Hospital Patient Ledger (${allBookings.length})</h3>
+            <span class="badge badge-live">Live Hospital Roster</span>
+          </div>
+
+          <div class="table-responsive">
+            <table class="clinical-table">
+              <thead>
+                <tr>
+                  <th>Token</th>
+                  <th>Patient Name</th>
+                  <th>Attending Doctor</th>
+                  <th>Scheduled Slot</th>
+                  <th>Status</th>
+                  <th>Reception Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${allBookings.length > 0 ? allBookings.map(b => `
+                  <tr>
+                    <td class="text-mono"><strong>#${b.tokenNumber}</strong></td>
+                    <td>
+                      <strong>${escapeHtml(b.patientName)}</strong>
+                      <div style="font-size: 0.75rem; color: var(--text-muted);">${escapeHtml(b.patientPhone)}</div>
+                    </td>
+                    <td>${escapeHtml(b.doctorName)}</td>
+                    <td>${escapeHtml(b.scheduledSlot || '09:00 AM')}</td>
+                    <td>
+                      <span class="badge ${b.status === 'checked_in' ? 'badge-verified' : (b.status === 'in-consultation' ? 'badge-live' : (b.status === 'completed' ? 'badge-verified' : 'badge-pending'))}">
+                        ${escapeHtml(b.status.toUpperCase())}
+                      </span>
+                    </td>
+                    <td>
+                      <div style="display: flex; gap: 0.35rem;">
+                        ${b.status === 'booked' ? `
+                          <button class="btn btn-sm btn-teal" style="font-size:0.7rem; padding:0.25rem 0.5rem;" onclick="window.mediarcaApp.handleDirectCheckIn('${b.bookingId}')">
+                            <i data-lucide="check" style="width:11px; height:11px;"></i> Check-In
+                          </button>
+                        ` : ''}
+                        <button class="btn btn-sm btn-secondary" style="font-size:0.7rem; padding:0.25rem 0.5rem;" onclick="window.mediarcaApp.printPatientPass('${b.bookingId}')">
+                          <i data-lucide="printer" style="width:11px; height:11px;"></i> Print Pass
+                        </button>
+                        <button class="btn btn-sm btn-secondary" style="font-size:0.7rem; padding:0.25rem 0.5rem; color:#b91c1c;" onclick="window.mediarcaApp.handleMarkStatus('${b.doctorId}', ${b.tokenNumber}, 'no-show')">
+                          <i data-lucide="user-x" style="width:11px; height:11px;"></i> No-Show
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                `).join('') : `
+                  <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No patients scheduled in hospital register.</td></tr>
+                `}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    `;
+
+    if (window.lucide) window.lucide.createIcons();
+  }
+
+  async handleReceptionLoginSubmit(e) {
+    if (e) e.preventDefault();
+    const email = document.getElementById('receptionLoginEmail')?.value.trim() || 'reception@mediarca.health';
+    const password = document.getElementById('receptionLoginPassword')?.value.trim() || 'reception123';
+
+    try {
+      const user = await window.mediarcaStore.login(email, password);
+      this.showToast(`Welcome ${user.name || 'Front Desk Staff'}!`, 'success');
+      this.switchView('reception-portal');
+    } catch (err) {
+      console.error('Reception login error:', err);
+      this.showToast(err.message || 'Login failed.', 'warning');
+    }
+  }
+
+  async handleReceptionCheckIn() {
+    const input = document.getElementById('receptionQrInput')?.value.trim();
+    if (!input) {
+      this.showToast('Please scan or enter a check-in token.', 'warning');
+      return;
+    }
+
+    try {
+      await window.mediarcaStore.checkInPatientQr(input);
+      this.showToast(`Patient Check-in Successful! Status updated to CHECKED_IN.`, 'success');
+      if (window.mediarcaAudio) window.mediarcaAudio.playChime('success');
+      document.getElementById('receptionQrInput').value = '';
+      this.renderReceptionPortal();
+    } catch (err) {
+      console.error('Reception Check-in Error:', err);
+      this.showToast(err.message || 'Check-in validation failed.', 'warning');
+    }
+  }
+
+  async handleDirectCheckIn(bookingId) {
+    try {
+      await window.mediarcaStore.checkInPatientQr(bookingId);
+      this.showToast(`Patient checked in!`, 'success');
+      this.renderReceptionPortal();
+    } catch (err) {
+      console.error('Direct check-in error:', err);
+      this.showToast(err.message || 'Check-in failed.', 'warning');
+    }
+  }
+
+  async handleWalkInRegister(e) {
+    if (e) e.preventDefault();
+    const doctorId = document.getElementById('walkinDoctorSelect')?.value;
+    const patientName = document.getElementById('walkinPatientName')?.value.trim();
+    const patientPhone = document.getElementById('walkinPatientPhone')?.value.trim();
+    const symptoms = document.getElementById('walkinSymptoms')?.value.trim() || 'Walk-in Consultation';
+
+    if (!doctorId || !patientName || !patientPhone) {
+      this.showToast('Please fill out all walk-in registration fields.', 'warning');
+      return;
+    }
+
+    try {
+      const newBooking = await window.mediarcaStore.bookAppointment({
+        doctorId,
+        patientName,
+        patientPhone,
+        patientAge: 35,
+        patientGender: 'Not specified',
+        symptoms
+      });
+
+      // Automatically mark checked-in for walk-ins
+      await window.mediarcaStore.checkInPatientQr(newBooking.bookingId);
+
+      if (window.mediarcaAudio) window.mediarcaAudio.playChime('success');
+      this.showToast(`Walk-in Token #${newBooking.tokenNumber} issued and checked in!`, 'success');
+      this.renderReceptionPortal();
+    } catch (err) {
+      console.error('Walkin registration error:', err);
+      this.showToast(err.message || 'Failed to issue walk-in token.', 'warning');
+    }
+  }
+
+  printPatientPass(bookingId) {
+    const booking = window.mediarcaStore.state.bookings.find(b => b.bookingId === bookingId);
+    if (!booking) {
+      this.showToast('Booking not found.', 'warning');
+      return;
+    }
+
+    const waitEst = window.mediarcaStore.calculateSmartWaitTime(booking.doctorId, booking.tokenNumber);
+    const tokenHash = window.mediarcaStore.generateSignedCheckInToken(booking.bookingId, booking.patientId);
+
+    const win = window.open('', '_blank', 'width=450,height=600');
+    win.document.write(`
+      <html>
+        <head>
+          <title>Mediarca Official OPD Token Pass</title>
+          <style>
+            body { font-family: monospace; padding: 20px; text-align: center; color: #000; }
+            .header { border-bottom: 2px dashed #000; padding-bottom: 10px; margin-bottom: 15px; }
+            .token { font-size: 48px; font-weight: bold; margin: 10px 0; }
+            .meta { font-size: 14px; margin-bottom: 5px; text-align: left; }
+            .qr-box { border: 2px solid #000; padding: 10px; margin: 15px 0; font-size: 11px; word-break: break-all; }
+            .footer { border-top: 2px dashed #000; padding-top: 10px; font-size: 12px; margin-top: 15px; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h2 style="margin:0;">MEDIARCA HEALTH</h2>
+            <div>OFFICIAL OPD CLINICAL PASS</div>
+          </div>
+          <div class="token">TOKEN #${booking.tokenNumber}</div>
+          <div class="meta"><strong>Patient:</strong> ${escapeHtml(booking.patientName)}</div>
+          <div class="meta"><strong>Doctor:</strong> ${escapeHtml(booking.doctorName)}</div>
+          <div class="meta"><strong>Slot:</strong> ${escapeHtml(booking.scheduledSlot || '09:00 AM')}</div>
+          <div class="meta"><strong>Est. Wait:</strong> ${waitEst.rangeText} (${waitEst.confidence} Confidence)</div>
+          
+          <div class="qr-box">
+            <div style="font-weight:bold; margin-bottom:4px;">CRYPTOGRAPHIC CHECK-IN TOKEN:</div>
+            ${tokenHash}
+          </div>
+
+          <div class="footer">
+            Please proceed to waiting lounge. Token will be chimed on display.<br>
+            Date: ${new Date().toLocaleDateString()} • Ref: ${escapeHtml(booking.bookingId)}
+          </div>
+        </body>
+      </html>
+    `);
+    win.document.close();
+    win.print();
   }
 }
 

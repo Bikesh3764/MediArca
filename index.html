@@ -382,6 +382,35 @@
     </div>
 
     <!-- ==========================================
+         VIEW 6B: RECEPTIONIST FRONT-DESK AUTH (LOGIN)
+         ========================================== -->
+    <div id="view-auth-reception" class="section-view">
+      <div class="auth-page-wrap">
+        <div class="auth-card-container">
+          <div class="auth-card-header">
+            <span class="badge" style="background:#0284c7; color:#fff; margin-bottom:0.5rem;">Hospital Operations</span>
+            <h2 class="auth-card-title">Front Desk & Reception Desk</h2>
+            <p class="auth-card-desc">Check-in patients with QR scanners, register walk-ins, print tokens, and handle queue transfers.</p>
+          </div>
+
+          <form onsubmit="window.mediarcaApp.handleReceptionLoginSubmit(event)">
+            <div class="form-group">
+              <label class="form-label">Receptionist Email</label>
+              <input type="email" id="receptionLoginEmail" name="email" class="form-input" placeholder="reception@mediarca.health" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Access Password</label>
+              <input type="password" id="receptionLoginPassword" name="password" class="form-input" placeholder="••••••••" required>
+            </div>
+            <button type="submit" class="btn btn-block btn-primary" style="margin-top: 1rem; background: #0284c7;">
+              <i data-lucide="user-check" style="width: 15px; height: 15px;"></i> Open Receptionist Console
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==========================================
          VIEW 7: PROTECTED PATIENT PORTAL
          ========================================== -->
     <div id="view-patient-portal" class="section-view">
@@ -409,7 +438,16 @@
     </div>
 
     <!-- ==========================================
-         VIEW 10: HOSPITAL OPD FULLSCREEN TV DISPLAY
+         VIEW 10: PROTECTED RECEPTION / FRONT DESK PORTAL
+         ========================================== -->
+    <div id="view-reception-portal" class="section-view">
+      <div id="receptionPortalContainer">
+        <!-- Rendered by app.js -->
+      </div>
+    </div>
+
+    <!-- ==========================================
+         VIEW 11: HOSPITAL OPD FULLSCREEN TV DISPLAY
          ========================================== -->
     <div id="view-tv-display" class="section-view" style="background: #09090b; min-height: 100vh; color: #fff; padding: 2rem 0;">
       <div class="container" id="tvDisplayContainer">
@@ -446,6 +484,28 @@
 
         <form id="appointmentBookingForm" onsubmit="window.mediarcaApp.handleBookingSubmit(event)">
           <input type="hidden" id="bookingDoctorId" name="bookingDoctorId">
+
+          <!-- Real Scheduler: Date Picker & Time Slot Picker (Section 11 Resolution) -->
+          <div style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 1rem;">
+            <div class="form-group">
+              <label class="form-label" for="bookingDateInput">Appointment Date *</label>
+              <input type="date" id="bookingDateInput" name="bookingDate" class="form-input" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="bookingSlotSelect">Clinic Slot *</label>
+              <select id="bookingSlotSelect" name="bookingSlot" class="form-select">
+                <option value="09:00 AM">09:00 AM (Morning)</option>
+                <option value="09:30 AM">09:30 AM</option>
+                <option value="10:00 AM">10:00 AM</option>
+                <option value="10:30 AM">10:30 AM</option>
+                <option value="11:00 AM">11:00 AM</option>
+                <option value="11:30 AM">11:30 AM</option>
+                <option value="02:00 PM">02:00 PM (Afternoon)</option>
+                <option value="02:30 PM">02:30 PM</option>
+                <option value="03:00 PM">03:00 PM</option>
+              </select>
+            </div>
+          </div>
 
           <div class="form-group">
             <label class="form-label" for="bookingPatientName">Patient Full Name *</label>

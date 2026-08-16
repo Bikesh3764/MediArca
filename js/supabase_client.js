@@ -314,6 +314,55 @@ class MediarcaSupabaseClient {
     return data;
   }
 
+  async cloudCheckInPatientQr(checkinToken) {
+    if (!this.client) throw new Error('Cloud offline');
+
+    const { data, error } = await this.client.rpc('check_in_patient_qr_atomic', {
+      p_checkin_token: checkinToken
+    });
+
+    if (error) {
+      console.error('RPC QR Check-in Error:', error);
+      throw error;
+    }
+
+    return data;
+  }
+
+  async cloudTransferPatientQueue(appointmentId, targetDoctorId, reason = 'Reception queue transfer') {
+    if (!this.client) throw new Error('Cloud offline');
+
+    const { data, error } = await this.client.rpc('transfer_patient_queue_atomic', {
+      p_appointment_id: appointmentId,
+      p_target_doctor_id: targetDoctorId,
+      p_reason: reason
+    });
+
+    if (error) {
+      console.error('RPC Queue Transfer Error:', error);
+      throw error;
+    }
+
+    return data;
+  }
+
+  async cloudRescheduleAppointment(appointmentId, newDate, newSlot) {
+    if (!this.client) throw new Error('Cloud offline');
+
+    const { data, error } = await this.client.rpc('reschedule_appointment_atomic', {
+      p_appointment_id: appointmentId,
+      p_new_date: newDate,
+      p_new_slot: newSlot
+    });
+
+    if (error) {
+      console.error('RPC Reschedule Error:', error);
+      throw error;
+    }
+
+    return data;
+  }
+
   async cloudGetAuditLogs(limit = 50) {
     if (!this.client) throw new Error('Cloud offline');
 
