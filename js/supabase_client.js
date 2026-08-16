@@ -478,7 +478,7 @@ class MediarcaSupabaseClient {
 
     const signedUrl = signedData?.signedUrl || null;
 
-    // 3. Insert metadata record into clinical_documents table
+    // 3. Insert metadata record into clinical_documents table (C-11: store durable storage_path)
     const { data: docRecord, error: dbError } = await this.client
       .from('clinical_documents')
       .insert({
@@ -486,13 +486,13 @@ class MediarcaSupabaseClient {
         doctor_id: metadata.doctorId || null,
         document_name: metadata.title || cleanFileName,
         document_type: metadata.category || 'lab_report',
-        document_url: signedUrl || storagePath,
+        document_url: storagePath,
         storage_path: storagePath,
         file_name: cleanFileName,
         file_size_bytes: file.size || 0,
         mime_type: file.type || 'application/pdf',
-        is_encrypted: true,
-        notes: metadata.notes || 'Secured in HIPAA-compliant private vault'
+        is_encrypted: false, // Transparent storage-level encryption at rest, not app-layer PKI
+        notes: metadata.notes || 'Secured in private authenticated storage vault with server-side encryption at rest'
       })
       .select()
       .single();
@@ -504,7 +504,7 @@ class MediarcaSupabaseClient {
 
     return {
       ...docRecord,
-      signedUrl: signedUrl
+      signedUrl: signedUrl || storagePath
     };
   }
 

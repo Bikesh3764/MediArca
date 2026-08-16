@@ -2717,19 +2717,38 @@ class MediarcaApp {
     if (window.lucide) window.lucide.createIcons();
   }
 
-  handleProcessPayment(bookingId) {
-    const invoice = window.mediarcaStore.processBillingInvoice({
-      appointmentId: bookingId,
-      patientName: 'Sarah Jenkins',
-      doctorName: 'Dr. Bikesh Ray',
-      fee: 60.00,
-      couponCode: 'HEALTH10',
-      hasInsurance: true
-    });
+  async handleProcessPayment(bookingIdentifier) {
+    const store = window.mediarcaStore;
+    const booking = store.state.bookings.find(b => b.bookingId === bookingIdentifier || b.id === bookingIdentifier) || store.state.bookings[0];
+    if (!booking) {
+      this.showToast('Appointment record not found for billing settlement.', 'warning');
+      return;
+    }
 
-    document.getElementById('billingModal').classList.remove('active');
-    if (window.mediarcaAudio) window.mediarcaAudio.playChime('success');
-    this.showToast(`Invoice #${invoice.invoiceNumber} paid and settled!`, 'success');
+    const doctor = store.state.doctors.find(d => d.id === booking.doctorId);
+    const fee = doctor?.fee || 50.00;
+    const hasInsurance = document.getElementById('billingInsuranceCheck')?.checked ?? true;
+    const couponCode = document.getElementById('billingCouponInput')?.value?.trim() || '';
+
+    try {
+      this.showToast('Processing secure transaction & settling invoice...', 'info');
+      const invoice = await store.processBillingInvoice({
+        appointmentId: booking.id || booking.bookingId,
+        patientName: booking.patientName || 'Sarah Johnson',
+        doctorName: booking.doctorName || (doctor?.name || 'Attending Physician'),
+        fee: fee,
+        couponCode: couponCode,
+        hasInsurance: hasInsurance
+      });
+
+      document.getElementById('billingModal')?.classList.remove('active');
+      if (window.mediarcaAudio) window.mediarcaAudio.playChime('success');
+      this.showToast(`Invoice #${invoice.invoiceNumber} paid & officially settled ($${invoice.netPayable.toFixed(2)})!`, 'success');
+      this.renderPatientDashboard();
+    } catch (err) {
+      console.error('Invoice settlement error:', err);
+      this.showToast(err.message || 'Payment settlement failed.', 'warning');
+    }
   }
 }
 
