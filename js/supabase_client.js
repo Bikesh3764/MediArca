@@ -1,6 +1,6 @@
 /**
- * Mediarca Supabase Cloud Database & Realtime WebSocket Client
- * Real-time PostgreSQL sync for queues, doctors, bookings, and audit approvals
+ * Mediarca Supabase Cloud Database & Supabase Auth Client
+ * Authoritative Supabase Auth JWT, Real-time PostgreSQL sync for queues, doctors, bookings, and audit logs
  */
 
 const SUPABASE_CONFIG = {
@@ -20,7 +20,8 @@ class MediarcaSupabaseClient {
       try {
         this.client = window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.key);
         this.isConnected = true;
-        console.log('✅ Mediarca Cloud DB Connected to Supabase:', SUPABASE_CONFIG.url);
+        console.log('✅ Mediarca Cloud DB & Supabase Auth Connected:', SUPABASE_CONFIG.url);
+        this.setupAuthListener();
         this.setupRealtimeSubscriptions();
         this.syncInitialDataFromCloud();
       } catch (err) {
@@ -29,15 +30,109 @@ class MediarcaSupabaseClient {
     }
   }
 
+  // --- 1. SUPABASE AUTH INTEGRATION (C-01 & C-02 Resolution) ---
+  setupAuthListener() {
+    if (!this.client) return;
+
+    this.client.auth.onAuthStateChange(async (event, session) => {
+      console.log('⚡ Supabase Auth State Changed:', event, session?.user?.email);
+      if (session && session.user) {
+        const user = session.user;
+        // Query user role and practitioner profile from database
+        try {
+          const { data: profile } = await this.client
+            .from('users')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+
+          const { data: doctorProfile } = await this.client
+            .from('doctors')
+            .select('*')
+            .eq('user_id', user.id)
+            .single();
+
+          const role = profile?.role || (doctorProfile ? 'doctor' : (user.user_metadata?.role || 'patient'));
+          const name = profile?.full_name || doctorProfile?.name || user.user_metadata?.name || user.email.split('@')[0];
+
+          window.mediarcaStore.setAuthSession({
+            id: user.id,
+            email: user.email,
+            role: role,
+            name: name,
+            jwt: session.access_token,
+            doctorProfile: doctorProfile || null,
+            patientProfile: profile || null
+          });
+        } catch (e) {
+          console.warn('Profile fetch note:', e);
+        }
+      }
+    });
+  }
+
+  async authSignUp(email, password, metadata = {}) {
+    if (!this.client) throw new Error('Supabase client unavailable');
+
+    const { data, error } = await this.client.auth.signUp({
+      email,
+      password,
+      options: {
+        data: metadata
+      }
+    });
+
+    if (error) throw error;
+
+    if (data.user) {
+      // Upsert profile in users table
+      await this.client.from('users').upsert({
+        id: data.user.id,
+        email: email.toLowerCase().trim(),
+        role: metadata.role || 'patient',
+        full_name: metadata.name || email.split('@')[0],
+        phone: metadata.phone || null,
+        age: metadata.age || null,
+        gender: metadata.gender || null,
+        blood_group: metadata.bloodGroup || null
+      });
+    }
+
+    return data;
+  }
+
+  async authSignIn(email, password) {
+    if (!this.client) throw new Error('Supabase client unavailable');
+
+    const { data, error } = await this.client.auth.signInWithPassword({
+      email: email.trim(),
+      password: password.trim()
+    });
+
+    if (error) throw error;
+    return data;
+  }
+
+  async authSignOut() {
+    if (!this.client) return;
+    await this.client.auth.signOut();
+  }
+
+  async getCurrentSession() {
+    if (!this.client) return null;
+    const { data } = await this.client.auth.getSession();
+    return data.session;
+  }
+
+  // --- 2. PRIVACY-SAFE REALTIME SUBSCRIPTIONS (C-12 Resolution) ---
   setupRealtimeSubscriptions() {
     if (!this.client) return;
 
     try {
-      // 1. Listen for Realtime Queue updates across all doctor clinics
+      // Listen for Realtime Queue updates across doctor clinics (Telemetry only)
       this.client
         .channel('public:clinic_queues')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'clinic_queues' }, payload => {
-          console.log('⚡ Realtime Queue Update Received from Supabase:', payload);
           if (payload.new && payload.new.doctor_id) {
             const queue = window.mediarcaStore.state.queues[payload.new.doctor_id];
             if (queue) {
@@ -49,322 +144,161 @@ class MediarcaSupabaseClient {
         })
         .subscribe();
 
-      // 2. Listen for Realtime Appointments & Prescriptions
-      this.client
-        .channel('public:appointments')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'appointments' }, payload => {
-          console.log('⚡ Realtime Appointment Update Received from Supabase:', payload);
-          if (payload.eventType === 'INSERT' && payload.new) {
-            const doc = window.mediarcaStore.state.doctors.find(d => d.id === payload.new.doctor_id) || {
-              name: 'Clinical Specialist',
-              specialty: 'General Medicine',
-              hospital: 'Mediarca Health Center'
-            };
-
-            const exists = window.mediarcaStore.state.bookings.find(b => b.bookingId === payload.new.booking_id);
-            if (!exists) {
-              const newBooking = {
-                bookingId: payload.new.booking_id,
-                patientId: payload.new.patient_id,
-                patientName: payload.new.patient_name,
-                patientPhone: payload.new.patient_phone,
-                patientAge: payload.new.patient_age,
-                patientGender: payload.new.patient_gender || 'Other',
-                doctorId: payload.new.doctor_id,
-                doctorName: doc.name,
-                specialty: doc.specialty,
-                hospital: doc.hospital,
-                date: 'Today',
-                tokenNumber: payload.new.token_number,
-                status: payload.new.status,
-                symptoms: payload.new.symptoms,
-                prescription: payload.new.diagnosis ? {
-                  diagnosis: payload.new.diagnosis,
-                  medications: payload.new.medications,
-                  advice: payload.new.advice
-                } : null
-              };
-              window.mediarcaStore.state.bookings.unshift(newBooking);
-
-              // Also sync into doctor queue token list
-              if (!window.mediarcaStore.state.queues[payload.new.doctor_id]) {
-                window.mediarcaStore.state.queues[payload.new.doctor_id] = {
-                  doctorId: payload.new.doctor_id,
-                  status: 'in-session',
-                  currentToken: 0,
-                  avgConsultTimeMins: doc.avgConsultTimeMins || 12,
-                  tokens: []
-                };
-              }
-
-              const queue = window.mediarcaStore.state.queues[payload.new.doctor_id];
-              const tokenExists = queue.tokens.find(t => t.tokenNumber === payload.new.token_number);
-              if (!tokenExists) {
-                queue.tokens.push({
-                  tokenNumber: payload.new.token_number,
-                  patientName: payload.new.patient_name,
-                  bookingId: payload.new.booking_id,
-                  status: payload.new.status,
-                  checkInTime: payload.new.check_in_time || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                  symptoms: payload.new.symptoms
-                });
-              }
-            }
-          } else if (payload.eventType === 'UPDATE' && payload.new) {
-            const b = window.mediarcaStore.state.bookings.find(x => x.bookingId === payload.new.booking_id);
-            if (b) {
-              b.status = payload.new.status;
-              if (payload.new.diagnosis) {
-                b.prescription = {
-                  diagnosis: payload.new.diagnosis,
-                  medications: payload.new.medications,
-                  advice: payload.new.advice
-                };
-              }
-            }
-            // Update queue token status
-            if (window.mediarcaStore.state.queues[payload.new.doctor_id]) {
-              const queue = window.mediarcaStore.state.queues[payload.new.doctor_id];
-              const t = queue.tokens.find(x => x.tokenNumber === payload.new.token_number);
-              if (t) t.status = payload.new.status;
-            }
-          }
-          window.mediarcaStore.notifySubscribers();
-        })
-        .subscribe();
-
-      // 3. Listen for Doctor verification updates (new registrations & approvals)
+      // Listen for Verified Doctor profile updates
       this.client
         .channel('public:doctors')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'doctors' }, payload => {
-          console.log('⚡ Realtime Doctor Status Update:', payload);
-          if (payload.eventType === 'INSERT' && payload.new) {
-            const exists = window.mediarcaStore.state.doctors.find(d => d.id === payload.new.id || d.email.toLowerCase() === payload.new.email.toLowerCase());
-            if (!exists) {
-              window.mediarcaStore.state.doctors.unshift({
-                id: payload.new.id,
-                name: payload.new.name,
-                email: payload.new.email,
-                specialty: payload.new.specialty,
-                specialtyId: payload.new.specialty_id,
-                title: payload.new.title,
-                degrees: payload.new.degrees,
-                regNumber: payload.new.reg_number,
-                mediarcaId: payload.new.mediarca_id,
+          if (payload.new && payload.new.id) {
+            const index = window.mediarcaStore.state.doctors.findIndex(d => d.id === payload.new.id);
+            if (index >= 0) {
+              window.mediarcaStore.state.doctors[index] = {
+                ...window.mediarcaStore.state.doctors[index],
                 verificationStatus: payload.new.verification_status,
-                experienceYears: payload.new.experience_years,
-                hospital: payload.new.hospital,
-                fee: parseFloat(payload.new.fee || 50),
-                rating: parseFloat(payload.new.rating || 5.0),
-                reviewsCount: payload.new.reviews_count || 0,
-                avatar: payload.new.avatar || 'https://images.unsplash.com/photo-1594824813501-48e02d64a27a?w=300&h=300&fit=crop&crop=faces&q=80',
-                bio: payload.new.bio || '',
-                schedule: payload.new.schedule || 'Mon - Fri | 09:00 AM - 02:00 PM',
-                queueActive: payload.new.queue_active,
-                currentToken: payload.new.current_token || 0,
-                totalTokens: payload.new.total_tokens || 0,
-                avgConsultTimeMins: payload.new.avg_consult_time_mins || 12
-              });
-            }
-          } else if (payload.new && payload.new.id) {
-            const doc = window.mediarcaStore.state.doctors.find(d => d.id === payload.new.id || d.email.toLowerCase() === payload.new.email.toLowerCase());
-            if (doc) {
-              doc.verificationStatus = payload.new.verification_status;
-              doc.mediarcaId = payload.new.mediarca_id;
+                mediarcaId: payload.new.mediarca_id,
+                currentToken: payload.new.current_token
+              };
+              window.mediarcaStore.notifySubscribers();
             }
           }
-          window.mediarcaStore.saveState();
-          window.mediarcaStore.notifySubscribers();
         })
         .subscribe();
     } catch (e) {
-      console.warn('Realtime subscription:', e);
+      console.warn('Realtime subscription note:', e);
     }
   }
 
+  // --- 3. CLOUD REPOSITORY OPERATIONS ---
   async syncInitialDataFromCloud() {
-    if (!this.client || this.isSyncing) return;
-    this.isSyncing = true;
+    if (!this.client) return;
+
     try {
-      // Sync Doctors
-      const { data: cloudDocs, error: docErr } = await this.client.from('doctors').select('*');
-      if (!docErr && cloudDocs && cloudDocs.length > 0) {
-        console.log(`☁️ Synced ${cloudDocs.length} doctors from Supabase`);
-        const mappedCloud = cloudDocs.map(cd => ({
-          id: cd.id,
-          name: cd.name,
-          email: cd.email,
-          specialty: cd.specialty,
-          specialtyId: cd.specialty_id,
-          title: cd.title,
-          degrees: cd.degrees,
-          regNumber: cd.reg_number,
-          mediarcaId: cd.mediarca_id,
-          verificationStatus: cd.verification_status,
-          experienceYears: cd.experience_years,
-          hospital: cd.hospital,
-          fee: parseFloat(cd.fee || 50),
-          rating: parseFloat(cd.rating || 5.0),
-          reviewsCount: cd.reviews_count || 0,
-          avatar: cd.avatar || 'https://images.unsplash.com/photo-1594824813501-48e02d64a27a?w=300&h=300&fit=crop&crop=faces&q=80',
-          bio: cd.bio || '',
-          schedule: cd.schedule || 'Mon - Fri | 09:00 AM - 02:00 PM',
-          queueActive: cd.queue_active,
-          currentToken: cd.current_token || 0,
-          totalTokens: cd.total_tokens || 0,
-          avgConsultTimeMins: cd.avg_consult_time_mins || 12
+      // 1. Fetch Verified Doctors Directory
+      const { data: docs, error: docErr } = await this.client
+        .from('doctors')
+        .select('*')
+        .order('rating', { ascending: false });
+
+      if (!docErr && docs && docs.length > 0) {
+        const cloudDocs = docs.map(d => ({
+          id: d.id,
+          name: d.name,
+          email: d.email,
+          specialty: d.specialty,
+          specialtyId: d.specialty_id || 'general',
+          title: d.title,
+          degrees: d.degrees,
+          regNumber: d.reg_number,
+          mediarcaId: d.mediarca_id,
+          verificationStatus: d.verification_status,
+          experienceYears: d.experience_years,
+          hospital: d.hospital,
+          fee: parseFloat(d.fee) || 50,
+          rating: parseFloat(d.rating) || 5.0,
+          reviewsCount: d.reviews_count || 0,
+          avatar: d.avatar,
+          bio: d.bio,
+          schedule: d.schedule,
+          currentToken: d.current_token || 0,
+          totalTokens: d.total_tokens || 0,
+          avgConsultTimeMins: d.avg_consult_time_mins || 12
         }));
 
-        // Deduplicate and merge with local state
-        const currentLocal = window.mediarcaStore.state.doctors || [];
-        const mergedDocs = [...mappedCloud];
-
-        currentLocal.forEach(localDoc => {
-          const existsInCloud = mergedDocs.find(cd => cd.email && localDoc.email && cd.email.toLowerCase() === localDoc.email.toLowerCase());
-          if (!existsInCloud) {
-            mergedDocs.unshift(localDoc);
-            this.cloudRegisterDoctor(localDoc);
-          }
-        });
-
-        window.mediarcaStore.state.doctors = mergedDocs;
+        window.mediarcaStore.state.doctors = cloudDocs;
       }
 
-      window.mediarcaStore.saveState();
-      window.mediarcaStore.notifySubscribers();
-    } catch (e) {
-      console.warn('Initial cloud sync notice:', e);
-    } finally {
-      this.isSyncing = false;
-    }
-  }
-
-  // Cloud Write Methods
-  async cloudRegisterDoctor(docObj) {
-    if (!this.client || !docObj || !docObj.email) return docObj;
-    try {
-      const passwordHash = docObj.passwordHash || (docObj.password ? (typeof hashPassword === 'function' ? hashPassword(docObj.password) : docObj.password) : 'sha256_e7d23588');
-
-      // 1. Upsert into users (deduplicated by email)
-      await this.client
-        .from('users')
-        .upsert({
-          role: 'doctor',
-          email: docObj.email.toLowerCase().trim(),
-          password_hash: passwordHash,
-          full_name: docObj.name,
-          phone: '+1 (555) 000-0000',
-          age: 40,
-          gender: 'Other'
-        }, { onConflict: 'email' });
-
-      // 2. Upsert into doctors table in Supabase (deduplicated by email)
-      const { data: docRes, error: docErr } = await this.client
-        .from('doctors')
-        .upsert({
-          name: docObj.name,
-          email: docObj.email.toLowerCase().trim(),
-          specialty: docObj.specialty,
-          specialty_id: docObj.specialtyId || docObj.specialty.toLowerCase().replace(/\s+/g, ''),
-          title: docObj.title || 'Consultant Specialist',
-          degrees: docObj.degrees,
-          reg_number: docObj.regNumber,
-          mediarca_id: docObj.mediarcaId || null,
-          verification_status: docObj.verificationStatus || 'pending',
-          experience_years: parseInt(docObj.experienceYears) || 5,
-          hospital: docObj.hospital,
-          fee: parseFloat(docObj.fee) || 50.00,
-          bio: docObj.bio || ''
-        }, { onConflict: 'email' })
-        .select()
-        .single();
-
-      if (docRes && !docErr) {
-        docObj.id = docRes.id;
-        console.log('✅ Doctor record synced with Supabase Cloud:', docRes);
-      }
-    } catch (e) {
-      console.warn('Cloud register doctor notice:', e);
-    }
-    return docObj;
-  }
-
-  async cloudAdvanceQueue(doctorId, nextToken, newStatus = 'in-session') {
-    if (!this.client) return;
-    try {
-      await this.client
+      // 2. Fetch Live Clinic Queues
+      const { data: queues, error: qErr } = await this.client
         .from('clinic_queues')
-        .upsert({
-          doctor_id: doctorId,
-          current_token: nextToken,
-          status: newStatus,
-          updated_at: new Date().toISOString()
-        }, { onConflict: 'doctor_id, queue_date' });
-      
-      await this.client
-        .from('doctors')
-        .update({ current_token: nextToken, queue_active: newStatus === 'in-session' })
-        .eq('id', doctorId);
-    } catch (e) {
-      console.warn('Cloud advance queue error:', e);
-    }
-  }
+        .select('*')
+        .eq('queue_date', new Date().toISOString().split('T')[0]);
 
-  async cloudSavePrescription(bookingId, rxData) {
-    if (!this.client) return;
-    try {
-      await this.client
-        .from('appointments')
-        .update({
-          status: 'completed',
-          diagnosis: rxData.diagnosis,
-          medications: rxData.medications,
-          advice: rxData.advice
-        })
-        .eq('booking_id', bookingId);
-    } catch (e) {
-      console.warn('Cloud prescription save error:', e);
-    }
-  }
-
-  async cloudBookAppointment(bookingObj) {
-    if (!this.client) return;
-    try {
-      await this.client
-        .from('appointments')
-        .insert({
-          booking_id: bookingObj.bookingId,
-          doctor_id: bookingObj.doctorId,
-          patient_name: bookingObj.patientName,
-          patient_phone: bookingObj.patientPhone,
-          patient_age: bookingObj.patientAge,
-          patient_gender: bookingObj.patientGender,
-          token_number: bookingObj.tokenNumber,
-          status: bookingObj.status,
-          check_in_time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          symptoms: bookingObj.symptoms
+      if (!qErr && queues && queues.length > 0) {
+        queues.forEach(q => {
+          window.mediarcaStore.state.queues[q.doctor_id] = {
+            doctorId: q.doctor_id,
+            currentToken: q.current_token,
+            status: q.status,
+            avgConsultTimeMins: q.avg_consult_time_mins || 12,
+            tokens: []
+          };
         });
-    } catch (e) {
-      console.warn('Cloud booking error:', e);
+      }
+
+      window.mediarcaStore.notifySubscribers();
+    } catch (err) {
+      console.warn('Initial cloud hydration notice:', err);
     }
+  }
+
+  // --- 4. ATOMIC AUTHORIZED STORED PROCEDURES (C-04 & C-05) ---
+  async cloudBookAppointment(bookingObj) {
+    if (!this.client) throw new Error('Cloud offline');
+
+    // Call authoritative RPC: patient identity derived via auth.uid() on server
+    const { data, error } = await this.client.rpc('issue_next_opd_token', {
+      p_doctor_id: bookingObj.doctorId,
+      p_symptoms: bookingObj.symptoms || 'General Consultation'
+    });
+
+    if (error) {
+      console.error('RPC Booking Error:', error);
+      throw error;
+    }
+
+    return data;
+  }
+
+  async cloudAdvanceQueue(doctorId) {
+    if (!this.client) throw new Error('Cloud offline');
+
+    // Call authoritative RPC: caller verified against doctor ownership on server
+    const { data, error } = await this.client.rpc('advance_doctor_queue_atomic', {
+      p_doctor_id: doctorId
+    });
+
+    if (error) {
+      console.error('RPC Advance Error:', error);
+      throw error;
+    }
+
+    return data;
+  }
+
+  async cloudSavePrescription(appointmentId, rxData) {
+    if (!this.client) throw new Error('Cloud offline');
+
+    const { data, error } = await this.client
+      .from('appointments')
+      .update({
+        diagnosis: rxData.diagnosis,
+        medications: Array.isArray(rxData.medications) ? rxData.medications : [rxData.medications],
+        advice: rxData.advice,
+        status: 'completed'
+      })
+      .eq('id', appointmentId)
+      .select();
+
+    if (error) throw error;
+    return data;
   }
 
   async cloudVerifyDoctor(doctorId, approved, mediarcaId) {
-    if (!this.client) return;
-    try {
-      await this.client
-        .from('doctors')
-        .update({
-          verification_status: approved ? 'verified' : 'rejected',
-          mediarca_id: approved ? mediarcaId : null,
-          verified_at: approved ? new Date().toISOString() : null
-        })
-        .eq('id', doctorId);
-      console.log(`✅ Doctor ${doctorId} verification updated on Supabase to: ${approved ? 'verified' : 'rejected'}`);
-    } catch (e) {
-      console.warn('Cloud doctor verification error:', e);
-    }
+    if (!this.client) throw new Error('Cloud offline');
+
+    const { data, error } = await this.client
+      .from('doctors')
+      .update({
+        verification_status: approved ? 'verified' : 'rejected',
+        mediarca_id: approved ? mediarcaId : null,
+        verified_at: approved ? new Date().toISOString() : null
+      })
+      .eq('id', doctorId)
+      .select();
+
+    if (error) throw error;
+    return data;
   }
 }
 
+// Instantiate Singleton
 window.mediarcaSupabase = new MediarcaSupabaseClient();

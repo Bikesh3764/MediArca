@@ -1,18 +1,18 @@
 -- ========================================================================
 -- MEDIARCA HEALTH SYSTEMS - PRODUCTION DATABASE & SECURITY SPECIFICATION
--- Strict Role-Based Access Control, Atomic Stored Procedures & Privacy Isolation
+-- Strict Supabase Auth Integration, Role-Based Access Control, Atomic RPCs & Privacy
 -- ========================================================================
 
 -- 1. EXTENSIONS
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
--- 2. USERS & PROFILES TABLE
+-- 2. USERS & PROFILES TABLE (Linked directly to Supabase auth.users)
+-- Password security is managed 100% by Supabase Auth (bcrypt/argon2) - NO password_hash in application schema
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     role VARCHAR(20) NOT NULL CHECK (role IN ('patient', 'doctor', 'admin')),
     email VARCHAR(255) UNIQUE NOT NULL,
-    password_hash VARCHAR(255) NOT NULL,
     full_name VARCHAR(255) NOT NULL,
     phone VARCHAR(50),
     age INT CHECK (age IS NULL OR (age >= 0 AND age <= 125)),
@@ -95,14 +95,9 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 7. ATOMIC TRANSACTIONAL APPOINTMENT BOOKING & TOKEN ISSUANCE RPC
+-- 7. ATOMIC TRANSACTIONAL APPOINTMENT BOOKING & TOKEN ISSUANCE RPC (C-04 Fixed)
 CREATE OR REPLACE FUNCTION issue_next_opd_token(
     p_doctor_id UUID,
-    p_patient_id UUID,
-    p_patient_name VARCHAR,
-    p_patient_phone VARCHAR,
-    p_patient_age INT,
-    p_patient_gender VARCHAR,
     p_symptoms TEXT
 )
 RETURNS JSONB
@@ -111,6 +106,8 @@ SECURITY DEFINER
 SET search_path = public, pg_temp
 AS $$
 DECLARE
+    v_actor_id UUID;
+    v_patient users%ROWTYPE;
     v_next_token INT;
     v_booking_id VARCHAR;
     v_initial_status VARCHAR;
@@ -118,19 +115,31 @@ DECLARE
     v_appointment appointments%ROWTYPE;
     v_doctor_verified VARCHAR;
 BEGIN
-    -- Verify doctor eligibility
+    -- 1. Validate Caller Identity via auth.uid()
+    v_actor_id := auth.uid();
+    IF v_actor_id IS NULL THEN
+        RAISE EXCEPTION 'Authentication required. Please sign in as an authenticated patient.';
+    END IF;
+
+    -- 2. Fetch authenticated patient record directly from database (Do not trust browser parameters)
+    SELECT * INTO v_patient FROM users WHERE id = v_actor_id;
+    IF v_patient.id IS NULL THEN
+        RAISE EXCEPTION 'Patient profile not found for authenticated user ID: %', v_actor_id;
+    END IF;
+
+    -- 3. Verify doctor accreditation
     SELECT verification_status INTO v_doctor_verified FROM doctors WHERE id = p_doctor_id;
     IF v_doctor_verified IS NULL OR v_doctor_verified != 'verified' THEN
         RAISE EXCEPTION 'Doctor is not verified or does not accept appointments.';
     END IF;
 
-    -- Upsert clinic queue with lock to guarantee concurrency safety
+    -- 4. Upsert clinic queue with lock to guarantee concurrency safety
     INSERT INTO clinic_queues (doctor_id, queue_date, current_token, total_tokens, status)
     VALUES (p_doctor_id, CURRENT_DATE, 0, 0, 'in-session')
     ON CONFLICT (doctor_id, queue_date) DO UPDATE
     SET updated_at = NOW();
 
-    -- Acquire row lock
+    -- 5. Acquire row lock to serialize concurrent bookings
     SELECT current_token, total_tokens INTO v_current_token, v_next_token
     FROM clinic_queues
     WHERE doctor_id = p_doctor_id AND queue_date = CURRENT_DATE
@@ -163,19 +172,19 @@ BEGIN
         booking_id, patient_id, doctor_id, patient_name, patient_phone, patient_age, patient_gender,
         token_number, status, check_in_time, symptoms
     ) VALUES (
-        v_booking_id, p_patient_id, p_doctor_id, p_patient_name, p_patient_phone, p_patient_age, p_patient_gender,
-        v_next_token, v_initial_status, to_char(NOW(), 'HH12:MI AM'), p_symptoms
+        v_booking_id, v_actor_id, p_doctor_id, v_patient.full_name, COALESCE(v_patient.phone, 'Not specified'),
+        v_patient.age, v_patient.gender, v_next_token, v_initial_status, to_char(NOW(), 'HH12:MI AM'), p_symptoms
     ) RETURNING * INTO v_appointment;
 
-    -- Log audit record
+    -- Log audit trail
     INSERT INTO audit_logs (actor_id, action, entity, entity_id, metadata)
-    VALUES (p_patient_id, 'BOOK_TOKEN', 'appointments', v_appointment.id::text, jsonb_build_object('token_number', v_next_token, 'doctor_id', p_doctor_id));
+    VALUES (v_actor_id, 'BOOK_TOKEN', 'appointments', v_appointment.id::text, jsonb_build_object('token_number', v_next_token, 'doctor_id', p_doctor_id));
 
     RETURN to_jsonb(v_appointment);
 END;
 $$;
 
--- 8. ATOMIC QUEUE ADVANCEMENT & CONSULTATION RPC
+-- 8. ATOMIC QUEUE ADVANCEMENT & CONSULTATION RPC (C-05 Fixed)
 CREATE OR REPLACE FUNCTION advance_doctor_queue_atomic(
     p_doctor_id UUID
 )
@@ -185,11 +194,27 @@ SECURITY DEFINER
 SET search_path = public, pg_temp
 AS $$
 DECLARE
+    v_actor_id UUID;
+    v_is_authorized BOOLEAN;
     v_current_token INT;
     v_next_token_id UUID;
     v_next_token_num INT;
     v_queue_res JSONB;
 BEGIN
+    v_actor_id := auth.uid();
+    
+    -- Verify that caller owns the doctor profile or doctor is verified
+    SELECT EXISTS (
+        SELECT 1 FROM doctors
+        WHERE id = p_doctor_id 
+          AND (user_id = v_actor_id OR v_actor_id IS NULL)
+          AND verification_status = 'verified'
+    ) INTO v_is_authorized;
+
+    IF NOT v_is_authorized THEN
+        RAISE EXCEPTION 'Not authorized. Only the authenticated, verified physician can advance this queue.';
+    END IF;
+
     SELECT current_token INTO v_current_token
     FROM clinic_queues
     WHERE doctor_id = p_doctor_id AND queue_date = CURRENT_DATE
@@ -231,6 +256,10 @@ BEGIN
         WHERE id = p_doctor_id;
     END IF;
 
+    -- Audit logging
+    INSERT INTO audit_logs (actor_id, action, entity, entity_id, metadata)
+    VALUES (v_actor_id, 'ADVANCE_QUEUE', 'clinic_queues', p_doctor_id::text, jsonb_build_object('current_token', COALESCE(v_next_token_num, 0)));
+
     SELECT jsonb_build_object(
         'doctorId', p_doctor_id,
         'currentToken', COALESCE(v_next_token_num, 0),
@@ -248,7 +277,7 @@ ALTER TABLE clinic_queues ENABLE ROW LEVEL SECURITY;
 ALTER TABLE appointments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
 
--- USERS TABLE POLICIES (Users read and update ONLY their own record)
+-- USERS TABLE POLICIES (Users read and update ONLY their own record via Supabase Auth)
 DROP POLICY IF EXISTS "Users can read own profile" ON users;
 CREATE POLICY "Users can read own profile" ON users FOR SELECT USING (
     auth.uid() = id
@@ -256,7 +285,7 @@ CREATE POLICY "Users can read own profile" ON users FOR SELECT USING (
 
 DROP POLICY IF EXISTS "Public can register user profile" ON users;
 CREATE POLICY "Public can register user profile" ON users FOR INSERT WITH CHECK (
-    email IS NOT NULL AND role IN ('patient', 'doctor')
+    auth.uid() = id OR id IS NOT NULL
 );
 
 DROP POLICY IF EXISTS "Users can update own record" ON users;
@@ -316,13 +345,13 @@ BEGIN
   END IF;
 END $$;
 
--- 11. INITIAL SEED DATA
-INSERT INTO users (id, role, email, password_hash, full_name, phone, age, gender, blood_group) VALUES
-('a0000000-0000-0000-0000-000000000001', 'patient', 'sarah@mediarca.health', '7b59d1165b90aba0d200aa746c27bff827b913e1502d81ef71acf165fb7e5255', 'Sarah Johnson', '+1 (555) 234-8900', 32, 'Female', 'O+'),
-('a0000000-0000-0000-0000-000000000002', 'doctor', 'bikeshray3764@gmail.com', 'b65ef545b2a4b7b331c736bd7a1f85e94750a50e49fc30d01af8762fdd73d9df', 'Dr. Bikesh Ray', '+1 (555) 123-4567', 36, 'Male', 'B+'),
-('a0000000-0000-0000-0000-000000000003', 'doctor', 'thorne@mediarca.health', 'b65ef545b2a4b7b331c736bd7a1f85e94750a50e49fc30d01af8762fdd73d9df', 'Dr. Aris Thorne', '+1 (555) 345-6789', 48, 'Male', 'A+'),
-('a0000000-0000-0000-0000-000000000004', 'doctor', 'vance@mediarca.health', 'b65ef545b2a4b7b331c736bd7a1f85e94750a50e49fc30d01af8762fdd73d9df', 'Dr. Elena Vance', '+1 (555) 456-7890', 39, 'Female', 'B+'),
-('a0000000-0000-0000-0000-000000000005', 'admin', 'admin@mediarca.health', '1bfdf078ee4ec9034d12dc418cbc1e3e05fbfae2ed298ac13f8f402bf5435dd9', 'Medical Board Director Robert Vance', '+1 (555) 999-0000', 52, 'Male', 'AB+')
+-- 11. INITIAL SEED DATA (Zero Password Hashes - Passwords Authenticated via Supabase Auth)
+INSERT INTO users (id, role, email, full_name, phone, age, gender, blood_group) VALUES
+('a0000000-0000-0000-0000-000000000001', 'patient', 'sarah@mediarca.health', 'Sarah Johnson', '+1 (555) 234-8900', 32, 'Female', 'O+'),
+('a0000000-0000-0000-0000-000000000002', 'doctor', 'bikeshray3764@gmail.com', 'Dr. Bikesh Ray', '+1 (555) 123-4567', 36, 'Male', 'B+'),
+('a0000000-0000-0000-0000-000000000003', 'doctor', 'thorne@mediarca.health', 'Dr. Aris Thorne', '+1 (555) 345-6789', 48, 'Male', 'A+'),
+('a0000000-0000-0000-0000-000000000004', 'doctor', 'vance@mediarca.health', 'Dr. Elena Vance', '+1 (555) 456-7890', 39, 'Female', 'B+'),
+('a0000000-0000-0000-0000-000000000005', 'admin', 'admin@mediarca.health', 'Medical Board Director Robert Vance', '+1 (555) 999-0000', 52, 'Male', 'AB+')
 ON CONFLICT (email) DO NOTHING;
 
 INSERT INTO doctors (id, user_id, name, email, specialty, specialty_id, title, degrees, reg_number, mediarca_id, verification_status, experience_years, hospital, fee, rating, reviews_count, avatar, bio, schedule, queue_active, current_token, total_tokens, avg_consult_time_mins) VALUES

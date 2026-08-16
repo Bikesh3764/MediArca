@@ -384,7 +384,7 @@ class MediarcaApp {
     if (window.lucide) window.lucide.createIcons();
   }
 
-  handleBookingSubmit(e) {
+  async handleBookingSubmit(e) {
     e.preventDefault();
     const form = e.target;
     const doctorId = form.bookingDoctorId.value;
@@ -395,7 +395,7 @@ class MediarcaApp {
     const symptoms = form.symptoms.value.trim();
 
     try {
-      const newBooking = window.mediarcaStore.bookAppointment({
+      const newBooking = await window.mediarcaStore.bookAppointment({
         doctorId,
         patientName,
         patientAge,
@@ -409,7 +409,8 @@ class MediarcaApp {
       this.showToast(`Token #${newBooking.tokenNumber} issued successfully!`, 'success');
       this.switchView('queue-radar', { doctorId });
     } catch (err) {
-      this.showToast(err.message, 'warning');
+      console.error('Booking submission error:', err);
+      this.showToast(err.message || 'Unable to book appointment.', 'warning');
     }
   }
 
@@ -455,22 +456,23 @@ class MediarcaApp {
     }
   }
 
-  handlePatientLoginSubmit(e) {
+  async handlePatientLoginSubmit(e) {
     if (e) e.preventDefault();
     const form = e.target || document.getElementById('patientLoginForm');
     const email = (form.querySelector('[name="email"]')?.value || document.getElementById('patientLoginEmail')?.value || '').trim();
     const password = (form.querySelector('[name="password"]')?.value || document.getElementById('patientLoginPassword')?.value || '').trim();
 
     try {
-      const user = window.mediarcaStore.login(email, password);
+      const user = await window.mediarcaStore.login(email, password);
       this.showToast(`Welcome back, ${user.name || 'Patient'}!`, 'success');
       this.switchView('patient-portal');
     } catch (err) {
-      this.showToast(err.message || 'Authentication failed', 'warning');
+      console.error('Patient login notice:', err);
+      this.showToast(err.message || 'Authentication failed. Please verify credentials.', 'warning');
     }
   }
 
-  handlePatientRegisterSubmit(e) {
+  async handlePatientRegisterSubmit(e) {
     if (e) e.preventDefault();
     const form = e.target || document.getElementById('patientRegisterForm');
     const formData = new FormData(form);
@@ -479,9 +481,9 @@ class MediarcaApp {
     const email = (formData.get('email') || form.querySelector('[name="email"]')?.value || '').trim();
     const password = (formData.get('password') || form.querySelector('[name="password"]')?.value || '').trim();
     const phone = (formData.get('phone') || form.querySelector('[name="phone"]')?.value || '').trim();
-    const age = formData.get('age') || form.querySelector('[name="age"]')?.value || 30;
-    const gender = formData.get('gender') || form.querySelector('[name="gender"]')?.value || 'Other';
-    const bloodGroup = formData.get('bloodGroup') || form.querySelector('[name="bloodGroup"]')?.value || 'O+';
+    const age = formData.get('age') || form.querySelector('[name="age"]')?.value || null;
+    const gender = formData.get('gender') || form.querySelector('[name="gender"]')?.value || 'Not specified';
+    const bloodGroup = formData.get('bloodGroup') || form.querySelector('[name="bloodGroup"]')?.value || 'Not specified';
 
     if (!name || !email || !password) {
       this.showToast('Please fill out all required fields.', 'warning');
@@ -489,7 +491,7 @@ class MediarcaApp {
     }
 
     try {
-      const newPatient = window.mediarcaStore.registerPatient({
+      const newPatient = await window.mediarcaStore.registerPatient({
         name,
         email,
         password,
@@ -501,18 +503,19 @@ class MediarcaApp {
       this.showToast(`Account created! Welcome ${newPatient.name}.`, 'success');
       this.switchView('patient-portal');
     } catch (err) {
+      console.error('Patient registration notice:', err);
       this.showToast(err.message || 'Registration failed.', 'warning');
     }
   }
 
-  handleDoctorLoginSubmit(e) {
+  async handleDoctorLoginSubmit(e) {
     if (e) e.preventDefault();
     const form = e.target || document.querySelector('#view-auth-doctor form');
     const email = (form.querySelector('[name="email"]')?.value || document.getElementById('doctorLoginEmail')?.value || '').trim();
     const password = (form.querySelector('[name="password"]')?.value || document.getElementById('doctorLoginPassword')?.value || '').trim();
 
     try {
-      const doc = window.mediarcaStore.login(email, password);
+      const doc = await window.mediarcaStore.login(email, password);
       this.showToast(`Welcome Dr. ${doc.name}!`, 'success');
       this.switchView('doctor-portal');
     } catch (err) {
@@ -521,7 +524,7 @@ class MediarcaApp {
     }
   }
 
-  handleDoctorOnboardingSubmit(e) {
+  async handleDoctorOnboardingSubmit(e) {
     if (e) e.preventDefault();
     const form = e.target || document.querySelector('#view-doctor-onboarding form');
     const formData = new FormData(form);
@@ -534,7 +537,7 @@ class MediarcaApp {
     const docDegrees = (formData.get('docDegrees') || form.querySelector('[name="docDegrees"]')?.value || '').trim();
     const docExperience = parseInt(formData.get('docExperience') || form.querySelector('[name="docExperience"]')?.value || 10);
     const docHospital = (formData.get('docHospital') || form.querySelector('[name="docHospital"]')?.value || '').trim();
-    const docFee = parseInt(formData.get('docFee') || form.querySelector('[name="docFee"]')?.value || 60);
+    const docFee = parseFloat(formData.get('docFee') || form.querySelector('[name="docFee"]')?.value || 60);
     const docBio = (formData.get('docBio') || form.querySelector('[name="docBio"]')?.value || '').trim();
 
     if (!docName || !docEmail || !docRegNumber || !docPassword) {
@@ -543,7 +546,7 @@ class MediarcaApp {
     }
 
     try {
-      const newDoc = window.mediarcaStore.registerDoctor({
+      const newDoc = await window.mediarcaStore.registerDoctor({
         name: docName,
         email: docEmail,
         password: docPassword,
@@ -564,14 +567,14 @@ class MediarcaApp {
     }
   }
 
-  handleAdminLoginSubmit(e) {
+  async handleAdminLoginSubmit(e) {
     if (e) e.preventDefault();
     const form = e.target || document.querySelector('#view-auth-admin form');
     const email = (form.querySelector('[name="email"]')?.value || document.getElementById('adminLoginEmail')?.value || '').trim();
     const password = (form.querySelector('[name="password"]')?.value || document.getElementById('adminLoginPassword')?.value || '').trim();
 
     try {
-      window.mediarcaStore.login(email, password);
+      await window.mediarcaStore.login(email, password);
       this.showToast('Medical Board Administration portal unlocked.', 'success');
       this.switchView('admin-portal');
     } catch (err) {
