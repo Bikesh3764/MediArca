@@ -575,8 +575,7 @@ class MediarcaStore {
         role: 'guest',
         id: null,
         name: null,
-        email: null,
-        jwt: null
+        email: null
       }
     };
     this.subscribers = [];
@@ -589,7 +588,13 @@ class MediarcaStore {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed && parsed.currentUser) {
-          this.state.currentUser = parsed.currentUser;
+          // Keep only minimal UI metadata
+          this.state.currentUser = {
+            id: parsed.currentUser.id || null,
+            role: parsed.currentUser.role || 'guest',
+            name: parsed.currentUser.name || null,
+            email: parsed.currentUser.email || null
+          };
         }
       }
     } catch (e) {
@@ -599,9 +604,15 @@ class MediarcaStore {
 
   saveState() {
     try {
-      // Privacy Protection: Store ONLY session metadata in localStorage
+      // Privacy & Security (C-02): Store ONLY minimal UI profile metadata in localStorage.
+      // NEVER store Supabase JWT / access tokens in application storage.
       const sessionData = {
-        currentUser: this.state.currentUser
+        currentUser: this.state.currentUser ? {
+          id: this.state.currentUser.id,
+          role: this.state.currentUser.role,
+          name: this.state.currentUser.name,
+          email: this.state.currentUser.email
+        } : null
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(sessionData));
       this.notifySubscribers();
@@ -629,12 +640,12 @@ class MediarcaStore {
 
   // --- Supabase Auth Integration & State Hydration ---
   setAuthSession(sessionData) {
+    // Zero JWT in app state (C-02 Resolution)
     this.state.currentUser = {
       id: sessionData.id,
       email: sessionData.email,
       role: sessionData.role || 'patient',
-      name: sessionData.name || sessionData.email.split('@')[0],
-      jwt: sessionData.jwt || null
+      name: sessionData.name || sessionData.email.split('@')[0]
     };
 
     // If doctor profile exists, sync doctor state
@@ -662,7 +673,7 @@ class MediarcaStore {
 
     const cleanEmail = email.toLowerCase().trim();
 
-    // 1. Primary Authentication Path via Supabase Auth
+    // 1. Authoritative Supabase Auth Path (C-01 Resolution: Strict Server-Side Authentication)
     if (window.mediarcaSupabase && window.mediarcaSupabase.isConnected) {
       try {
         const authRes = await window.mediarcaSupabase.authSignIn(cleanEmail, password);
@@ -671,49 +682,26 @@ class MediarcaStore {
           const role = user.user_metadata?.role || (this.state.doctors.some(d => d.email.toLowerCase() === cleanEmail) ? 'doctor' : (cleanEmail.includes('admin') ? 'admin' : 'patient'));
           const name = user.user_metadata?.name || this.state.users.find(u => u.email.toLowerCase() === cleanEmail)?.name || cleanEmail.split('@')[0];
 
+          // Zero JWT stored in application state (C-02 Resolution)
           this.state.currentUser = {
             id: user.id,
             email: user.email,
             role: role,
-            name: name,
-            jwt: authRes.session?.access_token || null
+            name: name
           };
           this.saveState();
           return this.state.currentUser;
+        } else {
+          throw new Error('Authentication failed. Please verify your credentials.');
         }
       } catch (authErr) {
-        console.warn('Supabase Auth response:', authErr.message || authErr);
+        console.error('Supabase Auth error:', authErr.message || authErr);
+        throw new Error(authErr.message || 'Invalid email or password. Please verify your credentials.');
       }
     }
 
-    // 2. Seamless Verified Fallback (Zero client password hashes required)
-    const user = this.state.users.find(u => u.email.toLowerCase() === cleanEmail);
-    const doc = this.state.doctors.find(d => d.email.toLowerCase() === cleanEmail);
-
-    let authenticated = null;
-    if (doc) {
-      authenticated = {
-        id: doc.userId || doc.id,
-        role: 'doctor',
-        email: doc.email,
-        name: doc.name
-      };
-    } else if (user) {
-      authenticated = {
-        id: user.id,
-        role: user.role,
-        email: user.email,
-        name: user.name
-      };
-    }
-
-    if (!authenticated) {
-      throw new Error('Invalid email or password. Please verify your credentials.');
-    }
-
-    this.state.currentUser = { ...authenticated };
-    this.saveState();
-    return this.state.currentUser;
+    // When cloud authentication service is not connected, fail securely with clear notice (No unauthenticated fallback)
+    throw new Error('Authentication service unavailable. Please check your network connection.');
   }
 
   logout() {
@@ -724,8 +712,7 @@ class MediarcaStore {
       role: 'guest',
       id: null,
       name: null,
-      email: null,
-      jwt: null
+      email: null
     };
     this.saveState();
   }

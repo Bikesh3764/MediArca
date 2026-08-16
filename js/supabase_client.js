@@ -60,7 +60,6 @@ class MediarcaSupabaseClient {
             email: user.email,
             role: role,
             name: name,
-            jwt: session.access_token,
             doctorProfile: doctorProfile || null,
             patientProfile: profile || null
           });
