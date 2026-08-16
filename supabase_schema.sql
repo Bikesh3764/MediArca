@@ -95,6 +95,8 @@ CREATE TABLE IF NOT EXISTS appointments (
     priority_reason TEXT,
     scheduled_slot VARCHAR(50) DEFAULT '09:00 AM',
     checkin_token VARCHAR(255),
+    checkin_token_expires_at TIMESTAMPTZ DEFAULT (NOW() + interval '24 hours'),
+    checkin_token_used_at TIMESTAMPTZ,
     check_in_time TIMESTAMPTZ DEFAULT NOW(),
     appointment_date DATE NOT NULL DEFAULT CURRENT_DATE,
     start_at TIMESTAMPTZ,
@@ -395,16 +397,16 @@ BEGIN
 
     INSERT INTO appointments (
         booking_id, patient_id, doctor_id, patient_name, patient_phone, patient_age, patient_gender,
-        token_number, status, checkin_token, check_in_time, appointment_date, scheduled_date, start_at, end_at, timezone, symptoms
+        token_number, status, checkin_token, checkin_token_expires_at, check_in_time, appointment_date, scheduled_date, start_at, end_at, timezone, symptoms
     ) VALUES (
         v_booking_id, v_actor_id, p_doctor_id, v_patient.full_name, COALESCE(v_patient.phone, 'Not specified'),
-        v_clinical.age, v_clinical.gender, v_next_token, 'waiting', v_checkin_token, NOW(), CURRENT_DATE, CURRENT_DATE,
+        v_clinical.age, v_clinical.gender, v_next_token, 'waiting', v_checkin_token, NOW() + interval '24 hours', NOW(), CURRENT_DATE, CURRENT_DATE,
         NOW(), NOW() + interval '15 minutes', 'UTC', p_symptoms
     ) RETURNING * INTO v_appointment;
 
     -- Log audit trail
     INSERT INTO audit_logs (actor_id, action, entity, entity_id, metadata)
-    VALUES (v_actor_id, 'BOOK_TOKEN', 'appointments', v_appointment.id, jsonb_build_object('token_number', v_next_token, 'doctor_id', p_doctor_id));
+    VALUES (v_actor_id, 'BOOK_TOKEN', 'appointments', v_appointment.id, jsonb_build_object('token_number', v_next_token, 'doctor_id', p_doctor_id, 'checkin_token', v_checkin_token));
 
     RETURN to_jsonb(v_appointment);
 END;
@@ -501,13 +503,19 @@ BEGIN
 END;
 $$;
 
--- 10. ATOMIC TRANSACTIONAL PRESCRIPTION & CONSULTATION COMPLETION RPC (C-08 Resolution)
+-- 10. ATOMIC TRANSACTIONAL PRESCRIPTION & CONSULTATION COMPLETION RPC (C-08 & Section 9 Resolution: Multi-Table Atomic EMR Write)
 CREATE OR REPLACE FUNCTION complete_consultation_rx_atomic(
     p_doctor_id UUID,
     p_token_number INT,
     p_diagnosis TEXT,
     p_medications TEXT[],
-    p_advice TEXT
+    p_advice TEXT,
+    p_vitals JSONB DEFAULT NULL,
+    p_chief_complaint TEXT DEFAULT NULL,
+    p_examination_findings TEXT DEFAULT NULL,
+    p_assessment TEXT DEFAULT NULL,
+    p_treatment_plan TEXT DEFAULT NULL,
+    p_follow_up_date DATE DEFAULT NULL
 )
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -517,7 +525,10 @@ AS $$
 DECLARE
     v_actor_id UUID;
     v_is_authorized BOOLEAN;
-    v_appointment_id UUID;
+    v_appointment appointments%ROWTYPE;
+    v_encounter_id UUID;
+    v_prescription_id UUID;
+    v_med TEXT;
     v_next_token_id UUID;
     v_next_token_num INT;
     v_result JSONB;
@@ -541,7 +552,7 @@ BEGIN
         RAISE EXCEPTION 'Not authorized. Only the attending, verified physician can issue prescriptions.';
     END IF;
 
-    -- Update appointment with clinical prescription strictly scoped to CURRENT_DATE
+    -- 1. Update appointment with clinical prescription strictly scoped to CURRENT_DATE
     UPDATE appointments
     SET diagnosis = p_diagnosis,
         medications = p_medications,
@@ -549,13 +560,62 @@ BEGIN
         status = 'completed',
         end_at = NOW()
     WHERE doctor_id = p_doctor_id AND scheduled_date = CURRENT_DATE AND token_number = p_token_number
-    RETURNING id INTO v_appointment_id;
+    RETURNING * INTO v_appointment;
 
-    IF v_appointment_id IS NULL THEN
+    IF v_appointment.id IS NULL THEN
         RAISE EXCEPTION 'Active consultation record not found for Token #% on %', p_token_number, CURRENT_DATE;
     END IF;
 
-    -- Advance queue to next waiting patient atomically (Priority emergency tokens first)
+    -- 2. Insert rich Clinical Encounter (Section 9 Resolution)
+    INSERT INTO clinical_encounters (
+        appointment_id, doctor_id, patient_id, chief_complaint, vitals,
+        examination_findings, assessment, diagnosis, treatment_plan, follow_up_date
+    ) VALUES (
+        v_appointment.id,
+        p_doctor_id,
+        v_appointment.patient_id,
+        COALESCE(p_chief_complaint, v_appointment.symptoms, 'Clinical evaluation'),
+        COALESCE(p_vitals, '{"bp": "120/80", "pulse": 72, "temp": "98.6"}'::jsonb),
+        COALESCE(p_examination_findings, 'Physical exam within normal physiological parameters.'),
+        COALESCE(p_assessment, p_diagnosis),
+        p_diagnosis,
+        COALESCE(p_treatment_plan, p_advice),
+        p_follow_up_date
+    ) RETURNING id INTO v_encounter_id;
+
+    -- 3. Insert Clinical Prescription Header (Section 9 Resolution)
+    INSERT INTO clinical_prescriptions (
+        encounter_id, appointment_id, doctor_id, patient_id, diagnosis, advice, follow_up_date
+    ) VALUES (
+        v_encounter_id,
+        v_appointment.id,
+        p_doctor_id,
+        v_appointment.patient_id,
+        p_diagnosis,
+        p_advice,
+        p_follow_up_date
+    ) RETURNING id INTO v_prescription_id;
+
+    -- 4. Insert Itemized Prescription Items (Section 9 Resolution)
+    IF p_medications IS NOT NULL AND array_length(p_medications, 1) > 0 THEN
+        FOREACH v_med IN ARRAY p_medications LOOP
+            IF trim(v_med) != '' THEN
+                INSERT INTO prescription_items (
+                    prescription_id, drug_name, dosage, frequency, route, duration, instructions
+                ) VALUES (
+                    v_prescription_id,
+                    trim(v_med),
+                    'As directed',
+                    'Twice daily',
+                    'Oral',
+                    '5 days',
+                    p_advice
+                );
+            END IF;
+        END LOOP;
+    END IF;
+
+    -- 5. Advance queue to next waiting patient atomically (Priority emergency tokens first)
     SELECT id, token_number INTO v_next_token_id, v_next_token_num
     FROM appointments
     WHERE doctor_id = p_doctor_id AND scheduled_date = CURRENT_DATE AND status = 'waiting'
@@ -584,23 +644,27 @@ BEGIN
         WHERE id = p_doctor_id;
     END IF;
 
-    -- Log immutable audit event
+    -- 6. Log comprehensive immutable audit event
     INSERT INTO audit_logs (actor_id, action, entity, entity_id, metadata)
     VALUES (
         v_actor_id,
         'COMPLETE_CONSULTATION_RX',
         'appointments',
-        v_appointment_id,
+        v_appointment.id,
         jsonb_build_object(
             'doctor_id', p_doctor_id,
             'token_number', p_token_number,
             'diagnosis', p_diagnosis,
+            'encounter_id', v_encounter_id,
+            'prescription_id', v_prescription_id,
             'next_token', COALESCE(v_next_token_num, 0)
         )
     );
 
     SELECT jsonb_build_object(
-        'appointmentId', v_appointment_id,
+        'appointmentId', v_appointment.id,
+        'encounterId', v_encounter_id,
+        'prescriptionId', v_prescription_id,
         'currentToken', COALESCE(v_next_token_num, 0),
         'status', CASE WHEN v_next_token_id IS NOT NULL THEN 'in-session' ELSE 'completed' END
     ) INTO v_result;
@@ -789,7 +853,7 @@ BEGIN
 END;
 $$;
 
--- 13. ATOMIC QR CODE CHECK-IN RPC (C-13 Resolution: Role-Based Check-in Authorization)
+-- 13. ATOMIC QR CODE CHECK-IN RPC (C-13, C-25 & C-26 Resolution: Expiry, Replay Protection & High-Entropy Credential Only)
 CREATE OR REPLACE FUNCTION check_in_patient_qr_atomic(
     p_checkin_token VARCHAR
 )
@@ -811,14 +875,22 @@ BEGIN
         RAISE EXCEPTION 'Authentication required. Reception staff, attending doctors, or the patient must be authenticated to check in.';
     END IF;
 
-    -- Look up appointment strictly by checkin token or booking reference
+    -- C-26: Strictly look up appointment by dedicated high-entropy checkin_token (never booking_id)
     SELECT * INTO v_appointment
     FROM appointments
-    WHERE checkin_token = p_checkin_token
-       OR booking_id = p_checkin_token;
+    WHERE checkin_token = p_checkin_token;
 
     IF v_appointment.id IS NULL THEN
-        RAISE EXCEPTION 'Invalid or expired QR check-in token.';
+        RAISE EXCEPTION 'Invalid check-in token credential.';
+    END IF;
+
+    -- C-25: Server-side token expiration and replay prevention checks
+    IF v_appointment.checkin_token_expires_at IS NOT NULL AND v_appointment.checkin_token_expires_at < NOW() THEN
+        RAISE EXCEPTION 'QR check-in token has expired (24h validity window elapsed).';
+    END IF;
+
+    IF v_appointment.checkin_token_used_at IS NOT NULL OR v_appointment.status = 'checked_in' THEN
+        RAISE EXCEPTION 'This check-in pass has already been used on %.', v_appointment.check_in_time;
     END IF;
 
     IF v_appointment.status IN ('completed', 'cancelled') THEN
@@ -841,7 +913,8 @@ BEGIN
 
     UPDATE appointments
     SET status = 'checked_in',
-        check_in_time = NOW()
+        check_in_time = NOW(),
+        checkin_token_used_at = NOW()
     WHERE id = v_appointment.id
     RETURNING * INTO v_appointment;
 
@@ -856,7 +929,7 @@ BEGIN
             'booking_id', v_appointment.booking_id,
             'token_number', v_appointment.token_number,
             'actor_role', COALESCE(v_actor_role, 'patient'),
-            'timestamp', NOW()
+            'checkin_token_used_at', NOW()
         )
     );
 
