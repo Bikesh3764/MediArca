@@ -317,9 +317,12 @@ AS $$
 $$;
 
 -- 9. ATOMIC TRANSACTIONAL APPOINTMENT BOOKING & TOKEN ISSUANCE RPC (H-01, H-02, H-03, H-04 & C-27 Resolution)
+DROP FUNCTION IF EXISTS issue_next_opd_token(UUID, TEXT);
+DROP FUNCTION IF EXISTS issue_next_opd_token(UUID, TEXT, VARCHAR);
+
 CREATE OR REPLACE FUNCTION issue_next_opd_token(
     p_doctor_id UUID,
-    p_symptoms TEXT,
+    p_symptoms TEXT DEFAULT 'General Consultation',
     p_timezone VARCHAR DEFAULT 'Asia/Kolkata'
 )
 RETURNS JSONB
@@ -2442,3 +2445,7 @@ INSERT INTO clinic_queues (doctor_id, current_token, total_tokens, status, avg_c
 ('d0000000-0000-0000-0000-000000000001', 4, 7, 'in-session', 12),
 ('d0000000-0000-0000-0000-000000000002', 2, 6, 'in-session', 15)
 ON CONFLICT (doctor_id, queue_date) DO NOTHING;
+
+-- 26. RELOAD POSTGREST SCHEMA CACHE
+NOTIFY pgrst, 'reload schema';
+

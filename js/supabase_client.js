@@ -253,7 +253,8 @@ class MediarcaSupabaseClient {
     // Call authoritative RPC: patient identity derived via auth.uid() on server
     const { data, error } = await this.client.rpc('issue_next_opd_token', {
       p_doctor_id: bookingObj.doctorId,
-      p_symptoms: bookingObj.symptoms || 'General Consultation'
+      p_symptoms: bookingObj.symptoms || 'General Consultation',
+      p_timezone: bookingObj.timezone || 'Asia/Kolkata'
     });
 
     if (error) {

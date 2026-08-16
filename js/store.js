@@ -907,18 +907,22 @@ class MediarcaStore {
 
     // 4. Authoritative Cloud Stored Procedure via Supabase RPC (C-08 & C-09 Resolution)
     if (window.mediarcaSupabase && window.mediarcaSupabase.isConnected) {
-      if (isFutureBooking) {
-        cloudBooking = await window.mediarcaSupabase.cloudScheduleFutureAppointment(
-          doctor.id,
-          bookingData.scheduledDate,
-          bookingData.scheduledSlot || '10:00 AM',
-          bookingData.symptoms || 'General Consultation'
-        );
-      } else {
-        cloudBooking = await window.mediarcaSupabase.cloudBookAppointment({
-          doctorId: doctor.id,
-          symptoms: bookingData.symptoms
-        });
+      try {
+        if (isFutureBooking) {
+          cloudBooking = await window.mediarcaSupabase.cloudScheduleFutureAppointment(
+            doctor.id,
+            bookingData.scheduledDate,
+            bookingData.scheduledSlot || '10:00 AM',
+            bookingData.symptoms || 'General Consultation'
+          );
+        } else {
+          cloudBooking = await window.mediarcaSupabase.cloudBookAppointment({
+            doctorId: doctor.id,
+            symptoms: bookingData.symptoms || 'General Consultation'
+          });
+        }
+      } catch (cloudErr) {
+        console.warn('Cloud appointment RPC notice (falling back to synchronized local queue):', cloudErr);
       }
     }
 
