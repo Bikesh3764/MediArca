@@ -522,6 +522,88 @@ class MediarcaSupabaseClient {
 
     return data?.signedUrl;
   }
+
+  async cloudUpdatePatientStage(appointmentId, stage, notes = 'Clinical stage routing transition') {
+    if (!this.client) throw new Error('Cloud offline');
+
+    const { data, error } = await this.client.rpc('update_patient_stage_atomic', {
+      p_appointment_id: appointmentId,
+      p_stage: stage,
+      p_notes: notes
+    });
+
+    if (error) {
+      console.error('RPC Stage Route Error:', error);
+      throw error;
+    }
+
+    return data;
+  }
+
+  async cloudRecordPatientConsent(consentType, version = 'v2026.1', termsAccepted = true, metadata = {}) {
+    if (!this.client) throw new Error('Cloud offline');
+
+    const { data, error } = await this.client.rpc('record_patient_consent_atomic', {
+      p_consent_type: consentType,
+      p_version: version,
+      p_terms_accepted: termsAccepted,
+      p_metadata: metadata
+    });
+
+    if (error) {
+      console.error('RPC Record Consent Error:', error);
+      throw error;
+    }
+
+    return data;
+  }
+
+  async cloudGenerateAndSettleInvoice(appointmentId, paymentMethod = 'Card', insuranceProvider = null, insuranceCoverage = 0) {
+    if (!this.client) throw new Error('Cloud offline');
+
+    const { data, error } = await this.client.rpc('generate_and_settle_invoice_atomic', {
+      p_appointment_id: appointmentId,
+      p_payment_method: paymentMethod,
+      p_insurance_provider: insuranceProvider,
+      p_insurance_coverage: parseFloat(insuranceCoverage) || 0
+    });
+
+    if (error) {
+      console.error('RPC Invoice Error:', error);
+      throw error;
+    }
+
+    return data;
+  }
+
+  async cloudCreateTelemedicineRoom(appointmentId, roomName = 'MediArca Virtual Suite') {
+    if (!this.client) throw new Error('Cloud offline');
+
+    const { data, error } = await this.client.rpc('create_telemedicine_room_atomic', {
+      p_appointment_id: appointmentId,
+      p_room_name: roomName
+    });
+
+    if (error) {
+      console.error('RPC Telemedicine Room Error:', error);
+      throw error;
+    }
+
+    return data;
+  }
+
+  async cloudGetHospitalAnalytics() {
+    if (!this.client) throw new Error('Cloud offline');
+
+    const { data, error } = await this.client.rpc('get_hospital_operational_analytics');
+
+    if (error) {
+      console.error('RPC Analytics Error:', error);
+      throw error;
+    }
+
+    return data;
+  }
 }
 
 // Instantiate Singleton

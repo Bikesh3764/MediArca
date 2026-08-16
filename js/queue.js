@@ -30,7 +30,7 @@ function sanitizeImageUrl(url) {
 
 class MediarcaQueueEngine {
   constructor() {
-    this.selectedDoctorId = 'doc_1';
+    this.selectedDoctorId = null;
     this.lastServedToken = null;
   }
 
@@ -59,7 +59,7 @@ class MediarcaQueueEngine {
 
     // Check user's own active pass reference (P-04 Resolution)
     const booking = store.state.bookings.find(b => 
-      b.patientId === store.state.currentUser.id &&
+      b.patientId === store.state.currentUser?.id &&
       (b.bookingId || '').toUpperCase() === q
     );
     if (booking) {
@@ -76,7 +76,11 @@ class MediarcaQueueEngine {
     if (!container) return;
 
     const store = window.mediarcaStore;
-    const doctor = store.state.doctors.find(d => d.id === this.selectedDoctorId) || store.state.doctors[0];
+    const verifiedDocs = (store.state.doctors || []).filter(d => d.verificationStatus === 'verified');
+    const doctor = store.state.doctors.find(d => d.id === this.selectedDoctorId) || verifiedDocs[0] || store.state.doctors[0];
+    if (!doctor) return;
+    this.selectedDoctorId = doctor.id;
+
     const queue = store.state.queues[doctor.id] || {
       doctorId: doctor.id,
       status: 'idle',
@@ -89,17 +93,20 @@ class MediarcaQueueEngine {
     
     // Determine user token
     let userBooking = highlightBooking;
-    if (!userBooking && store.state.currentUser.role === 'patient') {
+    if (!userBooking && store.state.currentUser?.role === 'patient') {
       userBooking = store.state.bookings.find(b => b.doctorId === doctor.id && (b.status === 'waiting' || b.status === 'in-consultation'));
     }
     const yourToken = userBooking ? userBooking.tokenNumber : null;
 
     let waitMins = 0;
     let peopleAhead = 0;
+    let smartWait = { rangeText: '--', confidence: 'High', statusText: 'No wait' };
+
     if (yourToken && yourToken !== currentToken) {
       const activeAhead = (queue.tokens || []).filter(t => t.tokenNumber < yourToken && (t.status === 'waiting' || t.status === 'in-consultation'));
       peopleAhead = activeAhead.length;
-      waitMins = peopleAhead * (queue.avgConsultTimeMins || 12);
+      smartWait = store.calculateSmartWaitTime(peopleAhead, queue.avgConsultTimeMins || doctor.avgConsultTimeMins || 12, doctor.id);
+      waitMins = smartWait.estimatedWaitMins;
     }
 
     // Sound chime trigger on token update
