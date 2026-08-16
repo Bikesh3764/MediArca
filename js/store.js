@@ -341,6 +341,128 @@ const SEED_BOOKINGS = [
   }
 ];
 
+const SEED_MEDICAL_TIMELINE = [
+  {
+    id: 'tl_1',
+    patientId: 'a0000000-0000-0000-0000-000000000001',
+    date: '2026-08-16',
+    type: 'encounter',
+    title: 'Clinical Consultation & Triage',
+    doctorName: 'Dr. Bikesh Ray',
+    specialty: 'Cardiology & Critical Care',
+    details: 'Exertion dyspnea evaluation. Vitals: BP 120/80 mmHg, Pulse 74 bpm, SpO2 99%, BMI 22.4. Normal resting rhythm.'
+  },
+  {
+    id: 'tl_2',
+    patientId: 'a0000000-0000-0000-0000-000000000001',
+    date: '2026-08-16',
+    type: 'prescription',
+    title: 'Itemized Multi-Drug Regimen Issued',
+    doctorName: 'Dr. Bikesh Ray',
+    details: 'Tab. Metoprolol Tartrate 25mg OD (1-0-0) x 14 Days, Electrolyte rehydration sachets SOS.'
+  },
+  {
+    id: 'tl_3',
+    patientId: 'a0000000-0000-0000-0000-000000000001',
+    date: '2026-07-20',
+    type: 'lab_report',
+    title: 'Diagnostic Blood Chemistry (CBC & Lipid Panel)',
+    doctorName: 'Apex Heart Central Laboratory',
+    details: 'Hemoglobin: 14.2 g/dL, WBC: 6,800 /uL, Total Cholesterol: 178 mg/dL. All parameters within optimal limits.'
+  },
+  {
+    id: 'tl_4',
+    patientId: 'a0000000-0000-0000-0000-000000000001',
+    date: '2026-06-08',
+    type: 'encounter',
+    title: 'Cardiovascular Risk Assessment',
+    doctorName: 'Dr. Aris Thorne',
+    specialty: 'Cardiology',
+    details: 'Routine follow-up. Vitals: BP 124/82 mmHg, Pulse 78 bpm, Weight 68.5 kg. Advised dietary sodium restriction.'
+  },
+  {
+    id: 'tl_5',
+    patientId: 'a0000000-0000-0000-0000-000000000001',
+    date: '2026-04-03',
+    type: 'diagnosis',
+    title: 'Diagnosis: Stage 1 Essential Hypertension (Borderline)',
+    doctorName: 'City Life Health Center',
+    details: 'Mild elevation during stress evaluation. Recommended lifestyle modifications and 3-month monitoring.'
+  }
+];
+
+const SEED_CLINICAL_DOCUMENTS = [
+  {
+    id: 'doc_vault_1',
+    patientId: 'a0000000-0000-0000-0000-000000000001',
+    fileName: 'Complete_Blood_Count_CBC_Aug2026.pdf',
+    category: 'Lab Report PDF',
+    fileSize: '412 KB',
+    uploadedDate: '2026-08-16',
+    doctorName: 'Dr. Bikesh Ray',
+    downloadUrl: '#preview-cbc-aug2026'
+  },
+  {
+    id: 'doc_vault_2',
+    patientId: 'a0000000-0000-0000-0000-000000000001',
+    fileName: 'Chest_XRay_Digital_Scan_PA_View.png',
+    category: 'Imaging X-Ray',
+    fileSize: '1.8 MB',
+    uploadedDate: '2026-07-20',
+    doctorName: 'Metro Heart Institute',
+    downloadUrl: 'https://images.unsplash.com/photo-1516549655169-df83a0774514?w=600&fit=crop&q=80'
+  },
+  {
+    id: 'doc_vault_3',
+    patientId: 'a0000000-0000-0000-0000-000000000001',
+    fileName: 'Discharge_Summary_CardioCare_2026.pdf',
+    category: 'Discharge Summary',
+    fileSize: '890 KB',
+    uploadedDate: '2026-06-08',
+    doctorName: 'Dr. Aris Thorne',
+    downloadUrl: '#preview-discharge-summary'
+  }
+];
+
+const CLINICAL_PRESCRIPTION_TEMPLATES = {
+  urti: {
+    diagnosis: 'Acute Upper Respiratory Tract Infection (Viral Pharyngitis)',
+    medications: [
+      { drug: 'Tab. Azithromycin 500mg', freq: 'OD (1-0-0)', route: 'Oral', dur: '5 Days', instructions: 'Take 1 hour before food' },
+      { drug: 'Tab. Paracetamol 650mg', freq: 'TID (1-1-1)', route: 'Oral', dur: '3 Days', instructions: 'Take after meals for fever > 100°F' },
+      { drug: 'Tab. Levocetirizine 5mg', freq: 'HS (0-0-1)', route: 'Oral', dur: '5 Days', instructions: 'Take at bedtime' }
+    ],
+    advice: 'Warm salt-water gargles 3x daily. Adequate hydration (3L daily). Review if fever persists past 5 days.'
+  },
+  cardio: {
+    diagnosis: 'Essential Hypertension & Cardiovascular Prevention',
+    medications: [
+      { drug: 'Tab. Telmisartan 40mg', freq: 'OD (1-0-0)', route: 'Oral', dur: '30 Days', instructions: 'Take in morning with water' },
+      { drug: 'Tab. Amlodipine 5mg', freq: 'OD (1-0-0)', route: 'Oral', dur: '30 Days', instructions: 'Take morning with Telmisartan' },
+      { drug: 'Tab. Atorvastatin 20mg', freq: 'HS (0-0-1)', route: 'Oral', dur: '30 Days', instructions: 'Take post-dinner' }
+    ],
+    advice: 'Low sodium diet (< 2g/day). 30 mins brisk walking 5 days/week. Maintain daily BP log.'
+  },
+  gerd: {
+    diagnosis: 'Gastroesophageal Reflux Disease (GERD) & Dyspepsia',
+    medications: [
+      { drug: 'Cap. Pantoprazole 40mg', freq: 'OD (1-0-0)', route: 'Oral', dur: '14 Days', instructions: 'Take 30 mins before breakfast on empty stomach' },
+      { drug: 'Tab. Domperidone 10mg', freq: 'BID (1-0-1)', route: 'Oral', dur: '10 Days', instructions: 'Take before lunch and dinner' },
+      { drug: 'Syrup Sucralfate 10ml', freq: 'TID (1-1-1)', route: 'Oral', dur: '7 Days', instructions: 'Take 1 hr after meals' }
+    ],
+    advice: 'Avoid spicy/fried foods and caffeine. Do not lie down immediately after eating. Elevate head of bed 15 degrees.'
+  },
+  pain: {
+    diagnosis: 'Acute Musculoskeletal Strain & Lumbar Myalgia',
+    medications: [
+      { drug: 'Tab. Aceclofenac 100mg + Paracetamol 325mg', freq: 'BID (1-0-1)', route: 'Oral', dur: '5 Days', instructions: 'Take strictly after food' },
+      { drug: 'Cap. Rabeprazole 20mg', freq: 'OD (1-0-0)', route: 'Oral', dur: '5 Days', instructions: 'Take morning on empty stomach' },
+      { drug: 'Tab. Thiocolchicoside 4mg', freq: 'BID (1-0-1)', route: 'Oral', dur: '5 Days', instructions: 'Muscle relaxant post meals' }
+    ],
+    advice: 'Local hot fermentation 15 mins twice daily. Avoid heavy lifting and prolonged static sitting.'
+  }
+};
+
 class MediarcaStore {
   constructor() {
     this.state = {
@@ -348,6 +470,9 @@ class MediarcaStore {
       doctors: [...SEED_DOCTORS],
       queues: { ...SEED_QUEUES },
       bookings: [...SEED_BOOKINGS],
+      medicalTimeline: [...SEED_MEDICAL_TIMELINE],
+      clinicalDocuments: [...SEED_CLINICAL_DOCUMENTS],
+      prescriptionTemplates: { ...CLINICAL_PRESCRIPTION_TEMPLATES },
       currentUser: {
         role: 'guest',
         id: null,
@@ -1020,6 +1145,68 @@ class MediarcaStore {
 
     this.notifySubscribers();
     return booking || cloudRes;
+  }
+
+  // 6. CLINICAL VITALS BMI CALCULATOR (Tier 2 Resolution)
+  calculateBmi(weightKg, heightCm) {
+    if (!weightKg || !heightCm || heightCm <= 0) return { bmi: null, category: 'Unknown' };
+    const heightM = heightCm / 100;
+    const bmi = parseFloat((weightKg / (heightM * heightM)).toFixed(1));
+    let category = 'Normal';
+    if (bmi < 18.5) category = 'Underweight';
+    else if (bmi >= 25 && bmi < 30) category = 'Overweight';
+    else if (bmi >= 30) category = 'Obese';
+    return { bmi, category };
+  }
+
+  // 7. CLINICAL DOCUMENT VAULT UPLOAD (Tier 2 Resolution)
+  async addClinicalDocument(docData) {
+    if (!this.state.currentUser || !this.state.currentUser.id) {
+      throw new Error('Authentication required to upload medical documents.');
+    }
+
+    const newDoc = {
+      id: 'doc_vault_' + Date.now(),
+      patientId: docData.patientId || this.state.currentUser.id,
+      fileName: docData.fileName || 'Clinical_Report.pdf',
+      category: docData.category || 'Lab Report PDF',
+      fileSize: docData.fileSize || '350 KB',
+      uploadedDate: new Date().toISOString().split('T')[0],
+      doctorName: docData.doctorName || 'Self-Uploaded by Patient',
+      downloadUrl: docData.downloadUrl || '#signed-storage-url-' + Date.now()
+    };
+
+    this.state.clinicalDocuments.unshift(newDoc);
+    
+    // Also record in medical timeline
+    this.addTimelineEvent({
+      patientId: newDoc.patientId,
+      date: newDoc.uploadedDate,
+      type: 'document',
+      title: `Document Uploaded: ${newDoc.fileName}`,
+      doctorName: newDoc.doctorName,
+      details: `Category: ${newDoc.category} (${newDoc.fileSize}) stored in secure EMR vault.`
+    });
+
+    this.notifySubscribers();
+    return newDoc;
+  }
+
+  // 8. MEDICAL TIMELINE EVENT RECORDING (Tier 2 Resolution)
+  addTimelineEvent(eventData) {
+    const newEvent = {
+      id: 'tl_' + Date.now(),
+      patientId: eventData.patientId || this.state.currentUser.id,
+      date: eventData.date || new Date().toISOString().split('T')[0],
+      type: eventData.type || 'encounter',
+      title: eventData.title || 'Clinical Event',
+      doctorName: eventData.doctorName || 'Attending Physician',
+      specialty: eventData.specialty || 'Clinical Care',
+      details: eventData.details || 'Clinical record noted.'
+    };
+    this.state.medicalTimeline.unshift(newEvent);
+    this.notifySubscribers();
+    return newEvent;
   }
 }
 

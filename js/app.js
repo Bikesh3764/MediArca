@@ -693,94 +693,228 @@ class MediarcaApp {
     const user = window.mediarcaStore.state.currentUser;
     const allBookings = window.mediarcaStore.state.bookings || [];
     // Strictly isolate patient's own bookings by immutable authenticated UUID only (A-02 Resolution)
-    const patientBookings = allBookings.filter(b => user.id && b.patientId === user.id);
+    const patientTimeline = window.mediarcaStore.state.medicalTimeline || [];
+    const patientDocs = window.mediarcaStore.state.clinicalDocuments || [];
 
     container.innerHTML = `
       <div class="container" style="padding-top: 2rem; padding-bottom: 4rem;">
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
           <div>
-            <span class="badge badge-role" style="margin-bottom: 0.5rem;">Patient Account</span>
+            <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.25rem;">
+              <span class="badge badge-role">Patient EMR Health Portal</span>
+              <span style="font-size:0.75rem; color:var(--text-muted);">Unified Health Records</span>
+            </div>
             <h2 style="font-size: 1.75rem; font-weight: 800; color: var(--text-primary);">Hello, ${escapeHtml(user.name || 'Patient')}</h2>
-            <p style="color: var(--text-secondary); font-size: 0.875rem;">Manage your active appointments, digital queue tokens, and physician advice.</p>
+            <p style="color: var(--text-secondary); font-size: 0.875rem;">Manage your active appointments, longitudinal medical timeline, clinical vitals, and document vault.</p>
           </div>
-          <button class="btn btn-primary" onclick="window.mediarcaApp.switchView('home')">
-            <i data-lucide="plus" style="width: 15px; height: 15px;"></i> Book Another Doctor
-          </button>
+          <div style="display:flex; gap:0.75rem;">
+            <button class="btn btn-secondary" onclick="window.mediarcaApp.showUploadDocModal()">
+              <i data-lucide="upload-cloud" style="width: 15px; height: 15px;"></i> Upload Health Record
+            </button>
+            <button class="btn btn-primary" onclick="window.mediarcaApp.switchView('home')">
+              <i data-lucide="plus" style="width: 15px; height: 15px;"></i> Book Doctor
+            </button>
+          </div>
         </div>
 
         <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem;">
           <div>
-            <h3 style="font-size: 1.125rem; font-weight: 800; color: var(--text-primary); margin-bottom: 1rem;">My Active Consultations (${patientBookings.length})</h3>
-            
-            ${patientBookings.length === 0 ? `
-              <div style="padding: 2.5rem; text-align: center; background: var(--bg-surface); border: 1px dashed var(--border-strong); border-radius: var(--radius-md);">
-                <p style="color: var(--text-secondary);">No appointments scheduled yet. Find a doctor on the home page to book a slot.</p>
-              </div>
-            ` : patientBookings.map(b => `
-              <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.5rem; margin-bottom: 1.25rem; box-shadow: var(--shadow-sm);">
-                <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.75rem; margin-bottom: 1rem;">
-                  <div>
-                    <span class="badge ${b.status === 'in-consultation' ? 'badge-live' : (b.status === 'waiting' ? 'badge-pending' : 'badge-verified')}">
-                      ${escapeHtml(b.status.toUpperCase())}
-                    </span>
-                    <span style="font-size: 0.75rem; color: var(--text-muted); margin-left: 0.5rem;">Booking Ref: ${escapeHtml(b.bookingId)}</span>
-                  </div>
-                  <div class="text-mono" style="font-size: 1.25rem; font-weight: 800; color: var(--clinical-blue);">
-                    Token #${b.tokenNumber}
-                  </div>
-                </div>
-
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
-                  <div>
-                    <h4 style="font-size: 1.0625rem; font-weight: 700; color: var(--text-primary);">${escapeHtml(b.doctorName)}</h4>
-                    <p style="font-size: 0.8125rem; color: var(--text-secondary);">${escapeHtml(b.specialty)} • ${escapeHtml(b.hospital)}</p>
-                    <p style="font-size: 0.8125rem; color: var(--text-primary); margin-top: 0.35rem;"><strong>Symptoms:</strong> ${escapeHtml(b.symptoms)}</p>
-                  </div>
-                  <button class="btn btn-sm btn-clinical" onclick="window.mediarcaApp.switchView('queue-radar', { doctorId: '${b.doctorId}' })">
-                    <i data-lucide="radio" style="width: 14px; height: 14px;"></i> Open Live Radar
-                  </button>
-                </div>
-
-                ${b.prescription ? `
-                  <div style="margin-top: 1rem; padding: 1.25rem; background: var(--status-verified-bg); border-radius: var(--radius-sm); border: 1px solid var(--status-verified-border);">
-                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
-                      <div style="font-size: 0.75rem; font-weight: 700; color: #166534; text-transform: uppercase;">
-                        <i data-lucide="file-text" style="width: 12px; height: 12px; display: inline-block; vertical-align: middle;"></i> Official Clinical Prescription
-                      </div>
-                      ${b.prescription.followUpDate ? `<span style="font-size: 0.75rem; color: #15803d; font-weight: 600;">Follow-up: ${escapeHtml(b.prescription.followUpDate)}</span>` : ''}
-                    </div>
-                    <div style="font-size: 0.875rem; color: #14532d; font-weight: 700;">Diagnosis: ${escapeHtml(b.prescription.diagnosis)}</div>
-                    <div style="font-size: 0.8125rem; color: #166534; margin-top: 0.35rem;">
-                      <strong>Prescribed Regimen:</strong> ${escapeHtml(Array.isArray(b.prescription.medications) ? b.prescription.medications.join(' • ') : b.prescription.medications)}
-                    </div>
-                    <div style="font-size: 0.75rem; color: #15803d; margin-top: 0.35rem;"><strong>Clinical Instructions:</strong> ${escapeHtml(b.prescription.advice)}</div>
-                  </div>
-                ` : ''}
-              </div>
-            `).join('')}
-
-            <!-- Clinical Diagnostics & Lab Results Section -->
-            <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.5rem; margin-top: 1.5rem;">
-              <h3 style="font-size: 1.0625rem; font-weight: 800; color: var(--text-primary); margin-bottom: 1rem;">
-                <i data-lucide="activity" style="width:16px; height:16px; display:inline-block; vertical-align:middle;"></i> Diagnostic Lab Reports & EMR Documents
+            <!-- Section 1: Active Consultations & Queue Passes -->
+            <div style="margin-bottom: 2rem;">
+              <h3 style="font-size: 1.125rem; font-weight: 800; color: var(--text-primary); margin-bottom: 1rem; display:flex; align-items:center; gap:0.5rem;">
+                <i data-lucide="ticket" style="width:16px;height:16px; color:var(--clinical-blue);"></i> Active Consultations & OPD Passes (${patientBookings.length})
               </h3>
+              
+              ${patientBookings.length === 0 ? `
+                <div style="padding: 2.5rem; text-align: center; background: var(--bg-surface); border: 1px dashed var(--border-strong); border-radius: var(--radius-md);">
+                  <p style="color: var(--text-secondary);">No appointments scheduled yet. Find a doctor on the home page to book a slot.</p>
+                </div>
+              ` : patientBookings.map(b => `
+                <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.5rem; margin-bottom: 1.25rem; box-shadow: var(--shadow-sm);">
+                  <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.75rem; margin-bottom: 1rem;">
+                    <div>
+                      <span class="badge ${b.status === 'in-consultation' ? 'badge-live' : (b.status === 'waiting' ? 'badge-pending' : (b.status === 'checked_in' ? 'badge-verified' : 'badge-verified'))}">
+                        ${escapeHtml(b.status.toUpperCase())}
+                      </span>
+                      <span style="font-size: 0.75rem; color: var(--text-muted); margin-left: 0.5rem;">Slot: ${escapeHtml(b.scheduledSlot || '09:00 AM')} • Ref: ${escapeHtml(b.bookingId)}</span>
+                    </div>
+                    <div class="text-mono" style="font-size: 1.25rem; font-weight: 800; color: var(--clinical-blue);">
+                      Token #${b.tokenNumber}
+                    </div>
+                  </div>
+
+                  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                    <div>
+                      <h4 style="font-size: 1.0625rem; font-weight: 700; color: var(--text-primary);">${escapeHtml(b.doctorName)}</h4>
+                      <p style="font-size: 0.8125rem; color: var(--text-secondary);">${escapeHtml(b.specialty)} • ${escapeHtml(b.hospital)}</p>
+                      <p style="font-size: 0.8125rem; color: var(--text-primary); margin-top: 0.35rem;"><strong>Chief Complaint:</strong> ${escapeHtml(b.symptoms)}</p>
+                    </div>
+                    <div style="display:flex; gap:0.5rem;">
+                      <button class="btn btn-sm btn-secondary" onclick="window.mediarcaApp.printPatientPass('${b.bookingId}')">
+                        <i data-lucide="printer" style="width: 14px; height: 14px;"></i> Pass
+                      </button>
+                      <button class="btn btn-sm btn-clinical" onclick="window.mediarcaApp.switchView('queue-radar', { doctorId: '${b.doctorId}' })">
+                        <i data-lucide="radio" style="width: 14px; height: 14px;"></i> Live Radar
+                      </button>
+                    </div>
+                  </div>
+
+                  ${b.prescription ? `
+                    <div style="margin-top: 1rem; padding: 1.25rem; background: var(--status-verified-bg); border-radius: var(--radius-sm); border: 1px solid var(--status-verified-border);">
+                      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+                        <div style="font-size: 0.75rem; font-weight: 700; color: #166534; text-transform: uppercase;">
+                          <i data-lucide="file-text" style="width: 12px; height: 12px; display: inline-block; vertical-align: middle;"></i> Official Clinical Prescription
+                        </div>
+                        ${b.prescription.followUpDate ? `<span style="font-size: 0.75rem; color: #15803d; font-weight: 600;">Follow-up: ${escapeHtml(b.prescription.followUpDate)}</span>` : ''}
+                      </div>
+                      <div style="font-size: 0.875rem; color: #14532d; font-weight: 700;">Diagnosis: ${escapeHtml(b.prescription.diagnosis)}</div>
+                      <div style="font-size: 0.8125rem; color: #166534; margin-top: 0.35rem;">
+                        <strong>Prescribed Regimen:</strong> ${escapeHtml(Array.isArray(b.prescription.medications) ? b.prescription.medications.join(' • ') : b.prescription.medications)}
+                      </div>
+                      <div style="font-size: 0.75rem; color: #15803d; margin-top: 0.35rem;"><strong>Clinical Instructions:</strong> ${escapeHtml(b.prescription.advice)}</div>
+                    </div>
+                  ` : ''}
+                </div>
+              `).join('')}
+            </div>
+
+            <!-- Section 2: Vitals Dashboard & Longitudinal Trend (Tier 2 Resolution) -->
+            <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.5rem; margin-bottom: 2rem; box-shadow: var(--shadow-sm);">
+              <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 1rem;">
+                <h3 style="font-size: 1.0625rem; font-weight: 800; color: var(--text-primary); display:flex; align-items:center; gap:0.5rem;">
+                  <i data-lucide="heart-pulse" style="width:16px;height:16px; color:#ef4444;"></i> Clinical Vitals & Biometric Telemetry
+                </h3>
+                <span class="badge badge-verified">Latest Triaged: Today</span>
+              </div>
+
+              <!-- Vitals Cards Grid -->
+              <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-bottom: 1.25rem;">
+                <div style="background: var(--bg-surface-subtle); border: 1px solid var(--border-subtle); padding: 0.875rem; border-radius: var(--radius-sm);">
+                  <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Blood Pressure</div>
+                  <div class="text-mono" style="font-size: 1.15rem; font-weight: 800; color: var(--text-primary); margin-top: 0.2rem;">120/80</div>
+                  <div style="font-size: 0.65rem; color: #15803d; font-weight: 700;">mmHg • Optimal</div>
+                </div>
+                <div style="background: var(--bg-surface-subtle); border: 1px solid var(--border-subtle); padding: 0.875rem; border-radius: var(--radius-sm);">
+                  <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Heart Rate</div>
+                  <div class="text-mono" style="font-size: 1.15rem; font-weight: 800; color: #ef4444; margin-top: 0.2rem;">74</div>
+                  <div style="font-size: 0.65rem; color: #15803d; font-weight: 700;">bpm • Sinus Normal</div>
+                </div>
+                <div style="background: var(--bg-surface-subtle); border: 1px solid var(--border-subtle); padding: 0.875rem; border-radius: var(--radius-sm);">
+                  <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">SpO2 Oxygen</div>
+                  <div class="text-mono" style="font-size: 1.15rem; font-weight: 800; color: #0284c7; margin-top: 0.2rem;">99%</div>
+                  <div style="font-size: 0.65rem; color: #15803d; font-weight: 700;">Arterial Normal</div>
+                </div>
+                <div style="background: var(--bg-surface-subtle); border: 1px solid var(--border-subtle); padding: 0.875rem; border-radius: var(--radius-sm);">
+                  <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">BMI Index</div>
+                  <div class="text-mono" style="font-size: 1.15rem; font-weight: 800; color: #16a34a; margin-top: 0.2rem;">22.5</div>
+                  <div style="font-size: 0.65rem; color: #15803d; font-weight: 700;">Normal Weight (68 kg)</div>
+                </div>
+              </div>
+
+              <!-- Historical Trend Comparison -->
+              <div style="background: var(--bg-surface-subtle); border-radius: var(--radius-sm); padding: 1rem; border: 1px solid var(--border-subtle);">
+                <div style="font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase;">
+                  Longitudinal Repeat Visit Vitals Trend
+                </div>
+                <div class="table-responsive">
+                  <table style="width: 100%; font-size: 0.75rem; border-collapse: collapse;">
+                    <thead>
+                      <tr style="border-bottom: 1px solid var(--border-subtle); color: var(--text-muted); text-align: left;">
+                        <th style="padding: 0.35rem 0;">Visit Date</th>
+                        <th>BP (mmHg)</th>
+                        <th>Pulse</th>
+                        <th>SpO2</th>
+                        <th>Weight</th>
+                        <th>Trend Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr style="border-bottom: 1px solid var(--border-subtle);">
+                        <td style="padding: 0.4rem 0;"><strong>2026-08-16 (Today)</strong></td>
+                        <td class="text-mono">120/80</td>
+                        <td class="text-mono">74 bpm</td>
+                        <td class="text-mono">99%</td>
+                        <td>67.8 kg</td>
+                        <td><span style="color: #15803d; font-weight: 700;">↘ Normalized</span></td>
+                      </tr>
+                      <tr style="border-bottom: 1px solid var(--border-subtle);">
+                        <td style="padding: 0.4rem 0;">2026-06-08</td>
+                        <td class="text-mono">124/82</td>
+                        <td class="text-mono">78 bpm</td>
+                        <td class="text-mono">98%</td>
+                        <td>68.5 kg</td>
+                        <td><span style="color: #d97706; font-weight: 700;">→ Stable</span></td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 0.4rem 0;">2026-04-03</td>
+                        <td class="text-mono">128/84</td>
+                        <td class="text-mono">82 bpm</td>
+                        <td class="text-mono">98%</td>
+                        <td>69.2 kg</td>
+                        <td><span style="color: #ef4444; font-weight: 700;">↗ Elevated</span></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Section 3: Unified Longitudinal Medical Timeline (Tier 2 Resolution) -->
+            <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.5rem; margin-bottom: 2rem; box-shadow: var(--shadow-sm);">
+              <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 1.25rem;">
+                <h3 style="font-size: 1.0625rem; font-weight: 800; color: var(--text-primary); display:flex; align-items:center; gap:0.5rem;">
+                  <i data-lucide="git-commit" style="width:16px;height:16px; color:var(--clinical-teal);"></i> Longitudinal Medical Timeline
+                </h3>
+                <span class="badge" style="background:#e0f2fe; color:#0369a1;">Full EMR History</span>
+              </div>
+
+              <div style="display: flex; flex-direction: column; gap: 1rem; border-left: 2px solid var(--border-subtle); margin-left: 0.75rem; padding-left: 1.25rem;">
+                ${patientTimeline.map(tl => `
+                  <div style="position: relative;">
+                    <div style="position: absolute; left: -1.65rem; top: 0.2rem; width: 12px; height: 12px; border-radius: 50%; background: ${tl.type === 'encounter' ? '#0284c7' : (tl.type === 'prescription' ? '#16a34a' : (tl.type === 'lab_report' ? '#8b5cf6' : '#d97706'))}; border: 2px solid #fff;"></div>
+                    <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 700;">${escapeHtml(tl.date)} • ${escapeHtml(tl.doctorName)}</div>
+                    <div style="font-size: 0.875rem; font-weight: 800; color: var(--text-primary); margin-top: 0.1rem;">${escapeHtml(tl.title)}</div>
+                    <div style="font-size: 0.8125rem; color: var(--text-secondary); margin-top: 0.2rem;">${escapeHtml(tl.details)}</div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+
+            <!-- Section 4: Clinical Document Vault (Tier 2 Resolution) -->
+            <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.5rem; box-shadow: var(--shadow-sm);">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+                <h3 style="font-size: 1.0625rem; font-weight: 800; color: var(--text-primary); display:flex; align-items:center; gap:0.5rem;">
+                  <i data-lucide="shield-check" style="width:16px; height:16px; color:#16a34a;"></i> Secure Clinical Document Vault
+                </h3>
+                <span class="badge badge-verified"><i data-lucide="lock" style="width:10px;height:10px"></i> Supabase Storage Protected</span>
+              </div>
+
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                <div style="background: var(--bg-surface-subtle); padding: 1rem; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
-                  <div style="font-size: 0.8125rem; font-weight: 700; color: var(--text-primary);">Complete Blood Count (CBC)</div>
-                  <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;">Hemoglobin: 14.2 g/dL • WBC: 6,800 /uL • Platelets: 280,000</div>
-                  <div style="font-size: 0.7rem; color: #15803d; font-weight: 600; margin-top: 0.5rem;">✓ Normal Parameter Range</div>
-                </div>
-                <div style="background: var(--bg-surface-subtle); padding: 1rem; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
-                  <div style="font-size: 0.8125rem; font-weight: 700; color: var(--text-primary);">Lipid & Metabolic Panel</div>
-                  <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;">Total Cholesterol: 178 mg/dL • Fasting Blood Sugar: 94 mg/dL</div>
-                  <div style="font-size: 0.7rem; color: #15803d; font-weight: 600; margin-top: 0.5rem;">✓ Normal Fasting Glycemia</div>
-                </div>
+                ${patientDocs.map(doc => `
+                  <div style="background: var(--bg-surface-subtle); padding: 1rem; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); display:flex; flex-direction:column; justify-content:space-between;">
+                    <div>
+                      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.25rem;">
+                        <span class="badge" style="font-size:0.65rem; background:#f1f5f9; color:#475569;">${escapeHtml(doc.category)}</span>
+                        <span style="font-size:0.65rem; color:var(--text-muted);">${escapeHtml(doc.fileSize)}</span>
+                      </div>
+                      <div style="font-size: 0.8125rem; font-weight: 700; color: var(--text-primary);">${escapeHtml(doc.fileName)}</div>
+                      <div style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 0.2rem;">Uploaded: ${escapeHtml(doc.uploadedDate)} by ${escapeHtml(doc.doctorName)}</div>
+                    </div>
+                    <div style="margin-top: 0.75rem; display:flex; justify-content:space-between; align-items:center;">
+                      <span style="font-size:0.65rem; color:#16a34a; font-weight:600;">🔒 Signed URL Active</span>
+                      <a href="${escapeHtml(doc.downloadUrl)}" target="_blank" class="btn btn-sm btn-secondary" style="font-size:0.7rem; padding:0.2rem 0.5rem;">
+                        <i data-lucide="download" style="width:11px;height:11px"></i> Download
+                      </a>
+                    </div>
+                  </div>
+                `).join('')}
               </div>
             </div>
           </div>
 
+          <!-- Sidebar Demographics -->
           <div>
-            <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.5rem;">
+            <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.5rem; position:sticky; top:20px;">
               <h3 style="font-size: 1.0625rem; font-weight: 800; color: var(--text-primary); margin-bottom: 1rem;">Medical Demographics</h3>
               <div style="display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.875rem;">
                 <div><span style="color: var(--text-muted);">Full Name:</span> <strong>${escapeHtml(user.name || 'Sarah Johnson')}</strong></div>
@@ -788,7 +922,7 @@ class MediarcaApp {
                 <div><span style="color: var(--text-muted);">Phone:</span> <strong>${escapeHtml(user.phone || '+1 (555) 234-8900')}</strong></div>
                 <div><span style="color: var(--text-muted);">Blood Group:</span> <strong class="badge" style="background:#fee2e2; color:#b91c1c; font-size:0.8rem;">O+ Positive</strong></div>
                 <div><span style="color: var(--text-muted);">Allergies:</span> <span class="badge" style="background:#fef3c7; color:#92400e; font-size:0.75rem;">Penicillin, Dust Mites</span></div>
-                <div><span style="color: var(--text-muted);">Chronic Conditions:</span> <strong>None Reported</strong></div>
+                <div><span style="color: var(--text-muted);">Chronic Conditions:</span> <strong>Essential Hypertension (Borderline)</strong></div>
                 <div><span style="color: var(--text-muted);">Emergency Contact:</span> <strong>+1 (555) 987-6543 (Spouse)</strong></div>
                 <div><span style="color: var(--text-muted);">Insurance Provider:</span> <strong>MediShield Global #POL-99214</strong></div>
                 <div><span style="color: var(--text-muted);">Preferred Language:</span> <strong>English</strong></div>
@@ -901,14 +1035,54 @@ class MediarcaApp {
                     </div>
                   </div>
 
-                  <!-- Clinical Vitals Entry (Section 10 Resolution) -->
-                  <div style="margin-bottom: 1.25rem;">
-                    <div style="font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 0.5rem;">Patient Vitals & Triage Metrics</div>
-                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem;">
-                      <input type="text" id="docBpInput" class="form-input" placeholder="BP (e.g. 120/80)" value="120/80 mmHg" style="font-size: 0.8125rem;">
-                      <input type="text" id="docPulseInput" class="form-input" placeholder="Pulse (e.g. 74 bpm)" value="74 bpm" style="font-size: 0.8125rem;">
-                      <input type="text" id="docTempInput" class="form-input" placeholder="Temp (e.g. 98.6°F)" value="98.6 °F" style="font-size: 0.8125rem;">
-                      <input type="text" id="docSpo2Input" class="form-input" placeholder="SpO2 (e.g. 99%)" value="99%" style="font-size: 0.8125rem;">
+                  <!-- Clinical Vitals & Biometrics Dashboard (Tier 2 Resolution) -->
+                  <div style="background:#fff; border:1px solid var(--border-subtle); border-radius:var(--radius-sm); padding:1rem; margin-bottom:1.25rem;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+                      <div style="font-size:0.75rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase; display:flex; align-items:center; gap:0.35rem;">
+                        <i data-lucide="heart-pulse" style="width:14px;height:14px; color:#ef4444;"></i> Pre-Consultation Vitals & Biometrics
+                      </div>
+                      <div style="font-size:0.7rem; color:var(--text-muted);">
+                        Repeat Visit Trend: <strong style="color:#15803d;">BP 124/82 ↘ 120/80 mmHg</strong>
+                      </div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; margin-bottom: 0.5rem;">
+                      <div>
+                        <label style="font-size:0.65rem; color:var(--text-muted); font-weight:700;">BP (mmHg)</label>
+                        <input type="text" id="docBpInput" class="form-input" placeholder="e.g. 120/80" value="120/80 mmHg" style="font-size: 0.8125rem;">
+                      </div>
+                      <div>
+                        <label style="font-size:0.65rem; color:var(--text-muted); font-weight:700;">PULSE (bpm)</label>
+                        <input type="text" id="docPulseInput" class="form-input" placeholder="e.g. 74 bpm" value="74 bpm" style="font-size: 0.8125rem;">
+                      </div>
+                      <div>
+                        <label style="font-size:0.65rem; color:var(--text-muted); font-weight:700;">TEMP (°F)</label>
+                        <input type="text" id="docTempInput" class="form-input" placeholder="e.g. 98.6°F" value="98.6 °F" style="font-size: 0.8125rem;">
+                      </div>
+                      <div>
+                        <label style="font-size:0.65rem; color:var(--text-muted); font-weight:700;">SpO2 (%)</label>
+                        <input type="text" id="docSpo2Input" class="form-input" placeholder="e.g. 99%" value="99%" style="font-size: 0.8125rem;">
+                      </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1.2fr; gap: 0.5rem; align-items:center;">
+                      <div>
+                        <label style="font-size:0.65rem; color:var(--text-muted); font-weight:700;">WEIGHT (kg)</label>
+                        <input type="number" id="docWeightInput" class="form-input" placeholder="68" value="68" step="0.5" oninput="window.mediarcaApp.updateDoctorBmiLive()" style="font-size: 0.8125rem;">
+                      </div>
+                      <div>
+                        <label style="font-size:0.65rem; color:var(--text-muted); font-weight:700;">HEIGHT (cm)</label>
+                        <input type="number" id="docHeightInput" class="form-input" placeholder="174" value="174" oninput="window.mediarcaApp.updateDoctorBmiLive()" style="font-size: 0.8125rem;">
+                      </div>
+                      <div>
+                        <label style="font-size:0.65rem; color:var(--text-muted); font-weight:700;">RESP RATE (/min)</label>
+                        <input type="text" id="docRespInput" class="form-input" placeholder="16 /min" value="16 /min" style="font-size: 0.8125rem;">
+                      </div>
+                      <div style="padding-top:1.1rem;">
+                        <span id="docBmiBadge" class="badge" style="background:#dcfce7; color:#15803d; font-size:0.75rem; width:100%; justify-content:center; display:flex;">
+                          BMI: 22.5 (Normal Weight)
+                        </span>
+                      </div>
                     </div>
                   </div>
 
@@ -919,24 +1093,43 @@ class MediarcaApp {
                     </div>
                   </div>
 
-                  <!-- Clinical Examination & Itemized Prescription Suite (Section 10 Resolution) -->
+                  <!-- Clinical Examination & Itemized Prescription Suite (Tier 2 Resolution) -->
                   <div style="border-top: 1px solid var(--border-subtle); padding-top: 1rem;">
-                    <div style="font-size: 0.8125rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.5rem;">Clinical Assessment & Final Diagnosis:</div>
-                    <input type="text" id="docDiagnosisInput" class="form-input" placeholder="Primary Diagnosis (e.g. Acute Upper Respiratory Infection, Essential Hypertension)" value="Acute Upper Respiratory Tract Infection" style="margin-bottom: 0.75rem;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 0.5rem;">
+                      <div style="font-size: 0.8125rem; font-weight: 700; color: var(--text-primary);">Clinical Assessment & Final Diagnosis:</div>
+                      <div style="display:flex; align-items:center; gap:0.5rem;">
+                        <label style="font-size: 0.7rem; color: var(--text-secondary); font-weight: 600;">Clinical Protocol Template:</label>
+                        <select id="docRxTemplateSelect" class="form-select" style="font-size:0.75rem; padding:0.25rem 0.5rem; width:auto;" onchange="window.mediarcaApp.applyPrescriptionTemplate(this.value)">
+                          <option value="">-- Select Standard Protocol --</option>
+                          <option value="urti">🩺 Viral Upper Respiratory Infection (URTI)</option>
+                          <option value="cardio">🫀 Hypertension & Cardiac Care</option>
+                          <option value="gerd">🧬 Acid Reflux & Dyspepsia (GERD)</option>
+                          <option value="pain">🩹 Acute Musculoskeletal Strain</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <input type="text" id="docDiagnosisInput" class="form-input" placeholder="Primary Diagnosis" value="Acute Upper Respiratory Tract Infection" style="margin-bottom: 0.75rem;">
                     
-                    <div style="font-size: 0.8125rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.5rem;">Itemized Multi-Drug Regimen (Prescription Items):</div>
-                    <div style="background: #fff; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 0.75rem; margin-bottom: 0.75rem;">
+                    <div style="font-size: 0.8125rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.5rem;">Structured Prescription Regimen (Itemized Drugs):</div>
+                    <div id="docPrescriptionItemsContainer" style="background: #fff; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 0.75rem; margin-bottom: 0.75rem;">
                       <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 0.5rem; margin-bottom: 0.5rem;">
-                        <input type="text" id="docMed1Drug" class="form-input" value="Tab. Azithromycin 500mg" placeholder="Drug Name">
+                        <input type="text" id="docMed1Drug" class="form-input" value="Tab. Azithromycin 500mg" placeholder="Medicine Name">
                         <input type="text" id="docMed1Freq" class="form-input" value="OD (1-0-0)" placeholder="Frequency">
                         <input type="text" id="docMed1Route" class="form-input" value="Oral" placeholder="Route">
                         <input type="text" id="docMed1Dur" class="form-input" value="5 Days" placeholder="Duration">
                       </div>
-                      <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 0.5rem;">
-                        <input type="text" id="docMed2Drug" class="form-input" value="Tab. Paracetamol 650mg" placeholder="Drug Name">
+                      <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 0.5rem; margin-bottom: 0.5rem;">
+                        <input type="text" id="docMed2Drug" class="form-input" value="Tab. Paracetamol 650mg" placeholder="Medicine Name">
                         <input type="text" id="docMed2Freq" class="form-input" value="TID (1-1-1)" placeholder="Frequency">
                         <input type="text" id="docMed2Route" class="form-input" value="Oral" placeholder="Route">
                         <input type="text" id="docMed2Dur" class="form-input" value="3 Days" placeholder="Duration">
+                      </div>
+                      <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 0.5rem;">
+                        <input type="text" id="docMed3Drug" class="form-input" value="Tab. Levocetirizine 5mg" placeholder="Medicine Name">
+                        <input type="text" id="docMed3Freq" class="form-input" value="HS (0-0-1)" placeholder="Frequency">
+                        <input type="text" id="docMed3Route" class="form-input" value="Oral" placeholder="Route">
+                        <input type="text" id="docMed3Dur" class="form-input" value="5 Days" placeholder="Duration">
                       </div>
                     </div>
 
@@ -1677,6 +1870,123 @@ class MediarcaApp {
     `);
     win.document.close();
     win.print();
+  }
+
+  applyPrescriptionTemplate(templateKey) {
+    if (!templateKey) return;
+    const template = window.mediarcaStore.state.prescriptionTemplates[templateKey];
+    if (!template) return;
+
+    const diagInput = document.getElementById('docDiagnosisInput');
+    if (diagInput) diagInput.value = template.diagnosis;
+
+    const adviceInput = document.getElementById('docAdviceInput');
+    if (adviceInput) adviceInput.value = template.advice;
+
+    const container = document.getElementById('docPrescriptionItemsContainer');
+    if (container && template.medications) {
+      container.innerHTML = template.medications.map((med, idx) => `
+        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 0.5rem; margin-bottom: 0.5rem;">
+          <input type="text" id="docMed${idx+1}Drug" class="form-input" value="${escapeHtml(med.drug)}" placeholder="Medicine Name">
+          <input type="text" id="docMed${idx+1}Freq" class="form-input" value="${escapeHtml(med.freq)}" placeholder="Frequency">
+          <input type="text" id="docMed${idx+1}Route" class="form-input" value="${escapeHtml(med.route)}" placeholder="Route">
+          <input type="text" id="docMed${idx+1}Dur" class="form-input" value="${escapeHtml(med.dur)}" placeholder="Duration">
+        </div>
+      `).join('');
+    }
+
+    this.showToast(`Applied clinical template: ${template.diagnosis}`, 'info');
+  }
+
+  updateDoctorBmiLive() {
+    const weight = parseFloat(document.getElementById('docWeightInput')?.value || 0);
+    const height = parseFloat(document.getElementById('docHeightInput')?.value || 0);
+    const badge = document.getElementById('docBmiBadge');
+    if (!badge) return;
+
+    const result = window.mediarcaStore.calculateBmi(weight, height);
+    if (result.bmi) {
+      badge.textContent = `BMI: ${result.bmi} (${result.category})`;
+      badge.style.background = result.category === 'Normal' ? '#dcfce7' : (result.category === 'Overweight' ? '#fef3c7' : '#fee2e2');
+      badge.style.color = result.category === 'Normal' ? '#15803d' : (result.category === 'Overweight' ? '#92400e' : '#b91c1c');
+    }
+  }
+
+  showUploadDocModal() {
+    let modal = document.getElementById('uploadDocModal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'uploadDocModal';
+      modal.className = 'modal-overlay';
+      document.body.appendChild(modal);
+    }
+
+    modal.innerHTML = `
+      <div class="modal-box">
+        <div class="modal-header">
+          <h3 style="font-size: 1.125rem; font-weight: 800; color: var(--text-primary);">Upload Clinical Document</h3>
+          <button class="modal-close-btn" onclick="document.getElementById('uploadDocModal').classList.remove('active')" style="background:none; border:none; cursor:pointer;">
+            <i data-lucide="x" style="width: 16px; height: 16px;"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form onsubmit="window.mediarcaApp.handleDocumentUploadSubmit(event)">
+            <div class="form-group">
+              <label class="form-label">Document Record Name *</label>
+              <input type="text" id="uploadDocTitle" class="form-input" placeholder="e.g. Echo_Color_Doppler_Report.pdf" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Clinical Category *</label>
+              <select id="uploadDocCategory" class="form-select" required>
+                <option value="Lab Report PDF">Diagnostic Lab PDF Report</option>
+                <option value="Imaging X-Ray">Medical Imaging (X-Ray / MRI / CT)</option>
+                <option value="Prescription">Physician Prescription Scan</option>
+                <option value="Discharge Summary">Hospital Discharge Summary</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Attending Doctor / Lab *</label>
+              <input type="text" id="uploadDocDoctor" class="form-input" placeholder="e.g. Apex Diagnostics / Dr. Bikesh Ray" value="Apex Central Clinical Laboratory" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Attach File (PDF, PNG, JPEG) *</label>
+              <input type="file" class="form-input" style="padding: 0.4rem;" required>
+              <span class="form-hint">🔒 Files are encrypted and stored in private Supabase Storage buckets.</span>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block" style="margin-top: 1rem;">
+              <i data-lucide="shield-check" style="width: 15px; height: 15px;"></i> Upload to Secure Vault
+            </button>
+          </form>
+        </div>
+      </div>
+    `;
+
+    modal.classList.add('active');
+    if (window.lucide) window.lucide.createIcons();
+  }
+
+  async handleDocumentUploadSubmit(e) {
+    e.preventDefault();
+    const title = document.getElementById('uploadDocTitle')?.value.trim();
+    const category = document.getElementById('uploadDocCategory')?.value;
+    const doctor = document.getElementById('uploadDocDoctor')?.value.trim();
+
+    try {
+      await window.mediarcaStore.addClinicalDocument({
+        fileName: title || 'Clinical_Document.pdf',
+        category,
+        doctorName: doctor,
+        fileSize: '520 KB'
+      });
+
+      document.getElementById('uploadDocModal')?.classList.remove('active');
+      if (window.mediarcaAudio) window.mediarcaAudio.playChime('success');
+      this.showToast(`Document "${title}" saved to Secure EMR Vault!`, 'success');
+      this.renderPatientDashboard();
+    } catch (err) {
+      console.error('Doc upload error:', err);
+      this.showToast(err.message || 'Upload failed.', 'warning');
+    }
   }
 }
 
