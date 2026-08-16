@@ -124,17 +124,23 @@ class MediarcaApp {
         </div>
       `;
     } else if (user.role === 'doctor') {
+      const doc = window.mediarcaStore.state.doctors.find(d => 
+        d.id === user.id || 
+        d.userId === user.id || 
+        (d.email && user.email && d.email.toLowerCase().trim() === user.email.toLowerCase().trim())
+      ) || user;
+
       // Authenticated Doctor Navigation
       navLinksContainer.innerHTML = `
         <li><button class="nav-link-btn active" onclick="window.mediarcaApp.switchView('doctor-portal')"><i data-lucide="layout-dashboard" style="width:15px;height:15px"></i> Practice Console</button></li>
-        <li><button class="nav-link-btn" onclick="window.mediarcaApp.switchView('queue-radar', { doctorId: '${user.id}' })"><i data-lucide="radio" style="width:15px;height:15px"></i> Public Radar View</button></li>
+        <li><button class="nav-link-btn" onclick="window.mediarcaApp.switchView('queue-radar', { doctorId: '${doc.id}' })"><i data-lucide="radio" style="width:15px;height:15px"></i> Public Radar View</button></li>
       `;
 
       navActionsContainer.innerHTML = `
         <div style="display:flex; align-items:center; gap:0.75rem;">
           <div style="text-align:right;">
-            <div style="font-size:0.8125rem; font-weight:700; color:var(--text-primary);">${user.name}</div>
-            <div style="font-size:0.7rem; color:var(--clinical-blue); font-family:var(--font-mono); font-weight:700;">${user.mediarcaId || 'PENDING VERIFICATION'}</div>
+            <div style="font-size:0.8125rem; font-weight:700; color:var(--text-primary);">${doc.name || user.name}</div>
+            <div style="font-size:0.7rem; color:var(--clinical-blue); font-family:var(--font-mono); font-weight:700;">${doc.mediarcaId || 'VERIFIED PRACTITIONER'}</div>
           </div>
           <button class="btn btn-sm btn-secondary" onclick="window.mediarcaApp.handleLogout()">
             <i data-lucide="log-out" style="width:14px;height:14px"></i> Logout
@@ -1003,8 +1009,12 @@ class MediarcaApp {
     if (!container) return;
 
     const user = window.mediarcaStore.state.currentUser;
-    // Canonical UUID matching (A-04 Resolution)
-    const doc = window.mediarcaStore.state.doctors.find(d => d.id === user.id || d.userId === user.id) || user;
+    // Canonical UUID & email matching (A-04 Resolution)
+    const doc = window.mediarcaStore.state.doctors.find(d => 
+      d.id === user.id || 
+      d.userId === user.id || 
+      (d.email && user.email && d.email.toLowerCase().trim() === user.email.toLowerCase().trim())
+    ) || user;
     const activeTab = this.doctorActiveTab || 'current';
 
     if (doc.verificationStatus === 'pending') {

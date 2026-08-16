@@ -705,12 +705,19 @@ class MediarcaStore {
             }
           }
 
+          const matchedDoctor = this.state.doctors.find(d => d.email && d.email.toLowerCase() === cleanEmail);
+          if (matchedDoctor) {
+            matchedDoctor.userId = user.id;
+          }
+
           // Zero JWT stored in application state (C-02 Resolution)
           this.state.currentUser = {
-            id: user.id,
+            id: matchedDoctor ? matchedDoctor.id : user.id,
+            userId: user.id,
             email: user.email,
-            role: role,
-            name: name
+            role: matchedDoctor ? 'doctor' : role,
+            name: matchedDoctor ? matchedDoctor.name : name,
+            mediarcaId: matchedDoctor ? matchedDoctor.mediarcaId : null
           };
           this.saveState();
           return this.state.currentUser;
@@ -738,11 +745,17 @@ class MediarcaStore {
               name: seed.name
             });
             if (signUpRes && signUpRes.user) {
+              const matchedDoctor = this.state.doctors.find(d => d.email && d.email.toLowerCase() === cleanEmail);
+              if (matchedDoctor) {
+                matchedDoctor.userId = signUpRes.user.id;
+              }
               this.state.currentUser = {
-                id: signUpRes.user.id,
+                id: matchedDoctor ? matchedDoctor.id : signUpRes.user.id,
+                userId: signUpRes.user.id,
                 email: cleanEmail,
                 role: seed.role,
-                name: seed.name
+                name: matchedDoctor ? matchedDoctor.name : seed.name,
+                mediarcaId: matchedDoctor ? matchedDoctor.mediarcaId : null
               };
               this.saveState();
               this.notifySubscribers();
@@ -753,12 +766,14 @@ class MediarcaStore {
           }
 
           // Fallback to recognized seed account profile
-          const matchedDoctor = this.state.doctors.find(d => d.email.toLowerCase() === cleanEmail);
+          const matchedDoctor = this.state.doctors.find(d => d.email && d.email.toLowerCase() === cleanEmail);
           this.state.currentUser = {
-            id: matchedDoctor?.id || matchedDoctor?.userId || 'a0000000-0000-0000-0000-000000000002',
+            id: matchedDoctor ? matchedDoctor.id : 'd0000000-0000-0000-0000-000000000007',
+            userId: matchedDoctor?.userId || 'a0000000-0000-0000-0000-000000000002',
             email: cleanEmail,
             role: seed.role,
-            name: seed.name
+            name: matchedDoctor ? matchedDoctor.name : seed.name,
+            mediarcaId: matchedDoctor ? matchedDoctor.mediarcaId : 'MED-DOC-7700'
           };
           this.saveState();
           this.notifySubscribers();
