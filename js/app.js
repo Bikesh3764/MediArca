@@ -2411,54 +2411,53 @@ class MediarcaApp {
   }
 
   printPatientPass(bookingId) {
-    const booking = window.mediarcaStore.state.bookings.find(b => b.bookingId === bookingId);
+    const booking = window.mediarcaStore.state.bookings.find(b => b.bookingId === bookingId || b.id === bookingId);
     if (!booking) {
       this.showToast('Booking not found.', 'warning');
       return;
     }
 
     const waitEst = window.mediarcaStore.calculateSmartWaitTime(booking.doctorId, booking.tokenNumber);
-    const tokenHash = window.mediarcaStore.generateSignedCheckInToken(booking.bookingId, booking.patientId);
+    const tokenHash = window.mediarcaStore.generateSignedCheckInToken(booking.bookingId || booking.id, booking.patientId);
 
     const win = window.open('', '_blank', 'width=450,height=600');
-    win.document.write(`
-      <html>
-        <head>
-          <title>Mediarca Official OPD Token Pass</title>
-          <style>
-            body { font-family: monospace; padding: 20px; text-align: center; color: #000; }
-            .header { border-bottom: 2px dashed #000; padding-bottom: 10px; margin-bottom: 15px; }
-            .token { font-size: 48px; font-weight: bold; margin: 10px 0; }
-            .meta { font-size: 14px; margin-bottom: 5px; text-align: left; }
-            .qr-box { border: 2px solid #000; padding: 10px; margin: 15px 0; font-size: 11px; word-break: break-all; }
-            .footer { border-top: 2px dashed #000; padding-top: 10px; font-size: 12px; margin-top: 15px; }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <h2 style="margin:0;">MEDIARCA HEALTH</h2>
-            <div>OFFICIAL OPD CLINICAL PASS</div>
-          </div>
-          <div class="token">TOKEN #${booking.tokenNumber}</div>
-          <div class="meta"><strong>Patient:</strong> ${escapeHtml(booking.patientName)}</div>
-          <div class="meta"><strong>Doctor:</strong> ${escapeHtml(booking.doctorName)}</div>
-          <div class="meta"><strong>Slot:</strong> ${escapeHtml(booking.scheduledSlot || '09:00 AM')}</div>
-          <div class="meta"><strong>Est. Wait:</strong> ${waitEst.rangeText} (${waitEst.confidence} Confidence)</div>
-          
-          <div class="qr-box">
-            <div style="font-weight:bold; margin-bottom:4px;">CRYPTOGRAPHIC CHECK-IN TOKEN:</div>
-            ${tokenHash}
-          </div>
+    if (!win) {
+      this.showToast('Pop-up blocked. Please allow pop-ups to print pass.', 'warning');
+      return;
+    }
+    win.document.title = 'Mediarca Official OPD Token Pass';
+    win.document.body.innerHTML = `
+      <style>
+        body { font-family: monospace; padding: 20px; text-align: center; color: #000; }
+        .header { border-bottom: 2px dashed #000; padding-bottom: 10px; margin-bottom: 15px; }
+        .token { font-size: 48px; font-weight: bold; margin: 10px 0; }
+        .meta { font-size: 14px; margin-bottom: 5px; text-align: left; }
+        .qr-box { border: 2px solid #000; padding: 10px; margin: 15px 0; font-size: 11px; word-break: break-all; }
+        .footer { border-top: 2px dashed #000; padding-top: 10px; font-size: 12px; margin-top: 15px; }
+      </style>
+      <div class="header">
+        <h2 style="margin:0;">MEDIARCA HEALTH</h2>
+        <div>OFFICIAL OPD CLINICAL PASS</div>
+      </div>
+      <div class="token">TOKEN #${booking.tokenNumber}</div>
+      <div class="meta"><strong>Patient:</strong> ${escapeHtml(booking.patientName)}</div>
+      <div class="meta"><strong>Doctor:</strong> ${escapeHtml(booking.doctorName)}</div>
+      <div class="meta"><strong>Slot:</strong> ${escapeHtml(booking.scheduledSlot || '09:00 AM')}</div>
+      <div class="meta"><strong>Est. Wait:</strong> ${waitEst.rangeText} (${waitEst.confidence} Confidence)</div>
+      
+      <div class="qr-box">
+        <div style="font-weight:bold; margin-bottom:4px;">CRYPTOGRAPHIC CHECK-IN TOKEN:</div>
+        ${tokenHash}
+      </div>
 
-          <div class="footer">
-            Please proceed to waiting lounge. Token will be chimed on display.<br>
-            Date: ${new Date().toLocaleDateString()} • Ref: ${escapeHtml(booking.bookingId)}
-          </div>
-        </body>
-      </html>
-    `);
-    win.document.close();
-    win.print();
+      <div class="footer">
+        Please proceed to waiting lounge. Token will be chimed on display.<br>
+        Date: ${new Date().toLocaleDateString()} • Ref: ${escapeHtml(booking.bookingId || booking.id)}
+      </div>
+    `;
+    setTimeout(() => {
+      win.print();
+    }, 250);
   }
 
   applyPrescriptionTemplate(templateKey) {

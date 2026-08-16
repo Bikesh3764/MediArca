@@ -1,15 +1,16 @@
 /**
- * MediArca - Automated Regression & Audit Test Suite (Latest Full Release Audit Edition)
+ * MediArca - Automated Regression & Audit Test Suite (Full Line-by-Line 2026-08-17 Edition)
  * Validates store logic, queue algorithms, slot collisions, stage transitions, cloud sync, RLS immutability triggers, 
  * zero demo credentials in store, zero hardcoded passwords in app, persistent hospitalSettings serialization, 
  * server-authoritative reports, zero cross-user seed ID fallbacks, patient billing authorization, dynamic notifications,
- * clean empty production clinical boot state, and fail-closed official exports.
+ * clean empty production clinical boot state, fail-closed official exports, schema token constraints, future slot unique indexes,
+ * date-bound QR lifetimes, safe DOM printing without document.write, and clean audit credential hygiene.
  */
 
 const fs = require('fs');
 const path = require('path');
 
-console.log('--- Starting MediArca Automated Regression Suite (Latest Full Release Audit) ---');
+console.log('--- Starting MediArca Automated Regression Suite (Full Line-by-Line 2026-08-17 Edition) ---');
 
 let passCount = 0;
 let failCount = 0;
@@ -40,6 +41,11 @@ assert(schemaContent.includes('AND status = \'in-consultation\''), 'Consultation
 assert(schemaContent.includes('v_checkin_token := \'MED-QR-\''), 'Rescheduling regenerates fresh CSPRNG check-in token (RS-04)');
 assert(schemaContent.includes('prevent_user_role_escalation'), 'Users table contains immutable role trigger (P0)');
 assert(schemaContent.includes('prevent_doctor_self_verification'), 'Doctors table contains self-verification prevention trigger (P0)');
+assert(schemaContent.includes('token_number INT CHECK (token_number IS NULL OR token_number > 0)'), 'Appointments table permits NULL token_number for future scheduled visits (BUG-02 Resolution)');
+assert(schemaContent.includes('uq_active_doctor_future_slot'), 'Schema includes unique index on active future slots for concurrency safety (BUG-04 Resolution)');
+assert(schemaContent.includes('(p_scheduled_date + interval \'1 day\')::timestamptz'), 'Future appointment QR checkin token expiry is tied to appointment date (BUG-03 Resolution)');
+assert(schemaContent.includes('checkin_token_issued\', true'), 'Issue OPD token logs audit flag instead of raw bearer check-in token (BUG-08 Resolution)');
+assert(!schemaContent.includes('Physical exam recorded by attending physician.'), 'No assertive placeholder exam findings in consultation RPC (BUG-05 Resolution)');
 
 // 2. Validate App JS and Store JS Syntax & Logic
 const appPath = path.join(__dirname, '../js/app.js');
@@ -81,6 +87,7 @@ assert(storeContent.includes('medicalTimeline: []'), 'Production store runtime b
 assert(storeContent.includes('clinicalDocuments: []'), 'Production store runtime boots with clean empty documents array (P0 Data Separation)');
 assert(appContent.includes('Server throughput data unavailable'), 'Official throughput report fails closed on server query error (P1)');
 assert(appContent.includes('Failed to export server audit ledger'), 'Official compliance audit report fails closed on server query error (P1)');
+assert(!appContent.includes('win.document.write('), 'Patient pass printing uses safe DOM innerHTML instead of document.write (BUG-14 Resolution)');
 assert(storeContent.includes('Clinical Document Vault upload failed'), 'Store throws on vault upload failure');
 assert(storeContent.includes('Billing transaction could not be settled'), 'Store fails closed on cloud billing settlement failure (BI-03)');
 assert(storeContent.includes('Appointment booking could not be completed on the hospital server'), 'Store fails closed on cloud booking failure (P0)');
@@ -105,5 +112,5 @@ console.log(`\nTest Summary: ${passCount} Passed, ${failCount} Failed.`);
 if (failCount > 0) {
   process.exit(1);
 } else {
-  console.log('--- All Latest Full Release Audit Regression Checks Passed Successfully! ---');
+  console.log('--- All Full Line-by-Line (2026-08-17) Regression Checks Passed Successfully! ---');
 }

@@ -90,7 +90,7 @@ CREATE TABLE IF NOT EXISTS appointments (
     patient_phone VARCHAR(50) NOT NULL,
     patient_age INT CHECK (patient_age IS NULL OR (patient_age >= 0 AND patient_age <= 125)),
     patient_gender VARCHAR(20),
-    token_number INT NOT NULL CHECK (token_number > 0),
+    token_number INT CHECK (token_number IS NULL OR token_number > 0),
     status VARCHAR(20) DEFAULT 'booked' CHECK (status IN ('booked', 'checked_in', 'waiting', 'in-consultation', 'completed', 'cancelled', 'no-show', 'skipped')),
     is_priority BOOLEAN DEFAULT false,
     priority_reason TEXT,
@@ -111,6 +111,11 @@ CREATE TABLE IF NOT EXISTS appointments (
     current_stage VARCHAR(50) DEFAULT 'triage',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Active Slot Uniqueness Index for Concurrency Protection (Audit BUG-04 Resolution)
+CREATE UNIQUE INDEX IF NOT EXISTS uq_active_doctor_future_slot 
+ON appointments (doctor_id, scheduled_date, scheduled_slot)
+WHERE status IN ('booked', 'checked_in', 'waiting', 'in-consultation');
 
 -- 7. RICH EMR CLINICAL ENCOUNTERS (Section 10 Resolution: Chief Complaint, Vitals, Exam Findings, Assessment & Treatment)
 CREATE TABLE IF NOT EXISTS clinical_encounters (
@@ -441,7 +446,7 @@ BEGIN
         jsonb_build_object(
             'token_number', v_next_token,
             'doctor_id', p_doctor_id,
-            'checkin_token', v_checkin_token,
+            'checkin_token_issued', true,
             'timezone', COALESCE(p_timezone, 'Asia/Kolkata')
         )
     );
@@ -612,11 +617,11 @@ BEGIN
         COALESCE(v_patient.phone, 'Not specified'),
         v_clinical.age,
         v_clinical.gender,
-        0, -- Token is issued upon day-of check-in
+        NULL, -- Token is issued upon day-of check-in (Audit BUG-02 Resolution)
         'booked',
         p_scheduled_slot,
         v_checkin_token,
-        NOW() + interval '48 hours',
+        ((p_scheduled_date + interval '1 day')::timestamptz), -- Audit BUG-03 Resolution: Tied to appointment date
         NULL,
         p_scheduled_date,
         p_scheduled_date,
@@ -823,10 +828,10 @@ BEGIN
         v_appointment.patient_id,
         COALESCE(p_chief_complaint, v_appointment.symptoms, 'Clinical evaluation'),
         COALESCE(p_vitals, '{"status": "not_recorded"}'::jsonb),
-        COALESCE(p_examination_findings, 'Physical exam recorded by attending physician.'),
-        COALESCE(p_assessment, p_diagnosis),
+        COALESCE(p_examination_findings, 'Not documented'),
+        p_assessment,
         p_diagnosis,
-        COALESCE(p_treatment_plan, p_advice),
+        p_treatment_plan,
         p_follow_up_date
     ) RETURNING id INTO v_encounter_id;
 
@@ -843,7 +848,7 @@ BEGIN
         p_follow_up_date
     ) RETURNING id INTO v_prescription_id;
 
-    -- 4. Insert Itemized Prescription Items (H-07: Structured prescription entries)
+    -- 4. Insert Itemized Prescription Items (H-07: Structured prescription entries without fabricated defaults)
     IF p_medications IS NOT NULL AND array_length(p_medications, 1) > 0 THEN
         FOREACH v_med IN ARRAY p_medications LOOP
             IF trim(v_med) != '' THEN
@@ -852,10 +857,10 @@ BEGIN
                 ) VALUES (
                     v_prescription_id,
                     trim(v_med),
-                    'As directed by physician',
-                    'As scheduled',
-                    'Oral / Systemic',
-                    'Course duration per clinical advice',
+                    NULL,
+                    NULL,
+                    NULL,
+                    NULL,
                     p_advice
                 );
             END IF;
