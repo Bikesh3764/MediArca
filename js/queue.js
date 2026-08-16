@@ -29,23 +29,27 @@ class MediarcaQueueEngine {
     const store = window.mediarcaStore;
     if (!q) return false;
     
-    // Check if query matches booking ID
-    const booking = store.state.bookings.find(b => (b.bookingId || '').toUpperCase() === q);
-    if (booking) {
-      this.selectedDoctorId = booking.doctorId;
-      this.renderQueueRadar(booking);
-      return true;
-    }
-
-    // Check if query matches doctor ID or Mediarca ID
+    // Check if query matches doctor ID, Mediarca ID, name, or specialty
     const doc = store.state.doctors.find(d => 
       (d.id || '').toUpperCase() === q || 
       (d.mediarcaId && d.mediarcaId.toUpperCase() === q) ||
-      (d.name || '').toUpperCase().includes(q)
+      (d.name || '').toUpperCase().includes(q) ||
+      (d.specialty || '').toUpperCase().includes(q)
     );
     if (doc) {
       this.selectedDoctorId = doc.id;
       this.renderQueueRadar();
+      return true;
+    }
+
+    // Check user's own active pass reference (P-04 Resolution)
+    const booking = store.state.bookings.find(b => 
+      b.patientId === store.state.currentUser.id &&
+      (b.bookingId || '').toUpperCase() === q
+    );
+    if (booking) {
+      this.selectedDoctorId = booking.doctorId;
+      this.renderQueueRadar(booking);
       return true;
     }
 

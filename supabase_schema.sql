@@ -539,18 +539,81 @@ CREATE POLICY "Doctor can update consultation status and prescription" ON appoin
     doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid())
 );
 
--- 14. REALTIME PUBLICATION SETUP (Publish ONLY telemetry, never private clinical tables)
+-- 14. PUBLIC DIRECTORY VIEW (P-02 Resolution: Strips user_id, email, reg_number, and internal PII)
+CREATE OR REPLACE VIEW public_doctor_directory AS
+SELECT 
+    id,
+    name,
+    specialty,
+    specialty_id,
+    title,
+    degrees,
+    experience_years,
+    hospital,
+    fee,
+    rating,
+    reviews_count,
+    avatar,
+    bio,
+    schedule,
+    mediarca_id,
+    verification_status,
+    current_token,
+    total_tokens,
+    avg_consult_time_mins
+FROM doctors
+WHERE verification_status = 'verified';
+
+-- 15. AUDIT LOG ACCESS POLICIES & ADMIN RETRIEVAL RPC (P-05 Resolution)
+DROP POLICY IF EXISTS "Admins can view audit logs" ON audit_logs;
+CREATE POLICY "Admins can view audit logs" ON audit_logs FOR SELECT USING (
+    is_admin(auth.uid())
+);
+
+CREATE OR REPLACE FUNCTION get_system_audit_logs(p_limit INT DEFAULT 50)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+    v_admin_id UUID;
+    v_is_admin BOOLEAN;
+    v_logs JSONB;
+BEGIN
+    v_admin_id := auth.uid();
+    SELECT is_admin(v_admin_id) INTO v_is_admin;
+    IF NOT v_is_admin AND v_admin_id IS NOT NULL THEN
+        RAISE EXCEPTION 'Access Denied: Medical Board Administrator privileges required.';
+    END IF;
+
+    SELECT jsonb_agg(to_jsonb(a)) INTO v_logs
+    FROM (
+        SELECT * FROM audit_logs
+        ORDER BY created_at DESC
+        LIMIT p_limit
+    ) a;
+
+    RETURN COALESCE(v_logs, '[]'::jsonb);
+END;
+$$;
+
+REVOKE EXECUTE ON FUNCTION get_system_audit_logs(INT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION get_system_audit_logs(INT) TO authenticated, anon;
+
+-- 16. REALTIME TELEMETRY PUBLICATION (P-03 Resolution: Exclusively publishes queue counters, never doctors PII table)
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'clinic_queues') THEN
     ALTER PUBLICATION supabase_realtime ADD TABLE clinic_queues;
   END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'doctors') THEN
-    ALTER PUBLICATION supabase_realtime ADD TABLE doctors;
+  -- Ensure sensitive doctors table is NOT in realtime publication to prevent PII leakage
+  IF EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'doctors') THEN
+    ALTER PUBLICATION supabase_realtime DROP TABLE doctors;
   END IF;
 END $$;
 
--- 15. INITIAL SEED DATA (Zero Password Hashes - Passwords Authenticated via Supabase Auth)
+-- 17. INITIAL SEED DATA (Zero Password Hashes - Passwords Authenticated via Supabase Auth)
 INSERT INTO users (id, role, email, full_name, phone, age, gender, blood_group) VALUES
 ('a0000000-0000-0000-0000-000000000001', 'patient', 'sarah@mediarca.health', 'Sarah Johnson', '+1 (555) 234-8900', 32, 'Female', 'O+'),
 ('a0000000-0000-0000-0000-000000000002', 'doctor', 'bikeshray3764@gmail.com', 'Dr. Bikesh Ray', '+1 (555) 123-4567', 36, 'Male', 'B+'),

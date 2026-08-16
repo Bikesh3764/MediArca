@@ -124,12 +124,12 @@ class MediarcaSupabaseClient {
     return data.session;
   }
 
-  // --- 2. PRIVACY-SAFE REALTIME SUBSCRIPTIONS (C-12 Resolution) ---
+  // --- 2. PRIVACY-SAFE REALTIME TELEMETRY SUBSCRIPTIONS (P-03 Resolution) ---
   setupRealtimeSubscriptions() {
     if (!this.client) return;
 
     try {
-      // Listen for Realtime Queue updates across doctor clinics (Telemetry only)
+      // Exclusively listen for Realtime Queue Telemetry (Never subscribe to sensitive internal tables)
       this.client
         .channel('public:clinic_queues')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'clinic_queues' }, payload => {
@@ -143,25 +143,6 @@ class MediarcaSupabaseClient {
           }
         })
         .subscribe();
-
-      // Listen for Verified Doctor profile updates
-      this.client
-        .channel('public:doctors')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'doctors' }, payload => {
-          if (payload.new && payload.new.id) {
-            const index = window.mediarcaStore.state.doctors.findIndex(d => d.id === payload.new.id);
-            if (index >= 0) {
-              window.mediarcaStore.state.doctors[index] = {
-                ...window.mediarcaStore.state.doctors[index],
-                verificationStatus: payload.new.verification_status,
-                mediarcaId: payload.new.mediarca_id,
-                currentToken: payload.new.current_token
-              };
-              window.mediarcaStore.notifySubscribers();
-            }
-          }
-        })
-        .subscribe();
     } catch (e) {
       console.warn('Realtime subscription note:', e);
     }
@@ -172,38 +153,34 @@ class MediarcaSupabaseClient {
     if (!this.client) return;
 
     try {
-      // 1. Fetch Verified Doctors Directory
+      // 1. Fetch Verified Doctors from sanitized Public Directory View (P-02 Resolution)
       const { data: docs, error: docErr } = await this.client
-        .from('doctors')
+        .from('public_doctor_directory')
         .select('*')
         .order('rating', { ascending: false });
 
       if (!docErr && docs && docs.length > 0) {
-        const cloudDocs = docs.map(d => ({
+        window.mediarcaStore.state.doctors = docs.map(d => ({
           id: d.id,
           name: d.name,
-          email: d.email,
           specialty: d.specialty,
-          specialtyId: d.specialty_id || 'general',
+          specialtyId: d.specialty_id,
           title: d.title,
           degrees: d.degrees,
-          regNumber: d.reg_number,
-          mediarcaId: d.mediarca_id,
           verificationStatus: d.verification_status,
           experienceYears: d.experience_years,
           hospital: d.hospital,
-          fee: parseFloat(d.fee) || 50,
-          rating: parseFloat(d.rating) || 5.0,
-          reviewsCount: d.reviews_count || 0,
+          fee: parseFloat(d.fee),
+          rating: parseFloat(d.rating),
+          reviewsCount: d.reviews_count,
           avatar: d.avatar,
           bio: d.bio,
           schedule: d.schedule,
+          mediarcaId: d.mediarca_id,
           currentToken: d.current_token || 0,
           totalTokens: d.total_tokens || 0,
           avgConsultTimeMins: d.avg_consult_time_mins || 12
         }));
-
-        window.mediarcaStore.state.doctors = cloudDocs;
       }
 
       // 2. Fetch Live Clinic Queues
@@ -296,6 +273,21 @@ class MediarcaSupabaseClient {
 
     if (error) {
       console.error('RPC Doctor Verification Error:', error);
+      throw error;
+    }
+
+    return data;
+  }
+
+  async cloudGetAuditLogs(limit = 50) {
+    if (!this.client) throw new Error('Cloud offline');
+
+    const { data, error } = await this.client.rpc('get_system_audit_logs', {
+      p_limit: limit
+    });
+
+    if (error) {
+      console.error('RPC Audit Logs Error:', error);
       throw error;
     }
 
