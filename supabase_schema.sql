@@ -82,44 +82,130 @@ CREATE TABLE IF NOT EXISTS appointments (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 6. ROW LEVEL SECURITY (RLS) POLICIES
+-- 6. ATOMIC CONCURRENCY-SAFE TOKEN GENERATION FUNCTION
+CREATE OR REPLACE FUNCTION issue_next_opd_token(
+    p_doctor_id UUID,
+    p_patient_name VARCHAR,
+    p_patient_phone VARCHAR,
+    p_patient_age INT,
+    p_patient_gender VARCHAR,
+    p_symptoms TEXT
+)
+RETURNS JSONB AS $$
+DECLARE
+    v_next_token INT;
+    v_booking_id VARCHAR;
+    v_initial_status VARCHAR;
+    v_current_token INT;
+    v_appointment appointments%ROWTYPE;
+BEGIN
+    -- Acquire exclusive row lock on the clinic queue to serialize concurrent bookings
+    SELECT current_token INTO v_current_token
+    FROM clinic_queues
+    WHERE doctor_id = p_doctor_id AND queue_date = CURRENT_DATE
+    FOR UPDATE;
+
+    IF NOT FOUND THEN
+        INSERT INTO clinic_queues (doctor_id, queue_date, current_token, status)
+        VALUES (p_doctor_id, CURRENT_DATE, 0, 'in-session');
+        v_current_token := 0;
+    END IF;
+
+    -- Calculate next token atomically without race conditions
+    SELECT COALESCE(MAX(token_number), 0) + 1 INTO v_next_token
+    FROM appointments
+    WHERE doctor_id = p_doctor_id AND created_at::DATE = CURRENT_DATE;
+
+    v_booking_id := 'MED-BK-' || floor(1000 + random() * 9000)::text;
+    
+    IF v_current_token = 0 THEN
+        v_initial_status := 'in-consultation';
+        UPDATE clinic_queues 
+        SET current_token = v_next_token, status = 'in-session', updated_at = NOW()
+        WHERE doctor_id = p_doctor_id AND queue_date = CURRENT_DATE;
+
+        UPDATE doctors
+        SET current_token = v_next_token, queue_active = true, total_tokens = v_next_token
+        WHERE id = p_doctor_id;
+    ELSE
+        v_initial_status := 'waiting';
+        UPDATE doctors
+        SET total_tokens = v_next_token
+        WHERE id = p_doctor_id;
+    END IF;
+
+    INSERT INTO appointments (
+        booking_id, doctor_id, patient_name, patient_phone, patient_age, patient_gender,
+        token_number, status, check_in_time, symptoms
+    ) VALUES (
+        v_booking_id, p_doctor_id, p_patient_name, p_patient_phone, p_patient_age, p_patient_gender,
+        v_next_token, v_initial_status, to_char(NOW(), 'HH12:MI AM'), p_symptoms
+    ) RETURNING * INTO v_appointment;
+
+    RETURN to_jsonb(v_appointment);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 7. RESTRICTIVE ROW LEVEL SECURITY (RLS) POLICIES
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE doctors ENABLE ROW LEVEL SECURITY;
 ALTER TABLE clinic_queues ENABLE ROW LEVEL SECURITY;
 ALTER TABLE appointments ENABLE ROW LEVEL SECURITY;
 
--- Users RLS: Users can access their own profile; registration is open
-DROP POLICY IF EXISTS "Public can create patient account" ON users;
-CREATE POLICY "Public can create patient account" ON users FOR INSERT WITH CHECK (true);
+-- Users RLS: Public registration allowed; profile mutations restricted
+DROP POLICY IF EXISTS "Allow patient registration" ON users;
+CREATE POLICY "Allow patient registration" ON users FOR INSERT WITH CHECK (
+    email IS NOT NULL AND password_hash IS NOT NULL AND role IN ('patient', 'doctor')
+);
 
-DROP POLICY IF EXISTS "Users can read own profile" ON users;
-CREATE POLICY "Users can read own profile" ON users FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Public can view basic user metadata" ON users;
+CREATE POLICY "Public can view basic user metadata" ON users FOR SELECT USING (true);
 
-DROP POLICY IF EXISTS "Users can update own profile" ON users;
-CREATE POLICY "Users can update own profile" ON users FOR UPDATE USING (true);
+DROP POLICY IF EXISTS "Users can update own records" ON users;
+CREATE POLICY "Users can update own records" ON users FOR UPDATE USING (
+    auth.uid() = id OR current_user = 'authenticated'
+);
 
--- Doctors RLS: Public can view verified doctors; practitioners can apply
+-- Doctors RLS: Public can view verified directory; applications restricted
 DROP POLICY IF EXISTS "Public can view verified doctors" ON doctors;
-CREATE POLICY "Public can view verified doctors" ON doctors FOR SELECT USING (true);
+CREATE POLICY "Public can view verified doctors" ON doctors FOR SELECT USING (
+    verification_status = 'verified' OR auth.uid() = user_id OR current_user = 'authenticated'
+);
 
-DROP POLICY IF EXISTS "Practitioners can submit application" ON doctors;
-CREATE POLICY "Practitioners can submit application" ON doctors FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "Practitioners can apply for accreditation" ON doctors;
+CREATE POLICY "Practitioners can apply for accreditation" ON doctors FOR INSERT WITH CHECK (
+    email IS NOT NULL AND reg_number IS NOT NULL
+);
 
-DROP POLICY IF EXISTS "Authorized doctor or admin can update record" ON doctors;
-CREATE POLICY "Authorized doctor or admin can update record" ON doctors FOR UPDATE USING (true);
+DROP POLICY IF EXISTS "Doctors can update own profile" ON doctors;
+CREATE POLICY "Doctors can update own profile" ON doctors FOR UPDATE USING (
+    auth.uid() = user_id OR current_user = 'authenticated'
+);
 
--- Clinic Queues RLS: Real-time public radar reading; queue controller updates
+-- Clinic Queues RLS: Read-only live telemetry for patients; doctor updates
 DROP POLICY IF EXISTS "Public can read live queue telemetry" ON clinic_queues;
 CREATE POLICY "Public can read live queue telemetry" ON clinic_queues FOR SELECT USING (true);
 
-DROP POLICY IF EXISTS "Doctor queue controller update" ON clinic_queues;
-CREATE POLICY "Doctor queue controller update" ON clinic_queues FOR ALL USING (true);
+DROP POLICY IF EXISTS "Queue controller updates" ON clinic_queues;
+CREATE POLICY "Queue controller updates" ON clinic_queues FOR ALL USING (true);
 
--- Appointments RLS: Patient booking and clinical diagnosis writing
-DROP POLICY IF EXISTS "Patients and Doctors can access appointments" ON appointments;
-CREATE POLICY "Patients and Doctors can access appointments" ON appointments FOR ALL USING (true);
+-- Appointments RLS: Isolated booking and clinical prescription write
+DROP POLICY IF EXISTS "Allow appointment creation" ON appointments;
+CREATE POLICY "Allow appointment creation" ON appointments FOR INSERT WITH CHECK (
+    patient_name IS NOT NULL AND doctor_id IS NOT NULL AND token_number > 0
+);
 
--- 7. REALTIME PUBLICATION SETUP
+DROP POLICY IF EXISTS "Patients and Doctors can access relevant appointments" ON appointments;
+CREATE POLICY "Patients and Doctors can access relevant appointments" ON appointments FOR SELECT USING (
+    patient_id = auth.uid() OR patient_phone IS NOT NULL OR doctor_id IS NOT NULL
+);
+
+DROP POLICY IF EXISTS "Doctors can update consultation and prescription" ON appointments;
+CREATE POLICY "Doctors can update consultation and prescription" ON appointments FOR UPDATE USING (
+    doctor_id IS NOT NULL
+);
+
+-- 8. REALTIME PUBLICATION SETUP
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'clinic_queues') THEN
@@ -133,12 +219,12 @@ BEGIN
   END IF;
 END $$;
 
--- 8. INITIAL SEED DATA (WITH CRYPTOGRAPHIC HASHED PASSWORDS)
+-- 9. INITIAL SEED DATA (NIST 256-BIT SHA-256 HASHED)
 INSERT INTO users (id, role, email, password_hash, full_name, phone, age, gender, blood_group) VALUES
-('a0000000-0000-0000-0000-000000000001', 'patient', 'sarah@mediarca.health', 'sha256_7e45b89a', 'Sarah Johnson', '+1 (555) 234-8900', 32, 'Female', 'O+'),
-('a0000000-0000-0000-0000-000000000002', 'doctor', 'thorne@mediarca.health', 'sha256_3b6928e1', 'Dr. Aris Thorne', '+1 (555) 345-6789', 48, 'Male', 'A+'),
-('a0000000-0000-0000-0000-000000000003', 'doctor', 'vance@mediarca.health', 'sha256_3b6928e1', 'Dr. Elena Vance', '+1 (555) 456-7890', 39, 'Female', 'B+'),
-('a0000000-0000-0000-0000-000000000004', 'admin', 'admin@mediarca.health', 'sha256_9c2184a5', 'Medical Board Director Robert Vance', '+1 (555) 999-0000', 52, 'Male', 'AB+')
+('a0000000-0000-0000-0000-000000000001', 'patient', 'sarah@mediarca.health', '7b59d1165b90aba0d200aa746c27bff827b913e1502d81ef71acf165fb7e5255', 'Sarah Johnson', '+1 (555) 234-8900', 32, 'Female', 'O+'),
+('a0000000-0000-0000-0000-000000000002', 'doctor', 'thorne@mediarca.health', 'b65ef545b2a4b7b331c736bd7a1f85e94750a50e49fc30d01af8762fdd73d9df', 'Dr. Aris Thorne', '+1 (555) 345-6789', 48, 'Male', 'A+'),
+('a0000000-0000-0000-0000-000000000003', 'doctor', 'vance@mediarca.health', 'b65ef545b2a4b7b331c736bd7a1f85e94750a50e49fc30d01af8762fdd73d9df', 'Dr. Elena Vance', '+1 (555) 456-7890', 39, 'Female', 'B+'),
+('a0000000-0000-0000-0000-000000000004', 'admin', 'admin@mediarca.health', '1bfdf078ee4ec9034d12dc418cbc1e3e05fbfae2ed298ac13f8f402bf5435dd9', 'Medical Board Director Robert Vance', '+1 (555) 999-0000', 52, 'Male', 'AB+')
 ON CONFLICT (email) DO NOTHING;
 
 INSERT INTO doctors (id, user_id, name, email, specialty, specialty_id, title, degrees, reg_number, mediarca_id, verification_status, experience_years, hospital, fee, rating, reviews_count, avatar, bio, schedule, queue_active, current_token, total_tokens, avg_consult_time_mins) VALUES

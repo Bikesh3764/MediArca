@@ -132,23 +132,42 @@ class MediarcaApp {
 
   // --- View Switcher ---
   switchView(viewName, params = {}) {
-    const user = window.mediarcaStore.state.currentUser;
-
-    // RBAC Security guards
-    if (viewName === 'patient-portal' && user.role !== 'patient') {
-      this.switchView('auth-patient');
-      this.showToast('Please login as a patient to access your portal.', 'info');
-      return;
+    // Cryptographic Session Signature and RBAC security guards
+    if (viewName === 'patient-portal') {
+      if (!window.mediarcaStore.isAuthorized('patient')) {
+        this.currentView = 'auth-patient';
+        this.showToast('Please login as a patient to access your portal.', 'info');
+        document.querySelectorAll('.section-view').forEach(view => view.classList.remove('active'));
+        const targetView = document.getElementById('view-auth-patient');
+        if (targetView) targetView.classList.add('active');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        this.updateHeaderNav();
+        return;
+      }
     }
-    if (viewName === 'doctor-portal' && user.role !== 'doctor') {
-      this.switchView('auth-doctor');
-      this.showToast('Please login to access the Doctor Practice Console.', 'info');
-      return;
+    if (viewName === 'doctor-portal') {
+      if (!window.mediarcaStore.isAuthorized('doctor')) {
+        this.currentView = 'auth-doctor';
+        this.showToast('Please login to access the Doctor Practice Console.', 'info');
+        document.querySelectorAll('.section-view').forEach(view => view.classList.remove('active'));
+        const targetView = document.getElementById('view-auth-doctor');
+        if (targetView) targetView.classList.add('active');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        this.updateHeaderNav();
+        return;
+      }
     }
-    if (viewName === 'admin-portal' && user.role !== 'admin') {
-      this.switchView('auth-admin');
-      this.showToast('Administrator credentials required.', 'warning');
-      return;
+    if (viewName === 'admin-portal') {
+      if (!window.mediarcaStore.isAuthorized('admin')) {
+        this.currentView = 'auth-admin';
+        this.showToast('Medical Board administrator authorization required.', 'warning');
+        document.querySelectorAll('.section-view').forEach(view => view.classList.remove('active'));
+        const targetView = document.getElementById('view-auth-admin');
+        if (targetView) targetView.classList.add('active');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        this.updateHeaderNav();
+        return;
+      }
     }
 
     this.currentView = viewName;
@@ -573,12 +592,11 @@ class MediarcaApp {
     const user = window.mediarcaStore.state.currentUser;
     const allBookings = window.mediarcaStore.state.bookings || [];
 
-    // Strictly isolate patient's own bookings
+    // Strictly isolate patient's own bookings by immutable user keys (no name fallback)
     const patientBookings = allBookings.filter(b => {
       if (user.id && b.patientId === user.id) return true;
       if (user.phone && b.patientPhone && b.patientPhone === user.phone) return true;
       if (user.email && b.email && b.email.toLowerCase() === user.email.toLowerCase()) return true;
-      if (user.name && b.patientName && b.patientName.toLowerCase() === user.name.toLowerCase()) return true;
       return false;
     });
 
