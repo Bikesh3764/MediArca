@@ -282,20 +282,21 @@ class MediarcaSupabaseClient {
     return data;
   }
 
-  async cloudVerifyDoctor(doctorId, approved, mediarcaId) {
+  async cloudVerifyDoctor(doctorId, approved, reason = 'Medical board credentials review concluded.') {
     if (!this.client) throw new Error('Cloud offline');
 
-    const { data, error } = await this.client
-      .from('doctors')
-      .update({
-        verification_status: approved ? 'verified' : 'rejected',
-        mediarca_id: approved ? mediarcaId : null,
-        verified_at: approved ? new Date().toISOString() : null
-      })
-      .eq('id', doctorId)
-      .select();
+    // Call protected Admin RPC with role validation and immutable audit logging
+    const { data, error } = await this.client.rpc('verify_doctor_admin_atomic', {
+      p_doctor_id: doctorId,
+      p_approved: approved,
+      p_reason: reason
+    });
 
-    if (error) throw error;
+    if (error) {
+      console.error('RPC Doctor Verification Error:', error);
+      throw error;
+    }
+
     return data;
   }
 }

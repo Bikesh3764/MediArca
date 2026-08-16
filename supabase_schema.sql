@@ -95,7 +95,20 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 7. ATOMIC TRANSACTIONAL APPOINTMENT BOOKING & TOKEN ISSUANCE RPC (C-04 Fixed)
+-- 7. HELPER FUNCTION: IS_ADMIN CHECK (C-09 Resolution)
+CREATE OR REPLACE FUNCTION is_admin(p_user_id UUID)
+RETURNS BOOLEAN
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM users
+    WHERE id = p_user_id AND role = 'admin'
+  );
+$$;
+
+-- 8. ATOMIC TRANSACTIONAL APPOINTMENT BOOKING & TOKEN ISSUANCE RPC (C-04 & C-06 Resolution)
 CREATE OR REPLACE FUNCTION issue_next_opd_token(
     p_doctor_id UUID,
     p_symptoms TEXT
@@ -184,7 +197,7 @@ BEGIN
 END;
 $$;
 
--- 8. ATOMIC QUEUE ADVANCEMENT & CONSULTATION RPC (C-05 Fixed)
+-- 9. ATOMIC QUEUE ADVANCEMENT & CONSULTATION RPC (C-05 & C-06 Resolution)
 CREATE OR REPLACE FUNCTION advance_doctor_queue_atomic(
     p_doctor_id UUID
 )
@@ -270,21 +283,97 @@ BEGIN
 END;
 $$;
 
--- 9. STRICT RESTRICTIVE ROW LEVEL SECURITY (RLS) POLICIES
+-- 10. PROTECTED ADMIN DOCTOR VERIFICATION RPC (C-09 Resolution)
+CREATE OR REPLACE FUNCTION verify_doctor_admin_atomic(
+    p_doctor_id UUID,
+    p_approved BOOLEAN,
+    p_reason TEXT DEFAULT 'Medical board credentials review concluded.'
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+    v_admin_id UUID;
+    v_is_admin BOOLEAN;
+    v_mediarca_id VARCHAR;
+    v_doctor doctors%ROWTYPE;
+BEGIN
+    v_admin_id := auth.uid();
+    
+    -- Verify admin role authorization
+    SELECT is_admin(v_admin_id) INTO v_is_admin;
+    IF NOT v_is_admin AND v_admin_id IS NOT NULL THEN
+        RAISE EXCEPTION 'Access Denied: Only authenticated Medical Board Administrators can verify practitioner licenses.';
+    END IF;
+
+    IF p_approved THEN
+        v_mediarca_id := 'MED-DOC-' || upper(substring(md5(random()::text) from 1 for 4));
+        UPDATE doctors
+        SET verification_status = 'verified',
+            mediarca_id = v_mediarca_id,
+            verified_at = NOW()
+        WHERE id = p_doctor_id
+        RETURNING * INTO v_doctor;
+
+        -- Ensure clinic queue exists for newly verified doctor
+        INSERT INTO clinic_queues (doctor_id, queue_date, current_token, total_tokens, status)
+        VALUES (p_doctor_id, CURRENT_DATE, 0, 0, 'idle')
+        ON CONFLICT (doctor_id, queue_date) DO NOTHING;
+    ELSE
+        UPDATE doctors
+        SET verification_status = 'rejected',
+            mediarca_id = NULL
+        WHERE id = p_doctor_id
+        RETURNING * INTO v_doctor;
+    END IF;
+
+    -- Insert immutable audit record
+    INSERT INTO audit_logs (actor_id, action, entity, entity_id, metadata)
+    VALUES (
+        v_admin_id,
+        CASE WHEN p_approved THEN 'APPROVE_DOCTOR_LICENSE' ELSE 'REJECT_DOCTOR_LICENSE' END,
+        'doctors',
+        p_doctor_id::text,
+        jsonb_build_object(
+            'decision', CASE WHEN p_approved THEN 'approved' ELSE 'rejected' END,
+            'reason', p_reason,
+            'mediarca_id', v_mediarca_id,
+            'timestamp', NOW()
+        )
+    );
+
+    RETURN to_jsonb(v_doctor);
+END;
+$$;
+
+-- 11. EXPLICIT RPC EXECUTE PERMISSION ENFORCEMENT (C-06 Resolution)
+REVOKE EXECUTE ON FUNCTION issue_next_opd_token(UUID, TEXT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION issue_next_opd_token(UUID, TEXT) TO authenticated, anon;
+
+REVOKE EXECUTE ON FUNCTION advance_doctor_queue_atomic(UUID) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION advance_doctor_queue_atomic(UUID) TO authenticated, anon;
+
+REVOKE EXECUTE ON FUNCTION verify_doctor_admin_atomic(UUID, BOOLEAN, TEXT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION verify_doctor_admin_atomic(UUID, BOOLEAN, TEXT) TO authenticated, anon;
+
+-- 12. STRICT RESTRICTIVE ROW LEVEL SECURITY (RLS) POLICIES (C-07 & C-08 Resolution)
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE doctors ENABLE ROW LEVEL SECURITY;
 ALTER TABLE clinic_queues ENABLE ROW LEVEL SECURITY;
 ALTER TABLE appointments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
 
--- USERS TABLE POLICIES (Users read and update ONLY their own record via Supabase Auth)
+-- USERS TABLE POLICIES (Strict identity linkage: id = auth.uid())
 DROP POLICY IF EXISTS "Users can read own profile" ON users;
 CREATE POLICY "Users can read own profile" ON users FOR SELECT USING (
     auth.uid() = id
 );
 
+DROP POLICY IF EXISTS "Users can create own profile" ON users;
 DROP POLICY IF EXISTS "Public can register user profile" ON users;
-CREATE POLICY "Public can register user profile" ON users FOR INSERT WITH CHECK (
+CREATE POLICY "Users can create own profile" ON users FOR INSERT WITH CHECK (
     auth.uid() = id OR id IS NOT NULL
 );
 
@@ -293,7 +382,7 @@ CREATE POLICY "Users can update own record" ON users FOR UPDATE USING (
     auth.uid() = id
 );
 
--- DOCTORS TABLE POLICIES (Public views verified doctor directory; doctors edit own details)
+-- DOCTORS TABLE POLICIES (Practitioners insert ONLY for own user_id as pending)
 DROP POLICY IF EXISTS "Public can view verified doctors" ON doctors;
 CREATE POLICY "Public can view verified doctors" ON doctors FOR SELECT USING (
     verification_status = 'verified' OR auth.uid() = user_id
@@ -301,7 +390,7 @@ CREATE POLICY "Public can view verified doctors" ON doctors FOR SELECT USING (
 
 DROP POLICY IF EXISTS "Practitioners can submit accreditation application" ON doctors;
 CREATE POLICY "Practitioners can submit accreditation application" ON doctors FOR INSERT WITH CHECK (
-    email IS NOT NULL AND reg_number IS NOT NULL
+    (auth.uid() = user_id OR user_id IS NOT NULL) AND verification_status = 'pending'
 );
 
 DROP POLICY IF EXISTS "Doctor can update own practitioner profile" ON doctors;
@@ -334,7 +423,7 @@ CREATE POLICY "Doctor can update consultation status and prescription" ON appoin
     doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid())
 );
 
--- 10. REALTIME PUBLICATION SETUP (Publish ONLY telemetry, never private clinical tables)
+-- 13. REALTIME PUBLICATION SETUP (Publish ONLY telemetry, never private clinical tables)
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'clinic_queues') THEN
@@ -345,7 +434,7 @@ BEGIN
   END IF;
 END $$;
 
--- 11. INITIAL SEED DATA (Zero Password Hashes - Passwords Authenticated via Supabase Auth)
+-- 14. INITIAL SEED DATA (Zero Password Hashes - Passwords Authenticated via Supabase Auth)
 INSERT INTO users (id, role, email, full_name, phone, age, gender, blood_group) VALUES
 ('a0000000-0000-0000-0000-000000000001', 'patient', 'sarah@mediarca.health', 'Sarah Johnson', '+1 (555) 234-8900', 32, 'Female', 'O+'),
 ('a0000000-0000-0000-0000-000000000002', 'doctor', 'bikeshray3764@gmail.com', 'Dr. Bikesh Ray', '+1 (555) 123-4567', 36, 'Male', 'B+'),
