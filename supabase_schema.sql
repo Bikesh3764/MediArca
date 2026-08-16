@@ -73,12 +73,12 @@ CREATE TABLE IF NOT EXISTS clinic_queues (
     UNIQUE(doctor_id, queue_date)
 );
 
--- 6. APPOINTMENTS, TOKENS & CLINICAL PRESCRIPTIONS TABLE (Q-06 & Q-07 Resolution)
+-- 6. APPOINTMENTS & TOKENS TABLE (Q-06, Q-07, D-08 & D-09 Resolution)
 CREATE TABLE IF NOT EXISTS appointments (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     booking_id VARCHAR(50) UNIQUE NOT NULL,
     patient_id UUID REFERENCES users(id) ON DELETE SET NULL,
-    doctor_id UUID NOT NULL REFERENCES doctors(id) ON DELETE CASCADE,
+    doctor_id UUID NOT NULL REFERENCES doctors(id) ON DELETE RESTRICT,
     patient_name VARCHAR(255) NOT NULL,
     patient_phone VARCHAR(50) NOT NULL,
     patient_age INT CHECK (patient_age IS NULL OR (patient_age >= 0 AND patient_age <= 125)),
@@ -100,18 +100,68 @@ CREATE TABLE IF NOT EXISTS appointments (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 7. AUDIT COMPLIANCE & ACTIVITY LOGS TABLE (D-05 Resolution: FK to users)
+-- 7. RICH EMR CLINICAL ENCOUNTERS & PRESCRIPTIONS (D-10 Resolution)
+CREATE TABLE IF NOT EXISTS clinical_encounters (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    appointment_id UUID REFERENCES appointments(id) ON DELETE RESTRICT,
+    doctor_id UUID REFERENCES doctors(id) ON DELETE RESTRICT,
+    patient_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    chief_complaint TEXT,
+    clinical_notes TEXT,
+    vitals JSONB,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS clinical_prescriptions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    encounter_id UUID REFERENCES clinical_encounters(id) ON DELETE CASCADE,
+    appointment_id UUID REFERENCES appointments(id) ON DELETE RESTRICT,
+    diagnosis TEXT NOT NULL,
+    advice TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS prescription_items (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    prescription_id UUID REFERENCES clinical_prescriptions(id) ON DELETE CASCADE,
+    drug_name VARCHAR(255) NOT NULL,
+    dosage VARCHAR(100),
+    frequency VARCHAR(100),
+    duration VARCHAR(100),
+    instructions TEXT
+);
+
+-- 8. AUDIT COMPLIANCE & ACTIVITY LOGS TABLE (D-05 & D-06 Resolution: FK to users + UUID entity_id)
 CREATE TABLE IF NOT EXISTS audit_logs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     actor_id UUID REFERENCES users(id) ON DELETE SET NULL,
     action VARCHAR(100) NOT NULL,
     entity VARCHAR(50) NOT NULL,
-    entity_id VARCHAR(100),
+    entity_id UUID,
     metadata JSONB,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 8. HELPER FUNCTION: IS_ADMIN CHECK (C-09 Resolution)
+-- 9. AUTOMATED UPDATED_AT TRIGGER FUNCTION (D-07 Resolution)
+CREATE OR REPLACE FUNCTION set_updated_at_timestamp()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trigger_clinic_queues_updated_at ON clinic_queues;
+CREATE TRIGGER trigger_clinic_queues_updated_at
+BEFORE UPDATE ON clinic_queues
+FOR EACH ROW EXECUTE FUNCTION set_updated_at_timestamp();
+
+DROP TRIGGER IF EXISTS trigger_patient_clinical_profiles_updated_at ON patient_clinical_profiles;
+CREATE TRIGGER trigger_patient_clinical_profiles_updated_at
+BEFORE UPDATE ON patient_clinical_profiles
+FOR EACH ROW EXECUTE FUNCTION set_updated_at_timestamp();
+
+-- 10. HELPER FUNCTION: IS_ADMIN CHECK (C-09 Resolution)
 CREATE OR REPLACE FUNCTION is_admin(p_user_id UUID)
 RETURNS BOOLEAN
 LANGUAGE sql
@@ -217,7 +267,7 @@ BEGIN
 
     -- Log audit trail
     INSERT INTO audit_logs (actor_id, action, entity, entity_id, metadata)
-    VALUES (v_actor_id, 'BOOK_TOKEN', 'appointments', v_appointment.id::text, jsonb_build_object('token_number', v_next_token, 'doctor_id', p_doctor_id));
+    VALUES (v_actor_id, 'BOOK_TOKEN', 'appointments', v_appointment.id, jsonb_build_object('token_number', v_next_token, 'doctor_id', p_doctor_id));
 
     RETURN to_jsonb(v_appointment);
 END;
@@ -297,7 +347,7 @@ BEGIN
 
     -- Audit logging
     INSERT INTO audit_logs (actor_id, action, entity, entity_id, metadata)
-    VALUES (v_actor_id, 'ADVANCE_QUEUE', 'clinic_queues', p_doctor_id::text, jsonb_build_object('current_token', COALESCE(v_next_token_num, 0)));
+    VALUES (v_actor_id, 'ADVANCE_QUEUE', 'clinic_queues', p_doctor_id, jsonb_build_object('current_token', COALESCE(v_next_token_num, 0)));
 
     SELECT jsonb_build_object(
         'doctorId', p_doctor_id,
@@ -392,7 +442,7 @@ BEGIN
         v_actor_id,
         'COMPLETE_CONSULTATION_RX',
         'appointments',
-        v_appointment_id::text,
+        v_appointment_id,
         jsonb_build_object(
             'doctor_id', p_doctor_id,
             'token_number', p_token_number,
@@ -501,7 +551,7 @@ BEGIN
         v_actor_id,
         'MARK_APPOINTMENT_' || upper(p_status),
         'appointments',
-        v_appointment_id::text,
+        v_appointment_id,
         jsonb_build_object(
             'doctor_id', p_doctor_id,
             'token_number', p_token_number,
@@ -563,7 +613,7 @@ BEGIN
         v_actor_id,
         'PRIORITY_TRIAGE_OVERRIDE',
         'appointments',
-        v_appointment_id::text,
+        v_appointment_id,
         jsonb_build_object(
             'doctor_id', p_doctor_id,
             'token_number', p_token_number,
@@ -632,7 +682,7 @@ BEGIN
         v_admin_id,
         CASE WHEN p_approved THEN 'APPROVE_DOCTOR_LICENSE' ELSE 'REJECT_DOCTOR_LICENSE' END,
         'doctors',
-        p_doctor_id::text,
+        p_doctor_id,
         jsonb_build_object(
             'decision', CASE WHEN p_approved THEN 'approved' ELSE 'rejected' END,
             'reason', p_reason,
