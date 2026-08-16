@@ -1365,6 +1365,7 @@ DECLARE
     v_actor_role VARCHAR;
     v_appointment appointments%ROWTYPE;
     v_is_authorized BOOLEAN;
+    v_checkin_token VARCHAR;
 BEGIN
     v_actor_id := auth.uid();
 
@@ -1419,10 +1420,16 @@ BEGIN
         END IF;
     END IF;
 
+    -- RS-04 Resolution: Invalidate old check-in token and issue fresh 128-bit CSPRNG token for new date window
+    v_checkin_token := 'MED-QR-' || lower(encode(gen_random_bytes(16), 'hex'));
+
     UPDATE appointments
     SET scheduled_date = p_new_date,
         appointment_date = p_new_date,
         scheduled_slot = p_new_slot,
+        checkin_token = v_checkin_token,
+        checkin_token_expires_at = (p_new_date + interval '1 day 23:59:59')::timestamptz,
+        check_in_time = NULL,
         status = 'booked'
     WHERE id = p_appointment_id
     RETURNING * INTO v_appointment;

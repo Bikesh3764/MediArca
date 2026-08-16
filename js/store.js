@@ -1261,7 +1261,16 @@ class MediarcaStore {
       const token = queue.tokens.find(t => t.tokenNumber === tokenNumber);
       if (token) {
         token.isPriority = true;
+        token.priorityReason = reason;
       }
+      // PR-03 Resolution: Immediately sort tokens placing priority waiting tokens at front
+      queue.tokens.sort((a, b) => {
+        if (a.status === 'in-consultation') return -1;
+        if (b.status === 'in-consultation') return 1;
+        if (a.isPriority && !b.isPriority) return -1;
+        if (!a.isPriority && b.isPriority) return 1;
+        return a.tokenNumber - b.tokenNumber;
+      });
     }
 
     this.notifySubscribers();
@@ -1473,7 +1482,55 @@ class MediarcaStore {
     return newDoc;
   }
 
-  // 8. MEDICAL TIMELINE EVENT RECORDING (Tier 2 Resolution)
+  // 8. MEDICAL TIMELINE DYNAMIC AGGREGATOR (MT-01 Resolution: Synthesized from Clinical Records)
+  getPatientTimeline(patientId) {
+    const pid = patientId || this.state.currentUser?.id;
+    const events = [];
+
+    // 1. Synthesize from Bookings/Appointments
+    (this.state.bookings || []).forEach(b => {
+      if (!pid || b.patientId === pid) {
+        events.push({
+          id: 'tl_appt_' + (b.id || b.bookingId),
+          patientId: b.patientId,
+          date: b.date || b.scheduledDate || new Date().toISOString().split('T')[0],
+          type: 'encounter',
+          title: `OPD Consultation with ${b.doctorName || 'Attending Physician'}`,
+          doctorName: b.doctorName || 'Specialist',
+          specialty: b.specialty || 'General OPD',
+          status: b.status,
+          details: `Encounter Token #${b.tokenNumber || '—'} [Status: ${(b.status || 'booked').toUpperCase()}] • Symptoms: ${b.symptoms || 'General Checkup'}`
+        });
+      }
+    });
+
+    // 2. Synthesize from Clinical Documents
+    (this.state.clinicalDocuments || []).forEach(doc => {
+      if (!pid || doc.patientId === pid) {
+        events.push({
+          id: 'tl_doc_' + doc.id,
+          patientId: doc.patientId,
+          date: doc.uploadedDate || new Date().toISOString().split('T')[0],
+          type: 'document',
+          title: `Clinical Vault: ${doc.fileName}`,
+          doctorName: doc.doctorName || 'Self-Uploaded',
+          specialty: doc.category || 'Diagnostic Record',
+          status: 'verified',
+          details: `Document Category: ${doc.category} (${doc.fileSize || 'Standard'}) stored in authenticated private vault.`
+        });
+      }
+    });
+
+    // 3. Include any custom timeline events
+    (this.state.medicalTimeline || []).forEach(t => {
+      if (!events.some(e => e.id === t.id)) {
+        events.push(t);
+      }
+    });
+
+    return events.sort((a, b) => new Date(b.date) - new Date(a.date));
+  }
+
   addTimelineEvent(eventData) {
     const newEvent = {
       id: 'tl_' + Date.now(),
@@ -1551,18 +1608,28 @@ class MediarcaStore {
       }
     }
 
-    const allBookings = this.state.bookings || [];
-    const totalAppointments = allBookings.length;
-    const completed = allBookings.filter(b => b.status === 'completed').length;
-    const noShows = allBookings.filter(b => b.status === 'no-show').length;
-    const waiting = allBookings.filter(b => b.status === 'waiting' || b.status === 'checked_in').length;
-    const noShowRate = totalAppointments > 0 ? ((noShows / totalAppointments) * 100).toFixed(1) : '0.0';
+    // AN-03 Resolution: Authentically derive hourly patient arrival from real bookings
+    const hourBuckets = {
+      '09:00 AM': 0,
+      '10:00 AM': 0,
+      '11:00 AM': 0,
+      '12:00 PM': 0,
+      '01:00 PM': 0,
+      '02:00 PM': 0
+    };
 
-    const queues = Object.values(this.state.queues || {});
-    const activeQueuesCount = queues.filter(q => q.status === 'in-session').length;
-    const avgConsultDurationMins = queues.length > 0
-      ? (queues.reduce((acc, q) => acc + (q.avgConsultTimeMins || 12), 0) / queues.length).toFixed(1)
-      : '12.0';
+    allBookings.forEach(b => {
+      const timeStr = b.checkInTime || b.scheduledSlot || '10:00 AM';
+      if (timeStr.includes('09:')) hourBuckets['09:00 AM']++;
+      else if (timeStr.includes('10:')) hourBuckets['10:00 AM']++;
+      else if (timeStr.includes('11:')) hourBuckets['11:00 AM']++;
+      else if (timeStr.includes('12:')) hourBuckets['12:00 PM']++;
+      else if (timeStr.includes('01:') || timeStr.includes('13:')) hourBuckets['01:00 PM']++;
+      else if (timeStr.includes('02:') || timeStr.includes('14:')) hourBuckets['02:00 PM']++;
+      else hourBuckets['10:00 AM']++;
+    });
+
+    const hourlyDistribution = Object.entries(hourBuckets).map(([hour, count]) => ({ hour, patients: count }));
 
     return {
       totalAppointments,
@@ -1573,14 +1640,9 @@ class MediarcaStore {
       noShowRate: `${noShowRate}%`,
       avgWaitTimeMins: `${avgConsultDurationMins} min`,
       avgConsultDurationMins: `${avgConsultDurationMins} min`,
+      todayRevenue: `$${(completed * 60).toFixed(2)}`,
       peakHours: '10:00 AM – 01:00 PM',
-      hourlyDistribution: [
-        { hour: '09:00 AM', patients: Math.max(2, Math.round(totalAppointments * 0.15)) },
-        { hour: '10:00 AM', patients: Math.max(4, Math.round(totalAppointments * 0.25)) },
-        { hour: '11:00 AM', patients: Math.max(5, Math.round(totalAppointments * 0.30)) },
-        { hour: '12:00 PM', patients: Math.max(3, Math.round(totalAppointments * 0.18)) },
-        { hour: '01:00 PM', patients: Math.max(1, Math.round(totalAppointments * 0.07)) }
-      ]
+      hourlyDistribution
     };
   }
 
@@ -1747,7 +1809,8 @@ class MediarcaStore {
           coveragePct
         );
       } catch (e) {
-        console.warn('Cloud invoice settlement warning:', e);
+        console.error('Cloud invoice settlement failure:', e);
+        throw new Error(`Billing transaction could not be settled on the server: ${e.message || 'Settlement declined'}`);
       }
     }
 
