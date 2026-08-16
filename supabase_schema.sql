@@ -1821,7 +1821,16 @@ BEGIN
     SELECT COUNT(*) INTO v_noshow_appointments FROM appointments WHERE scheduled_date = CURRENT_DATE AND status = 'no-show';
     SELECT COUNT(*) INTO v_active_queues FROM clinic_queues WHERE queue_date = CURRENT_DATE AND status = 'in-session';
     SELECT COALESCE(SUM(total_amount), 0.00) INTO v_total_revenue FROM patient_invoices WHERE DATE(settled_at) = CURRENT_DATE;
-    SELECT COALESCE(AVG(avg_consult_time_mins), 12.0) INTO v_avg_wait FROM clinic_queues WHERE queue_date = CURRENT_DATE;
+
+    -- H-24: Calculate real measured wait times from check_in_time to start_at
+    SELECT COALESCE(
+        AVG(EXTRACT(EPOCH FROM (start_at - check_in_time)) / 60.0),
+        12.0
+    ) INTO v_avg_wait 
+    FROM appointments 
+    WHERE scheduled_date = CURRENT_DATE 
+      AND check_in_time IS NOT NULL 
+      AND start_at IS NOT NULL;
 
     RETURN jsonb_build_object(
         'date', CURRENT_DATE,
@@ -1925,14 +1934,35 @@ CREATE POLICY "Doctor can update own practitioner profile" ON doctors FOR UPDATE
     auth.uid() = user_id
 );
 
--- CLINIC QUEUES TABLE POLICIES (Public reads live queue counters; doctor mutates)
+-- CLINIC QUEUES TABLE POLICIES (M-01 Resolution: Restrict Public Read to Today's Active Queues)
 DROP POLICY IF EXISTS "Public can read live queue telemetry" ON clinic_queues;
-CREATE POLICY "Public can read live queue telemetry" ON clinic_queues FOR SELECT USING (true);
+CREATE POLICY "Public can read live queue telemetry" ON clinic_queues FOR SELECT USING (
+    queue_date = CURRENT_DATE
+);
 
 DROP POLICY IF EXISTS "Doctor can update own queue" ON clinic_queues;
 CREATE POLICY "Doctor can update own queue" ON clinic_queues FOR ALL USING (
     doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid())
 );
+
+-- 22. MINIMAL PUBLIC QUEUE TELEMETRY VIEW (M-02 Resolution)
+CREATE OR REPLACE VIEW public_queue_telemetry AS
+SELECT 
+    cq.id AS queue_id,
+    cq.doctor_id,
+    d.name AS doctor_name,
+    d.specialty,
+    cq.queue_date,
+    cq.current_token,
+    cq.total_tokens,
+    cq.status,
+    cq.avg_consult_time_mins,
+    cq.updated_at
+FROM clinic_queues cq
+JOIN doctors d ON d.id = cq.doctor_id
+WHERE cq.queue_date = CURRENT_DATE AND d.verification_status = 'verified';
+
+GRANT SELECT ON public_queue_telemetry TO anon, authenticated;
 
 -- APPOINTMENTS TABLE POLICIES (Strict isolated access between patient & doctor)
 DROP POLICY IF EXISTS "Patients and Doctors can access relevant appointments" ON appointments;

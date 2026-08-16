@@ -1445,7 +1445,7 @@ class MediarcaApp {
     this.renderAdminHub();
   }
 
-  renderAdminHub() {
+  async renderAdminHub() {
     const container = document.getElementById('adminPortalContainer');
     if (!container) return;
 
@@ -1453,7 +1453,7 @@ class MediarcaApp {
     const pending = doctors.filter(d => d.verificationStatus === 'pending');
     const verified = doctors.filter(d => d.verificationStatus === 'verified');
     const users = window.mediarcaStore.state.users || [];
-    const analytics = window.mediarcaStore.getHospitalAnalytics();
+    const analytics = await window.mediarcaStore.getHospitalAnalytics();
     const auditLogs = window.mediarcaStore.state.auditLogs || [];
     const facilities = window.mediarcaStore.state.facilities || [];
     const rooms = window.mediarcaStore.state.rooms || [];
