@@ -621,10 +621,15 @@ class MediarcaStore {
   }
 
   async bookAppointment(bookingData) {
+    // 1. Enforce Strict Caller Authorization & Authentication (A-01 & A-03 Resolution)
+    if (!this.state.currentUser || !this.state.currentUser.id || (this.state.currentUser.role !== 'patient' && this.state.currentUser.role !== 'admin')) {
+      throw new Error('Access Denied: Only authenticated patients can book appointments.');
+    }
+
     const doctor = this.state.doctors.find(d => d.id === bookingData.doctorId);
     if (!doctor) throw new Error('Doctor not found in accredited directory.');
 
-    // 1. Prevent Duplicate Active Appointments for Same Doctor/Day (H-13 Resolution)
+    // 2. Prevent Duplicate Active Appointments for Same Doctor/Day (H-13 Resolution)
     const hasActiveBooking = this.state.bookings.some(b => 
       b.patientId === this.state.currentUser.id &&
       b.doctorId === doctor.id &&
@@ -642,7 +647,7 @@ class MediarcaStore {
       tokens: []
     };
 
-    // 2. Enforce Queue Status Rules (H-12 Resolution)
+    // 3. Enforce Queue Status Rules (H-12 Resolution)
     if (queue.status === 'paused') {
       throw new Error('This doctor OPD queue is currently paused. Please wait for the queue to resume.');
     } else if (queue.status === 'completed') {
@@ -651,7 +656,7 @@ class MediarcaStore {
 
     let cloudBooking = null;
 
-    // 3. Authoritative Cloud Stored Procedure via Supabase RPC (H-01 & H-02 Resolution)
+    // 4. Authoritative Cloud Stored Procedure via Supabase RPC (H-01 & H-02 Resolution)
     if (window.mediarcaSupabase && window.mediarcaSupabase.isConnected) {
       cloudBooking = await window.mediarcaSupabase.cloudBookAppointment({
         doctorId: doctor.id,
@@ -664,7 +669,7 @@ class MediarcaStore {
 
     const bookingId = cloudBooking ? cloudBooking.booking_id : ('MED-BK-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase());
     
-    // 4. All New Bookings enter 'waiting' queue line until called by doctor (H-11 Resolution)
+    // 5. All New Bookings enter 'waiting' queue line until called by doctor (H-11 Resolution)
     const initialStatus = 'waiting';
 
     const newBooking = {
@@ -710,9 +715,14 @@ class MediarcaStore {
   }
 
   async advanceDoctorQueue(doctorId) {
+    // 1. Enforce Doctor/Admin Authorization (A-01 Resolution)
+    if (!this.state.currentUser || !this.state.currentUser.id || (this.state.currentUser.role !== 'doctor' && this.state.currentUser.role !== 'admin')) {
+      throw new Error('Access Denied: Only the assigned verified physician can control this OPD queue.');
+    }
+
     let cloudRes = null;
 
-    // 1. Authoritative Cloud Stored Procedure via Supabase RPC (H-03 Resolution)
+    // 2. Authoritative Cloud Stored Procedure via Supabase RPC (H-03 Resolution)
     if (window.mediarcaSupabase && window.mediarcaSupabase.isConnected) {
       cloudRes = await window.mediarcaSupabase.cloudAdvanceQueue(doctorId);
     }
@@ -758,9 +768,14 @@ class MediarcaStore {
   }
 
   async completeConsultationWithPrescription(doctorId, tokenNumber, rxData) {
+    // 1. Enforce Doctor/Admin Authorization (A-01 Resolution)
+    if (!this.state.currentUser || !this.state.currentUser.id || (this.state.currentUser.role !== 'doctor' && this.state.currentUser.role !== 'admin')) {
+      throw new Error('Access Denied: Only the attending physician can issue prescriptions.');
+    }
+
     let cloudRes = null;
 
-    // 1. Authoritative Transactional Cloud RPC (H-05 Resolution)
+    // 2. Authoritative Transactional Cloud RPC (H-05 Resolution)
     if (window.mediarcaSupabase && window.mediarcaSupabase.isConnected) {
       cloudRes = await window.mediarcaSupabase.cloudSavePrescription(doctorId, tokenNumber, rxData);
     }
@@ -795,6 +810,11 @@ class MediarcaStore {
   }
 
   async verifyDoctor(doctorId, approved, reason) {
+    // 1. Enforce Admin Authorization (A-01 Resolution)
+    if (!this.state.currentUser || !this.state.currentUser.id || this.state.currentUser.role !== 'admin') {
+      throw new Error('Access Denied: Medical Board Administrator privileges required.');
+    }
+
     const doc = this.state.doctors.find(d => d.id === doctorId);
     if (!doc) return null;
 

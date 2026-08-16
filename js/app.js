@@ -609,21 +609,15 @@ class MediarcaApp {
 
     const user = window.mediarcaStore.state.currentUser;
     const allBookings = window.mediarcaStore.state.bookings || [];
-
-    // Strictly isolate patient's own bookings by immutable user keys (no name fallback)
-    const patientBookings = allBookings.filter(b => {
-      if (user.id && b.patientId === user.id) return true;
-      if (user.phone && b.patientPhone && b.patientPhone === user.phone) return true;
-      if (user.email && b.email && b.email.toLowerCase() === user.email.toLowerCase()) return true;
-      return false;
-    });
+    // Strictly isolate patient's own bookings by immutable authenticated UUID only (A-02 Resolution)
+    const patientBookings = allBookings.filter(b => user.id && b.patientId === user.id);
 
     container.innerHTML = `
       <div class="container" style="padding-top: 2rem; padding-bottom: 4rem;">
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
           <div>
             <span class="badge badge-role" style="margin-bottom: 0.5rem;">Patient Account</span>
-            <h2 style="font-size: 1.75rem; font-weight: 800; color: var(--text-primary);">Hello, ${user.name || 'Patient'}</h2>
+            <h2 style="font-size: 1.75rem; font-weight: 800; color: var(--text-primary);">Hello, ${escapeHtml(user.name || 'Patient')}</h2>
             <p style="color: var(--text-secondary); font-size: 0.875rem;">Manage your active appointments, digital queue tokens, and physician advice.</p>
           </div>
           <button class="btn btn-primary" onclick="window.mediarcaApp.switchView('home')">
@@ -683,7 +677,7 @@ class MediarcaApp {
                 <div><span style="color: var(--text-muted);">Full Name:</span> <strong>${escapeHtml(user.name || 'Patient')}</strong></div>
                 <div><span style="color: var(--text-muted);">Email:</span> <strong>${escapeHtml(user.email || 'N/A')}</strong></div>
                 <div><span style="color: var(--text-muted);">Phone:</span> <strong>${escapeHtml(user.phone || 'N/A')}</strong></div>
-                <div><span style="color: var(--text-muted);">Blood Group:</span> <strong>${escapeHtml(user.bloodGroup || 'O+')}</strong></div>
+                <div><span style="color: var(--text-muted);">Blood Group:</span> <strong>${escapeHtml(user.bloodGroup || 'Not specified')}</strong></div>
               </div>
             </div>
           </div>
@@ -700,7 +694,8 @@ class MediarcaApp {
     if (!container) return;
 
     const user = window.mediarcaStore.state.currentUser;
-    const doc = window.mediarcaStore.state.doctors.find(d => d.id === user.id || (d.email && user.email && d.email.toLowerCase() === user.email.toLowerCase())) || user;
+    // Canonical UUID matching (A-04 Resolution)
+    const doc = window.mediarcaStore.state.doctors.find(d => d.id === user.id || d.userId === user.id) || user;
 
     if (doc.verificationStatus === 'pending') {
       container.innerHTML = `
