@@ -1117,38 +1117,38 @@ class MediarcaApp {
                     <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; margin-bottom: 0.5rem;">
                       <div>
                         <label style="font-size:0.65rem; color:var(--text-muted); font-weight:700;">BP (mmHg)</label>
-                        <input type="text" id="docBpInput" class="form-input" placeholder="e.g. 120/80" value="120/80 mmHg" style="font-size: 0.8125rem;">
+                        <input type="text" id="docBpInput" class="form-input" placeholder="e.g. 120/80" value="" style="font-size: 0.8125rem;">
                       </div>
                       <div>
                         <label style="font-size:0.65rem; color:var(--text-muted); font-weight:700;">PULSE (bpm)</label>
-                        <input type="text" id="docPulseInput" class="form-input" placeholder="e.g. 74 bpm" value="74 bpm" style="font-size: 0.8125rem;">
+                        <input type="text" id="docPulseInput" class="form-input" placeholder="e.g. 74" value="" style="font-size: 0.8125rem;">
                       </div>
                       <div>
                         <label style="font-size:0.65rem; color:var(--text-muted); font-weight:700;">TEMP (°F)</label>
-                        <input type="text" id="docTempInput" class="form-input" placeholder="e.g. 98.6°F" value="98.6 °F" style="font-size: 0.8125rem;">
+                        <input type="text" id="docTempInput" class="form-input" placeholder="e.g. 98.6" value="" style="font-size: 0.8125rem;">
                       </div>
                       <div>
                         <label style="font-size:0.65rem; color:var(--text-muted); font-weight:700;">SpO2 (%)</label>
-                        <input type="text" id="docSpo2Input" class="form-input" placeholder="e.g. 99%" value="99%" style="font-size: 0.8125rem;">
+                        <input type="text" id="docSpo2Input" class="form-input" placeholder="e.g. 99" value="" style="font-size: 0.8125rem;">
                       </div>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1.2fr; gap: 0.5rem; align-items:center;">
                       <div>
                         <label style="font-size:0.65rem; color:var(--text-muted); font-weight:700;">WEIGHT (kg)</label>
-                        <input type="number" id="docWeightInput" class="form-input" placeholder="68" value="68" step="0.5" oninput="window.mediarcaApp.updateDoctorBmiLive()" style="font-size: 0.8125rem;">
+                        <input type="number" id="docWeightInput" class="form-input" placeholder="e.g. 70" value="" step="0.5" oninput="window.mediarcaApp.updateDoctorBmiLive()" style="font-size: 0.8125rem;">
                       </div>
                       <div>
                         <label style="font-size:0.65rem; color:var(--text-muted); font-weight:700;">HEIGHT (cm)</label>
-                        <input type="number" id="docHeightInput" class="form-input" placeholder="174" value="174" oninput="window.mediarcaApp.updateDoctorBmiLive()" style="font-size: 0.8125rem;">
+                        <input type="number" id="docHeightInput" class="form-input" placeholder="e.g. 175" value="" oninput="window.mediarcaApp.updateDoctorBmiLive()" style="font-size: 0.8125rem;">
                       </div>
                       <div>
                         <label style="font-size:0.65rem; color:var(--text-muted); font-weight:700;">RESP RATE (/min)</label>
-                        <input type="text" id="docRespInput" class="form-input" placeholder="16 /min" value="16 /min" style="font-size: 0.8125rem;">
+                        <input type="text" id="docRespInput" class="form-input" placeholder="e.g. 16" value="" style="font-size: 0.8125rem;">
                       </div>
                       <div style="padding-top:1.1rem;">
-                        <span id="docBmiBadge" class="badge" style="background:#dcfce7; color:#15803d; font-size:0.75rem; width:100%; justify-content:center; display:flex;">
-                          BMI: 22.5 (Normal Weight)
+                        <span id="docBmiBadge" class="badge" style="background:#f1f5f9; color:#475569; font-size:0.75rem; width:100%; justify-content:center; display:flex;">
+                          BMI: Not Measured
                         </span>
                       </div>
                     </div>
@@ -1373,10 +1373,11 @@ class MediarcaApp {
 
   async handleCompleteWithRx(doctorId, tokenNumber) {
     const diagnosis = document.getElementById('docDiagnosisInput')?.value.trim() || 'Clinical evaluation concluded.';
-    const bp = document.getElementById('docBpInput')?.value.trim() || '120/80 mmHg';
-    const pulse = document.getElementById('docPulseInput')?.value.trim() || '72 bpm';
-    const temp = document.getElementById('docTempInput')?.value.trim() || '98.6 °F';
-    const spo2 = document.getElementById('docSpo2Input')?.value.trim() || '99%';
+    const bp = document.getElementById('docBpInput')?.value.trim() || null;
+    const pulse = document.getElementById('docPulseInput')?.value.trim() || null;
+    const temp = document.getElementById('docTempInput')?.value.trim() || null;
+    const spo2 = document.getElementById('docSpo2Input')?.value.trim() || null;
+    const vitalsObj = (bp || pulse || temp || spo2) ? { bp, pulse, temp, spo2 } : null;
     
     // Multi-drug regimen items
     const med1Drug = document.getElementById('docMed1Drug')?.value.trim();
@@ -1401,7 +1402,7 @@ class MediarcaApp {
         medications,
         advice: `${advice}${labOrders ? ' • Diagnostic Labs Ordered: ' + labOrders : ''}`,
         followUpDate,
-        vitals: { bp, pulse, temp, spo2 }
+        vitals: vitalsObj
       });
 
       if (window.mediarcaAudio) window.mediarcaAudio.playChime('success');

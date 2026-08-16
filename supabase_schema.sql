@@ -1894,6 +1894,9 @@ GRANT EXECUTE ON FUNCTION issue_reception_walkin_token(UUID, VARCHAR, VARCHAR, I
 REVOKE ALL ON FUNCTION schedule_future_appointment_atomic(UUID, DATE, VARCHAR, TEXT, VARCHAR) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION schedule_future_appointment_atomic(UUID, DATE, VARCHAR, TEXT, VARCHAR) TO authenticated;
 
+REVOKE ALL ON FUNCTION transition_appointment_status_atomic(UUID, VARCHAR, TEXT) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION transition_appointment_status_atomic(UUID, VARCHAR, TEXT) TO authenticated;
+
 -- 13. STRICT RESTRICTIVE ROW LEVEL SECURITY (RLS) POLICIES (C-07 & C-08 Resolution)
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE doctors ENABLE ROW LEVEL SECURITY;
@@ -2205,7 +2208,81 @@ CREATE POLICY "Participants can update room status" ON telemedicine_rooms FOR UP
         ) OR is_admin(auth.uid())
     );
 
--- 18. PUBLIC DIRECTORY VIEW (P-02 & Q-04 Resolution: Single Source of Truth via clinic_queues)
+-- 23. CENTRALIZED APPOINTMENT LIFECYCLE STATE TRANSITION RPC (M-06 Resolution)
+CREATE OR REPLACE FUNCTION transition_appointment_status_atomic(
+    p_appointment_id UUID,
+    p_target_status VARCHAR,
+    p_reason TEXT DEFAULT 'Clinical workflow transition'
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+    v_actor_id UUID;
+    v_actor_role VARCHAR;
+    v_appointment appointments%ROWTYPE;
+    v_valid BOOLEAN := false;
+BEGIN
+    v_actor_id := auth.uid();
+    IF v_actor_id IS NULL THEN
+        RAISE EXCEPTION 'Authentication required.';
+    END IF;
+
+    SELECT * INTO v_appointment FROM appointments WHERE id = p_appointment_id;
+    IF v_appointment.id IS NULL THEN
+        RAISE EXCEPTION 'Appointment record not found.';
+    END IF;
+
+    SELECT role INTO v_actor_role FROM users WHERE id = v_actor_id;
+
+    -- Lifecycle state machine validation
+    IF v_appointment.status = p_target_status THEN
+        RETURN to_jsonb(v_appointment);
+    END IF;
+
+    IF v_appointment.status = 'booked' AND p_target_status IN ('checked_in', 'cancelled', 'no-show') THEN
+        v_valid := true;
+    ELSIF v_appointment.status = 'checked_in' AND p_target_status IN ('waiting', 'cancelled') THEN
+        v_valid := true;
+    ELSIF v_appointment.status = 'waiting' AND p_target_status IN ('in-consultation', 'skipped', 'no-show', 'cancelled') THEN
+        v_valid := true;
+    ELSIF v_appointment.status = 'in-consultation' AND p_target_status IN ('completed', 'cancelled') THEN
+        v_valid := true;
+    END IF;
+
+    IF NOT v_valid THEN
+        RAISE EXCEPTION 'Invalid status transition: Cannot transition appointment from % to %.', v_appointment.status, p_target_status;
+    END IF;
+
+    UPDATE appointments
+    SET status = p_target_status,
+        check_in_time = CASE WHEN p_target_status = 'checked_in' AND check_in_time IS NULL THEN NOW() ELSE check_in_time END,
+        start_at = CASE WHEN p_target_status = 'in-consultation' AND start_at IS NULL THEN NOW() ELSE start_at END,
+        end_at = CASE WHEN p_target_status = 'completed' AND end_at IS NULL THEN NOW() ELSE end_at END
+    WHERE id = p_appointment_id
+    RETURNING * INTO v_appointment;
+
+    INSERT INTO audit_logs (actor_id, action, entity, entity_id, metadata)
+    VALUES (
+        v_actor_id,
+        'APPOINTMENT_STATUS_TRANSITION',
+        'appointments',
+        p_appointment_id,
+        jsonb_build_object(
+            'from_status', v_appointment.status,
+            'to_status', p_target_status,
+            'reason', p_reason,
+            'actor_role', COALESCE(v_actor_role, 'user')
+        )
+    );
+
+    RETURN to_jsonb(v_appointment);
+END;
+$$;
+
+-- 24. MINIMAL PUBLIC DOCTOR DIRECTORY VIEW (M-03 Resolution: Strictly Verified Public Data)
 CREATE OR REPLACE VIEW public_doctor_directory AS
 SELECT 
     d.id,
@@ -2223,7 +2300,6 @@ SELECT
     d.bio,
     d.schedule,
     d.mediarca_id,
-    d.verification_status,
     COALESCE(cq.current_token, 0) AS current_token,
     COALESCE(cq.total_tokens, 0) AS total_tokens,
     COALESCE(cq.status, 'idle') AS queue_status,
@@ -2231,6 +2307,8 @@ SELECT
 FROM doctors d
 LEFT JOIN clinic_queues cq ON cq.doctor_id = d.id AND cq.queue_date = CURRENT_DATE
 WHERE d.verification_status = 'verified';
+
+GRANT SELECT ON public_doctor_directory TO anon, authenticated;
 
 -- 15. AUDIT LOG ACCESS POLICIES & ADMIN RETRIEVAL RPC (C-12 Resolution: Administrator Authentication Required)
 DROP POLICY IF EXISTS "Admins can view audit logs" ON audit_logs;
