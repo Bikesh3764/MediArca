@@ -37,10 +37,10 @@ CREATE TABLE IF NOT EXISTS patient_clinical_profiles (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 4. ACCREDITED PRACTITIONERS TABLE (D-04 Resolution: Canonical User Relationship)
+-- 4. ACCREDITED PRACTITIONERS TABLE (C-28 Resolution: Explicit UUID foreign key data type)
 CREATE TABLE IF NOT EXISTS doctors (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id REFERENCES users(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     specialty VARCHAR(100) NOT NULL,
@@ -69,14 +69,15 @@ CREATE TABLE IF NOT EXISTS doctors (
 -- 5. CLINIC LIVE QUEUES TABLE (Primary Source of Live Telemetry)
 CREATE TABLE IF NOT EXISTS clinic_queues (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    doctor_id UUID NOT NULL REFERENCES doctors(id) ON DELETE CASCADE,
+    doctor_id UUID UNIQUE NOT NULL REFERENCES doctors(id) ON DELETE CASCADE,
     queue_date DATE NOT NULL DEFAULT CURRENT_DATE,
     current_token INT DEFAULT 0 CHECK (current_token >= 0),
     total_tokens INT DEFAULT 0 CHECK (total_tokens >= 0),
-    status VARCHAR(20) DEFAULT 'in-session' CHECK (status IN ('in-session', 'paused', 'completed', 'idle')),
+    status VARCHAR(20) DEFAULT 'idle' CHECK (status IN ('idle', 'in-session', 'paused', 'completed')),
     avg_consult_time_mins INT DEFAULT 12 CHECK (avg_consult_time_mins > 0),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    UNIQUE(doctor_id, queue_date)
+    CONSTRAINT unique_doctor_queue_per_day UNIQUE (doctor_id, queue_date)
 );
 
 -- 6. APPOINTMENTS & TOKENS TABLE (Section 11 Resolution: Real Scheduler & Cryptographic Check-in Token)
@@ -97,11 +98,11 @@ CREATE TABLE IF NOT EXISTS appointments (
     checkin_token VARCHAR(255),
     checkin_token_expires_at TIMESTAMPTZ DEFAULT (NOW() + interval '24 hours'),
     checkin_token_used_at TIMESTAMPTZ,
-    check_in_time TIMESTAMPTZ DEFAULT NOW(),
+    check_in_time TIMESTAMPTZ,
     appointment_date DATE NOT NULL DEFAULT CURRENT_DATE,
     start_at TIMESTAMPTZ,
     end_at TIMESTAMPTZ,
-    timezone VARCHAR(50) DEFAULT 'UTC',
+    timezone VARCHAR(50) DEFAULT 'Asia/Kolkata',
     symptoms TEXT NOT NULL,
     diagnosis TEXT,
     medications TEXT[],
@@ -309,10 +310,11 @@ AS $$
   );
 $$;
 
--- 9. ATOMIC TRANSACTIONAL APPOINTMENT BOOKING & TOKEN ISSUANCE RPC (C-04 & C-06 Resolution)
+-- 9. ATOMIC TRANSACTIONAL APPOINTMENT BOOKING & TOKEN ISSUANCE RPC (H-01, H-02, H-03, H-04 & C-27 Resolution)
 CREATE OR REPLACE FUNCTION issue_next_opd_token(
     p_doctor_id UUID,
-    p_symptoms TEXT
+    p_symptoms TEXT,
+    p_timezone VARCHAR DEFAULT 'Asia/Kolkata'
 )
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -383,7 +385,7 @@ BEGIN
     v_next_token := COALESCE(v_next_token, 0) + 1;
     v_booking_id := 'MED-BK-' || upper(to_hex(extract(epoch from now())::bigint)) || '-' || upper(substring(md5(random()::text) from 1 for 4));
     
-    -- C-24: Server-side cryptographic 128-bit check-in token generation
+    -- C-24 & C-27: Server-side cryptographic 128-bit check-in token generation
     v_checkin_token := 'MED-QR-' || lower(encode(gen_random_bytes(16), 'hex'));
 
     -- 7. All new bookings start in 'waiting' queue line until called by doctor (H-11 Resolution)
@@ -395,18 +397,45 @@ BEGIN
     SET total_tokens = v_next_token, queue_active = true
     WHERE id = p_doctor_id;
 
+    -- H-01, H-02, H-03, H-04: check_in_time, start_at, end_at are strictly NULL until events occur
     INSERT INTO appointments (
         booking_id, patient_id, doctor_id, patient_name, patient_phone, patient_age, patient_gender,
         token_number, status, checkin_token, checkin_token_expires_at, check_in_time, appointment_date, scheduled_date, start_at, end_at, timezone, symptoms
     ) VALUES (
-        v_booking_id, v_actor_id, p_doctor_id, v_patient.full_name, COALESCE(v_patient.phone, 'Not specified'),
-        v_clinical.age, v_clinical.gender, v_next_token, 'waiting', v_checkin_token, NOW() + interval '24 hours', NOW(), CURRENT_DATE, CURRENT_DATE,
-        NOW(), NOW() + interval '15 minutes', 'UTC', p_symptoms
+        v_booking_id,
+        v_actor_id,
+        p_doctor_id,
+        v_patient.full_name,
+        COALESCE(v_patient.phone, 'Not specified'),
+        v_clinical.age,
+        v_clinical.gender,
+        v_next_token,
+        'waiting',
+        v_checkin_token,
+        NOW() + interval '24 hours',
+        NULL,
+        CURRENT_DATE,
+        CURRENT_DATE,
+        NULL,
+        NULL,
+        COALESCE(p_timezone, 'Asia/Kolkata'),
+        p_symptoms
     ) RETURNING * INTO v_appointment;
 
     -- Log audit trail
     INSERT INTO audit_logs (actor_id, action, entity, entity_id, metadata)
-    VALUES (v_actor_id, 'BOOK_TOKEN', 'appointments', v_appointment.id, jsonb_build_object('token_number', v_next_token, 'doctor_id', p_doctor_id, 'checkin_token', v_checkin_token));
+    VALUES (
+        v_actor_id,
+        'BOOK_TOKEN',
+        'appointments',
+        v_appointment.id,
+        jsonb_build_object(
+            'token_number', v_next_token,
+            'doctor_id', p_doctor_id,
+            'checkin_token', v_checkin_token,
+            'timezone', COALESCE(p_timezone, 'Asia/Kolkata')
+        )
+    );
 
     RETURN to_jsonb(v_appointment);
 END;
@@ -1181,14 +1210,14 @@ END;
 $$;
 
 -- 12. EXPLICIT RPC EXECUTE PERMISSION ENFORCEMENT (C-06 Resolution: Privileged RPCs Granted ONLY to Authenticated Role)
-REVOKE ALL ON FUNCTION issue_next_opd_token(UUID, TEXT) FROM PUBLIC, anon;
-GRANT EXECUTE ON FUNCTION issue_next_opd_token(UUID, TEXT) TO authenticated, anon;
+REVOKE ALL ON FUNCTION issue_next_opd_token(UUID, TEXT, VARCHAR) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION issue_next_opd_token(UUID, TEXT, VARCHAR) TO authenticated;
 
 REVOKE ALL ON FUNCTION advance_doctor_queue_atomic(UUID) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION advance_doctor_queue_atomic(UUID) TO authenticated;
 
-REVOKE ALL ON FUNCTION complete_consultation_rx_atomic(UUID, INT, TEXT, TEXT[], TEXT) FROM PUBLIC, anon;
-GRANT EXECUTE ON FUNCTION complete_consultation_rx_atomic(UUID, INT, TEXT, TEXT[], TEXT) TO authenticated;
+REVOKE ALL ON FUNCTION complete_consultation_rx_atomic(UUID, INT, TEXT, TEXT[], TEXT, JSONB, TEXT, TEXT, TEXT, TEXT, DATE) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION complete_consultation_rx_atomic(UUID, INT, TEXT, TEXT[], TEXT, JSONB, TEXT, TEXT, TEXT, TEXT, DATE) TO authenticated;
 
 REVOKE ALL ON FUNCTION mark_appointment_status_atomic(UUID, INT, VARCHAR, TEXT) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION mark_appointment_status_atomic(UUID, INT, VARCHAR, TEXT) TO authenticated;
