@@ -624,17 +624,14 @@ class MediarcaStore {
     const doctor = this.state.doctors.find(d => d.id === bookingData.doctorId);
     if (!doctor) throw new Error('Doctor not found in accredited directory.');
 
-    // 1. Authoritative Cloud Stored Procedure via Supabase RPC (C-04 Resolution)
     let cloudBooking = null;
+
+    // 1. Authoritative Cloud Stored Procedure via Supabase RPC (H-01 & H-02 Resolution)
     if (window.mediarcaSupabase && window.mediarcaSupabase.isConnected) {
-      try {
-        cloudBooking = await window.mediarcaSupabase.cloudBookAppointment({
-          doctorId: doctor.id,
-          symptoms: bookingData.symptoms
-        });
-      } catch (err) {
-        console.warn('RPC Booking note:', err.message);
-      }
+      cloudBooking = await window.mediarcaSupabase.cloudBookAppointment({
+        doctorId: doctor.id,
+        symptoms: bookingData.symptoms
+      });
     }
 
     const queue = this.state.queues[doctor.id] || {
@@ -646,19 +643,20 @@ class MediarcaStore {
     };
 
     const existingTokens = queue.tokens ? queue.tokens.map(t => t.tokenNumber) : [];
-    const nextTokenNumber = cloudBooking?.token_number || (existingTokens.length > 0 ? Math.max(...existingTokens) + 1 : (doctor.totalTokens || 0) + 1);
+    const nextTokenNumber = cloudBooking ? cloudBooking.token_number : (existingTokens.length > 0 ? Math.max(...existingTokens) + 1 : (doctor.totalTokens || 0) + 1);
 
-    const bookingId = cloudBooking?.booking_id || ('MED-BK-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase());
+    const bookingId = cloudBooking ? cloudBooking.booking_id : ('MED-BK-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase());
     const isFirstInLine = queue.currentToken === 0;
     const initialStatus = isFirstInLine ? 'in-consultation' : 'waiting';
 
     const newBooking = {
+      id: cloudBooking?.id || null,
       bookingId: bookingId,
       patientId: this.state.currentUser.id,
-      patientName: bookingData.patientName || this.state.currentUser.name || 'Patient',
-      patientAge: parseInt(bookingData.patientAge) || null,
-      patientGender: bookingData.patientGender || 'Not specified',
-      patientPhone: bookingData.patientPhone || 'Not specified',
+      patientName: cloudBooking?.patient_name || bookingData.patientName || this.state.currentUser.name || 'Patient',
+      patientAge: cloudBooking?.patient_age || parseInt(bookingData.patientAge) || null,
+      patientGender: cloudBooking?.patient_gender || bookingData.patientGender || 'Not specified',
+      patientPhone: cloudBooking?.patient_phone || bookingData.patientPhone || 'Not specified',
       doctorId: doctor.id,
       doctorName: doctor.name,
       specialty: doctor.specialty,
@@ -669,7 +667,7 @@ class MediarcaStore {
       tokenNumber: nextTokenNumber,
       status: cloudBooking?.status || initialStatus,
       symptoms: bookingData.symptoms,
-      createdAt: new Date().toISOString()
+      createdAt: cloudBooking?.created_at || new Date().toISOString()
     };
 
     this.state.bookings.unshift(newBooking);
@@ -698,37 +696,41 @@ class MediarcaStore {
   }
 
   async advanceDoctorQueue(doctorId) {
+    let cloudRes = null;
+
+    // 1. Authoritative Cloud Stored Procedure via Supabase RPC (H-03 Resolution)
     if (window.mediarcaSupabase && window.mediarcaSupabase.isConnected) {
-      try {
-        await window.mediarcaSupabase.cloudAdvanceQueue(doctorId);
-      } catch (err) {
-        console.warn('RPC advance note:', err.message);
-      }
+      cloudRes = await window.mediarcaSupabase.cloudAdvanceQueue(doctorId);
     }
 
     const queue = this.state.queues[doctorId];
     if (!queue || !queue.tokens) return null;
 
-    if (queue.currentToken > 0) {
-      const activeToken = queue.tokens.find(t => t.tokenNumber === queue.currentToken && t.status === 'in-consultation');
-      if (activeToken) activeToken.status = 'completed';
-
-      const booking = this.state.bookings.find(b => b.doctorId === doctorId && b.tokenNumber === queue.currentToken);
-      if (booking) booking.status = 'completed';
-    }
-
-    const waitingTokens = queue.tokens.filter(t => t.status === 'waiting').sort((a, b) => a.tokenNumber - b.tokenNumber);
-    if (waitingTokens.length > 0) {
-      const nextToken = waitingTokens[0];
-      nextToken.status = 'in-consultation';
-      queue.currentToken = nextToken.tokenNumber;
-      queue.status = 'in-session';
-
-      const booking = this.state.bookings.find(b => b.doctorId === doctorId && b.tokenNumber === nextToken.tokenNumber);
-      if (booking) booking.status = 'in-consultation';
+    if (cloudRes) {
+      queue.currentToken = cloudRes.currentToken || 0;
+      queue.status = cloudRes.status || 'in-session';
     } else {
-      queue.currentToken = 0;
-      queue.status = 'completed';
+      if (queue.currentToken > 0) {
+        const activeToken = queue.tokens.find(t => t.tokenNumber === queue.currentToken && t.status === 'in-consultation');
+        if (activeToken) activeToken.status = 'completed';
+
+        const booking = this.state.bookings.find(b => b.doctorId === doctorId && b.tokenNumber === queue.currentToken);
+        if (booking) booking.status = 'completed';
+      }
+
+      const waitingTokens = queue.tokens.filter(t => t.status === 'waiting').sort((a, b) => a.tokenNumber - b.tokenNumber);
+      if (waitingTokens.length > 0) {
+        const nextToken = waitingTokens[0];
+        nextToken.status = 'in-consultation';
+        queue.currentToken = nextToken.tokenNumber;
+        queue.status = 'in-session';
+
+        const booking = this.state.bookings.find(b => b.doctorId === doctorId && b.tokenNumber === nextToken.tokenNumber);
+        if (booking) booking.status = 'in-consultation';
+      } else {
+        queue.currentToken = 0;
+        queue.status = 'completed';
+      }
     }
 
     const doctor = this.state.doctors.find(d => d.id === doctorId);
@@ -741,7 +743,14 @@ class MediarcaStore {
     return queue;
   }
 
-  completeConsultationWithPrescription(doctorId, tokenNumber, rxData) {
+  async completeConsultationWithPrescription(doctorId, tokenNumber, rxData) {
+    let cloudRes = null;
+
+    // 1. Authoritative Transactional Cloud RPC (H-05 Resolution)
+    if (window.mediarcaSupabase && window.mediarcaSupabase.isConnected) {
+      cloudRes = await window.mediarcaSupabase.cloudSavePrescription(doctorId, tokenNumber, rxData);
+    }
+
     const queue = this.state.queues[doctorId];
     if (queue && queue.tokens) {
       const token = queue.tokens.find(t => t.tokenNumber === tokenNumber);
@@ -756,24 +765,34 @@ class MediarcaStore {
         medications: Array.isArray(rxData.medications) ? rxData.medications : [rxData.medications],
         advice: rxData.advice || 'Follow prescription dosage as directed.'
       };
-
-      if (window.mediarcaSupabase && window.mediarcaSupabase.isConnected && booking.id) {
-        window.mediarcaSupabase.cloudSavePrescription(booking.id, booking.prescription);
-      }
     }
 
-    this.advanceDoctorQueue(doctorId);
+    if (!cloudRes) {
+      await this.advanceDoctorQueue(doctorId);
+    } else {
+      if (queue) {
+        queue.currentToken = cloudRes.currentToken || 0;
+        queue.status = cloudRes.status || 'in-session';
+      }
+      this.notifySubscribers();
+    }
+
     return booking;
   }
 
-  verifyDoctor(doctorId, approved) {
+  async verifyDoctor(doctorId, approved, reason) {
     const doc = this.state.doctors.find(d => d.id === doctorId);
     if (!doc) return null;
 
+    let cloudRes = null;
+    if (window.mediarcaSupabase && window.mediarcaSupabase.isConnected) {
+      cloudRes = await window.mediarcaSupabase.cloudVerifyDoctor(doc.id, approved, reason);
+    }
+
     if (approved) {
       doc.verificationStatus = 'verified';
-      doc.mediarcaId = 'MED-DOC-' + Math.floor(1000 + Math.random() * 9000);
-      doc.verifiedAt = new Date().toISOString();
+      doc.mediarcaId = cloudRes?.mediarca_id || ('MED-DOC-' + Math.floor(1000 + Math.random() * 9000));
+      doc.verifiedAt = cloudRes?.verified_at || new Date().toISOString();
 
       if (!this.state.queues[doc.id]) {
         this.state.queues[doc.id] = {
@@ -787,10 +806,6 @@ class MediarcaStore {
     } else {
       doc.verificationStatus = 'rejected';
       doc.mediarcaId = null;
-    }
-
-    if (window.mediarcaSupabase && window.mediarcaSupabase.isConnected) {
-      window.mediarcaSupabase.cloudVerifyDoctor(doc.id, approved, doc.mediarcaId);
     }
 
     this.notifySubscribers();

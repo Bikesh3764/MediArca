@@ -264,21 +264,23 @@ class MediarcaSupabaseClient {
     return data;
   }
 
-  async cloudSavePrescription(appointmentId, rxData) {
+  async cloudSavePrescription(doctorId, tokenNumber, rxData) {
     if (!this.client) throw new Error('Cloud offline');
 
-    const { data, error } = await this.client
-      .from('appointments')
-      .update({
-        diagnosis: rxData.diagnosis,
-        medications: Array.isArray(rxData.medications) ? rxData.medications : [rxData.medications],
-        advice: rxData.advice,
-        status: 'completed'
-      })
-      .eq('id', appointmentId)
-      .select();
+    // Call atomic transactional RPC: updates appointment, advances queue, and logs audit
+    const { data, error } = await this.client.rpc('complete_consultation_rx_atomic', {
+      p_doctor_id: doctorId,
+      p_token_number: parseInt(tokenNumber),
+      p_diagnosis: rxData.diagnosis || 'Clinical evaluation concluded.',
+      p_medications: Array.isArray(rxData.medications) ? rxData.medications : [rxData.medications],
+      p_advice: rxData.advice || 'Follow dosage as directed.'
+    });
 
-    if (error) throw error;
+    if (error) {
+      console.error('RPC Prescription Error:', error);
+      throw error;
+    }
+
     return data;
   }
 

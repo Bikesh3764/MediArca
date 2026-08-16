@@ -894,32 +894,42 @@ class MediarcaApp {
     if (window.lucide) window.lucide.createIcons();
   }
 
-  handleCompleteWithRx(doctorId, tokenNumber) {
+  async handleCompleteWithRx(doctorId, tokenNumber) {
     const diagnosis = document.getElementById('docDiagnosisInput')?.value.trim() || 'Clinical evaluation concluded.';
     const medications = document.getElementById('docMedicationsInput')?.value.trim() || 'Prescribed oral medication as directed';
     const advice = document.getElementById('docAdviceInput')?.value.trim() || 'Take prescribed medications with plenty of water. Follow up if needed.';
 
-    window.mediarcaStore.completeConsultationWithPrescription(doctorId, tokenNumber, {
-      diagnosis,
-      medications: [medications],
-      advice
-    });
+    try {
+      await window.mediarcaStore.completeConsultationWithPrescription(doctorId, tokenNumber, {
+        diagnosis,
+        medications: [medications],
+        advice
+      });
 
-    if (window.mediarcaAudio) window.mediarcaAudio.playChime('success');
-    this.showToast(`Prescription saved! Token #${tokenNumber} completed.`, 'success');
-    this.renderDoctorConsole();
+      if (window.mediarcaAudio) window.mediarcaAudio.playChime('success');
+      this.showToast(`Prescription saved! Token #${tokenNumber} completed.`, 'success');
+      this.renderDoctorConsole();
+    } catch (err) {
+      console.error('Prescription save error:', err);
+      this.showToast(err.message || 'Error saving prescription.', 'warning');
+    }
   }
 
-  handleDoctorAdvance(doctorId) {
-    const updated = window.mediarcaStore.advanceDoctorQueue(doctorId);
-    if (updated) {
-      if (window.mediarcaAudio) window.mediarcaAudio.playChime('queue-call');
-      if (updated.currentToken > 0) {
-        this.showToast(`Queue advanced to Token #${updated.currentToken}`, 'success');
-      } else {
-        this.showToast(`All scheduled patient consultations completed!`, 'info');
+  async handleDoctorAdvance(doctorId) {
+    try {
+      const updated = await window.mediarcaStore.advanceDoctorQueue(doctorId);
+      if (updated) {
+        if (window.mediarcaAudio) window.mediarcaAudio.playChime('queue-call');
+        if (updated.currentToken > 0) {
+          this.showToast(`Queue advanced to Token #${updated.currentToken}`, 'success');
+        } else {
+          this.showToast(`All scheduled patient consultations completed!`, 'info');
+        }
+        this.renderDoctorConsole();
       }
-      this.renderDoctorConsole();
+    } catch (err) {
+      console.error('Doctor queue advance error:', err);
+      this.showToast(err.message || 'Error advancing queue.', 'warning');
     }
   }
 
@@ -1029,15 +1039,20 @@ class MediarcaApp {
     if (window.lucide) window.lucide.createIcons();
   }
 
-  handleAdminVerify(doctorId, approved) {
-    const doc = window.mediarcaStore.verifyDoctor(doctorId, approved);
-    if (doc && approved) {
-      if (window.mediarcaAudio) window.mediarcaAudio.playChime('success');
-      this.showToast(`Verified ${doc.name}! Issued Mediarca ID: ${doc.mediarcaId}`, 'success');
-    } else if (doc && !approved) {
-      this.showToast(`Application for ${doc.name} was rejected.`, 'warning');
+  async handleAdminVerify(doctorId, approved) {
+    try {
+      const doc = await window.mediarcaStore.verifyDoctor(doctorId, approved);
+      if (doc && approved) {
+        if (window.mediarcaAudio) window.mediarcaAudio.playChime('success');
+        this.showToast(`Verified ${doc.name}! Issued Mediarca ID: ${doc.mediarcaId}`, 'success');
+      } else if (doc && !approved) {
+        this.showToast(`Application for ${doc.name} was rejected.`, 'warning');
+      }
+      this.renderAdminHub();
+    } catch (err) {
+      console.error('Admin verify error:', err);
+      this.showToast(err.message || 'Error processing verification.', 'warning');
     }
-    this.renderAdminHub();
   }
 
   closeAllModals() {

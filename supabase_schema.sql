@@ -283,6 +283,107 @@ BEGIN
 END;
 $$;
 
+-- 10. ATOMIC TRANSACTIONAL PRESCRIPTION & CONSULTATION COMPLETION RPC (H-05 Resolution)
+CREATE OR REPLACE FUNCTION complete_consultation_rx_atomic(
+    p_doctor_id UUID,
+    p_token_number INT,
+    p_diagnosis TEXT,
+    p_medications TEXT[],
+    p_advice TEXT
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+    v_actor_id UUID;
+    v_is_authorized BOOLEAN;
+    v_appointment_id UUID;
+    v_next_token_id UUID;
+    v_next_token_num INT;
+    v_result JSONB;
+BEGIN
+    v_actor_id := auth.uid();
+
+    -- Check physician authorization
+    SELECT EXISTS (
+        SELECT 1 FROM doctors
+        WHERE id = p_doctor_id 
+          AND (user_id = v_actor_id OR v_actor_id IS NULL)
+    ) INTO v_is_authorized;
+
+    IF NOT v_is_authorized THEN
+        RAISE EXCEPTION 'Not authorized. Only the attending physician can issue prescriptions.';
+    END IF;
+
+    -- Update appointment with clinical prescription
+    UPDATE appointments
+    SET diagnosis = p_diagnosis,
+        medications = p_medications,
+        advice = p_advice,
+        status = 'completed'
+    WHERE doctor_id = p_doctor_id AND token_number = p_token_number
+    RETURNING id INTO v_appointment_id;
+
+    IF v_appointment_id IS NULL THEN
+        RAISE EXCEPTION 'Active consultation record not found for Token #%', p_token_number;
+    END IF;
+
+    -- Advance queue to next waiting patient atomically
+    SELECT id, token_number INTO v_next_token_id, v_next_token_num
+    FROM appointments
+    WHERE doctor_id = p_doctor_id AND status = 'waiting'
+    ORDER BY token_number ASC
+    LIMIT 1;
+
+    IF v_next_token_id IS NOT NULL THEN
+        UPDATE appointments
+        SET status = 'in-consultation'
+        WHERE id = v_next_token_id;
+
+        UPDATE clinic_queues
+        SET current_token = v_next_token_num, status = 'in-session', updated_at = NOW()
+        WHERE doctor_id = p_doctor_id AND queue_date = CURRENT_DATE;
+
+        UPDATE doctors
+        SET current_token = v_next_token_num, queue_active = true
+        WHERE id = p_doctor_id;
+    ELSE
+        UPDATE clinic_queues
+        SET current_token = 0, status = 'completed', updated_at = NOW()
+        WHERE doctor_id = p_doctor_id AND queue_date = CURRENT_DATE;
+
+        UPDATE doctors
+        SET current_token = 0, queue_active = false
+        WHERE id = p_doctor_id;
+    END IF;
+
+    -- Log immutable audit event
+    INSERT INTO audit_logs (actor_id, action, entity, entity_id, metadata)
+    VALUES (
+        v_actor_id,
+        'COMPLETE_CONSULTATION_RX',
+        'appointments',
+        v_appointment_id::text,
+        jsonb_build_object(
+            'doctor_id', p_doctor_id,
+            'token_number', p_token_number,
+            'diagnosis', p_diagnosis,
+            'next_token', COALESCE(v_next_token_num, 0)
+        )
+    );
+
+    SELECT jsonb_build_object(
+        'appointmentId', v_appointment_id,
+        'currentToken', COALESCE(v_next_token_num, 0),
+        'status', CASE WHEN v_next_token_id IS NOT NULL THEN 'in-session' ELSE 'completed' END
+    ) INTO v_result;
+
+    RETURN v_result;
+END;
+$$;
+
 -- 10. PROTECTED ADMIN DOCTOR VERIFICATION RPC (C-09 Resolution)
 CREATE OR REPLACE FUNCTION verify_doctor_admin_atomic(
     p_doctor_id UUID,
@@ -354,6 +455,9 @@ GRANT EXECUTE ON FUNCTION issue_next_opd_token(UUID, TEXT) TO authenticated, ano
 
 REVOKE EXECUTE ON FUNCTION advance_doctor_queue_atomic(UUID) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION advance_doctor_queue_atomic(UUID) TO authenticated, anon;
+
+REVOKE EXECUTE ON FUNCTION complete_consultation_rx_atomic(UUID, INT, TEXT, TEXT[], TEXT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION complete_consultation_rx_atomic(UUID, INT, TEXT, TEXT[], TEXT) TO authenticated, anon;
 
 REVOKE EXECUTE ON FUNCTION verify_doctor_admin_atomic(UUID, BOOLEAN, TEXT) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION verify_doctor_admin_atomic(UUID, BOOLEAN, TEXT) TO authenticated, anon;
