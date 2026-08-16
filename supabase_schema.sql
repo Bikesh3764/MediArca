@@ -1181,6 +1181,8 @@ BEGIN
 
     UPDATE clinic_queues
     SET total_tokens = v_new_token, status = 'in-session', updated_at = NOW()
+    WHERE doctor_id = p_target_doctor_id AND queue_date = CURRENT_DATE;
+
     -- H-11: Reconcile source doctor queue if transferred patient was currently in-consultation
     IF v_appointment.status = 'in-consultation' THEN
         DECLARE
@@ -1405,7 +1407,7 @@ BEGIN
 END;
 $$;
 
--- 17. PATIENT FLOW MULTI-STAGE ROUTING RPC (H-42 Resolution)
+-- 17. PATIENT FLOW MULTI-STAGE ROUTING RPC (C-05 Resolution: Enforce Attending Doctor / Reception Staff Authorization)
 CREATE OR REPLACE FUNCTION update_patient_stage_atomic(
     p_appointment_id UUID,
     p_stage VARCHAR,
@@ -1420,20 +1422,26 @@ DECLARE
     v_actor_id UUID;
     v_actor_role VARCHAR;
     v_appointment appointments%ROWTYPE;
+    v_doctor doctors%ROWTYPE;
 BEGIN
     v_actor_id := auth.uid();
     IF v_actor_id IS NULL THEN
         RAISE EXCEPTION 'Authentication required.';
     END IF;
 
-    SELECT role INTO v_actor_role FROM users WHERE id = v_actor_id;
-    IF v_actor_role NOT IN ('receptionist', 'doctor', 'admin') AND NOT is_admin(v_actor_id) THEN
-        RAISE EXCEPTION 'Access Denied: Only clinical and front-desk staff can route patient stages.';
-    END IF;
-
     SELECT * INTO v_appointment FROM appointments WHERE id = p_appointment_id;
     IF v_appointment.id IS NULL THEN
         RAISE EXCEPTION 'Appointment not found.';
+    END IF;
+
+    SELECT role INTO v_actor_role FROM users WHERE id = v_actor_id;
+    SELECT * INTO v_doctor FROM doctors WHERE id = v_appointment.doctor_id;
+
+    -- C-05: Strict record authorization: Doctor must be the assigned attending physician, or staff must be receptionist/admin
+    IF v_actor_role = 'doctor' AND v_doctor.user_id != v_actor_id THEN
+        RAISE EXCEPTION 'Access Denied: Only the assigned attending physician can transition clinical stages for this appointment.';
+    ELSIF v_actor_role NOT IN ('doctor', 'receptionist', 'admin') AND NOT is_admin(v_actor_id) THEN
+        RAISE EXCEPTION 'Access Denied: Administrative or clinical staff privileges required.';
     END IF;
 
     -- Record flow transition in audit ledger
@@ -1504,7 +1512,7 @@ BEGIN
 END;
 $$;
 
--- 19. SERVER-AUTHORITATIVE BILLING & INVOICE RPC (H-27, H-28, H-29, H-30, H-31 Resolution)
+-- 19. SERVER-AUTHORITATIVE BILLING & INVOICE RPC (C-02 Resolution: Enforce Patient / Staff Authorization)
 CREATE OR REPLACE FUNCTION generate_and_settle_invoice_atomic(
     p_appointment_id UUID,
     p_payment_method VARCHAR DEFAULT 'Card',
@@ -1518,6 +1526,7 @@ SET search_path = public, pg_temp
 AS $$
 DECLARE
     v_actor_id UUID;
+    v_actor_role VARCHAR;
     v_appointment appointments%ROWTYPE;
     v_doctor doctors%ROWTYPE;
     v_base_fee NUMERIC;
@@ -1536,8 +1545,18 @@ BEGIN
         RAISE EXCEPTION 'Appointment not found.';
     END IF;
 
-    -- Fetch authoritative doctor fee from database
     SELECT * INTO v_doctor FROM doctors WHERE id = v_appointment.doctor_id;
+    SELECT role INTO v_actor_role FROM users WHERE id = v_actor_id;
+
+    -- C-02: Strict record authorization: Must be appointment patient, attending doctor, receptionist, or admin
+    IF v_actor_id != v_appointment.patient_id 
+       AND v_doctor.user_id != v_actor_id 
+       AND v_actor_role NOT IN ('receptionist', 'admin') 
+       AND NOT is_admin(v_actor_id) THEN
+        RAISE EXCEPTION 'Access Denied: You are not authorized to create or settle invoices for this appointment.';
+    END IF;
+
+    -- Fetch authoritative doctor fee from database
     v_base_fee := COALESCE(v_doctor.fee, 50.00);
 
     -- Calculate server-authoritative insurance breakdown
@@ -1581,7 +1600,7 @@ BEGIN
 END;
 $$;
 
--- 20. TELEMEDICINE SECURE ROOM RPC (H-32 to H-36 Resolution)
+-- 20. TELEMEDICINE SECURE ROOM RPC (C-03 Resolution: Participant Authorization Enforcement)
 CREATE OR REPLACE FUNCTION create_telemedicine_room_atomic(
     p_appointment_id UUID,
     p_room_name VARCHAR DEFAULT 'MediArca Virtual Suite'
@@ -1593,7 +1612,9 @@ SET search_path = public, pg_temp
 AS $$
 DECLARE
     v_actor_id UUID;
+    v_actor_role VARCHAR;
     v_appointment appointments%ROWTYPE;
+    v_doctor doctors%ROWTYPE;
     v_room telemedicine_rooms%ROWTYPE;
     v_token VARCHAR;
 BEGIN
@@ -1605,6 +1626,17 @@ BEGIN
     SELECT * INTO v_appointment FROM appointments WHERE id = p_appointment_id;
     IF v_appointment.id IS NULL THEN
         RAISE EXCEPTION 'Appointment not found.';
+    END IF;
+
+    SELECT * INTO v_doctor FROM doctors WHERE id = v_appointment.doctor_id;
+    SELECT role INTO v_actor_role FROM users WHERE id = v_actor_id;
+
+    -- C-03: Participant authorization: Only appointment patient, attending doctor, receptionist, or admin
+    IF v_actor_id != v_appointment.patient_id 
+       AND v_doctor.user_id != v_actor_id 
+       AND v_actor_role NOT IN ('receptionist', 'admin') 
+       AND NOT is_admin(v_actor_id) THEN
+        RAISE EXCEPTION 'Access Denied: Only registered consultation participants or clinical staff can initialize telemedicine rooms.';
     END IF;
 
     -- Generate high-entropy 128-bit session credential
@@ -1635,7 +1667,7 @@ BEGIN
 END;
 $$;
 
--- 21. REAL AGGREGATE HOSPITAL OPERATIONAL ANALYTICS RPC (H-44, H-45 Resolution)
+-- 21. REAL AGGREGATE HOSPITAL OPERATIONAL ANALYTICS RPC (C-04 Resolution: Restrict to Management & Staff)
 CREATE OR REPLACE FUNCTION get_hospital_operational_analytics()
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -1644,6 +1676,7 @@ SET search_path = public, pg_temp
 AS $$
 DECLARE
     v_actor_id UUID;
+    v_actor_role VARCHAR;
     v_total_appointments INT;
     v_completed_appointments INT;
     v_noshow_appointments INT;
@@ -1654,6 +1687,12 @@ BEGIN
     v_actor_id := auth.uid();
     IF v_actor_id IS NULL THEN
         RAISE EXCEPTION 'Authentication required.';
+    END IF;
+
+    -- C-04: Restrict operational and financial analytics strictly to reception/admin staff
+    SELECT role INTO v_actor_role FROM users WHERE id = v_actor_id;
+    IF v_actor_role NOT IN ('receptionist', 'admin') AND NOT is_admin(v_actor_id) THEN
+        RAISE EXCEPTION 'Access Denied: Hospital operational analytics restricted to management and administrative staff.';
     END IF;
 
     -- Aggregate counts directly from authoritative tables
