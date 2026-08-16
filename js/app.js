@@ -830,9 +830,18 @@ class MediarcaApp {
                     <input type="text" id="docMedicationsInput" class="form-input" placeholder="Medications (e.g. Tab Azithromycin 500mg, Paracetamol 650mg)" style="margin-bottom: 0.5rem;">
                     <textarea id="docAdviceInput" class="form-textarea" placeholder="Clinical Advice & Follow-up timeline..." style="margin-bottom: 1rem; min-height: 60px;"></textarea>
 
-                    <button class="btn btn-teal btn-block" onclick="window.mediarcaApp.handleCompleteWithRx('${doc.id}', ${currentPatient.tokenNumber})">
+                    <button class="btn btn-teal btn-block" onclick="window.mediarcaApp.handleCompleteWithRx('${doc.id}', ${currentPatient.tokenNumber})" style="margin-bottom: 0.75rem;">
                       <i data-lucide="check-check" style="width: 15px; height: 15px;"></i> Save Prescription & Call Next Patient
                     </button>
+
+                    <div style="display: flex; gap: 0.5rem;">
+                      <button class="btn btn-sm btn-secondary" onclick="window.mediarcaApp.handleMarkStatus('${doc.id}', ${currentPatient.tokenNumber}, 'no-show')" style="flex: 1; color: #b91c1c;">
+                        <i data-lucide="user-x" style="width: 13px; height: 13px;"></i> Mark No-Show
+                      </button>
+                      <button class="btn btn-sm btn-secondary" onclick="window.mediarcaApp.handleMarkStatus('${doc.id}', ${currentPatient.tokenNumber}, 'skipped')" style="flex: 1; color: #d97706;">
+                        <i data-lucide="skip-forward" style="width: 13px; height: 13px;"></i> Skip / Call Later
+                      </button>
+                    </div>
                   </div>
                 </div>
               ` : `
@@ -877,21 +886,30 @@ class MediarcaApp {
                       <th>Patient</th>
                       <th>Check In</th>
                       <th>Status</th>
-                      <th>Reason</th>
+                      <th>Triage Action</th>
                     </tr>
                   </thead>
                   <tbody>
                     ${queue.tokens && queue.tokens.length > 0 ? queue.tokens.map(t => `
                       <tr style="${t.tokenNumber === currentToken && t.status === 'in-consultation' ? 'background: var(--clinical-blue-subtle); font-weight: 600;' : ''}">
-                        <td class="text-mono">#${t.tokenNumber}</td>
-                        <td>${t.patientName}</td>
-                        <td>${t.checkInTime || '09:00 AM'}</td>
+                        <td class="text-mono">
+                          #${t.tokenNumber}
+                          ${t.isPriority ? '<span class="badge" style="background:#fee2e2; color:#b91c1c; font-size:0.65rem; margin-left:0.25rem;">EMERGENCY</span>' : ''}
+                        </td>
+                        <td>${escapeHtml(t.patientName)}</td>
+                        <td>${escapeHtml(t.checkInTime || '09:00 AM')}</td>
                         <td>
-                          <span class="badge ${t.status === 'in-consultation' ? 'badge-live' : (t.status === 'completed' ? 'badge-verified' : 'badge-pending')}">
-                            ${t.status === 'in-consultation' ? 'IN ROOM' : t.status.toUpperCase()}
+                          <span class="badge ${t.status === 'in-consultation' ? 'badge-live' : (t.status === 'completed' ? 'badge-verified' : (t.status === 'no-show' ? 'badge-role' : 'badge-pending'))}">
+                            ${t.status === 'in-consultation' ? 'IN ROOM' : escapeHtml(t.status.toUpperCase())}
                           </span>
                         </td>
-                        <td style="color: var(--text-secondary); font-size: 0.8125rem;">${t.symptoms}</td>
+                        <td>
+                          ${t.status === 'waiting' && !t.isPriority ? `
+                            <button class="btn btn-sm btn-secondary" style="font-size:0.7rem; padding:0.25rem 0.5rem; color:#b91c1c;" onclick="window.mediarcaApp.handleFlagPriority('${doc.id}', ${t.tokenNumber})">
+                              <i data-lucide="alert-circle" style="width:11px; height:11px;"></i> Priority Triage
+                            </button>
+                          ` : (t.isPriority ? '<span style="color:#b91c1c; font-size:0.75rem; font-weight:700;">Top Priority</span>' : '—')}
+                        </td>
                       </tr>
                     `).join('') : `
                       <tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No patients registered in queue.</td></tr>
@@ -926,6 +944,28 @@ class MediarcaApp {
     `;
 
     if (window.lucide) window.lucide.createIcons();
+  }
+
+  async handleMarkStatus(doctorId, tokenNumber, status) {
+    try {
+      await window.mediarcaStore.markAppointmentStatus(doctorId, tokenNumber, status);
+      this.showToast(`Token #${tokenNumber} marked as ${status}.`, 'info');
+      this.renderDoctorConsole();
+    } catch (err) {
+      console.error('Status update error:', err);
+      this.showToast(err.message || 'Failed to update status.', 'warning');
+    }
+  }
+
+  async handleFlagPriority(doctorId, tokenNumber) {
+    try {
+      await window.mediarcaStore.flagPriorityAppointment(doctorId, tokenNumber, 'Emergency medical priority override.');
+      this.showToast(`Token #${tokenNumber} flagged for Priority Emergency Triage!`, 'success');
+      this.renderDoctorConsole();
+    } catch (err) {
+      console.error('Priority flag error:', err);
+      this.showToast(err.message || 'Failed to flag priority.', 'warning');
+    }
   }
 
   async handleCompleteWithRx(doctorId, tokenNumber) {

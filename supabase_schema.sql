@@ -63,7 +63,7 @@ CREATE TABLE IF NOT EXISTS clinic_queues (
     UNIQUE(doctor_id, queue_date)
 );
 
--- 5. APPOINTMENTS, TOKENS & CLINICAL PRESCRIPTIONS TABLE (H-09 & H-10 Resolution)
+-- 5. APPOINTMENTS, TOKENS & CLINICAL PRESCRIPTIONS TABLE (Q-06 & Q-07 Resolution)
 CREATE TABLE IF NOT EXISTS appointments (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     booking_id VARCHAR(50) UNIQUE NOT NULL,
@@ -74,7 +74,9 @@ CREATE TABLE IF NOT EXISTS appointments (
     patient_age INT CHECK (patient_age IS NULL OR (patient_age >= 0 AND patient_age <= 125)),
     patient_gender VARCHAR(20),
     token_number INT NOT NULL CHECK (token_number > 0),
-    status VARCHAR(20) DEFAULT 'waiting' CHECK (status IN ('waiting', 'in-consultation', 'completed', 'cancelled', 'no-show')),
+    status VARCHAR(20) DEFAULT 'waiting' CHECK (status IN ('waiting', 'in-consultation', 'completed', 'cancelled', 'no-show', 'skipped')),
+    is_priority BOOLEAN DEFAULT false,
+    priority_reason TEXT,
     check_in_time TIMESTAMPTZ DEFAULT NOW(),
     appointment_date DATE NOT NULL DEFAULT CURRENT_DATE,
     start_at TIMESTAMPTZ,
@@ -208,7 +210,7 @@ BEGIN
 END;
 $$;
 
--- 9. ATOMIC QUEUE ADVANCEMENT & CONSULTATION RPC (H-07 & H-08 Resolution)
+-- 9. ATOMIC QUEUE ADVANCEMENT & CONSULTATION RPC (H-07, H-08 & Q-07 Priority Handling)
 CREATE OR REPLACE FUNCTION advance_doctor_queue_atomic(
     p_doctor_id UUID
 )
@@ -251,11 +253,11 @@ BEGIN
         WHERE doctor_id = p_doctor_id AND scheduled_date = CURRENT_DATE AND token_number = v_current_token AND status = 'in-consultation';
     END IF;
 
-    -- Fetch next waiting patient in line strictly for CURRENT_DATE
+    -- Fetch next waiting patient in line strictly for CURRENT_DATE (Priority emergency tokens first)
     SELECT id, token_number INTO v_next_token_id, v_next_token_num
     FROM appointments
     WHERE doctor_id = p_doctor_id AND scheduled_date = CURRENT_DATE AND status = 'waiting'
-    ORDER BY token_number ASC
+    ORDER BY is_priority DESC, token_number ASC
     LIMIT 1;
 
     IF v_next_token_id IS NOT NULL THEN
@@ -294,7 +296,7 @@ BEGIN
 END;
 $$;
 
--- 10. ATOMIC TRANSACTIONAL PRESCRIPTION & CONSULTATION COMPLETION RPC (H-06, H-07, H-08 Resolution)
+-- 10. ATOMIC TRANSACTIONAL PRESCRIPTION & CONSULTATION COMPLETION RPC (H-06 & Q-07 Resolution)
 CREATE OR REPLACE FUNCTION complete_consultation_rx_atomic(
     p_doctor_id UUID,
     p_token_number INT,
@@ -342,11 +344,11 @@ BEGIN
         RAISE EXCEPTION 'Active consultation record not found for Token #% on %', p_token_number, CURRENT_DATE;
     END IF;
 
-    -- Advance queue to next waiting patient atomically strictly for CURRENT_DATE
+    -- Advance queue to next waiting patient atomically (Priority emergency tokens first)
     SELECT id, token_number INTO v_next_token_id, v_next_token_num
     FROM appointments
     WHERE doctor_id = p_doctor_id AND scheduled_date = CURRENT_DATE AND status = 'waiting'
-    ORDER BY token_number ASC
+    ORDER BY is_priority DESC, token_number ASC
     LIMIT 1;
 
     IF v_next_token_id IS NOT NULL THEN
@@ -393,6 +395,175 @@ BEGIN
     ) INTO v_result;
 
     RETURN v_result;
+END;
+$$;
+
+-- 11. ATOMIC NO-SHOW / SKIPPED / STATUS OVERRIDE RPC (Q-06 Resolution)
+CREATE OR REPLACE FUNCTION mark_appointment_status_atomic(
+    p_doctor_id UUID,
+    p_token_number INT,
+    p_status VARCHAR,
+    p_reason TEXT DEFAULT 'Status updated by clinic physician.'
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+    v_actor_id UUID;
+    v_is_authorized BOOLEAN;
+    v_appointment_id UUID;
+    v_current_token INT;
+    v_next_token_id UUID;
+    v_next_token_num INT;
+BEGIN
+    v_actor_id := auth.uid();
+
+    IF p_status NOT IN ('no-show', 'skipped', 'cancelled') THEN
+        RAISE EXCEPTION 'Invalid status transition: %', p_status;
+    END IF;
+
+    -- Check physician authorization
+    SELECT EXISTS (
+        SELECT 1 FROM doctors
+        WHERE id = p_doctor_id 
+          AND (user_id = v_actor_id OR v_actor_id IS NULL)
+    ) INTO v_is_authorized;
+
+    IF NOT v_is_authorized THEN
+        RAISE EXCEPTION 'Not authorized. Only the attending physician can update consultation status.';
+    END IF;
+
+    -- Update the specified appointment
+    UPDATE appointments
+    SET status = p_status,
+        end_at = NOW()
+    WHERE doctor_id = p_doctor_id AND scheduled_date = CURRENT_DATE AND token_number = p_token_number
+    RETURNING id INTO v_appointment_id;
+
+    IF v_appointment_id IS NULL THEN
+        RAISE EXCEPTION 'Appointment Token #% not found on %', p_token_number, CURRENT_DATE;
+    END IF;
+
+    -- Check if we need to advance the queue
+    SELECT current_token INTO v_current_token
+    FROM clinic_queues
+    WHERE doctor_id = p_doctor_id AND queue_date = CURRENT_DATE
+    FOR UPDATE;
+
+    IF v_current_token = p_token_number THEN
+        SELECT id, token_number INTO v_next_token_id, v_next_token_num
+        FROM appointments
+        WHERE doctor_id = p_doctor_id AND scheduled_date = CURRENT_DATE AND status = 'waiting'
+        ORDER BY is_priority DESC, token_number ASC
+        LIMIT 1;
+
+        IF v_next_token_id IS NOT NULL THEN
+            UPDATE appointments
+            SET status = 'in-consultation', start_at = NOW()
+            WHERE id = v_next_token_id;
+
+            UPDATE clinic_queues
+            SET current_token = v_next_token_num, status = 'in-session', updated_at = NOW()
+            WHERE doctor_id = p_doctor_id AND queue_date = CURRENT_DATE;
+
+            UPDATE doctors
+            SET current_token = v_next_token_num, queue_active = true
+            WHERE id = p_doctor_id;
+        ELSE
+            UPDATE clinic_queues
+            SET current_token = 0, status = 'completed', updated_at = NOW()
+            WHERE doctor_id = p_doctor_id AND queue_date = CURRENT_DATE;
+
+            UPDATE doctors
+            SET current_token = 0, queue_active = false
+            WHERE id = p_doctor_id;
+        END IF;
+    END IF;
+
+    -- Audit log
+    INSERT INTO audit_logs (actor_id, action, entity, entity_id, metadata)
+    VALUES (
+        v_actor_id,
+        'MARK_APPOINTMENT_' || upper(p_status),
+        'appointments',
+        v_appointment_id::text,
+        jsonb_build_object(
+            'doctor_id', p_doctor_id,
+            'token_number', p_token_number,
+            'status', p_status,
+            'reason', p_reason
+        )
+    );
+
+    RETURN jsonb_build_object(
+        'appointmentId', v_appointment_id,
+        'status', p_status,
+        'currentToken', COALESCE(v_next_token_num, v_current_token)
+    );
+END;
+$$;
+
+-- 12. ATOMIC EMERGENCY / PRIORITY OVERRIDE RPC (Q-07 Resolution)
+CREATE OR REPLACE FUNCTION flag_priority_appointment_atomic(
+    p_doctor_id UUID,
+    p_token_number INT,
+    p_reason TEXT DEFAULT 'Emergency clinical triage priority requested.'
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+    v_actor_id UUID;
+    v_is_authorized BOOLEAN;
+    v_appointment_id UUID;
+BEGIN
+    v_actor_id := auth.uid();
+
+    -- Check physician authorization
+    SELECT EXISTS (
+        SELECT 1 FROM doctors
+        WHERE id = p_doctor_id 
+          AND (user_id = v_actor_id OR v_actor_id IS NULL)
+    ) INTO v_is_authorized;
+
+    IF NOT v_is_authorized THEN
+        RAISE EXCEPTION 'Not authorized. Only medical personnel can flag emergency triage priority.';
+    END IF;
+
+    UPDATE appointments
+    SET is_priority = true,
+        priority_reason = p_reason
+    WHERE doctor_id = p_doctor_id AND scheduled_date = CURRENT_DATE AND token_number = p_token_number
+    RETURNING id INTO v_appointment_id;
+
+    IF v_appointment_id IS NULL THEN
+        RAISE EXCEPTION 'Appointment Token #% not found on %', p_token_number, CURRENT_DATE;
+    END IF;
+
+    -- Log immutable audit event for priority override
+    INSERT INTO audit_logs (actor_id, action, entity, entity_id, metadata)
+    VALUES (
+        v_actor_id,
+        'PRIORITY_TRIAGE_OVERRIDE',
+        'appointments',
+        v_appointment_id::text,
+        jsonb_build_object(
+            'doctor_id', p_doctor_id,
+            'token_number', p_token_number,
+            'reason', p_reason,
+            'timestamp', NOW()
+        )
+    );
+
+    RETURN jsonb_build_object(
+        'appointmentId', v_appointment_id,
+        'isPriority', true,
+        'tokenNumber', p_token_number
+    );
 END;
 $$;
 
@@ -470,6 +641,12 @@ GRANT EXECUTE ON FUNCTION advance_doctor_queue_atomic(UUID) TO authenticated, an
 
 REVOKE EXECUTE ON FUNCTION complete_consultation_rx_atomic(UUID, INT, TEXT, TEXT[], TEXT) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION complete_consultation_rx_atomic(UUID, INT, TEXT, TEXT[], TEXT) TO authenticated, anon;
+
+REVOKE EXECUTE ON FUNCTION mark_appointment_status_atomic(UUID, INT, VARCHAR, TEXT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION mark_appointment_status_atomic(UUID, INT, VARCHAR, TEXT) TO authenticated, anon;
+
+REVOKE EXECUTE ON FUNCTION flag_priority_appointment_atomic(UUID, INT, TEXT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION flag_priority_appointment_atomic(UUID, INT, TEXT) TO authenticated, anon;
 
 REVOKE EXECUTE ON FUNCTION verify_doctor_admin_atomic(UUID, BOOLEAN, TEXT) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION verify_doctor_admin_atomic(UUID, BOOLEAN, TEXT) TO authenticated, anon;

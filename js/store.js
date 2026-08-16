@@ -845,6 +845,72 @@ class MediarcaStore {
     this.notifySubscribers();
     return doc;
   }
+
+  async markAppointmentStatus(doctorId, tokenNumber, status, reason = 'Physician clinical consultation update.') {
+    // 1. Enforce Doctor/Admin Authorization (A-01 Resolution)
+    if (!this.state.currentUser || !this.state.currentUser.id || (this.state.currentUser.role !== 'doctor' && this.state.currentUser.role !== 'admin')) {
+      throw new Error('Access Denied: Only attending medical personnel can update consultation statuses.');
+    }
+
+    let cloudRes = null;
+    if (window.mediarcaSupabase && window.mediarcaSupabase.isConnected) {
+      cloudRes = await window.mediarcaSupabase.cloudMarkAppointmentStatus(doctorId, tokenNumber, status, reason);
+    }
+
+    const booking = this.state.bookings.find(b => b.doctorId === doctorId && b.tokenNumber === tokenNumber);
+    if (booking) {
+      booking.status = status;
+    }
+
+    const queue = this.state.queues[doctorId];
+    if (queue && queue.tokens) {
+      const token = queue.tokens.find(t => t.tokenNumber === tokenNumber);
+      if (token) token.status = status;
+    }
+
+    if (!cloudRes) {
+      if (queue && queue.currentToken === tokenNumber) {
+        await this.advanceDoctorQueue(doctorId);
+      }
+    } else {
+      if (queue) {
+        queue.currentToken = cloudRes.currentToken || 0;
+        queue.status = cloudRes.currentToken > 0 ? 'in-session' : 'completed';
+      }
+      this.notifySubscribers();
+    }
+
+    return booking;
+  }
+
+  async flagPriorityAppointment(doctorId, tokenNumber, reason = 'Emergency clinical triage priority requested.') {
+    // 1. Enforce Doctor/Admin Authorization (A-01 Resolution)
+    if (!this.state.currentUser || !this.state.currentUser.id || (this.state.currentUser.role !== 'doctor' && this.state.currentUser.role !== 'admin')) {
+      throw new Error('Access Denied: Only medical personnel can flag emergency priority.');
+    }
+
+    let cloudRes = null;
+    if (window.mediarcaSupabase && window.mediarcaSupabase.isConnected) {
+      cloudRes = await window.mediarcaSupabase.cloudFlagPriorityAppointment(doctorId, tokenNumber, reason);
+    }
+
+    const booking = this.state.bookings.find(b => b.doctorId === doctorId && b.tokenNumber === tokenNumber);
+    if (booking) {
+      booking.isPriority = true;
+      booking.priorityReason = reason;
+    }
+
+    const queue = this.state.queues[doctorId];
+    if (queue && queue.tokens) {
+      const token = queue.tokens.find(t => t.tokenNumber === tokenNumber);
+      if (token) {
+        token.isPriority = true;
+      }
+    }
+
+    this.notifySubscribers();
+    return booking;
+  }
 }
 
 // Instantiate Singleton

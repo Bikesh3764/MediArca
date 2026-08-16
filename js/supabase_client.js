@@ -279,6 +279,41 @@ class MediarcaSupabaseClient {
     return data;
   }
 
+  async cloudMarkAppointmentStatus(doctorId, tokenNumber, status, reason = 'Doctor clinic queue update.') {
+    if (!this.client) throw new Error('Cloud offline');
+
+    const { data, error } = await this.client.rpc('mark_appointment_status_atomic', {
+      p_doctor_id: doctorId,
+      p_token_number: parseInt(tokenNumber),
+      p_status: status,
+      p_reason: reason
+    });
+
+    if (error) {
+      console.error('RPC Mark Status Error:', error);
+      throw error;
+    }
+
+    return data;
+  }
+
+  async cloudFlagPriorityAppointment(doctorId, tokenNumber, reason = 'Emergency clinical triage priority requested.') {
+    if (!this.client) throw new Error('Cloud offline');
+
+    const { data, error } = await this.client.rpc('flag_priority_appointment_atomic', {
+      p_doctor_id: doctorId,
+      p_token_number: parseInt(tokenNumber),
+      p_reason: reason
+    });
+
+    if (error) {
+      console.error('RPC Priority Override Error:', error);
+      throw error;
+    }
+
+    return data;
+  }
+
   async cloudGetAuditLogs(limit = 50) {
     if (!this.client) throw new Error('Cloud offline');
 
