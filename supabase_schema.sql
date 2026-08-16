@@ -452,6 +452,99 @@ BEGIN
 END;
 $$;
 
+-- 9B. ATOMIC RECEPTION WALK-IN TOKEN ISSUANCE RPC (H-18 & H-19 Resolution)
+CREATE OR REPLACE FUNCTION issue_reception_walkin_token(
+    p_doctor_id UUID,
+    p_patient_name VARCHAR,
+    p_patient_phone VARCHAR,
+    p_patient_age INT DEFAULT NULL,
+    p_patient_gender VARCHAR DEFAULT NULL,
+    p_symptoms TEXT DEFAULT 'General Walk-in Consultation',
+    p_is_priority BOOLEAN DEFAULT false,
+    p_priority_reason TEXT DEFAULT NULL,
+    p_timezone VARCHAR DEFAULT 'Asia/Kolkata'
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+    v_actor_id UUID;
+    v_actor_role VARCHAR;
+    v_booking_id VARCHAR;
+    v_checkin_token VARCHAR;
+    v_next_token INT;
+    v_appointment appointments%ROWTYPE;
+BEGIN
+    v_actor_id := auth.uid();
+    IF v_actor_id IS NULL THEN
+        RAISE EXCEPTION 'Authentication required.';
+    END IF;
+
+    -- H-18: Authorize strictly receptionists or administrators
+    SELECT role INTO v_actor_role FROM users WHERE id = v_actor_id;
+    IF v_actor_role NOT IN ('receptionist', 'admin') AND NOT is_admin(v_actor_id) THEN
+        RAISE EXCEPTION 'Access Denied: Only accredited reception staff and administrators can issue walk-in tokens.';
+    END IF;
+
+    -- Verify target doctor is active and accredited
+    IF NOT EXISTS (SELECT 1 FROM doctors WHERE id = p_doctor_id AND verification_status = 'verified') THEN
+        RAISE EXCEPTION 'Doctor is not accredited, active, or verified.';
+    END IF;
+
+    -- Ensure queue exists and acquire row lock
+    INSERT INTO clinic_queues (doctor_id, queue_date, current_token, total_tokens, status)
+    VALUES (p_doctor_id, CURRENT_DATE, 0, 0, 'in-session')
+    ON CONFLICT (doctor_id, queue_date) DO UPDATE SET updated_at = NOW();
+
+    SELECT total_tokens INTO v_next_token
+    FROM clinic_queues
+    WHERE doctor_id = p_doctor_id AND queue_date = CURRENT_DATE
+    FOR UPDATE;
+
+    v_next_token := COALESCE(v_next_token, 0) + 1;
+    v_booking_id := 'MED-WLK-' || upper(to_hex(extract(epoch from now())::bigint)) || '-' || upper(substring(md5(random()::text) from 1 for 4));
+    v_checkin_token := 'MED-QR-' || lower(encode(gen_random_bytes(16), 'hex'));
+
+    UPDATE clinic_queues
+    SET total_tokens = v_next_token, status = 'in-session', updated_at = NOW()
+    WHERE doctor_id = p_doctor_id AND queue_date = CURRENT_DATE;
+
+    UPDATE doctors
+    SET total_tokens = v_next_token, queue_active = true
+    WHERE id = p_doctor_id;
+
+    -- H-19: Store actual demographic values (or null if unknown) without hardcoding fictitious demographics
+    INSERT INTO appointments (
+        booking_id, patient_id, doctor_id, patient_name, patient_phone, patient_age, patient_gender,
+        token_number, status, is_priority, priority_reason, checkin_token, checkin_token_expires_at,
+        check_in_time, checkin_token_used_at, appointment_date, scheduled_date, start_at, end_at, timezone, symptoms
+    ) VALUES (
+        v_booking_id, NULL, p_doctor_id, p_patient_name, COALESCE(p_patient_phone, 'Not specified'),
+        p_patient_age, p_patient_gender, v_next_token, 'checked_in', p_is_priority, p_priority_reason,
+        v_checkin_token, NOW() + interval '24 hours', NOW(), NOW(), CURRENT_DATE, CURRENT_DATE,
+        NULL, NULL, COALESCE(p_timezone, 'Asia/Kolkata'), p_symptoms
+    ) RETURNING * INTO v_appointment;
+
+    INSERT INTO audit_logs (actor_id, action, entity, entity_id, metadata)
+    VALUES (
+        v_actor_id,
+        'RECEPTION_ISSUE_WALKIN_TOKEN',
+        'appointments',
+        v_appointment.id,
+        jsonb_build_object(
+            'token_number', v_next_token,
+            'doctor_id', p_doctor_id,
+            'patient_name', p_patient_name,
+            'is_priority', p_is_priority
+        )
+    );
+
+    RETURN to_jsonb(v_appointment);
+END;
+$$;
+
 -- 9. ATOMIC QUEUE ADVANCEMENT & CONSULTATION RPC (H-13 & H-14 Resolution: Active Verification & Anti-Starvation Scoring)
 CREATE OR REPLACE FUNCTION advance_doctor_queue_atomic(
     p_doctor_id UUID
@@ -1318,6 +1411,9 @@ GRANT EXECUTE ON FUNCTION transfer_patient_queue_atomic(UUID, UUID, TEXT) TO aut
 
 REVOKE ALL ON FUNCTION reschedule_appointment_atomic(UUID, DATE, VARCHAR) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION reschedule_appointment_atomic(UUID, DATE, VARCHAR) TO authenticated;
+
+REVOKE ALL ON FUNCTION issue_reception_walkin_token(UUID, VARCHAR, VARCHAR, INT, VARCHAR, TEXT, BOOLEAN, TEXT, VARCHAR) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION issue_reception_walkin_token(UUID, VARCHAR, VARCHAR, INT, VARCHAR, TEXT, BOOLEAN, TEXT, VARCHAR) TO authenticated;
 
 -- 13. STRICT RESTRICTIVE ROW LEVEL SECURITY (RLS) POLICIES (C-07 & C-08 Resolution)
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;

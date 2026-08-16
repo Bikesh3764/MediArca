@@ -1998,9 +1998,18 @@ class MediarcaApp {
                 </select>
                 <input type="text" id="walkinPatientName" class="form-input" placeholder="Patient Full Name" required>
               </div>
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.75rem;">
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.5rem;">
                 <input type="tel" id="walkinPatientPhone" class="form-input" placeholder="Phone Number" required>
                 <input type="text" id="walkinSymptoms" class="form-input" placeholder="Chief Complaint / Reason" value="OPD Walk-in Checkup">
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.75rem;">
+                <input type="number" id="walkinPatientAge" class="form-input" placeholder="Patient Age (optional)" min="0" max="125">
+                <select id="walkinPatientGender" class="form-select">
+                  <option value="">-- Select Gender --</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Other">Other</option>
+                </select>
               </div>
               <button type="submit" class="btn btn-primary btn-block">
                 <i data-lucide="ticket" style="width: 14px; height: 14px;"></i> Issue Walk-in Token & Print Pass
@@ -2160,27 +2169,27 @@ class MediarcaApp {
     const patientName = document.getElementById('walkinPatientName')?.value.trim();
     const patientPhone = document.getElementById('walkinPatientPhone')?.value.trim();
     const symptoms = document.getElementById('walkinSymptoms')?.value.trim() || 'Walk-in Consultation';
+    const patientAge = document.getElementById('walkinPatientAge')?.value.trim();
+    const patientGender = document.getElementById('walkinPatientGender')?.value;
 
     if (!doctorId || !patientName || !patientPhone) {
-      this.showToast('Please fill out all walk-in registration fields.', 'warning');
+      this.showToast('Please fill out patient name, phone number, and attending physician.', 'warning');
       return;
     }
 
     try {
-      const newBooking = await window.mediarcaStore.bookAppointment({
+      // H-18 & H-19: Call dedicated receptionist walk-in token issuance RPC with accurate demographics
+      const newBooking = await window.mediarcaStore.issueReceptionWalkinToken({
         doctorId,
         patientName,
         patientPhone,
-        patientAge: 35,
-        patientGender: 'Not specified',
+        patientAge: patientAge ? parseInt(patientAge) : null,
+        patientGender: patientGender || null,
         symptoms
       });
 
-      // Automatically mark checked-in for walk-ins
-      await window.mediarcaStore.checkInPatientQr(newBooking.bookingId);
-
       if (window.mediarcaAudio) window.mediarcaAudio.playChime('success');
-      this.showToast(`Walk-in Token #${newBooking.tokenNumber} issued and checked in!`, 'success');
+      this.showToast(`Walk-in Token #${newBooking.tokenNumber} issued and registered!`, 'success');
       this.renderReceptionPortal();
     } catch (err) {
       console.error('Walkin registration error:', err);

@@ -958,6 +958,86 @@ class MediarcaStore {
     return newBooking;
   }
 
+  async issueReceptionWalkinToken(walkinData) {
+    // H-18: Strict Receptionist / Admin Authorization
+    if (!this.state.currentUser || !this.state.currentUser.id || (this.state.currentUser.role !== 'receptionist' && this.state.currentUser.role !== 'admin')) {
+      throw new Error('Access Denied: Only accredited clinic receptionists and administrators can issue walk-in tokens.');
+    }
+
+    const doctor = this.state.doctors.find(d => d.id === walkinData.doctorId);
+    if (!doctor) throw new Error('Doctor not found in accredited directory.');
+
+    let cloudBooking = null;
+    if (window.mediarcaSupabase && window.mediarcaSupabase.isConnected) {
+      cloudBooking = await window.mediarcaSupabase.cloudIssueReceptionWalkinToken({
+        doctorId: doctor.id,
+        patientName: walkinData.patientName,
+        patientPhone: walkinData.patientPhone || 'Not specified',
+        patientAge: walkinData.patientAge ? parseInt(walkinData.patientAge) : null,
+        patientGender: walkinData.patientGender || null,
+        symptoms: walkinData.symptoms || 'General Walk-in Consultation',
+        isPriority: !!walkinData.isPriority,
+        priorityReason: walkinData.priorityReason || null,
+        timezone: 'Asia/Kolkata'
+      });
+    }
+
+    const queue = this.state.queues[doctor.id] || {
+      doctorId: doctor.id,
+      currentToken: doctor.currentToken || 0,
+      status: 'in-session',
+      avgConsultTimeMins: doctor.avgConsultTimeMins || 12,
+      tokens: []
+    };
+
+    const existingTokens = queue.tokens ? queue.tokens.map(t => t.tokenNumber) : [];
+    const nextTokenNumber = cloudBooking ? cloudBooking.token_number : (existingTokens.length > 0 ? Math.max(...existingTokens) + 1 : (doctor.totalTokens || 0) + 1);
+    const bookingId = cloudBooking ? cloudBooking.booking_id : ('MED-WLK-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase());
+
+    const newBooking = {
+      id: cloudBooking?.id || null,
+      bookingId: bookingId,
+      patientId: null,
+      patientName: cloudBooking?.patient_name || walkinData.patientName,
+      patientAge: cloudBooking?.patient_age || (walkinData.patientAge ? parseInt(walkinData.patientAge) : null),
+      patientGender: cloudBooking?.patient_gender || walkinData.patientGender || null,
+      patientPhone: cloudBooking?.patient_phone || walkinData.patientPhone || 'Not specified',
+      doctorId: doctor.id,
+      doctorName: doctor.name,
+      specialty: doctor.specialty,
+      hospital: doctor.hospital,
+      mediarcaId: doctor.mediarcaId || 'VERIFIED',
+      date: new Date().toISOString().split('T')[0],
+      timeSlot: 'Walk-in Desk',
+      tokenNumber: nextTokenNumber,
+      status: 'checked_in',
+      isPriority: !!walkinData.isPriority,
+      priorityReason: walkinData.priorityReason || null,
+      symptoms: walkinData.symptoms || 'Walk-in Consultation',
+      createdAt: cloudBooking?.created_at || new Date().toISOString()
+    };
+
+    this.state.bookings.unshift(newBooking);
+
+    if (!queue.tokens) queue.tokens = [];
+    queue.tokens.push({
+      tokenNumber: nextTokenNumber,
+      status: 'checked_in',
+      isPriority: newBooking.isPriority,
+      patientName: newBooking.patientName,
+      checkInTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      bookingId: bookingId,
+      symptoms: newBooking.symptoms
+    });
+
+    doctor.totalTokens = nextTokenNumber;
+    doctor.queueActive = true;
+    this.state.queues[doctor.id] = queue;
+
+    this.notifySubscribers();
+    return newBooking;
+  }
+
   async advanceDoctorQueue(doctorId) {
     // 1. Enforce Doctor/Admin Authorization (A-01 Resolution)
     if (!this.state.currentUser || !this.state.currentUser.id || (this.state.currentUser.role !== 'doctor' && this.state.currentUser.role !== 'admin')) {

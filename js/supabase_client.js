@@ -264,6 +264,30 @@ class MediarcaSupabaseClient {
     return data;
   }
 
+  async cloudIssueReceptionWalkinToken(walkinObj) {
+    if (!this.client) throw new Error('Cloud offline');
+
+    // H-18 & H-19: Dedicated receptionist walk-in token issuance RPC with accurate demographics
+    const { data, error } = await this.client.rpc('issue_reception_walkin_token', {
+      p_doctor_id: walkinObj.doctorId,
+      p_patient_name: walkinObj.patientName,
+      p_patient_phone: walkinObj.patientPhone || 'Not specified',
+      p_patient_age: walkinObj.patientAge ? parseInt(walkinObj.patientAge) : null,
+      p_patient_gender: walkinObj.patientGender || null,
+      p_symptoms: walkinObj.symptoms || 'General Walk-in Consultation',
+      p_is_priority: !!walkinObj.isPriority,
+      p_priority_reason: walkinObj.priorityReason || null,
+      p_timezone: walkinObj.timezone || 'Asia/Kolkata'
+    });
+
+    if (error) {
+      console.error('RPC Reception Walk-in Error:', error);
+      throw error;
+    }
+
+    return data;
+  }
+
   async cloudAdvanceQueue(doctorId) {
     if (!this.client) throw new Error('Cloud offline');
 
