@@ -7,7 +7,7 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
--- 2. USERS & PROFILES TABLE (Linked directly to Supabase auth.users)
+-- 2. USERS & IDENTITY PROFILES TABLE (Linked directly to Supabase auth.users - D-01 & D-02 Resolution)
 -- Password security is managed 100% by Supabase Auth (bcrypt/argon2) - NO password_hash in application schema
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -15,13 +15,23 @@ CREATE TABLE IF NOT EXISTS users (
     email VARCHAR(255) UNIQUE NOT NULL,
     full_name VARCHAR(255) NOT NULL,
     phone VARCHAR(50),
-    age INT CHECK (age IS NULL OR (age >= 0 AND age <= 125)),
-    gender VARCHAR(20),
-    blood_group VARCHAR(10),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 3. ACCREDITED PRACTITIONERS TABLE
+-- 3. PATIENT CLINICAL PROFILES TABLE (D-02 & D-03 Resolution: Strict Medical Isolation)
+CREATE TABLE IF NOT EXISTS patient_clinical_profiles (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    age INT CHECK (age IS NULL OR (age >= 0 AND age <= 125)),
+    gender VARCHAR(20),
+    blood_group VARCHAR(10),
+    allergies TEXT[],
+    emergency_contact VARCHAR(50),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 4. ACCREDITED PRACTITIONERS TABLE (D-04 Resolution: Canonical User Relationship)
 CREATE TABLE IF NOT EXISTS doctors (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
@@ -50,7 +60,7 @@ CREATE TABLE IF NOT EXISTS doctors (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 4. CLINIC LIVE QUEUES TABLE (Primary Source of Live Telemetry)
+-- 5. CLINIC LIVE QUEUES TABLE (Primary Source of Live Telemetry)
 CREATE TABLE IF NOT EXISTS clinic_queues (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     doctor_id UUID NOT NULL REFERENCES doctors(id) ON DELETE CASCADE,
@@ -63,7 +73,7 @@ CREATE TABLE IF NOT EXISTS clinic_queues (
     UNIQUE(doctor_id, queue_date)
 );
 
--- 5. APPOINTMENTS, TOKENS & CLINICAL PRESCRIPTIONS TABLE (Q-06 & Q-07 Resolution)
+-- 6. APPOINTMENTS, TOKENS & CLINICAL PRESCRIPTIONS TABLE (Q-06 & Q-07 Resolution)
 CREATE TABLE IF NOT EXISTS appointments (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     booking_id VARCHAR(50) UNIQUE NOT NULL,
@@ -90,10 +100,10 @@ CREATE TABLE IF NOT EXISTS appointments (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 6. AUDIT COMPLIANCE & ACTIVITY LOGS TABLE
+-- 7. AUDIT COMPLIANCE & ACTIVITY LOGS TABLE (D-05 Resolution: FK to users)
 CREATE TABLE IF NOT EXISTS audit_logs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    actor_id UUID,
+    actor_id UUID REFERENCES users(id) ON DELETE SET NULL,
     action VARCHAR(100) NOT NULL,
     entity VARCHAR(50) NOT NULL,
     entity_id VARCHAR(100),
@@ -101,7 +111,7 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 7. HELPER FUNCTION: IS_ADMIN CHECK (C-09 Resolution)
+-- 8. HELPER FUNCTION: IS_ADMIN CHECK (C-09 Resolution)
 CREATE OR REPLACE FUNCTION is_admin(p_user_id UUID)
 RETURNS BOOLEAN
 LANGUAGE sql
@@ -114,7 +124,7 @@ AS $$
   );
 $$;
 
--- 8. ATOMIC TRANSACTIONAL APPOINTMENT BOOKING & TOKEN ISSUANCE RPC (C-04 & C-06 Resolution)
+-- 9. ATOMIC TRANSACTIONAL APPOINTMENT BOOKING & TOKEN ISSUANCE RPC (C-04 & C-06 Resolution)
 CREATE OR REPLACE FUNCTION issue_next_opd_token(
     p_doctor_id UUID,
     p_symptoms TEXT
@@ -127,6 +137,7 @@ AS $$
 DECLARE
     v_actor_id UUID;
     v_patient users%ROWTYPE;
+    v_clinical patient_clinical_profiles%ROWTYPE;
     v_next_token INT;
     v_booking_id VARCHAR;
     v_initial_status VARCHAR;
@@ -140,11 +151,13 @@ BEGIN
         RAISE EXCEPTION 'Authentication required. Please sign in as an authenticated patient.';
     END IF;
 
-    -- 2. Fetch authenticated patient record directly from database (Do not trust browser parameters)
+    -- 2. Fetch authenticated patient record & clinical profile directly from database (D-02 Resolution)
     SELECT * INTO v_patient FROM users WHERE id = v_actor_id;
     IF v_patient.id IS NULL THEN
         RAISE EXCEPTION 'Patient profile not found for authenticated user ID: %', v_actor_id;
     END IF;
+
+    SELECT * INTO v_clinical FROM patient_clinical_profiles WHERE user_id = v_actor_id;
 
     -- 3. Verify doctor accreditation
     SELECT verification_status INTO v_doctor_verified FROM doctors WHERE id = p_doctor_id;
@@ -198,7 +211,7 @@ BEGIN
         token_number, status, check_in_time, appointment_date, scheduled_date, start_at, end_at, timezone, symptoms
     ) VALUES (
         v_booking_id, v_actor_id, p_doctor_id, v_patient.full_name, COALESCE(v_patient.phone, 'Not specified'),
-        v_patient.age, v_patient.gender, v_next_token, 'waiting', NOW(), CURRENT_DATE, CURRENT_DATE,
+        v_clinical.age, v_clinical.gender, v_next_token, 'waiting', NOW(), CURRENT_DATE, CURRENT_DATE,
         NOW(), NOW() + interval '15 minutes', 'UTC', p_symptoms
     ) RETURNING * INTO v_appointment;
 
@@ -716,6 +729,23 @@ CREATE POLICY "Doctor can update consultation status and prescription" ON appoin
     doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid())
 );
 
+-- PATIENT CLINICAL PROFILES RLS (D-02 & D-03 Resolution: Strict Medical Isolation)
+ALTER TABLE patient_clinical_profiles ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Patients can manage own clinical profile" ON patient_clinical_profiles;
+CREATE POLICY "Patients can manage own clinical profile" ON patient_clinical_profiles FOR ALL USING (
+    auth.uid() = user_id
+);
+
+DROP POLICY IF EXISTS "Attending doctors can view patient clinical profile" ON patient_clinical_profiles;
+CREATE POLICY "Attending doctors can view patient clinical profile" ON patient_clinical_profiles FOR SELECT USING (
+    user_id IN (
+        SELECT patient_id FROM appointments 
+        WHERE doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid())
+          AND scheduled_date = CURRENT_DATE
+    )
+);
+
 -- 14. PUBLIC DIRECTORY VIEW (P-02 & Q-04 Resolution: Single Source of Truth via clinic_queues)
 CREATE OR REPLACE VIEW public_doctor_directory AS
 SELECT 
@@ -793,13 +823,17 @@ BEGIN
 END $$;
 
 -- 17. INITIAL SEED DATA (Zero Password Hashes - Passwords Authenticated via Supabase Auth)
-INSERT INTO users (id, role, email, full_name, phone, age, gender, blood_group) VALUES
-('a0000000-0000-0000-0000-000000000001', 'patient', 'sarah@mediarca.health', 'Sarah Johnson', '+1 (555) 234-8900', 32, 'Female', 'O+'),
-('a0000000-0000-0000-0000-000000000002', 'doctor', 'bikeshray3764@gmail.com', 'Dr. Bikesh Ray', '+1 (555) 123-4567', 36, 'Male', 'B+'),
-('a0000000-0000-0000-0000-000000000003', 'doctor', 'thorne@mediarca.health', 'Dr. Aris Thorne', '+1 (555) 345-6789', 48, 'Male', 'A+'),
-('a0000000-0000-0000-0000-000000000004', 'doctor', 'vance@mediarca.health', 'Dr. Elena Vance', '+1 (555) 456-7890', 39, 'Female', 'B+'),
-('a0000000-0000-0000-0000-000000000005', 'admin', 'admin@mediarca.health', 'Medical Board Director Robert Vance', '+1 (555) 999-0000', 52, 'Male', 'AB+')
+INSERT INTO users (id, role, email, full_name, phone) VALUES
+('a0000000-0000-0000-0000-000000000001', 'patient', 'sarah@mediarca.health', 'Sarah Johnson', '+1 (555) 234-8900'),
+('a0000000-0000-0000-0000-000000000002', 'doctor', 'bikeshray3764@gmail.com', 'Dr. Bikesh Ray', '+1 (555) 123-4567'),
+('a0000000-0000-0000-0000-000000000003', 'doctor', 'thorne@mediarca.health', 'Dr. Aris Thorne', '+1 (555) 345-6789'),
+('a0000000-0000-0000-0000-000000000004', 'doctor', 'vance@mediarca.health', 'Dr. Elena Vance', '+1 (555) 456-7890'),
+('a0000000-0000-0000-0000-000000000005', 'admin', 'admin@mediarca.health', 'Medical Board Director Robert Vance', '+1 (555) 999-0000')
 ON CONFLICT (email) DO NOTHING;
+
+INSERT INTO patient_clinical_profiles (user_id, age, gender, blood_group, allergies, emergency_contact) VALUES
+('a0000000-0000-0000-0000-000000000001', 32, 'Female', 'O+', ARRAY['Penicillin'], '+1 (555) 987-6543')
+ON CONFLICT (user_id) DO NOTHING;
 
 INSERT INTO doctors (id, user_id, name, email, specialty, specialty_id, title, degrees, reg_number, mediarca_id, verification_status, experience_years, hospital, fee, rating, reviews_count, avatar, bio, schedule, queue_active, current_token, total_tokens, avg_consult_time_mins) VALUES
 ('d0000000-0000-0000-0000-000000000007', 'a0000000-0000-0000-0000-000000000002', 'Dr. Bikesh Ray', 'bikeshray3764@gmail.com', 'Cardiology & Critical Care', 'cardiology', 'Consultant Interventional Cardiologist', 'MBBS, MD (Cardiology), FACC', 'NMC-98765-IND', 'MED-DOC-7700', 'verified', 12, 'Apex Heart Institute & Research Center, Suite 402', 60.00, 4.95, 340, 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=300&h=300&fit=crop&crop=faces&q=80', 'Specialist in clinical cardiology, angioplasty, hypertension therapeutics, and acute cardiovascular interventions.', 'Mon - Sat | 09:00 AM - 03:00 PM', true, 3, 8, 12),
