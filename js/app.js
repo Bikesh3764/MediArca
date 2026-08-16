@@ -1834,14 +1834,15 @@ class MediarcaApp {
   }
 
   async handleDownloadThroughputCsv() {
-    let bookings = window.mediarcaStore.state.bookings || [];
+    let bookings = [];
     if (window.mediarcaSupabase && window.mediarcaSupabase.isConnected) {
       try {
         const todayStr = new Date().toISOString().split('T')[0];
-        const { data: serverAppts } = await window.mediarcaSupabase.client
+        const { data: serverAppts, error } = await window.mediarcaSupabase.client
           .from('appointments')
           .select('*, doctor:doctors(name, specialty), patient:users!appointments_patient_id_fkey(full_name, phone)')
           .eq('appointment_date', todayStr);
+        if (error) throw error;
         if (serverAppts && serverAppts.length > 0) {
           bookings = serverAppts.map(a => ({
             bookingId: a.id,
@@ -1856,8 +1857,17 @@ class MediarcaApp {
           }));
         }
       } catch (e) {
-        console.warn('Server appointments fetch notice for CSV export:', e);
+        console.error('Server appointments fetch error for CSV export:', e);
+        this.showToast('Server throughput data unavailable: ' + e.message, 'warning');
+        return;
       }
+    } else {
+      bookings = window.mediarcaStore.state.bookings || [];
+    }
+
+    if (bookings.length === 0) {
+      this.showToast('No registered throughput records to export for today.', 'info');
+      return;
     }
 
     const headers = ['Booking ID', 'Date', 'Time Slot', 'Doctor', 'Specialty', 'Token', 'Status', 'Symptoms', 'Stage'];
@@ -1884,7 +1894,7 @@ class MediarcaApp {
   }
 
   async handleExportAuditCsv() {
-    let logs = window.mediarcaStore.state.auditLogs || [];
+    let logs = [];
     if (window.mediarcaSupabase && window.mediarcaSupabase.isConnected && window.mediarcaStore.state.currentUser?.role === 'admin') {
       try {
         this.showToast('Querying authoritative server audit ledger...', 'info');
@@ -1899,9 +1909,19 @@ class MediarcaApp {
           }));
         }
       } catch (err) {
-        console.warn('Server audit export fetch notice:', err);
+        console.error('Server audit export fetch error:', err);
+        this.showToast('Failed to export server audit ledger: ' + err.message, 'warning');
+        return;
       }
+    } else {
+      logs = window.mediarcaStore.state.auditLogs || [];
     }
+
+    if (logs.length === 0) {
+      this.showToast('No compliance audit logs to export.', 'info');
+      return;
+    }
+
     const headers = ['Timestamp', 'Action', 'Entity', 'Entity ID', 'Actor ID'];
     const rows = logs.map(l => [
       l.timestamp || '',

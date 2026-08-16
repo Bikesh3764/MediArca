@@ -1,14 +1,15 @@
 /**
- * MediArca - Automated Regression & Audit Test Suite (Final Line-by-Line Release Audit Edition)
+ * MediArca - Automated Regression & Audit Test Suite (Latest Full Release Audit Edition)
  * Validates store logic, queue algorithms, slot collisions, stage transitions, cloud sync, RLS immutability triggers, 
  * zero demo credentials in store, zero hardcoded passwords in app, persistent hospitalSettings serialization, 
- * server-authoritative reports, zero cross-user seed ID fallbacks, patient billing authorization, dynamic notifications, and security headers.
+ * server-authoritative reports, zero cross-user seed ID fallbacks, patient billing authorization, dynamic notifications,
+ * clean empty production clinical boot state, and fail-closed official exports.
  */
 
 const fs = require('fs');
 const path = require('path');
 
-console.log('--- Starting MediArca Automated Regression Suite (Final Line-by-Line Release Audit) ---');
+console.log('--- Starting MediArca Automated Regression Suite (Latest Full Release Audit) ---');
 
 let passCount = 0;
 let failCount = 0;
@@ -75,6 +76,11 @@ assert(!storeContent.includes('docData.password || \'doc123\''), 'Doctor registr
 assert(!appContent.includes('receptionLoginPassword\')?.value.trim() || \'reception123\''), 'Receptionist login strictly disallows hardcoded reception123 password fallback (P0)');
 assert(!appContent.includes('Token #2 is confirmed for Today 10:30 AM in Suite 402'), 'Hardcoded static notifications replaced with dynamic patient appointment telemetry (P0)');
 assert(!appContent.includes('BP 124/82 ↘ 120/80 mmHg'), 'Doctor consultation card vitals trend replaced with dynamic clinical records (P0)');
+assert(storeContent.includes('bookings: []'), 'Production store runtime boots with clean empty bookings array (P0 Data Separation)');
+assert(storeContent.includes('medicalTimeline: []'), 'Production store runtime boots with clean empty timeline array (P0 Data Separation)');
+assert(storeContent.includes('clinicalDocuments: []'), 'Production store runtime boots with clean empty documents array (P0 Data Separation)');
+assert(appContent.includes('Server throughput data unavailable'), 'Official throughput report fails closed on server query error (P1)');
+assert(appContent.includes('Failed to export server audit ledger'), 'Official compliance audit report fails closed on server query error (P1)');
 assert(storeContent.includes('Clinical Document Vault upload failed'), 'Store throws on vault upload failure');
 assert(storeContent.includes('Billing transaction could not be settled'), 'Store fails closed on cloud billing settlement failure (BI-03)');
 assert(storeContent.includes('Appointment booking could not be completed on the hospital server'), 'Store fails closed on cloud booking failure (P0)');
@@ -99,5 +105,5 @@ console.log(`\nTest Summary: ${passCount} Passed, ${failCount} Failed.`);
 if (failCount > 0) {
   process.exit(1);
 } else {
-  console.log('--- All Final Line-by-Line Release Audit Regression Checks Passed Successfully! ---');
+  console.log('--- All Latest Full Release Audit Regression Checks Passed Successfully! ---');
 }

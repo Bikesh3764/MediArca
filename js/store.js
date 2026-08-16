@@ -561,15 +561,15 @@ const SEED_AUDIT_LOGS = [
 class MediarcaStore {
   constructor() {
     this.state = {
-      users: [...SEED_USERS],
+      users: [],
       doctors: [...SEED_DOCTORS],
       queues: { ...SEED_QUEUES },
-      bookings: [...SEED_BOOKINGS],
+      bookings: [],
       facilities: [...SEED_FACILITIES],
       rooms: [...SEED_ROOMS],
-      auditLogs: [...SEED_AUDIT_LOGS],
-      medicalTimeline: [...SEED_MEDICAL_TIMELINE],
-      clinicalDocuments: [...SEED_CLINICAL_DOCUMENTS],
+      auditLogs: [],
+      medicalTimeline: [],
+      clinicalDocuments: [],
       prescriptionTemplates: { ...CLINICAL_PRESCRIPTION_TEMPLATES },
       currentUser: {
         role: 'guest',
