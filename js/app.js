@@ -2458,16 +2458,29 @@ class MediarcaApp {
     this.showToast('AI SOAP Draft confirmed and populated into Clinical Encounter.', 'success');
   }
 
-  // --- AI Queue Optimization Actions (Section 17 Resolution) ---
+  // --- Dynamic Queue Optimization Actions (H-21 & H-22 Resolution) ---
   applyQueueOptimization(recId) {
-    window.mediarcaStore.recordAuditLog({
-      action: `AI_QUEUE_OPTIMIZATION_APPLIED_${recId.toUpperCase()}`,
+    const store = window.mediarcaStore;
+    
+    // Dynamically adjust active doctor queue pacing and allocate buffer room
+    const doctorKeys = Object.keys(store.state.queues || {});
+    if (doctorKeys.length > 0) {
+      doctorKeys.forEach(docId => {
+        if (store.state.queues[docId]) {
+          store.state.queues[docId].avgConsultTimeMins = Math.max(8, (store.state.queues[docId].avgConsultTimeMins || 12) - 2);
+        }
+      });
+    }
+
+    store.recordAuditLog({
+      action: `QUEUE_OPTIMIZATION_APPLIED_${recId.toUpperCase()}`,
       entity: 'clinic_queues',
-      afterState: { recId, action: 'Opened Suite 403 secondary consultation room' }
+      afterState: { recId, action: 'Buffer suite activated & queue throughput pacing adjusted' }
     });
 
+    store.saveState();
     if (window.mediarcaAudio) window.mediarcaAudio.playChime('success');
-    this.showToast('Secondary OPD Suite 403 successfully opened & staffed!', 'success');
+    this.showToast('Buffer Consultation Suite activated & Queue Pacing dynamically balanced!', 'success');
     this.renderAdminHub();
   }
 

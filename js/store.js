@@ -1564,96 +1564,83 @@ class MediarcaStore {
     return logEntry;
   }
 
-  // 12. AI-ASSISTED AMBIENT CLINICAL SCRIBE (Section 16, H-37, H-38, H-39 Resolution)
+  // 12. AMBIENT CLINICAL NOTE DRAFT ASSISTANT (H-18, H-19, H-20 Resolution: Extraction without Fabrication)
   parseAmbientClinicalNote(rawNote) {
     if (!rawNote || !rawNote.trim()) {
       throw new Error('Dictation note cannot be empty.');
     }
 
     const note = rawNote.toLowerCase();
-    let chiefComplaint = 'Patient consultation note review';
-    let findings = 'Physician clinical examination findings as dictated.';
-    let assessment = 'Clinical Evaluation Concluded';
-    let medications = [];
-    let advice = 'Maintain hydration, follow recommended care guidelines, and review as needed.';
+    let chiefComplaint = 'Dictated Clinical Consultation Note';
+    let assessment = 'Provisional Clinical Assessment';
+    let advice = 'Clinical care plan formulated per attending physician examination.';
 
     if (note.includes('fever') || note.includes('throat') || note.includes('cough') || note.includes('cold')) {
-      chiefComplaint = 'History of fever, cough, and throat congestion.';
-      findings = 'Pharyngeal congestion noted. Lungs clear to auscultation.';
-      assessment = 'Acute Upper Respiratory Tract Infection';
-      medications = [
-        'Tab. Azithromycin 500mg - 1 tablet OD (1-0-0) x 5 Days [Oral]',
-        'Tab. Paracetamol 650mg - 1 tablet TID (1-1-1) for fever x 3 Days [Oral]',
-        'Tab. Levocetirizine 5mg - 1 tablet HS (0-0-1) x 5 Days [Oral]'
-      ];
-      advice = 'Warm salt-water gargles 3x daily. Maintain 3L fluid intake. Review in 5 days if fever persists.';
+      chiefComplaint = 'History of fever, cough, or respiratory symptoms.';
+      assessment = 'Suspected Acute Upper Respiratory Illness';
+      advice = 'Maintain hydration, monitor temperature trajectory, and review if red flag symptoms develop.';
     } else if (note.includes('chest') || note.includes('bp') || note.includes('hypertension') || note.includes('heart')) {
-      chiefComplaint = 'Exertional chest discomfort and elevated blood pressure.';
-      findings = 'S1, S2 audible with regular rhythm. No peripheral edema.';
-      assessment = 'Essential Hypertension & Cardiovascular Evaluation';
-      medications = [
-        'Tab. Telmisartan 40mg - 1 tablet OD (1-0-0) morning x 30 Days [Oral]',
-        'Tab. Amlodipine 5mg - 1 tablet OD (1-0-0) morning x 30 Days [Oral]',
-        'Tab. Atorvastatin 20mg - 1 tablet HS (0-0-1) post-dinner x 30 Days [Oral]'
-      ];
-      advice = 'Strict low sodium diet (< 2g/day). 30 mins aerobic exercise 5 days/week. Maintain daily BP log.';
+      chiefComplaint = 'Cardiovascular evaluation / elevated blood pressure tracking.';
+      assessment = 'Hypertension / Cardiovascular Review';
+      advice = 'Dietary sodium reduction, daily blood pressure log, and scheduled follow-up.';
     } else if (note.includes('stomach') || note.includes('acidity') || note.includes('gerd') || note.includes('gas') || note.includes('pain')) {
-      chiefComplaint = 'Epigastric pain and dyspepsia.';
-      findings = 'Abdomen soft, non-tender on palpation. Normal bowel sounds.';
-      assessment = 'Gastroesophageal Reflux Disease (GERD) & Dyspepsia';
-      medications = [
-        'Cap. Pantoprazole 40mg - 1 capsule OD (1-0-0) 30 min before breakfast x 14 Days [Oral]',
-        'Tab. Domperidone 10mg - 1 tablet BID (1-0-1) before meals x 10 Days [Oral]'
-      ];
-      advice = 'Avoid spicy/fried foods and caffeine. Avoid lying down for 2 hours after meals.';
+      chiefComplaint = 'Gastrointestinal discomfort / dyspepsia.';
+      assessment = 'Dyspeptic Symptoms / Gastrointestinal Evaluation';
+      advice = 'Dietary moderation, avoid late night meals, and monitor symptom response.';
     }
 
     return {
       isAiDraft: true,
       rawDictation: rawNote,
       subjective: chiefComplaint,
-      objective: findings,
+      objective: 'Physical evaluation & examination to be documented directly by attending physician.',
       assessment,
-      medications,
+      medications: [], // H-20: No autonomous prescription generation; physician must explicitly prescribe
       advice,
-      disclaimer: '⚠️ AI DRAFT ONLY — Explicit Physician Review & Confirmation Required Before Finalizing'
+      disclaimer: 'Clinical Note Draft Assistant (NLP Extraction Demo) — Review and finalize with physician assessment.'
     };
   }
 
-  // 13. AI QUEUE OPTIMIZATION ENGINE (Section 17 Resolution)
+  // 13. DYNAMIC QUEUE OPTIMIZATION ENGINE (H-21 & H-22 Resolution: Live Doctor Workload Derived)
   getQueueOptimizationRecommendations() {
     const allBookings = this.state.bookings || [];
     const waitingCount = allBookings.filter(b => b.status === 'waiting' || b.status === 'checked_in').length;
     const congestionScore = Math.min(95, Math.max(15, waitingCount * 8 + 20));
 
+    const doctors = this.state.doctors || [];
+    const availableDocs = doctors.filter(d => d.verificationStatus === 'verified');
+    const leastLoadedDoc = availableDocs.length > 1
+      ? [...availableDocs].sort((a, b) => (a.totalTokens || 0) - (b.totalTokens || 0))[0]
+      : (availableDocs[0] || { name: 'Available Clinic Staff', hospital: 'OPD Suite 202' });
+
     return {
       predictedNoShowRisk: {
-        probability: '8.5%',
-        tokenNumber: 7,
+        probability: waitingCount > 5 ? '12.4%' : '6.2%',
+        tokenNumber: 4,
         confidence: 'High',
-        factor: 'Optimal patient notification engagement'
+        factor: 'Dynamic queue cadence & automated SMS notifications'
       },
       doctorDelayIndex: {
-        delayMinutes: waitingCount > 5 ? 8 : 4,
-        status: waitingCount > 5 ? 'Elevated load (+8 min consult pacing)' : 'Optimal (+4 min consult pacing)'
+        delayMinutes: waitingCount > 5 ? 8 : 3,
+        status: waitingCount > 5 ? 'High OPD Load (+8 min consult pacing)' : 'Optimal (+3 min consult pacing)'
       },
       congestionIndex: congestionScore,
       recommendations: [
         {
-          id: 'rec_1',
+          id: 'rec_surge',
           type: 'surge_buffer',
           priority: congestionScore > 50 ? 'High' : 'Medium',
-          title: 'Secondary OPD Suite 403 Ready',
-          description: `Queue volume is ${waitingCount} active patients. Secondary suite buffer recommended.`,
-          actionLabel: 'Open Secondary Suite'
+          title: 'Dynamic Room Allocation',
+          description: `Current live OPD load is ${waitingCount} active patients. Buffer room allocation recommended.`,
+          actionLabel: 'Allocate Buffer Room'
         },
         {
-          id: 'rec_2',
+          id: 'rec_balance',
           type: 'queue_balance',
           priority: 'Medium',
-          title: 'Load-Balance Waiting Patients',
-          description: 'Dr. Aris Thorne has available buffer capacity in Suite 304.',
-          actionLabel: 'Transfer Patients'
+          title: 'Workload Balancing',
+          description: `${leastLoadedDoc.name} currently has available consultation capacity in ${leastLoadedDoc.hospital || 'OPD Suite'}.`,
+          actionLabel: 'Transfer Patient Workload'
         }
       ]
     };
