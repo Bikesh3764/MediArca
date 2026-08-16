@@ -539,30 +539,32 @@ CREATE POLICY "Doctor can update consultation status and prescription" ON appoin
     doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid())
 );
 
--- 14. PUBLIC DIRECTORY VIEW (P-02 Resolution: Strips user_id, email, reg_number, and internal PII)
+-- 14. PUBLIC DIRECTORY VIEW (P-02 & Q-04 Resolution: Single Source of Truth via clinic_queues)
 CREATE OR REPLACE VIEW public_doctor_directory AS
 SELECT 
-    id,
-    name,
-    specialty,
-    specialty_id,
-    title,
-    degrees,
-    experience_years,
-    hospital,
-    fee,
-    rating,
-    reviews_count,
-    avatar,
-    bio,
-    schedule,
-    mediarca_id,
-    verification_status,
-    current_token,
-    total_tokens,
-    avg_consult_time_mins
-FROM doctors
-WHERE verification_status = 'verified';
+    d.id,
+    d.name,
+    d.specialty,
+    d.specialty_id,
+    d.title,
+    d.degrees,
+    d.experience_years,
+    d.hospital,
+    d.fee,
+    d.rating,
+    d.reviews_count,
+    d.avatar,
+    d.bio,
+    d.schedule,
+    d.mediarca_id,
+    d.verification_status,
+    COALESCE(cq.current_token, 0) AS current_token,
+    COALESCE(cq.total_tokens, 0) AS total_tokens,
+    COALESCE(cq.status, 'idle') AS queue_status,
+    COALESCE(cq.avg_consult_time_mins, 12) AS avg_consult_time_mins
+FROM doctors d
+LEFT JOIN clinic_queues cq ON cq.doctor_id = d.id AND cq.queue_date = CURRENT_DATE
+WHERE d.verification_status = 'verified';
 
 -- 15. AUDIT LOG ACCESS POLICIES & ADMIN RETRIEVAL RPC (P-05 Resolution)
 DROP POLICY IF EXISTS "Admins can view audit logs" ON audit_logs;
