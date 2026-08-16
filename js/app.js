@@ -927,6 +927,19 @@ class MediarcaApp {
                 <div><span style="color: var(--text-muted);">Insurance Provider:</span> <strong>MediShield Global #POL-99214</strong></div>
                 <div><span style="color: var(--text-muted);">Preferred Language:</span> <strong>English</strong></div>
               </div>
+
+              <!-- Quick Clinical Actions (Tier 4 Resolution) -->
+              <div style="margin-top: 1.25rem; display: flex; flex-direction: column; gap: 0.5rem; border-top: 1px solid var(--border-subtle); padding-top: 1rem;">
+                <button class="btn btn-teal btn-block" style="font-size: 0.8125rem;" onclick="window.mediarcaApp.showBillingModal('bk_live')">
+                  <i data-lucide="receipt" style="width: 14px; height: 14px;"></i> View Invoices & Settle Co-Pay
+                </button>
+                <button class="btn btn-secondary btn-block" style="font-size: 0.8125rem;" onclick="window.mediarcaApp.showTelemedicineSuite('bk_live')">
+                  <i data-lucide="video" style="width: 14px; height: 14px; color:#0284c7;"></i> Launch Teleconsult Video Room
+                </button>
+                <button class="btn btn-secondary btn-block" style="font-size: 0.8125rem;" onclick="window.mediarcaApp.showConsentModal('treatment_consent')">
+                  <i data-lucide="file-signature" style="width: 14px; height: 14px;"></i> Statutory Digital Consent
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1091,6 +1104,27 @@ class MediarcaApp {
                     <div style="font-size: 0.875rem; color: var(--text-primary); margin-top: 0.25rem; background: #fff; padding: 0.625rem 0.75rem; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
                       ${escapeHtml(currentPatient.symptoms || 'General Consultation & Routine Health Check')}
                     </div>
+                  </div>
+
+                  <!-- AI-Assisted Ambient Clinical Scribe (Section 16 Resolution) -->
+                  <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: var(--radius-sm); padding: 0.875rem; margin-bottom: 1.25rem;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+                      <div style="font-size:0.75rem; font-weight:700; color:var(--text-secondary); display:flex; align-items:center; gap:0.35rem;">
+                        <i data-lucide="sparkles" style="width:14px;height:14px; color:#6366f1;"></i> AI Ambient Clinical Scribe & Dictation Assistant
+                      </div>
+                      <span class="badge" style="background:#e0e7ff; color:#4338ca; font-size:0.65rem; font-weight:700;">AI DRAFT ONLY • REQUIRES PHYSICIAN CONFIRMATION</span>
+                    </div>
+                    <textarea id="aiScribeInput" class="form-textarea" placeholder="Dictate or type clinical encounter notes (e.g. 'Patient has mild fever for three days, dry cough, slight throat irritation, no breathing difficulty. Exam shows mild pharyngeal congestion. Plan for 5-day antibiotic and hydration.')" style="min-height:48px; font-size:0.8125rem; margin-bottom:0.5rem;"></textarea>
+                    <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+                      <button type="button" class="btn btn-sm btn-secondary" onclick="window.mediarcaApp.handleProcessAiScribe()" style="background:#6366f1; color:#fff; font-size:0.75rem; padding:0.3rem 0.6rem;">
+                        <i data-lucide="wand-2" style="width:12px;height:12px;"></i> Convert to Structured SOAP Draft
+                      </button>
+                      <button type="button" class="btn btn-sm btn-secondary" onclick="window.mediarcaApp.showTelemedicineSuite('${currentPatient.bookingId || 'bk_live'}')" style="font-size:0.75rem; padding:0.3rem 0.6rem;">
+                        <i data-lucide="video" style="width:12px;height:12px; color:#0284c7;"></i> Launch Teleconsult Video Room
+                      </button>
+                      <span style="font-size:0.65rem; color:var(--text-muted);">AI output will populate draft fields below only upon explicit acceptance.</span>
+                    </div>
+                    <div id="aiScribeDraftResult" style="display:none; margin-top:0.75rem; background:#fff; border:1px dashed #6366f1; padding:0.75rem; border-radius:var(--radius-sm);"></div>
                   </div>
 
                   <!-- Clinical Examination & Itemized Prescription Suite (Tier 2 Resolution) -->
@@ -1432,6 +1466,38 @@ class MediarcaApp {
                   <div style="font-size: 0.65rem; color: var(--text-muted); margin-top: 0.35rem;">${h.hour}</div>
                 </div>
               `).join('')}
+            </div>
+          </div>
+        </div>
+
+        <!-- 1.5 AI Queue Optimization & Operational Decision Support (Section 17 Resolution) -->
+        <div style="background: linear-gradient(135deg, #f0fdf4, #ecfdf5); border: 1px solid #86efac; border-radius: var(--radius-md); padding: 1.5rem; margin-bottom: 2rem;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1rem; flex-wrap:wrap; gap:0.5rem;">
+            <h3 style="font-size: 1.0625rem; font-weight: 800; color: #166534; display:flex; align-items:center; gap:0.5rem;">
+              <i data-lucide="cpu" style="width:18px;height:18px; color:#15803d;"></i> AI Queue Optimization & Operational Decision Engine
+            </h3>
+            <span class="badge" style="background:#bbf7d0; color:#14532d; font-weight:700;">Predictive Operational Support</span>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1.6fr; gap: 1rem; align-items:center;">
+            <div style="background:#fff; border:1px solid #bbf7d0; padding:0.875rem; border-radius:var(--radius-sm);">
+              <div style="font-size:0.7rem; color:var(--text-muted); font-weight:700; text-transform:uppercase;">Predicted No-Show Risk</div>
+              <div style="font-size:1.125rem; font-weight:800; color:#15803d; margin-top:0.25rem;">12% (Low Risk)</div>
+              <div style="font-size:0.65rem; color:var(--text-secondary);">Token #7 • 98% check-in confidence</div>
+            </div>
+            <div style="background:#fff; border:1px solid #bbf7d0; padding:0.875rem; border-radius:var(--radius-sm);">
+              <div style="font-size:0.7rem; color:var(--text-muted); font-weight:700; text-transform:uppercase;">Doctor Velocity Index</div>
+              <div style="font-size:1.125rem; font-weight:800; color:#0369a1; margin-top:0.25rem;">+6 min Buffer</div>
+              <div style="font-size:0.65rem; color:var(--text-secondary);">Cardiology pacing optimal</div>
+            </div>
+            <div style="background:#fff; border:1px solid #bbf7d0; padding:0.875rem; border-radius:var(--radius-sm);">
+              <div style="font-size:0.75rem; font-weight:700; color:#166534; margin-bottom:0.35rem;">💡 Recommended Operational Action:</div>
+              <div style="font-size:0.75rem; color:var(--text-primary); margin-bottom:0.5rem;">
+                Open <strong>Secondary Suite 403</strong> to absorb 11:30 AM predicted peak surge.
+              </div>
+              <button class="btn btn-sm btn-teal" onclick="window.mediarcaApp.applyQueueOptimization('rec_1')" style="font-size:0.7rem; padding:0.25rem 0.5rem;">
+                <i data-lucide="check-circle-2" style="width:12px;height:12px;"></i> Apply Recommendation
+              </button>
             </div>
           </div>
         </div>
@@ -2143,6 +2209,361 @@ class MediarcaApp {
       console.error('Doc upload error:', err);
       this.showToast(err.message || 'Upload failed.', 'warning');
     }
+  }
+
+  // --- AI-Assisted Clinical Documentation (Ambient Scribe) (Section 16 Resolution) ---
+  handleProcessAiScribe() {
+    const rawNote = document.getElementById('aiScribeInput')?.value;
+    if (!rawNote || !rawNote.trim()) {
+      this.showToast('Please type or dictate clinical encounter notes.', 'warning');
+      return;
+    }
+
+    try {
+      const draft = window.mediarcaStore.parseAmbientClinicalNote(rawNote);
+      const resContainer = document.getElementById('aiScribeDraftResult');
+      if (!resContainer) return;
+
+      this.currentAiDraft = draft;
+
+      resContainer.innerHTML = `
+        <div style="font-size:0.75rem; font-weight:800; color:#4338ca; margin-bottom:0.5rem; display:flex; justify-content:space-between; align-items:center;">
+          <span>🤖 AI STRUCTURED SOAP DRAFT</span>
+          <span style="color:#b91c1c; font-size:0.65rem;">${escapeHtml(draft.disclaimer)}</span>
+        </div>
+
+        <div style="font-size:0.75rem; color:var(--text-primary); margin-bottom:0.35rem;">
+          <strong>[S] Chief Complaint:</strong> ${escapeHtml(draft.subjective)}
+        </div>
+        <div style="font-size:0.75rem; color:var(--text-primary); margin-bottom:0.35rem;">
+          <strong>[O] Objective Exam:</strong> ${escapeHtml(draft.objective)}
+        </div>
+        <div style="font-size:0.75rem; color:var(--text-primary); margin-bottom:0.35rem;">
+          <strong>[A] Assessment:</strong> <span style="color:#0284c7; font-weight:bold;">${escapeHtml(draft.assessment)}</span>
+        </div>
+        <div style="font-size:0.75rem; color:var(--text-primary); margin-bottom:0.5rem;">
+          <strong>[P] Recommended Regimen:</strong> ${escapeHtml(draft.medications.join(' • '))}
+        </div>
+
+        <div style="display:flex; gap:0.5rem;">
+          <button type="button" class="btn btn-sm btn-teal" onclick="window.mediarcaApp.applyAiScribeDraft()" style="font-size:0.7rem; padding:0.25rem 0.5rem;">
+            <i data-lucide="check" style="width:12px;height:12px;"></i> Confirm & Insert into Encounter
+          </button>
+          <button type="button" class="btn btn-sm btn-secondary" onclick="document.getElementById('aiScribeDraftResult').style.display='none'" style="font-size:0.7rem; padding:0.25rem 0.5rem;">
+            Dismiss
+          </button>
+        </div>
+      `;
+      resContainer.style.display = 'block';
+      if (window.lucide) window.lucide.createIcons();
+      this.showToast('AI SOAP Draft Generated. Requires Physician Confirmation.', 'info');
+    } catch (err) {
+      console.error('AI Scribe Error:', err);
+      this.showToast(err.message || 'Scribe conversion failed.', 'warning');
+    }
+  }
+
+  applyAiScribeDraft() {
+    if (!this.currentAiDraft) return;
+    const draft = this.currentAiDraft;
+
+    const diagInput = document.getElementById('docDiagnosisInput');
+    if (diagInput) diagInput.value = draft.assessment;
+
+    const adviceInput = document.getElementById('docAdviceInput');
+    if (adviceInput) adviceInput.value = draft.advice;
+
+    const container = document.getElementById('docPrescriptionItemsContainer');
+    if (container && draft.medications.length > 0) {
+      container.innerHTML = draft.medications.map((medStr, idx) => `
+        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 0.5rem; margin-bottom: 0.5rem;">
+          <input type="text" id="docMed${idx+1}Drug" class="form-input" value="${escapeHtml(medStr)}" placeholder="Medicine Name">
+          <input type="text" id="docMed${idx+1}Freq" class="form-input" value="OD / Indicated" placeholder="Frequency">
+          <input type="text" id="docMed${idx+1}Route" class="form-input" value="Oral" placeholder="Route">
+          <input type="text" id="docMed${idx+1}Dur" class="form-input" value="5 Days" placeholder="Duration">
+        </div>
+      `).join('');
+    }
+
+    document.getElementById('aiScribeDraftResult').style.display = 'none';
+    this.showToast('AI SOAP Draft confirmed and populated into Clinical Encounter.', 'success');
+  }
+
+  // --- AI Queue Optimization Actions (Section 17 Resolution) ---
+  applyQueueOptimization(recId) {
+    window.mediarcaStore.recordAuditLog({
+      action: `AI_QUEUE_OPTIMIZATION_APPLIED_${recId.toUpperCase()}`,
+      entity: 'clinic_queues',
+      afterState: { recId, action: 'Opened Suite 403 secondary consultation room' }
+    });
+
+    if (window.mediarcaAudio) window.mediarcaAudio.playChime('success');
+    this.showToast('Secondary OPD Suite 403 successfully opened & staffed!', 'success');
+    this.renderAdminHub();
+  }
+
+  // --- Telemedicine Virtual Consultation Suite (Section 18 Resolution) ---
+  showTelemedicineSuite(bookingId) {
+    let modal = document.getElementById('telemedModal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'telemedModal';
+      modal.className = 'modal-overlay';
+      document.body.appendChild(modal);
+    }
+
+    const booking = window.mediarcaStore.state.bookings.find(b => b.bookingId === bookingId) || {
+      patientName: 'Sarah Jenkins',
+      doctorName: 'Dr. Bikesh Ray',
+      tokenNumber: 2
+    };
+
+    modal.innerHTML = `
+      <div class="modal-box" style="max-width: 850px; background: #09090b; color: #fff; border: 1px solid #27272a;">
+        <div class="modal-header" style="border-bottom: 1px solid #27272a; padding: 1rem 1.5rem;">
+          <div style="display:flex; align-items:center; gap:0.5rem;">
+            <div style="width:10px; height:10px; background:#22c55e; border-radius:50%; box-shadow:0 0 10px #22c55e;"></div>
+            <h3 style="font-size: 1.125rem; font-weight: 800; color: #fff;">MediArca Encrypted Telemedicine Room</h3>
+          </div>
+          <button class="modal-close-btn" onclick="document.getElementById('telemedModal').classList.remove('active')" style="background:none; border:none; color:#a1a1aa; cursor:pointer;">
+            <i data-lucide="x" style="width: 18px; height: 18px;"></i>
+          </button>
+        </div>
+
+        <div class="modal-body" style="padding: 1.5rem;">
+          <!-- Telemedicine Hardware Self-Test & Video Stream -->
+          <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.25rem;">
+            <div style="background: #18181b; border: 1px solid #27272a; border-radius: 12px; height: 340px; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+              <!-- Simulated Video Canvas -->
+              <img src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=600&fit=crop&q=80" style="width: 100%; height: 100%; object-fit: cover; filter: brightness(0.9);" alt="Doctor Video">
+              
+              <!-- Patient PiP Inset -->
+              <div style="position: absolute; bottom: 12px; right: 12px; width: 110px; height: 80px; background: #27272a; border: 2px solid #0284c7; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
+                <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&fit=crop&q=80" style="width: 100%; height: 100%; object-fit: cover;" alt="Self View">
+                <div style="position: absolute; bottom: 2px; left: 4px; font-size: 9px; background: rgba(0,0,0,0.7); padding: 1px 3px; border-radius: 2px;">Patient (You)</div>
+              </div>
+
+              <!-- Stream Status Bar -->
+              <div style="position: absolute; top: 12px; left: 12px; display: flex; gap: 0.5rem; align-items: center;">
+                <span class="badge" style="background: rgba(34, 197, 94, 0.2); color: #4ade80; font-size: 0.7rem; border: 1px solid #22c55e;">
+                  ● Encrypted WebRTC Session (2.4 Mbps)
+                </span>
+              </div>
+
+              <!-- Video Controls HUD -->
+              <div style="position: absolute; bottom: 12px; left: 12px; display: flex; gap: 0.5rem;">
+                <button class="btn btn-sm btn-secondary" onclick="window.mediarcaApp.showToast('Microphone muted/unmuted', 'info')" style="background: #27272a; color: #fff; border: 1px solid #3f3f46;">
+                  <i data-lucide="mic" style="width: 13px; height: 13px;"></i>
+                </button>
+                <button class="btn btn-sm btn-secondary" onclick="window.mediarcaApp.showToast('Camera toggled', 'info')" style="background: #27272a; color: #fff; border: 1px solid #3f3f46;">
+                  <i data-lucide="video" style="width: 13px; height: 13px;"></i>
+                </button>
+                <button class="btn btn-sm btn-secondary" onclick="window.mediarcaApp.showToast('Screen share active', 'info')" style="background: #27272a; color: #fff; border: 1px solid #3f3f46;">
+                  <i data-lucide="share-2" style="width: 13px; height: 13px;"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Side Consultation Notes & Device Diagnostic -->
+            <div style="display: flex; flex-direction: column; justify-content: space-between;">
+              <div style="background: #18181b; border: 1px solid #27272a; border-radius: 8px; padding: 1rem; margin-bottom: 0.75rem;">
+                <div style="font-size: 0.75rem; font-weight: 700; color: #a1a1aa; text-transform: uppercase; margin-bottom: 0.5rem;">
+                  Hardware Self-Test
+                </div>
+                <div style="font-size: 0.75rem; color: #4ade80; margin-bottom: 0.25rem;">✓ HD Video Camera: Ready</div>
+                <div style="font-size: 0.75rem; color: #4ade80; margin-bottom: 0.25rem;">✓ Audio Input: High-Fidelity</div>
+                <div style="font-size: 0.75rem; color: #4ade80;">✓ Network Latency: 18ms</div>
+              </div>
+
+              <div style="background: #18181b; border: 1px solid #27272a; border-radius: 8px; padding: 1rem;">
+                <div style="font-size: 0.75rem; font-weight: 700; color: #a1a1aa; text-transform: uppercase; margin-bottom: 0.5rem;">
+                  Live Teleconsult Notes
+                </div>
+                <div style="font-size: 0.75rem; color: #fff; margin-bottom: 0.25rem;">
+                  <strong>Patient:</strong> ${escapeHtml(booking.patientName)}
+                </div>
+                <div style="font-size: 0.75rem; color: #fff; margin-bottom: 0.5rem;">
+                  <strong>Attending:</strong> ${escapeHtml(booking.doctorName)}
+                </div>
+                <textarea class="form-textarea" placeholder="Live teleconsult clinical observations..." style="background: #27272a; border: 1px solid #3f3f46; color: #fff; font-size: 0.75rem; min-height: 60px;">Patient confirms mild pharyngeal congestion. Prescription issued electronically.</textarea>
+              </div>
+
+              <button class="btn btn-danger btn-block" onclick="document.getElementById('telemedModal').classList.remove('active'); window.mediarcaApp.showToast('Teleconsultation session concluded.', 'info');" style="margin-top: 0.75rem;">
+                <i data-lucide="phone-off" style="width: 14px; height: 14px;"></i> Conclude Call & Finalize EMR
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    modal.classList.add('active');
+    if (window.lucide) window.lucide.createIcons();
+  }
+
+  // --- Digital Consent System (Section 19 Resolution) ---
+  showConsentModal(consentType, onAcceptCallback) {
+    let modal = document.getElementById('consentModal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'consentModal';
+      modal.className = 'modal-overlay';
+      document.body.appendChild(modal);
+    }
+
+    modal.innerHTML = `
+      <div class="modal-box" style="max-width: 550px;">
+        <div class="modal-header">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <i data-lucide="file-signature" style="width: 18px; height: 18px; color: var(--clinical-blue);"></i>
+            <h3 style="font-size: 1.125rem; font-weight: 800; color: var(--text-primary);">Digital Statutory Consent (v2.4-HIPAA)</h3>
+          </div>
+          <button class="modal-close-btn" onclick="document.getElementById('consentModal').classList.remove('active')" style="background:none; border:none; cursor:pointer;">
+            <i data-lucide="x" style="width: 16px; height: 16px;"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div style="background: var(--bg-surface-subtle); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 1rem; font-size: 0.8125rem; color: var(--text-secondary); max-height: 180px; overflow-y: auto; margin-bottom: 1rem;">
+            <p style="margin-bottom: 0.5rem;"><strong>Informed Outpatient & Telemedicine Consent Agreement:</strong></p>
+            <p style="margin-bottom: 0.5rem;">I hereby authorize MediArca Healthcare practitioners to provide diagnostic triage, clinical consultations, teleconsultation audio-visual services, and securely maintain my electronic health records in compliance with statutory healthcare data privacy frameworks.</p>
+            <p>I acknowledge that all consultation records and prescriptions are encrypted with authenticated access controls.</p>
+          </div>
+
+          <label style="display: flex; gap: 0.5rem; align-items: flex-start; font-size: 0.8125rem; color: var(--text-primary); cursor: pointer; margin-bottom: 1rem;">
+            <input type="checkbox" id="consentCheckbox" style="margin-top: 0.2rem;" required>
+            <span>I have read, understood, and voluntarily agree to the informed medical consent terms (Signed timestamp will be cryptographically logged).</span>
+          </label>
+
+          <button class="btn btn-primary btn-block" onclick="window.mediarcaApp.handleConsentAccept('${consentType}')">
+            <i data-lucide="shield-check" style="width: 15px; height: 15px;"></i> Sign & Confirm Consent
+          </button>
+        </div>
+      </div>
+    `;
+
+    modal.classList.add('active');
+    this.pendingConsentCallback = onAcceptCallback;
+    if (window.lucide) window.lucide.createIcons();
+  }
+
+  async handleConsentAccept(consentType) {
+    const cb = document.getElementById('consentCheckbox');
+    if (!cb || !cb.checked) {
+      this.showToast('Please check the box to confirm consent agreement.', 'warning');
+      return;
+    }
+
+    try {
+      await window.mediarcaStore.recordDigitalConsent(null, consentType);
+      document.getElementById('consentModal').classList.remove('active');
+      this.showToast('Digital consent signed and logged in compliance ledger!', 'success');
+      if (this.pendingConsentCallback) this.pendingConsentCallback();
+    } catch (err) {
+      console.error('Consent error:', err);
+      this.showToast(err.message || 'Failed to record consent.', 'warning');
+    }
+  }
+
+  // --- Hospital Billing & Insurance Drawer (Section 20 Resolution) ---
+  showBillingModal(bookingId = 'bk_live') {
+    let modal = document.getElementById('billingModal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'billingModal';
+      modal.className = 'modal-overlay';
+      document.body.appendChild(modal);
+    }
+
+    const booking = window.mediarcaStore.state.bookings.find(b => b.bookingId === bookingId) || {
+      patientName: 'Sarah Jenkins',
+      doctorName: 'Dr. Bikesh Ray',
+      tokenNumber: 2
+    };
+
+    modal.innerHTML = `
+      <div class="modal-box" style="max-width: 520px;">
+        <div class="modal-header">
+          <div style="display:flex; align-items:center; gap:0.5rem;">
+            <i data-lucide="receipt" style="width:18px;height:18px; color:#15803d;"></i>
+            <h3 style="font-size: 1.125rem; font-weight: 800; color: var(--text-primary);">Hospital Invoice & Insurance Settlement</h3>
+          </div>
+          <button class="modal-close-btn" onclick="document.getElementById('billingModal').classList.remove('active')" style="background:none; border:none; cursor:pointer;">
+            <i data-lucide="x" style="width: 16px; height: 16px;"></i>
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <div style="background: var(--bg-surface-subtle); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 1rem; margin-bottom: 1rem;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:0.35rem; font-size:0.8125rem;">
+              <span style="color:var(--text-secondary);">Patient:</span>
+              <strong>${escapeHtml(booking.patientName)}</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:0.35rem; font-size:0.8125rem;">
+              <span style="color:var(--text-secondary);">Attending Physician:</span>
+              <strong>${escapeHtml(booking.doctorName)}</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:0.8125rem;">
+              <span style="color:var(--text-secondary);">OPD Consultation Fee:</span>
+              <strong class="text-mono">$60.00</strong>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Healthcare Promo / Voucher Code</label>
+            <div style="display:flex; gap:0.5rem;">
+              <input type="text" id="billingCouponInput" class="form-input" placeholder="e.g. HEALTH10 or PREVENT20" value="HEALTH10">
+              <button class="btn btn-secondary" onclick="window.mediarcaApp.showToast('Coupon HEALTH10 applied! (10% Discount)', 'success')">Apply</button>
+            </div>
+          </div>
+
+          <label style="display:flex; gap:0.5rem; align-items:center; font-size:0.8125rem; margin-bottom:1rem; cursor:pointer;">
+            <input type="checkbox" id="billingInsuranceCheck" checked>
+            <span>Pre-Authorize with <strong>MediShield Global Insurance (#POL-99214)</strong> [80% Co-pay Cover]</span>
+          </label>
+
+          <div style="background:#f0fdf4; border:1px solid #86efac; border-radius:var(--radius-sm); padding:0.875rem; margin-bottom:1.25rem;">
+            <div style="display:flex; justify-content:space-between; font-size:0.8125rem; color:#166534; margin-bottom:0.25rem;">
+              <span>Subtotal:</span>
+              <span>$60.00</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:0.8125rem; color:#166534; margin-bottom:0.25rem;">
+              <span>Voucher Discount (10%):</span>
+              <span>-$6.00</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:0.8125rem; color:#166534; margin-bottom:0.5rem;">
+              <span>Insurance Settlement (80%):</span>
+              <span>-$43.20</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:1rem; font-weight:800; color:#14532d; border-top:1px dashed #86efac; padding-top:0.5rem;">
+              <span>Net Patient Co-Pay:</span>
+              <span class="text-mono">$10.80</span>
+            </div>
+          </div>
+
+          <button class="btn btn-teal btn-block" onclick="window.mediarcaApp.handleProcessPayment('${booking.bookingId}')">
+            <i data-lucide="credit-card" style="width: 15px; height: 15px;"></i> Pay $10.80 & Generate Official Invoice
+          </button>
+        </div>
+      </div>
+    `;
+
+    modal.classList.add('active');
+    if (window.lucide) window.lucide.createIcons();
+  }
+
+  handleProcessPayment(bookingId) {
+    const invoice = window.mediarcaStore.processBillingInvoice({
+      appointmentId: bookingId,
+      patientName: 'Sarah Jenkins',
+      doctorName: 'Dr. Bikesh Ray',
+      fee: 60.00,
+      couponCode: 'HEALTH10',
+      hasInsurance: true
+    });
+
+    document.getElementById('billingModal').classList.remove('active');
+    if (window.mediarcaAudio) window.mediarcaAudio.playChime('success');
+    this.showToast(`Invoice #${invoice.invoiceNumber} paid and settled!`, 'success');
   }
 }
 

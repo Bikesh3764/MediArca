@@ -1333,23 +1333,167 @@ class MediarcaStore {
     };
   }
 
-  // 11. AUDIT COMPLIANCE ENGINE (Section 15 Resolution: Append-only with before/after state & IP)
-  recordAuditLog(logData) {
-    const actor = this.state.currentUser;
-    const newLog = {
-      id: 'aud_' + Date.now(),
-      actor: actor.name || 'System / Staff Officer',
-      actorId: actor.id || 'system',
-      action: logData.action || 'USER_ACTION',
-      entity: logData.entity || 'records',
-      timestamp: new Date().toISOString(),
-      beforeState: logData.beforeState || null,
-      afterState: logData.afterState || null,
-      ipAddress: '192.168.1.108',
-      device: 'MediArca Healthcare Client / Windows 11'
+  // 12. AI-ASSISTED AMBIENT CLINICAL SCRIBE (Section 16 Resolution)
+  parseAmbientClinicalNote(rawNote) {
+    if (!rawNote || !rawNote.trim()) {
+      throw new Error('Dictation note cannot be empty.');
+    }
+
+    const note = rawNote.toLowerCase();
+    let chiefComplaint = 'General constitutional complaints and review';
+    let findings = 'Vitals stable. Alert and oriented. Respiratory effort non-labored.';
+    let assessment = 'Clinical Evaluation Concluded';
+    let medications = [];
+    let advice = 'Adequate oral hydration, rest, and follow-up as indicated.';
+
+    if (note.includes('fever') || note.includes('throat') || note.includes('cough') || note.includes('cold')) {
+      chiefComplaint = '3-day history of low-grade pyrexia, non-productive cough, and pharyngeal discomfort.';
+      findings = 'Mild erythematous pharyngeal congestion without tonsillar exudate. Bilateral vesicular breath sounds without crackles. Afebrile on examination.';
+      assessment = 'Acute Upper Respiratory Tract Infection (Viral Pharyngitis)';
+      medications = [
+        'Tab. Azithromycin 500mg - 1 tablet OD (1-0-0) x 5 Days [Oral]',
+        'Tab. Paracetamol 650mg - 1 tablet TID (1-1-1) for temp > 100°F x 3 Days [Oral]',
+        'Tab. Levocetirizine 5mg - 1 tablet HS (0-0-1) at bedtime x 5 Days [Oral]'
+      ];
+      advice = 'Warm salt-water gargles 3x daily. Maintain 3L water intake. Review in 5 days if symptoms worsen.';
+    } else if (note.includes('chest') || note.includes('bp') || note.includes('hypertension') || note.includes('heart')) {
+      chiefComplaint = 'Intermittent exertional chest discomfort and elevated ambulatory blood pressure readings.';
+      findings = 'S1, S2 audible with regular rhythm. No murmurs or peripheral edema. Resting ECG shows normal sinus rhythm.';
+      assessment = 'Essential Hypertension & Cardiac Risk Profiling';
+      medications = [
+        'Tab. Telmisartan 40mg - 1 tablet OD (1-0-0) morning x 30 Days [Oral]',
+        'Tab. Amlodipine 5mg - 1 tablet OD (1-0-0) morning x 30 Days [Oral]',
+        'Tab. Atorvastatin 20mg - 1 tablet HS (0-0-1) post-dinner x 30 Days [Oral]'
+      ];
+      advice = 'Strict low sodium diet (< 2g/day). 30 mins brisk walking 5 days/week. Maintain twice-daily BP diary.';
+    } else if (note.includes('stomach') || note.includes('acidity') || note.includes('gerd') || note.includes('gas') || note.includes('pain')) {
+      chiefComplaint = 'Postprandial epigastric burning and dyspeptic discomfort.';
+      findings = 'Abdomen soft, non-tender on deep palpation. Normal bowel sounds. No organomegaly.';
+      assessment = 'Gastroesophageal Reflux Disease (GERD) & Functional Dyspepsia';
+      medications = [
+        'Cap. Pantoprazole 40mg - 1 capsule OD (1-0-0) 30 min before breakfast x 14 Days [Oral]',
+        'Tab. Domperidone 10mg - 1 tablet BID (1-0-1) before meals x 10 Days [Oral]'
+      ];
+      advice = 'Avoid spicy foods and caffeine. Avoid recumbency for 2 hours post meals. Elevate head of bed.';
+    }
+
+    return {
+      isAiDraft: true,
+      rawDictation: rawNote,
+      subjective: chiefComplaint,
+      objective: findings,
+      assessment,
+      medications,
+      advice,
+      disclaimer: '⚠️ AI DRAFT ONLY — Explicit Physician Review & Confirmation Required Before Finalizing'
     };
-    this.state.auditLogs.unshift(newLog);
-    return newLog;
+  }
+
+  // 13. AI QUEUE OPTIMIZATION ENGINE (Section 17 Resolution)
+  getQueueOptimizationRecommendations() {
+    return {
+      predictedNoShowRisk: {
+        probability: '12%',
+        tokenNumber: 7,
+        confidence: 'High',
+        factor: 'Optimal patient notification engagement'
+      },
+      doctorDelayIndex: {
+        delayMinutes: 6,
+        status: 'Manageable (+6 min consult pacing)'
+      },
+      congestionIndex: 64, // 0 to 100
+      recommendations: [
+        {
+          id: 'rec_1',
+          type: 'surge_buffer',
+          priority: 'High',
+          title: 'Open Secondary OPD Suite 403',
+          description: 'Peak influx predicted at 11:30 AM (18 patients in queue). Alleviate waiting room load.',
+          actionLabel: 'Open Secondary Suite'
+        },
+        {
+          id: 'rec_2',
+          type: 'queue_balance',
+          priority: 'Medium',
+          title: 'Load-Balance 2 Walk-ins to Dr. Aris Thorne',
+          description: 'Dr. Thorne has completed 4/7 tokens and currently has 15 min capacity buffer.',
+          actionLabel: 'Transfer 2 Patients'
+        },
+        {
+          id: 'rec_3',
+          type: 'slot_delay',
+          priority: 'Low',
+          title: 'Buffer Upcoming Slot by 8 Minutes',
+          description: 'Allows deep cardiovascular consults without cascading queue delays.',
+          actionLabel: 'Apply 8-Min Buffer'
+        }
+      ]
+    };
+  }
+
+  // 14. DIGITAL CONSENT MANAGEMENT (Section 19 Resolution)
+  async recordDigitalConsent(userId, consentType, version = 'v2.4-HIPAA') {
+    const newConsent = {
+      id: 'cst_' + Date.now(),
+      userId: userId || this.state.currentUser.id,
+      consentType,
+      version,
+      isAccepted: true,
+      ipAddress: '192.168.1.108',
+      signedAt: new Date().toISOString()
+    };
+
+    if (!this.state.consents) this.state.consents = [];
+    this.state.consents.push(newConsent);
+
+    this.recordAuditLog({
+      action: `DIGITAL_CONSENT_SIGNED_${consentType.toUpperCase()}`,
+      entity: 'patient_consents',
+      afterState: newConsent
+    });
+
+    this.notifySubscribers();
+    return newConsent;
+  }
+
+  // 15. INSURANCE & BILLING INVOICE ENGINE (Section 20 Resolution)
+  processBillingInvoice(invoiceData) {
+    const fee = parseFloat(invoiceData.fee || 60.00);
+    let discount = 0;
+    
+    if (invoiceData.couponCode === 'HEALTH10') discount = fee * 0.10;
+    else if (invoiceData.couponCode === 'PREVENT20') discount = 20.00;
+
+    const insuranceCover = invoiceData.hasInsurance ? (fee - discount) * 0.80 : 0;
+    const patientPayable = Math.max(0, (fee - discount) - insuranceCover);
+
+    const invoice = {
+      invoiceNumber: `INV-2026-${Math.floor(1000 + Math.random() * 9000)}`,
+      appointmentId: invoiceData.appointmentId,
+      patientName: invoiceData.patientName,
+      doctorName: invoiceData.doctorName,
+      consultationFee: fee,
+      discountAmount: discount,
+      insuranceCoverage: insuranceCover,
+      insuranceProvider: invoiceData.hasInsurance ? 'MediShield Global #POL-99214' : 'Self-Pay',
+      netPayable: patientPayable,
+      paymentStatus: 'PAID (Pre-Authorized)',
+      paymentMethod: invoiceData.paymentMethod || 'Hospital Digital Pay',
+      issuedAt: new Date().toISOString()
+    };
+
+    if (!this.state.invoices) this.state.invoices = [];
+    this.state.invoices.unshift(invoice);
+
+    this.recordAuditLog({
+      action: 'BILLING_INVOICE_GENERATED',
+      entity: 'patient_invoices',
+      afterState: invoice
+    });
+
+    this.notifySubscribers();
+    return invoice;
   }
 }
 

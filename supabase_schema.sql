@@ -234,6 +234,47 @@ CREATE TABLE IF NOT EXISTS clinic_rooms (
     is_active BOOLEAN DEFAULT true
 );
 
+-- 13. STATUTORY DIGITAL CONSENT REGISTRY (Section 19 Resolution)
+CREATE TABLE IF NOT EXISTS patient_consents (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    consent_type VARCHAR(50) NOT NULL CHECK (consent_type IN ('treatment_consent', 'teleconsult_consent', 'data_sharing_consent', 'document_upload_consent')),
+    version VARCHAR(20) NOT NULL DEFAULT 'v2.4-HIPAA',
+    is_accepted BOOLEAN NOT NULL DEFAULT true,
+    ip_address VARCHAR(45) DEFAULT '127.0.0.1',
+    signed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 14. PATIENT INVOICES & INSURANCE BILLING (Section 20 Resolution)
+CREATE TABLE IF NOT EXISTS patient_invoices (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    invoice_number VARCHAR(50) UNIQUE NOT NULL,
+    appointment_id UUID REFERENCES appointments(id) ON DELETE SET NULL,
+    patient_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    doctor_id UUID REFERENCES doctors(id) ON DELETE SET NULL,
+    consultation_fee NUMERIC(10, 2) NOT NULL DEFAULT 60.00,
+    discount_code VARCHAR(50),
+    discount_amount NUMERIC(10, 2) DEFAULT 0.00,
+    net_payable NUMERIC(10, 2) NOT NULL,
+    insurance_provider VARCHAR(100),
+    claim_number VARCHAR(100),
+    claim_status VARCHAR(30) DEFAULT 'unclaimed' CHECK (claim_status IN ('unclaimed', 'submitted', 'pre_authorized', 'settled', 'rejected')),
+    payment_status VARCHAR(20) DEFAULT 'pending' CHECK (payment_status IN ('pending', 'paid', 'refunded', 'waived')),
+    payment_method VARCHAR(50) DEFAULT 'Credit Card / Digital Payment',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 15. TELEMEDICINE SECURE VIDEO SESSIONS (Section 18 Resolution)
+CREATE TABLE IF NOT EXISTS telemedicine_rooms (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    appointment_id UUID UNIQUE REFERENCES appointments(id) ON DELETE CASCADE,
+    room_token VARCHAR(255) UNIQUE NOT NULL,
+    status VARCHAR(20) DEFAULT 'waiting' CHECK (status IN ('waiting', 'live', 'concluded', 'abandoned')),
+    doctor_joined_at TIMESTAMP WITH TIME ZONE,
+    patient_joined_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- 12. AUTOMATED UPDATED_AT TRIGGER FUNCTION (D-07 Resolution)
 CREATE OR REPLACE FUNCTION set_updated_at_timestamp()
 RETURNS TRIGGER AS $$
