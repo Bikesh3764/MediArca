@@ -749,10 +749,12 @@ class MediarcaStore {
     const isFirstInLine = (queue.currentToken === 0 && (!queue.tokens || queue.tokens.length === 0 || !queue.tokens.some(t => t.status === 'in-consultation')));
     const initialStatus = isFirstInLine ? 'in-consultation' : 'waiting';
 
+    const uniqueBookingId = 'MED-BK-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase();
+
     const tokenObj = {
       tokenNumber: nextTokenNumber,
       patientName: bookingData.patientName,
-      bookingId: 'MED-BK-' + Math.floor(1000 + Math.random() * 9000),
+      bookingId: uniqueBookingId,
       status: initialStatus,
       checkInTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       symptoms: bookingData.symptoms || 'General Clinical Consultation',
@@ -770,7 +772,7 @@ class MediarcaStore {
 
     const newBooking = {
       bookingId: tokenObj.bookingId,
-      patientId: this.state.currentUser.id || 'pat_' + Date.now(),
+      patientId: this.state.currentUser.id || ('pat_' + Date.now().toString(36)),
       patientName: bookingData.patientName,
       patientAge: parseInt(bookingData.patientAge) || 30,
       patientGender: bookingData.patientGender || 'Female',

@@ -3,6 +3,16 @@
  * Clean, high-contrast clinical HUD with instant token telemetry and digital pass QR pass
  */
 
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 class MediarcaQueueEngine {
   constructor() {
     this.selectedDoctorId = 'doc_1';
@@ -15,11 +25,12 @@ class MediarcaQueueEngine {
   }
 
   lookupByQuery(query) {
-    const q = query.trim().toUpperCase();
+    const q = (query || '').trim().toUpperCase();
     const store = window.mediarcaStore;
+    if (!q) return false;
     
     // Check if query matches booking ID
-    const booking = store.state.bookings.find(b => b.bookingId.toUpperCase() === q);
+    const booking = store.state.bookings.find(b => (b.bookingId || '').toUpperCase() === q);
     if (booking) {
       this.selectedDoctorId = booking.doctorId;
       this.renderQueueRadar(booking);
@@ -28,9 +39,9 @@ class MediarcaQueueEngine {
 
     // Check if query matches doctor ID or Mediarca ID
     const doc = store.state.doctors.find(d => 
-      d.id.toUpperCase() === q || 
+      (d.id || '').toUpperCase() === q || 
       (d.mediarcaId && d.mediarcaId.toUpperCase() === q) ||
-      d.name.toUpperCase().includes(q)
+      (d.name || '').toUpperCase().includes(q)
     );
     if (doc) {
       this.selectedDoctorId = doc.id;
@@ -67,7 +78,6 @@ class MediarcaQueueEngine {
     let waitMins = 0;
     let peopleAhead = 0;
     if (yourToken && yourToken !== currentToken) {
-      // Calculate actual number of waiting patients ahead in the queue line
       const activeAhead = (queue.tokens || []).filter(t => t.tokenNumber < yourToken && (t.status === 'waiting' || t.status === 'in-consultation'));
       peopleAhead = activeAhead.length;
       waitMins = peopleAhead * (queue.avgConsultTimeMins || 12);
@@ -77,7 +87,7 @@ class MediarcaQueueEngine {
     if (this.lastServedToken !== null && this.lastServedToken !== currentToken && currentToken > 0) {
       if (window.mediarcaAudio) window.mediarcaAudio.playChime('queue-call');
       if (yourToken === currentToken) {
-        window.mediarcaApp.showToast(`🔔 It's your turn! Please proceed to Room: ${doctor.hospital}`, 'success');
+        window.mediarcaApp.showToast(`🔔 It's your turn! Please proceed to: ${doctor.hospital}`, 'success');
       }
     }
     this.lastServedToken = currentToken;
@@ -105,21 +115,21 @@ class MediarcaQueueEngine {
         <div class="radar-hud-box">
           <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.12); padding-bottom: 1.25rem;">
             <div style="display: flex; align-items: center; gap: 1rem;">
-              <img src="${doctor.avatar}" style="width: 48px; height: 48px; border-radius: var(--radius-sm); object-fit: cover; border: 1px solid rgba(255,255,255,0.2);">
+              <img src="${escapeHtml(doctor.avatar)}" style="width: 48px; height: 48px; border-radius: var(--radius-sm); object-fit: cover; border: 1px solid rgba(255,255,255,0.2);">
               <div>
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
-                  <h3 style="font-size: 1.25rem; font-weight: 800; color: #ffffff;">${doctor.name}</h3>
+                  <h3 style="font-size: 1.25rem; font-weight: 800; color: #ffffff;">${escapeHtml(doctor.name)}</h3>
                   <span class="badge badge-verified"><i data-lucide="shield-check" style="width: 12px; height: 12px;"></i> Verified</span>
                 </div>
-                <div style="font-size: 0.8125rem; color: #a1a1aa;">${doctor.specialty} • ${doctor.hospital}</div>
+                <div style="font-size: 0.8125rem; color: #a1a1aa;">${escapeHtml(doctor.specialty)} • ${escapeHtml(doctor.hospital)}</div>
               </div>
             </div>
             <div style="text-align: right;">
               <span class="doctor-id-tag text-mono" style="background: rgba(255,255,255,0.1); color: #38bdf8; border-color: rgba(255,255,255,0.2);">
-                ${doctor.mediarcaId || 'PENDING'}
+                ${escapeHtml(doctor.mediarcaId || 'PENDING')}
               </span>
               <div style="font-size: 0.75rem; color: #a1a1aa; margin-top: 0.25rem;">
-                Status: <strong style="color: #ffffff;">${queue.status.toUpperCase()}</strong>
+                Status: <strong style="color: #ffffff;">${escapeHtml(queue.status.toUpperCase())}</strong>
               </div>
             </div>
           </div>
@@ -156,7 +166,7 @@ class MediarcaQueueEngine {
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
             <div>
               <h4 style="font-size: 1rem; font-weight: 800; color: var(--text-primary);">Live Line Sequence</h4>
-              <p style="font-size: 0.8125rem; color: var(--text-secondary);">Today's queue order for ${doctor.name}</p>
+              <p style="font-size: 0.8125rem; color: var(--text-secondary);">Today's queue order for ${escapeHtml(doctor.name)}</p>
             </div>
           </div>
 
@@ -165,11 +175,10 @@ class MediarcaQueueEngine {
           </div>
         </div>
 
-        <!-- Digital Pass Card with QR Scanner Simulation -->
+        <!-- Digital Pass Card -->
         ${userBooking ? `
           <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1.5rem;">
             <div style="display: flex; align-items: center; gap: 1.25rem;">
-              <!-- Simulated SVG QR Code -->
               <div style="width: 72px; height: 72px; background: #ffffff; border: 2px solid var(--border-strong); padding: 4px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center;">
                 <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <rect x="3" y="3" width="7" height="7" rx="1"></rect>
@@ -182,8 +191,8 @@ class MediarcaQueueEngine {
               </div>
               <div>
                 <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Digital Hospital OPD Pass</div>
-                <div style="font-size: 1.125rem; font-weight: 800; color: var(--text-primary);">Booking: ${userBooking.bookingId} • Token #${userBooking.tokenNumber}</div>
-                <div style="font-size: 0.8125rem; color: var(--text-secondary);">Patient: <strong>${userBooking.patientName}</strong> (${userBooking.patientAge}y) • ${userBooking.hospital}</div>
+                <div style="font-size: 1.125rem; font-weight: 800; color: var(--text-primary);">Booking: ${escapeHtml(userBooking.bookingId)} • Token #${userBooking.tokenNumber}</div>
+                <div style="font-size: 0.8125rem; color: var(--text-secondary);">Patient: <strong>${escapeHtml(userBooking.patientName)}</strong> (${userBooking.patientAge}y) • ${escapeHtml(userBooking.hospital)}</div>
               </div>
             </div>
             <button class="btn btn-secondary" onclick="window.print()">
@@ -192,7 +201,7 @@ class MediarcaQueueEngine {
           </div>
         ` : `
           <div style="text-align: center; padding: 2rem; background: var(--bg-surface); border: 1px dashed var(--border-strong); border-radius: var(--radius-md);">
-            <p style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 1rem;">Need an appointment with ${doctor.name}?</p>
+            <p style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 1rem;">Need an appointment with ${escapeHtml(doctor.name)}?</p>
             <button class="btn btn-primary" onclick="window.mediarcaApp.openBookingModal('${doctor.id}')">
               <i data-lucide="calendar-plus" style="width: 15px; height: 15px;"></i> Book Next Available Token
             </button>
@@ -210,9 +219,9 @@ class MediarcaQueueEngine {
     }
 
     return tokens.map(t => {
-      let isCurrent = t.tokenNumber === currentToken;
-      let isCompleted = t.tokenNumber < currentToken || t.status === 'completed';
-      let isYours = t.tokenNumber === yourToken;
+      const isCurrent = t.tokenNumber === currentToken;
+      const isCompleted = t.tokenNumber < currentToken || t.status === 'completed';
+      const isYours = t.tokenNumber === yourToken;
 
       let pillClass = 'queue-token-pill';
       let statusLabel = 'WAITING';
@@ -233,7 +242,7 @@ class MediarcaQueueEngine {
           <span style="font-size: 0.65rem; text-transform: uppercase; font-weight: 700; opacity: 0.8;">${statusLabel}</span>
           <span class="text-mono" style="font-size: 1.5rem; font-weight: 800; line-height: 1.2;">#${t.tokenNumber}</span>
           <span style="font-size: 0.65rem; max-width: 70px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-            ${t.patientName.split(' ')[0]}
+            ${escapeHtml((t.patientName || '').split(' ')[0])}
           </span>
         </div>
       `;

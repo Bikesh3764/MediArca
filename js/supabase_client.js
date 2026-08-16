@@ -55,18 +55,25 @@ class MediarcaSupabaseClient {
         .on('postgres_changes', { event: '*', schema: 'public', table: 'appointments' }, payload => {
           console.log('⚡ Realtime Appointment Update Received from Supabase:', payload);
           if (payload.eventType === 'INSERT' && payload.new) {
+            const doc = window.mediarcaStore.state.doctors.find(d => d.id === payload.new.doctor_id) || {
+              name: 'Clinical Specialist',
+              specialty: 'General Medicine',
+              hospital: 'Mediarca Health Center'
+            };
+
             const exists = window.mediarcaStore.state.bookings.find(b => b.bookingId === payload.new.booking_id);
             if (!exists) {
-              window.mediarcaStore.state.bookings.unshift({
+              const newBooking = {
                 bookingId: payload.new.booking_id,
                 patientId: payload.new.patient_id,
                 patientName: payload.new.patient_name,
                 patientPhone: payload.new.patient_phone,
                 patientAge: payload.new.patient_age,
+                patientGender: payload.new.patient_gender || 'Other',
                 doctorId: payload.new.doctor_id,
-                doctorName: 'Dr. Aris Thorne',
-                specialty: 'Cardiology',
-                hospital: 'Metro Heart Institute',
+                doctorName: doc.name,
+                specialty: doc.specialty,
+                hospital: doc.hospital,
                 date: 'Today',
                 tokenNumber: payload.new.token_number,
                 status: payload.new.status,
@@ -76,7 +83,32 @@ class MediarcaSupabaseClient {
                   medications: payload.new.medications,
                   advice: payload.new.advice
                 } : null
-              });
+              };
+              window.mediarcaStore.state.bookings.unshift(newBooking);
+
+              // Also sync into doctor queue token list
+              if (!window.mediarcaStore.state.queues[payload.new.doctor_id]) {
+                window.mediarcaStore.state.queues[payload.new.doctor_id] = {
+                  doctorId: payload.new.doctor_id,
+                  status: 'in-session',
+                  currentToken: 0,
+                  avgConsultTimeMins: doc.avgConsultTimeMins || 12,
+                  tokens: []
+                };
+              }
+
+              const queue = window.mediarcaStore.state.queues[payload.new.doctor_id];
+              const tokenExists = queue.tokens.find(t => t.tokenNumber === payload.new.token_number);
+              if (!tokenExists) {
+                queue.tokens.push({
+                  tokenNumber: payload.new.token_number,
+                  patientName: payload.new.patient_name,
+                  bookingId: payload.new.booking_id,
+                  status: payload.new.status,
+                  checkInTime: payload.new.check_in_time || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                  symptoms: payload.new.symptoms
+                });
+              }
             }
           } else if (payload.eventType === 'UPDATE' && payload.new) {
             const b = window.mediarcaStore.state.bookings.find(x => x.bookingId === payload.new.booking_id);
@@ -89,6 +121,12 @@ class MediarcaSupabaseClient {
                   advice: payload.new.advice
                 };
               }
+            }
+            // Update queue token status
+            if (window.mediarcaStore.state.queues[payload.new.doctor_id]) {
+              const queue = window.mediarcaStore.state.queues[payload.new.doctor_id];
+              const t = queue.tokens.find(x => x.tokenNumber === payload.new.token_number);
+              if (t) t.status = payload.new.status;
             }
           }
           window.mediarcaStore.notifySubscribers();

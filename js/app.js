@@ -3,6 +3,17 @@
  * Handles RBAC routing, isolated portals, dedicated auth flows, and clinical operations
  */
 
+// --- Global HTML Sanitizer Utility (XSS Prevention) ---
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 class MediarcaApp {
   constructor() {
     this.currentView = 'home';
@@ -344,6 +355,13 @@ class MediarcaApp {
 
   // --- Booking Flow & Modal ---
   openBookingModal(doctorId) {
+    const currentUser = window.mediarcaStore.state.currentUser;
+    if (!currentUser || currentUser.role !== 'patient' || !window.mediarcaStore.isAuthorized('patient')) {
+      this.switchView('auth-patient');
+      this.showToast('Please sign in or create a patient account to book an appointment.', 'info');
+      return;
+    }
+
     const doc = window.mediarcaStore.state.doctors.find(d => d.id === doctorId);
     if (!doc) return;
 
@@ -354,16 +372,13 @@ class MediarcaApp {
     document.getElementById('bookingDoctorId').value = doc.id;
     document.getElementById('bookingModalDoctorName').textContent = doc.name;
     document.getElementById('bookingModalSpecialty').textContent = `${doc.specialty} • ${doc.hospital}`;
-    document.getElementById('bookingModalDoctorId').textContent = doc.mediarcaId;
+    document.getElementById('bookingModalDoctorId').textContent = doc.mediarcaId || 'PENDING';
     document.getElementById('bookingModalEstimatedToken').textContent = '#' + nextToken;
     document.getElementById('bookingModalFee').textContent = '$' + doc.fee;
 
-    const currentUser = window.mediarcaStore.state.currentUser;
-    if (currentUser && currentUser.name) {
-      document.getElementById('bookingPatientName').value = currentUser.name;
-      document.getElementById('bookingPatientPhone').value = currentUser.phone || '';
-      document.getElementById('bookingPatientAge').value = currentUser.age || '32';
-    }
+    document.getElementById('bookingPatientName').value = currentUser.name || '';
+    document.getElementById('bookingPatientPhone').value = currentUser.phone || '';
+    document.getElementById('bookingPatientAge').value = currentUser.age || '30';
 
     modal.classList.add('active');
     if (window.lucide) window.lucide.createIcons();
@@ -1037,6 +1052,11 @@ class MediarcaApp {
     if (type === 'success') iconName = 'check-circle';
     if (type === 'warning') iconName = 'alert-triangle';
 
+    toast.innerHTML = `
+      <i data-lucide="${iconName}" style="width: 16px; height: 16px; flex-shrink: 0;"></i>
+      <span>${escapeHtml(message)}</span>
+    `;
+
     container.appendChild(toast);
     if (window.lucide) window.lucide.createIcons();
 
@@ -1056,20 +1076,26 @@ class MediarcaApp {
     const doc = window.mediarcaStore.state.doctors.find(d => d.id === doctorId) || window.mediarcaStore.state.doctors[0];
     const queue = window.mediarcaStore.state.queues[doc.id] || { currentToken: 0, status: 'idle', tokens: [] };
     const currentToken = queue.currentToken || 0;
-    const currentPatient = queue.tokens.find(t => t.tokenNumber === currentToken);
     const waitingTokens = queue.tokens.filter(t => t.tokenNumber > currentToken && t.status === 'waiting');
+
+    // Live clock ticker
+    if (this.tvClockInterval) clearInterval(this.tvClockInterval);
+    this.tvClockInterval = setInterval(() => {
+      const el = document.getElementById('tvClock');
+      if (el) el.innerText = new Date().toLocaleTimeString();
+    }, 1000);
 
     container.innerHTML = `
       <div style="max-width: 1200px; margin: 0 auto; padding: 1rem;">
         <!-- TV Header -->
         <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #27272a; padding-bottom: 1.5rem; margin-bottom: 2.5rem;">
           <div style="display: flex; align-items: center; gap: 1rem;">
-            <div style="width: 48px; height: 48px; background: #0284c7; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 800;">
+            <div style="width: 48px; height: 48px; background: #0284c7; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 800; color: #fff;">
               +
             </div>
             <div>
               <h1 style="font-size: 1.75rem; font-weight: 800; color: #fff; letter-spacing: -0.02em;">MEDIARCA OPD LIVE MONITOR</h1>
-              <p style="color: #a1a1aa; font-size: 0.95rem;">${doc.hospital} • ${doc.specialty}</p>
+              <p style="color: #a1a1aa; font-size: 0.95rem;">${escapeHtml(doc.hospital)} • ${escapeHtml(doc.specialty)}</p>
             </div>
           </div>
           <div style="text-align: right;">
@@ -1090,17 +1116,15 @@ class MediarcaApp {
             </div>
             
             <div style="background: #27272a; border-radius: 12px; padding: 1.25rem; margin-top: 2rem;">
-              <div style="font-size: 1.5rem; font-weight: 800; color: #ffffff;">${doc.name}</div>
-              <div style="font-size: 1rem; color: #38bdf8;">${doc.specialty} • Room: 304</div>
-              ${currentPatient ? `
-                <div style="font-size: 1rem; color: #4ade80; font-weight: 700; margin-top: 0.5rem;">
-                  Patient: ${currentPatient.patientName} (In Consultation)
-                </div>
-              ` : ''}
+              <div style="font-size: 1.5rem; font-weight: 800; color: #ffffff;">${escapeHtml(doc.name)}</div>
+              <div style="font-size: 1rem; color: #38bdf8;">${escapeHtml(doc.specialty)} • Consultation Suite</div>
+              <div style="font-size: 1rem; color: #4ade80; font-weight: 700; margin-top: 0.5rem;">
+                ${currentToken > 0 ? '● Active Consultation in Progress' : 'Waiting for next patient call'}
+              </div>
             </div>
           </div>
 
-          <!-- Upcoming Tokens List -->
+          <!-- Upcoming Tokens List (Privacy Masked) -->
           <div>
             <div style="background: #18181b; border: 1px solid #27272a; border-radius: 20px; padding: 2rem;">
               <h3 style="font-size: 1.25rem; font-weight: 800; color: #fff; margin-bottom: 1.5rem; border-bottom: 1px solid #27272a; padding-bottom: 0.75rem;">
@@ -1115,13 +1139,13 @@ class MediarcaApp {
                         #${t.tokenNumber}
                       </div>
                       <div>
-                        <div style="font-size: 1.125rem; font-weight: 700; color: #fff;">${t.patientName}</div>
-                        <div style="font-size: 0.8125rem; color: #a1a1aa;">Check-in: ${t.checkInTime}</div>
+                        <div style="font-size: 1.125rem; font-weight: 700; color: #fff;">Token #${t.tokenNumber}</div>
+                        <div style="font-size: 0.8125rem; color: #a1a1aa;">Scheduled Slot • Room Ready</div>
                       </div>
                     </div>
                     <div>
                       <span class="badge" style="background: ${idx === 0 ? 'rgba(251, 191, 36, 0.2)' : 'rgba(255,255,255,0.1)'}; color: ${idx === 0 ? '#fbbf24' : '#a1a1aa'}; font-size: 0.85rem; padding: 0.4rem 0.75rem;">
-                        ${idx === 0 ? 'PLEASE PREPARE' : 'WAITING'}
+                        ${idx === 0 ? 'PLEASE PREPARE' : 'IN QUEUE'}
                       </span>
                     </div>
                   </div>
@@ -1132,8 +1156,8 @@ class MediarcaApp {
                 <button class="btn btn-secondary" onclick="window.mediarcaAudio.playChime('queue-call')">
                   <i data-lucide="volume-2" style="width:16px;height:16px"></i> Sound Room Chime
                 </button>
-                <button class="btn btn-primary" onclick="window.mediarcaApp.switchView('home')">
-                  Exit Fullscreen TV View
+                <button class="btn btn-primary" onclick="if (window.mediarcaApp.tvClockInterval) clearInterval(window.mediarcaApp.tvClockInterval); window.mediarcaApp.switchView('home')">
+                  Exit TV View
                 </button>
               </div>
             </div>
