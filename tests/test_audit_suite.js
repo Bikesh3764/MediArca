@@ -1,12 +1,12 @@
 /**
- * MediArca - Automated Regression & Audit Test Suite
- * Validates store logic, queue algorithms, slot collisions, stage transitions, and billing math.
+ * MediArca - Automated Regression & Audit Test Suite (Audit v6 Edition)
+ * Validates store logic, queue algorithms, slot collisions, stage transitions, cloud sync, and billing math.
  */
 
 const fs = require('fs');
 const path = require('path');
 
-console.log('--- Starting MediArca Automated Regression Suite ---');
+console.log('--- Starting MediArca Automated Regression Suite (Audit v6) ---');
 
 let passCount = 0;
 let failCount = 0;
@@ -33,6 +33,8 @@ assert(schemaContent.includes('CREATE OR REPLACE FUNCTION transition_appointment
 assert(schemaContent.includes('CREATE OR REPLACE VIEW public_queue_telemetry'), 'Schema contains public_queue_telemetry view');
 assert(schemaContent.includes('CREATE OR REPLACE VIEW public_doctor_directory'), 'Schema contains public_doctor_directory view');
 assert(schemaContent.includes('current_stage VARCHAR(50) DEFAULT \'triage\''), 'Appointments table contains current_stage column');
+assert(schemaContent.includes('AND status = \'in-consultation\''), 'Consultation completion strictly requires in-consultation state (C-02)');
+assert(schemaContent.includes('v_checkin_token := \'MED-QR-\''), 'Rescheduling regenerates fresh CSPRNG check-in token (RS-04)');
 
 // 2. Validate App JS and Store JS Syntax & Logic
 const appPath = path.join(__dirname, '../js/app.js');
@@ -47,12 +49,17 @@ assert(fs.existsSync(supabaseClientPath), 'js/supabase_client.js exists');
 
 const appContent = fs.readFileSync(appPath, 'utf-8');
 const storeContent = fs.readFileSync(storePath, 'utf-8');
+const supabaseClientContent = fs.readFileSync(supabaseClientPath, 'utf-8');
 
 assert(appContent.includes('async handleProcessPayment'), 'handleProcessPayment is async');
 assert(appContent.includes('async renderAdminHub'), 'renderAdminHub is async');
+assert(appContent.includes('submitBtn.disabled = true'), 'handleBookingSubmit has double-click protection (UX-03)');
 assert(storeContent.includes('Clinical Document Vault upload failed'), 'Store throws on vault upload failure');
+assert(storeContent.includes('Billing transaction could not be settled'), 'Store fails closed on cloud billing settlement failure (BI-03)');
 assert(!storeContent.includes('waiting * 3.5'), 'Synthetic waiting multiplier removed from store');
 assert(!appContent.includes('value="120/80 mmHg"'), 'Hardcoded default vitals values removed from doctor console');
+assert(supabaseClientContent.includes('appointments_patient_id_fkey'), 'Initial sync hydrates appointments & queue tokens from Supabase (H-01 & Q-04)');
+assert(storeContent.includes('getPatientTimeline'), 'Dynamic medical timeline synthesizer present in store (MT-01)');
 
 console.log(`\nTest Summary: ${passCount} Passed, ${failCount} Failed.`);
 if (failCount > 0) {
