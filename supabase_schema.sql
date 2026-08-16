@@ -860,7 +860,7 @@ BEGIN
 END;
 $$;
 
--- 14. ATOMIC QUEUE TRANSFER RPC (Section 11 Resolution: Receptionist Doctor-to-Doctor Transfer)
+-- 14. ATOMIC QUEUE TRANSFER RPC (C-14 Resolution: Receptionist/Doctor Role Authorization)
 CREATE OR REPLACE FUNCTION transfer_patient_queue_atomic(
     p_appointment_id UUID,
     p_target_doctor_id UUID,
@@ -873,13 +873,16 @@ SET search_path = public, pg_temp
 AS $$
 DECLARE
     v_actor_id UUID;
+    v_actor_role VARCHAR;
     v_appointment appointments%ROWTYPE;
+    v_is_authorized BOOLEAN;
     v_new_token INT;
 BEGIN
     v_actor_id := auth.uid();
 
+    -- C-14: Require non-null authenticated identity
     IF v_actor_id IS NULL THEN
-        RAISE EXCEPTION 'Authentication required to transfer patients between queues.';
+        RAISE EXCEPTION 'Authentication required. Only clinic staff, attending physicians, or administrators can transfer queues.';
     END IF;
 
     SELECT * INTO v_appointment
@@ -888,6 +891,28 @@ BEGIN
 
     IF v_appointment.id IS NULL THEN
         RAISE EXCEPTION 'Appointment record not found.';
+    END IF;
+
+    IF v_appointment.status IN ('completed', 'cancelled') THEN
+        RAISE EXCEPTION 'Cannot transfer appointment in % status.', v_appointment.status;
+    END IF;
+
+    -- C-14: Actor Authorization Check: Receptionist, Admin, or Current Attending Doctor
+    SELECT role INTO v_actor_role FROM users WHERE id = v_actor_id;
+
+    v_is_authorized := (
+        v_actor_role IN ('receptionist', 'admin')
+        OR v_appointment.doctor_id IN (SELECT id FROM doctors WHERE user_id = v_actor_id)
+        OR is_admin(v_actor_id)
+    );
+
+    IF NOT v_is_authorized THEN
+        RAISE EXCEPTION 'Access Denied: You do not have permission to transfer patients between queues.';
+    END IF;
+
+    -- Verify target doctor is verified
+    IF NOT EXISTS (SELECT 1 FROM doctors WHERE id = p_target_doctor_id AND verification_status = 'verified') THEN
+        RAISE EXCEPTION 'Target physician is not verified or active.';
     END IF;
 
     -- Allocate next token on target doctor queue
@@ -919,7 +944,8 @@ BEGIN
         jsonb_build_object(
             'target_doctor_id', p_target_doctor_id,
             'new_token_number', v_new_token,
-            'reason', p_reason
+            'reason', p_reason,
+            'actor_role', COALESCE(v_actor_role, 'staff')
         )
     );
 
@@ -927,7 +953,7 @@ BEGIN
 END;
 $$;
 
--- 15. ATOMIC APPOINTMENT RESCHEDULING RPC (Section 11 Resolution: Calendar Scheduler)
+-- 15. ATOMIC APPOINTMENT RESCHEDULING RPC (C-15 Resolution: Role-Specific Authorization & Status Validation)
 CREATE OR REPLACE FUNCTION reschedule_appointment_atomic(
     p_appointment_id UUID,
     p_new_date DATE,
@@ -940,12 +966,47 @@ SET search_path = public, pg_temp
 AS $$
 DECLARE
     v_actor_id UUID;
+    v_actor_role VARCHAR;
     v_appointment appointments%ROWTYPE;
+    v_is_authorized BOOLEAN;
 BEGIN
     v_actor_id := auth.uid();
 
+    -- C-15: Require non-null authenticated identity
     IF v_actor_id IS NULL THEN
         RAISE EXCEPTION 'Authentication required to reschedule appointments.';
+    END IF;
+
+    -- C-15: Prevent rescheduling to past dates
+    IF p_new_date < CURRENT_DATE THEN
+        RAISE EXCEPTION 'Cannot reschedule appointment to a past date.';
+    END IF;
+
+    SELECT * INTO v_appointment
+    FROM appointments
+    WHERE id = p_appointment_id;
+
+    IF v_appointment.id IS NULL THEN
+        RAISE EXCEPTION 'Appointment record not found.';
+    END IF;
+
+    -- C-15: Validate appointment status allows rescheduling
+    IF v_appointment.status IN ('completed', 'cancelled') THEN
+        RAISE EXCEPTION 'Cannot reschedule an appointment that is already %.', v_appointment.status;
+    END IF;
+
+    -- C-15: Role-specific authorization (patient owner, attending doctor, receptionist, or admin)
+    SELECT role INTO v_actor_role FROM users WHERE id = v_actor_id;
+
+    v_is_authorized := (
+        v_appointment.patient_id = v_actor_id
+        OR v_appointment.doctor_id IN (SELECT id FROM doctors WHERE user_id = v_actor_id)
+        OR v_actor_role IN ('receptionist', 'admin')
+        OR is_admin(v_actor_id)
+    );
+
+    IF NOT v_is_authorized THEN
+        RAISE EXCEPTION 'Access Denied: You are not authorized to reschedule this appointment.';
     END IF;
 
     UPDATE appointments
@@ -953,12 +1014,8 @@ BEGIN
         appointment_date = p_new_date,
         scheduled_slot = p_new_slot,
         status = 'booked'
-    WHERE id = p_appointment_id AND (patient_id = v_actor_id OR is_admin(v_actor_id))
+    WHERE id = p_appointment_id
     RETURNING * INTO v_appointment;
-
-    IF v_appointment.id IS NULL THEN
-        RAISE EXCEPTION 'Appointment record not found or unauthorized to reschedule.';
-    END IF;
 
     INSERT INTO audit_logs (actor_id, action, entity, entity_id, metadata)
     VALUES (
@@ -968,7 +1025,8 @@ BEGIN
         p_appointment_id,
         jsonb_build_object(
             'new_date', p_new_date,
-            'new_slot', p_new_slot
+            'new_slot', p_new_slot,
+            'rescheduled_by_role', COALESCE(v_actor_role, 'patient')
         )
     );
 

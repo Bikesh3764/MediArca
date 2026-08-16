@@ -30,7 +30,7 @@ class MediarcaSupabaseClient {
     }
   }
 
-  // --- 1. SUPABASE AUTH INTEGRATION (C-01 & C-02 Resolution) ---
+  // --- 1. SUPABASE AUTH INTEGRATION (C-01, C-02, C-03 & C-17 Resolution) ---
   setupAuthListener() {
     if (!this.client) return;
 
@@ -38,35 +38,59 @@ class MediarcaSupabaseClient {
       console.log('⚡ Supabase Auth State Changed:', event, session?.user?.email);
       if (session && session.user) {
         const user = session.user;
-        // Query user role and practitioner profile from database
+        let profile = null;
+        let doctorProfile = null;
+        let clinicalProfile = null;
+
+        // C-17: Query user identity profile independently with maybeSingle()
         try {
-          const { data: profile } = await this.client
+          const { data } = await this.client
             .from('users')
             .select('*')
             .eq('id', user.id)
-            .single();
+            .maybeSingle();
+          profile = data;
+        } catch (e) {
+          console.warn('User profile fetch notice:', e);
+        }
 
-          const { data: doctorProfile } = await this.client
+        // C-17: Query doctor profile independently with maybeSingle() (returns null cleanly for normal patients)
+        try {
+          const { data } = await this.client
             .from('doctors')
             .select('*')
             .eq('user_id', user.id)
-            .single();
-
-          // C-03 Resolution: Role must strictly come from authoritative DB profile, NEVER client user_metadata
-          const role = profile?.role || (doctorProfile ? 'doctor' : 'patient');
-          const name = profile?.full_name || doctorProfile?.name || user.email.split('@')[0];
-
-          window.mediarcaStore.setAuthSession({
-            id: user.id,
-            email: user.email,
-            role: role,
-            name: name,
-            doctorProfile: doctorProfile || null,
-            patientProfile: profile || null
-          });
+            .maybeSingle();
+          doctorProfile = data;
         } catch (e) {
-          console.warn('Profile fetch note:', e);
+          console.warn('Doctor profile fetch notice:', e);
         }
+
+        // C-17: Query patient clinical profile independently
+        try {
+          const { data } = await this.client
+            .from('patient_clinical_profiles')
+            .select('*')
+            .eq('user_id', user.id)
+            .maybeSingle();
+          clinicalProfile = data;
+        } catch (e) {
+          console.warn('Clinical profile fetch notice:', e);
+        }
+
+        // Authoritative role resolution from DB (never client user_metadata)
+        const role = profile?.role || (doctorProfile ? 'doctor' : 'patient');
+        const name = profile?.full_name || doctorProfile?.name || user.email.split('@')[0];
+
+        window.mediarcaStore.setAuthSession({
+          id: user.id,
+          email: user.email,
+          role: role,
+          name: name,
+          doctorProfile: doctorProfile || null,
+          patientProfile: profile || null,
+          clinicalProfile: clinicalProfile || null
+        });
       }
     });
   }
@@ -92,7 +116,7 @@ class MediarcaSupabaseClient {
     if (error) throw error;
 
     if (data.user) {
-      // Upsert profile in users table with authoritative role
+      // 1. C-16 Resolution: Upsert core identity strictly into users table (valid schema columns only)
       await this.client.from('users').upsert({
         id: data.user.id,
         email: cleanEmail,
@@ -100,6 +124,16 @@ class MediarcaSupabaseClient {
         full_name: (metadata.name || cleanEmail.split('@')[0]).trim(),
         phone: metadata.phone || null
       });
+
+      // 2. C-16 Resolution: Upsert clinical demographics separately into patient_clinical_profiles
+      if (assignedRole === 'patient' && (metadata.age || metadata.gender || metadata.bloodGroup)) {
+        await this.client.from('patient_clinical_profiles').upsert({
+          user_id: data.user.id,
+          age: parseInt(metadata.age) || null,
+          gender: metadata.gender || null,
+          blood_group: metadata.bloodGroup || null
+        });
+      }
     }
 
     return data;
