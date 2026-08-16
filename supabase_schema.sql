@@ -108,6 +108,7 @@ CREATE TABLE IF NOT EXISTS appointments (
     medications TEXT[],
     advice TEXT,
     scheduled_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    current_stage VARCHAR(50) DEFAULT 'triage',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -791,21 +792,25 @@ BEGIN
         RAISE EXCEPTION 'Not authorized. Only the attending, verified physician can issue prescriptions.';
     END IF;
 
-    -- 1. Update appointment with clinical prescription strictly scoped to CURRENT_DATE
+    -- 1. Update appointment with clinical prescription strictly scoped to CURRENT_DATE and active consultation state (H-09)
     UPDATE appointments
     SET diagnosis = p_diagnosis,
         medications = p_medications,
         advice = p_advice,
         status = 'completed',
+        current_stage = 'pharmacy',
         end_at = NOW()
-    WHERE doctor_id = p_doctor_id AND scheduled_date = CURRENT_DATE AND token_number = p_token_number
+    WHERE doctor_id = p_doctor_id 
+      AND scheduled_date = CURRENT_DATE 
+      AND token_number = p_token_number
+      AND status IN ('in-consultation', 'waiting')
     RETURNING * INTO v_appointment;
 
     IF v_appointment.id IS NULL THEN
-        RAISE EXCEPTION 'Active consultation record not found for Token #% on %', p_token_number, CURRENT_DATE;
+        RAISE EXCEPTION 'Active consultation record not found for Token #% on % (status must be in-consultation or waiting)', p_token_number, CURRENT_DATE;
     END IF;
 
-    -- 2. Insert rich Clinical Encounter (Section 9 Resolution)
+    -- 2. Insert rich Clinical Encounter (H-06: No fabricated vitals)
     INSERT INTO clinical_encounters (
         appointment_id, doctor_id, patient_id, chief_complaint, vitals,
         examination_findings, assessment, diagnosis, treatment_plan, follow_up_date
@@ -814,8 +819,8 @@ BEGIN
         p_doctor_id,
         v_appointment.patient_id,
         COALESCE(p_chief_complaint, v_appointment.symptoms, 'Clinical evaluation'),
-        COALESCE(p_vitals, '{"bp": "120/80", "pulse": 72, "temp": "98.6"}'::jsonb),
-        COALESCE(p_examination_findings, 'Physical exam within normal physiological parameters.'),
+        COALESCE(p_vitals, '{"status": "not_recorded"}'::jsonb),
+        COALESCE(p_examination_findings, 'Physical exam recorded by attending physician.'),
         COALESCE(p_assessment, p_diagnosis),
         p_diagnosis,
         COALESCE(p_treatment_plan, p_advice),
@@ -835,7 +840,7 @@ BEGIN
         p_follow_up_date
     ) RETURNING id INTO v_prescription_id;
 
-    -- 4. Insert Itemized Prescription Items (Section 9 Resolution)
+    -- 4. Insert Itemized Prescription Items (H-07: Structured prescription entries)
     IF p_medications IS NOT NULL AND array_length(p_medications, 1) > 0 THEN
         FOREACH v_med IN ARRAY p_medications LOOP
             IF trim(v_med) != '' THEN
@@ -844,28 +849,36 @@ BEGIN
                 ) VALUES (
                     v_prescription_id,
                     trim(v_med),
-                    'As directed',
-                    'Twice daily',
-                    'Oral',
-                    '5 days',
+                    'As directed by physician',
+                    'As scheduled',
+                    'Oral / Systemic',
+                    'Course duration per clinical advice',
                     p_advice
                 );
             END IF;
         END LOOP;
     END IF;
 
-    -- 4B. Insert Structured Lab Orders (M-22 Resolution)
+    -- 4B. Insert Structured Lab Orders (H-08: Itemized one row per test)
     IF p_lab_orders IS NOT NULL AND trim(p_lab_orders) != '' THEN
-        INSERT INTO lab_orders (
-            appointment_id, doctor_id, patient_id, test_name, clinical_notes, status
-        ) VALUES (
-            v_appointment.id,
-            p_doctor_id,
-            v_appointment.patient_id,
-            trim(p_lab_orders),
-            'Clinical indications: ' || p_diagnosis,
-            'ordered'
-        );
+        DECLARE
+            v_lab_item TEXT;
+        BEGIN
+            FOR v_lab_item IN SELECT unnest(string_to_array(p_lab_orders, ',')) LOOP
+                IF trim(v_lab_item) != '' THEN
+                    INSERT INTO lab_orders (
+                        appointment_id, doctor_id, patient_id, test_name, clinical_notes, status
+                    ) VALUES (
+                        v_appointment.id,
+                        p_doctor_id,
+                        v_appointment.patient_id,
+                        trim(v_lab_item),
+                        'Diagnostic evaluation for: ' || COALESCE(p_diagnosis, 'Clinical indication'),
+                        'ordered'
+                    );
+                END IF;
+            END LOOP;
+        END;
     END IF;
 
     -- 5. Advance queue to next waiting patient atomically (H-13 Anti-Starvation Fair Scoring)
@@ -1533,6 +1546,11 @@ BEGIN
     ELSIF v_actor_role NOT IN ('doctor', 'receptionist', 'admin') AND NOT is_admin(v_actor_id) THEN
         RAISE EXCEPTION 'Access Denied: Administrative or clinical staff privileges required.';
     END IF;
+
+    -- H-10: Persist current_stage directly to appointment domain record
+    UPDATE appointments
+    SET current_stage = p_stage
+    WHERE id = p_appointment_id;
 
     -- Record flow transition in audit ledger
     INSERT INTO audit_logs (actor_id, action, entity, entity_id, metadata)
