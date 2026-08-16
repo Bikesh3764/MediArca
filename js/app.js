@@ -300,15 +300,15 @@ class MediarcaApp {
       return `
         <div class="doctor-card">
           <div class="doctor-card-top">
-            <img src="${doc.avatar}" alt="${doc.name}" class="doctor-avatar">
+            <img src="${escapeHtml(doc.avatar)}" alt="${escapeHtml(doc.name)}" class="doctor-avatar">
             <div class="doctor-info-head">
               <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.25rem;">
-                <h4 class="doctor-name">${doc.name}</h4>
+                <h4 class="doctor-name">${escapeHtml(doc.name)}</h4>
                 <span class="badge badge-verified"><i data-lucide="shield-check" style="width: 12px; height: 12px;"></i> Verified</span>
               </div>
-              <div class="doctor-specialty">${doc.specialty} • ${doc.experienceYears}y exp</div>
+              <div class="doctor-specialty">${escapeHtml(doc.specialty)} • ${doc.experienceYears}y exp</div>
               <div style="margin-top: 0.25rem;">
-                <span class="doctor-id-tag">${doc.mediarcaId}</span>
+                <span class="doctor-id-tag">${escapeHtml(doc.mediarcaId || 'PENDING')}</span>
               </div>
             </div>
           </div>
@@ -316,11 +316,11 @@ class MediarcaApp {
           <div class="doctor-meta-list">
             <div class="doctor-meta-item">
               <i data-lucide="graduation-cap" style="width: 14px; height: 14px; color: var(--text-muted);"></i>
-              <span>${doc.degrees}</span>
+              <span>${escapeHtml(doc.degrees)}</span>
             </div>
             <div class="doctor-meta-item">
               <i data-lucide="building" style="width: 14px; height: 14px; color: var(--text-muted);"></i>
-              <span>${doc.hospital}</span>
+              <span>${escapeHtml(doc.hospital)}</span>
             </div>
           </div>
 
@@ -641,9 +641,9 @@ class MediarcaApp {
                 <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.75rem; margin-bottom: 1rem;">
                   <div>
                     <span class="badge ${b.status === 'in-consultation' ? 'badge-live' : (b.status === 'waiting' ? 'badge-pending' : 'badge-verified')}">
-                      ${b.status.toUpperCase()}
+                      ${escapeHtml(b.status.toUpperCase())}
                     </span>
-                    <span style="font-size: 0.75rem; color: var(--text-muted); margin-left: 0.5rem;">Booking Ref: ${b.bookingId}</span>
+                    <span style="font-size: 0.75rem; color: var(--text-muted); margin-left: 0.5rem;">Booking Ref: ${escapeHtml(b.bookingId)}</span>
                   </div>
                   <div class="text-mono" style="font-size: 1.25rem; font-weight: 800; color: var(--clinical-blue);">
                     Token #${b.tokenNumber}
@@ -652,9 +652,9 @@ class MediarcaApp {
 
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
                   <div>
-                    <h4 style="font-size: 1.0625rem; font-weight: 700; color: var(--text-primary);">${b.doctorName}</h4>
-                    <p style="font-size: 0.8125rem; color: var(--text-secondary);">${b.specialty} • ${b.hospital}</p>
-                    <p style="font-size: 0.8125rem; color: var(--text-primary); margin-top: 0.35rem;"><strong>Symptoms:</strong> ${b.symptoms}</p>
+                    <h4 style="font-size: 1.0625rem; font-weight: 700; color: var(--text-primary);">${escapeHtml(b.doctorName)}</h4>
+                    <p style="font-size: 0.8125rem; color: var(--text-secondary);">${escapeHtml(b.specialty)} • ${escapeHtml(b.hospital)}</p>
+                    <p style="font-size: 0.8125rem; color: var(--text-primary); margin-top: 0.35rem;"><strong>Symptoms:</strong> ${escapeHtml(b.symptoms)}</p>
                   </div>
                   <button class="btn btn-sm btn-clinical" onclick="window.mediarcaApp.switchView('queue-radar', { doctorId: '${b.doctorId}' })">
                     <i data-lucide="radio" style="width: 14px; height: 14px;"></i> Open Live Radar
@@ -664,9 +664,9 @@ class MediarcaApp {
                 ${b.prescription ? `
                   <div style="margin-top: 1rem; padding: 1rem; background: var(--status-verified-bg); border-radius: var(--radius-sm); border: 1px solid var(--status-verified-border);">
                     <div style="font-size: 0.75rem; font-weight: 700; color: #166534; text-transform: uppercase; margin-bottom: 0.25rem;">Doctor Prescription & Advice</div>
-                    <div style="font-size: 0.875rem; color: #14532d; font-weight: 600;">Diagnosis: ${b.prescription.diagnosis}</div>
-                    <div style="font-size: 0.8125rem; color: #166534; margin-top: 0.25rem;">Medications: ${Array.isArray(b.prescription.medications) ? b.prescription.medications.join(', ') : b.prescription.medications}</div>
-                    <div style="font-size: 0.75rem; color: #15803d; margin-top: 0.25rem;">Advice: ${b.prescription.advice}</div>
+                    <div style="font-size: 0.875rem; color: #14532d; font-weight: 600;">Diagnosis: ${escapeHtml(b.prescription.diagnosis)}</div>
+                    <div style="font-size: 0.8125rem; color: #166534; margin-top: 0.25rem;">Medications: ${escapeHtml(Array.isArray(b.prescription.medications) ? b.prescription.medications.join(', ') : b.prescription.medications)}</div>
+                    <div style="font-size: 0.75rem; color: #15803d; margin-top: 0.25rem;">Advice: ${escapeHtml(b.prescription.advice)}</div>
                   </div>
                 ` : ''}
               </div>
@@ -677,10 +677,10 @@ class MediarcaApp {
             <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.5rem;">
               <h3 style="font-size: 1.0625rem; font-weight: 800; color: var(--text-primary); margin-bottom: 1rem;">Patient Profile</h3>
               <div style="display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.875rem;">
-                <div><span style="color: var(--text-muted);">Full Name:</span> <strong>${user.name || 'Patient'}</strong></div>
-                <div><span style="color: var(--text-muted);">Email:</span> <strong>${user.email || 'N/A'}</strong></div>
-                <div><span style="color: var(--text-muted);">Phone:</span> <strong>${user.phone || 'N/A'}</strong></div>
-                <div><span style="color: var(--text-muted);">Blood Group:</span> <strong>${user.bloodGroup || 'O+'}</strong></div>
+                <div><span style="color: var(--text-muted);">Full Name:</span> <strong>${escapeHtml(user.name || 'Patient')}</strong></div>
+                <div><span style="color: var(--text-muted);">Email:</span> <strong>${escapeHtml(user.email || 'N/A')}</strong></div>
+                <div><span style="color: var(--text-muted);">Phone:</span> <strong>${escapeHtml(user.phone || 'N/A')}</strong></div>
+                <div><span style="color: var(--text-muted);">Blood Group:</span> <strong>${escapeHtml(user.bloodGroup || 'O+')}</strong></div>
               </div>
             </div>
           </div>
@@ -707,16 +707,16 @@ class MediarcaApp {
               <i data-lucide="clock" style="width: 26px; height: 26px;"></i>
             </div>
             <span class="badge badge-pending" style="margin-bottom: 1rem;">Verification In Progress</span>
-            <h2 style="font-size: 1.5rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.5rem;">Welcome, ${doc.name}</h2>
+            <h2 style="font-size: 1.5rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.5rem;">Welcome, ${escapeHtml(doc.name)}</h2>
             <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.6; margin-bottom: 1.5rem;">
-              Your medical credentials for <strong>${doc.specialty}</strong> (License: <code>${doc.regNumber}</code>) are under review by the Mediarca Medical Board.
+              Your medical credentials for <strong>${escapeHtml(doc.specialty)}</strong> (License: <code>${escapeHtml(doc.regNumber)}</code>) are under review by the Mediarca Medical Board.
               Once verified, your certified Mediarca Doctor ID will be activated to accept bookings.
             </p>
 
             <div style="background: var(--bg-surface-subtle); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 1rem; text-align: left; margin-bottom: 1.5rem; font-size: 0.8125rem;">
-              <div style="margin-bottom: 0.25rem;"><strong>Qualifications:</strong> ${doc.degrees}</div>
-              <div style="margin-bottom: 0.25rem;"><strong>Hospital:</strong> ${doc.hospital}</div>
-              <div><strong>Registration Date:</strong> ${doc.appliedDate || 'Today'}</div>
+              <div style="margin-bottom: 0.25rem;"><strong>Qualifications:</strong> ${escapeHtml(doc.degrees)}</div>
+              <div style="margin-bottom: 0.25rem;"><strong>Hospital:</strong> ${escapeHtml(doc.hospital)}</div>
+              <div><strong>Registration Date:</strong> ${escapeHtml(doc.appliedDate || 'Today')}</div>
             </div>
           </div>
         </div>
@@ -746,14 +746,14 @@ class MediarcaApp {
           <div>
             <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
               <span class="badge badge-verified"><i data-lucide="shield-check" style="width:12px;height:12px"></i> VERIFIED PRACTITIONER</span>
-              <span style="font-size: 0.75rem; color: #a1a1aa;">Reg No: ${doc.regNumber}</span>
+              <span style="font-size: 0.75rem; color: #a1a1aa;">Reg No: ${escapeHtml(doc.regNumber)}</span>
             </div>
-            <h2 style="font-size: 1.35rem; font-weight: 800;">${doc.name}</h2>
-            <p style="font-size: 0.8125rem; color: #a1a1aa;">${doc.specialty} • ${doc.hospital}</p>
+            <h2 style="font-size: 1.35rem; font-weight: 800;">${escapeHtml(doc.name)}</h2>
+            <p style="font-size: 0.8125rem; color: #a1a1aa;">${escapeHtml(doc.specialty)} • ${escapeHtml(doc.hospital)}</p>
           </div>
           <div style="text-align: right;">
             <div style="font-size: 0.7rem; text-transform: uppercase; color: #a1a1aa;">Official Mediarca ID</div>
-            <div class="text-mono" style="font-size: 1.5rem; font-weight: 800; color: #38bdf8;">${doc.mediarcaId}</div>
+            <div class="text-mono" style="font-size: 1.5rem; font-weight: 800; color: #38bdf8;">${escapeHtml(doc.mediarcaId || 'PENDING')}</div>
           </div>
         </div>
 
@@ -763,7 +763,7 @@ class MediarcaApp {
               <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem;">
                 <h3 style="font-size: 1.125rem; font-weight: 800; color: var(--text-primary);">Patient In Consultation</h3>
                 <span class="badge ${queue.status === 'in-session' ? 'badge-live' : 'badge-pending'}">
-                  Queue Status: ${queue.status.toUpperCase()}
+                  Queue Status: ${escapeHtml(queue.status.toUpperCase())}
                 </span>
               </div>
 
@@ -771,8 +771,8 @@ class MediarcaApp {
                 <div style="background: var(--bg-surface-subtle); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 1.25rem; margin-bottom: 1.5rem;">
                   <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
                     <div>
-                      <h4 style="font-size: 1.125rem; font-weight: 800; color: var(--text-primary);">${currentPatient.patientName}</h4>
-                      <div style="font-size: 0.8125rem; color: var(--text-secondary);">Ref: ${currentPatient.bookingId} • Check-in: ${currentPatient.checkInTime}</div>
+                      <h4 style="font-size: 1.125rem; font-weight: 800; color: var(--text-primary);">${escapeHtml(currentPatient.patientName)}</h4>
+                      <div style="font-size: 0.8125rem; color: var(--text-secondary);">Ref: ${escapeHtml(currentPatient.bookingId)} • Check-in: ${escapeHtml(currentPatient.checkInTime)}</div>
                     </div>
                     <div class="text-mono" style="font-size: 2rem; font-weight: 800; color: var(--clinical-blue);">
                       Token #${currentPatient.tokenNumber}
@@ -782,7 +782,7 @@ class MediarcaApp {
                   <div style="margin-bottom: 1.25rem;">
                     <div style="font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;">Reported Symptoms</div>
                     <div style="font-size: 0.875rem; color: var(--text-primary); margin-top: 0.25rem; background: #fff; padding: 0.625rem 0.75rem; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
-                      ${currentPatient.symptoms || 'General Consultation'}
+                      ${escapeHtml(currentPatient.symptoms || 'General Consultation')}
                     </div>
                   </div>
 
@@ -970,11 +970,11 @@ class MediarcaApp {
                 <tbody>
                   ${pending.map(doc => `
                     <tr>
-                      <td><strong>${doc.name}</strong><div style="font-size:0.75rem; color:var(--text-muted);">${doc.email}</div></td>
-                      <td><span class="badge badge-live">${doc.specialty}</span></td>
-                      <td class="text-mono"><strong>${doc.regNumber}</strong></td>
-                      <td>${doc.degrees} (${doc.experienceYears}y)</td>
-                      <td>${doc.hospital}</td>
+                      <td><strong>${escapeHtml(doc.name)}</strong><div style="font-size:0.75rem; color:var(--text-muted);">${escapeHtml(doc.email)}</div></td>
+                      <td><span class="badge badge-live">${escapeHtml(doc.specialty)}</span></td>
+                      <td class="text-mono"><strong>${escapeHtml(doc.regNumber)}</strong></td>
+                      <td>${escapeHtml(doc.degrees)} (${doc.experienceYears}y)</td>
+                      <td>${escapeHtml(doc.hospital)}</td>
                       <td>
                         <div style="display:flex; gap:0.5rem;">
                           <button class="btn btn-sm btn-teal" onclick="window.mediarcaApp.handleAdminVerify('${doc.id}', true)">
@@ -1009,10 +1009,10 @@ class MediarcaApp {
               <tbody>
                 ${verified.map(doc => `
                   <tr>
-                    <td><strong class="text-mono" style="color: var(--clinical-blue);">${doc.mediarcaId}</strong></td>
-                    <td><strong>${doc.name}</strong></td>
-                    <td>${doc.specialty}</td>
-                    <td class="text-mono">${doc.regNumber}</td>
+                    <td><strong class="text-mono" style="color: var(--clinical-blue);">${escapeHtml(doc.mediarcaId || 'VERIFIED')}</strong></td>
+                    <td><strong>${escapeHtml(doc.name)}</strong></td>
+                    <td>${escapeHtml(doc.specialty)}</td>
+                    <td class="text-mono">${escapeHtml(doc.regNumber)}</td>
                     <td><span class="badge badge-verified">Active & Verified</span></td>
                   </tr>
                 `).join('')}

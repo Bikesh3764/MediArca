@@ -82,7 +82,18 @@ CREATE TABLE IF NOT EXISTS appointments (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 6. ATOMIC CONCURRENCY-SAFE TOKEN GENERATION FUNCTION
+-- 6. AUDIT COMPLIANCE LOG TABLE
+CREATE TABLE IF NOT EXISTS audit_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    actor_id UUID,
+    action VARCHAR(100) NOT NULL,
+    entity VARCHAR(50) NOT NULL,
+    entity_id VARCHAR(100),
+    metadata JSONB,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 7. ATOMIC CONCURRENCY-SAFE TOKEN GENERATION FUNCTION
 CREATE OR REPLACE FUNCTION issue_next_opd_token(
     p_doctor_id UUID,
     p_patient_name VARCHAR,
@@ -91,7 +102,9 @@ CREATE OR REPLACE FUNCTION issue_next_opd_token(
     p_patient_gender VARCHAR,
     p_symptoms TEXT
 )
-RETURNS JSONB AS $$
+RETURNS JSONB 
+SET search_path = public, pg_temp
+AS $$
 DECLARE
     v_next_token INT;
     v_booking_id VARCHAR;
@@ -116,7 +129,8 @@ BEGIN
     FROM appointments
     WHERE doctor_id = p_doctor_id AND created_at::DATE = CURRENT_DATE;
 
-    v_booking_id := 'MED-BK-' || floor(1000 + random() * 9000)::text;
+    -- High entropy collision-free booking identifier
+    v_booking_id := 'MED-BK-' || upper(to_hex(extract(epoch from now())::bigint)) || '-' || upper(substring(md5(random()::text) from 1 for 4));
     
     IF v_current_token = 0 THEN
         v_initial_status := 'in-consultation';
