@@ -142,9 +142,10 @@ class MediarcaSupabaseClient {
   async authSignIn(email, password) {
     if (!this.client) throw new Error('Supabase client unavailable');
 
+    // H-15 Resolution: Never trim passwords; normalize email only
     const { data, error } = await this.client.auth.signInWithPassword({
-      email: email.trim(),
-      password: password.trim()
+      email: email.toLowerCase().trim(),
+      password: password
     });
 
     if (error) throw error;

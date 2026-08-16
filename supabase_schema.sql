@@ -452,7 +452,7 @@ BEGIN
 END;
 $$;
 
--- 9. ATOMIC QUEUE ADVANCEMENT & CONSULTATION RPC (H-07, H-08 & Q-07 Priority Handling)
+-- 9. ATOMIC QUEUE ADVANCEMENT & CONSULTATION RPC (H-13 & H-14 Resolution: Active Verification & Anti-Starvation Scoring)
 CREATE OR REPLACE FUNCTION advance_doctor_queue_atomic(
     p_doctor_id UUID
 )
@@ -465,6 +465,7 @@ DECLARE
     v_actor_id UUID;
     v_is_authorized BOOLEAN;
     v_current_token INT;
+    v_queue_status VARCHAR;
     v_next_token_id UUID;
     v_next_token_num INT;
     v_queue_res JSONB;
@@ -488,10 +489,17 @@ BEGIN
         RAISE EXCEPTION 'Not authorized. Only the authenticated, verified physician can advance this queue.';
     END IF;
 
-    SELECT current_token INTO v_current_token
+    SELECT current_token, status INTO v_current_token, v_queue_status
     FROM clinic_queues
     WHERE doctor_id = p_doctor_id AND queue_date = CURRENT_DATE
     FOR UPDATE;
+
+    -- H-14: Explicit queue status verification (cannot advance paused or closed queues)
+    IF v_queue_status = 'paused' THEN
+        RAISE EXCEPTION 'Cannot advance queue. This clinical queue is currently paused.';
+    ELSIF v_queue_status = 'completed' THEN
+        RAISE EXCEPTION 'Cannot advance queue. Today''s clinical session is already concluded.';
+    END IF;
 
     -- Complete currently active appointment strictly for CURRENT_DATE
     IF v_current_token > 0 THEN
@@ -500,11 +508,13 @@ BEGIN
         WHERE doctor_id = p_doctor_id AND scheduled_date = CURRENT_DATE AND token_number = v_current_token AND status = 'in-consultation';
     END IF;
 
-    -- Fetch next waiting patient in line strictly for CURRENT_DATE (Priority emergency tokens first)
+    -- Fetch next waiting patient in line strictly for CURRENT_DATE (H-13 Anti-Starvation Fair Scoring: Emergency priority + wait-time aging)
     SELECT id, token_number INTO v_next_token_id, v_next_token_num
     FROM appointments
     WHERE doctor_id = p_doctor_id AND scheduled_date = CURRENT_DATE AND status = 'waiting'
-    ORDER BY is_priority DESC, token_number ASC
+    ORDER BY 
+        (CASE WHEN is_priority THEN 500 ELSE 0 END + (EXTRACT(EPOCH FROM (NOW() - created_at))/60)) DESC,
+        token_number ASC
     LIMIT 1;
 
     IF v_next_token_id IS NOT NULL THEN
@@ -655,11 +665,13 @@ BEGIN
         END LOOP;
     END IF;
 
-    -- 5. Advance queue to next waiting patient atomically (Priority emergency tokens first)
+    -- 5. Advance queue to next waiting patient atomically (H-13 Anti-Starvation Fair Scoring)
     SELECT id, token_number INTO v_next_token_id, v_next_token_num
     FROM appointments
     WHERE doctor_id = p_doctor_id AND scheduled_date = CURRENT_DATE AND status = 'waiting'
-    ORDER BY is_priority DESC, token_number ASC
+    ORDER BY 
+        (CASE WHEN is_priority THEN 500 ELSE 0 END + (EXTRACT(EPOCH FROM (NOW() - created_at))/60)) DESC,
+        token_number ASC
     LIMIT 1;
 
     IF v_next_token_id IS NOT NULL THEN
@@ -773,10 +785,13 @@ BEGIN
     FOR UPDATE;
 
     IF v_current_token = p_token_number THEN
+        -- Fetch next waiting patient in line (H-13 Anti-Starvation Fair Scoring)
         SELECT id, token_number INTO v_next_token_id, v_next_token_num
         FROM appointments
         WHERE doctor_id = p_doctor_id AND scheduled_date = CURRENT_DATE AND status = 'waiting'
-        ORDER BY is_priority DESC, token_number ASC
+        ORDER BY 
+            (CASE WHEN is_priority THEN 500 ELSE 0 END + (EXTRACT(EPOCH FROM (NOW() - created_at))/60)) DESC,
+            token_number ASC
         LIMIT 1;
 
         IF v_next_token_id IS NOT NULL THEN
@@ -1052,7 +1067,38 @@ BEGIN
 
     UPDATE clinic_queues
     SET total_tokens = v_new_token, status = 'in-session', updated_at = NOW()
-    WHERE doctor_id = p_target_doctor_id AND queue_date = CURRENT_DATE;
+    -- H-11: Reconcile source doctor queue if transferred patient was currently in-consultation
+    IF v_appointment.status = 'in-consultation' THEN
+        DECLARE
+            v_source_current_token INT;
+            v_source_next_id UUID;
+            v_source_next_token INT;
+        BEGIN
+            SELECT current_token INTO v_source_current_token
+            FROM clinic_queues
+            WHERE doctor_id = v_appointment.doctor_id AND queue_date = CURRENT_DATE
+            FOR UPDATE;
+
+            IF v_source_current_token = v_appointment.token_number THEN
+                SELECT id, token_number INTO v_source_next_id, v_source_next_token
+                FROM appointments
+                WHERE doctor_id = v_appointment.doctor_id AND scheduled_date = CURRENT_DATE AND status = 'waiting' AND id != p_appointment_id
+                ORDER BY 
+                    (CASE WHEN is_priority THEN 500 ELSE 0 END + (EXTRACT(EPOCH FROM (NOW() - created_at))/60)) DESC,
+                    token_number ASC
+                LIMIT 1;
+
+                IF v_source_next_id IS NOT NULL THEN
+                    UPDATE appointments SET status = 'in-consultation', start_at = NOW() WHERE id = v_source_next_id;
+                    UPDATE clinic_queues SET current_token = v_source_next_token, status = 'in-session', updated_at = NOW() WHERE doctor_id = v_appointment.doctor_id AND queue_date = CURRENT_DATE;
+                    UPDATE doctors SET current_token = v_source_next_token, queue_active = true WHERE id = v_appointment.doctor_id;
+                ELSE
+                    UPDATE clinic_queues SET current_token = 0, status = 'idle', updated_at = NOW() WHERE doctor_id = v_appointment.doctor_id AND queue_date = CURRENT_DATE;
+                    UPDATE doctors SET current_token = 0, queue_active = false WHERE id = v_appointment.doctor_id;
+                END IF;
+            END IF;
+        END;
+    END IF;
 
     UPDATE appointments
     SET doctor_id = p_target_doctor_id,
@@ -1069,6 +1115,7 @@ BEGIN
         'appointments',
         p_appointment_id,
         jsonb_build_object(
+            'source_doctor_id', v_appointment.doctor_id,
             'target_doctor_id', p_target_doctor_id,
             'new_token_number', v_new_token,
             'reason', p_reason,
