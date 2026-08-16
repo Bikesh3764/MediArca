@@ -1024,7 +1024,7 @@ ALTER TABLE clinic_queues ENABLE ROW LEVEL SECURITY;
 ALTER TABLE appointments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
 
--- USERS TABLE POLICIES (Strict identity linkage: id = auth.uid())
+-- USERS TABLE POLICIES (Strict identity linkage: id = auth.uid() - C-04 Resolution)
 DROP POLICY IF EXISTS "Users can read own profile" ON users;
 CREATE POLICY "Users can read own profile" ON users FOR SELECT USING (
     auth.uid() = id
@@ -1033,7 +1033,7 @@ CREATE POLICY "Users can read own profile" ON users FOR SELECT USING (
 DROP POLICY IF EXISTS "Users can create own profile" ON users;
 DROP POLICY IF EXISTS "Public can register user profile" ON users;
 CREATE POLICY "Users can create own profile" ON users FOR INSERT WITH CHECK (
-    auth.uid() = id OR id IS NOT NULL
+    auth.uid() = id
 );
 
 DROP POLICY IF EXISTS "Users can update own record" ON users;
@@ -1041,7 +1041,7 @@ CREATE POLICY "Users can update own record" ON users FOR UPDATE USING (
     auth.uid() = id
 );
 
--- DOCTORS TABLE POLICIES (Practitioners insert ONLY for own user_id as pending)
+-- DOCTORS TABLE POLICIES (Practitioners insert ONLY for own user_id as pending - C-05 Resolution)
 DROP POLICY IF EXISTS "Public can view verified doctors" ON doctors;
 CREATE POLICY "Public can view verified doctors" ON doctors FOR SELECT USING (
     verification_status = 'verified' OR auth.uid() = user_id
@@ -1049,7 +1049,7 @@ CREATE POLICY "Public can view verified doctors" ON doctors FOR SELECT USING (
 
 DROP POLICY IF EXISTS "Practitioners can submit accreditation application" ON doctors;
 CREATE POLICY "Practitioners can submit accreditation application" ON doctors FOR INSERT WITH CHECK (
-    (auth.uid() = user_id OR user_id IS NOT NULL) AND verification_status = 'pending'
+    auth.uid() = user_id AND verification_status = 'pending'
 );
 
 DROP POLICY IF EXISTS "Doctor can update own practitioner profile" ON doctors;

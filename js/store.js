@@ -673,14 +673,37 @@ class MediarcaStore {
 
     const cleanEmail = email.toLowerCase().trim();
 
-    // 1. Authoritative Supabase Auth Path (C-01 Resolution: Strict Server-Side Authentication)
+    // 1. Authoritative Supabase Auth Path (C-01 & C-03 Resolution: Strict Server-Side Authentication & Database Profile Role)
     if (window.mediarcaSupabase && window.mediarcaSupabase.isConnected) {
       try {
         const authRes = await window.mediarcaSupabase.authSignIn(cleanEmail, password);
         if (authRes && authRes.user) {
           const user = authRes.user;
-          const role = user.user_metadata?.role || (this.state.doctors.some(d => d.email.toLowerCase() === cleanEmail) ? 'doctor' : (cleanEmail.includes('admin') ? 'admin' : 'patient'));
-          const name = user.user_metadata?.name || this.state.users.find(u => u.email.toLowerCase() === cleanEmail)?.name || cleanEmail.split('@')[0];
+          let role = 'patient';
+          let name = cleanEmail.split('@')[0];
+
+          // Fetch authoritative profile from database (C-03: Never trust client metadata)
+          if (window.mediarcaSupabase.client) {
+            const { data: profile } = await window.mediarcaSupabase.client
+              .from('users')
+              .select('role, full_name')
+              .eq('id', user.id)
+              .single();
+
+            const { data: doctorProfile } = await window.mediarcaSupabase.client
+              .from('doctors')
+              .select('id, name, verification_status, mediarca_id')
+              .eq('user_id', user.id)
+              .single();
+
+            if (profile) {
+              role = profile.role;
+              name = profile.full_name || name;
+            } else if (doctorProfile) {
+              role = 'doctor';
+              name = doctorProfile.name || name;
+            }
+          }
 
           // Zero JWT stored in application state (C-02 Resolution)
           this.state.currentUser = {

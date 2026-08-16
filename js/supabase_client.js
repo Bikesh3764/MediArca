@@ -52,8 +52,9 @@ class MediarcaSupabaseClient {
             .eq('user_id', user.id)
             .single();
 
-          const role = profile?.role || (doctorProfile ? 'doctor' : (user.user_metadata?.role || 'patient'));
-          const name = profile?.full_name || doctorProfile?.name || user.user_metadata?.name || user.email.split('@')[0];
+          // C-03 Resolution: Role must strictly come from authoritative DB profile, NEVER client user_metadata
+          const role = profile?.role || (doctorProfile ? 'doctor' : 'patient');
+          const name = profile?.full_name || doctorProfile?.name || user.email.split('@')[0];
 
           window.mediarcaStore.setAuthSession({
             id: user.id,
@@ -73,27 +74,31 @@ class MediarcaSupabaseClient {
   async authSignUp(email, password, metadata = {}) {
     if (!this.client) throw new Error('Supabase client unavailable');
 
+    // C-03 Resolution: Never allow client-requested admin privilege escalation on signup
+    const assignedRole = metadata.role === 'doctor' ? 'doctor' : (metadata.role === 'receptionist' ? 'receptionist' : 'patient');
+    const cleanEmail = email.toLowerCase().trim();
+
     const { data, error } = await this.client.auth.signUp({
-      email,
-      password,
+      email: cleanEmail,
+      password: password,
       options: {
-        data: metadata
+        data: {
+          name: (metadata.name || '').trim(),
+          role: assignedRole
+        }
       }
     });
 
     if (error) throw error;
 
     if (data.user) {
-      // Upsert profile in users table
+      // Upsert profile in users table with authoritative role
       await this.client.from('users').upsert({
         id: data.user.id,
-        email: email.toLowerCase().trim(),
-        role: metadata.role || 'patient',
-        full_name: metadata.name || email.split('@')[0],
-        phone: metadata.phone || null,
-        age: metadata.age || null,
-        gender: metadata.gender || null,
-        blood_group: metadata.bloodGroup || null
+        email: cleanEmail,
+        role: assignedRole,
+        full_name: (metadata.name || cleanEmail.split('@')[0]).trim(),
+        phone: metadata.phone || null
       });
     }
 
