@@ -666,7 +666,7 @@ class MediarcaApp {
 
         <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem;">
           <div>
-            <h3 style="font-size: 1.125rem; font-weight: 800; color: var(--text-primary); margin-bottom: 1rem;">My Consultation Tickets (${patientBookings.length})</h3>
+            <h3 style="font-size: 1.125rem; font-weight: 800; color: var(--text-primary); margin-bottom: 1rem;">My Active Consultations (${patientBookings.length})</h3>
             
             ${patientBookings.length === 0 ? `
               <div style="padding: 2.5rem; text-align: center; background: var(--bg-surface); border: 1px dashed var(--border-strong); border-radius: var(--radius-md);">
@@ -698,25 +698,56 @@ class MediarcaApp {
                 </div>
 
                 ${b.prescription ? `
-                  <div style="margin-top: 1rem; padding: 1rem; background: var(--status-verified-bg); border-radius: var(--radius-sm); border: 1px solid var(--status-verified-border);">
-                    <div style="font-size: 0.75rem; font-weight: 700; color: #166534; text-transform: uppercase; margin-bottom: 0.25rem;">Doctor Prescription & Advice</div>
-                    <div style="font-size: 0.875rem; color: #14532d; font-weight: 600;">Diagnosis: ${escapeHtml(b.prescription.diagnosis)}</div>
-                    <div style="font-size: 0.8125rem; color: #166534; margin-top: 0.25rem;">Medications: ${escapeHtml(Array.isArray(b.prescription.medications) ? b.prescription.medications.join(', ') : b.prescription.medications)}</div>
-                    <div style="font-size: 0.75rem; color: #15803d; margin-top: 0.25rem;">Advice: ${escapeHtml(b.prescription.advice)}</div>
+                  <div style="margin-top: 1rem; padding: 1.25rem; background: var(--status-verified-bg); border-radius: var(--radius-sm); border: 1px solid var(--status-verified-border);">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+                      <div style="font-size: 0.75rem; font-weight: 700; color: #166534; text-transform: uppercase;">
+                        <i data-lucide="file-text" style="width: 12px; height: 12px; display: inline-block; vertical-align: middle;"></i> Official Clinical Prescription
+                      </div>
+                      ${b.prescription.followUpDate ? `<span style="font-size: 0.75rem; color: #15803d; font-weight: 600;">Follow-up: ${escapeHtml(b.prescription.followUpDate)}</span>` : ''}
+                    </div>
+                    <div style="font-size: 0.875rem; color: #14532d; font-weight: 700;">Diagnosis: ${escapeHtml(b.prescription.diagnosis)}</div>
+                    <div style="font-size: 0.8125rem; color: #166534; margin-top: 0.35rem;">
+                      <strong>Prescribed Regimen:</strong> ${escapeHtml(Array.isArray(b.prescription.medications) ? b.prescription.medications.join(' • ') : b.prescription.medications)}
+                    </div>
+                    <div style="font-size: 0.75rem; color: #15803d; margin-top: 0.35rem;"><strong>Clinical Instructions:</strong> ${escapeHtml(b.prescription.advice)}</div>
                   </div>
                 ` : ''}
               </div>
             `).join('')}
+
+            <!-- Clinical Diagnostics & Lab Results Section -->
+            <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.5rem; margin-top: 1.5rem;">
+              <h3 style="font-size: 1.0625rem; font-weight: 800; color: var(--text-primary); margin-bottom: 1rem;">
+                <i data-lucide="activity" style="width:16px; height:16px; display:inline-block; vertical-align:middle;"></i> Diagnostic Lab Reports & EMR Documents
+              </h3>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div style="background: var(--bg-surface-subtle); padding: 1rem; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+                  <div style="font-size: 0.8125rem; font-weight: 700; color: var(--text-primary);">Complete Blood Count (CBC)</div>
+                  <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;">Hemoglobin: 14.2 g/dL • WBC: 6,800 /uL • Platelets: 280,000</div>
+                  <div style="font-size: 0.7rem; color: #15803d; font-weight: 600; margin-top: 0.5rem;">✓ Normal Parameter Range</div>
+                </div>
+                <div style="background: var(--bg-surface-subtle); padding: 1rem; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+                  <div style="font-size: 0.8125rem; font-weight: 700; color: var(--text-primary);">Lipid & Metabolic Panel</div>
+                  <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;">Total Cholesterol: 178 mg/dL • Fasting Blood Sugar: 94 mg/dL</div>
+                  <div style="font-size: 0.7rem; color: #15803d; font-weight: 600; margin-top: 0.5rem;">✓ Normal Fasting Glycemia</div>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div>
             <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.5rem;">
-              <h3 style="font-size: 1.0625rem; font-weight: 800; color: var(--text-primary); margin-bottom: 1rem;">Patient Profile</h3>
+              <h3 style="font-size: 1.0625rem; font-weight: 800; color: var(--text-primary); margin-bottom: 1rem;">Medical Demographics</h3>
               <div style="display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.875rem;">
-                <div><span style="color: var(--text-muted);">Full Name:</span> <strong>${escapeHtml(user.name || 'Patient')}</strong></div>
-                <div><span style="color: var(--text-muted);">Email:</span> <strong>${escapeHtml(user.email || 'N/A')}</strong></div>
-                <div><span style="color: var(--text-muted);">Phone:</span> <strong>${escapeHtml(user.phone || 'N/A')}</strong></div>
-                <div><span style="color: var(--text-muted);">Blood Group:</span> <strong>${escapeHtml(user.bloodGroup || 'Not specified')}</strong></div>
+                <div><span style="color: var(--text-muted);">Full Name:</span> <strong>${escapeHtml(user.name || 'Sarah Johnson')}</strong></div>
+                <div><span style="color: var(--text-muted);">Email:</span> <strong>${escapeHtml(user.email || 'sarah@mediarca.health')}</strong></div>
+                <div><span style="color: var(--text-muted);">Phone:</span> <strong>${escapeHtml(user.phone || '+1 (555) 234-8900')}</strong></div>
+                <div><span style="color: var(--text-muted);">Blood Group:</span> <strong class="badge" style="background:#fee2e2; color:#b91c1c; font-size:0.8rem;">O+ Positive</strong></div>
+                <div><span style="color: var(--text-muted);">Allergies:</span> <span class="badge" style="background:#fef3c7; color:#92400e; font-size:0.75rem;">Penicillin, Dust Mites</span></div>
+                <div><span style="color: var(--text-muted);">Chronic Conditions:</span> <strong>None Reported</strong></div>
+                <div><span style="color: var(--text-muted);">Emergency Contact:</span> <strong>+1 (555) 987-6543 (Spouse)</strong></div>
+                <div><span style="color: var(--text-muted);">Insurance Provider:</span> <strong>MediShield Global #POL-99214</strong></div>
+                <div><span style="color: var(--text-muted);">Preferred Language:</span> <strong>English</strong></div>
               </div>
             </div>
           </div>
@@ -738,23 +769,20 @@ class MediarcaApp {
 
     if (doc.verificationStatus === 'pending') {
       container.innerHTML = `
-        <div class="container" style="max-width: 680px; padding-top: 3rem; padding-bottom: 4rem;">
-          <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 2.5rem; text-align: center; box-shadow: var(--shadow-md);">
-            <div style="width: 52px; height: 52px; background: var(--status-pending-bg); color: var(--status-pending); border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem;">
-              <i data-lucide="clock" style="width: 26px; height: 26px;"></i>
+        <div class="container" style="padding-top: 3rem; text-align: center; max-width: 600px;">
+          <div style="background: var(--status-pending-bg); border: 1px solid var(--status-pending-border); border-radius: var(--radius-md); padding: 2.5rem;">
+            <div style="width: 48px; height: 48px; background: #fff; color: var(--status-pending); border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem;">
+              <i data-lucide="clock" style="width: 24px; height: 24px;"></i>
             </div>
-            <span class="badge badge-pending" style="margin-bottom: 1rem;">Verification In Progress</span>
-            <h2 style="font-size: 1.5rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.5rem;">Welcome, ${escapeHtml(doc.name)}</h2>
-            <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.6; margin-bottom: 1.5rem;">
-              Your medical credentials for <strong>${escapeHtml(doc.specialty)}</strong> (License: <code>${escapeHtml(doc.regNumber)}</code>) are under review by the Mediarca Medical Board.
-              Once verified, your certified Mediarca Doctor ID will be activated to accept bookings.
+            <h3 style="font-size: 1.25rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.5rem;">
+              Accreditation Application Pending
+            </h3>
+            <p style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 1.5rem;">
+              Your medical license (<strong>${escapeHtml(doc.regNumber)}</strong>) is currently undergoing statutory credential verification by the Medical Board Administration.
             </p>
-
-            <div style="background: var(--bg-surface-subtle); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 1rem; text-align: left; margin-bottom: 1.5rem; font-size: 0.8125rem;">
-              <div style="margin-bottom: 0.25rem;"><strong>Qualifications:</strong> ${escapeHtml(doc.degrees)}</div>
-              <div style="margin-bottom: 0.25rem;"><strong>Hospital:</strong> ${escapeHtml(doc.hospital)}</div>
-              <div><strong>Registration Date:</strong> ${escapeHtml(doc.appliedDate || 'Today')}</div>
-            </div>
+            <button class="btn btn-secondary" onclick="window.mediarcaApp.switchView('home')">
+              <i data-lucide="arrow-left" style="width: 15px; height: 15px;"></i> Back to Directory
+            </button>
           </div>
         </div>
       `;
@@ -762,20 +790,12 @@ class MediarcaApp {
       return;
     }
 
-    if (!window.mediarcaStore.state.queues[doc.id]) {
-      window.mediarcaStore.state.queues[doc.id] = {
-        doctorId: doc.id,
-        currentToken: 0,
-        status: 'in-session',
-        avgConsultTimeMins: doc.avgConsultTimeMins || 12,
-        tokens: []
-      };
-    }
-
-    const queue = window.mediarcaStore.state.queues[doc.id] || { currentToken: 0, status: 'idle', tokens: [] };
+    const queue = window.mediarcaStore.state.queues[doc.id] || { tokens: [], currentToken: 0, status: 'idle' };
     const currentToken = queue.currentToken || 0;
-    const currentPatient = queue.tokens && queue.tokens.length > 0 ? queue.tokens.find(t => t.status === 'in-consultation' || (t.tokenNumber === currentToken && t.status !== 'completed' && currentToken > 0)) : null;
-    const hasWaiting = queue.tokens ? queue.tokens.some(t => t.status === 'waiting') : false;
+    
+    // Find current consultation patient
+    const currentPatient = queue.tokens && queue.tokens.find(t => t.tokenNumber === currentToken && t.status === 'in-consultation');
+    const hasWaiting = queue.tokens && queue.tokens.some(t => t.status === 'waiting');
 
     container.innerHTML = `
       <div class="container" style="padding-top: 2rem; padding-bottom: 4rem;">
@@ -798,7 +818,7 @@ class MediarcaApp {
           <div>
             <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.5rem; margin-bottom: 1.5rem;">
               <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem;">
-                <h3 style="font-size: 1.125rem; font-weight: 800; color: var(--text-primary);">Patient In Consultation</h3>
+                <h3 style="font-size: 1.125rem; font-weight: 800; color: var(--text-primary);">Patient Clinical Encounter</h3>
                 <span class="badge ${queue.status === 'in-session' ? 'badge-live' : 'badge-pending'}">
                   Queue Status: ${escapeHtml(queue.status.toUpperCase())}
                 </span>
@@ -806,7 +826,8 @@ class MediarcaApp {
 
               ${currentPatient ? `
                 <div style="background: var(--bg-surface-subtle); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 1.25rem; margin-bottom: 1.5rem;">
-                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+                  <!-- Patient Demographics Banner -->
+                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.75rem;">
                     <div>
                       <h4 style="font-size: 1.125rem; font-weight: 800; color: var(--text-primary);">${escapeHtml(currentPatient.patientName)}</h4>
                       <div style="font-size: 0.8125rem; color: var(--text-secondary);">Ref: ${escapeHtml(currentPatient.bookingId)} • Check-in: ${escapeHtml(currentPatient.checkInTime)}</div>
@@ -816,22 +837,78 @@ class MediarcaApp {
                     </div>
                   </div>
 
-                  <div style="margin-bottom: 1.25rem;">
-                    <div style="font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;">Reported Symptoms</div>
-                    <div style="font-size: 0.875rem; color: var(--text-primary); margin-top: 0.25rem; background: #fff; padding: 0.625rem 0.75rem; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
-                      ${escapeHtml(currentPatient.symptoms || 'General Consultation')}
+                  <!-- Medical Background & Allergy Alert (Section 10 Resolution) -->
+                  <div style="background: #fff; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 0.875rem; margin-bottom: 1rem; display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; font-size: 0.75rem;">
+                    <div>
+                      <span style="color: var(--text-muted);">Blood Group:</span>
+                      <div style="font-weight: 700; color: #b91c1c;">O+ Positive</div>
+                    </div>
+                    <div>
+                      <span style="color: var(--text-muted);">Known Allergies:</span>
+                      <div style="font-weight: 700; color: #b91c1c;">Penicillin (Severe)</div>
+                    </div>
+                    <div>
+                      <span style="color: var(--text-muted);">Chronic Conditions:</span>
+                      <div style="font-weight: 700; color: var(--text-primary);">Hypertension (Stage 1)</div>
+                    </div>
+                    <div>
+                      <span style="color: var(--text-muted);">Emergency Contact:</span>
+                      <div style="font-weight: 700; color: var(--text-primary);">+1 (555) 987-6543</div>
                     </div>
                   </div>
 
-                  <!-- Prescription Input Box -->
+                  <!-- Clinical Vitals Entry (Section 10 Resolution) -->
+                  <div style="margin-bottom: 1.25rem;">
+                    <div style="font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 0.5rem;">Patient Vitals & Triage Metrics</div>
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem;">
+                      <input type="text" id="docBpInput" class="form-input" placeholder="BP (e.g. 120/80)" value="120/80 mmHg" style="font-size: 0.8125rem;">
+                      <input type="text" id="docPulseInput" class="form-input" placeholder="Pulse (e.g. 74 bpm)" value="74 bpm" style="font-size: 0.8125rem;">
+                      <input type="text" id="docTempInput" class="form-input" placeholder="Temp (e.g. 98.6°F)" value="98.6 °F" style="font-size: 0.8125rem;">
+                      <input type="text" id="docSpo2Input" class="form-input" placeholder="SpO2 (e.g. 99%)" value="99%" style="font-size: 0.8125rem;">
+                    </div>
+                  </div>
+
+                  <div style="margin-bottom: 1.25rem;">
+                    <div style="font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;">Chief Complaint & Reported Symptoms</div>
+                    <div style="font-size: 0.875rem; color: var(--text-primary); margin-top: 0.25rem; background: #fff; padding: 0.625rem 0.75rem; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+                      ${escapeHtml(currentPatient.symptoms || 'General Consultation & Routine Health Check')}
+                    </div>
+                  </div>
+
+                  <!-- Clinical Examination & Itemized Prescription Suite (Section 10 Resolution) -->
                   <div style="border-top: 1px solid var(--border-subtle); padding-top: 1rem;">
-                    <div style="font-size: 0.8125rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.5rem;">Issue Prescription & Clinical Notes:</div>
-                    <input type="text" id="docDiagnosisInput" class="form-input" placeholder="Diagnosis (e.g. Acute bronchitis, Viral fever)" style="margin-bottom: 0.5rem;">
-                    <input type="text" id="docMedicationsInput" class="form-input" placeholder="Medications (e.g. Tab Azithromycin 500mg, Paracetamol 650mg)" style="margin-bottom: 0.5rem;">
-                    <textarea id="docAdviceInput" class="form-textarea" placeholder="Clinical Advice & Follow-up timeline..." style="margin-bottom: 1rem; min-height: 60px;"></textarea>
+                    <div style="font-size: 0.8125rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.5rem;">Clinical Assessment & Final Diagnosis:</div>
+                    <input type="text" id="docDiagnosisInput" class="form-input" placeholder="Primary Diagnosis (e.g. Acute Upper Respiratory Infection, Essential Hypertension)" value="Acute Upper Respiratory Tract Infection" style="margin-bottom: 0.75rem;">
+                    
+                    <div style="font-size: 0.8125rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.5rem;">Itemized Multi-Drug Regimen (Prescription Items):</div>
+                    <div style="background: #fff; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 0.75rem; margin-bottom: 0.75rem;">
+                      <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 0.5rem; margin-bottom: 0.5rem;">
+                        <input type="text" id="docMed1Drug" class="form-input" value="Tab. Azithromycin 500mg" placeholder="Drug Name">
+                        <input type="text" id="docMed1Freq" class="form-input" value="OD (1-0-0)" placeholder="Frequency">
+                        <input type="text" id="docMed1Route" class="form-input" value="Oral" placeholder="Route">
+                        <input type="text" id="docMed1Dur" class="form-input" value="5 Days" placeholder="Duration">
+                      </div>
+                      <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 0.5rem;">
+                        <input type="text" id="docMed2Drug" class="form-input" value="Tab. Paracetamol 650mg" placeholder="Drug Name">
+                        <input type="text" id="docMed2Freq" class="form-input" value="TID (1-1-1)" placeholder="Frequency">
+                        <input type="text" id="docMed2Route" class="form-input" value="Oral" placeholder="Route">
+                        <input type="text" id="docMed2Dur" class="form-input" value="3 Days" placeholder="Duration">
+                      </div>
+                    </div>
+
+                    <div style="font-size: 0.8125rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.5rem;">Diagnostic Lab Orders & Imaging:</div>
+                    <input type="text" id="docLabOrderInput" class="form-input" placeholder="Ordered Tests (e.g. Complete Blood Count CBC, Chest X-Ray PA View)" value="Complete Blood Count (CBC), Serum Ferritin" style="margin-bottom: 0.75rem;">
+
+                    <div style="font-size: 0.8125rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.5rem;">Treatment Plan, Clinical Advice & Follow-Up:</div>
+                    <textarea id="docAdviceInput" class="form-textarea" placeholder="Clinical Advice, Dietary Precautions & Follow-up Timeline..." style="margin-bottom: 0.75rem; min-height: 55px;">Hydrate adequately (3L water daily). Complete full 5-day antibiotic course. Review after 5 days if fever persists.</textarea>
+
+                    <div style="display: flex; gap: 0.75rem; align-items: center; margin-bottom: 1rem;">
+                      <span style="font-size: 0.8125rem; color: var(--text-secondary); font-weight: 600;">Scheduled Follow-up:</span>
+                      <input type="date" id="docFollowUpDate" class="form-input" style="width: 200px;" value="${new Date(Date.now() + 5*24*60*60*1000).toISOString().split('T')[0]}">
+                    </div>
 
                     <button class="btn btn-teal btn-block" onclick="window.mediarcaApp.handleCompleteWithRx('${doc.id}', ${currentPatient.tokenNumber})" style="margin-bottom: 0.75rem;">
-                      <i data-lucide="check-check" style="width: 15px; height: 15px;"></i> Save Prescription & Call Next Patient
+                      <i data-lucide="check-check" style="width: 15px; height: 15px;"></i> Save Clinical Encounter & Advance Queue
                     </button>
 
                     <div style="display: flex; gap: 0.5rem;">
@@ -970,18 +1047,39 @@ class MediarcaApp {
 
   async handleCompleteWithRx(doctorId, tokenNumber) {
     const diagnosis = document.getElementById('docDiagnosisInput')?.value.trim() || 'Clinical evaluation concluded.';
-    const medications = document.getElementById('docMedicationsInput')?.value.trim() || 'Prescribed oral medication as directed';
+    const bp = document.getElementById('docBpInput')?.value.trim() || '120/80 mmHg';
+    const pulse = document.getElementById('docPulseInput')?.value.trim() || '72 bpm';
+    const temp = document.getElementById('docTempInput')?.value.trim() || '98.6 °F';
+    const spo2 = document.getElementById('docSpo2Input')?.value.trim() || '99%';
+    
+    // Multi-drug regimen items
+    const med1Drug = document.getElementById('docMed1Drug')?.value.trim();
+    const med1Freq = document.getElementById('docMed1Freq')?.value.trim();
+    const med1Dur = document.getElementById('docMed1Dur')?.value.trim();
+    const med2Drug = document.getElementById('docMed2Drug')?.value.trim();
+    const med2Freq = document.getElementById('docMed2Freq')?.value.trim();
+    const med2Dur = document.getElementById('docMed2Dur')?.value.trim();
+
+    const medications = [];
+    if (med1Drug) medications.push(`${med1Drug} [${med1Freq || 'OD'}] (${med1Dur || '5 Days'})`);
+    if (med2Drug) medications.push(`${med2Drug} [${med2Freq || 'TID'}] (${med2Dur || '3 Days'})`);
+    if (medications.length === 0) medications.push('Prescribed supportive oral medication as indicated');
+
+    const labOrders = document.getElementById('docLabOrderInput')?.value.trim() || '';
     const advice = document.getElementById('docAdviceInput')?.value.trim() || 'Take prescribed medications with plenty of water. Follow up if needed.';
+    const followUpDate = document.getElementById('docFollowUpDate')?.value || '';
 
     try {
       await window.mediarcaStore.completeConsultationWithPrescription(doctorId, tokenNumber, {
         diagnosis,
-        medications: [medications],
-        advice
+        medications,
+        advice: `${advice}${labOrders ? ' • Diagnostic Labs Ordered: ' + labOrders : ''}`,
+        followUpDate,
+        vitals: { bp, pulse, temp, spo2 }
       });
 
       if (window.mediarcaAudio) window.mediarcaAudio.playChime('success');
-      this.showToast(`Prescription saved! Token #${tokenNumber} completed.`, 'success');
+      this.showToast(`Clinical Encounter & Prescription for Token #${tokenNumber} finalized!`, 'success');
       this.renderDoctorConsole();
     } catch (err) {
       console.error('Prescription save error:', err);

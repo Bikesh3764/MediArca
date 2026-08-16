@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS users (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 3. PATIENT CLINICAL PROFILES TABLE (D-02 & D-03 Resolution: Strict Medical Isolation)
+-- 3. PATIENT CLINICAL PROFILES TABLE (Section 10 Resolution: Medical Background & Clinical Demographics)
 CREATE TABLE IF NOT EXISTS patient_clinical_profiles (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -26,7 +26,13 @@ CREATE TABLE IF NOT EXISTS patient_clinical_profiles (
     gender VARCHAR(20),
     blood_group VARCHAR(10),
     allergies TEXT[],
+    chronic_conditions TEXT[],
+    past_surgeries TEXT[],
+    family_history TEXT,
     emergency_contact VARCHAR(50),
+    insurance_provider VARCHAR(100),
+    insurance_policy_number VARCHAR(100),
+    preferred_language VARCHAR(50) DEFAULT 'English',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -100,24 +106,32 @@ CREATE TABLE IF NOT EXISTS appointments (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 7. RICH EMR CLINICAL ENCOUNTERS & PRESCRIPTIONS (D-10 Resolution)
+-- 7. RICH EMR CLINICAL ENCOUNTERS (Section 10 Resolution: Chief Complaint, Vitals, Exam Findings, Assessment & Treatment)
 CREATE TABLE IF NOT EXISTS clinical_encounters (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     appointment_id UUID REFERENCES appointments(id) ON DELETE RESTRICT,
     doctor_id UUID REFERENCES doctors(id) ON DELETE RESTRICT,
     patient_id UUID REFERENCES users(id) ON DELETE SET NULL,
     chief_complaint TEXT,
-    clinical_notes TEXT,
-    vitals JSONB,
+    vitals JSONB, -- { bp: '120/80', pulse: 72, temp: '98.6', spo2: 99, weight: 70, height: 175, bmi: 22.9 }
+    examination_findings TEXT,
+    assessment TEXT,
+    diagnosis TEXT,
+    treatment_plan TEXT,
+    follow_up_date DATE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- 8. STRUCTURED ITEM-BY-ITEM PRESCRIPTIONS (Section 10 Resolution: Dosage, Frequency, Route, Duration & Instructions)
 CREATE TABLE IF NOT EXISTS clinical_prescriptions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     encounter_id UUID REFERENCES clinical_encounters(id) ON DELETE CASCADE,
     appointment_id UUID REFERENCES appointments(id) ON DELETE RESTRICT,
+    doctor_id UUID REFERENCES doctors(id) ON DELETE RESTRICT,
+    patient_id UUID REFERENCES users(id) ON DELETE SET NULL,
     diagnosis TEXT NOT NULL,
     advice TEXT,
+    follow_up_date DATE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -127,11 +141,50 @@ CREATE TABLE IF NOT EXISTS prescription_items (
     drug_name VARCHAR(255) NOT NULL,
     dosage VARCHAR(100),
     frequency VARCHAR(100),
+    route VARCHAR(50) DEFAULT 'Oral',
     duration VARCHAR(100),
     instructions TEXT
 );
 
--- 8. AUDIT COMPLIANCE & ACTIVITY LOGS TABLE (D-05 & D-06 Resolution: FK to users + UUID entity_id)
+-- 9. LAB ORDERS & DIAGNOSTIC RESULTS (Section 10 Resolution: Lab Orders & Results)
+CREATE TABLE IF NOT EXISTS lab_orders (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    appointment_id UUID REFERENCES appointments(id) ON DELETE RESTRICT,
+    doctor_id UUID REFERENCES doctors(id) ON DELETE RESTRICT,
+    patient_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    test_name VARCHAR(255) NOT NULL,
+    category VARCHAR(100) DEFAULT 'Biochemistry',
+    clinical_indication TEXT,
+    priority VARCHAR(20) DEFAULT 'routine' CHECK (priority IN ('routine', 'urgent', 'stat')),
+    status VARCHAR(20) DEFAULT 'ordered' CHECK (status IN ('ordered', 'sample-collected', 'completed', 'cancelled')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS lab_results (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    order_id UUID REFERENCES lab_orders(id) ON DELETE CASCADE,
+    patient_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    parameter_name VARCHAR(255) NOT NULL,
+    observed_value VARCHAR(100) NOT NULL,
+    reference_range VARCHAR(100),
+    unit VARCHAR(50),
+    is_abnormal BOOLEAN DEFAULT false,
+    reported_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 10. CLINICAL DOCUMENTS & IMAGING ARCHIVE (Section 10 Resolution: Imaging & Documents)
+CREATE TABLE IF NOT EXISTS clinical_documents (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    patient_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    doctor_id UUID REFERENCES doctors(id) ON DELETE SET NULL,
+    document_name VARCHAR(255) NOT NULL,
+    document_type VARCHAR(50) NOT NULL CHECK (document_type IN ('lab_report', 'imaging_xray', 'mri_scan', 'discharge_summary', 'prescription_scan', 'other')),
+    document_url TEXT NOT NULL,
+    notes TEXT,
+    uploaded_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 11. AUDIT COMPLIANCE & ACTIVITY LOGS TABLE (D-05 & D-06 Resolution: FK to users + UUID entity_id)
 CREATE TABLE IF NOT EXISTS audit_logs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     actor_id UUID REFERENCES users(id) ON DELETE SET NULL,
@@ -142,7 +195,7 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 9. AUTOMATED UPDATED_AT TRIGGER FUNCTION (D-07 Resolution)
+-- 12. AUTOMATED UPDATED_AT TRIGGER FUNCTION (D-07 Resolution)
 CREATE OR REPLACE FUNCTION set_updated_at_timestamp()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -161,7 +214,7 @@ CREATE TRIGGER trigger_patient_clinical_profiles_updated_at
 BEFORE UPDATE ON patient_clinical_profiles
 FOR EACH ROW EXECUTE FUNCTION set_updated_at_timestamp();
 
--- 10. HELPER FUNCTION: IS_ADMIN CHECK (C-09 Resolution)
+-- 13. HELPER FUNCTION: IS_ADMIN CHECK (C-09 Resolution)
 CREATE OR REPLACE FUNCTION is_admin(p_user_id UUID)
 RETURNS BOOLEAN
 LANGUAGE sql
@@ -794,6 +847,47 @@ CREATE POLICY "Attending doctors can view patient clinical profile" ON patient_c
         WHERE doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid())
           AND scheduled_date = CURRENT_DATE
     )
+);
+
+-- CLINICAL ENCOUNTERS & PRESCRIPTIONS RLS (Section 10 Resolution)
+ALTER TABLE clinical_encounters ENABLE ROW LEVEL SECURITY;
+ALTER TABLE clinical_prescriptions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE prescription_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE lab_orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE lab_results ENABLE ROW LEVEL SECURITY;
+ALTER TABLE clinical_documents ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Encounter access" ON clinical_encounters;
+CREATE POLICY "Encounter access" ON clinical_encounters FOR ALL USING (
+    patient_id = auth.uid() OR doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid())
+);
+
+DROP POLICY IF EXISTS "Prescription access" ON clinical_prescriptions;
+CREATE POLICY "Prescription access" ON clinical_prescriptions FOR ALL USING (
+    patient_id = auth.uid() OR doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid())
+);
+
+DROP POLICY IF EXISTS "Prescription items access" ON prescription_items;
+CREATE POLICY "Prescription items access" ON prescription_items FOR ALL USING (
+    prescription_id IN (
+        SELECT id FROM clinical_prescriptions 
+        WHERE patient_id = auth.uid() OR doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid())
+    )
+);
+
+DROP POLICY IF EXISTS "Lab orders access" ON lab_orders;
+CREATE POLICY "Lab orders access" ON lab_orders FOR ALL USING (
+    patient_id = auth.uid() OR doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid())
+);
+
+DROP POLICY IF EXISTS "Lab results access" ON lab_results;
+CREATE POLICY "Lab results access" ON lab_results FOR ALL USING (
+    patient_id = auth.uid() OR order_id IN (SELECT id FROM lab_orders WHERE doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid()))
+);
+
+DROP POLICY IF EXISTS "Clinical documents access" ON clinical_documents;
+CREATE POLICY "Clinical documents access" ON clinical_documents FOR ALL USING (
+    patient_id = auth.uid() OR doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid())
 );
 
 -- 14. PUBLIC DIRECTORY VIEW (P-02 & Q-04 Resolution: Single Source of Truth via clinic_queues)
