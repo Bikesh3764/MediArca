@@ -1040,18 +1040,27 @@ class MediarcaStore {
       createdAt: cloudBooking?.created_at || new Date().toISOString()
     };
 
-    this.state.bookings.unshift(newBooking);
+    // R-04 Resolution: Canonical record merge preventing duplicates on re-hydration
+    const existingIndex = this.state.bookings.findIndex(b => (newBooking.id && b.id === newBooking.id) || (b.bookingId === newBooking.bookingId));
+    if (existingIndex >= 0) {
+      this.state.bookings[existingIndex] = newBooking;
+    } else {
+      this.state.bookings.unshift(newBooking);
+    }
 
     if (!queue.tokens) queue.tokens = [];
-    queue.tokens.push({
-      tokenNumber: nextTokenNumber,
-      status: 'checked_in',
-      isPriority: newBooking.isPriority,
-      patientName: newBooking.patientName,
-      checkInTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      bookingId: bookingId,
-      symptoms: newBooking.symptoms
-    });
+    const tokenExists = queue.tokens.some(t => t.tokenNumber === nextTokenNumber);
+    if (!tokenExists) {
+      queue.tokens.push({
+        tokenNumber: nextTokenNumber,
+        status: 'checked_in',
+        isPriority: newBooking.isPriority,
+        patientName: newBooking.patientName,
+        checkInTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        bookingId: bookingId,
+        symptoms: newBooking.symptoms
+      });
+    }
 
     doctor.totalTokens = nextTokenNumber;
     doctor.queueActive = true;
@@ -1308,7 +1317,7 @@ class MediarcaStore {
     return `MED-QR-${tokenHex}`;
   }
 
-  // 3. FRONT-DESK & PATIENT QR CHECK-IN (H-03 Resolution: Align Client & Server Authorization)
+  // 3. FRONT-DESK & PATIENT QR CHECK-IN (QR-06 Resolution: Authoritative Cloud Verification)
   async checkInPatientQr(checkinToken) {
     if (!this.state.currentUser || !this.state.currentUser.id) {
       throw new Error('Authentication required to perform check-in.');
@@ -1319,7 +1328,11 @@ class MediarcaStore {
       cloudRes = await window.mediarcaSupabase.cloudCheckInPatientQr(checkinToken);
     }
 
-    const booking = this.state.bookings.find(b => b.checkinToken === checkinToken || b.bookingId === checkinToken || b.id === checkinToken);
+    const booking = this.state.bookings.find(b => b.checkinToken === checkinToken || (b.bookingId && b.bookingId === checkinToken) || b.id === checkinToken);
+    if (!booking && !cloudRes) {
+      throw new Error('Invalid or expired check-in QR token.');
+    }
+
     if (booking) {
       booking.status = 'checked_in';
       booking.checkInTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });

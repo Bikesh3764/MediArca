@@ -116,23 +116,25 @@ class MediarcaSupabaseClient {
     if (error) throw error;
 
     if (data.user) {
-      // 1. C-16 Resolution: Upsert core identity strictly into users table (valid schema columns only)
-      await this.client.from('users').upsert({
+      // 1. C-16 & P-02 Resolution: Upsert core identity strictly into users table
+      const { error: userErr } = await this.client.from('users').upsert({
         id: data.user.id,
         email: cleanEmail,
         role: assignedRole,
         full_name: (metadata.name || cleanEmail.split('@')[0]).trim(),
         phone: metadata.phone || null
       });
+      if (userErr) console.warn('User profile sync notice:', userErr);
 
-      // 2. C-16 Resolution: Upsert clinical demographics separately into patient_clinical_profiles
-      if (assignedRole === 'patient' && (metadata.age || metadata.gender || metadata.bloodGroup)) {
-        await this.client.from('patient_clinical_profiles').upsert({
+      // 2. Upsert clinical demographics separately into patient_clinical_profiles
+      if (assignedRole === 'patient') {
+        const { error: profErr } = await this.client.from('patient_clinical_profiles').upsert({
           user_id: data.user.id,
-          age: parseInt(metadata.age) || null,
+          age: metadata.age ? parseInt(metadata.age) : null,
           gender: metadata.gender || null,
           blood_group: metadata.bloodGroup || null
         });
+        if (profErr) console.warn('Clinical profile sync notice:', profErr);
       }
     }
 
@@ -230,14 +232,89 @@ class MediarcaSupabaseClient {
 
       if (!qErr && queues && queues.length > 0) {
         queues.forEach(q => {
-          window.mediarcaStore.state.queues[q.doctor_id] = {
-            doctorId: q.doctor_id,
-            currentToken: q.current_token,
-            status: q.status,
-            avgConsultTimeMins: q.avg_consult_time_mins || 12,
-            tokens: []
-          };
+          if (!window.mediarcaStore.state.queues[q.doctor_id]) {
+            window.mediarcaStore.state.queues[q.doctor_id] = {
+              doctorId: q.doctor_id,
+              currentToken: q.current_token,
+              status: q.status,
+              avgConsultTimeMins: q.avg_consult_time_mins || 12,
+              tokens: []
+            };
+          } else {
+            window.mediarcaStore.state.queues[q.doctor_id].currentToken = q.current_token;
+            window.mediarcaStore.state.queues[q.doctor_id].status = q.status;
+            window.mediarcaStore.state.queues[q.doctor_id].avgConsultTimeMins = q.avg_consult_time_mins || 12;
+          }
         });
+      }
+
+      // 3. Hydrate Authoritative Appointments & Queue Tokens (H-01 & Q-04 Resolution)
+      const user = (await this.client.auth.getUser())?.data?.user;
+      if (user) {
+        const { data: appts, error: apptErr } = await this.client
+          .from('appointments')
+          .select('*, users!appointments_patient_id_fkey(full_name, phone)')
+          .order('created_at', { ascending: false });
+
+        if (!apptErr && appts && appts.length > 0) {
+          const mappedBookings = appts.map(a => ({
+            id: a.id,
+            bookingId: a.booking_id || `MED-BK-${a.id.substring(0, 8).toUpperCase()}`,
+            patientId: a.patient_id,
+            doctorId: a.doctor_id,
+            patientName: a.patient_name || a.users?.full_name || 'Registered Patient',
+            patientAge: a.patient_age || 30,
+            patientGender: a.patient_gender || 'Not specified',
+            patientPhone: a.patient_phone || a.users?.phone || 'Not specified',
+            symptoms: a.symptoms,
+            tokenNumber: a.token_number,
+            status: a.status,
+            currentStage: a.current_stage || 'triage',
+            scheduledDate: a.scheduled_date,
+            scheduledSlot: a.scheduled_slot,
+            checkinToken: a.checkin_token,
+            createdAt: a.created_at,
+            startAt: a.start_at,
+            endAt: a.end_at
+          }));
+
+          // Merge into state.bookings by unique ID
+          const existingIds = new Set(mappedBookings.map(b => b.id));
+          const localOnly = (window.mediarcaStore.state.bookings || []).filter(b => !existingIds.has(b.id));
+          window.mediarcaStore.state.bookings = [...mappedBookings, ...localOnly];
+
+          // Distribute active tokens into respective doctor queues
+          mappedBookings.forEach(b => {
+            if (b.scheduledDate === new Date().toISOString().split('T')[0] && b.tokenNumber > 0) {
+              if (!window.mediarcaStore.state.queues[b.doctorId]) {
+                window.mediarcaStore.state.queues[b.doctorId] = {
+                  doctorId: b.doctorId,
+                  currentToken: 0,
+                  status: 'in-session',
+                  avgConsultTimeMins: 12,
+                  tokens: []
+                };
+              }
+              const queue = window.mediarcaStore.state.queues[b.doctorId];
+              if (!queue.tokens) queue.tokens = [];
+              const tokenExists = queue.tokens.some(t => t.tokenNumber === b.tokenNumber);
+              if (!tokenExists) {
+                queue.tokens.push({
+                  tokenNumber: b.tokenNumber,
+                  patientName: b.patientName,
+                  patientAge: b.patientAge,
+                  patientGender: b.patientGender,
+                  status: b.status,
+                  currentStage: b.currentStage,
+                  checkInTime: b.createdAt ? new Date(b.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '09:00 AM',
+                  symptoms: b.symptoms,
+                  isPriority: false,
+                  bookingId: b.id
+                });
+              }
+            }
+          });
+        }
       }
 
       window.mediarcaStore.notifySubscribers();

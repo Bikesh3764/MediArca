@@ -795,7 +795,7 @@ BEGIN
         RAISE EXCEPTION 'Not authorized. Only the attending, verified physician can issue prescriptions.';
     END IF;
 
-    -- 1. Update appointment with clinical prescription strictly scoped to CURRENT_DATE and active consultation state (H-09)
+    -- 1. Update appointment with clinical prescription strictly scoped to CURRENT_DATE and active consultation state (C-02 Resolution)
     UPDATE appointments
     SET diagnosis = p_diagnosis,
         medications = p_medications,
@@ -806,11 +806,11 @@ BEGIN
     WHERE doctor_id = p_doctor_id 
       AND scheduled_date = CURRENT_DATE 
       AND token_number = p_token_number
-      AND status IN ('in-consultation', 'waiting')
+      AND status = 'in-consultation'
     RETURNING * INTO v_appointment;
 
     IF v_appointment.id IS NULL THEN
-        RAISE EXCEPTION 'Active consultation record not found for Token #% on % (status must be in-consultation or waiting)', p_token_number, CURRENT_DATE;
+        RAISE EXCEPTION 'Active consultation record not found for Token #% on % (patient must be actively in-consultation)', p_token_number, CURRENT_DATE;
     END IF;
 
     -- 2. Insert rich Clinical Encounter (H-06: No fabricated vitals)
