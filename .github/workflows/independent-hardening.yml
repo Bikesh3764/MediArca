@@ -15,8 +15,9 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Patch client safely
-        shell: python
+        shell: bash
         run: |
+          python - <<'PY'
           from pathlib import Path
           import re
 
@@ -43,10 +44,10 @@ jobs:
               raise SystemExit('Patient profile method replacement failed')
 
           sync_open = "  async syncInitialDataFromCloud() {\n    if (!this.client) return;"
-          sync_open_new = "  async syncInitialDataFromCloud() {\n    if (!this.client) return;\n    const { data: authUserData } = await this.client.auth.getUser();\n    const user = authUserData?.user || null;"
+          sync_repl = "  async syncInitialDataFromCloud() {\n    if (!this.client) return;\n    const { data: authUserData } = await this.client.auth.getUser();\n    const user = authUserData?.user || null;"
           if sync_open not in s:
               raise SystemExit('syncInitialDataFromCloud opener not found')
-          s = s.replace(sync_open, sync_open_new, 1)
+          s = s.replace(sync_open, sync_repl, 1)
 
           s = s.replace("const todayStr = new Date().toISOString().split('T')[0];", "const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());", 1)
           s = s.replace(".eq('queue_date', new Date().toISOString().split('T')[0]);", ".eq('queue_date', new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date()));", 1)
