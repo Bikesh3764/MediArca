@@ -190,11 +190,11 @@
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
               <div class="form-group">
                 <label class="form-label">Full Name (with Title) *</label>
-                <input type="text" name="docName" class="form-input" placeholder="e.g. Dr. Arthur Miller" required>
+                <input type="text" name="docName" class="form-input" placeholder="e.g. Dr. Rajesh Verma" required>
               </div>
               <div class="form-group">
                 <label class="form-label">Professional Email *</label>
-                <input type="email" name="docEmail" class="form-input" placeholder="dr.miller@hospital.org" required>
+                <input type="email" name="docEmail" class="form-input" placeholder="dr.verma@hospital.org" required>
               </div>
             </div>
 
@@ -220,7 +220,7 @@
               <div class="form-group">
                 <label class="form-label">Medical Council Registration No. *</label>
                 <input type="text" name="docRegNumber" class="form-input text-mono" placeholder="e.g. NMC-99412-MED" required>
-                <span class="form-hint">Verified against state/national medical registries.</span>
+                <span class="form-hint">Verified against National Medical Commission (NMC) & State Registries.</span>
               </div>
               <div class="form-group">
                 <label class="form-label">Clinical Experience (Years) *</label>
@@ -236,11 +236,11 @@
             <div style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 1rem;">
               <div class="form-group">
                 <label class="form-label">Hospital / Clinic Affiliation *</label>
-                <input type="text" name="docHospital" class="form-input" placeholder="e.g. St. Jude Hospital, Suite 4" required>
+                <input type="text" name="docHospital" class="form-input" placeholder="e.g. Apex Hospital, New Delhi" required>
               </div>
               <div class="form-group">
-                <label class="form-label">Consultation Fee ($)</label>
-                <input type="number" name="docFee" class="form-input" value="60" min="10" max="1000">
+                <label class="form-label">Consultation Fee (₹)</label>
+                <input type="number" name="docFee" class="form-input" value="600" min="50" max="5000">
               </div>
             </div>
 
@@ -507,7 +507,7 @@
             <div style="font-size: 0.6875rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Est. Next Token</div>
             <div class="text-mono" style="font-size: 1.5rem; font-weight: 800; color: var(--clinical-blue);" id="bookingModalEstimatedToken">#5</div>
             <div style="font-size: 0.65rem; color: var(--text-muted);">(Server Authoritative)</div>
-            <div style="font-size: 0.75rem; font-weight: 700; color: var(--text-primary); margin-top: 0.25rem;" id="bookingModalFee">$65</div>
+            <div style="font-size: 0.75rem; font-weight: 700; color: var(--text-primary); margin-top: 0.25rem;" id="bookingModalFee">₹600</div>
           </div>
         </div>
 
@@ -538,7 +538,7 @@
 
           <div class="form-group">
             <label class="form-label" for="bookingPatientName">Patient Full Name *</label>
-            <input type="text" id="bookingPatientName" name="patientName" class="form-input" placeholder="e.g. Sarah Johnson" required>
+            <input type="text" id="bookingPatientName" name="patientName" class="form-input" placeholder="e.g. Rahul Sharma" required>
           </div>
 
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
@@ -549,16 +549,16 @@
             <div class="form-group">
               <label class="form-label" for="bookingPatientGender">Gender</label>
               <select id="bookingPatientGender" name="patientGender" class="form-select">
-                <option value="Female">Female</option>
                 <option value="Male">Male</option>
+                <option value="Female">Female</option>
                 <option value="Other">Other</option>
               </select>
             </div>
           </div>
 
           <div class="form-group">
-            <label class="form-label" for="bookingPatientPhone">Contact Phone Number *</label>
-            <input type="tel" id="bookingPatientPhone" name="patientPhone" class="form-input" placeholder="+1 (555) 000-0000" required>
+            <label class="form-label" for="bookingPatientPhone">Patient WhatsApp / Mobile Number *</label>
+            <input type="tel" id="bookingPatientPhone" name="patientPhone" class="form-input" placeholder="+91 98765 43210" required>
           </div>
 
           <div class="form-group">

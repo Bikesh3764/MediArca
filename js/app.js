@@ -460,7 +460,7 @@ class MediarcaApp {
           <div class="doc-card-action-footer" style="padding-top: 0.85rem; border-top: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
             <div class="doc-fee-box">
               <span class="fee-label" style="font-size: 0.65rem; text-transform: uppercase; color: #94a3b8; font-weight: 800; letter-spacing: 0.05em; display: block;">Consultation Fee</span>
-              <div class="fee-amount" style="font-family: var(--font-display); font-size: 1.4rem; font-weight: 900; color: #090d16; line-height: 1.1;">$${doc.fee} <span class="fee-sub" style="font-size: 0.75rem; font-weight: 600; color: #64748b;">/ visit</span></div>
+              <div class="fee-amount" style="font-family: var(--font-display); font-size: 1.4rem; font-weight: 900; color: #090d16; line-height: 1.1;">₹${doc.fee || 600} <span class="fee-sub" style="font-size: 0.75rem; font-weight: 600; color: #64748b;">/ visit</span></div>
             </div>
             <button class="doc-book-btn" onclick="window.mediarcaApp.openBookingModal('${doc.id}')" style="display: inline-flex; align-items: center; gap: 0.45rem; background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: #ffffff; border: none; padding: 0.6rem 1.25rem; border-radius: 10px; font-size: 0.875rem; font-weight: 700; cursor: pointer; box-shadow: 0 3px 8px rgba(2, 132, 199, 0.28); transition: transform 0.15s ease;">
               <i data-lucide="calendar-plus" style="width: 15px; height: 15px;"></i>
@@ -495,7 +495,7 @@ class MediarcaApp {
     document.getElementById('bookingModalSpecialty').textContent = `${doc.specialty} • ${doc.hospital}`;
     document.getElementById('bookingModalDoctorId').textContent = doc.mediarcaId || 'PENDING';
     document.getElementById('bookingModalEstimatedToken').textContent = '#' + nextToken;
-    document.getElementById('bookingModalFee').textContent = '$' + doc.fee;
+    document.getElementById('bookingModalFee').textContent = '₹' + (doc.fee || 600);
 
     document.getElementById('bookingPatientName').value = currentUser.name || '';
     document.getElementById('bookingPatientPhone').value = currentUser.phone || '';
@@ -2970,8 +2970,8 @@ class MediarcaApp {
     }
 
     const doc = window.mediarcaStore.state.doctors.find(d => d.id === booking.doctorId || d.name === booking.doctorName);
-    const consultFee = doc?.consultFee || doc?.fee || 60.00;
-    const insurancePolicy = user?.clinicalProfile?.insurance_policy || user?.insurancePolicy || 'Standard Patient Co-Pay';
+    const consultFee = doc?.consultFee || doc?.fee || 600.00;
+    const insurancePolicy = user?.clinicalProfile?.insurance_policy || user?.insurancePolicy || 'Ayushman Bharat (AB-PMJAY) / Star Health';
     const insuranceCover = (consultFee * 0.80);
     const netCoPay = (consultFee - insuranceCover).toFixed(2);
 
@@ -2999,7 +2999,7 @@ class MediarcaApp {
             </div>
             <div style="display:flex; justify-content:space-between; font-size:0.8125rem;">
               <span style="color:var(--text-secondary);">OPD Consultation Fee:</span>
-              <strong class="text-mono">$${consultFee.toFixed(2)}</strong>
+              <strong class="text-mono">₹${consultFee.toFixed(2)}</strong>
             </div>
           </div>
 
@@ -3019,24 +3019,24 @@ class MediarcaApp {
           <div style="background:#f0fdf4; border:1px solid #86efac; border-radius:var(--radius-sm); padding:0.875rem; margin-bottom:1.25rem;">
             <div style="display:flex; justify-content:space-between; font-size:0.8125rem; color:#166534; margin-bottom:0.25rem;">
               <span>Subtotal:</span>
-              <span id="billingSubtotalDisplay">$${consultFee.toFixed(2)}</span>
+              <span id="billingSubtotalDisplay">₹${consultFee.toFixed(2)}</span>
             </div>
             <div style="display:flex; justify-content:space-between; font-size:0.8125rem; color:#166534; margin-bottom:0.25rem;">
               <span>Voucher Discount:</span>
-              <span id="billingDiscountDisplay">-$0.00</span>
+              <span id="billingDiscountDisplay">-₹0.00</span>
             </div>
             <div style="display:flex; justify-content:space-between; font-size:0.8125rem; color:#166534; margin-bottom:0.5rem;">
               <span>Insurance Settlement (80%):</span>
-              <span id="billingInsuranceDisplay">-$${insuranceCover.toFixed(2)}</span>
+              <span id="billingInsuranceDisplay">-₹${insuranceCover.toFixed(2)}</span>
             </div>
             <div style="display:flex; justify-content:space-between; font-size:1rem; font-weight:800; color:#14532d; border-top:1px dashed #86efac; padding-top:0.5rem;">
               <span>Net Patient Co-Pay:</span>
-              <span class="text-mono" id="billingNetDisplay">$${netCoPay}</span>
+              <span class="text-mono" id="billingNetDisplay">₹${netCoPay}</span>
             </div>
           </div>
 
           <button id="billingPayButton" class="btn btn-teal btn-block" onclick="window.mediarcaApp.handleProcessPayment('${booking.bookingId || booking.id}')">
-            <i data-lucide="credit-card" style="width: 15px; height: 15px;"></i> Pay $${netCoPay} & Settle Invoice
+            <i data-lucide="credit-card" style="width: 15px; height: 15px;"></i> Pay ₹${netCoPay} & Settle Invoice
           </button>
         </div>
       </div>
@@ -3051,7 +3051,7 @@ class MediarcaApp {
     const hasInsurance = document.getElementById('billingInsuranceCheck')?.checked ?? true;
     let discount = 0;
     if (coupon === 'HEALTH10') discount = consultFee * 0.10;
-    else if (coupon === 'PREVENT20') discount = 20.00;
+    else if (coupon === 'PREVENT20') discount = Math.min(consultFee, 200.00);
 
     const afterDiscount = Math.max(0, consultFee - discount);
     const insuranceCover = hasInsurance ? (afterDiscount * 0.80) : 0;
@@ -3062,10 +3062,10 @@ class MediarcaApp {
     const netEl = document.getElementById('billingNetDisplay');
     const payBtnEl = document.getElementById('billingPayButton');
 
-    if (discountEl) discountEl.textContent = `-$${discount.toFixed(2)}`;
-    if (insuranceEl) insuranceEl.textContent = `-$${insuranceCover.toFixed(2)}`;
-    if (netEl) netEl.textContent = `$${netCoPay}`;
-    if (payBtnEl) payBtnEl.innerHTML = `<i data-lucide="credit-card" style="width: 15px; height: 15px;"></i> Pay $${netCoPay} & Settle Invoice`;
+    if (discountEl) discountEl.textContent = `-₹${discount.toFixed(2)}`;
+    if (insuranceEl) insuranceEl.textContent = `-₹${insuranceCover.toFixed(2)}`;
+    if (netEl) netEl.textContent = `₹${netCoPay}`;
+    if (payBtnEl) payBtnEl.innerHTML = `<i data-lucide="credit-card" style="width: 15px; height: 15px;"></i> Pay ₹${netCoPay} & Settle Invoice`;
     if (window.lucide) window.lucide.createIcons();
   }
 
