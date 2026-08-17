@@ -756,32 +756,20 @@ class MediarcaApp {
   async handlePatientProfileSubmit(e) {
     if (e) e.preventDefault();
     const form = e.target || document.getElementById('patientProfileUpdateForm');
-    const submitBtn = form?.querySelector('button[type="submit"]') || document.getElementById('patientProfileSaveBtn');
-    if (submitBtn) {
-      submitBtn.disabled = true;
-      submitBtn.innerText = 'Saving...';
-    }
+    const formData = new FormData(form);
+    const name = (formData.get('name') || form.querySelector('[name="name"]')?.value || '').trim();
+    const phone = (formData.get('phone') || form.querySelector('[name="phone"]')?.value || '').trim();
+    const age = formData.get('age') || form.querySelector('[name="age"]')?.value || 30;
+    const gender = formData.get('gender') || form.querySelector('[name="gender"]')?.value || 'Male';
+    const bloodGroup = formData.get('bloodGroup') || form.querySelector('[name="bloodGroup"]')?.value || 'O+';
 
     try {
-      const formData = new FormData(form);
-      const name = (formData.get('name') || form.querySelector('[name="name"]')?.value || '').trim();
-      const phone = (formData.get('phone') || form.querySelector('[name="phone"]')?.value || '').trim();
-      const emergencyContact = (formData.get('emergencyContact') || form.querySelector('[name="emergencyContact"]')?.value || '').trim();
-      const age = formData.get('age') || form.querySelector('[name="age"]')?.value || 30;
-      const gender = formData.get('gender') || form.querySelector('[name="gender"]')?.value || 'Male';
-      const bloodGroup = formData.get('bloodGroup') || form.querySelector('[name="bloodGroup"]')?.value || 'O+';
-      const insurancePolicy = (formData.get('insurancePolicy') || form.querySelector('[name="insurancePolicy"]')?.value || '').trim();
-      const allergies = (formData.get('allergies') || form.querySelector('[name="allergies"]')?.value || '').trim();
-
       await window.mediarcaStore.updatePatientProfile({
         name,
         phone,
-        emergencyContact,
         age,
         gender,
-        bloodGroup,
-        insurancePolicy,
-        allergies
+        bloodGroup
       });
 
       this.showToast('Profile details saved successfully!', 'success');
@@ -789,10 +777,6 @@ class MediarcaApp {
     } catch (err) {
       console.error('Profile update error:', err);
       this.showToast(err.message || 'Could not update profile.', 'warning');
-      if (submitBtn) {
-        submitBtn.disabled = false;
-        submitBtn.innerText = 'Save Details';
-      }
     }
   }
 
@@ -942,7 +926,7 @@ class MediarcaApp {
             <i data-lucide="folder-lock" style="width:13px;height:13px"></i> Document Vault (${patientDocs.length})
           </button>
           <button class="btn btn-sm ${activeTab === 'profile' ? 'btn-primary' : 'btn-secondary'}" onclick="window.mediarcaApp.setPatientTab('profile')">
-            <i data-lucide="user-check" style="width:13px;height:13px"></i> Profile & Insurance
+            <i data-lucide="user" style="width:13px;height:13px"></i> My Profile
           </button>
           <button class="btn btn-sm ${activeTab === 'notifications' ? 'btn-primary' : 'btn-secondary'}" onclick="window.mediarcaApp.setPatientTab('notifications')">
             <i data-lucide="bell" style="width:13px;height:13px"></i> Notifications
@@ -1132,7 +1116,7 @@ class MediarcaApp {
 
         <!-- TAB 6: PROFILE DETAILS (Clean, Simple & Direct) -->
         ${activeTab === 'profile' ? `
-          <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 2rem; max-width: 650px; margin: 0 auto; box-shadow: var(--shadow-sm);">
+          <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 2rem; max-width: 550px; margin: 0 auto; box-shadow: var(--shadow-sm);">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 1rem;">
               <div style="display: flex; align-items: center; gap: 1rem;">
                 <div style="width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #0284c7, #0369a1); display: flex; align-items: center; justify-content: center; font-size: 1.25rem; font-weight: 800; color: #fff;">
@@ -1154,18 +1138,12 @@ class MediarcaApp {
                 <input type="text" name="name" class="form-input" value="${escapeHtml(user.name || '')}" placeholder="e.g. Rahul Sharma" required>
               </div>
 
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                <div class="form-group">
-                  <label class="form-label">Phone / WhatsApp Number *</label>
-                  <input type="tel" name="phone" class="form-input" value="${escapeHtml(user.phone || '+91 98765 43210')}" placeholder="+91 98765 43210" required>
-                </div>
-                <div class="form-group">
-                  <label class="form-label">Emergency Contact Phone</label>
-                  <input type="tel" name="emergencyContact" class="form-input" value="${escapeHtml(user.clinicalProfile?.emergency_contact || '')}" placeholder="+91 98765 43210">
-                </div>
+              <div class="form-group" style="margin-bottom: 1rem;">
+                <label class="form-label">Phone / WhatsApp Number *</label>
+                <input type="tel" name="phone" class="form-input" value="${escapeHtml(user.phone || '+91 98765 43210')}" placeholder="+91 98765 43210" required>
               </div>
 
-              <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+              <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
                 <div class="form-group">
                   <label class="form-label">Age</label>
                   <input type="number" name="age" class="form-input" value="${user.clinicalProfile?.age || user.age || 30}" min="1" max="120">
@@ -1191,16 +1169,6 @@ class MediarcaApp {
                     <option value="AB-" ${(user.clinicalProfile?.blood_group || user.bloodGroup) === 'AB-' ? 'selected' : ''}>AB-</option>
                   </select>
                 </div>
-              </div>
-
-              <div class="form-group" style="margin-bottom: 1rem;">
-                <label class="form-label">Insurance Provider / Policy</label>
-                <input type="text" name="insurancePolicy" class="form-input" value="${escapeHtml(user.clinicalProfile?.insurance_policy || user.clinicalProfile?.insurance_provider || '')}" placeholder="e.g. Star Health / Ayushman Bharat">
-              </div>
-
-              <div class="form-group" style="margin-bottom: 1.5rem;">
-                <label class="form-label">Known Allergies / Medical Notes</label>
-                <input type="text" name="allergies" class="form-input" value="${escapeHtml(Array.isArray(user.clinicalProfile?.allergies) ? user.clinicalProfile.allergies.join(', ') : (user.clinicalProfile?.allergies || ''))}" placeholder="e.g. Penicillin, Pollen (or leave empty)">
               </div>
 
               <button type="submit" id="patientProfileSaveBtn" class="btn btn-block btn-primary" style="font-weight: 700; padding: 0.75rem;">

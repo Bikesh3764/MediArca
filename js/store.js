@@ -695,10 +695,7 @@ class MediarcaStore {
 
     const userId = this.state.currentUser.id;
 
-    if (window.mediarcaSupabase && window.mediarcaSupabase.isConnected && userId) {
-      await window.mediarcaSupabase.cloudUpdatePatientProfile(userId, profileData);
-    }
-
+    // 1. Instant local reactive state & storage update
     this.state.currentUser.name = profileData.name || this.state.currentUser.name;
     this.state.currentUser.phone = profileData.phone || this.state.currentUser.phone;
     this.state.currentUser.age = parseInt(profileData.age) || this.state.currentUser.age;
@@ -709,9 +706,6 @@ class MediarcaStore {
     this.state.currentUser.clinicalProfile.age = this.state.currentUser.age;
     this.state.currentUser.clinicalProfile.gender = this.state.currentUser.gender;
     this.state.currentUser.clinicalProfile.blood_group = this.state.currentUser.bloodGroup;
-    this.state.currentUser.clinicalProfile.emergency_contact = profileData.emergencyContact || this.state.currentUser.clinicalProfile.emergency_contact;
-    this.state.currentUser.clinicalProfile.insurance_policy = profileData.insurancePolicy || this.state.currentUser.clinicalProfile.insurance_policy;
-    this.state.currentUser.clinicalProfile.allergies = profileData.allergies || this.state.currentUser.clinicalProfile.allergies;
 
     this.recordAuditLog({
       action: 'PATIENT_PROFILE_UPDATED',
@@ -722,6 +716,14 @@ class MediarcaStore {
 
     this.saveState();
     this.notifySubscribers();
+
+    // 2. Non-blocking cloud background persistence
+    if (window.mediarcaSupabase && window.mediarcaSupabase.isConnected && userId) {
+      window.mediarcaSupabase.cloudUpdatePatientProfile(userId, profileData).catch(err => {
+        console.warn('Background profile cloud sync notice:', err);
+      });
+    }
+
     return this.state.currentUser;
   }
 
@@ -731,10 +733,6 @@ class MediarcaStore {
     }
 
     const docId = this.state.currentUser.doctorId || this.state.currentUser.id;
-
-    if (window.mediarcaSupabase && window.mediarcaSupabase.isConnected) {
-      await window.mediarcaSupabase.cloudUpdateDoctorProfile(docId, doctorData);
-    }
 
     const docIdx = this.state.doctors.findIndex(d => d.id === docId || d.userId === this.state.currentUser.id);
     if (docIdx >= 0) {
@@ -756,6 +754,13 @@ class MediarcaStore {
 
     this.saveState();
     this.notifySubscribers();
+
+    if (window.mediarcaSupabase && window.mediarcaSupabase.isConnected) {
+      window.mediarcaSupabase.cloudUpdateDoctorProfile(docId, doctorData).catch(err => {
+        console.warn('Background doctor profile cloud sync notice:', err);
+      });
+    }
+
     return this.state.currentUser;
   }
 
