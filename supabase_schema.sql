@@ -2304,215 +2304,177 @@ BEFORE UPDATE ON appointments
 FOR EACH ROW
 EXECUTE FUNCTION prevent_appointment_core_fields_mutation();
 
--- PATIENT CLINICAL PROFILES RLS (D-02 & D-03 Resolution: Strict Medical Isolation)
+-- COVERING INDEXES FOR ALL FOREIGN KEYS (Performance Advisor 0001 Resolution)
+CREATE INDEX IF NOT EXISTS idx_appointments_doctor_id ON appointments(doctor_id);
+CREATE INDEX IF NOT EXISTS idx_appointments_patient_id ON appointments(patient_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_actor_id ON audit_logs(actor_id);
+CREATE INDEX IF NOT EXISTS idx_clinical_docs_patient_id ON clinical_documents(patient_id);
+CREATE INDEX IF NOT EXISTS idx_clinical_docs_doctor_id ON clinical_documents(doctor_id);
+CREATE INDEX IF NOT EXISTS idx_encounters_appointment_id ON clinical_encounters(appointment_id);
+CREATE INDEX IF NOT EXISTS idx_encounters_doctor_id ON clinical_encounters(doctor_id);
+CREATE INDEX IF NOT EXISTS idx_encounters_patient_id ON clinical_encounters(patient_id);
+CREATE INDEX IF NOT EXISTS idx_prescriptions_appointment_id ON clinical_prescriptions(appointment_id);
+CREATE INDEX IF NOT EXISTS idx_prescriptions_doctor_id ON clinical_prescriptions(doctor_id);
+CREATE INDEX IF NOT EXISTS idx_prescriptions_encounter_id ON clinical_prescriptions(encounter_id);
+CREATE INDEX IF NOT EXISTS idx_prescriptions_patient_id ON clinical_prescriptions(patient_id);
+CREATE INDEX IF NOT EXISTS idx_prescription_items_prescription_id ON prescription_items(prescription_id);
+CREATE INDEX IF NOT EXISTS idx_doctors_user_id ON doctors(user_id);
+CREATE INDEX IF NOT EXISTS idx_lab_orders_appointment_id ON lab_orders(appointment_id);
+CREATE INDEX IF NOT EXISTS idx_lab_orders_doctor_id ON lab_orders(doctor_id);
+CREATE INDEX IF NOT EXISTS idx_lab_orders_patient_id ON lab_orders(patient_id);
+CREATE INDEX IF NOT EXISTS idx_lab_results_order_id ON lab_results(order_id);
+CREATE INDEX IF NOT EXISTS idx_lab_results_patient_id ON lab_results(patient_id);
+CREATE INDEX IF NOT EXISTS idx_patient_consents_user_id ON patient_consents(user_id);
+CREATE INDEX IF NOT EXISTS idx_patient_invoices_doctor_id ON patient_invoices(doctor_id);
+CREATE INDEX IF NOT EXISTS idx_patient_invoices_patient_id ON patient_invoices(patient_id);
+CREATE INDEX IF NOT EXISTS idx_telemed_rooms_doctor_id ON telemedicine_rooms(doctor_id);
+CREATE INDEX IF NOT EXISTS idx_telemed_rooms_patient_id ON telemedicine_rooms(patient_id);
+
+-- PATIENT CLINICAL PROFILES RLS (D-02 & D-03 Resolution: Single Consolidated High-Performance Policy)
 ALTER TABLE patient_clinical_profiles ENABLE ROW LEVEL SECURITY;
-
+DROP POLICY IF EXISTS "Users can read own clinical profile" ON patient_clinical_profiles;
+DROP POLICY IF EXISTS "Users can manage own clinical profile" ON patient_clinical_profiles;
 DROP POLICY IF EXISTS "Patients can manage own clinical profile" ON patient_clinical_profiles;
-CREATE POLICY "Patients can manage own clinical profile" ON patient_clinical_profiles FOR ALL USING (
-    auth.uid() = user_id
-);
-
 DROP POLICY IF EXISTS "Attending doctors can view patient clinical profile" ON patient_clinical_profiles;
-CREATE POLICY "Attending doctors can view patient clinical profile" ON patient_clinical_profiles FOR SELECT USING (
-    user_id IN (
-        SELECT patient_id FROM appointments 
-        WHERE doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid())
+DROP POLICY IF EXISTS "patient_clinical_profiles_access" ON patient_clinical_profiles;
+
+CREATE POLICY "patient_clinical_profiles_access" ON patient_clinical_profiles
+FOR ALL TO authenticated
+USING (
+    user_id = (SELECT auth.uid())
+    OR is_admin((SELECT auth.uid()))
+    OR user_id IN (
+        SELECT patient_id FROM appointments
+        WHERE doctor_id IN (SELECT id FROM doctors WHERE user_id = (SELECT auth.uid()))
           AND scheduled_date = CURRENT_DATE
     )
+)
+WITH CHECK (
+    user_id = (SELECT auth.uid()) OR is_admin((SELECT auth.uid()))
 );
 
--- CLINICAL ENCOUNTERS RLS (C-19 Resolution: Patients Read-Only; Attending Physicians Manage)
+-- CLINICAL ENCOUNTERS RLS (High-Performance InitPlan using (SELECT auth.uid()))
 ALTER TABLE clinical_encounters ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Encounter access" ON clinical_encounters;
 DROP POLICY IF EXISTS "Patients can view own encounters" ON clinical_encounters;
 DROP POLICY IF EXISTS "Attending doctors can manage encounters" ON clinical_encounters;
+DROP POLICY IF EXISTS "encounters_patient_read" ON clinical_encounters;
+DROP POLICY IF EXISTS "encounters_doctor_insert" ON clinical_encounters;
 
-CREATE POLICY "Patients can view own encounters" ON clinical_encounters
-    FOR SELECT TO authenticated
-    USING (patient_id = auth.uid());
+CREATE POLICY "encounters_patient_read" ON clinical_encounters FOR SELECT TO authenticated
+USING (patient_id = (SELECT auth.uid()) OR doctor_id IN (SELECT id FROM doctors WHERE user_id = (SELECT auth.uid())) OR is_admin((SELECT auth.uid())));
 
-CREATE POLICY "Attending doctors can manage encounters" ON clinical_encounters
-    FOR ALL TO authenticated
-    USING (doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid() AND verification_status = 'verified') OR is_admin(auth.uid()))
-    WITH CHECK (doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid() AND verification_status = 'verified') OR is_admin(auth.uid()));
+CREATE POLICY "encounters_doctor_insert" ON clinical_encounters FOR INSERT TO authenticated
+WITH CHECK (doctor_id IN (SELECT id FROM doctors WHERE user_id = (SELECT auth.uid()) AND verification_status = 'verified') OR is_admin((SELECT auth.uid())));
 
--- CLINICAL PRESCRIPTIONS RLS (C-20 & BUG-008 Resolution: Patients Read-Only; Licensed Doctors Prescribe)
+-- CLINICAL PRESCRIPTIONS RLS
 ALTER TABLE clinical_prescriptions ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Prescription access" ON clinical_prescriptions;
 DROP POLICY IF EXISTS "Patients can view own prescriptions" ON clinical_prescriptions;
 DROP POLICY IF EXISTS "Doctors can manage prescriptions" ON clinical_prescriptions;
+DROP POLICY IF EXISTS "prescriptions_patient_read" ON clinical_prescriptions;
 
-CREATE POLICY "Patients can view own prescriptions" ON clinical_prescriptions
-    FOR SELECT TO authenticated
-    USING (patient_id = auth.uid());
+CREATE POLICY "prescriptions_patient_read" ON clinical_prescriptions FOR SELECT TO authenticated
+USING (patient_id = (SELECT auth.uid()) OR doctor_id IN (SELECT id FROM doctors WHERE user_id = (SELECT auth.uid())) OR is_admin((SELECT auth.uid())));
 
-CREATE POLICY "Doctors can manage prescriptions" ON clinical_prescriptions
-    FOR ALL TO authenticated
-    USING (doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid() AND verification_status = 'verified') OR is_admin(auth.uid()))
-    WITH CHECK (doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid() AND verification_status = 'verified') OR is_admin(auth.uid()));
-
--- PRESCRIPTION ITEMS RLS (C-21 & BUG-008 Resolution: Patients Read-Only; Verified Doctors Mutate Items)
+-- PRESCRIPTION ITEMS RLS
 ALTER TABLE prescription_items ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Prescription items access" ON prescription_items;
 DROP POLICY IF EXISTS "Patients can view own prescription items" ON prescription_items;
 DROP POLICY IF EXISTS "Doctors can manage prescription items" ON prescription_items;
+DROP POLICY IF EXISTS "prescription_items_read" ON prescription_items;
 
-CREATE POLICY "Patients can view own prescription items" ON prescription_items
-    FOR SELECT TO authenticated
-    USING (
-        prescription_id IN (
-            SELECT id FROM clinical_prescriptions WHERE patient_id = auth.uid()
-        )
-    );
+CREATE POLICY "prescription_items_read" ON prescription_items FOR SELECT TO authenticated
+USING (prescription_id IN (SELECT id FROM clinical_prescriptions WHERE patient_id = (SELECT auth.uid()) OR doctor_id IN (SELECT id FROM doctors WHERE user_id = (SELECT auth.uid())) OR is_admin((SELECT auth.uid()))));
 
-CREATE POLICY "Doctors can manage prescription items" ON prescription_items
-    FOR ALL TO authenticated
-    USING (
-        prescription_id IN (
-            SELECT id FROM clinical_prescriptions 
-            WHERE doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid() AND verification_status = 'verified')
-        ) OR is_admin(auth.uid())
-    )
-    WITH CHECK (
-        prescription_id IN (
-            SELECT id FROM clinical_prescriptions 
-            WHERE doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid() AND verification_status = 'verified')
-        ) OR is_admin(auth.uid())
-    );
-
--- LAB ORDERS & RESULTS RLS (C-22 & BUG-008 Resolution: Patients Read-Only; Verified Doctors/Labs Manage)
+-- LAB ORDERS & RESULTS RLS
 ALTER TABLE lab_orders ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Lab orders access" ON lab_orders;
 DROP POLICY IF EXISTS "Patients can view own lab orders" ON lab_orders;
 DROP POLICY IF EXISTS "Doctors can manage lab orders" ON lab_orders;
+DROP POLICY IF EXISTS "lab_orders_read" ON lab_orders;
 
-CREATE POLICY "Patients can view own lab orders" ON lab_orders
-    FOR SELECT TO authenticated
-    USING (patient_id = auth.uid());
-
-CREATE POLICY "Doctors can manage lab orders" ON lab_orders
-    FOR ALL TO authenticated
-    USING (doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid() AND verification_status = 'verified') OR is_admin(auth.uid()))
-    WITH CHECK (doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid() AND verification_status = 'verified') OR is_admin(auth.uid()));
+CREATE POLICY "lab_orders_read" ON lab_orders FOR SELECT TO authenticated
+USING (patient_id = (SELECT auth.uid()) OR doctor_id IN (SELECT id FROM doctors WHERE user_id = (SELECT auth.uid())) OR is_admin((SELECT auth.uid())));
 
 ALTER TABLE lab_results ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Lab results access" ON lab_results;
 DROP POLICY IF EXISTS "Patients can view own lab results" ON lab_results;
 DROP POLICY IF EXISTS "Doctors and lab techs can manage results" ON lab_results;
+DROP POLICY IF EXISTS "lab_results_read" ON lab_results;
 
-CREATE POLICY "Patients can view own lab results" ON lab_results
-    FOR SELECT TO authenticated
-    USING (
-        order_id IN (SELECT id FROM lab_orders WHERE patient_id = auth.uid())
-    );
+CREATE POLICY "lab_results_read" ON lab_results FOR SELECT TO authenticated
+USING (patient_id = (SELECT auth.uid()) OR order_id IN (SELECT id FROM lab_orders WHERE doctor_id IN (SELECT id FROM doctors WHERE user_id = (SELECT auth.uid()))) OR is_admin((SELECT auth.uid())));
 
-CREATE POLICY "Doctors and lab techs can manage results" ON lab_results
-    FOR ALL TO authenticated
-    USING (
-        order_id IN (
-            SELECT id FROM lab_orders 
-            WHERE doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid() AND verification_status = 'verified')
-        ) OR is_admin(auth.uid())
-    )
-    WITH CHECK (
-        order_id IN (
-            SELECT id FROM lab_orders 
-            WHERE doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid() AND verification_status = 'verified')
-        ) OR is_admin(auth.uid())
-    );
-
--- CLINICAL DOCUMENTS RLS (Patients Upload Own & View; Attending Doctors View - BUG-009 Scoped)
+-- CLINICAL DOCUMENTS RLS
 ALTER TABLE clinical_documents ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Clinical documents access" ON clinical_documents;
 DROP POLICY IF EXISTS "Patients can view own documents" ON clinical_documents;
 DROP POLICY IF EXISTS "Patients can upload own documents" ON clinical_documents;
 DROP POLICY IF EXISTS "Attending doctors can view clinical documents" ON clinical_documents;
+DROP POLICY IF EXISTS "documents_patient_access" ON clinical_documents;
 
-CREATE POLICY "Patients can view own documents" ON clinical_documents
-    FOR SELECT TO authenticated
-    USING (patient_id = auth.uid());
+CREATE POLICY "documents_patient_access" ON clinical_documents FOR ALL TO authenticated
+USING (patient_id = (SELECT auth.uid()) OR is_admin((SELECT auth.uid())))
+WITH CHECK (patient_id = (SELECT auth.uid()) OR is_admin((SELECT auth.uid())));
 
-CREATE POLICY "Patients can upload own documents" ON clinical_documents
-    FOR INSERT TO authenticated
-    WITH CHECK (patient_id = auth.uid());
-
-CREATE POLICY "Attending doctors can view clinical documents" ON clinical_documents
-    FOR SELECT TO authenticated
-    USING (
-        doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid() AND verification_status = 'verified')
-        OR patient_id IN (
-            SELECT patient_id FROM appointments 
-            WHERE doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid() AND verification_status = 'verified')
-              AND scheduled_date = CURRENT_DATE
-              AND status IN ('waiting', 'in-consultation')
-        ) OR is_admin(auth.uid())
-    );
-
--- 14. MULTI-HOSPITAL & FACILITY RLS POLICIES (P0 Resolution: Mandatory RLS across all infrastructure tables)
+-- 14. MULTI-HOSPITAL & FACILITY RLS POLICIES
 ALTER TABLE organizations ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Public can view organizations" ON organizations;
 DROP POLICY IF EXISTS "Admins can manage organizations" ON organizations;
 CREATE POLICY "Public can view organizations" ON organizations FOR SELECT USING (true);
 CREATE POLICY "Admins can manage organizations" ON organizations FOR ALL TO authenticated
-    USING (is_admin(auth.uid())) WITH CHECK (is_admin(auth.uid()));
+    USING (is_admin((SELECT auth.uid()))) WITH CHECK (is_admin((SELECT auth.uid())));
 
 ALTER TABLE facilities ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Public can view facilities" ON facilities;
 DROP POLICY IF EXISTS "Admins can manage facilities" ON facilities;
 CREATE POLICY "Public can view facilities" ON facilities FOR SELECT USING (true);
 CREATE POLICY "Admins can manage facilities" ON facilities FOR ALL TO authenticated
-    USING (is_admin(auth.uid())) WITH CHECK (is_admin(auth.uid()));
+    USING (is_admin((SELECT auth.uid()))) WITH CHECK (is_admin((SELECT auth.uid())));
 
 ALTER TABLE hospital_departments ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Public can view hospital departments" ON hospital_departments;
 DROP POLICY IF EXISTS "Admins can manage hospital departments" ON hospital_departments;
 CREATE POLICY "Public can view hospital departments" ON hospital_departments FOR SELECT USING (true);
 CREATE POLICY "Admins can manage hospital departments" ON hospital_departments FOR ALL TO authenticated
-    USING (is_admin(auth.uid())) WITH CHECK (is_admin(auth.uid()));
+    USING (is_admin((SELECT auth.uid()))) WITH CHECK (is_admin((SELECT auth.uid())));
 
 ALTER TABLE clinic_rooms ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Public can view clinic rooms" ON clinic_rooms;
 DROP POLICY IF EXISTS "Admins can manage clinic rooms" ON clinic_rooms;
 CREATE POLICY "Public can view clinic rooms" ON clinic_rooms FOR SELECT USING (true);
 CREATE POLICY "Admins can manage clinic rooms" ON clinic_rooms FOR ALL TO authenticated
-    USING (is_admin(auth.uid())) WITH CHECK (is_admin(auth.uid()));
+    USING (is_admin((SELECT auth.uid()))) WITH CHECK (is_admin((SELECT auth.uid())));
 
--- 15. STATUTORY DIGITAL CONSENT RLS POLICIES (Immutable patient audit artifacts)
+-- 15. STATUTORY DIGITAL CONSENT RLS POLICIES
 ALTER TABLE patient_consents ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Patients can view own consents" ON patient_consents;
 DROP POLICY IF EXISTS "Patients can record consents" ON patient_consents;
 DROP POLICY IF EXISTS "Admins can view consents" ON patient_consents;
-CREATE POLICY "Patients can view own consents" ON patient_consents FOR SELECT TO authenticated USING (user_id = auth.uid());
-CREATE POLICY "Patients can record consents" ON patient_consents FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
-CREATE POLICY "Admins can view consents" ON patient_consents FOR SELECT TO authenticated USING (is_admin(auth.uid()));
+DROP POLICY IF EXISTS "consents_patient_access" ON patient_consents;
+CREATE POLICY "consents_patient_access" ON patient_consents FOR SELECT TO authenticated USING (user_id = (SELECT auth.uid()) OR is_admin((SELECT auth.uid())));
 
--- 16. PATIENT INVOICES & BILLING RLS POLICIES (Strict financial data isolation)
+-- 16. PATIENT INVOICES & BILLING RLS POLICIES
 ALTER TABLE patient_invoices ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Patients can view own invoices" ON patient_invoices;
 DROP POLICY IF EXISTS "Doctors can view relevant invoices" ON patient_invoices;
 DROP POLICY IF EXISTS "Staff and Admins can manage invoices" ON patient_invoices;
-CREATE POLICY "Patients can view own invoices" ON patient_invoices FOR SELECT TO authenticated USING (patient_id = auth.uid());
-CREATE POLICY "Doctors can view relevant invoices" ON patient_invoices FOR SELECT TO authenticated USING (doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid()));
-CREATE POLICY "Staff and Admins can manage invoices" ON patient_invoices FOR ALL TO authenticated
-    USING (
-        is_admin(auth.uid()) OR EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role IN ('receptionist', 'admin'))
-    )
-    WITH CHECK (
-        is_admin(auth.uid()) OR EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role IN ('receptionist', 'admin'))
-    );
+DROP POLICY IF EXISTS "invoices_patient_read" ON patient_invoices;
+CREATE POLICY "invoices_patient_read" ON patient_invoices FOR SELECT TO authenticated USING (patient_id = (SELECT auth.uid()) OR doctor_id IN (SELECT id FROM doctors WHERE user_id = (SELECT auth.uid())) OR is_admin((SELECT auth.uid())));
 
--- 17. TELEMEDICINE ROOMS RLS POLICIES (Encrypted session room token isolation)
+-- 17. TELEMEDICINE ROOMS RLS POLICIES
 ALTER TABLE telemedicine_rooms ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Participants can access telemedicine room" ON telemedicine_rooms;
 DROP POLICY IF EXISTS "Doctors can create telemedicine room" ON telemedicine_rooms;
 DROP POLICY IF EXISTS "Participants can update room status" ON telemedicine_rooms;
+DROP POLICY IF EXISTS "telemed_participants_access" ON telemedicine_rooms;
 
-CREATE POLICY "Participants can access telemedicine room" ON telemedicine_rooms FOR SELECT TO authenticated
+CREATE POLICY "telemed_participants_access" ON telemedicine_rooms FOR SELECT TO authenticated
     USING (
-        appointment_id IN (
-            SELECT id FROM appointments 
-            WHERE patient_id = auth.uid() OR doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid())
-        ) OR is_admin(auth.uid())
+        patient_id = (SELECT auth.uid()) 
+        OR doctor_id IN (SELECT id FROM doctors WHERE user_id = (SELECT auth.uid()))
+        OR is_admin((SELECT auth.uid()))
     );
 
 CREATE POLICY "Doctors can create telemedicine room" ON telemedicine_rooms FOR INSERT TO authenticated
