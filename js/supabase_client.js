@@ -178,7 +178,12 @@ class MediarcaSupabaseClient {
       }
     });
 
-    if (error) throw error;
+    if (error) {
+      if (error.message && error.message.toLowerCase().includes('rate limit')) {
+        throw new Error('Supabase free email limit reached. In Supabase Dashboard -> Auth -> Providers -> Email -> turn OFF "Confirm email" for instant unlimited signups.');
+      }
+      throw error;
+    }
 
     if (data.user) {
       // 1. C-16 & P-02 Resolution: Upsert core identity strictly into users table
