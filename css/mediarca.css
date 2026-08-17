@@ -249,14 +249,14 @@ p {
 
 /* Primary Apple Action Blue Pill */
 .btn-primary {
-  background-color: var(--color-primary);
+  background-color: var(--color-primary) !important;
   color: #ffffff !important;
-  border-color: var(--color-primary);
+  border: 1px solid var(--color-primary) !important;
 }
 
 .btn-primary:hover {
-  background-color: var(--color-primary-hover);
-  border-color: var(--color-primary-hover);
+  background-color: var(--color-primary-hover) !important;
+  border-color: var(--color-primary-hover) !important;
 }
 
 .btn-primary:focus-visible {
