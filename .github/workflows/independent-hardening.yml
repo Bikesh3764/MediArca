@@ -8,27 +8,124 @@ permissions:
   contents: write
 
 jobs:
-  diagnose:
+  patch:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Compare syntax independently
+        with:
+          fetch-depth: 0
+
+      - name: Apply verified existing-feature fixes
         shell: bash
         run: |
-          set +e
-          echo '--- branch syntax ---'
+          python - <<'PY'
+          from pathlib import Path
+          import subprocess
+          import re
+
+          p = Path('js/supabase_client.js')
+          s = p.read_text(encoding='utf-8')
+
+          # 1. Repair the actual syntax defect present in main.
+          bad = "        }\n      }\n\n      window.mediarcaStore.notifySubscribers();\n    } catch (err) {"
+          good = "        }\n\n      window.mediarcaStore.notifySubscribers();\n    } catch (err) {"
+          if bad not in s:
+              raise SystemExit('Expected sync syntax defect not found')
+          s = s.replace(bad, good, 1)
+
+          def patch(old, new, label):
+              global s
+              if old not in s:
+                  raise SystemExit(f'{label}: expected source not found')
+              candidate = s.replace(old, new, 1)
+              p.write_text(candidate, encoding='utf-8')
+              result = subprocess.run(['node', '--check', str(p)], capture_output=True, text=True)
+              if result.returncode:
+                  p.write_text(s, encoding='utf-8')
+                  raise SystemExit(f'{label}: syntax check failed: {result.stderr}')
+              s = candidate
+
+          patch(
+              "phone: user.phone || user.user_metadata?.phone || '+91 9608858316'",
+              "phone: user.phone || user.user_metadata?.phone || null",
+              'remove fabricated OAuth phone'
+          )
+          patch(
+              "age: 19,\n              gender: 'Male',\n              blood_group: 'B+'",
+              "age: null,\n              gender: null,\n              blood_group: null",
+              'remove fabricated OAuth demographics'
+          )
+          patch(
+              ".or(`user_id.eq.${user.id},email.eq.${userEmail}`)\n            .maybeSingle();",
+              ".eq('user_id', user.id)\n            .maybeSingle();",
+              'remove email based doctor identity matching'
+          )
+          doctor_link = """          if (doctorProfile && !doctorProfile.user_id) {\n            await this.client\n              .from('doctors')\n              .update({ user_id: user.id })\n              .eq('id', doctorProfile.id);\n            doctorProfile.user_id = user.id;\n          }\n"""
+          patch(doctor_link, '', 'remove browser doctor identity mutation')
+          role_promotion = """        if (doctorProfile && profile && profile.role !== 'doctor') {\n          try {\n            await this.client.from('users').update({ role: 'doctor' }).eq('id', user.id);\n          } catch (rErr) {\n            console.warn('Role update notice:', rErr);\n          }\n        }\n\n"""
+          patch(role_promotion, '', 'remove browser role promotion')
+
+          # 2. The sync routine needs an authenticated user context for role-scoped hydration.
+          old = """  async syncInitialDataFromCloud() {\n    if (!this.client) return;\n\n    try {"""
+          new = """  async syncInitialDataFromCloud() {\n    if (!this.client) return;\n\n    const { data: authUserData } = await this.client.auth.getUser();\n    const user = authUserData?.user || null;\n\n    try {"""
+          patch(old, new, 'add authoritative auth context to sync')
+
+          # 3. Avoid null-user runtime errors before role-scoped queries.
+          old = """        // 4. Authenticated Doctor & Admin Full Hydration (Item 5 & P1-13 Resolution)\n        const { data: userProfile } = await this.client.from('users').select('role').eq('id', user.id).single();\n        \n        if (userProfile?.role === 'doctor' || window.mediarcaStore.state.currentUser?.role === 'doctor') {"""
+          new = """        // 4. Authenticated Doctor & Admin Full Hydration (Item 5 & P1-13 Resolution)\n        const { data: userProfile } = user\n          ? await this.client.from('users').select('role').eq('id', user.id).maybeSingle()\n          : { data: null };\n        \n        if (user && (userProfile?.role === 'doctor' || window.mediarcaStore.state.currentUser?.role === 'doctor')) {"""
+          patch(old, new, 'guard role hydration without auth user')
+
+          old = "if (userProfile?.role === 'admin' || window.mediarcaStore.state.currentUser?.role === 'admin') {"
+          new = "if (user && (userProfile?.role === 'admin' || window.mediarcaStore.state.currentUser?.role === 'admin')) {"
+          patch(old, new, 'guard admin hydration without auth user')
+
+          # 4. Use India business date, not UTC-derived date.
+          patch(
+              "const todayStr = new Date().toISOString().split('T')[0];",
+              "const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());",
+              'use India date for realtime queue filter'
+          )
+          patch(
+              ".eq('queue_date', new Date().toISOString().split('T')[0]);",
+              ".eq('queue_date', new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date()));",
+              'use India date for queue hydration'
+          )
+
+          # 5. Supabase is authoritative for clinical appointments. Do not resurrect stale local-only rows.
+          merge_old = """          // Merge into state.bookings by unique ID\n          const existingIds = new Set(mappedBookings.map(b => b.id));\n          const localOnly = (window.mediarcaStore.state.bookings || []).filter(b => !existingIds.has(b.id));\n          window.mediarcaStore.state.bookings = [...mappedBookings, ...localOnly];"""
+          merge_new = """          // Supabase is authoritative for clinical appointments.\n          window.mediarcaStore.state.bookings = mappedBookings;"""
+          patch(merge_old, merge_new, 'remove stale local appointment merge')
+
+          # 6. Profile writes must fail closed; never silently fall back to direct partial writes.
+          method_pattern = re.compile(r"  async cloudUpdatePatientProfile\(userId, profileData\) \{.*?\n  \}\n\n  async cloudUpdateDoctorProfile", re.S)
+          method_replacement = """  async cloudUpdatePatientProfile(userId, profileData) {\n    if (!this.client || !userId) throw new Error('Supabase client unavailable');\n\n    const name = profileData.name || null;\n    const phone = profileData.phone || null;\n    const age = profileData.age ? parseInt(profileData.age, 10) : null;\n    const gender = profileData.gender || null;\n    const bloodGroup = profileData.bloodGroup || null;\n\n    const { data, error } = await this.client.rpc('update_patient_profile_atomic', {\n      p_name: name,\n      p_phone: phone,\n      p_age: age,\n      p_gender: gender,\n      p_blood_group: bloodGroup\n    });\n\n    if (error) throw error;\n    return data;\n  }\n\n  async cloudUpdateDoctorProfile"""
+          m = method_pattern.search(s)
+          if not m:
+              raise SystemExit('patient profile method not found')
+          candidate = s[:m.start()] + method_replacement + s[m.end():]
+          p.write_text(candidate, encoding='utf-8')
+          result = subprocess.run(['node', '--check', str(p)], capture_output=True, text=True)
+          if result.returncode:
+              p.write_text(s, encoding='utf-8')
+              raise SystemExit(f'patient profile method replacement syntax failed: {result.stderr}')
+          s = candidate
+
+          p.write_text(s, encoding='utf-8')
+          PY
+
+      - name: Validate application JavaScript
+        run: |
           node --check js/supabase_client.js
-          echo "branch_exit=$?"
-          echo '--- main syntax ---'
-          git fetch origin main --depth=1
-          git show origin/main:js/supabase_client.js > /tmp/main.js
-          node --check /tmp/main.js
-          echo "main_exit=$?"
-          echo '--- branch try/catch lines ---'
-          grep -nE '\btry\b|\bcatch\b|\bfinally\b' js/supabase_client.js
-          echo '--- main try/catch lines ---'
-          grep -nE '\btry\b|\bcatch\b|\bfinally\b' /tmp/main.js
-          echo '--- branch 500-590 ---'
-          nl -ba js/supabase_client.js | sed -n '500,590p'
-          echo '--- main 500-590 ---'
-          nl -ba /tmp/main.js | sed -n '500,590p'
+          node --check js/store.js
+          node --check js/app.js
+          node --check js/queue.js
+          node --check js/audio.js
+
+      - name: Commit code fixes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add js/supabase_client.js
+          git diff --cached --check
+          git commit -m "fix: harden existing auth, profile, sync, and India date flows"
+          git push origin HEAD:audit-write-access-fixes
