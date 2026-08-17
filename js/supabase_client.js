@@ -232,10 +232,12 @@ class MediarcaSupabaseClient {
 
   async signInWithGoogle() {
     if (!this.client) throw new Error('Supabase client unavailable');
+    // Ensure full path (including /MediArca/ on GitHub Pages) is passed
+    const redirectUrl = window.location.origin + window.location.pathname;
     const { data, error } = await this.client.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: window.location.origin
+        redirectTo: redirectUrl
       }
     });
     if (error) throw error;
