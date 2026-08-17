@@ -54,6 +54,34 @@ class MediarcaSupabaseClient {
           console.warn('User profile fetch notice:', e);
         }
 
+        // Auto-provision user record if signed in via Google OAuth for first time
+        if (!profile && user.id) {
+          const googleName = (user.user_metadata?.full_name || user.user_metadata?.name || user.email.split('@')[0]).trim();
+          try {
+            const { data: newProfile } = await this.client
+              .from('users')
+              .upsert({
+                id: user.id,
+                email: user.email.toLowerCase().trim(),
+                full_name: googleName,
+                role: 'patient',
+                phone: user.phone || '+91 98765 43210'
+              }, { onConflict: 'id' })
+              .select('*')
+              .maybeSingle();
+            if (newProfile) profile = newProfile;
+
+            await this.client.from('patient_clinical_profiles').upsert({
+              user_id: user.id,
+              age: 30,
+              gender: 'Not specified',
+              blood_group: 'O+'
+            }, { onConflict: 'user_id' });
+          } catch (upsertErr) {
+            console.warn('OAuth profile provisioning notice:', upsertErr);
+          }
+        }
+
         // C-17: Query doctor profile independently with maybeSingle() (returns null cleanly for normal patients)
         try {
           const { data } = await this.client
@@ -80,7 +108,7 @@ class MediarcaSupabaseClient {
 
         // Authoritative role resolution from DB (never client user_metadata)
         const role = profile?.role || (doctorProfile ? 'doctor' : 'patient');
-        const name = profile?.full_name || doctorProfile?.name || user.email.split('@')[0];
+        const name = profile?.full_name || doctorProfile?.name || user.user_metadata?.full_name || user.email.split('@')[0];
 
         window.mediarcaStore.setAuthSession({
           id: user.id,
@@ -163,6 +191,18 @@ class MediarcaSupabaseClient {
       password: password
     });
 
+    if (error) throw error;
+    return data;
+  }
+
+  async signInWithGoogle() {
+    if (!this.client) throw new Error('Supabase client unavailable');
+    const { data, error } = await this.client.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin
+      }
+    });
     if (error) throw error;
     return data;
   }

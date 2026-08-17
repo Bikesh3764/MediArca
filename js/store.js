@@ -746,6 +746,14 @@ async login(email, password) {
     }
   }
 
+  async loginWithGoogle() {
+    if (window.mediarcaSupabase && window.mediarcaSupabase.isConnected) {
+      return await window.mediarcaSupabase.signInWithGoogle();
+    } else {
+      throw new Error('Supabase authentication service unavailable. Please check your network connection.');
+    }
+  }
+
   logout() {
     if (window.mediarcaSupabase) {
       window.mediarcaSupabase.authSignOut();

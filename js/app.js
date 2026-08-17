@@ -618,6 +618,16 @@ class MediarcaApp {
     }
   }
 
+  async handleGoogleAuth() {
+    try {
+      this.showToast('Connecting to Google Authentication...', 'info');
+      await window.mediarcaStore.loginWithGoogle();
+    } catch (err) {
+      console.error('Google auth notice:', err);
+      this.showToast(err.message || 'Google sign-in initiation failed.', 'warning');
+    }
+  }
+
   async handlePatientLoginSubmit(e) {
     if (e) e.preventDefault();
     const form = e.target || document.getElementById('patientLoginForm');
