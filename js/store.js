@@ -588,12 +588,16 @@ class MediarcaStore {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed && parsed.currentUser) {
-          // Keep only minimal UI metadata
+          // Keep minimal UI metadata
           this.state.currentUser = {
             id: parsed.currentUser.id || null,
             role: parsed.currentUser.role || 'guest',
             name: parsed.currentUser.name || null,
-            email: parsed.currentUser.email || null
+            email: parsed.currentUser.email || null,
+            phone: parsed.currentUser.phone || null,
+            age: parsed.currentUser.age || null,
+            gender: parsed.currentUser.gender || null,
+            bloodGroup: parsed.currentUser.bloodGroup || null
           };
         }
         if (parsed && parsed.hospitalSettings) {
@@ -614,7 +618,11 @@ class MediarcaStore {
           id: this.state.currentUser.id,
           role: this.state.currentUser.role,
           name: this.state.currentUser.name,
-          email: this.state.currentUser.email
+          email: this.state.currentUser.email,
+          phone: this.state.currentUser.phone,
+          age: this.state.currentUser.age,
+          gender: this.state.currentUser.gender,
+          bloodGroup: this.state.currentUser.bloodGroup
         } : null,
         hospitalSettings: this.state.hospitalSettings || {
           slotBufferMins: 12,
@@ -658,10 +666,10 @@ class MediarcaStore {
       email: sessionData.email,
       role: sessionData.role || 'patient',
       name: sessionData.name || patientProf.full_name || docProf.name || sessionData.email?.split('@')[0] || 'User',
-      phone: patientProf.phone || clinicalProf.emergency_contact || sessionData.phone || '+91 98765 43210',
-      age: clinicalProf.age || patientProf.age || 30,
-      gender: clinicalProf.gender || patientProf.gender || 'Male',
-      bloodGroup: clinicalProf.blood_group || patientProf.blood_group || 'O+',
+      phone: patientProf.phone || clinicalProf.emergency_contact || sessionData.phone || this.state.currentUser?.phone || '',
+      age: clinicalProf.age || patientProf.age || this.state.currentUser?.age || 19,
+      gender: clinicalProf.gender || patientProf.gender || this.state.currentUser?.gender || 'Male',
+      bloodGroup: clinicalProf.blood_group || patientProf.blood_group || this.state.currentUser?.bloodGroup || 'B+',
       avatar: sessionData.avatar || docProf.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&h=200&fit=crop&crop=faces&q=80',
       clinicalProfile: sessionData.clinicalProfile || null,
       patientProfile: sessionData.patientProfile || null,

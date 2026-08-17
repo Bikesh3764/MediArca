@@ -65,7 +65,7 @@ class MediarcaSupabaseClient {
                 email: user.email.toLowerCase().trim(),
                 full_name: googleName,
                 role: 'patient',
-                phone: user.phone || '+91 98765 43210'
+                phone: user.phone || user.user_metadata?.phone || '+91 9608858316'
               }, { onConflict: 'id' })
               .select('*')
               .maybeSingle();
@@ -73,9 +73,9 @@ class MediarcaSupabaseClient {
 
             await this.client.from('patient_clinical_profiles').upsert({
               user_id: user.id,
-              age: 30,
-              gender: 'Not specified',
-              blood_group: 'O+'
+              age: 19,
+              gender: 'Male',
+              blood_group: 'B+'
             }, { onConflict: 'user_id' });
           } catch (upsertErr) {
             console.warn('OAuth profile provisioning notice:', upsertErr);

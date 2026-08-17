@@ -1140,33 +1140,33 @@ class MediarcaApp {
 
               <div class="form-group" style="margin-bottom: 1rem;">
                 <label class="form-label">Phone / WhatsApp Number *</label>
-                <input type="tel" name="phone" class="form-input" value="${escapeHtml(user.phone || '+91 98765 43210')}" placeholder="+91 98765 43210" required>
+                <input type="tel" name="phone" class="form-input" value="${escapeHtml(user.phone || user.patientProfile?.phone || '')}" placeholder="+91 9608858316" required>
               </div>
 
               <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
                 <div class="form-group">
                   <label class="form-label">Age</label>
-                  <input type="number" name="age" class="form-input" value="${user.clinicalProfile?.age || user.age || 30}" min="1" max="120">
+                  <input type="number" name="age" class="form-input" value="${user.clinicalProfile?.age || user.patientProfile?.age || user.age || ''}" placeholder="19" min="1" max="120">
                 </div>
                 <div class="form-group">
                   <label class="form-label">Gender</label>
                   <select name="gender" class="form-select">
-                    <option value="Male" ${(user.clinicalProfile?.gender || user.gender) === 'Male' ? 'selected' : ''}>Male</option>
-                    <option value="Female" ${(user.clinicalProfile?.gender || user.gender) === 'Female' ? 'selected' : ''}>Female</option>
-                    <option value="Other" ${(user.clinicalProfile?.gender || user.gender) === 'Other' ? 'selected' : ''}>Other</option>
+                    <option value="Male" ${(user.clinicalProfile?.gender || user.patientProfile?.gender || user.gender || 'Male') === 'Male' ? 'selected' : ''}>Male</option>
+                    <option value="Female" ${(user.clinicalProfile?.gender || user.patientProfile?.gender || user.gender) === 'Female' ? 'selected' : ''}>Female</option>
+                    <option value="Other" ${(user.clinicalProfile?.gender || user.patientProfile?.gender || user.gender) === 'Other' ? 'selected' : ''}>Other</option>
                   </select>
                 </div>
                 <div class="form-group">
                   <label class="form-label">Blood Group</label>
                   <select name="bloodGroup" class="form-select">
-                    <option value="O+" ${(user.clinicalProfile?.blood_group || user.bloodGroup) === 'O+' ? 'selected' : ''}>O+</option>
-                    <option value="A+" ${(user.clinicalProfile?.blood_group || user.bloodGroup) === 'A+' ? 'selected' : ''}>A+</option>
-                    <option value="B+" ${(user.clinicalProfile?.blood_group || user.bloodGroup) === 'B+' ? 'selected' : ''}>B+</option>
-                    <option value="AB+" ${(user.clinicalProfile?.blood_group || user.bloodGroup) === 'AB+' ? 'selected' : ''}>AB+</option>
-                    <option value="O-" ${(user.clinicalProfile?.blood_group || user.bloodGroup) === 'O-' ? 'selected' : ''}>O-</option>
-                    <option value="A-" ${(user.clinicalProfile?.blood_group || user.bloodGroup) === 'A-' ? 'selected' : ''}>A-</option>
-                    <option value="B-" ${(user.clinicalProfile?.blood_group || user.bloodGroup) === 'B-' ? 'selected' : ''}>B-</option>
-                    <option value="AB-" ${(user.clinicalProfile?.blood_group || user.bloodGroup) === 'AB-' ? 'selected' : ''}>AB-</option>
+                    <option value="B+" ${(user.clinicalProfile?.blood_group || user.patientProfile?.blood_group || user.bloodGroup || 'B+') === 'B+' ? 'selected' : ''}>B+</option>
+                    <option value="O+" ${(user.clinicalProfile?.blood_group || user.patientProfile?.blood_group || user.bloodGroup) === 'O+' ? 'selected' : ''}>O+</option>
+                    <option value="A+" ${(user.clinicalProfile?.blood_group || user.patientProfile?.blood_group || user.bloodGroup) === 'A+' ? 'selected' : ''}>A+</option>
+                    <option value="AB+" ${(user.clinicalProfile?.blood_group || user.patientProfile?.blood_group || user.bloodGroup) === 'AB+' ? 'selected' : ''}>AB+</option>
+                    <option value="O-" ${(user.clinicalProfile?.blood_group || user.patientProfile?.blood_group || user.bloodGroup) === 'O-' ? 'selected' : ''}>O-</option>
+                    <option value="A-" ${(user.clinicalProfile?.blood_group || user.patientProfile?.blood_group || user.bloodGroup) === 'A-' ? 'selected' : ''}>A-</option>
+                    <option value="B-" ${(user.clinicalProfile?.blood_group || user.patientProfile?.blood_group || user.bloodGroup) === 'B-' ? 'selected' : ''}>B-</option>
+                    <option value="AB-" ${(user.clinicalProfile?.blood_group || user.patientProfile?.blood_group || user.bloodGroup) === 'AB-' ? 'selected' : ''}>AB-</option>
                   </select>
                 </div>
               </div>
