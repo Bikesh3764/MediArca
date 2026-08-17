@@ -12,21 +12,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Diagnose syntax fault
+      - name: Compare syntax independently
         shell: bash
         run: |
           set +e
           echo '--- branch syntax ---'
           node --check js/supabase_client.js
-          echo "exit=$?"
-          echo '--- lines 500-600 ---'
-          nl -ba js/supabase_client.js | sed -n '500,600p'
-          echo '--- try/catch lines ---'
-          grep -nE '\btry\b|\bcatch\b|\bfinally\b' js/supabase_client.js
+          echo "branch_exit=$?"
           echo '--- main syntax ---'
           git fetch origin main --depth=1
           git show origin/main:js/supabase_client.js > /tmp/main.js
           node --check /tmp/main.js
           echo "main_exit=$?"
-          echo '--- main lines 500-600 ---'
-          nl -ba /tmp/main.js | sed -n '500,600p'
+          echo '--- branch try/catch lines ---'
+          grep -nE '\btry\b|\bcatch\b|\bfinally\b' js/supabase_client.js
+          echo '--- main try/catch lines ---'
+          grep -nE '\btry\b|\bcatch\b|\bfinally\b' /tmp/main.js
+          echo '--- branch 500-590 ---'
+          nl -ba js/supabase_client.js | sed -n '500,590p'
+          echo '--- main 500-590 ---'
+          nl -ba /tmp/main.js | sed -n '500,590p'
