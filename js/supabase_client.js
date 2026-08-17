@@ -5,7 +5,7 @@
 
 const SUPABASE_CONFIG = {
   url: 'https://pkvwnsigucncdwrjtggs.supabase.co',
-  key: 'sb_publishable_ZU0BqFxZTXdTOxUOmhRr1w_CR3myIy8'
+  key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBrdnduc2lndWNuY2R3cmp0Z2dzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY4Nzg5NzAsImV4cCI6MjEwMjQ1NDk3MH0._VAaiZ0DiNHeMmiS9VoaSdNsluOaz5sOTgM0Qi4Lbok'
 };
 
 class MediarcaSupabaseClient {
