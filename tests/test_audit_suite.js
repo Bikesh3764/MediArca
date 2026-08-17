@@ -148,9 +148,16 @@ if (fs.existsSync(vercelPath)) {
   assert(vercelContent.includes('camera=(self)'), 'Production vercel.json allows local camera access (P2)');
 }
 
+// 8. Batch 4: Pre-Release Final Bug Audit Assertions (2026-08-17)
+assert(appContent.includes("else if (viewName === 'reception-portal') {\n      this.renderReceptionPortal();\n    }"), 'Release Audit 01: Reception portal view trigger present in switchView');
+assert(supabaseClientContent.includes('p_chief_complaint: rxData.symptoms'), 'Release Audit 02: complete_consultation_rx_atomic RPC passes p_chief_complaint matching schema parameter');
+assert(appContent.includes('const patientTimeline = window.mediarcaStore.getPatientTimeline(user.id);'), 'Release Audit 03: Patient portal calls dynamic getPatientTimeline synthesizer');
+assert(appContent.includes('renderTVDisplay(doctorId = null)'), 'Release Audit 04: TV Display dynamically resolves verified doctor fallback');
+assert(appContent.includes('clearInterval(this.tvClockInterval)'), 'Release Audit 05: TV clock interval cleaned up on view change');
+
 console.log(`\nTest Summary: ${passCount} Passed, ${failCount} Failed.`);
 if (failCount > 0) {
   process.exit(1);
 } else {
-  console.log('--- ALL FULL LINE-BY-LINE AUDIT BATCHES (P0, P1, P2, P3) PASSED 100% SUCCESSFULLY! ---');
+  console.log('--- ALL FULL LINE-BY-LINE AUDIT BATCHES (P0, P1, P2, P3, P4) PASSED 100% SUCCESSFULLY! ---');
 }

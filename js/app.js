@@ -273,11 +273,20 @@ class MediarcaApp {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
+    // Always clean up TV ticker interval when navigating away from tv-display
+    if (viewName !== 'tv-display' && this.tvClockInterval) {
+      clearInterval(this.tvClockInterval);
+      this.tvClockInterval = null;
+    }
+
     // Trigger view-specific rendering
+    const defaultDoc = (window.mediarcaStore.state.doctors || []).find(d => d.verificationStatus === 'verified') || (window.mediarcaStore.state.doctors || [])[0];
+    const defaultDocId = defaultDoc ? defaultDoc.id : null;
+
     if (viewName === 'home') {
       this.renderDoctorCards();
     } else if (viewName === 'queue-radar') {
-      const docId = params.doctorId || 'doc_1';
+      const docId = params.doctorId || defaultDocId;
       window.mediarcaQueueEngine.setDoctor(docId);
     } else if (viewName === 'patient-portal') {
       this.renderPatientDashboard();
@@ -285,8 +294,10 @@ class MediarcaApp {
       this.renderDoctorConsole();
     } else if (viewName === 'admin-portal') {
       this.renderAdminHub();
+    } else if (viewName === 'reception-portal') {
+      this.renderReceptionPortal();
     } else if (viewName === 'tv-display') {
-      this.renderTVDisplay(params.doctorId || 'doc_1');
+      this.renderTVDisplay(params.doctorId || defaultDocId);
     }
 
     this.updateHeaderNav();
@@ -761,7 +772,7 @@ class MediarcaApp {
     }
 
     const patientBookings = window.mediarcaStore.state.bookings.filter(b => b.patientId === user.id);
-    const patientTimeline = window.mediarcaStore.state.medicalTimeline.filter(tl => tl.patientId === user.id);
+    const patientTimeline = window.mediarcaStore.getPatientTimeline(user.id);
     const patientDocs = window.mediarcaStore.state.clinicalDocuments.filter(d => d.patientId === user.id);
 
     const activeAppointment = patientBookings.find(b => b.status === 'booked' || b.status === 'checked_in') || patientBookings[0];
@@ -1053,7 +1064,7 @@ class MediarcaApp {
     const currentToken = queue.currentToken || 0;
     
     // Find current consultation patient
-    const currentPatient = queue.tokens && queue.tokens.find(t => t.tokenNumber === currentToken && t.status === 'in-consultation');
+    const currentPatient = queue.tokens && queue.tokens.find(t => t.tokenNumber === currentToken && (t.status === 'in-consultation' || t.status === 'waiting' || t.status === 'checked_in'));
     const nextPatients = queue.tokens ? queue.tokens.filter(t => t.tokenNumber > currentToken && t.status === 'waiting') : [];
     const hasWaiting = queue.tokens && queue.tokens.some(t => t.status === 'waiting');
 
@@ -2039,14 +2050,20 @@ class MediarcaApp {
   }
 
   // --- Hospital OPD Fullscreen TV Display ---
-  renderTVDisplay(doctorId = 'doc_1') {
+  renderTVDisplay(doctorId = null) {
     const container = document.getElementById('tvDisplayContainer');
     if (!container) return;
 
-    const doc = window.mediarcaStore.state.doctors.find(d => d.id === doctorId) || window.mediarcaStore.state.doctors[0];
-    const queue = window.mediarcaStore.state.queues[doc.id] || { currentToken: 0, status: 'idle', tokens: [] };
+    const verifiedDocs = (window.mediarcaStore.state.doctors || []).filter(d => d.verificationStatus === 'verified');
+    const doc = (doctorId ? window.mediarcaStore.state.doctors.find(d => d.id === doctorId) : null) || verifiedDocs[0] || (window.mediarcaStore.state.doctors || [])[0] || {
+      id: 'default_doc',
+      name: 'Dr. Aris Thorne',
+      specialty: 'Cardiology',
+      hospital: 'Metro Heart Institute'
+    };
+    const queue = (doc && window.mediarcaStore.state.queues[doc.id]) || { currentToken: 0, status: 'idle', tokens: [] };
     const currentToken = queue.currentToken || 0;
-    const waitingTokens = queue.tokens.filter(t => t.tokenNumber > currentToken && t.status === 'waiting');
+    const waitingTokens = (queue.tokens || []).filter(t => t.tokenNumber > currentToken && (t.status === 'waiting' || t.status === 'checked_in'));
 
     // Live clock ticker
     if (this.tvClockInterval) clearInterval(this.tvClockInterval);

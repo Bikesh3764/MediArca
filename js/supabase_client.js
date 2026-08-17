@@ -454,7 +454,7 @@ class MediarcaSupabaseClient {
       p_medications: Array.isArray(rxData.medications) ? rxData.medications : (rxData.medications ? [rxData.medications] : []),
       p_advice: rxData.advice || 'Follow dosage as directed.',
       p_vitals: rxData.vitals || null,
-      p_symptoms: rxData.symptoms || null,
+      p_chief_complaint: rxData.symptoms || rxData.chiefComplaint || rxData.chief_complaint || null,
       p_examination_findings: rxData.examinationFindings || rxData.examination_findings || null,
       p_assessment: rxData.assessment || null,
       p_treatment_plan: rxData.treatmentPlan || rxData.treatment_plan || null,
