@@ -1,0 +1,85 @@
+name: One-shot audit hardening
+
+on:
+  push:
+    branches: [audit-write-access-fixes]
+
+permissions:
+  contents: write
+
+jobs:
+  harden-client:
+    if: ${{ !startsWith(github.event.head_commit.message, '[security-bot]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Patch security-sensitive client paths
+        shell: python
+        run: |
+          from pathlib import Path
+
+          p = Path('js/supabase_client.js')
+          s = p.read_text(encoding='utf-8')
+
+          replacements = [
+            (
+              "phone: user.phone || user.user_metadata?.phone || '+91 9608858316'",
+              "phone: user.phone || user.user_metadata?.phone || null"
+            ),
+            (
+              "age: 19,\n              gender: 'Male',\n              blood_group: 'B+'",
+              "age: null,\n              gender: null,\n              blood_group: null"
+            ),
+            (
+              ".or(`user_id.eq.${user.id},email.eq.${userEmail}`)\n            .maybeSingle();",
+              ".eq('user_id', user.id)\n            .maybeSingle();"
+            ),
+            (
+              "          if (doctorProfile && !doctorProfile.user_id) {\n            await this.client\n              .from('doctors')\n              .update({ user_id: user.id })\n              .eq('id', doctorProfile.id);\n            doctorProfile.user_id = user.id;\n          }\n",
+              ""
+            ),
+            (
+              "        if (doctorProfile && profile && profile.role !== 'doctor') {\n          try {\n            await this.client.from('users').update({ role: 'doctor' }).eq('id', user.id);\n          } catch (rErr) {\n            console.warn('Role update notice:', rErr);\n          }\n        }\n\n",
+              ""
+            ),
+            (
+              "    if (!this.client) return;\n\n    try {\n      // 1. Fetch Verified Doctors",
+              "    if (!this.client) return;\n\n    const { data: authUserData } = await this.client.auth.getUser();\n    const user = authUserData?.user || null;\n\n    try {\n      // 1. Fetch Verified Doctors"
+            ),
+            (
+              "          // Merge into state.bookings by unique ID\n          const existingIds = new Set(mappedBookings.map(b => b.id));\n          const localOnly = (window.mediarcaStore.state.bookings || []).filter(b => !existingIds.has(b.id));\n          window.mediarcaStore.state.bookings = [...mappedBookings, ...localOnly];",
+              "          // Supabase is authoritative for clinical appointments; do not resurrect stale browser-only records.\n          window.mediarcaStore.state.bookings = mappedBookings;"
+            ),
+            (
+              "      const todayStr = new Date().toISOString().split('T')[0];",
+              "      const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());"
+            ),
+            (
+              ".eq('queue_date', new Date().toISOString().split('T')[0]);",
+              ".eq('queue_date', new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date()));"
+            ),
+            (
+              "    } catch (rpcErr) {\n      console.warn('RPC profile update fallback notice:', rpcErr);\n    }\n\n    try {\n      // 2. Direct fallback updates\n      const userUpdate = {};\n      if (name) userUpdate.full_name = name;\n      if (phone) userUpdate.phone = phone;\n      if (age) userUpdate.age = age;\n      if (gender) userUpdate.gender = gender;\n      if (bloodGroup) userUpdate.blood_group = bloodGroup;\n\n      await this.client.from('users').update(userUpdate).eq('id', userId);\n\n      await this.client.from('patient_clinical_profiles').upsert({\n        user_id: userId,\n        age: age,\n        gender: gender,\n        blood_group: bloodGroup\n      }, { onConflict: 'user_id' });\n    } catch (fallbackErr) {\n      console.warn('Direct fallback profile update notice:', fallbackErr);\n    }",
+              "    } catch (rpcErr) {\n      console.error('Authoritative patient profile RPC failed:', rpcErr);\n      throw rpcErr;\n    }"
+            )
+          ]
+
+          for old, new in replacements:
+              if old not in s:
+                  raise SystemExit(f'Expected source pattern not found: {old[:120]!r}')
+              s = s.replace(old, new, 1)
+
+          p.write_text(s, encoding='utf-8')
+
+      - name: Validate JavaScript syntax
+        run: node --check js/supabase_client.js
+
+      - name: Commit hardened client
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add js/supabase_client.js
+          git diff --cached --check
+          git commit -m "[security-bot] Harden auth hydration and India date handling"
+          git push origin HEAD:audit-write-access-fixes
