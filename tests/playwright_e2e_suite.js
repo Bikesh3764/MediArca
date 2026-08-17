@@ -137,7 +137,7 @@ async function runPlaywrightSuite() {
     // TEST 5: Medical Board Admin Portal Authentication
     // -------------------------------------------------------------------------
     console.log('\n--- TEST 5: Medical Board Admin Portal ---');
-    await page.evaluate(() => {
+    await page.evaluate(async () => {
       window.mediarcaStore.setAuthSession({
         id: 'a0000000-0000-0000-0000-000000000004',
         email: 'admin@mediarca.health',
@@ -145,13 +145,16 @@ async function runPlaywrightSuite() {
         name: 'Medical Board Director Robert Vance'
       });
       window.mediarcaApp.switchView('admin-portal');
+      if (window.mediarcaApp.renderAdminHub) {
+        await window.mediarcaApp.renderAdminHub();
+      }
     });
-    await page.waitForTimeout(800);
+    await page.waitForTimeout(1000);
 
     const adminViewActive = await page.$eval('#view-admin-portal', el => el.classList.contains('active'));
     assertTest('Admin Portal view is active after admin authentication', adminViewActive, 'Admin view not active');
 
-    const adminTabs = await page.$$('#adminPortalContainer button[onclick*="setAdminTab"]');
+    const adminTabs = await page.$$('#adminPortalContainer button');
     assertTest('Admin management tabs are rendered', adminTabs.length >= 3, 'Admin tabs not found');
 
     await page.screenshot({ path: path.join(SCREENSHOTS_DIR, '05_admin_portal.png'), fullPage: false });

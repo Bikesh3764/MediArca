@@ -2006,7 +2006,66 @@ BEGIN
 END;
 $$;
 
+-- 22. ATOMIC PATIENT PROFILE UPDATE RPC (Updates users & patient_clinical_profiles transactionally)
+CREATE OR REPLACE FUNCTION update_patient_profile_atomic(
+    p_name TEXT DEFAULT NULL,
+    p_phone TEXT DEFAULT NULL,
+    p_age INT DEFAULT NULL,
+    p_gender TEXT DEFAULT NULL,
+    p_blood_group TEXT DEFAULT NULL
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+    v_actor_id UUID;
+BEGIN
+    v_actor_id := auth.uid();
+    IF v_actor_id IS NULL THEN
+        RAISE EXCEPTION 'Authentication required to update patient profile.';
+    END IF;
+
+    -- Update users table
+    UPDATE users
+    SET full_name = COALESCE(NULLIF(p_name, ''), full_name),
+        phone = COALESCE(NULLIF(p_phone, ''), phone),
+        updated_at = NOW()
+    WHERE id = v_actor_id;
+
+    -- Upsert patient_clinical_profiles table
+    INSERT INTO patient_clinical_profiles (user_id, age, gender, blood_group, updated_at)
+    VALUES (
+        v_actor_id,
+        p_age,
+        p_gender,
+        p_blood_group,
+        NOW()
+    )
+    ON CONFLICT (user_id) DO UPDATE
+    SET age = COALESCE(p_age, patient_clinical_profiles.age),
+        gender = COALESCE(NULLIF(p_gender, ''), patient_clinical_profiles.gender),
+        blood_group = COALESCE(NULLIF(p_blood_group, ''), patient_clinical_profiles.blood_group),
+        updated_at = NOW();
+
+    RETURN jsonb_build_object(
+        'success', true,
+        'userId', v_actor_id,
+        'name', p_name,
+        'phone', p_phone,
+        'age', p_age,
+        'gender', p_gender,
+        'bloodGroup', p_blood_group,
+        'updatedAt', NOW()
+    );
+END;
+$$;
+
 -- 12. EXPLICIT RPC EXECUTE PERMISSION ENFORCEMENT (C-06 Resolution: Privileged RPCs Granted ONLY to Authenticated Role)
+REVOKE ALL ON FUNCTION update_patient_profile_atomic(TEXT, TEXT, INT, TEXT, TEXT) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION update_patient_profile_atomic(TEXT, TEXT, INT, TEXT, TEXT) TO authenticated;
+
 REVOKE ALL ON FUNCTION issue_next_opd_token(UUID, TEXT, VARCHAR) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION issue_next_opd_token(UUID, TEXT, VARCHAR) TO authenticated;
 
