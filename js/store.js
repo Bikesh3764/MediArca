@@ -1071,9 +1071,9 @@ async login(email, password) {
   }
 
   async bookAppointment(bookingData) {
-    // 1. Enforce Strict Caller Authorization & Authentication (A-01 & A-03 Resolution)
-    if (!this.state.currentUser || !this.state.currentUser.id || (this.state.currentUser.role !== 'patient' && this.state.currentUser.role !== 'admin')) {
-      throw new Error('Access Denied: Only authenticated patients can book appointments.');
+    // 1. Enforce Authentication
+    if (!this.state.currentUser || !this.state.currentUser.id || this.state.currentUser.role === 'guest') {
+      throw new Error('Please sign in or create an account to book an appointment.');
     }
 
     const doctor = this.state.doctors.find(d => d.id === bookingData.doctorId);

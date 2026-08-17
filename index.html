@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
 
   <!-- Clinical CSS Design System (Apple Inspired - Cache-busted) -->
-  <link rel="stylesheet" href="css/mediarca.css?v=20260817_clinical_v5">
+  <link rel="stylesheet" href="css/mediarca.css?v=20260817_prod_v6">
   
   <!-- Pinned Lucide Icons -->
   <script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.min.js"></script>
@@ -75,55 +75,13 @@
             </p>
 
             <!-- Apple Dual Pill Action CTAs -->
-            <div style="display: flex; justify-content: center; gap: 0.85rem; flex-wrap: wrap; margin-bottom: 3rem;">
+            <div style="display: flex; justify-content: center; gap: 0.85rem; flex-wrap: wrap;">
               <button class="btn btn-lg btn-primary" onclick="document.getElementById('directorySection').scrollIntoView({behavior: 'smooth'})">
                 <i data-lucide="search" style="width: 16px; height: 16px;"></i> Find Specialists
               </button>
               <button class="btn btn-lg btn-secondary" onclick="window.mediarcaApp.switchView('patient-portal')">
                 <i data-lucide="calendar" style="width: 16px; height: 16px;"></i> My Bookings & Queue
               </button>
-            </div>
-
-            <!-- Apple Sleek Clinical Accreditation Bar -->
-            <div style="display: inline-flex; align-items: center; justify-content: center; gap: 2rem; background: #f5f5f7; border: 1px solid rgba(0,0,0,0.06); border-radius: 9999px; padding: 0.75rem 2.2rem; margin: 0 auto; flex-wrap: wrap;">
-              
-              <!-- Item 1: NMC Certified -->
-              <div style="display: flex; align-items: center; gap: 0.6rem;">
-                <div style="width: 28px; height: 28px; border-radius: 50%; background: #ecfdf5; display: flex; align-items: center; justify-content: center; color: #059669; flex-shrink: 0;">
-                  <i data-lucide="shield-check" style="width: 15px; height: 15px;"></i>
-                </div>
-                <div style="text-align: left;">
-                  <div style="font-size: 0.875rem; font-weight: 600; color: #1d1d1f; line-height: 1.1;">NMC Accredited</div>
-                  <div style="font-size: 0.7rem; color: #86868b;">Verified Medical Specialists</div>
-                </div>
-              </div>
-
-              <div style="width: 1px; height: 20px; background: rgba(0,0,0,0.1);"></div>
-
-              <!-- Item 2: Live OPD Queue Radar -->
-              <div style="display: flex; align-items: center; gap: 0.6rem;">
-                <div style="width: 28px; height: 28px; border-radius: 50%; background: #f0f9ff; display: flex; align-items: center; justify-content: center; color: #0066cc; flex-shrink: 0;">
-                  <i data-lucide="radio" style="width: 15px; height: 15px;"></i>
-                </div>
-                <div style="text-align: left;">
-                  <div style="font-size: 0.875rem; font-weight: 600; color: #1d1d1f; line-height: 1.1;">Live Queue Radar</div>
-                  <div style="font-size: 0.7rem; color: #86868b;">Zero Waiting Room Congestion</div>
-                </div>
-              </div>
-
-              <div style="width: 1px; height: 20px; background: rgba(0,0,0,0.1);"></div>
-
-              <!-- Item 3: ABDM & HIPAA Records -->
-              <div style="display: flex; align-items: center; gap: 0.6rem;">
-                <div style="width: 28px; height: 28px; border-radius: 50%; background: #f5f3ff; display: flex; align-items: center; justify-content: center; color: #7c3aed; flex-shrink: 0;">
-                  <i data-lucide="lock" style="width: 14px; height: 14px;"></i>
-                </div>
-                <div style="text-align: left;">
-                  <div style="font-size: 0.875rem; font-weight: 600; color: #1d1d1f; line-height: 1.1;">Encrypted EMR</div>
-                  <div style="font-size: 0.7rem; color: #86868b;">ABDM & HIPAA Statutory Security</div>
-                </div>
-              </div>
-
             </div>
           </div>
         </div>
@@ -632,11 +590,11 @@
 
   <!-- Supabase Cloud SDK & Core Scripts (Apple Design V3.2) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.8/dist/umd/supabase.min.js"></script>
-  <script src="js/audio.js?v=20260817_clinical_v5"></script>
-  <script src="js/store.js?v=20260817_clinical_v5"></script>
-  <script src="js/supabase_client.js?v=20260817_clinical_v5"></script>
-  <script src="js/queue.js?v=20260817_clinical_v5"></script>
-  <script src="js/app.js?v=20260817_clinical_v5"></script>
+  <script src="js/audio.js?v=20260817_prod_v6"></script>
+  <script src="js/store.js?v=20260817_prod_v6"></script>
+  <script src="js/supabase_client.js?v=20260817_prod_v6"></script>
+  <script src="js/queue.js?v=20260817_prod_v6"></script>
+  <script src="js/app.js?v=20260817_prod_v6"></script>
 
 </body>
 </html>

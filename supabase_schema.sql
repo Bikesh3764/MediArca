@@ -364,17 +364,26 @@ BEGIN
     -- 1. Validate Caller Identity via auth.uid()
     v_actor_id := auth.uid();
     IF v_actor_id IS NULL THEN
-        RAISE EXCEPTION 'Authentication required. Please sign in as an authenticated patient.';
+        RAISE EXCEPTION 'Authentication required. Please sign in to book an appointment.';
     END IF;
 
-    -- 2. Fetch authenticated patient record & clinical profile directly from database (D-02 & BUG-004 Resolution)
+    -- 2. Fetch authenticated patient record (with auto-provisioning fallback)
     SELECT * INTO v_patient FROM users WHERE id = v_actor_id;
     IF v_patient.id IS NULL THEN
-        RAISE EXCEPTION 'Patient profile not found for authenticated user ID: %', v_actor_id;
-    END IF;
+        SELECT email, raw_user_meta_data INTO v_auth_email, v_auth_meta FROM auth.users WHERE id = v_actor_id;
+        INSERT INTO users (id, email, role, full_name, phone)
+        VALUES (
+            v_actor_id,
+            COALESCE(v_auth_email, 'patient_' || substring(v_actor_id::text from 1 for 8) || '@mediarca.health'),
+            'patient',
+            COALESCE(v_auth_meta->>'name', v_auth_meta->>'full_name', split_part(v_auth_email, '@', 1), 'Registered User'),
+            v_auth_meta->>'phone'
+        )
+        RETURNING * INTO v_patient;
 
-    IF v_patient.role != 'patient' AND NOT is_admin(v_actor_id) THEN
-        RAISE EXCEPTION 'Access Denied: Only authenticated users with patient role can book consultation tokens.';
+        INSERT INTO patient_clinical_profiles (user_id, age, gender, blood_group)
+        VALUES (v_actor_id, (v_auth_meta->>'age')::INT, v_auth_meta->>'gender', v_auth_meta->>'bloodGroup')
+        ON CONFLICT (user_id) DO NOTHING;
     END IF;
 
     SELECT * INTO v_clinical FROM patient_clinical_profiles WHERE user_id = v_actor_id;
@@ -385,7 +394,7 @@ BEGIN
         RAISE EXCEPTION 'Doctor is not verified or does not accept appointments.';
     END IF;
 
-    -- 4. Check Duplicate Active Appointments (H-06 & C-07 Resolution: Comprehensive Active Status Set & Slot Checks)
+    -- 4. Check Duplicate Active Appointments for today
     IF EXISTS (
         SELECT 1 FROM appointments
         WHERE patient_id = v_actor_id
@@ -402,7 +411,6 @@ BEGIN
     ON CONFLICT (doctor_id, queue_date) DO UPDATE
     SET updated_at = NOW();
 
-    -- 6. Acquire row lock and check queue status (H-12 Resolution)
     SELECT current_token, total_tokens, status INTO v_current_token, v_next_token, v_initial_status
     FROM clinic_queues
     WHERE doctor_id = p_doctor_id AND queue_date = CURRENT_DATE
@@ -416,11 +424,8 @@ BEGIN
 
     v_next_token := COALESCE(v_next_token, 0) + 1;
     v_booking_id := 'MED-BK-' || upper(to_hex(extract(epoch from now())::bigint)) || '-' || upper(substring(md5(random()::text) from 1 for 4));
-    
-    -- C-24 & C-27: Server-side cryptographic 128-bit check-in token generation
     v_checkin_token := 'MED-QR-' || lower(replace(gen_random_uuid()::text, '-', ''));
 
-    -- 7. All new same-day bookings start in 'waiting' queue line until called by doctor (H-11 Resolution)
     UPDATE clinic_queues 
     SET total_tokens = v_next_token, status = 'in-session', updated_at = NOW()
     WHERE doctor_id = p_doctor_id AND queue_date = CURRENT_DATE;
@@ -429,7 +434,6 @@ BEGIN
     SET total_tokens = v_next_token, queue_active = true
     WHERE id = p_doctor_id;
 
-    -- H-01, H-02, H-03, H-04: check_in_time, start_at, end_at are strictly NULL until events occur
     INSERT INTO appointments (
         booking_id, patient_id, doctor_id, patient_name, patient_phone, patient_age, patient_gender,
         token_number, status, checkin_token, checkin_token_expires_at, check_in_time, appointment_date, scheduled_date, start_at, end_at, timezone, symptoms
@@ -437,10 +441,10 @@ BEGIN
         v_booking_id,
         v_actor_id,
         p_doctor_id,
-        v_patient.full_name,
+        COALESCE(v_patient.full_name, 'Patient'),
         COALESCE(v_patient.phone, 'Not specified'),
-        v_clinical.age,
-        v_clinical.gender,
+        COALESCE(v_clinical.age, 30),
+        COALESCE(v_clinical.gender, 'Not specified'),
         v_next_token,
         'waiting',
         v_checkin_token,

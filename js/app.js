@@ -413,9 +413,9 @@ class MediarcaApp {
               <div class="doc-title-wrap" style="flex: 1; min-width: 0;">
                 <div class="doc-name-row" style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.15rem;">
                   <h4 class="doc-name" style="font-size: 1.15rem; font-weight: 600; color: #1d1d1f; margin: 0; letter-spacing: -0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${escapeHtml(doc.name)}">${escapeHtml(doc.name)}</h4>
-                  <span class="doc-verified-badge" style="display: inline-flex; align-items: center; gap: 0.25rem; background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; padding: 0.15rem 0.5rem; border-radius: 9999px; font-size: 0.6875rem; font-weight: 600; flex-shrink: 0;" title="National Medical Commission Verified Specialist">
+                  <span class="doc-verified-badge" style="display: inline-flex; align-items: center; gap: 0.25rem; background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; padding: 0.15rem 0.5rem; border-radius: 9999px; font-size: 0.6875rem; font-weight: 600; flex-shrink: 0;" title="Verified Specialist">
                     <i data-lucide="shield-check" style="width: 11px; height: 11px;"></i>
-                    <span>NMC Verified</span>
+                    <span>Verified</span>
                   </span>
                 </div>
                 
@@ -475,12 +475,11 @@ class MediarcaApp {
     if (window.lucide) window.lucide.createIcons();
   }
 
-  // --- Booking Flow & Modal ---
   openBookingModal(doctorId) {
     const currentUser = window.mediarcaStore.state.currentUser;
-    if (!currentUser || currentUser.role !== 'patient' || !window.mediarcaStore.isAuthorized('patient')) {
+    if (!currentUser || !currentUser.id || currentUser.role === 'guest') {
       this.switchView('auth-patient');
-      this.showToast('Please sign in or create a patient account to book an appointment.', 'info');
+      this.showToast('Please sign in or create an account to book an appointment.', 'info');
       return;
     }
 
