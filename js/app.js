@@ -1584,8 +1584,13 @@ class MediarcaApp {
                       <h4 style="font-size: 1.125rem; font-weight: 800; color: var(--text-primary);">${escapeHtml(currentPatient.patientName)}</h4>
                       <div style="font-size: 0.8125rem; color: var(--text-secondary);">Ref: ${escapeHtml(currentPatient.bookingId)} • Check-in: ${escapeHtml(currentPatient.checkInTime)}</div>
                     </div>
-                    <div class="text-mono" style="font-size: 2rem; font-weight: 800; color: var(--clinical-blue);">
-                      Token #${currentPatient.tokenNumber}
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                      <button type="button" class="btn btn-sm btn-secondary" onclick="window.mediarcaApp.showTelemedicineSuite('${currentPatient.bookingId || 'bk_live'}')" style="font-size:0.75rem; padding:0.4rem 0.75rem; border:1px solid #cbd5e1; display:inline-flex; align-items:center; gap:0.35rem; background:#fff;">
+                        <i data-lucide="video" style="width:13px;height:13px; color:#0284c7;"></i> Video Room
+                      </button>
+                      <div class="text-mono" style="font-size: 2rem; font-weight: 800; color: var(--clinical-blue);">
+                        Token #${currentPatient.tokenNumber}
+                      </div>
                     </div>
                   </div>
 
@@ -1660,32 +1665,12 @@ class MediarcaApp {
                     </div>
                   </div>
 
+                  <!-- Chief Complaint & Reported Symptoms -->
                   <div style="margin-bottom: 1.25rem;">
                     <div style="font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;">Chief Complaint & Reported Symptoms</div>
                     <div style="font-size: 0.875rem; color: var(--text-primary); margin-top: 0.25rem; background: #fff; padding: 0.625rem 0.75rem; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
                       ${escapeHtml(currentPatient.symptoms || 'General Consultation & Routine Health Check')}
                     </div>
-                  </div>
-
-                  <!-- AI-Assisted Ambient Clinical Scribe (Section 16 Resolution) -->
-                  <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: var(--radius-sm); padding: 0.875rem; margin-bottom: 1.25rem;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
-                      <div style="font-size:0.75rem; font-weight:700; color:var(--text-secondary); display:flex; align-items:center; gap:0.35rem;">
-                        <i data-lucide="sparkles" style="width:14px;height:14px; color:#6366f1;"></i> AI Ambient Clinical Scribe & Dictation Assistant
-                      </div>
-                      <span class="badge" style="background:#e0e7ff; color:#4338ca; font-size:0.65rem; font-weight:700;">AI DRAFT ONLY • REQUIRES PHYSICIAN CONFIRMATION</span>
-                    </div>
-                    <textarea id="aiScribeInput" class="form-textarea" placeholder="Dictate or type clinical encounter notes (e.g. 'Patient has mild fever for three days, dry cough, slight throat irritation, no breathing difficulty. Exam shows mild pharyngeal congestion. Plan for 5-day antibiotic and hydration.')" style="min-height:48px; font-size:0.8125rem; margin-bottom:0.5rem;"></textarea>
-                    <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
-                      <button type="button" class="btn btn-sm btn-secondary" onclick="window.mediarcaApp.handleProcessAiScribe()" style="background:#6366f1; color:#fff; font-size:0.75rem; padding:0.3rem 0.6rem;">
-                        <i data-lucide="wand-2" style="width:12px;height:12px;"></i> Convert to Structured SOAP Draft
-                      </button>
-                      <button type="button" class="btn btn-sm btn-secondary" onclick="window.mediarcaApp.showTelemedicineSuite('${currentPatient.bookingId || 'bk_live'}')" style="font-size:0.75rem; padding:0.3rem 0.6rem;">
-                        <i data-lucide="video" style="width:12px;height:12px; color:#0284c7;"></i> Launch Teleconsult Video Room
-                      </button>
-                      <span style="font-size:0.65rem; color:var(--text-muted);">AI output will populate draft fields below only upon explicit acceptance.</span>
-                    </div>
-                    <div id="aiScribeDraftResult" style="display:none; margin-top:0.75rem; background:#fff; border:1px dashed #6366f1; padding:0.75rem; border-radius:var(--radius-sm);"></div>
                   </div>
 
                   <!-- Clinical Examination & Itemized Prescription Suite (Tier 2 Resolution) -->

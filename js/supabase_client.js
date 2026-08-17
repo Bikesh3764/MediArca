@@ -1029,12 +1029,17 @@ class MediarcaSupabaseClient {
     if (docData.avatar !== undefined) updatePayload.avatar = docData.avatar;
     if (docData.avgConsultTimeMins !== undefined) updatePayload.avg_consult_time_mins = parseInt(docData.avgConsultTimeMins);
 
-    const { data, error } = await this.client
-      .from('doctors')
-      .update(updatePayload)
-      .eq('id', doctorId)
-      .select()
-      .maybeSingle();
+    const authRes = await this.client.auth.getUser();
+    const authUid = authRes?.data?.user?.id;
+
+    let query = this.client.from('doctors').update(updatePayload);
+    if (authUid) {
+      query = query.or(`id.eq.${doctorId},user_id.eq.${authUid}`);
+    } else {
+      query = query.eq('id', doctorId);
+    }
+
+    const { data, error } = await query.select().maybeSingle();
 
     if (error) {
       console.error('Doctor profile cloud update error:', error);
