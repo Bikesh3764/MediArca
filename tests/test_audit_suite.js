@@ -172,9 +172,21 @@ assert(schemaContent.includes("checkin_token VARCHAR(255) UNIQUE"), 'BUG-020: ch
 assert(schemaContent.includes("Access Denied: Statutory consent can only be recorded by authenticated patients"), 'BUG-022: Statutory consent RPC requires authenticated patient role');
 assert(schemaContent.includes("v_doctor.verification_status != 'verified'"), 'BUG-023: Telemedicine room initialization requires verified physician accreditation');
 
+// 10. Batch 6: Final Bug Audit Invariant Verifications (FINAL_BUG_AUDIT_20260817.md)
+assert(schemaContent.includes("v_appointment.scheduled_date > (NOW() AT TIME ZONE 'Asia/Kolkata')::DATE"), 'Final-01: Server QR check-in enforces appointment calendar date');
+assert(schemaContent.includes("consultation_fee = EXCLUDED.consultation_fee") && schemaContent.includes("net_payable = EXCLUDED.net_payable"), 'Final-02: Server invoice settlement persists full financial breakdown and doctor linkage');
+assert(schemaContent.includes("v_source_doctor_id := v_appointment.doctor_id;"), 'Final-03: Queue transfer captures source doctor ID prior to record update');
+assert(storeContent.includes("doctorId: matchedDoctor ? matchedDoctor.id : null"), 'Final-04: currentUser.id is strictly Supabase Auth user UUID and doctor identity is in doctorId');
+assert(supabaseClientContent.includes("userProfile?.role === 'doctor'") && supabaseClientContent.includes("myDoc.verification_status"), 'Final-05: Authenticated doctor profile merges private record on sync');
+assert(supabaseClientContent.includes("Registration failed: Could not persist user profile") && supabaseClientContent.includes("Registration failed: Could not record clinical demographics"), 'Final-06: Patient and demographic registration failures fail closed');
+assert(storeContent.includes("Invalid document upload: A real file or verified download URL must be provided"), 'Final-07: Clinical document upload disallows fabricated blob fallbacks');
+assert(appContent.includes("user.clinicalProfile?.blood_pressure || user.bloodPressure || 'Unrecorded'"), 'Final-08: Zero fabricated vitals fallbacks in patient dashboard UI');
+assert(schemaContent.includes("allowed_mime_types = ARRAY['application/pdf', 'image/jpeg', 'image/png', 'image/webp']::text[]"), 'Final-09: Storage bucket conflict update enforces strict MIME allowlist');
+assert(schemaContent.includes("Appointment Token #% is already in terminal state"), 'Final-10: Appointment status override rejects terminal appointments');
+
 console.log(`\nTest Summary: ${passCount} Passed, ${failCount} Failed.`);
 if (failCount > 0) {
   process.exit(1);
 } else {
-  console.log('--- ALL FULL LINE-BY-LINE AUDIT BATCHES (P0, P1, P2, P3, P4, P5) PASSED 100% SUCCESSFULLY! ---');
+  console.log('--- ALL FULL LINE-BY-LINE AUDIT BATCHES (P0, P1, P2, P3, P4, P5, P6) PASSED 100% SUCCESSFULLY! ---');
 }

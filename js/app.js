@@ -876,10 +876,10 @@ class MediarcaApp {
                   <i data-lucide="heart-pulse" style="width:14px;height:14px; color:#ef4444;"></i> Recent Triage Vitals
                 </h4>
                 <div style="display:flex; flex-direction:column; gap:0.5rem; font-size:0.8125rem;">
-                  <div style="display:flex; justify-content:space-between;"><span>Blood Pressure:</span> <strong>${escapeHtml(user.clinicalProfile?.blood_pressure || user.bloodPressure || '120/80 mmHg (Normal)')}</strong></div>
-                  <div style="display:flex; justify-content:space-between;"><span>Pulse Rate:</span> <strong>${escapeHtml(user.clinicalProfile?.pulse_rate || user.pulseRate || '72 bpm')}</strong></div>
-                  <div style="display:flex; justify-content:space-between;"><span>SpO2 Oxygen:</span> <strong>${escapeHtml(user.clinicalProfile?.spo2 || user.spo2 || '98%')}</strong></div>
-                  <div style="display:flex; justify-content:space-between;"><span>Blood Group:</span> <strong>${escapeHtml(user.clinicalProfile?.blood_group || user.bloodGroup || 'Recorded in EHR')}</strong></div>
+                  <div style="display:flex; justify-content:space-between;"><span>Blood Pressure:</span> <strong>${escapeHtml(user.clinicalProfile?.blood_pressure || user.bloodPressure || 'Unrecorded')}</strong></div>
+                  <div style="display:flex; justify-content:space-between;"><span>Pulse Rate:</span> <strong>${escapeHtml(user.clinicalProfile?.pulse_rate || user.pulseRate || 'Unrecorded')}</strong></div>
+                  <div style="display:flex; justify-content:space-between;"><span>SpO2 Oxygen:</span> <strong>${escapeHtml(user.clinicalProfile?.spo2 || user.spo2 || 'Unrecorded')}</strong></div>
+                  <div style="display:flex; justify-content:space-between;"><span>Blood Group:</span> <strong>${escapeHtml(user.clinicalProfile?.blood_group || user.bloodGroup || 'Unrecorded')}</strong></div>
                 </div>
               </div>
             </div>

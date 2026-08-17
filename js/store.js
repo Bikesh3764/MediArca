@@ -718,10 +718,11 @@ async login(email, password) {
             matchedDoctor.userId = user.id;
           }
 
-          // Zero JWT stored in application state (C-02 Resolution)
+          // Zero JWT stored in application state (Item 4 & C-02 Resolution)
           this.state.currentUser = {
-            id: matchedDoctor ? matchedDoctor.id : user.id,
+            id: user.id,
             userId: user.id,
+            doctorId: matchedDoctor ? matchedDoctor.id : null,
             email: user.email,
             role: role,
             name: name,
@@ -1523,9 +1524,7 @@ async login(email, password) {
     } else if (docData.downloadUrl) {
       downloadUrl = docData.downloadUrl;
     } else {
-      // Fallback dummy blob for programmatic seed data
-      const blob = new Blob(['MediArca EMR Clinical Record - Authenticated Patient Vault'], { type: 'text/plain' });
-      downloadUrl = URL.createObjectURL(blob);
+      throw new Error('Invalid document upload: A real file or verified download URL must be provided.');
     }
 
     const formatSize = fileSizeBytes > 0 ? `${(fileSizeBytes / 1024).toFixed(1)} KB` : (docData.fileSize || '350 KB');

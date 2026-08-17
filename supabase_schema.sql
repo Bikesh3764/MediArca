@@ -1014,6 +1014,15 @@ BEGIN
         RAISE EXCEPTION 'Not authorized. Only the accredited, verified attending physician or admin can update consultation status.';
     END IF;
 
+    -- Item 10: Reject terminal state overrides
+    IF EXISTS (
+        SELECT 1 FROM appointments
+        WHERE doctor_id = p_doctor_id AND scheduled_date = CURRENT_DATE AND token_number = p_token_number
+          AND status IN ('completed', 'cancelled', 'no-show')
+    ) THEN
+        RAISE EXCEPTION 'Cannot override status: Appointment Token #% is already in terminal state.', p_token_number;
+    END IF;
+
     -- Update the specified appointment
     UPDATE appointments
     SET status = p_status,
@@ -1199,6 +1208,11 @@ BEGIN
         RAISE EXCEPTION 'Cannot check-in. Consultation status is already %', v_appointment.status;
     END IF;
 
+    -- Item 1: Require appointment date to match current operational date
+    IF v_appointment.scheduled_date > (NOW() AT TIME ZONE 'Asia/Kolkata')::DATE THEN
+        RAISE EXCEPTION 'QR check-in is only permitted on the scheduled appointment date (%).', v_appointment.scheduled_date;
+    END IF;
+
     -- C-13 & BUG-019: Authorize only receptionists, admins, verified attending physicians, or the patient who owns the booking
     SELECT role INTO v_actor_role FROM users WHERE id = v_actor_id;
 
@@ -1254,6 +1268,7 @@ DECLARE
     v_actor_id UUID;
     v_actor_role VARCHAR;
     v_appointment appointments%ROWTYPE;
+    v_source_doctor_id UUID;
     v_is_authorized BOOLEAN;
     v_new_token INT;
 BEGIN
@@ -1271,6 +1286,9 @@ BEGIN
     IF v_appointment.id IS NULL THEN
         RAISE EXCEPTION 'Appointment record not found.';
     END IF;
+
+    -- Capture source doctor ID before any update mutations
+    v_source_doctor_id := v_appointment.doctor_id;
 
     IF v_appointment.status IN ('completed', 'cancelled', 'no-show') THEN
         RAISE EXCEPTION 'Cannot transfer appointment in % status.', v_appointment.status;
@@ -1364,7 +1382,7 @@ BEGIN
         'appointments',
         p_appointment_id,
         jsonb_build_object(
-            'source_doctor_id', v_appointment.doctor_id,
+            'source_doctor_id', v_source_doctor_id,
             'target_doctor_id', p_target_doctor_id,
             'new_token_number', v_new_token,
             'reason', p_reason,
@@ -1749,13 +1767,20 @@ BEGIN
     v_invoice_num := 'INV-2026-' || upper(to_hex(extract(epoch from now())::bigint)) || '-' || upper(substring(md5(random()::text) from 1 for 4));
 
     INSERT INTO patient_invoices (
-        appointment_id, patient_id, invoice_number, total_amount, insurance_covered_amount,
-        patient_paid_amount, payment_status, payment_method, insurance_provider, settled_at
+        appointment_id, patient_id, doctor_id, invoice_number,
+        consultation_fee, total_amount, discount_code, discount_amount, net_payable,
+        insurance_covered_amount, patient_paid_amount, payment_status, payment_method,
+        insurance_provider, settled_at
     ) VALUES (
         p_appointment_id,
         v_appointment.patient_id,
+        v_appointment.doctor_id,
         v_invoice_num,
         v_base_fee,
+        v_base_fee,
+        p_coupon_code,
+        v_discount,
+        v_net_before_ins,
         v_insurance_paid,
         v_patient_paid,
         'paid',
@@ -1763,9 +1788,17 @@ BEGIN
         COALESCE(p_insurance_provider, 'MediShield Global Health'),
         NOW()
     ) ON CONFLICT (appointment_id) DO UPDATE
-    SET total_amount = EXCLUDED.total_amount,
+    SET doctor_id = EXCLUDED.doctor_id,
+        consultation_fee = EXCLUDED.consultation_fee,
+        total_amount = EXCLUDED.total_amount,
+        discount_code = EXCLUDED.discount_code,
+        discount_amount = EXCLUDED.discount_amount,
+        net_payable = EXCLUDED.net_payable,
         insurance_covered_amount = EXCLUDED.insurance_covered_amount,
         patient_paid_amount = EXCLUDED.patient_paid_amount,
+        payment_status = 'paid',
+        payment_method = EXCLUDED.payment_method,
+        insurance_provider = EXCLUDED.insurance_provider,
         settled_at = NOW()
     RETURNING * INTO v_invoice;
 
@@ -2601,7 +2634,7 @@ VALUES (
     10485760, -- 10MB maximum
     ARRAY['application/pdf', 'image/jpeg', 'image/png', 'image/webp']
 )
-ON CONFLICT (id) DO UPDATE SET public = false, file_size_limit = 10485760;
+ON CONFLICT (id) DO UPDATE SET public = false, file_size_limit = 10485760, allowed_mime_types = ARRAY['application/pdf', 'image/jpeg', 'image/png', 'image/webp']::text[];
 
 -- STORAGE RLS: Authenticated patients can upload files into their own UUID directory
 DROP POLICY IF EXISTS "Patients can upload to own vault directory" ON storage.objects;

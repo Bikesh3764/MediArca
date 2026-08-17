@@ -124,7 +124,10 @@ class MediarcaSupabaseClient {
         full_name: (metadata.name || cleanEmail.split('@')[0]).trim(),
         phone: metadata.phone || null
       });
-      if (userErr) console.warn('User profile sync notice:', userErr);
+      if (userErr) {
+        console.error('User profile sync error:', userErr);
+        throw new Error('Registration failed: Could not persist user profile to database (' + userErr.message + ')');
+      }
 
       // 2. Upsert clinical demographics separately into patient_clinical_profiles
       if (assignedRole === 'patient') {
@@ -134,7 +137,10 @@ class MediarcaSupabaseClient {
           gender: metadata.gender || null,
           blood_group: metadata.bloodGroup || null
         });
-        if (profErr) console.warn('Clinical profile sync notice:', profErr);
+        if (profErr) {
+          console.error('Clinical profile sync error:', profErr);
+          throw new Error('Registration failed: Could not record clinical demographics (' + profErr.message + ')');
+        }
       }
     }
 
@@ -270,7 +276,7 @@ class MediarcaSupabaseClient {
             patientId: a.patient_id,
             doctorId: a.doctor_id,
             patientName: a.patient_name || a.users?.full_name || 'Registered Patient',
-            patientAge: a.patient_age || 30,
+            patientAge: a.patient_age || null,
             patientGender: a.patient_gender || 'Not specified',
             patientPhone: a.patient_phone || a.users?.phone || 'Not specified',
             symptoms: a.symptoms,
@@ -323,8 +329,45 @@ class MediarcaSupabaseClient {
           });
         }
 
-        // 4. Admin Full Hydration for Pending Doctors & System Users (P1-13 Resolution)
+        // 4. Authenticated Doctor & Admin Full Hydration (Item 5 & P1-13 Resolution)
         const { data: userProfile } = await this.client.from('users').select('role').eq('id', user.id).single();
+        
+        if (userProfile?.role === 'doctor' || window.mediarcaStore.state.currentUser?.role === 'doctor') {
+          const { data: myDoc } = await this.client.from('doctors').select('*').eq('user_id', user.id).maybeSingle();
+          if (myDoc) {
+            const existingIdx = window.mediarcaStore.state.doctors.findIndex(x => x.id === myDoc.id || x.userId === user.id);
+            const docObj = {
+              id: myDoc.id,
+              userId: myDoc.user_id,
+              name: myDoc.name,
+              email: myDoc.email,
+              specialty: myDoc.specialty,
+              specialtyId: myDoc.specialty_id || (myDoc.specialty || 'general').toLowerCase().replace(/\s+/g, ''),
+              title: myDoc.title || 'Consultant ' + (myDoc.specialty || 'Physician'),
+              degrees: myDoc.degrees,
+              regNumber: myDoc.reg_number,
+              verificationStatus: myDoc.verification_status,
+              experienceYears: myDoc.experience_years,
+              hospital: myDoc.hospital || 'General Hospital',
+              fee: parseFloat(myDoc.fee) || 50,
+              rating: parseFloat(myDoc.rating) || 5.0,
+              reviewsCount: myDoc.reviews_count || 0,
+              avatar: myDoc.avatar,
+              bio: myDoc.bio,
+              schedule: myDoc.schedule || 'Mon - Fri | 09:00 AM - 02:00 PM',
+              mediarcaId: myDoc.mediarca_id,
+              currentToken: myDoc.current_token || 0,
+              totalTokens: myDoc.total_tokens || 0,
+              avgConsultTimeMins: myDoc.avg_consult_time_mins || 12
+            };
+            if (existingIdx >= 0) {
+              window.mediarcaStore.state.doctors[existingIdx] = { ...window.mediarcaStore.state.doctors[existingIdx], ...docObj };
+            } else {
+              window.mediarcaStore.state.doctors.push(docObj);
+            }
+          }
+        }
+
         if (userProfile?.role === 'admin' || window.mediarcaStore.state.currentUser?.role === 'admin') {
           const { data: allDocs } = await this.client.from('doctors').select('*').order('created_at', { ascending: false });
           if (allDocs && allDocs.length > 0) {
