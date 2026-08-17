@@ -8,21 +8,25 @@ permissions:
   contents: write
 
 jobs:
-  verify-baseline:
+  diagnose:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Check baseline JavaScript syntax
+      - name: Diagnose syntax fault
+        shell: bash
         run: |
-          echo 'Checking current branch...'
+          set +e
+          echo '--- branch syntax ---'
           node --check js/supabase_client.js
-          echo 'Checking main branch source independently...'
-          git show origin/main:js/supabase_client.js > /tmp/main_supabase_client.js
-          node --check /tmp/main_supabase_client.js
-      - name: Static smoke checks
-        run: |
-          test -f js/supabase_client.js
-          test -f js/store.js
-          test -f js/app.js
-          test -f supabase_schema.sql
-          echo 'Baseline source files present.'
+          echo "exit=$?"
+          echo '--- lines 500-600 ---'
+          nl -ba js/supabase_client.js | sed -n '500,600p'
+          echo '--- try/catch lines ---'
+          grep -nE '\btry\b|\bcatch\b|\bfinally\b' js/supabase_client.js
+          echo '--- main syntax ---'
+          git fetch origin main --depth=1
+          git show origin/main:js/supabase_client.js > /tmp/main.js
+          node --check /tmp/main.js
+          echo "main_exit=$?"
+          echo '--- main lines 500-600 ---'
+          nl -ba /tmp/main.js | sed -n '500,600p'
