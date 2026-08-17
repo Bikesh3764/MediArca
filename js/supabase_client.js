@@ -493,6 +493,23 @@ class MediarcaSupabaseClient {
     return data;
   }
 
+  async cloudPauseDoctorQueue(doctorId, isPaused, reason = 'Clinic pause state toggled by physician') {
+    if (!this.client) throw new Error('Cloud offline');
+
+    const { data, error } = await this.client.rpc('pause_doctor_queue_atomic', {
+      p_doctor_id: doctorId,
+      p_is_paused: isPaused,
+      p_reason: reason
+    });
+
+    if (error) {
+      console.error('RPC Pause Queue Error:', error);
+      throw error;
+    }
+
+    return data;
+  }
+
   async cloudSavePrescription(doctorId, tokenNumber, rxData) {
     if (!this.client) throw new Error('Cloud offline');
 

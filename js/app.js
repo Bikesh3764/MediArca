@@ -539,13 +539,20 @@ class MediarcaApp {
         symptoms
       });
 
-      // Smart Wait-Time Prediction calculation
-      const waitEst = window.mediarcaStore.calculateSmartWaitTime(doctorId, newBooking.tokenNumber);
+      const todayStr = new Date().toISOString().split('T')[0];
+      const isToday = scheduledDate === todayStr;
 
       this.closeAllModals();
       if (window.mediarcaAudio) window.mediarcaAudio.playChime('success');
-      this.showToast(`Token #${newBooking.tokenNumber} confirmed for ${scheduledSlot}! Est. Wait: ${waitEst.rangeText} (Confidence: ${waitEst.confidence})`, 'success');
-      this.switchView('queue-radar', { doctorId });
+
+      if (isToday && newBooking.tokenNumber && newBooking.tokenNumber > 0) {
+        const waitEst = window.mediarcaStore.calculateSmartWaitTime(doctorId, newBooking.tokenNumber);
+        this.showToast(`Token #${newBooking.tokenNumber} confirmed for today's session! Est. Wait: ${waitEst.rangeText} (Confidence: ${waitEst.confidence})`, 'success');
+        this.switchView('queue-radar', { doctorId });
+      } else {
+        this.showToast(`Appointment scheduled successfully for ${scheduledDate} (${scheduledSlot})! Booking ID: ${newBooking.bookingId}`, 'success');
+        this.switchView('patient-portal');
+      }
     } catch (err) {
       console.error('Booking submission error:', err);
       this.showToast(err.message || 'Unable to book appointment.', 'warning');

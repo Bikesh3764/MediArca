@@ -184,9 +184,23 @@ assert(appContent.includes("user.clinicalProfile?.blood_pressure || user.bloodPr
 assert(schemaContent.includes("allowed_mime_types = ARRAY['application/pdf', 'image/jpeg', 'image/png', 'image/webp']::text[]"), 'Final-09: Storage bucket conflict update enforces strict MIME allowlist');
 assert(schemaContent.includes("Appointment Token #% is already in terminal state"), 'Final-10: Appointment status override rejects terminal appointments');
 
+// 11. Batch 7: Independent Full Bug Audit Assertions (MediArca_Independent_Full_Bug_Audit_20260817.md)
+assert(schemaContent.includes("scheduled_slot VARCHAR(50) DEFAULT NULL"), 'Audit P0-01: scheduled_slot defaults to NULL preventing OPD slot collision');
+assert(schemaContent.includes("AND token_number IS NULL;"), 'Audit P0-01: uq_active_doctor_future_slot index scoped to future scheduled slots');
+assert(schemaContent.includes("CONSTRAINT unique_doctor_queue_per_day UNIQUE (doctor_id, queue_date)"), 'Audit P0-02: clinic_queues uses (doctor_id, queue_date) unique key');
+assert(appContent.includes("Appointment scheduled successfully for") && appContent.includes("this.switchView('patient-portal')"), 'Audit P0-03: Future bookings route to patient portal without Token #0 live radar collision');
+assert(storeContent.includes("Hospital server network is unreachable. Cannot advance clinical queue offline"), 'Audit P0-04: Queue advancement fails closed when hospital server is unreachable');
+assert(storeContent.includes("Cannot issue medical tokens while offline"), 'Audit P0-04: OPD token booking fails closed when hospital server is unreachable');
+assert(schemaContent.includes("CREATE OR REPLACE FUNCTION pause_doctor_queue_atomic"), 'Audit P1-05: pause_doctor_queue_atomic RPC defined in schema');
+assert(supabaseClientContent.includes("cloudPauseDoctorQueue"), 'Audit P1-05: cloudPauseDoctorQueue method present in Supabase client');
+assert(storeContent.includes("age: data.age ? parseInt(data.age) : null") && !storeContent.includes("age: parseInt(data.age) || 28"), 'Audit P0-06: Zero fabricated demographic defaults (age=28, bloodGroup=O+)');
+assert(schemaContent.includes("SELECT * INTO v_appointment\n    FROM appointments\n    WHERE checkin_token = p_checkin_token\n    FOR UPDATE;"), 'Audit P0-08: QR check-in enforces row lock FOR UPDATE');
+assert(schemaContent.includes("WHERE id = v_appointment.id AND checkin_token_used_at IS NULL"), 'Audit P0-08: QR check-in uses atomic conditional update against replay races');
+assert(!schemaContent.includes("ip_address VARCHAR(45) DEFAULT '127.0.0.1'"), 'Audit P1-15/16: Zero fake 127.0.0.1 IP defaults in audit_logs and patient_consents');
+
 console.log(`\nTest Summary: ${passCount} Passed, ${failCount} Failed.`);
 if (failCount > 0) {
   process.exit(1);
 } else {
-  console.log('--- ALL FULL LINE-BY-LINE AUDIT BATCHES (P0, P1, P2, P3, P4, P5, P6) PASSED 100% SUCCESSFULLY! ---');
+  console.log('--- ALL FULL LINE-BY-LINE AUDIT BATCHES (P0, P1, P2, P3, P4, P5, P6, P7) PASSED 100% SUCCESSFULLY! ---');
 }

@@ -793,10 +793,10 @@ async login(email, password) {
       id: userId || 'p_' + Date.now(),
       name: data.name.trim(),
       email: cleanEmail,
-      phone: (data.phone || '').trim() || 'Not Provided',
-      age: parseInt(data.age) || 28,
-      gender: data.gender || 'Not Specified',
-      bloodGroup: data.bloodGroup || 'O+',
+      phone: (data.phone || '').trim() || null,
+      age: data.age ? parseInt(data.age) : null,
+      gender: data.gender || null,
+      bloodGroup: data.bloodGroup || null,
       medicalHistory: [],
       allergies: [],
       role: 'patient'
@@ -987,12 +987,12 @@ async login(email, password) {
         console.error('Cloud appointment RPC error:', cloudErr);
         throw new Error(`Appointment booking could not be completed on the hospital server: ${cloudErr.message || 'Server rejected booking request'}`);
       }
+    } else {
+      throw new Error('Hospital server network is currently unreachable. Cannot issue medical tokens while offline.');
     }
 
-    const existingTokens = queue.tokens ? queue.tokens.map(t => t.tokenNumber) : [];
-    const nextTokenNumber = isFutureBooking ? 0 : (cloudBooking ? cloudBooking.token_number : (existingTokens.length > 0 ? Math.max(...existingTokens) + 1 : (doctor.totalTokens || 0) + 1));
-
-    const bookingId = cloudBooking ? cloudBooking.booking_id : ('MED-BK-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase());
+    const nextTokenNumber = isFutureBooking ? 0 : (cloudBooking ? cloudBooking.token_number : 0);
+    const bookingId = cloudBooking ? cloudBooking.booking_id : ('MED-BK-' + Date.now().toString(36).toUpperCase());
     
     // 5. Initial Status: 'booked' for future scheduled slots, 'waiting' for active same-day queue tokens
     const initialStatus = isFutureBooking ? 'booked' : 'waiting';
@@ -1147,38 +1147,21 @@ async login(email, password) {
 
     // 2. Authoritative Cloud Stored Procedure via Supabase RPC (H-03 Resolution)
     if (window.mediarcaSupabase && window.mediarcaSupabase.isConnected) {
-      cloudRes = await window.mediarcaSupabase.cloudAdvanceQueue(doctorId);
+      try {
+        cloudRes = await window.mediarcaSupabase.cloudAdvanceQueue(doctorId);
+      } catch (err) {
+        console.error('Cloud advance queue error:', err);
+        throw new Error(`Failed to advance clinical queue on server: ${err.message}`);
+      }
+    } else {
+      throw new Error('Hospital server network is unreachable. Cannot advance clinical queue offline.');
     }
 
     const queue = this.state.queues[doctorId];
-    if (!queue || !queue.tokens) return null;
+    if (!queue) return null;
 
-    if (cloudRes) {
-      queue.currentToken = cloudRes.currentToken || 0;
-      queue.status = cloudRes.status || 'in-session';
-    } else {
-      if (queue.currentToken > 0) {
-        const activeToken = queue.tokens.find(t => t.tokenNumber === queue.currentToken && t.status === 'in-consultation');
-        if (activeToken) activeToken.status = 'completed';
-
-        const booking = this.state.bookings.find(b => b.doctorId === doctorId && b.tokenNumber === queue.currentToken);
-        if (booking) booking.status = 'completed';
-      }
-
-      const waitingTokens = queue.tokens.filter(t => t.status === 'waiting').sort((a, b) => a.tokenNumber - b.tokenNumber);
-      if (waitingTokens.length > 0) {
-        const nextToken = waitingTokens[0];
-        nextToken.status = 'in-consultation';
-        queue.currentToken = nextToken.tokenNumber;
-        queue.status = 'in-session';
-
-        const booking = this.state.bookings.find(b => b.doctorId === doctorId && b.tokenNumber === nextToken.tokenNumber);
-        if (booking) booking.status = 'in-consultation';
-      } else {
-        queue.currentToken = 0;
-        queue.status = 'completed';
-      }
-    }
+    queue.currentToken = cloudRes.currentToken || 0;
+    queue.status = cloudRes.status || 'in-session';
 
     const doctor = this.state.doctors.find(d => d.id === doctorId);
     if (doctor) {
@@ -1190,10 +1173,27 @@ async login(email, password) {
     return queue;
   }
 
-  pauseDoctorQueue(doctorId) {
+  async pauseDoctorQueue(doctorId) {
+    if (!this.state.currentUser || !this.state.currentUser.id || (this.state.currentUser.role !== 'doctor' && this.state.currentUser.role !== 'admin')) {
+      throw new Error('Access Denied: Only the assigned verified physician can pause this OPD queue.');
+    }
     const queue = this.state.queues[doctorId];
     if (!queue) return null;
-    queue.status = queue.status === 'paused' ? 'in-session' : 'paused';
+
+    const willPause = queue.status !== 'paused';
+    let cloudRes = null;
+    if (window.mediarcaSupabase && window.mediarcaSupabase.isConnected) {
+      try {
+        cloudRes = await window.mediarcaSupabase.cloudPauseDoctorQueue(doctorId, willPause);
+      } catch (err) {
+        console.error('Cloud pause doctor queue error:', err);
+        throw new Error(`Failed to toggle queue pause on server: ${err.message}`);
+      }
+    } else {
+      throw new Error('Hospital server network is unreachable. Cannot toggle queue pause offline.');
+    }
+
+    queue.status = cloudRes?.status || (willPause ? 'paused' : 'in-session');
     this.notifySubscribers();
     return queue;
   }
@@ -1208,13 +1208,20 @@ async login(email, password) {
 
     // 2. Authoritative Transactional Cloud RPC (H-05 Resolution)
     if (window.mediarcaSupabase && window.mediarcaSupabase.isConnected) {
-      cloudRes = await window.mediarcaSupabase.cloudSavePrescription(doctorId, tokenNumber, rxData);
+      try {
+        cloudRes = await window.mediarcaSupabase.cloudSavePrescription(doctorId, tokenNumber, rxData);
+      } catch (err) {
+        console.error('Cloud complete consultation error:', err);
+        throw new Error(`Failed to record consultation and prescription on server: ${err.message}`);
+      }
+    } else {
+      throw new Error('Hospital server network is unreachable. Cannot finalize medical records offline.');
     }
 
     const queue = this.state.queues[doctorId];
-    if (queue && queue.tokens) {
-      const token = queue.tokens.find(t => t.tokenNumber === tokenNumber);
-      if (token) token.status = 'completed';
+    if (queue) {
+      queue.currentToken = cloudRes.currentToken || 0;
+      queue.status = cloudRes.status || 'in-session';
     }
 
     const booking = this.state.bookings.find(b => b.doctorId === doctorId && b.tokenNumber === tokenNumber);
@@ -1227,16 +1234,7 @@ async login(email, password) {
       };
     }
 
-    if (!cloudRes) {
-      await this.advanceDoctorQueue(doctorId);
-    } else {
-      if (queue) {
-        queue.currentToken = cloudRes.currentToken || 0;
-        queue.status = cloudRes.status || 'in-session';
-      }
-      this.notifySubscribers();
-    }
-
+    this.notifySubscribers();
     return booking;
   }
 
@@ -1251,12 +1249,19 @@ async login(email, password) {
 
     let cloudRes = null;
     if (window.mediarcaSupabase && window.mediarcaSupabase.isConnected) {
-      cloudRes = await window.mediarcaSupabase.cloudVerifyDoctor(doc.id, approved, reason);
+      try {
+        cloudRes = await window.mediarcaSupabase.cloudVerifyDoctor(doc.id, approved, reason);
+      } catch (err) {
+        console.error('Cloud doctor verify error:', err);
+        throw new Error(`Failed to record doctor credential verification on server: ${err.message}`);
+      }
+    } else {
+      throw new Error('Hospital server network is unreachable. Cannot verify credentials offline.');
     }
 
     if (approved) {
       doc.verificationStatus = 'verified';
-      doc.mediarcaId = cloudRes?.mediarca_id || ('MED-DOC-' + Math.floor(1000 + Math.random() * 9000));
+      doc.mediarcaId = cloudRes?.mediarca_id || doc.mediarcaId;
       doc.verifiedAt = cloudRes?.verified_at || new Date().toISOString();
 
       if (!this.state.queues[doc.id]) {

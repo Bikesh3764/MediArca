@@ -94,7 +94,7 @@ CREATE TABLE IF NOT EXISTS appointments (
     status VARCHAR(20) DEFAULT 'booked' CHECK (status IN ('booked', 'checked_in', 'waiting', 'in-consultation', 'completed', 'cancelled', 'no-show', 'skipped')),
     is_priority BOOLEAN DEFAULT false,
     priority_reason TEXT,
-    scheduled_slot VARCHAR(50) DEFAULT '09:00 AM',
+    scheduled_slot VARCHAR(50) DEFAULT NULL,
     checkin_token VARCHAR(255) UNIQUE,
     checkin_token_expires_at TIMESTAMPTZ DEFAULT (NOW() + interval '24 hours'),
     checkin_token_used_at TIMESTAMPTZ,
@@ -112,10 +112,12 @@ CREATE TABLE IF NOT EXISTS appointments (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Active Slot Uniqueness Index for Concurrency Protection (Audit BUG-04 Resolution)
+-- Active Slot Uniqueness Index for Concurrency Protection (Audit P0-01 Resolution: applies to future scheduled slots only)
 CREATE UNIQUE INDEX IF NOT EXISTS uq_active_doctor_future_slot 
 ON appointments (doctor_id, scheduled_date, scheduled_slot)
-WHERE status IN ('booked', 'checked_in', 'waiting', 'in-consultation');
+WHERE status IN ('booked', 'checked_in', 'waiting', 'in-consultation')
+  AND scheduled_slot IS NOT NULL
+  AND token_number IS NULL;
 
 -- 7. RICH EMR CLINICAL ENCOUNTERS (Section 10 Resolution: Chief Complaint, Vitals, Exam Findings, Assessment & Treatment)
 CREATE TABLE IF NOT EXISTS clinical_encounters (
@@ -209,7 +211,7 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     entity_id UUID,
     before_state JSONB,
     after_state JSONB,
-    ip_address VARCHAR(45) DEFAULT '127.0.0.1',
+    ip_address VARCHAR(45) DEFAULT NULL,
     user_agent TEXT DEFAULT 'MediArca EMR Web Client',
     metadata JSONB,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -257,7 +259,7 @@ CREATE TABLE IF NOT EXISTS patient_consents (
     consent_text_version VARCHAR(20) DEFAULT 'v2.4-HIPAA',
     is_accepted BOOLEAN NOT NULL DEFAULT true,
     terms_accepted BOOLEAN NOT NULL DEFAULT true,
-    ip_address VARCHAR(45) DEFAULT '127.0.0.1',
+    ip_address VARCHAR(45) DEFAULT NULL,
     signed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     granted_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -1186,10 +1188,11 @@ BEGIN
         RAISE EXCEPTION 'Authentication required. Reception staff, attending doctors, or the patient must be authenticated to check in.';
     END IF;
 
-    -- C-26: Strictly look up appointment by dedicated high-entropy checkin_token (never booking_id)
+    -- C-26: Strictly look up appointment by dedicated high-entropy checkin_token with FOR UPDATE lock (Audit P0-08 Resolution)
     SELECT * INTO v_appointment
     FROM appointments
-    WHERE checkin_token = p_checkin_token;
+    WHERE checkin_token = p_checkin_token
+    FOR UPDATE;
 
     IF v_appointment.id IS NULL THEN
         RAISE EXCEPTION 'Invalid check-in token credential.';
@@ -1231,8 +1234,12 @@ BEGIN
     SET status = 'checked_in',
         check_in_time = NOW(),
         checkin_token_used_at = NOW()
-    WHERE id = v_appointment.id
+    WHERE id = v_appointment.id AND checkin_token_used_at IS NULL
     RETURNING * INTO v_appointment;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'QR check-in collision: This token has already been claimed by a concurrent process.';
+    END IF;
 
     -- Log reception audit event
     INSERT INTO audit_logs (actor_id, action, entity, entity_id, metadata)
@@ -1391,6 +1398,57 @@ BEGIN
     );
 
     RETURN to_jsonb(v_appointment);
+END;
+$$;
+
+-- 14B. ATOMIC QUEUE PAUSE / RESUME RPC (Audit P1-05 Resolution: Synchronized multi-client queue pause)
+CREATE OR REPLACE FUNCTION pause_doctor_queue_atomic(
+    p_doctor_id UUID,
+    p_is_paused BOOLEAN,
+    p_reason TEXT DEFAULT 'Clinic pause state toggled by attending physician'
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+    v_actor_id UUID;
+    v_is_authorized BOOLEAN;
+    v_new_status VARCHAR;
+BEGIN
+    v_actor_id := auth.uid();
+    IF v_actor_id IS NULL THEN
+        RAISE EXCEPTION 'Authentication required.';
+    END IF;
+
+    SELECT EXISTS (
+        SELECT 1 FROM doctors
+        WHERE id = p_doctor_id 
+          AND user_id = v_actor_id
+          AND verification_status = 'verified'
+    ) INTO v_is_authorized;
+
+    IF NOT v_is_authorized AND NOT is_admin(v_actor_id) THEN
+        RAISE EXCEPTION 'Not authorized. Only the accredited attending physician or admin can pause this queue.';
+    END IF;
+
+    v_new_status := CASE WHEN p_is_paused THEN 'paused' ELSE 'in-session' END;
+
+    UPDATE clinic_queues
+    SET status = v_new_status, updated_at = NOW()
+    WHERE doctor_id = p_doctor_id AND queue_date = CURRENT_DATE;
+
+    INSERT INTO audit_logs (actor_id, action, entity, entity_id, metadata)
+    VALUES (
+        v_actor_id,
+        'TOGGLE_QUEUE_PAUSE',
+        'clinic_queues',
+        p_doctor_id,
+        jsonb_build_object('is_paused', p_is_paused, 'status', v_new_status, 'reason', p_reason)
+    );
+
+    RETURN jsonb_build_object('doctorId', p_doctor_id, 'status', v_new_status, 'isPaused', p_is_paused);
 END;
 $$;
 
