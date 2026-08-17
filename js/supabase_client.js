@@ -65,7 +65,7 @@ class MediarcaSupabaseClient {
                 email: user.email.toLowerCase().trim(),
                 full_name: googleName,
                 role: 'patient',
-                phone: user.phone || user.user_metadata?.phone || '+91 9608858316'
+                phone: user.phone || user.user_metadata?.phone || null
               }, { onConflict: 'id' })
               .select('*')
               .maybeSingle();
@@ -73,9 +73,9 @@ class MediarcaSupabaseClient {
 
             await this.client.from('patient_clinical_profiles').upsert({
               user_id: user.id,
-              age: 19,
-              gender: 'Male',
-              blood_group: 'B+'
+              age: null,
+              gender: null,
+              blood_group: null
             }, { onConflict: 'user_id' });
           } catch (upsertErr) {
             console.warn('OAuth profile provisioning notice:', upsertErr);
@@ -88,17 +88,10 @@ class MediarcaSupabaseClient {
           const { data } = await this.client
             .from('doctors')
             .select('*')
-            .or(`user_id.eq.${user.id},email.eq.${userEmail}`)
+            .eq('user_id', user.id)
             .maybeSingle();
           doctorProfile = data;
 
-          if (doctorProfile && !doctorProfile.user_id) {
-            await this.client
-              .from('doctors')
-              .update({ user_id: user.id })
-              .eq('id', doctorProfile.id);
-            doctorProfile.user_id = user.id;
-          }
         } catch (e) {
           console.warn('Doctor profile fetch notice:', e);
         }
@@ -118,14 +111,6 @@ class MediarcaSupabaseClient {
         // Authoritative role resolution from DB (doctor profile takes precedence if registered doctor)
         const role = doctorProfile ? 'doctor' : (profile?.role || 'patient');
         const name = doctorProfile?.name || profile?.full_name || user.user_metadata?.full_name || user.email.split('@')[0];
-
-        if (doctorProfile && profile && profile.role !== 'doctor') {
-          try {
-            await this.client.from('users').update({ role: 'doctor' }).eq('id', user.id);
-          } catch (rErr) {
-            console.warn('Role update notice:', rErr);
-          }
-        }
 
         window.mediarcaStore.setAuthSession({
           id: user.id,
@@ -256,51 +241,24 @@ class MediarcaSupabaseClient {
   }
 
   async cloudUpdatePatientProfile(userId, profileData) {
-    if (!this.client || !userId) return;
+    if (!this.client || !userId) throw new Error('Supabase client unavailable');
 
     const name = profileData.name || null;
     const phone = profileData.phone || null;
-    const age = profileData.age ? parseInt(profileData.age) : null;
+    const age = profileData.age ? parseInt(profileData.age, 10) : null;
     const gender = profileData.gender || null;
     const bloodGroup = profileData.bloodGroup || null;
 
-    try {
-      // 1. Try atomic RPC update first
-      const { data, error } = await this.client.rpc('update_patient_profile_atomic', {
-        p_name: name,
-        p_phone: phone,
-        p_age: age,
-        p_gender: gender,
-        p_blood_group: bloodGroup
-      });
+    const { data, error } = await this.client.rpc('update_patient_profile_atomic', {
+      p_name: name,
+      p_phone: phone,
+      p_age: age,
+      p_gender: gender,
+      p_blood_group: bloodGroup
+    });
 
-      if (!error && data) {
-        return data;
-      }
-    } catch (rpcErr) {
-      console.warn('RPC profile update fallback notice:', rpcErr);
-    }
-
-    try {
-      // 2. Direct fallback updates
-      const userUpdate = {};
-      if (name) userUpdate.full_name = name;
-      if (phone) userUpdate.phone = phone;
-      if (age) userUpdate.age = age;
-      if (gender) userUpdate.gender = gender;
-      if (bloodGroup) userUpdate.blood_group = bloodGroup;
-
-      await this.client.from('users').update(userUpdate).eq('id', userId);
-
-      await this.client.from('patient_clinical_profiles').upsert({
-        user_id: userId,
-        age: age,
-        gender: gender,
-        blood_group: bloodGroup
-      }, { onConflict: 'user_id' });
-    } catch (fallbackErr) {
-      console.warn('Direct fallback profile update notice:', fallbackErr);
-    }
+    if (error) throw error;
+    return data;
   }
 
   async cloudUpdateDoctorProfile(doctorId, doctorData) {
@@ -325,7 +283,7 @@ class MediarcaSupabaseClient {
 
     try {
       // PQ-02 Resolution: Exclusively listen for today's live queue changes
-      const todayStr = new Date().toISOString().split('T')[0];
+      const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
       this.client
         .channel('public:clinic_queues_today')
         .on('postgres_changes', { 
@@ -353,6 +311,9 @@ class MediarcaSupabaseClient {
   // --- 3. CLOUD REPOSITORY OPERATIONS ---
   async syncInitialDataFromCloud() {
     if (!this.client) return;
+
+    const { data: authUserData } = await this.client.auth.getUser();
+    const user = authUserData?.user || null;
 
     try {
       // 1. Fetch Verified Doctors from sanitized Public Directory View (P-02 Resolution)
@@ -389,7 +350,7 @@ class MediarcaSupabaseClient {
       const { data: queues, error: qErr } = await this.client
         .from('clinic_queues')
         .select('*')
-        .eq('queue_date', new Date().toISOString().split('T')[0]);
+        .eq('queue_date', new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date()));
 
       if (!qErr && queues && queues.length > 0) {
         queues.forEach(q => {
@@ -440,10 +401,8 @@ class MediarcaSupabaseClient {
             endAt: a.end_at
           }));
 
-          // Merge into state.bookings by unique ID
-          const existingIds = new Set(mappedBookings.map(b => b.id));
-          const localOnly = (window.mediarcaStore.state.bookings || []).filter(b => !existingIds.has(b.id));
-          window.mediarcaStore.state.bookings = [...mappedBookings, ...localOnly];
+          // Supabase is authoritative for clinical appointments.
+          window.mediarcaStore.state.bookings = mappedBookings;
 
           // Distribute active tokens into respective doctor queues
           mappedBookings.forEach(b => {
@@ -484,9 +443,11 @@ class MediarcaSupabaseClient {
       }
 
         // 4. Authenticated Doctor & Admin Full Hydration (Item 5 & P1-13 Resolution)
-        const { data: userProfile } = await this.client.from('users').select('role').eq('id', user.id).single();
+        const { data: userProfile } = user
+          ? await this.client.from('users').select('role').eq('id', user.id).maybeSingle()
+          : { data: null };
         
-        if (userProfile?.role === 'doctor' || window.mediarcaStore.state.currentUser?.role === 'doctor') {
+        if (user && (userProfile?.role === 'doctor' || window.mediarcaStore.state.currentUser?.role === 'doctor')) {
           const { data: myDoc } = await this.client.from('doctors').select('*').eq('user_id', user.id).maybeSingle();
           if (myDoc) {
             const existingIdx = window.mediarcaStore.state.doctors.findIndex(x => x.id === myDoc.id || x.userId === user.id);
@@ -522,7 +483,7 @@ class MediarcaSupabaseClient {
           }
         }
 
-        if (userProfile?.role === 'admin' || window.mediarcaStore.state.currentUser?.role === 'admin') {
+        if (user && (userProfile?.role === 'admin' || window.mediarcaStore.state.currentUser?.role === 'admin')) {
           const { data: allDocs } = await this.client.from('doctors').select('*').order('created_at', { ascending: false });
           if (allDocs && allDocs.length > 0) {
             allDocs.forEach(d => {
@@ -580,7 +541,6 @@ class MediarcaSupabaseClient {
             });
           }
         }
-      }
 
       window.mediarcaStore.notifySubscribers();
     } catch (err) {
