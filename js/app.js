@@ -511,9 +511,9 @@ class MediarcaApp {
     const genderEl = document.getElementById('bookingPatientGender');
 
     if (nameEl) nameEl.value = currentUser.name || currentUser.patientProfile?.full_name || currentUser.email?.split('@')[0] || '';
-    if (phoneEl) phoneEl.value = currentUser.phone || currentUser.patientProfile?.phone || currentUser.clinicalProfile?.emergency_contact || '+91 98765 43210';
-    if (ageEl) ageEl.value = currentUser.clinicalProfile?.age || currentUser.age || 30;
-    if (genderEl) genderEl.value = currentUser.clinicalProfile?.gender || currentUser.gender || 'Male';
+    if (phoneEl) phoneEl.value = currentUser.phone || currentUser.patientProfile?.phone || '';
+    if (ageEl) ageEl.value = currentUser.clinicalProfile?.age || currentUser.patientProfile?.age || currentUser.age || '';
+    if (genderEl) genderEl.value = currentUser.clinicalProfile?.gender || currentUser.patientProfile?.gender || currentUser.gender || 'Male';
     
     const dateInput = document.getElementById('bookingDateInput');
     if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
