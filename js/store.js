@@ -348,7 +348,7 @@ const SEED_BOOKINGS = [
     patientName: 'Sarah Johnson',
     patientAge: 32,
     patientGender: 'Female',
-    patientPhone: '+1 (555) 234-8900',
+    patientPhone: '+91 98765 43210',
     doctorId: 'd0000000-0000-0000-0000-000000000001',
     doctorName: 'Dr. Aris Thorne',
     specialty: 'Cardiology',
