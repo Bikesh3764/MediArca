@@ -583,22 +583,57 @@ class MediarcaSupabaseClient {
   }
 
   // --- 4. ATOMIC AUTHORIZED STORED PROCEDURES (C-04 & C-05) ---
-  async safeRpc(rpcName, params, timeoutMs = 8000) {
-    if (!this.client) throw new Error('Hospital database is offline. Please check your network connection.');
+  async safeRpc(rpcName, params, timeoutMs = 15000) {
+    let authToken = SUPABASE_CONFIG.key;
+    try {
+      if (this.client) {
+        const { data } = await Promise.race([
+          this.client.auth.getSession(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('session timeout')), 1000))
+        ]);
+        if (data?.session?.access_token) {
+          authToken = data.session.access_token;
+        }
+      }
+    } catch (_) {}
 
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error(`Database request timed out (${rpcName}). Please check your connection.`)), timeoutMs)
-    );
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-    const rpcPromise = this.client.rpc(rpcName, params);
-    const { data, error } = await Promise.race([rpcPromise, timeoutPromise]);
+    try {
+      const response = await fetch(`${SUPABASE_CONFIG.url}/rest/v1/rpc/${rpcName}`, {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_CONFIG.key,
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=representation'
+        },
+        body: JSON.stringify(params),
+        signal: controller.signal
+      });
 
-    if (error) {
-      console.error(`RPC [${rpcName}] Error:`, error);
-      throw new Error(error.message || `RPC ${rpcName} failed`);
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        let errorMsg = `Server request failed (${response.status})`;
+        try {
+          const errJson = await response.json();
+          errorMsg = errJson.message || errJson.error_description || errJson.hint || errJson.details || errorMsg;
+        } catch (_) {}
+        console.error(`RPC [${rpcName}] Error Response:`, errorMsg);
+        throw new Error(errorMsg);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (err) {
+      clearTimeout(timeoutId);
+      if (err.name === 'AbortError') {
+        throw new Error(`Database request timed out (${rpcName}). Please check your connection.`);
+      }
+      throw err;
     }
-
-    return data;
   }
 
   async cloudBookAppointment(bookingObj) {
@@ -626,8 +661,7 @@ class MediarcaSupabaseClient {
   async cloudIssueReceptionWalkinToken(walkinObj) {
     if (!this.client) throw new Error('Cloud offline');
 
-    // H-18 & H-19: Dedicated receptionist walk-in token issuance RPC with accurate demographics
-    const { data, error } = await this.client.rpc('issue_reception_walkin_token', {
+    return this.safeRpc('issue_reception_walkin_token', {
       p_doctor_id: walkinObj.doctorId,
       p_patient_name: walkinObj.patientName,
       p_patient_phone: walkinObj.patientPhone || 'Not specified',
@@ -638,53 +672,30 @@ class MediarcaSupabaseClient {
       p_priority_reason: walkinObj.priorityReason || null,
       p_timezone: walkinObj.timezone || 'Asia/Kolkata'
     });
-
-    if (error) {
-      console.error('RPC Reception Walk-in Error:', error);
-      throw error;
-    }
-
-    return data;
   }
 
   async cloudAdvanceQueue(doctorId) {
     if (!this.client) throw new Error('Cloud offline');
 
-    // Call authoritative RPC: caller verified against doctor ownership on server
-    const { data, error } = await this.client.rpc('advance_doctor_queue_atomic', {
+    return this.safeRpc('advance_doctor_queue_atomic', {
       p_doctor_id: doctorId
     });
-
-    if (error) {
-      console.error('RPC Advance Error:', error);
-      throw error;
-    }
-
-    return data;
   }
 
   async cloudPauseDoctorQueue(doctorId, isPaused, reason = 'Clinic pause state toggled by physician') {
     if (!this.client) throw new Error('Cloud offline');
 
-    const { data, error } = await this.client.rpc('pause_doctor_queue_atomic', {
+    return this.safeRpc('pause_doctor_queue_atomic', {
       p_doctor_id: doctorId,
       p_is_paused: isPaused,
       p_reason: reason
     });
-
-    if (error) {
-      console.error('RPC Pause Queue Error:', error);
-      throw error;
-    }
-
-    return data;
   }
 
   async cloudSavePrescription(doctorId, tokenNumber, rxData) {
     if (!this.client) throw new Error('Cloud offline');
 
-    // Call atomic transactional RPC: updates appointment, advances queue, and logs audit with full clinical encounter fields
-    const { data, error } = await this.client.rpc('complete_consultation_rx_atomic', {
+    return this.safeRpc('complete_consultation_rx_atomic', {
       p_doctor_id: doctorId,
       p_token_number: parseInt(tokenNumber),
       p_diagnosis: rxData.diagnosis || 'Clinical evaluation concluded.',
@@ -698,130 +709,73 @@ class MediarcaSupabaseClient {
       p_lab_orders: rxData.labOrders || rxData.lab_orders || null,
       p_follow_up_date: rxData.followUpDate || rxData.follow_up_date || null
     });
-
-    if (error) {
-      console.error('RPC Prescription Error:', error);
-      throw error;
-    }
-
-    return data;
   }
 
   async cloudVerifyDoctor(doctorId, approved, reason = 'Medical board credentials review concluded.') {
     if (!this.client) throw new Error('Cloud offline');
 
-    // Call protected Admin RPC with role validation and immutable audit logging
-    const { data, error } = await this.client.rpc('verify_doctor_admin_atomic', {
+    return this.safeRpc('verify_doctor_admin_atomic', {
       p_doctor_id: doctorId,
       p_approved: approved,
       p_reason: reason
     });
-
-    if (error) {
-      console.error('RPC Doctor Verification Error:', error);
-      throw error;
-    }
-
-    return data;
   }
 
   async cloudMarkAppointmentStatus(doctorId, tokenNumber, status, reason = 'Doctor clinic queue update.') {
     if (!this.client) throw new Error('Cloud offline');
 
-    const { data, error } = await this.client.rpc('mark_appointment_status_atomic', {
+    return this.safeRpc('mark_appointment_status_atomic', {
       p_doctor_id: doctorId,
       p_token_number: parseInt(tokenNumber),
       p_status: status,
       p_reason: reason
     });
-
-    if (error) {
-      console.error('RPC Mark Status Error:', error);
-      throw error;
-    }
-
-    return data;
   }
 
   async cloudFlagPriorityAppointment(doctorId, tokenNumber, reason = 'Emergency clinical triage priority requested.') {
     if (!this.client) throw new Error('Cloud offline');
 
-    const { data, error } = await this.client.rpc('flag_priority_appointment_atomic', {
+    return this.safeRpc('flag_priority_appointment_atomic', {
       p_doctor_id: doctorId,
       p_token_number: parseInt(tokenNumber),
       p_reason: reason
     });
-
-    if (error) {
-      console.error('RPC Priority Override Error:', error);
-      throw error;
-    }
-
-    return data;
   }
 
   async cloudCheckInPatientQr(checkinToken) {
     if (!this.client) throw new Error('Cloud offline');
 
-    const { data, error } = await this.client.rpc('check_in_patient_qr_atomic', {
+    return this.safeRpc('check_in_patient_qr_atomic', {
       p_checkin_token: checkinToken
     });
-
-    if (error) {
-      console.error('RPC QR Check-in Error:', error);
-      throw error;
-    }
-
-    return data;
   }
 
   async cloudTransferPatientQueue(appointmentId, targetDoctorId, reason = 'Reception queue transfer') {
     if (!this.client) throw new Error('Cloud offline');
 
-    const { data, error } = await this.client.rpc('transfer_patient_queue_atomic', {
+    return this.safeRpc('transfer_patient_queue_atomic', {
       p_appointment_id: appointmentId,
       p_target_doctor_id: targetDoctorId,
       p_reason: reason
     });
-
-    if (error) {
-      console.error('RPC Queue Transfer Error:', error);
-      throw error;
-    }
-
-    return data;
   }
 
   async cloudRescheduleAppointment(appointmentId, newDate, newSlot) {
     if (!this.client) throw new Error('Cloud offline');
 
-    const { data, error } = await this.client.rpc('reschedule_appointment_atomic', {
+    return this.safeRpc('reschedule_appointment_atomic', {
       p_appointment_id: appointmentId,
       p_new_date: newDate,
       p_new_slot: newSlot
     });
-
-    if (error) {
-      console.error('RPC Reschedule Error:', error);
-      throw error;
-    }
-
-    return data;
   }
 
   async cloudGetAuditLogs(limit = 50) {
     if (!this.client) throw new Error('Cloud offline');
 
-    const { data, error } = await this.client.rpc('get_system_audit_logs', {
+    return this.safeRpc('get_system_audit_logs', {
       p_limit: limit
     });
-
-    if (error) {
-      console.error('RPC Audit Logs Error:', error);
-      throw error;
-    }
-
-    return data;
   }
 
   async cloudGetAdminAuditLogs(limit = 50) {
@@ -934,84 +888,49 @@ class MediarcaSupabaseClient {
   async cloudUpdatePatientStage(appointmentId, stage, notes = 'Clinical stage routing transition') {
     if (!this.client) throw new Error('Cloud offline');
 
-    const { data, error } = await this.client.rpc('update_patient_stage_atomic', {
+    return this.safeRpc('update_patient_stage_atomic', {
       p_appointment_id: appointmentId,
       p_stage: stage,
       p_notes: notes
     });
-
-    if (error) {
-      console.error('RPC Stage Route Error:', error);
-      throw error;
-    }
-
-    return data;
   }
 
   async cloudRecordPatientConsent(consentType, version = 'v2026.1', termsAccepted = true, metadata = {}) {
     if (!this.client) throw new Error('Cloud offline');
 
-    const { data, error } = await this.client.rpc('record_patient_consent_atomic', {
+    return this.safeRpc('record_patient_consent_atomic', {
       p_consent_type: consentType,
       p_version: version,
       p_terms_accepted: termsAccepted,
       p_metadata: metadata
     });
-
-    if (error) {
-      console.error('RPC Record Consent Error:', error);
-      throw error;
-    }
-
-    return data;
   }
 
   async cloudGenerateAndSettleInvoice(appointmentId, paymentMethod = 'Card', insuranceProvider = null, insuranceCoverage = 0, couponCode = null) {
     if (!this.client) throw new Error('Cloud offline');
 
-    const { data, error } = await this.client.rpc('generate_and_settle_invoice_atomic', {
+    return this.safeRpc('generate_and_settle_invoice_atomic', {
       p_appointment_id: appointmentId,
       p_payment_method: paymentMethod,
       p_insurance_provider: insuranceProvider,
       p_insurance_coverage: parseFloat(insuranceCoverage) || 0,
       p_coupon_code: couponCode || null
     });
-
-    if (error) {
-      console.error('RPC Invoice Error:', error);
-      throw error;
-    }
-
-    return data;
   }
 
   async cloudCreateTelemedicineRoom(appointmentId, roomName = 'MediArca Virtual Suite') {
     if (!this.client) throw new Error('Cloud offline');
 
-    const { data, error } = await this.client.rpc('create_telemedicine_room_atomic', {
+    return this.safeRpc('create_telemedicine_room_atomic', {
       p_appointment_id: appointmentId,
       p_room_name: roomName
     });
-
-    if (error) {
-      console.error('RPC Telemedicine Room Error:', error);
-      throw error;
-    }
-
-    return data;
   }
 
   async cloudGetHospitalAnalytics() {
     if (!this.client) throw new Error('Cloud offline');
 
-    const { data, error } = await this.client.rpc('get_hospital_operational_analytics');
-
-    if (error) {
-      console.error('RPC Analytics Error:', error);
-      throw error;
-    }
-
-    return data;
+    return this.safeRpc('get_hospital_operational_analytics', {});
   }
 
   async cloudScheduleFutureAppointment(bookingObj) {
