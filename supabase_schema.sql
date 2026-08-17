@@ -254,36 +254,48 @@ CREATE TABLE IF NOT EXISTS patient_consents (
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     consent_type VARCHAR(50) NOT NULL CHECK (consent_type IN ('treatment_consent', 'teleconsult_consent', 'data_sharing_consent', 'document_upload_consent')),
     version VARCHAR(20) NOT NULL DEFAULT 'v2.4-HIPAA',
+    consent_text_version VARCHAR(20) DEFAULT 'v2.4-HIPAA',
     is_accepted BOOLEAN NOT NULL DEFAULT true,
+    terms_accepted BOOLEAN NOT NULL DEFAULT true,
     ip_address VARCHAR(45) DEFAULT '127.0.0.1',
-    signed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    signed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    granted_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 14. PATIENT INVOICES & INSURANCE BILLING (Section 20 Resolution)
+-- 14. PATIENT INVOICES & INSURANCE BILLING (Section 20 & Audit P0-03 Resolution)
 CREATE TABLE IF NOT EXISTS patient_invoices (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     invoice_number VARCHAR(50) UNIQUE NOT NULL,
-    appointment_id UUID REFERENCES appointments(id) ON DELETE SET NULL,
+    appointment_id UUID UNIQUE REFERENCES appointments(id) ON DELETE SET NULL,
     patient_id UUID REFERENCES users(id) ON DELETE SET NULL,
     doctor_id UUID REFERENCES doctors(id) ON DELETE SET NULL,
     consultation_fee NUMERIC(10, 2) NOT NULL DEFAULT 60.00,
+    total_amount NUMERIC(10, 2) NOT NULL DEFAULT 60.00,
     discount_code VARCHAR(50),
     discount_amount NUMERIC(10, 2) DEFAULT 0.00,
-    net_payable NUMERIC(10, 2) NOT NULL,
+    net_payable NUMERIC(10, 2) NOT NULL DEFAULT 60.00,
+    insurance_covered_amount NUMERIC(10, 2) DEFAULT 0.00,
+    patient_paid_amount NUMERIC(10, 2) NOT NULL DEFAULT 60.00,
     insurance_provider VARCHAR(100),
     claim_number VARCHAR(100),
     claim_status VARCHAR(30) DEFAULT 'unclaimed' CHECK (claim_status IN ('unclaimed', 'submitted', 'pre_authorized', 'settled', 'rejected')),
     payment_status VARCHAR(20) DEFAULT 'pending' CHECK (payment_status IN ('pending', 'paid', 'refunded', 'waived')),
     payment_method VARCHAR(50) DEFAULT 'Credit Card / Digital Payment',
+    settled_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 15. TELEMEDICINE SECURE VIDEO SESSIONS (Section 18 Resolution)
+-- 15. TELEMEDICINE SECURE VIDEO SESSIONS (Section 18 & Audit P1-10 Resolution)
 CREATE TABLE IF NOT EXISTS telemedicine_rooms (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     appointment_id UUID UNIQUE REFERENCES appointments(id) ON DELETE CASCADE,
     room_token VARCHAR(255) UNIQUE NOT NULL,
-    status VARCHAR(20) DEFAULT 'waiting' CHECK (status IN ('waiting', 'live', 'concluded', 'abandoned')),
+    room_name VARCHAR(255) DEFAULT 'MediArca Virtual Suite',
+    doctor_id UUID REFERENCES doctors(id) ON DELETE SET NULL,
+    patient_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    status VARCHAR(20) DEFAULT 'waiting' CHECK (status IN ('waiting', 'active', 'live', 'concluded', 'abandoned')),
+    session_status VARCHAR(20) DEFAULT 'waiting' CHECK (session_status IN ('waiting', 'active', 'live', 'concluded', 'abandoned')),
+    expires_at TIMESTAMP WITH TIME ZONE,
     doctor_joined_at TIMESTAMP WITH TIME ZONE,
     patient_joined_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -518,14 +530,14 @@ BEGIN
     SET total_tokens = v_next_token, queue_active = true
     WHERE id = p_doctor_id;
 
-    -- H-19: Store actual demographic values (or null if unknown) without hardcoding fictitious demographics
+    -- H-19 & P0-10: Walk-in appointment registered with status 'waiting' and physical check-in timestamp
     INSERT INTO appointments (
         booking_id, patient_id, doctor_id, patient_name, patient_phone, patient_age, patient_gender,
         token_number, status, is_priority, priority_reason, checkin_token, checkin_token_expires_at,
         check_in_time, checkin_token_used_at, appointment_date, scheduled_date, start_at, end_at, timezone, symptoms
     ) VALUES (
         v_booking_id, NULL, p_doctor_id, p_patient_name, COALESCE(p_patient_phone, 'Not specified'),
-        p_patient_age, p_patient_gender, v_next_token, 'checked_in', p_is_priority, p_priority_reason,
+        p_patient_age, p_patient_gender, v_next_token, 'waiting', p_is_priority, p_priority_reason,
         v_checkin_token, NOW() + interval '24 hours', NOW(), NOW(), CURRENT_DATE, CURRENT_DATE,
         NULL, NULL, COALESCE(p_timezone, 'Asia/Kolkata'), p_symptoms
     ) RETURNING * INTO v_appointment;
@@ -708,7 +720,7 @@ BEGIN
     -- Fetch next waiting patient in line strictly for CURRENT_DATE (H-13 Anti-Starvation Fair Scoring: Emergency priority + wait-time aging)
     SELECT id, token_number INTO v_next_token_id, v_next_token_num
     FROM appointments
-    WHERE doctor_id = p_doctor_id AND scheduled_date = CURRENT_DATE AND status = 'waiting'
+    WHERE doctor_id = p_doctor_id AND scheduled_date = CURRENT_DATE AND status IN ('waiting', 'checked_in')
     ORDER BY 
         (CASE WHEN is_priority THEN 500 ELSE 0 END + (EXTRACT(EPOCH FROM (NOW() - created_at))/60)) DESC,
         token_number ASC
@@ -867,7 +879,7 @@ BEGIN
         END LOOP;
     END IF;
 
-    -- 4B. Insert Structured Lab Orders (H-08: Itemized one row per test)
+    -- 4B. Insert Structured Lab Orders (H-08 & P0-12: Itemized one row per test with clinical_indication)
     IF p_lab_orders IS NOT NULL AND trim(p_lab_orders) != '' THEN
         DECLARE
             v_lab_item TEXT;
@@ -875,7 +887,7 @@ BEGIN
             FOR v_lab_item IN SELECT unnest(string_to_array(p_lab_orders, ',')) LOOP
                 IF trim(v_lab_item) != '' THEN
                     INSERT INTO lab_orders (
-                        appointment_id, doctor_id, patient_id, test_name, clinical_notes, status
+                        appointment_id, doctor_id, patient_id, test_name, clinical_indication, status
                     ) VALUES (
                         v_appointment.id,
                         p_doctor_id,
@@ -892,7 +904,7 @@ BEGIN
     -- 5. Advance queue to next waiting patient atomically (H-13 Anti-Starvation Fair Scoring)
     SELECT id, token_number INTO v_next_token_id, v_next_token_num
     FROM appointments
-    WHERE doctor_id = p_doctor_id AND scheduled_date = CURRENT_DATE AND status = 'waiting'
+    WHERE doctor_id = p_doctor_id AND scheduled_date = CURRENT_DATE AND status IN ('waiting', 'checked_in')
     ORDER BY 
         (CASE WHEN is_priority THEN 500 ELSE 0 END + (EXTRACT(EPOCH FROM (NOW() - created_at))/60)) DESC,
         token_number ASC
@@ -2047,6 +2059,32 @@ CREATE POLICY "Doctor can update consultation status and prescription" ON appoin
     doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid() AND verification_status = 'verified') OR is_admin(auth.uid())
 );
 
+-- P0-09: Prevent direct mutation of core appointment identity fields on UPDATE
+CREATE OR REPLACE FUNCTION prevent_appointment_core_fields_mutation()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+    IF (OLD.patient_id IS DISTINCT FROM NEW.patient_id) OR
+       (OLD.doctor_id IS DISTINCT FROM NEW.doctor_id) OR
+       (OLD.booking_id IS DISTINCT FROM NEW.booking_id) OR
+       (OLD.token_number IS DISTINCT FROM NEW.token_number) OR
+       (OLD.checkin_token IS DISTINCT FROM NEW.checkin_token) THEN
+        IF NOT is_admin(auth.uid()) THEN
+            RAISE EXCEPTION 'Immutable Field Violation: Direct modification of appointment patient, doctor, booking ID, token, or check-in credentials is prohibited.';
+        END IF;
+    END IF;
+    RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_prevent_appointment_core_fields_mutation ON appointments;
+CREATE TRIGGER trg_prevent_appointment_core_fields_mutation
+BEFORE UPDATE ON appointments
+FOR EACH ROW
+EXECUTE FUNCTION prevent_appointment_core_fields_mutation();
+
 -- PATIENT CLINICAL PROFILES RLS (D-02 & D-03 Resolution: Strict Medical Isolation)
 ALTER TABLE patient_clinical_profiles ENABLE ROW LEVEL SECURITY;
 
@@ -2300,6 +2338,23 @@ BEGIN
     END IF;
 
     SELECT role INTO v_actor_role FROM users WHERE id = v_actor_id;
+
+    -- P0-08: Caller Authorization Check: Must be appointment patient, attending doctor, receptionist, or admin
+    IF v_actor_id != v_appointment.patient_id 
+       AND NOT EXISTS (SELECT 1 FROM doctors WHERE id = v_appointment.doctor_id AND user_id = v_actor_id)
+       AND v_actor_role NOT IN ('receptionist', 'admin') 
+       AND NOT is_admin(v_actor_id) THEN
+        RAISE EXCEPTION 'Access Denied: You are not authorized to transition the status of this appointment.';
+    END IF;
+
+    -- Patients are only allowed to cancel their own appointments
+    IF v_actor_id = v_appointment.patient_id 
+       AND v_actor_role NOT IN ('receptionist', 'admin') 
+       AND NOT EXISTS (SELECT 1 FROM doctors WHERE id = v_appointment.doctor_id AND user_id = v_actor_id) THEN
+        IF p_target_status != 'cancelled' THEN
+            RAISE EXCEPTION 'Access Denied: Patients are only permitted to cancel their own appointments.';
+        END IF;
+    END IF;
 
     -- Lifecycle state machine validation
     IF v_appointment.status = p_target_status THEN

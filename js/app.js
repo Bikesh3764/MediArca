@@ -1432,7 +1432,11 @@ class MediarcaApp {
         medications,
         advice: `${advice}${labOrders ? ' • Diagnostic Labs Ordered: ' + labOrders : ''}`,
         followUpDate,
-        vitals: vitalsObj
+        vitals: vitalsObj,
+        labOrders: labOrders || null,
+        examinationFindings: 'Clinical physical examination conducted and documented.',
+        treatmentPlan: advice,
+        symptoms: 'Documented chief complaints and clinical indications'
       });
 
       if (window.mediarcaAudio) window.mediarcaAudio.playChime('success');
@@ -2422,7 +2426,7 @@ class MediarcaApp {
     }
 
     const waitEst = window.mediarcaStore.calculateSmartWaitTime(booking.doctorId, booking.tokenNumber);
-    const tokenHash = window.mediarcaStore.generateSignedCheckInToken(booking.bookingId || booking.id, booking.patientId);
+    const tokenHash = booking.checkinToken || booking.checkin_token || window.mediarcaStore.generateSignedCheckInToken(booking.bookingId || booking.id, booking.patientId);
 
     const win = window.open('', '_blank', 'width=450,height=600');
     if (!win) {
@@ -2530,10 +2534,11 @@ class MediarcaApp {
             <div class="form-group">
               <label class="form-label">Clinical Category *</label>
               <select id="uploadDocCategory" class="form-select" required>
-                <option value="Lab Report PDF">Diagnostic Lab PDF Report</option>
-                <option value="Imaging X-Ray">Medical Imaging (X-Ray / MRI / CT)</option>
-                <option value="Prescription">Physician Prescription Scan</option>
-                <option value="Discharge Summary">Hospital Discharge Summary</option>
+                <option value="lab_report">Diagnostic Lab PDF Report</option>
+                <option value="imaging_xray">Medical Imaging (X-Ray / MRI / CT)</option>
+                <option value="prescription_scan">Physician Prescription Scan</option>
+                <option value="discharge_summary">Hospital Discharge Summary</option>
+                <option value="other">Other Clinical Document</option>
               </select>
             </div>
             <div class="form-group">

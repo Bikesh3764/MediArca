@@ -868,7 +868,37 @@ class MediarcaStore {
       throw new Error('Authentication cloud service unavailable. Cannot register doctor.');
     }
 
-    const docId = 'd_' + Date.now();
+    let docId = 'd_' + Date.now();
+
+    if (window.mediarcaSupabase && window.mediarcaSupabase.isConnected && window.mediarcaSupabase.client && userId) {
+      try {
+        const { data: dbDoc } = await window.mediarcaSupabase.client
+          .from('doctors')
+          .upsert({
+            user_id: userId,
+            name: docData.name.trim(),
+            email: cleanEmail,
+            specialty: docData.specialty || 'General Medicine',
+            degrees: docData.degrees || 'MBBS, MD',
+            reg_number: docData.regNumber.trim(),
+            verification_status: 'pending',
+            experience_years: parseInt(docData.experienceYears) || 5,
+            hospital_affiliation: docData.hospital || 'General Hospital',
+            consultation_fee: parseFloat(docData.fee) || 50,
+            bio: docData.bio || 'Accredited specialist practicing clinical medicine.',
+            queue_active: false
+          }, { onConflict: 'user_id' })
+          .select()
+          .single();
+
+        if (dbDoc) {
+          docId = dbDoc.id;
+        }
+      } catch (dbErr) {
+        console.warn('Doctor database registration notice:', dbErr);
+      }
+    }
+
     const newDoc = {
       id: docId,
       userId: userId,
@@ -1003,6 +1033,8 @@ class MediarcaStore {
       timeSlot: bookingData.scheduledSlot || (isFutureBooking ? '10:00 AM' : 'Live OPD Session'),
       tokenNumber: nextTokenNumber,
       status: cloudBooking?.status || initialStatus,
+      checkinToken: cloudBooking?.checkin_token || null,
+      checkin_token: cloudBooking?.checkin_token || null,
       symptoms: bookingData.symptoms,
       createdAt: cloudBooking?.created_at || new Date().toISOString()
     };
@@ -1084,6 +1116,8 @@ class MediarcaStore {
       timeSlot: 'Walk-in Desk',
       tokenNumber: nextTokenNumber,
       status: 'checked_in',
+      checkinToken: cloudBooking?.checkin_token || null,
+      checkin_token: cloudBooking?.checkin_token || null,
       isPriority: !!walkinData.isPriority,
       priorityReason: walkinData.priorityReason || null,
       symptoms: walkinData.symptoms || 'Walk-in Consultation',
@@ -1169,6 +1203,14 @@ class MediarcaStore {
       if (queue.currentToken === 0) doctor.queueActive = false;
     }
 
+    this.notifySubscribers();
+    return queue;
+  }
+
+  pauseDoctorQueue(doctorId) {
+    const queue = this.state.queues[doctorId];
+    if (!queue) return null;
+    queue.status = queue.status === 'paused' ? 'in-session' : 'paused';
     this.notifySubscribers();
     return queue;
   }

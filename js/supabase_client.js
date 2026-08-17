@@ -392,13 +392,20 @@ class MediarcaSupabaseClient {
   async cloudSavePrescription(doctorId, tokenNumber, rxData) {
     if (!this.client) throw new Error('Cloud offline');
 
-    // Call atomic transactional RPC: updates appointment, advances queue, and logs audit
+    // Call atomic transactional RPC: updates appointment, advances queue, and logs audit with full clinical encounter fields
     const { data, error } = await this.client.rpc('complete_consultation_rx_atomic', {
       p_doctor_id: doctorId,
       p_token_number: parseInt(tokenNumber),
       p_diagnosis: rxData.diagnosis || 'Clinical evaluation concluded.',
-      p_medications: Array.isArray(rxData.medications) ? rxData.medications : [rxData.medications],
-      p_advice: rxData.advice || 'Follow dosage as directed.'
+      p_medications: Array.isArray(rxData.medications) ? rxData.medications : (rxData.medications ? [rxData.medications] : []),
+      p_advice: rxData.advice || 'Follow dosage as directed.',
+      p_vitals: rxData.vitals || null,
+      p_symptoms: rxData.symptoms || null,
+      p_examination_findings: rxData.examinationFindings || rxData.examination_findings || null,
+      p_assessment: rxData.assessment || null,
+      p_treatment_plan: rxData.treatmentPlan || rxData.treatment_plan || null,
+      p_lab_orders: rxData.labOrders || rxData.lab_orders || null,
+      p_follow_up_date: rxData.followUpDate || rxData.follow_up_date || null
     });
 
     if (error) {
@@ -575,39 +582,43 @@ class MediarcaSupabaseClient {
     const signedUrl = signedData?.signedUrl || null;
 
     // 3. Insert metadata record into clinical_documents table (C-11: store durable storage_path)
-    const { data: docRecord, error: dbError } = await this.client
-      .from('clinical_documents')
-      .insert({
-        patient_id: user.id,
-        doctor_id: metadata.doctorId || null,
-        document_name: metadata.title || cleanFileName,
-        document_type: metadata.category || 'lab_report',
-        document_url: storagePath,
-        storage_path: storagePath,
-        file_name: cleanFileName,
-        file_size_bytes: file.size || 0,
-        mime_type: file.type || 'application/pdf',
-        is_encrypted: false, // Transparent storage-level encryption at rest, not app-layer PKI
-        notes: metadata.notes || 'Secured in private authenticated storage vault with server-side encryption at rest'
-      })
-      .select()
-      .single();
+    try {
+      const { data: docRecord, error: dbError } = await this.client
+        .from('clinical_documents')
+        .insert({
+          patient_id: user.id,
+          doctor_id: metadata.doctorId || null,
+          document_name: metadata.title || sanitizedBase,
+          document_type: metadata.category || 'lab_report',
+          document_url: storagePath,
+          storage_path: storagePath,
+          file_name: sanitizedBase,
+          file_size_bytes: file.size || 0,
+          mime_type: file.type || 'application/pdf',
+          is_encrypted: false, // Transparent storage-level encryption at rest, not app-layer PKI
+          notes: metadata.notes || 'Secured in private authenticated storage vault with server-side encryption at rest'
+        })
+        .select()
+        .single();
 
-    if (dbError) {
-      console.error('Document metadata insert error, rolling back storage object:', dbError);
-      // Audit v8 Resolution: Clean up orphaned storage object if metadata row insert fails
+      if (dbError) {
+        throw dbError;
+      }
+
+      return {
+        ...docRecord,
+        signedUrl: signedUrl || storagePath
+      };
+    } catch (insertOrRuntimeErr) {
+      console.error('Document metadata insert/runtime error, rolling back storage object:', insertOrRuntimeErr);
+      // P0-01 Resolution: Clean up orphaned storage object on ANY database or runtime exception
       try {
         await this.client.storage.from('clinical_documents').remove([storagePath]);
       } catch (cleanupErr) {
         console.warn('Storage cleanup warning:', cleanupErr);
       }
-      throw dbError;
+      throw insertOrRuntimeErr;
     }
-
-    return {
-      ...docRecord,
-      signedUrl: signedUrl || storagePath
-    };
   }
 
   async getClinicalDocumentSignedUrl(storagePath) {

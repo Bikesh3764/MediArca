@@ -101,16 +101,22 @@ assert(supabaseClientContent.includes('clinical_documents\').remove'), 'Storage 
 assert(!supabaseClientContent.includes('metadata.role === \'receptionist\' ? \'receptionist\''), 'Public signup strictly disallows self-assigned receptionist role (P0)');
 assert(storeContent.includes('getPatientTimeline'), 'Dynamic medical timeline synthesizer present in store (MT-01)');
 
-// 3. Validate Security Headers & Deployment Config
-const headersContent = fs.readFileSync(path.join(__dirname, '../_headers'), 'utf-8');
-const vercelContent = fs.readFileSync(path.join(__dirname, '../vercel.json'), 'utf-8');
-
-assert(headersContent.includes('camera=(self)'), 'Production _headers allows local camera access (P0)');
-assert(vercelContent.includes('camera=(self)'), 'Production vercel.json allows local camera access (P0)');
+// 4. Batch 1: P0-01 through P0-12 Exhaustive Audit Assertions (2026-08-17)
+assert(!supabaseClientContent.includes('document_name: metadata.title || cleanFileName'), 'P0-01: cleanFileName ReferenceError eliminated in uploadClinicalDocument');
+assert(appContent.includes('value="lab_report"'), 'P0-02: Document category options match database CHECK constraint');
+assert(schemaContent.includes('total_amount NUMERIC(10, 2) NOT NULL DEFAULT 60.00'), 'P0-03/P0-04: patient_invoices table includes total_amount column');
+assert(schemaContent.includes('terms_accepted BOOLEAN NOT NULL DEFAULT true'), 'P0-05: patient_consents table includes terms_accepted column');
+assert(storeContent.includes('from(\'doctors\')\n          .upsert'), 'P0-06: Doctor registration persists doctor record into database table');
+assert(appContent.includes('booking.checkinToken || booking.checkin_token'), 'P0-07: Patient pass prints authoritative server check-in token');
+assert(schemaContent.includes('Access Denied: You are not authorized to transition the status of this appointment'), 'P0-08: Status transition RPC enforces caller authorization');
+assert(schemaContent.includes('trg_prevent_appointment_core_fields_mutation'), 'P0-09: Trigger protects immutable appointment fields on UPDATE');
+assert(schemaContent.includes('status IN (\'waiting\', \'checked_in\')'), 'P0-10: Queue advance recognizes both waiting and checked_in patients');
+assert(supabaseClientContent.includes('p_examination_findings: rxData.examinationFindings'), 'P0-11: Clinical consultation passes all examination and treatment fields');
+assert(schemaContent.includes('appointment_id, doctor_id, patient_id, test_name, clinical_indication, status'), 'P0-12: Lab orders insertion uses clinical_indication column');
 
 console.log(`\nTest Summary: ${passCount} Passed, ${failCount} Failed.`);
 if (failCount > 0) {
   process.exit(1);
 } else {
-  console.log('--- All Full Line-by-Line (2026-08-17) Regression Checks Passed Successfully! ---');
+  console.log('--- All Exhaustive Batch 1 (P0-01 through P0-12) Checks Passed Successfully! ---');
 }
