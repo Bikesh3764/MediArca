@@ -564,7 +564,14 @@ class MediarcaApp {
       }
     } catch (err) {
       console.error('Booking submission error:', err);
-      this.showToast(err.message || 'Unable to book appointment.', 'warning');
+      const errMsg = err.message || '';
+      if (errMsg.toLowerCase().includes('authentication required') || errMsg.toLowerCase().includes('permission denied')) {
+        this.closeAllModals();
+        this.showToast('Please sign in or create a patient account to book an appointment.', 'info');
+        this.switchView('auth-patient');
+      } else {
+        this.showToast(errMsg || 'Unable to book appointment.', 'warning');
+      }
     } finally {
       if (submitBtn) {
         submitBtn.disabled = false;
