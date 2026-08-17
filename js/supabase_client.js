@@ -17,6 +17,28 @@ class MediarcaSupabaseClient {
 
   init() {
     this.isConnected = true;
+
+    // Check for OAuth error in URL hash or query params
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+      const errorMsg = urlParams.get('error_description') || hashParams.get('error_description') || urlParams.get('error') || hashParams.get('error');
+      
+      if (errorMsg) {
+        console.warn('OAuth callback notice:', errorMsg);
+        setTimeout(() => {
+          if (window.mediarcaApp) {
+            window.mediarcaApp.showToast(`Sign in notice: ${errorMsg.replace(/\+/g, ' ')}`, 'warning');
+          }
+        }, 600);
+        // Clean URL to prevent persisting error query string
+        if (window.history?.replaceState) {
+          const cleanUrl = window.location.pathname;
+          window.history.replaceState(null, '', cleanUrl);
+        }
+      }
+    } catch (_) {}
+
     if (window.supabase) {
       try {
         this.client = window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.key);
