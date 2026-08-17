@@ -320,21 +320,24 @@ class MediarcaApp {
     if (!container) return;
 
     const specialties = [
-      { id: 'all', name: 'All Specialties' },
-      { id: 'cardiology', name: 'Cardiology' },
-      { id: 'dermatology', name: 'Dermatology' },
-      { id: 'orthopedics', name: 'Orthopedics' },
-      { id: 'neurology', name: 'Neurology' },
-      { id: 'pediatrics', name: 'Pediatrics' },
-      { id: 'general', name: 'General Medicine' }
+      { id: 'all', name: 'All Specialists', icon: 'stethoscope' },
+      { id: 'cardiology', name: 'Cardiology', icon: 'heart-pulse' },
+      { id: 'dermatology', name: 'Dermatology', icon: 'sparkles' },
+      { id: 'orthopedics', name: 'Orthopedics', icon: 'activity' },
+      { id: 'neurology', name: 'Neurology', icon: 'brain' },
+      { id: 'pediatrics', name: 'Pediatrics', icon: 'baby' },
+      { id: 'general', name: 'General Medicine', icon: 'cross' }
     ];
 
     container.innerHTML = specialties.map(s => `
       <button class="specialty-pill-btn ${this.selectedSpecialty === s.id ? 'active' : ''}" 
               onclick="window.mediarcaApp.setSpecialtyFilter('${s.id}')">
-        ${s.name}
+        <i data-lucide="${s.icon}" style="width: 14px; height: 14px;"></i>
+        <span>${s.name}</span>
       </button>
     `).join('');
+
+    if (window.lucide) window.lucide.createIcons();
   }
 
   setSpecialtyFilter(specialtyId) {

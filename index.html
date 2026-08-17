@@ -90,55 +90,59 @@
               </div>
             </div>
 
-            <!-- Quick Live Queue Lookup Box -->
+            <!-- Quick Live Queue Cockpit Terminal -->
             <div>
-              <div class="queue-lookup-card">
-                <div class="lookup-card-header">
-                  <h3 class="lookup-card-title">
-                    <i data-lucide="activity" style="width: 17px; height: 17px; color: #0284c7;"></i>
-                    Live Clinic Queue HUD
+              <div class="cockpit-card">
+                <div class="cockpit-header">
+                  <h3 class="cockpit-title">
+                    <i data-lucide="activity" style="width: 18px; height: 18px; color: #0284c7;"></i>
+                    Live Clinic Telemetry HUD
                   </h3>
-                  <span class="badge badge-verified" style="font-size: 0.7rem;">
+                  <span class="badge badge-verified" style="font-size: 0.725rem;">
                     <span class="pulse-beacon"></span> Active Stream
                   </span>
                 </div>
 
                 <!-- Live Doctor Status Preview Strip -->
-                <div class="live-feed-banner">
-                  <div class="live-feed-top">
-                    <div>
-                      <div class="live-doctor-tag">Dr. Aris Thorne • Cardiology</div>
-                      <div style="font-size: 0.725rem; color: #64748b; font-weight: 500;">Metro Heart Institute • Room 302</div>
+                <div class="cockpit-live-feed">
+                  <div class="cockpit-feed-top">
+                    <div class="cockpit-doctor-info">
+                      <div class="cockpit-doctor-name">Dr. Aris Thorne • Cardiology</div>
+                      <div class="cockpit-doctor-room">Metro Heart Institute • Room 304</div>
                     </div>
-                    <div class="live-token-pill" title="Live In-Consultation Token">#4</div>
+                    <div class="cockpit-token-badge" title="Live In-Consultation Token">#4</div>
                   </div>
-                  <div style="display: flex; justify-content: space-between; font-size: 0.75rem; font-weight: 600; color: #0369a1; margin-top: 0.35rem;">
-                    <span>Consultation in session</span>
+                  
+                  <div style="display: flex; justify-content: space-between; font-size: 0.775rem; font-weight: 600; color: #0369a1; margin-top: 0.4rem;">
+                    <span>Consultation in Session</span>
                     <span>Next Up: <strong>Token #5</strong> (~8 min)</span>
                   </div>
-                  <div class="live-progress-wrap">
-                    <div class="live-progress-bar"></div>
+
+                  <!-- 4-Stage Patient Journey Step Tracker -->
+                  <div class="cockpit-timeline-steps">
+                    <div class="cockpit-step completed">1. Check-in ✓</div>
+                    <div class="cockpit-step completed">2. Triage ✓</div>
+                    <div class="cockpit-step active">3. Consult ●</div>
+                    <div class="cockpit-step">4. Pharmacy</div>
                   </div>
                 </div>
 
-                <p class="lookup-card-desc">Enter your Booking ID or Doctor Name to track your live queue position:</p>
-
-                <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1rem;">
-                  <div style="position: relative;">
-                    <i data-lucide="search" style="position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; color: #94a3b8;"></i>
-                    <input type="text" id="quickLookupInput" class="form-input" style="padding-left: 2.35rem;" placeholder="e.g. MED-BK-7890 or Dr. Thorne">
+                <div class="cockpit-search-box">
+                  <div class="cockpit-input-wrap">
+                    <i data-lucide="search" class="cockpit-input-icon" style="width: 16px; height: 16px;"></i>
+                    <input type="text" id="quickLookupInput" placeholder="Enter Booking ID (e.g. MED-BK-7890) or Doctor Name...">
                   </div>
-                  <button class="btn btn-clinical" onclick="const val = document.getElementById('quickLookupInput').value; if(val){ window.mediarcaApp.switchView('queue-radar'); window.mediarcaQueueEngine.lookupByQuery(val); } else { window.mediarcaApp.switchView('queue-radar'); }">
-                    <i data-lucide="radio" style="width: 15px; height: 15px;"></i> Lookup Live Token Position
+                  <button class="btn btn-clinical btn-block" onclick="const val = document.getElementById('quickLookupInput').value; if(val){ window.mediarcaApp.switchView('queue-radar'); window.mediarcaQueueEngine.lookupByQuery(val); } else { window.mediarcaApp.switchView('queue-radar'); }">
+                    <i data-lucide="radio" style="width: 16px; height: 16px;"></i> Track Live Queue Position
                   </button>
                 </div>
 
-                <div style="border-top: 1px solid #f1f5f9; padding-top: 0.75rem;">
-                  <div style="font-size: 0.725rem; color: #64748b; font-weight: 600; margin-bottom: 0.35rem;">Quick Telemetry Filters:</div>
+                <div style="border-top: 1px solid #f1f5f9; padding-top: 0.85rem;">
+                  <div style="font-size: 0.725rem; color: var(--text-muted); font-weight: 700; margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.04em;">Live Telemetry Channels:</div>
                   <div class="quick-chips-row">
-                    <span class="quick-chip" onclick="document.getElementById('quickLookupInput').value='Dr. Thorne'; window.mediarcaApp.switchView('queue-radar'); window.mediarcaQueueEngine.lookupByQuery('Dr. Thorne');">🩺 Dr. Thorne</span>
+                    <span class="quick-chip" onclick="document.getElementById('quickLookupInput').value='Dr. Thorne'; window.mediarcaApp.switchView('queue-radar'); window.mediarcaQueueEngine.lookupByQuery('Dr. Thorne');">🩺 Dr. Thorne (Cardio)</span>
                     <span class="quick-chip" onclick="document.getElementById('quickLookupInput').value='Dr. Sarah'; window.mediarcaApp.switchView('queue-radar'); window.mediarcaQueueEngine.lookupByQuery('Dr. Sarah');">🧬 Dr. Sarah Chen</span>
-                    <span class="quick-chip" onclick="window.mediarcaApp.switchView('queue-radar')">⚡ All Live Queues</span>
+                    <span class="quick-chip" onclick="window.mediarcaApp.switchView('queue-radar')">⚡ View All Active Queues</span>
                   </div>
                 </div>
               </div>
