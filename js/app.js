@@ -187,9 +187,9 @@ class MediarcaApp {
     } else {
       // Public / Guest Navigation
       navLinksContainer.innerHTML = `
-        <li><button class="nav-link-btn ${this.currentView === 'home' ? 'active' : ''}" onclick="window.mediarcaApp.switchView('home')"><i data-lucide="search" style="width:15px;height:15px"></i> Find Doctors</button></li>
-        <li><button class="nav-link-btn ${this.currentView === 'queue-radar' ? 'active' : ''}" onclick="window.mediarcaApp.switchView('queue-radar')"><i data-lucide="radio" style="width:15px;height:15px"></i> Live Queue Tracker</button></li>
-        <li><button class="nav-link-btn ${this.currentView === 'doctor-onboarding' ? 'active' : ''}" onclick="window.mediarcaApp.switchView('doctor-onboarding')"><i data-lucide="stethoscope" style="width:15px;height:15px"></i> For Doctors</button></li>
+        <li><button class="nav-link-btn ${this.currentView === 'home' ? 'active' : ''}" onclick="window.mediarcaApp.switchView('home')"><i data-lucide="compass" style="width:15px;height:15px"></i> Find Doctors</button></li>
+        <li><button class="nav-link-btn ${this.currentView === 'queue-radar' ? 'active' : ''}" onclick="window.mediarcaApp.switchView('queue-radar')"><i data-lucide="radio" style="width:15px;height:15px"></i> Live Queue Radar</button></li>
+        <li><button class="nav-link-btn ${this.currentView === 'doctor-onboarding' ? 'active' : ''}" onclick="window.mediarcaApp.switchView('doctor-onboarding')"><i data-lucide="stethoscope" style="width:15px;height:15px"></i> Join as Physician</button></li>
       `;
 
       navActionsContainer.innerHTML = `

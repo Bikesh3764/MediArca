@@ -52,9 +52,12 @@
         <div class="container">
           <div class="hero-grid">
             <div>
-              <div class="hero-eyebrow">Real-Time Clinical Queue Management</div>
+              <div class="hero-live-pill">
+                <span class="pulse-beacon"></span>
+                <span>Real-Time Clinical Queue Telemetry</span>
+              </div>
               <h1 class="hero-headline">
-                Track your doctor's queue live. Know exactly when to arrive.
+                Track your doctor's queue live. <span class="accent-highlight">Know exactly when to arrive.</span>
               </h1>
               <p class="hero-subtitle">
                 Mediarca eliminates crowded hospital waiting rooms. Book verified specialists, receive digital queue tokens, and follow your live turn in real-time.
@@ -65,22 +68,24 @@
                   <i data-lucide="search" style="width: 16px; height: 16px;"></i> Find & Book Doctors
                 </button>
                 <button class="btn btn-lg btn-secondary" onclick="window.mediarcaApp.switchView('queue-radar')">
-                  <i data-lucide="radio" style="width: 16px; height: 16px; color: var(--clinical-blue);"></i> Track Live Queue
+                  <i data-lucide="radio" style="width: 16px; height: 16px; color: #0284c7;"></i> Track Live Queue
                 </button>
               </div>
 
               <div class="hero-metrics-row">
-                <div>
+                <div class="hero-metric-card">
                   <div class="hero-metric-val">100%</div>
                   <div class="hero-metric-lbl">Board-Verified Doctors</div>
                 </div>
-                <div>
+                <div class="hero-metric-card">
                   <div class="hero-metric-val">~38 min</div>
                   <div class="hero-metric-lbl">Avg. Clinic Wait Saved</div>
                 </div>
-                <div>
-                  <div class="hero-metric-val">Live</div>
-                  <div class="hero-metric-lbl">Sync Telemetry</div>
+                <div class="hero-metric-card">
+                  <div class="hero-metric-val" style="color: #059669; display: flex; align-items: center; gap: 0.35rem;">
+                    <span class="pulse-beacon" style="background:#10b981;"></span> Live
+                  </div>
+                  <div class="hero-metric-lbl">Cloud OPD Sync</div>
                 </div>
               </div>
             </div>
@@ -88,18 +93,53 @@
             <!-- Quick Live Queue Lookup Box -->
             <div>
               <div class="queue-lookup-card">
-                <h3 class="lookup-card-title">Live Queue Quick Lookup</h3>
-                <p class="lookup-card-desc">Enter your Booking ID or Doctor Name to check live queue line status:</p>
+                <div class="lookup-card-header">
+                  <h3 class="lookup-card-title">
+                    <i data-lucide="activity" style="width: 17px; height: 17px; color: #0284c7;"></i>
+                    Live Clinic Queue HUD
+                  </h3>
+                  <span class="badge badge-verified" style="font-size: 0.7rem;">
+                    <span class="pulse-beacon"></span> Active Stream
+                  </span>
+                </div>
 
-                <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.25rem;">
-                  <input type="text" id="quickLookupInput" class="form-input" placeholder="e.g. MED-BK-7890 or Dr. Thorne">
-                  <button class="btn btn-clinical" onclick="const val = document.getElementById('quickLookupInput').value; if(val){ window.mediarcaApp.switchView('queue-radar'); window.mediarcaQueueEngine.lookupByQuery(val); }">
+                <!-- Live Doctor Status Preview Strip -->
+                <div class="live-feed-banner">
+                  <div class="live-feed-top">
+                    <div>
+                      <div class="live-doctor-tag">Dr. Aris Thorne • Cardiology</div>
+                      <div style="font-size: 0.725rem; color: #64748b; font-weight: 500;">Metro Heart Institute • Room 302</div>
+                    </div>
+                    <div class="live-token-pill" title="Live In-Consultation Token">#4</div>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; font-size: 0.75rem; font-weight: 600; color: #0369a1; margin-top: 0.35rem;">
+                    <span>Consultation in session</span>
+                    <span>Next Up: <strong>Token #5</strong> (~8 min)</span>
+                  </div>
+                  <div class="live-progress-wrap">
+                    <div class="live-progress-bar"></div>
+                  </div>
+                </div>
+
+                <p class="lookup-card-desc">Enter your Booking ID or Doctor Name to track your live queue position:</p>
+
+                <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1rem;">
+                  <div style="position: relative;">
+                    <i data-lucide="search" style="position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; color: #94a3b8;"></i>
+                    <input type="text" id="quickLookupInput" class="form-input" style="padding-left: 2.35rem;" placeholder="e.g. MED-BK-7890 or Dr. Thorne">
+                  </div>
+                  <button class="btn btn-clinical" onclick="const val = document.getElementById('quickLookupInput').value; if(val){ window.mediarcaApp.switchView('queue-radar'); window.mediarcaQueueEngine.lookupByQuery(val); } else { window.mediarcaApp.switchView('queue-radar'); }">
                     <i data-lucide="radio" style="width: 15px; height: 15px;"></i> Lookup Live Token Position
                   </button>
                 </div>
 
-                <div style="font-size: 0.75rem; color: var(--text-muted); border-top: 1px solid var(--border-subtle); padding-top: 0.75rem;">
-                  Active Clinic Example: Search <code>MED-BK-7890</code> or <code>Dr. Thorne</code> to view live queue #4 in session.
+                <div style="border-top: 1px solid #f1f5f9; padding-top: 0.75rem;">
+                  <div style="font-size: 0.725rem; color: #64748b; font-weight: 600; margin-bottom: 0.35rem;">Quick Telemetry Filters:</div>
+                  <div class="quick-chips-row">
+                    <span class="quick-chip" onclick="document.getElementById('quickLookupInput').value='Dr. Thorne'; window.mediarcaApp.switchView('queue-radar'); window.mediarcaQueueEngine.lookupByQuery('Dr. Thorne');">🩺 Dr. Thorne</span>
+                    <span class="quick-chip" onclick="document.getElementById('quickLookupInput').value='Dr. Sarah'; window.mediarcaApp.switchView('queue-radar'); window.mediarcaQueueEngine.lookupByQuery('Dr. Sarah');">🧬 Dr. Sarah Chen</span>
+                    <span class="quick-chip" onclick="window.mediarcaApp.switchView('queue-radar')">⚡ All Live Queues</span>
+                  </div>
                 </div>
               </div>
             </div>
