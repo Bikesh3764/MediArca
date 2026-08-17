@@ -2792,3 +2792,13 @@ ON CONFLICT (doctor_id, queue_date) DO NOTHING;
 -- 26. RELOAD POSTGREST SCHEMA CACHE
 NOTIFY pgrst, 'reload schema';
 
+
+
+-- MEDIARCA_FINAL_HARDENING_2026_08_17
+REVOKE ALL ON FUNCTION public.issue_next_opd_token(uuid,text,varchar,varchar,integer,varchar,varchar) FROM anon;
+REVOKE ALL ON FUNCTION public.schedule_future_appointment_atomic(uuid,date,varchar,text,varchar,varchar,integer,varchar,varchar) FROM anon;
+DROP POLICY IF EXISTS "Allow public read users" ON public.users;
+DROP POLICY IF EXISTS "Allow public read appointments" ON public.appointments;
+DROP POLICY IF EXISTS "Allow public read doctors" ON public.doctors;
+UPDATE public.users SET password_hash=NULL WHERE password_hash IS NOT NULL;
+ALTER TABLE public.users DROP COLUMN IF EXISTS password_hash;

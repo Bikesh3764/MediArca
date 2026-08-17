@@ -706,53 +706,21 @@ class MediarcaStore {
   }
 
   async updatePatientProfile(profileData) {
-    if (!this.state.currentUser || this.state.currentUser.role !== 'patient') {
-      throw new Error('Only authenticated patients can update their profile.');
-    }
-
+    if (!this.state.currentUser || this.state.currentUser.role !== 'patient') throw new Error('Only authenticated patients can update their profile.');
     const userId = this.state.currentUser.id;
-
-    // 1. Instant local reactive state & storage update
-    this.state.currentUser.name = profileData.name || this.state.currentUser.name;
-    this.state.currentUser.phone = profileData.phone || this.state.currentUser.phone;
-    this.state.currentUser.age = parseInt(profileData.age) || this.state.currentUser.age;
-    this.state.currentUser.gender = profileData.gender || this.state.currentUser.gender;
-    this.state.currentUser.bloodGroup = profileData.bloodGroup || this.state.currentUser.bloodGroup;
-
-    if (!this.state.currentUser.clinicalProfile) this.state.currentUser.clinicalProfile = {};
-    this.state.currentUser.clinicalProfile.age = this.state.currentUser.age;
-    this.state.currentUser.clinicalProfile.gender = this.state.currentUser.gender;
-    this.state.currentUser.clinicalProfile.blood_group = this.state.currentUser.bloodGroup;
-
-    if (!this.state.currentUser.patientProfile) this.state.currentUser.patientProfile = {};
-    this.state.currentUser.patientProfile.full_name = this.state.currentUser.name;
-    this.state.currentUser.patientProfile.phone = this.state.currentUser.phone;
-    this.state.currentUser.patientProfile.age = this.state.currentUser.age;
-    this.state.currentUser.patientProfile.gender = this.state.currentUser.gender;
-    this.state.currentUser.patientProfile.blood_group = this.state.currentUser.bloodGroup;
-
-    this.recordAuditLog({
-      action: 'PATIENT_PROFILE_UPDATED',
-      entity: 'patient_clinical_profiles',
-      entityId: userId,
-      afterState: profileData
-    });
-
+    if (!window.mediarcaSupabase || !window.mediarcaSupabase.isConnected) throw new Error('Cloud database unavailable. Profile was not changed.');
+    const result = await window.mediarcaSupabase.cloudUpdatePatientProfile(userId, profileData);
+    const saved = result || {};
+    this.state.currentUser.name = saved.full_name ?? profileData.name ?? this.state.currentUser.name;
+    this.state.currentUser.phone = saved.phone ?? profileData.phone ?? this.state.currentUser.phone;
+    this.state.currentUser.age = saved.age ?? profileData.age ?? null;
+    this.state.currentUser.gender = saved.gender ?? profileData.gender ?? null;
+    this.state.currentUser.bloodGroup = saved.blood_group ?? profileData.bloodGroup ?? null;
+    this.state.currentUser.clinicalProfile = { ...(this.state.currentUser.clinicalProfile || {}), age: this.state.currentUser.age, gender: this.state.currentUser.gender, blood_group: this.state.currentUser.bloodGroup };
+    this.state.currentUser.patientProfile = { ...(this.state.currentUser.patientProfile || {}), full_name: this.state.currentUser.name, phone: this.state.currentUser.phone };
+    this.recordAuditLog({ action: 'PATIENT_PROFILE_UPDATED', entity: 'patient_clinical_profiles', entityId: userId, afterState: profileData });
     this.saveState();
     this.notifySubscribers();
-
-    // 2. Authoritative Supabase Cloud persistence
-    if (window.mediarcaSupabase && window.mediarcaSupabase.isConnected && userId) {
-      try {
-        await Promise.race([
-          window.mediarcaSupabase.cloudUpdatePatientProfile(userId, profileData),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('Cloud sync timeout')), 4000))
-        ]);
-      } catch (cloudErr) {
-        console.warn('Cloud sync background note:', cloudErr);
-      }
-    }
-
     return this.state.currentUser;
   }
 
