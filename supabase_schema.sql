@@ -1536,6 +1536,8 @@ BEGIN
         scheduled_slot = p_new_slot,
         checkin_token = v_checkin_token,
         checkin_token_expires_at = (p_new_date + interval '1 day 23:59:59')::timestamptz,
+        checkin_token_used_at = NULL,
+        token_number = NULL,
         check_in_time = NULL,
         status = 'booked'
     WHERE id = p_appointment_id

@@ -582,6 +582,14 @@ class MediarcaStore {
     this.loadState();
   }
 
+  getIndiaTodayDate() {
+    try {
+      return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+    } catch (_) {
+      return new Date().toISOString().split('T')[0];
+    }
+  }
+
   loadState() {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -1098,7 +1106,7 @@ async login(email, password) {
     };
 
     // 3. Enforce Queue Status Rules (H-12 Resolution)
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = this.getIndiaTodayDate();
     const isFutureBooking = bookingData.scheduledDate && bookingData.scheduledDate > todayStr;
 
     if (!isFutureBooking) {

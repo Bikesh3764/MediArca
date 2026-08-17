@@ -503,12 +503,12 @@ class MediarcaApp {
 
     if (nameEl) nameEl.value = currentUser.name || currentUser.patientProfile?.full_name || currentUser.email?.split('@')[0] || '';
     if (phoneEl) phoneEl.value = currentUser.phone || currentUser.patientProfile?.phone || '';
-    if (ageEl) ageEl.value = currentUser.clinicalProfile?.age || currentUser.patientProfile?.age || currentUser.age || '19';
-    if (genderEl) genderEl.value = currentUser.clinicalProfile?.gender || currentUser.patientProfile?.gender || currentUser.gender || 'Male';
+    if (ageEl) ageEl.value = currentUser.clinicalProfile?.age || currentUser.patientProfile?.age || currentUser.age || '';
+    if (genderEl) genderEl.value = currentUser.clinicalProfile?.gender || currentUser.patientProfile?.gender || currentUser.gender || '';
     
     const dateInput = document.getElementById('bookingDateInput');
     if (dateInput) {
-      const today = new Date().toISOString().split('T')[0];
+      const today = window.mediarcaStore.getIndiaTodayDate();
       dateInput.min = today;
       if (!dateInput.value || dateInput.value < today) {
         dateInput.value = today;
@@ -529,7 +529,7 @@ class MediarcaApp {
     }
 
     const doctorId = form.bookingDoctorId.value;
-    const scheduledDate = form.bookingDate?.value || new Date().toISOString().split('T')[0];
+    const scheduledDate = form.bookingDate?.value || window.mediarcaStore.getIndiaTodayDate();
     const scheduledSlot = form.bookingSlot?.value || '09:00 AM';
     const patientName = form.patientName.value.trim();
     const patientAge = form.patientAge.value;
@@ -549,7 +549,7 @@ class MediarcaApp {
         symptoms
       });
 
-      const todayStr = new Date().toISOString().split('T')[0];
+      const todayStr = window.mediarcaStore.getIndiaTodayDate();
       const isToday = scheduledDate === todayStr;
 
       this.closeAllModals();
@@ -2019,17 +2019,36 @@ class MediarcaApp {
     const spo2 = document.getElementById('docSpo2Input')?.value.trim() || null;
     const vitalsObj = (bp || pulse || temp || spo2) ? { bp, pulse, temp, spo2 } : null;
     
-    // Multi-drug regimen items
-    const med1Drug = document.getElementById('docMed1Drug')?.value.trim();
-    const med1Freq = document.getElementById('docMed1Freq')?.value.trim();
-    const med1Dur = document.getElementById('docMed1Dur')?.value.trim();
-    const med2Drug = document.getElementById('docMed2Drug')?.value.trim();
-    const med2Freq = document.getElementById('docMed2Freq')?.value.trim();
-    const med2Dur = document.getElementById('docMed2Dur')?.value.trim();
-
+    // Multi-drug regimen items (P2-06 & P2-07 Resolution: Iterate all rendered slots dynamically)
     const medications = [];
-    if (med1Drug) medications.push(`${med1Drug} [${med1Freq || 'OD'}] (${med1Dur || '5 Days'})`);
-    if (med2Drug) medications.push(`${med2Drug} [${med2Freq || 'TID'}] (${med2Dur || '3 Days'})`);
+    const container = document.getElementById('docPrescriptionItemsContainer');
+    if (container) {
+      const rows = container.querySelectorAll('div[style*="grid"]');
+      rows.forEach(row => {
+        const drugInput = row.querySelector('input[id*="Drug"]') || row.querySelectorAll('input')[0];
+        const freqInput = row.querySelector('input[id*="Freq"]') || row.querySelectorAll('input')[1];
+        const routeInput = row.querySelector('input[id*="Route"]') || row.querySelectorAll('input')[2];
+        const durInput = row.querySelector('input[id*="Dur"]') || row.querySelectorAll('input')[3];
+        const drug = drugInput?.value?.trim();
+        const freq = freqInput?.value?.trim();
+        const route = routeInput?.value?.trim();
+        const dur = durInput?.value?.trim();
+        if (drug) {
+          medications.push(`${drug}${route ? ' ' + route : ''} [${freq || 'OD'}] (${dur || '5 Days'})`);
+        }
+      });
+    }
+
+    if (medications.length === 0) {
+      const med1Drug = document.getElementById('docMed1Drug')?.value.trim();
+      const med1Freq = document.getElementById('docMed1Freq')?.value.trim();
+      const med1Dur = document.getElementById('docMed1Dur')?.value.trim();
+      const med2Drug = document.getElementById('docMed2Drug')?.value.trim();
+      const med2Freq = document.getElementById('docMed2Freq')?.value.trim();
+      const med2Dur = document.getElementById('docMed2Dur')?.value.trim();
+      if (med1Drug) medications.push(`${med1Drug} [${med1Freq || 'OD'}] (${med1Dur || '5 Days'})`);
+      if (med2Drug) medications.push(`${med2Drug} [${med2Freq || 'TID'}] (${med2Dur || '3 Days'})`);
+    }
     if (medications.length === 0) medications.push('Prescribed supportive oral medication as indicated');
 
     const labOrders = document.getElementById('docLabOrderInput')?.value.trim() || '';
@@ -3237,8 +3256,8 @@ class MediarcaApp {
               </select>
             </div>
             <div class="form-group">
-              <label class="form-label">Attending Doctor / Lab *</label>
-              <input type="text" id="uploadDocDoctor" class="form-input" placeholder="e.g. Apex Diagnostics / Dr. Bikesh Ray" value="Apex Central Clinical Laboratory" required>
+              <label class="form-label">Attending Doctor / Diagnostic Provider *</label>
+              <input type="text" id="uploadDocDoctor" class="form-input" placeholder="e.g. Apex Clinical Laboratory / Attending Doctor" required>
             </div>
             <div class="form-group">
               <label class="form-label">Attach File (PDF, PNG, JPEG) *</label>
@@ -3487,7 +3506,7 @@ class MediarcaApp {
                 <div style="font-size: 0.75rem; color: #fff; margin-bottom: 0.5rem;">
                   <strong>Attending:</strong> ${escapeHtml(booking.doctorName)}
                 </div>
-                <textarea class="form-textarea" placeholder="Live teleconsult clinical observations..." style="background: #27272a; border: 1px solid #3f3f46; color: #fff; font-size: 0.75rem; min-height: 60px;">Patient confirms mild pharyngeal congestion. Prescription issued electronically.</textarea>
+                <textarea class="form-textarea" placeholder="Live teleconsult clinical observations..." style="background: #27272a; border: 1px solid #3f3f46; color: #fff; font-size: 0.75rem; min-height: 60px;">Chief Complaint: ${escapeHtml(booking.symptoms || 'General Clinical Consultation')}. Teleconsultation active.</textarea>
               </div>
 
               <button class="btn btn-danger btn-block" onclick="document.getElementById('telemedModal').classList.remove('active'); window.mediarcaApp.showToast('Teleconsultation session concluded.', 'info');" style="margin-top: 0.75rem;">
