@@ -399,65 +399,65 @@ class MediarcaApp {
       const waitTime = window.mediarcaStore.calculateSmartWaitTime(doc.id, currentToken + 1);
 
       return `
-        <div class="doctor-card-modern" style="border: 1px solid #e2e8f0; border-radius: 18px; background: #ffffff; padding: 1.35rem; box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.04); display: flex; flex-direction: column; justify-content: space-between; transition: all 0.2s ease;">
+        <div class="doctor-card-modern" style="border: 1px solid rgba(0, 0, 0, 0.08); border-radius: 18px; background: #ffffff; padding: 1.5rem; box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.04); display: flex; flex-direction: column; justify-content: space-between; transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);">
           <div>
             <!-- Card Header: Avatar with Status Dot, Name, Verified Badge, Specialty, Experience -->
-            <div class="doc-card-header" style="display: flex; gap: 1rem; align-items: flex-start; margin-bottom: 0.95rem;">
-              <div class="doc-avatar-wrap" style="position: relative; flex-shrink: 0; width: 64px; height: 64px;">
-                <img src="${sanitizeImageUrl(doc.avatar)}" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=300&h=300&fit=crop&crop=faces&q=80'" alt="${escapeHtml(doc.name)}" class="doc-avatar-img" style="width: 64px; height: 64px; border-radius: 14px; object-fit: cover; border: 1.5px solid #e2e8f0; display: block;">
+            <div class="doc-card-header" style="display: flex; gap: 1rem; align-items: flex-start; margin-bottom: 1rem;">
+              <div class="doc-avatar-wrap" style="position: relative; flex-shrink: 0; width: 60px; height: 60px;">
+                <img src="${sanitizeImageUrl(doc.avatar)}" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=300&h=300&fit=crop&crop=faces&q=80'" alt="${escapeHtml(doc.name)}" class="doc-avatar-img" style="width: 60px; height: 60px; border-radius: 14px; object-fit: cover; border: 1px solid rgba(0,0,0,0.08); display: block;">
                 <span class="doc-status-dot" title="Accepting Patients Now" style="position: absolute; bottom: -2px; right: -2px; width: 13px; height: 13px; border-radius: 50%; background: #10b981; border: 2.5px solid #ffffff;"></span>
               </div>
               
               <div class="doc-title-wrap" style="flex: 1; min-width: 0;">
-                <div class="doc-name-row" style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.2rem;">
-                  <h4 class="doc-name" style="font-family: var(--font-display); font-size: 1.15rem; font-weight: 800; color: #090d16; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${escapeHtml(doc.name)}">${escapeHtml(doc.name)}</h4>
-                  <span class="doc-verified-badge" style="display: inline-flex; align-items: center; gap: 0.25rem; background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; padding: 0.15rem 0.5rem; border-radius: 9999px; font-size: 0.6875rem; font-weight: 700; flex-shrink: 0;" title="Medical Council Verified Specialist">
+                <div class="doc-name-row" style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.15rem;">
+                  <h4 class="doc-name" style="font-size: 1.15rem; font-weight: 600; color: #1d1d1f; margin: 0; letter-spacing: -0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${escapeHtml(doc.name)}">${escapeHtml(doc.name)}</h4>
+                  <span class="doc-verified-badge" style="display: inline-flex; align-items: center; gap: 0.25rem; background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; padding: 0.15rem 0.5rem; border-radius: 9999px; font-size: 0.6875rem; font-weight: 600; flex-shrink: 0;" title="Medical Council Verified Specialist">
                     <i data-lucide="shield-check" style="width: 11px; height: 11px;"></i>
                     <span>Verified</span>
                   </span>
                 </div>
                 
-                <div class="doc-specialty-text" style="font-size: 0.85rem; font-weight: 700; color: #0284c7; margin-bottom: 0.35rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${escapeHtml(doc.specialty)}">${escapeHtml(doc.specialty)}</div>
+                <div class="doc-specialty-text" style="font-size: 0.875rem; font-weight: 500; color: #0066cc; margin-bottom: 0.35rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${escapeHtml(doc.specialty)}">${escapeHtml(doc.specialty)}</div>
                 
-                <div class="doc-exp-row" style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.75rem; color: #64748b; flex-wrap: wrap;">
-                  <span class="doc-exp-pill" style="background: #f1f5f9; color: #334155; font-weight: 700; padding: 0.1rem 0.45rem; border-radius: 6px; font-size: 0.7rem;">${doc.experienceYears}+ Yrs Exp</span>
-                  <span class="doc-degree-text" style="color: #64748b; font-size: 0.75rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${escapeHtml(doc.degrees || 'MBBS')}">${escapeHtml(doc.degrees || 'MBBS')}</span>
+                <div class="doc-exp-row" style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.75rem; color: #86868b; flex-wrap: wrap;">
+                  <span class="doc-exp-pill" style="background: #f5f5f7; color: #1d1d1f; font-weight: 600; padding: 0.15rem 0.5rem; border-radius: 6px; font-size: 0.7rem;">${doc.experienceYears}+ Yrs</span>
+                  <span class="doc-degree-text" style="color: #86868b; font-size: 0.75rem; font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${escapeHtml(doc.degrees || 'MBBS')}">${escapeHtml(doc.degrees || 'MBBS')}</span>
                 </div>
               </div>
             </div>
 
             <!-- Rating, Reviews Count & Hospital Distance Strip -->
-            <div class="doc-metrics-strip" style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 10px; padding: 0.5rem 0.75rem; margin-bottom: 0.85rem; font-size: 0.775rem;">
-              <div class="doc-rating" style="display: flex; align-items: center; gap: 0.3rem; color: #d97706;">
+            <div class="doc-metrics-strip" style="display: flex; justify-content: space-between; align-items: center; background: #f5f5f7; border-radius: 10px; padding: 0.55rem 0.85rem; margin-bottom: 0.85rem; font-size: 0.775rem;">
+              <div class="doc-rating" style="display: flex; align-items: center; gap: 0.3rem;">
                 <i data-lucide="star" class="star-icon" style="width: 13px; height: 13px; fill: #f59e0b; color: #f59e0b;"></i>
-                <strong style="font-weight: 800; color: #b45309;">${doc.rating}</strong>
-                <span class="reviews-count" style="color: #64748b; font-weight: 500;">(${doc.reviewsCount} reviews)</span>
+                <strong style="font-weight: 600; color: #1d1d1f;">${doc.rating}</strong>
+                <span class="reviews-count" style="color: #86868b; font-weight: 400;">(${doc.reviewsCount} reviews)</span>
               </div>
-              <div class="doc-location-tag" style="display: flex; align-items: center; gap: 0.3rem; color: #475569; font-weight: 600;">
-                <i data-lucide="map-pin" class="pin-icon" style="width: 12px; height: 12px; color: #0284c7;"></i>
+              <div class="doc-location-tag" style="display: flex; align-items: center; gap: 0.3rem; color: #515154; font-weight: 500;">
+                <i data-lucide="map-pin" class="pin-icon" style="width: 12px; height: 12px; color: #0066cc;"></i>
                 <span>${escapeHtml(doc.hospitalDistance || '0.8 km • Main Wing')}</span>
               </div>
             </div>
 
             <!-- Clinic & Languages Spoken -->
-            <div class="doc-facility-info" style="display: flex; flex-direction: column; gap: 0.35rem; font-size: 0.775rem; color: #475569; margin-bottom: 0.85rem;">
+            <div class="doc-facility-info" style="display: flex; flex-direction: column; gap: 0.35rem; font-size: 0.8125rem; color: #515154; margin-bottom: 1rem;">
               <div class="doc-facility-line" style="display: flex; align-items: center; gap: 0.45rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                <i data-lucide="building-2" class="facility-icon" style="width: 13px; height: 13px; color: #94a3b8; flex-shrink: 0;"></i>
-                <span class="facility-name" style="font-weight: 600; color: #334155; overflow: hidden; text-overflow: ellipsis;" title="${escapeHtml(doc.hospital)}">${escapeHtml(doc.hospital)}</span>
+                <i data-lucide="building-2" class="facility-icon" style="width: 13px; height: 13px; color: #86868b; flex-shrink: 0;"></i>
+                <span class="facility-name" style="font-weight: 500; color: #1d1d1f; overflow: hidden; text-overflow: ellipsis;" title="${escapeHtml(doc.hospital)}">${escapeHtml(doc.hospital)}</span>
               </div>
               <div class="doc-languages-line" style="display: flex; align-items: center; gap: 0.45rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                <i data-lucide="languages" class="lang-icon" style="width: 13px; height: 13px; color: #94a3b8; flex-shrink: 0;"></i>
+                <i data-lucide="languages" class="lang-icon" style="width: 13px; height: 13px; color: #86868b; flex-shrink: 0;"></i>
                 <span>Languages: <strong>${escapeHtml((doc.languages || ['English', 'Hindi']).join(', '))}</strong></span>
               </div>
             </div>
 
             <!-- Live OPD Queue & Next Available Slot Pill -->
-            <div class="doc-queue-pill" style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border: 1px solid #bae6fd; border-radius: 12px; padding: 0.65rem 0.85rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
+            <div class="doc-queue-pill" style="background: #f5f5f7; border: 1px solid rgba(0, 0, 0, 0.06); border-radius: 12px; padding: 0.75rem 0.95rem; margin-bottom: 1.15rem; display: flex; justify-content: space-between; align-items: center;">
               <div class="queue-pill-left" style="display: flex; flex-direction: column; gap: 0.15rem;">
-                <div class="queue-label" style="font-size: 0.6875rem; color: #0369a1; text-transform: uppercase; font-weight: 800; letter-spacing: 0.03em;">Next Slot: <span class="slot-val" style="color: #0c4a6e; font-weight: 800; text-transform: none;">${escapeHtml(doc.nextSlot || 'Today, 10:30 AM')}</span></div>
-                <div class="queue-wait-text" style="font-size: 0.75rem; color: #0369a1; font-weight: 500;">⏱ Est. Wait ~<strong style="color: #0c4a6e; font-weight: 800;">${waitTime.rangeText}</strong></div>
+                <div class="queue-label" style="font-size: 0.7rem; color: #86868b; text-transform: uppercase; font-weight: 600; letter-spacing: 0.02em;">Next Slot: <span class="slot-val" style="color: #1d1d1f; font-weight: 600; text-transform: none;">${escapeHtml(doc.nextSlot || 'Today, 10:30 AM')}</span></div>
+                <div class="queue-wait-text" style="font-size: 0.775rem; color: #515154; font-weight: 400;">⏱ Est. Wait ~<strong style="color: #1d1d1f; font-weight: 600;">${waitTime.rangeText}</strong></div>
               </div>
-              <button class="doc-radar-btn" onclick="window.mediarcaApp.switchView('queue-radar', { doctorId: '${doc.id}' })" style="display: inline-flex; align-items: center; gap: 0.35rem; background: #ffffff; border: 1px solid #bae6fd; color: #0284c7; padding: 0.35rem 0.75rem; border-radius: 8px; font-size: 0.725rem; font-weight: 700; cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.03);" title="Open Live OPD Queue Radar">
+              <button class="btn btn-sm btn-secondary" onclick="window.mediarcaApp.switchView('queue-radar', { doctorId: '${doc.id}' })" style="padding: 5px 12px; font-size: 0.75rem;" title="Open Live OPD Queue Radar">
                 <i data-lucide="radio" style="width: 11px; height: 11px;"></i>
                 <span>Live Radar</span>
               </button>
@@ -465,13 +465,13 @@ class MediarcaApp {
           </div>
 
           <!-- Card Action Footer: Consultation Fee & Direct Booking CTA -->
-          <div class="doc-card-action-footer" style="padding-top: 0.85rem; border-top: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
+          <div class="doc-card-action-footer" style="padding-top: 1rem; border-top: 1px solid rgba(0, 0, 0, 0.06); display: flex; justify-content: space-between; align-items: center;">
             <div class="doc-fee-box">
-              <span class="fee-label" style="font-size: 0.65rem; text-transform: uppercase; color: #94a3b8; font-weight: 800; letter-spacing: 0.05em; display: block;">Consultation Fee</span>
-              <div class="fee-amount" style="font-family: var(--font-display); font-size: 1.4rem; font-weight: 900; color: #090d16; line-height: 1.1;">₹${doc.fee || 600} <span class="fee-sub" style="font-size: 0.75rem; font-weight: 600; color: #64748b;">/ visit</span></div>
+              <span class="fee-label" style="font-size: 0.65rem; text-transform: uppercase; color: #86868b; font-weight: 600; letter-spacing: 0.04em; display: block;">Consultation Fee</span>
+              <div class="fee-amount" style="font-size: 1.35rem; font-weight: 700; color: #1d1d1f; line-height: 1.1;">₹${doc.fee || 600} <span class="fee-sub" style="font-size: 0.75rem; font-weight: 400; color: #86868b;">/ visit</span></div>
             </div>
-            <button class="doc-book-btn" onclick="window.mediarcaApp.openBookingModal('${doc.id}')" style="display: inline-flex; align-items: center; gap: 0.45rem; background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: #ffffff; border: none; padding: 0.6rem 1.25rem; border-radius: 10px; font-size: 0.875rem; font-weight: 700; cursor: pointer; box-shadow: 0 3px 8px rgba(2, 132, 199, 0.28); transition: transform 0.15s ease;">
-              <i data-lucide="calendar-plus" style="width: 15px; height: 15px;"></i>
+            <button class="btn btn-primary" onclick="window.mediarcaApp.openBookingModal('${doc.id}')" style="font-size: 0.875rem; padding: 8px 18px;">
+              <i data-lucide="calendar-plus" style="width: 14px; height: 14px;"></i>
               <span>Book Slot</span>
             </button>
           </div>

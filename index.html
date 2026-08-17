@@ -6,34 +6,34 @@
   <title>Mediarca - Modern Clinical Appointments & Live Queue Tracking</title>
   <meta name="description" content="Mediarca provides transparent doctor appointments with real-time live queue progression tracking, verified physician credentials, and digital token management.">
   
-  <!-- Google Fonts: Plus Jakarta Sans, Outfit & JetBrains Mono -->
+  <!-- Google Fonts: Inter & JetBrains Mono (Apple SF Pro Equivalent) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
 
-  <!-- Clinical CSS Design System (Cache-busted) -->
-  <link rel="stylesheet" href="css/mediarca.css?v=4.0">
+  <!-- Clinical CSS Design System (Apple Inspired - Cache-busted) -->
+  <link rel="stylesheet" href="css/mediarca.css?v=20260817_apple_v1">
   
   <!-- Pinned Lucide Icons -->
   <script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.min.js"></script>
 </head>
 <body>
 
-  <!-- Release Header (Dynamically updates based on authenticated user role) -->
+  <!-- Release Header (Apple Frosted Glass) -->
   <header class="site-header">
     <div class="container">
       <div class="nav-wrap">
-        <!-- Clean Modern Brandmark -->
-        <a class="brand-logo" onclick="window.mediarcaApp.switchView('home')" style="text-decoration: none; cursor: pointer; display: flex; align-items: center; gap: 0.65rem;">
-          <div class="brand-icon" style="width: 34px; height: 34px; border-radius: 9px; background: linear-gradient(135deg, #0284c7 0%, #0d9488 100%); display: flex; align-items: center; justify-content: center; color: #ffffff; box-shadow: 0 3px 10px rgba(2, 132, 199, 0.22); flex-shrink: 0;">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <!-- Clean Apple-Style Minimalist Brandmark -->
+        <a class="brand-logo" onclick="window.mediarcaApp.switchView('home')" style="text-decoration: none; cursor: pointer; display: flex; align-items: center; gap: 0.6rem;">
+          <div class="brand-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
               <path d="M12 9v6"/>
               <path d="M9 12h6"/>
             </svg>
           </div>
-          <span style="font-family: var(--font-display); font-size: 1.35rem; font-weight: 900; letter-spacing: -0.03em; color: #090d16;">
-            Medi<span style="color: #0284c7;">arca</span>
+          <span style="font-size: 1.25rem; font-weight: 700; letter-spacing: -0.03em; color: #1d1d1f;">
+            Medi<span style="color: #0066cc;">arca</span>
           </span>
         </a>
 
@@ -57,72 +57,71 @@
          VIEW 1: PUBLIC HOME & DOCTOR DIRECTORY
          ========================================== -->
     <div id="view-home" class="section-view active">
-      <!-- Modern High-End Centered Hero Section -->
-      <section class="hero-wrapper" style="padding: 3.5rem 0 3rem; background: radial-gradient(1200px circle at 50% 0%, rgba(2, 132, 199, 0.08), transparent 60%), #f8fafc; border-bottom: 1px solid #e2e8f0;">
-        <div class="container" style="max-width: 1180px;">
-          <!-- Centered Hero Headline & Value Pitch -->
-          <div style="text-align: center; max-width: 780px; margin: 0 auto 2.5rem;">
-            <div class="hero-live-pill" style="margin-bottom: 1rem;">
+      <!-- Apple Product Style Hero Section -->
+      <section class="hero-wrapper">
+        <div class="container" style="max-width: 1080px;">
+          <div style="text-align: center; max-width: 820px; margin: 0 auto 2.5rem;">
+            <div class="hero-live-pill" style="margin-bottom: 1.25rem;">
               <span class="pulse-beacon"></span>
-              <span>Real-Time Clinical Queue Telemetry • Live Cloud OPD Sync</span>
+              <span>Real-Time Clinical Telemetry • Live OPD Queue Sync</span>
             </div>
             
-            <h1 style="font-family: var(--font-display); font-size: 2.85rem; font-weight: 900; line-height: 1.15; letter-spacing: -0.035em; color: #090d16; margin-bottom: 1rem;">
-              Skip crowded waiting rooms. <br>
-              <span style="background: linear-gradient(135deg, #0284c7 0%, #0d9488 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Track your doctor's queue live.</span>
+            <h1 style="margin-bottom: 1.25rem;">
+              Skip crowded waiting rooms.<br>
+              <span style="color: #0066cc;">Track your doctor's queue live.</span>
             </h1>
             
-            <p style="font-size: 1.05rem; color: #475569; line-height: 1.6; margin-bottom: 1.75rem;">
-              Mediarca eliminates unpredictable clinic wait times. Book verified medical specialists, receive live token alerts on your device, and arrive precisely when your turn begins.
+            <p style="font-size: 1.125rem; color: #515154; line-height: 1.5; margin-bottom: 2rem; max-width: 680px; margin-left: auto; margin-right: auto;">
+              Mediarca eliminates unpredictable clinic wait times. Book verified medical specialists, receive live token progression on your device, and arrive precisely when your turn begins.
             </p>
 
-            <!-- Hero Action Buttons -->
-            <div style="display: flex; justify-content: center; gap: 0.85rem; flex-wrap: wrap; margin-bottom: 2.25rem;">
-              <button class="btn btn-lg btn-primary" onclick="document.getElementById('directorySection').scrollIntoView({behavior: 'smooth'})" style="padding: 0.85rem 1.75rem; font-size: 0.95rem; font-weight: 700; border-radius: 12px;">
-                <i data-lucide="search" style="width: 16px; height: 16px;"></i> Find & Book Specialists
+            <!-- Apple Dual Pill Action CTAs -->
+            <div style="display: flex; justify-content: center; gap: 0.85rem; flex-wrap: wrap; margin-bottom: 3rem;">
+              <button class="btn btn-lg btn-primary" onclick="document.getElementById('directorySection').scrollIntoView({behavior: 'smooth'})">
+                <i data-lucide="search" style="width: 16px; height: 16px;"></i> Find Specialists
               </button>
-              <button class="btn btn-lg btn-secondary" onclick="window.mediarcaApp.switchView('patient-portal')" style="padding: 0.85rem 1.75rem; font-size: 0.95rem; font-weight: 700; border-radius: 12px; background: #ffffff; border: 1px solid #cbd5e1; color: #0f172a;">
-                <i data-lucide="calendar" style="width: 16px; height: 16px; color: #0284c7;"></i> My Bookings & Queue
+              <button class="btn btn-lg btn-secondary" onclick="window.mediarcaApp.switchView('patient-portal')">
+                <i data-lucide="calendar" style="width: 16px; height: 16px;"></i> My Bookings & Queue
               </button>
             </div>
 
-            <!-- Modern Sleek Trust Ribbon -->
-            <div style="display: inline-flex; align-items: center; justify-content: center; gap: 1.5rem; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 9999px; padding: 0.65rem 1.8rem; box-shadow: 0 4px 14px -4px rgba(15, 23, 42, 0.05); margin: 0 auto; flex-wrap: wrap;">
+            <!-- Apple Sleek Trust Ribbon -->
+            <div style="display: inline-flex; align-items: center; justify-content: center; gap: 2rem; background: #f5f5f7; border: 1px solid rgba(0,0,0,0.06); border-radius: 9999px; padding: 0.75rem 2.2rem; margin: 0 auto; flex-wrap: wrap;">
               
               <!-- Item 1: Board Verified -->
-              <div style="display: flex; align-items: center; gap: 0.55rem;">
-                <div style="width: 30px; height: 30px; border-radius: 50%; background: #ecfdf5; border: 1px solid #a7f3d0; display: flex; align-items: center; justify-content: center; color: #059669; flex-shrink: 0;">
+              <div style="display: flex; align-items: center; gap: 0.6rem;">
+                <div style="width: 28px; height: 28px; border-radius: 50%; background: #ecfdf5; display: flex; align-items: center; justify-content: center; color: #059669; flex-shrink: 0;">
                   <i data-lucide="shield-check" style="width: 15px; height: 15px;"></i>
                 </div>
                 <div style="text-align: left;">
-                  <div style="font-size: 0.9rem; font-weight: 800; color: #090d16; line-height: 1.1;">100% Verified</div>
-                  <div style="font-size: 0.7rem; color: #64748b; font-weight: 600;">Accredited Specialists</div>
+                  <div style="font-size: 0.875rem; font-weight: 600; color: #1d1d1f; line-height: 1.1;">100% Verified</div>
+                  <div style="font-size: 0.7rem; color: #86868b;">Accredited Specialists</div>
                 </div>
               </div>
 
-              <div style="width: 1px; height: 22px; background: #e2e8f0;"></div>
+              <div style="width: 1px; height: 20px; background: rgba(0,0,0,0.1);"></div>
 
               <!-- Item 2: Wait Saved -->
-              <div style="display: flex; align-items: center; gap: 0.55rem;">
-                <div style="width: 30px; height: 30px; border-radius: 50%; background: #f0f9ff; border: 1px solid #bae6fd; display: flex; align-items: center; justify-content: center; color: #0284c7; flex-shrink: 0;">
+              <div style="display: flex; align-items: center; gap: 0.6rem;">
+                <div style="width: 28px; height: 28px; border-radius: 50%; background: #f0f9ff; display: flex; align-items: center; justify-content: center; color: #0066cc; flex-shrink: 0;">
                   <i data-lucide="clock" style="width: 15px; height: 15px;"></i>
                 </div>
                 <div style="text-align: left;">
-                  <div style="font-size: 0.9rem; font-weight: 800; color: #090d16; line-height: 1.1;">~38 Min Saved</div>
-                  <div style="font-size: 0.7rem; color: #64748b; font-weight: 600;">Avg. Hospital Wait</div>
+                  <div style="font-size: 0.875rem; font-weight: 600; color: #1d1d1f; line-height: 1.1;">~38 Min Saved</div>
+                  <div style="font-size: 0.7rem; color: #86868b;">Avg. Clinic Wait</div>
                 </div>
               </div>
 
-              <div style="width: 1px; height: 22px; background: #e2e8f0;"></div>
+              <div style="width: 1px; height: 20px; background: rgba(0,0,0,0.1);"></div>
 
               <!-- Item 3: Live OPD Telemetry -->
-              <div style="display: flex; align-items: center; gap: 0.55rem;">
-                <div style="width: 30px; height: 30px; border-radius: 50%; background: #ecfdf5; border: 1px solid #a7f3d0; display: flex; align-items: center; justify-content: center; color: #10b981; flex-shrink: 0;">
-                  <span class="pulse-beacon" style="background: #10b981; width: 7px; height: 7px;"></span>
+              <div style="display: flex; align-items: center; gap: 0.6rem;">
+                <div style="width: 28px; height: 28px; border-radius: 50%; background: #ecfdf5; display: flex; align-items: center; justify-content: center; color: #10b981; flex-shrink: 0;">
+                  <span class="pulse-beacon"></span>
                 </div>
                 <div style="text-align: left;">
-                  <div style="font-size: 0.9rem; font-weight: 800; color: #059669; line-height: 1.1;">Live Telemetry</div>
-                  <div style="font-size: 0.7rem; color: #64748b; font-weight: 600;">Cloud OPD Sync Active</div>
+                  <div style="font-size: 0.875rem; font-weight: 600; color: #1d1d1f; line-height: 1.1;">Live Telemetry</div>
+                  <div style="font-size: 0.7rem; color: #86868b;">Cloud OPD Sync Active</div>
                 </div>
               </div>
 
@@ -131,24 +130,24 @@
         </div>
       </section>
 
-      <!-- Doctor Discovery Section -->
-      <section id="directorySection" style="padding: 3.5rem 0 4.5rem; background: #ffffff;">
+      <!-- Doctor Discovery Section (Parchment Surface) -->
+      <section id="directorySection" class="section-parchment">
         <div class="container" style="max-width: 1180px;">
           <div style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 1rem;">
             <div>
-              <div style="font-size: 0.775rem; font-weight: 700; color: #0284c7; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">Accredited Medical Directory</div>
-              <h2 style="font-family: var(--font-display); font-size: 2rem; font-weight: 900; color: #090d16; margin: 0;">Verified Medical Specialists</h2>
+              <div style="font-size: 0.8125rem; font-weight: 600; color: #0066cc; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.25rem;">Accredited Medical Directory</div>
+              <h2 style="color: #1d1d1f; margin: 0;">Verified Medical Specialists</h2>
             </div>
-            <p style="color: #64748b; font-size: 0.875rem; margin: 0; max-width: 460px;">
+            <p style="color: #86868b; font-size: 0.875rem; margin: 0; max-width: 460px;">
               Check real-time live OPD queue telemetry, physician accreditation, and book direct consultation tokens.
             </p>
           </div>
 
-          <!-- Search & Filter Bar -->
-          <div class="filter-bar" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 0.85rem 1.15rem; margin-bottom: 2rem; display: flex; align-items: center; gap: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+          <!-- Search & Filter Bar (Apple Pill Search) -->
+          <div class="filter-bar" style="background: #ffffff; border: 1px solid rgba(0,0,0,0.08); border-radius: 9999px; padding: 0.65rem 1.25rem; margin-bottom: 2.25rem; display: flex; align-items: center; gap: 1rem; box-shadow: var(--shadow-product);">
             <div class="search-input-wrap" style="flex: 1; min-width: 240px; position: relative;">
-              <i data-lucide="search" class="search-icon" style="position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; color: #94a3b8; pointer-events: none;"></i>
-              <input type="text" id="doctorSearchInput" placeholder="Search doctor name, specialty, or clinic..." style="width: 100%; padding: 0.65rem 0.85rem 0.65rem 2.35rem; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.875rem; font-family: inherit; background: #ffffff;">
+              <i data-lucide="search" class="search-icon" style="position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: #86868b; pointer-events: none;"></i>
+              <input type="text" id="doctorSearchInput" placeholder="Search doctor name, specialty, or hospital..." style="width: 100%; padding: 0.65rem 0.85rem 0.65rem 2.5rem; border-radius: 9999px; border: 1px solid #d2d2d7; font-size: 0.875rem; font-family: inherit; background: #ffffff;">
             </div>
             <div class="specialty-pills" id="specialtyPillsContainer">
               <!-- Rendered by JS -->
@@ -156,7 +155,7 @@
           </div>
 
           <!-- Doctor Cards Grid -->
-          <div class="doctors-grid" id="doctorsDirectoryGrid">
+          <div class="doctor-grid" id="doctorsDirectoryGrid">
             <!-- Rendered by JS -->
           </div>
         </div>
@@ -632,13 +631,13 @@
     </div>
   </footer>
 
-  <!-- Supabase Cloud SDK & Core Scripts (Pinned Explicit Versions - X-05 Resolution) -->
+  <!-- Supabase Cloud SDK & Core Scripts (Apple Design V3) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.8/dist/umd/supabase.min.js"></script>
-  <script src="js/audio.js?v=20260817_v4_tabs"></script>
-  <script src="js/store.js?v=20260817_v4_tabs"></script>
-  <script src="js/supabase_client.js?v=20260817_v4_tabs"></script>
-  <script src="js/queue.js?v=20260817_v4_tabs"></script>
-  <script src="js/app.js?v=20260817_v4_tabs"></script>
+  <script src="js/audio.js?v=20260817_apple_v1"></script>
+  <script src="js/store.js?v=20260817_apple_v1"></script>
+  <script src="js/supabase_client.js?v=20260817_apple_v1"></script>
+  <script src="js/queue.js?v=20260817_apple_v1"></script>
+  <script src="js/app.js?v=20260817_apple_v1"></script>
 
 </body>
 </html>
