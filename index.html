@@ -76,22 +76,46 @@
               </button>
             </div>
 
-            <!-- Key Metric Counters -->
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; max-width: 680px; margin: 0 auto; padding-top: 1.5rem; border-top: 1px solid #e2e8f0;">
-              <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 0.75rem 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
-                <div style="font-family: var(--font-mono); font-size: 1.35rem; font-weight: 800; color: #090d16;">100%</div>
-                <div style="font-size: 0.75rem; color: #64748b; font-weight: 600;">Board-Verified Doctors</div>
-              </div>
-              <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 0.75rem 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
-                <div style="font-family: var(--font-mono); font-size: 1.35rem; font-weight: 800; color: #090d16;">~38 min</div>
-                <div style="font-size: 0.75rem; color: #64748b; font-weight: 600;">Avg. Wait Time Saved</div>
-              </div>
-              <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 0.75rem 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
-                <div style="font-family: var(--font-mono); font-size: 1.35rem; font-weight: 800; color: #059669; display: flex; align-items: center; justify-content: center; gap: 0.35rem;">
-                  <span class="pulse-beacon" style="background:#10b981;"></span> Live
+            <!-- Modern Sleek Telemetry Trust Ribbon -->
+            <div style="display: inline-flex; align-items: center; justify-content: center; gap: 1.5rem; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 9999px; padding: 0.6rem 1.6rem; box-shadow: 0 4px 14px -4px rgba(15, 23, 42, 0.05); margin: 0 auto; flex-wrap: wrap;">
+              
+              <!-- Item 1: Board Verified -->
+              <div style="display: flex; align-items: center; gap: 0.55rem;">
+                <div style="width: 30px; height: 30px; border-radius: 50%; background: #ecfdf5; border: 1px solid #a7f3d0; display: flex; align-items: center; justify-content: center; color: #059669; flex-shrink: 0;">
+                  <i data-lucide="shield-check" style="width: 15px; height: 15px;"></i>
                 </div>
-                <div style="font-size: 0.75rem; color: #64748b; font-weight: 600;">Cloud OPD Sync Active</div>
+                <div style="text-align: left;">
+                  <div style="font-size: 0.9rem; font-weight: 800; color: #090d16; line-height: 1.1;">100% Verified</div>
+                  <div style="font-size: 0.7rem; color: #64748b; font-weight: 600;">Accredited Specialists</div>
+                </div>
               </div>
+
+              <div style="width: 1px; height: 22px; background: #e2e8f0;"></div>
+
+              <!-- Item 2: Wait Saved -->
+              <div style="display: flex; align-items: center; gap: 0.55rem;">
+                <div style="width: 30px; height: 30px; border-radius: 50%; background: #f0f9ff; border: 1px solid #bae6fd; display: flex; align-items: center; justify-content: center; color: #0284c7; flex-shrink: 0;">
+                  <i data-lucide="clock" style="width: 15px; height: 15px;"></i>
+                </div>
+                <div style="text-align: left;">
+                  <div style="font-size: 0.9rem; font-weight: 800; color: #090d16; line-height: 1.1;">~38 Min Saved</div>
+                  <div style="font-size: 0.7rem; color: #64748b; font-weight: 600;">Avg. Hospital Wait</div>
+                </div>
+              </div>
+
+              <div style="width: 1px; height: 22px; background: #e2e8f0;"></div>
+
+              <!-- Item 3: Live OPD Telemetry -->
+              <div style="display: flex; align-items: center; gap: 0.55rem;">
+                <div style="width: 30px; height: 30px; border-radius: 50%; background: #ecfdf5; border: 1px solid #a7f3d0; display: flex; align-items: center; justify-content: center; color: #10b981; flex-shrink: 0;">
+                  <span class="pulse-beacon" style="background: #10b981; width: 7px; height: 7px;"></span>
+                </div>
+                <div style="text-align: left;">
+                  <div style="font-size: 0.9rem; font-weight: 800; color: #059669; line-height: 1.1;">Live Telemetry</div>
+                  <div style="font-size: 0.7rem; color: #64748b; font-weight: 600;">Cloud OPD Sync Active</div>
+                </div>
+              </div>
+
             </div>
           </div>
 
