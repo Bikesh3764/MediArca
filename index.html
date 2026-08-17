@@ -130,15 +130,15 @@
           </div>
 
           <!-- Live OPD Telemetry Dock Card (Integrated Visual Cockpit) -->
-          <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 18px; padding: 1.5rem; box-shadow: 0 10px 30px -8px rgba(15, 23, 42, 0.06); max-width: 960px; margin: 0 auto;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid #f1f5f9;">
-              <div style="display: flex; align-items: center; gap: 0.5rem; font-weight: 800; font-size: 0.95rem; color: #090d16;">
-                <i data-lucide="activity" style="width: 17px; height: 17px; color: #0284c7;"></i>
+          <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 20px; padding: 1.5rem; box-shadow: 0 12px 36px -8px rgba(15, 23, 42, 0.08); max-width: 960px; margin: 0 auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.15rem; padding-bottom: 0.75rem; border-bottom: 1px solid #f1f5f9;">
+              <div style="display: flex; align-items: center; gap: 0.55rem; font-weight: 800; font-size: 1rem; color: #090d16;">
+                <i data-lucide="radio" style="width: 18px; height: 18px; color: #0284c7;"></i>
                 <span>Live Clinic Telemetry Radar</span>
               </div>
               <div style="display: flex; align-items: center; gap: 0.5rem;">
-                <span class="badge badge-verified" style="font-size: 0.7rem; padding: 0.2rem 0.6rem;">
-                  <span class="pulse-beacon"></span> In-Session Stream
+                <span class="badge badge-verified" style="font-size: 0.725rem; padding: 0.25rem 0.65rem;">
+                  <span class="pulse-beacon"></span> In-Session Telemetry Stream
                 </span>
               </div>
             </div>
@@ -146,51 +146,57 @@
             <!-- 2-Column Grid inside the Dock Card -->
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; align-items: stretch;">
               <!-- Left: Live Doctor In-Session Preview -->
-              <div style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border: 1px solid #bae6fd; border-radius: 12px; padding: 1.15rem; display: flex; flex-direction: column; justify-content: space-between;">
+              <div style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border: 1px solid #bae6fd; border-radius: 14px; padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between;">
                 <div>
                   <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
                     <div>
-                      <div style="font-weight: 800; font-size: 0.95rem; color: #0369a1;">Dr. Aris Thorne • Cardiology</div>
-                      <div style="font-size: 0.775rem; color: #64748b; font-weight: 500;">Metro Heart Institute • Room 304</div>
+                      <div style="font-weight: 800; font-size: 1rem; color: #0369a1; display: flex; align-items: center; gap: 0.4rem;">
+                        <i data-lucide="stethoscope" style="width: 16px; height: 16px;"></i>
+                        <span>Dr. Aris Thorne • Cardiology</span>
+                      </div>
+                      <div style="font-size: 0.775rem; color: #475569; font-weight: 500; margin-top: 0.15rem;">Metro Heart Institute • Room 304</div>
                     </div>
-                    <div style="background: #ffffff; border: 1.5px solid #7dd3fc; border-radius: 8px; padding: 0.25rem 0.75rem; font-family: var(--font-mono); font-size: 1.25rem; font-weight: 900; color: #0284c7; box-shadow: 0 2px 6px rgba(2, 132, 199, 0.15);">
+                    <div style="background: #ffffff; border: 1.5px solid #7dd3fc; border-radius: 10px; padding: 0.3rem 0.85rem; font-family: var(--font-mono); font-size: 1.35rem; font-weight: 900; color: #0284c7; box-shadow: 0 2px 8px rgba(2, 132, 199, 0.15);" title="Active In-Consultation Token">
                       #4
                     </div>
                   </div>
                   
-                  <div style="display: flex; justify-content: space-between; font-size: 0.775rem; font-weight: 600; color: #0369a1; margin-bottom: 0.6rem;">
+                  <div style="display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: 700; color: #0369a1; margin-bottom: 0.75rem;">
                     <span>Consultation in Session</span>
-                    <span>Next Up: <strong>Token #5</strong> (~8 min)</span>
+                    <span>Next: <strong>Token #5</strong> (~8 min)</span>
                   </div>
                 </div>
 
                 <!-- 4-Stage Patient Journey Step Tracker -->
-                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.35rem; padding-top: 0.6rem; border-top: 1px dashed #bae6fd;">
-                  <div style="font-size: 0.6875rem; font-weight: 700; text-align: center; padding: 0.25rem 0.1rem; border-radius: 4px; background: #ecfdf5; color: #059669;">1. Check-in ✓</div>
-                  <div style="font-size: 0.6875rem; font-weight: 700; text-align: center; padding: 0.25rem 0.1rem; border-radius: 4px; background: #ecfdf5; color: #059669;">2. Triage ✓</div>
-                  <div style="font-size: 0.6875rem; font-weight: 700; text-align: center; padding: 0.25rem 0.1rem; border-radius: 4px; background: #0284c7; color: #ffffff; box-shadow: 0 2px 6px rgba(2, 132, 199, 0.25);">3. Consult ●</div>
-                  <div style="font-size: 0.6875rem; font-weight: 700; text-align: center; padding: 0.25rem 0.1rem; border-radius: 4px; background: rgba(255,255,255,0.7); color: #64748b;">4. Pharmacy</div>
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.35rem; padding-top: 0.75rem; border-top: 1px dashed #bae6fd;">
+                  <div style="font-size: 0.7rem; font-weight: 700; text-align: center; padding: 0.3rem 0.15rem; border-radius: 6px; background: #ecfdf5; color: #059669;">1. Check-in ✓</div>
+                  <div style="font-size: 0.7rem; font-weight: 700; text-align: center; padding: 0.3rem 0.15rem; border-radius: 6px; background: #ecfdf5; color: #059669;">2. Triage ✓</div>
+                  <div style="font-size: 0.7rem; font-weight: 700; text-align: center; padding: 0.3rem 0.15rem; border-radius: 6px; background: #0284c7; color: #ffffff; box-shadow: 0 2px 6px rgba(2, 132, 199, 0.3);">3. Consult ●</div>
+                  <div style="font-size: 0.7rem; font-weight: 700; text-align: center; padding: 0.3rem 0.15rem; border-radius: 6px; background: rgba(255,255,255,0.7); color: #64748b;">4. Pharmacy</div>
                 </div>
               </div>
 
               <!-- Right: Quick Live Token Lookup -->
-              <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.15rem; display: flex; flex-direction: column; justify-content: space-between;">
+              <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between;">
                 <div>
-                  <div style="font-size: 0.8125rem; font-weight: 700; color: #090d16; margin-bottom: 0.35rem;">Track Your Live OPD Token</div>
-                  <p style="font-size: 0.75rem; color: #64748b; margin-bottom: 0.75rem;">Enter your Booking ID or Doctor name to follow your position in real-time:</p>
+                  <div style="font-size: 0.875rem; font-weight: 800; color: #090d16; margin-bottom: 0.25rem; display: flex; align-items: center; gap: 0.4rem;">
+                    <i data-lucide="search" style="width: 15px; height: 15px; color: #0284c7;"></i>
+                    <span>Track Your Live OPD Token</span>
+                  </div>
+                  <p style="font-size: 0.775rem; color: #64748b; margin-bottom: 0.85rem; line-height: 1.45;">Enter your Booking ID (e.g. MED-BK-7890) or Doctor name to follow your position in real-time:</p>
                   
-                  <div style="position: relative; margin-bottom: 0.65rem;">
-                    <i data-lucide="search" style="position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; color: #94a3b8; pointer-events: none;"></i>
-                    <input type="text" id="quickLookupInput" placeholder="e.g. MED-BK-7890 or Dr. Thorne" style="width: 100%; padding: 0.6rem 0.85rem 0.6rem 2.25rem; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.84rem; font-family: inherit; background: #ffffff;">
+                  <div style="position: relative; margin-bottom: 0.75rem;">
+                    <i data-lucide="search" style="position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; color: #94a3b8; pointer-events: none;"></i>
+                    <input type="text" id="quickLookupInput" placeholder="e.g. MED-BK-7890 or Dr. Thorne" style="width: 100%; padding: 0.65rem 0.85rem 0.65rem 2.4rem; border-radius: 9px; border: 1px solid #cbd5e1; font-size: 0.875rem; font-family: inherit; background: #ffffff; transition: border-color 0.15s ease;">
                   </div>
                 </div>
 
                 <div style="display: flex; gap: 0.5rem;">
-                  <button class="btn btn-clinical" style="flex: 1; padding: 0.55rem 0.85rem; font-size: 0.8125rem; font-weight: 700; border-radius: 8px;" onclick="const val = document.getElementById('quickLookupInput').value; if(val){ window.mediarcaApp.switchView('queue-radar'); window.mediarcaQueueEngine.lookupByQuery(val); } else { window.mediarcaApp.switchView('queue-radar'); }">
-                    <i data-lucide="radio" style="width: 13px; height: 13px;"></i> Track Queue
+                  <button class="btn btn-clinical" style="flex: 1; padding: 0.6rem 0.95rem; font-size: 0.84rem; font-weight: 700; border-radius: 9px;" onclick="const val = document.getElementById('quickLookupInput').value; if(val){ window.mediarcaApp.switchView('queue-radar'); window.mediarcaQueueEngine.lookupByQuery(val); } else { window.mediarcaApp.switchView('queue-radar'); }">
+                    <i data-lucide="radio" style="width: 14px; height: 14px;"></i> Track Queue
                   </button>
-                  <button class="btn btn-secondary" style="padding: 0.55rem 0.85rem; font-size: 0.8125rem; font-weight: 700; border-radius: 8px; background: #ffffff;" onclick="window.mediarcaApp.switchView('queue-radar')">
-                    All Queues
+                  <button class="btn btn-secondary" style="padding: 0.6rem 0.95rem; font-size: 0.84rem; font-weight: 700; border-radius: 9px; background: #ffffff; border: 1px solid #cbd5e1; color: #090d16;" onclick="window.mediarcaApp.switchView('queue-radar')">
+                    All Live Queues
                   </button>
                 </div>
               </div>
