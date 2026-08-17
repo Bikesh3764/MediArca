@@ -1,0 +1,23 @@
+{
+  "projectId": "c52e2ce9-83df-49da-bf44-46894ad60666",
+  "type": "frontend",
+  "name": "Doctor Discovery & Specialty Search",
+  "planSteps": [
+    {
+      "type": "action",
+      "description": "Navigate to the homepage"
+    },
+    {
+      "type": "assertion",
+      "description": "Verify the MediArca brand header, navigation bar, and search bar are visible"
+    },
+    {
+      "type": "action",
+      "description": "Type 'Cardiology' into the doctor search input"
+    },
+    {
+      "type": "assertion",
+      "description": "Verify that Cardiology doctors (e.g. Dr. Aris Thorne) are displayed in the doctor directory cards"
+    }
+  ]
+}

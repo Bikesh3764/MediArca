@@ -1,0 +1,19 @@
+{
+  "projectId": "c52e2ce9-83df-49da-bf44-46894ad60666",
+  "type": "frontend",
+  "name": "Hospital TV OPD Announcement Board",
+  "planSteps": [
+    {
+      "type": "action",
+      "description": "Navigate to the homepage, scroll to the bottom footer, and click on 'Hospital TV Display'"
+    },
+    {
+      "type": "assertion",
+      "description": "Verify the high-contrast Hospital TV Display board opens with live digital clock"
+    },
+    {
+      "type": "assertion",
+      "description": "Verify multi-doctor OPD token calling boards and department queue rows are visible"
+    }
+  ]
+}

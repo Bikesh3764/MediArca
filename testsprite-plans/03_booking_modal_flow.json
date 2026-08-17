@@ -1,0 +1,19 @@
+{
+  "projectId": "c52e2ce9-83df-49da-bf44-46894ad60666",
+  "type": "frontend",
+  "name": "Consultation Booking Modal Interaction",
+  "planSteps": [
+    {
+      "type": "action",
+      "description": "Navigate to the homepage and click the 'Book Consultation' button on the first available doctor card"
+    },
+    {
+      "type": "assertion",
+      "description": "Verify the appointment booking modal overlay opens with doctor consultation fee and credentials"
+    },
+    {
+      "type": "assertion",
+      "description": "Verify patient name, phone number, age, gender, and appointment date fields are present in the form"
+    }
+  ]
+}

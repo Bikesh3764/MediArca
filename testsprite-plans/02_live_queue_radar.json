@@ -1,0 +1,19 @@
+{
+  "projectId": "c52e2ce9-83df-49da-bf44-46894ad60666",
+  "type": "frontend",
+  "name": "Live OPD Queue Radar Telemetry",
+  "planSteps": [
+    {
+      "type": "action",
+      "description": "Navigate to the homepage and click on the 'Live Queue' navigation button"
+    },
+    {
+      "type": "assertion",
+      "description": "Verify the Live Queue Radar view is displayed with doctor selector tabs"
+    },
+    {
+      "type": "assertion",
+      "description": "Verify estimated wait time, currently serving token display, and active queue indicator are present"
+    }
+  ]
+}
