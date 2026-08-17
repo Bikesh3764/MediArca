@@ -1136,8 +1136,8 @@ async login(email, password) {
           });
         }
       } catch (cloudErr) {
-        console.error('Cloud appointment RPC error:', cloudErr);
-        throw new Error(`Appointment booking could not be completed on the hospital server: ${cloudErr.message || 'Server rejected booking request'}`);
+        console.error('Cloud appointment RPC notice:', cloudErr);
+        throw new Error(cloudErr.message || 'Appointment booking could not be completed on the hospital server');
       }
     } else {
       throw new Error('Hospital server network is currently unreachable. Cannot issue medical tokens while offline.');

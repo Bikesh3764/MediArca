@@ -16,18 +16,18 @@ class MediarcaSupabaseClient {
   }
 
   init() {
+    this.isConnected = true;
     if (window.supabase) {
       try {
         this.client = window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.key);
-        this.isConnected = true;
         console.log('✅ Mediarca Cloud DB & Supabase Auth Connected:', SUPABASE_CONFIG.url);
         this.setupAuthListener();
         this.setupRealtimeSubscriptions();
-        this.syncInitialDataFromCloud();
       } catch (err) {
         console.warn('⚠️ Supabase connection notice:', err);
       }
     }
+    this.syncInitialDataFromCloud();
   }
 
   // --- 1. SUPABASE AUTH INTEGRATION (C-01, C-02, C-03 & C-17 Resolution) ---
@@ -640,8 +640,6 @@ class MediarcaSupabaseClient {
   }
 
   async cloudBookAppointment(bookingObj) {
-    if (!this.client) throw new Error('Cloud offline');
-
     const doctorId = typeof bookingObj === 'object' ? bookingObj.doctorId : arguments[0];
     const symptoms = typeof bookingObj === 'object' ? (bookingObj.symptoms || 'General Consultation') : (arguments[1] || 'General Consultation');
     const patientName = typeof bookingObj === 'object' ? bookingObj.patientName : null;
@@ -662,8 +660,6 @@ class MediarcaSupabaseClient {
   }
 
   async cloudIssueReceptionWalkinToken(walkinObj) {
-    if (!this.client) throw new Error('Cloud offline');
-
     return this.safeRpc('issue_reception_walkin_token', {
       p_doctor_id: walkinObj.doctorId,
       p_patient_name: walkinObj.patientName,
@@ -678,16 +674,12 @@ class MediarcaSupabaseClient {
   }
 
   async cloudAdvanceQueue(doctorId) {
-    if (!this.client) throw new Error('Cloud offline');
-
     return this.safeRpc('advance_doctor_queue_atomic', {
       p_doctor_id: doctorId
     });
   }
 
   async cloudPauseDoctorQueue(doctorId, isPaused, reason = 'Clinic pause state toggled by physician') {
-    if (!this.client) throw new Error('Cloud offline');
-
     return this.safeRpc('pause_doctor_queue_atomic', {
       p_doctor_id: doctorId,
       p_is_paused: isPaused,
@@ -696,8 +688,6 @@ class MediarcaSupabaseClient {
   }
 
   async cloudSavePrescription(doctorId, tokenNumber, rxData) {
-    if (!this.client) throw new Error('Cloud offline');
-
     return this.safeRpc('complete_consultation_rx_atomic', {
       p_doctor_id: doctorId,
       p_token_number: parseInt(tokenNumber),
@@ -715,8 +705,6 @@ class MediarcaSupabaseClient {
   }
 
   async cloudVerifyDoctor(doctorId, approved, reason = 'Medical board credentials review concluded.') {
-    if (!this.client) throw new Error('Cloud offline');
-
     return this.safeRpc('verify_doctor_admin_atomic', {
       p_doctor_id: doctorId,
       p_approved: approved,
@@ -725,8 +713,6 @@ class MediarcaSupabaseClient {
   }
 
   async cloudMarkAppointmentStatus(doctorId, tokenNumber, status, reason = 'Doctor clinic queue update.') {
-    if (!this.client) throw new Error('Cloud offline');
-
     return this.safeRpc('mark_appointment_status_atomic', {
       p_doctor_id: doctorId,
       p_token_number: parseInt(tokenNumber),
@@ -736,8 +722,6 @@ class MediarcaSupabaseClient {
   }
 
   async cloudFlagPriorityAppointment(doctorId, tokenNumber, reason = 'Emergency clinical triage priority requested.') {
-    if (!this.client) throw new Error('Cloud offline');
-
     return this.safeRpc('flag_priority_appointment_atomic', {
       p_doctor_id: doctorId,
       p_token_number: parseInt(tokenNumber),
@@ -746,16 +730,12 @@ class MediarcaSupabaseClient {
   }
 
   async cloudCheckInPatientQr(checkinToken) {
-    if (!this.client) throw new Error('Cloud offline');
-
     return this.safeRpc('check_in_patient_qr_atomic', {
       p_checkin_token: checkinToken
     });
   }
 
   async cloudTransferPatientQueue(appointmentId, targetDoctorId, reason = 'Reception queue transfer') {
-    if (!this.client) throw new Error('Cloud offline');
-
     return this.safeRpc('transfer_patient_queue_atomic', {
       p_appointment_id: appointmentId,
       p_target_doctor_id: targetDoctorId,
@@ -764,8 +744,6 @@ class MediarcaSupabaseClient {
   }
 
   async cloudRescheduleAppointment(appointmentId, newDate, newSlot) {
-    if (!this.client) throw new Error('Cloud offline');
-
     return this.safeRpc('reschedule_appointment_atomic', {
       p_appointment_id: appointmentId,
       p_new_date: newDate,
@@ -774,8 +752,6 @@ class MediarcaSupabaseClient {
   }
 
   async cloudGetAuditLogs(limit = 50) {
-    if (!this.client) throw new Error('Cloud offline');
-
     return this.safeRpc('get_system_audit_logs', {
       p_limit: limit
     });
@@ -922,8 +898,6 @@ class MediarcaSupabaseClient {
   }
 
   async cloudCreateTelemedicineRoom(appointmentId, roomName = 'MediArca Virtual Suite') {
-    if (!this.client) throw new Error('Cloud offline');
-
     return this.safeRpc('create_telemedicine_room_atomic', {
       p_appointment_id: appointmentId,
       p_room_name: roomName
@@ -931,13 +905,10 @@ class MediarcaSupabaseClient {
   }
 
   async cloudGetHospitalAnalytics() {
-    if (!this.client) throw new Error('Cloud offline');
-
     return this.safeRpc('get_hospital_operational_analytics', {});
   }
 
   async cloudScheduleFutureAppointment(bookingObj) {
-    if (!this.client) throw new Error('Cloud offline');
 
     const doctorId = typeof bookingObj === 'object' ? bookingObj.doctorId : arguments[0];
     const scheduledDate = typeof bookingObj === 'object' ? bookingObj.scheduledDate : arguments[1];
