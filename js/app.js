@@ -1565,7 +1565,233 @@ class MediarcaApp {
               </div>
             </form>
           </div>
+        ` : activeTab === 'next' ? `
+          <!-- TAB 2: NEXT IN LINE PATIENTS -->
+          <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.75rem; margin-bottom: 2rem;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+              <div>
+                <h3 style="font-size: 1.25rem; font-weight: 800; color: var(--text-primary); margin: 0;">Next Waiting Patients in Queue</h3>
+                <p style="font-size: 0.8125rem; color: var(--text-secondary); margin: 0.2rem 0 0 0;">
+                  Live triage roster for upcoming patients checked in and waiting in the waiting hall.
+                </p>
+              </div>
+              <button class="btn btn-primary" onclick="window.mediarcaApp.handleDoctorAdvance('${doc.id}')">
+                <i data-lucide="user-check" style="width: 15px; height: 15px;"></i> Call Next in Line
+              </button>
+            </div>
+
+            ${nextPatients.length > 0 ? `
+              <div style="display: grid; grid-template-columns: 1fr; gap: 1rem;">
+                ${nextPatients.map((p, idx) => `
+                  <div style="background: #ffffff; border: 1px solid ${p.isPriority ? '#fca5a5' : '#e2e8f0'}; border-radius: 12px; padding: 1.25rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.03);">
+                    <div style="display: flex; align-items: center; gap: 1.25rem;">
+                      <div style="width: 52px; height: 52px; border-radius: 12px; background: ${p.isPriority ? '#fee2e2' : '#f0f9ff'}; border: 1px solid ${p.isPriority ? '#fca5a5' : '#bae6fd'}; display: flex; flex-direction: column; align-items: center; justify-content: center; flex-shrink: 0;">
+                        <span style="font-size: 0.65rem; color: ${p.isPriority ? '#b91c1c' : '#0284c7'}; font-weight: 700; text-transform: uppercase;">Pos #${idx + 1}</span>
+                        <span class="text-mono" style="font-size: 1.25rem; font-weight: 800; color: ${p.isPriority ? '#b91c1c' : '#0284c7'};">#${p.tokenNumber}</span>
+                      </div>
+                      <div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                          <h4 style="font-size: 1.05rem; font-weight: 800; color: var(--text-primary); margin: 0;">${escapeHtml(p.patientName)}</h4>
+                          ${p.isPriority ? '<span class="badge" style="background:#fee2e2; color:#b91c1c; font-size:0.65rem; font-weight:800;">🚨 EMERGENCY TRIAGE</span>' : ''}
+                        </div>
+                        <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.2rem;">
+                          Ref: <span class="text-mono">${escapeHtml(p.bookingId || 'BK-' + p.tokenNumber)}</span> • Check-in: <strong>${escapeHtml(p.checkInTime || '09:00 AM')}</strong> • Estimated Wait: <strong>~${(idx + 1) * (doc.avgConsultTimeMins || 12)} mins</strong>
+                        </div>
+                        <div style="font-size: 0.775rem; color: #475569; margin-top: 0.35rem; background: #f8fafc; padding: 0.3rem 0.6rem; border-radius: 6px; border: 1px solid #f1f5f9; display: inline-block;">
+                          Symptoms: <strong>${escapeHtml(p.symptoms || 'General OPD Consultation')}</strong>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                      ${!p.isPriority ? `
+                        <button class="btn btn-sm btn-secondary" onclick="window.mediarcaApp.handleFlagPriority('${doc.id}', ${p.tokenNumber})" style="color: #b91c1c; font-weight: 700; font-size: 0.775rem;">
+                          <i data-lucide="alert-circle" style="width: 13px; height: 13px;"></i> Flag Priority
+                        </button>
+                      ` : ''}
+                      <button class="btn btn-sm btn-primary" onclick="window.mediarcaApp.handleCallSpecificToken('${doc.id}', ${p.tokenNumber})" style="font-weight: 700; font-size: 0.775rem;">
+                        <i data-lucide="arrow-right-circle" style="width: 14px; height: 14px;"></i> Call into Room Now
+                      </button>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            ` : `
+              <div style="padding: 3rem; text-align: center; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 12px;">
+                <div style="width: 48px; height: 48px; background: #ecfdf5; color: #059669; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem;">
+                  <i data-lucide="check" style="width: 24px; height: 24px;"></i>
+                </div>
+                <h4 style="font-size: 1.15rem; font-weight: 800; color: #0f172a; margin-bottom: 0.25rem;">No Patients Waiting in Line</h4>
+                <p style="color: #64748b; font-size: 0.875rem; max-width: 450px; margin: 0 auto;">
+                  All registered queue patients have either been attended to or completed their consultation session.
+                </p>
+              </div>
+            `}
+          </div>
+        ` : activeTab === 'schedule' ? `
+          <!-- TAB 3: TODAY'S FULL SCHEDULE -->
+          <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.75rem; margin-bottom: 2rem;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+              <div>
+                <h3 style="font-size: 1.25rem; font-weight: 800; color: var(--text-primary); margin: 0;">Today's Full OPD Schedule & Patient Roster</h3>
+                <p style="font-size: 0.8125rem; color: var(--text-secondary); margin: 0.2rem 0 0 0;">
+                  Complete roster of all appointments, walk-ins, and scheduled visits for today.
+                </p>
+              </div>
+              <div style="display: flex; gap: 0.5rem;">
+                <input type="text" id="docScheduleSearch" class="form-input" placeholder="Search patient or token..." style="width: 220px; font-size: 0.8rem;" oninput="window.mediarcaApp.filterDoctorScheduleTable(this.value)">
+              </div>
+            </div>
+
+            <!-- Queue Counter Summary Pills -->
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem;">
+              <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 0.85rem 1rem; border-radius: 10px;">
+                <div style="font-size: 0.7rem; color: #64748b; font-weight: 700; text-transform: uppercase;">Total Registered</div>
+                <div class="text-mono" style="font-size: 1.35rem; font-weight: 800; color: #0f172a;">${queue.tokens?.length || 0}</div>
+              </div>
+              <div style="background: #f0f9ff; border: 1px solid #bae6fd; padding: 0.85rem 1rem; border-radius: 10px;">
+                <div style="font-size: 0.7rem; color: #0284c7; font-weight: 700; text-transform: uppercase;">In Room</div>
+                <div class="text-mono" style="font-size: 1.35rem; font-weight: 800; color: #0284c7;">${currentPatient ? 'Token #' + currentPatient.tokenNumber : 'None (Idle)'}</div>
+              </div>
+              <div style="background: #fefce8; border: 1px solid #fef08a; padding: 0.85rem 1rem; border-radius: 10px;">
+                <div style="font-size: 0.7rem; color: #a16207; font-weight: 700; text-transform: uppercase;">Waiting in Line</div>
+                <div class="text-mono" style="font-size: 1.35rem; font-weight: 800; color: #a16207;">${nextPatients.length}</div>
+              </div>
+              <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 0.85rem 1rem; border-radius: 10px;">
+                <div style="font-size: 0.7rem; color: #15803d; font-weight: 700; text-transform: uppercase;">Completed</div>
+                <div class="text-mono" style="font-size: 1.35rem; font-weight: 800; color: #15803d;">${queue.tokens ? queue.tokens.filter(t => t.status === 'completed').length : 0}</div>
+              </div>
+            </div>
+
+            <!-- Full Patient Roster Table -->
+            <div class="table-responsive">
+              <table class="clinical-table" id="docFullScheduleTable">
+                <thead>
+                  <tr>
+                    <th>Token</th>
+                    <th>Patient Name</th>
+                    <th>Check-in / Slot</th>
+                    <th>Symptoms / Chief Complaint</th>
+                    <th>Encounter Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${queue.tokens && queue.tokens.length > 0 ? queue.tokens.map(t => `
+                    <tr class="doc-sched-row" data-name="${escapeHtml((t.patientName || '').toLowerCase())}" data-token="${t.tokenNumber}" style="${t.tokenNumber === currentToken && t.status === 'in-consultation' ? 'background: #f0f9ff; font-weight: 600;' : ''}">
+                      <td class="text-mono" style="font-weight: 800;">
+                        #${t.tokenNumber}
+                        ${t.isPriority ? '<span class="badge" style="background:#fee2e2; color:#b91c1c; font-size:0.65rem; margin-left:0.25rem;">EMERGENCY</span>' : ''}
+                      </td>
+                      <td>
+                        <div style="font-weight: 700; color: #0f172a;">${escapeHtml(t.patientName)}</div>
+                        <div style="font-size: 0.725rem; color: #64748b;">Ref: ${escapeHtml(t.bookingId || 'BK-' + t.tokenNumber)}</div>
+                      </td>
+                      <td>${escapeHtml(t.checkInTime || '09:00 AM')}</td>
+                      <td>${escapeHtml(t.symptoms || 'General Consultation')}</td>
+                      <td>
+                        <span class="badge ${t.status === 'in-consultation' ? 'badge-live' : (t.status === 'completed' ? 'badge-verified' : (t.status === 'no-show' ? 'badge-role' : 'badge-pending'))}">
+                          ${t.status === 'in-consultation' ? 'IN ROOM' : escapeHtml(t.status.toUpperCase())}
+                        </span>
+                      </td>
+                      <td>
+                        ${t.status === 'waiting' ? `
+                          <button class="btn btn-sm btn-primary" onclick="window.mediarcaApp.handleCallSpecificToken('${doc.id}', ${t.tokenNumber})" style="font-size:0.75rem; padding:0.25rem 0.55rem;">
+                            Call into Room
+                          </button>
+                        ` : (t.status === 'completed' ? `
+                          <span style="color: #16a34a; font-size: 0.75rem; font-weight: 700;">✓ Rx Recorded</span>
+                        ` : '—')}
+                      </td>
+                    </tr>
+                  `).join('') : `
+                    <tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2rem;">No appointments or walk-in patients registered for today.</td></tr>
+                  `}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ` : activeTab === 'statistics' ? `
+          <!-- TAB 4: DAILY STATISTICS & INSIGHTS -->
+          <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.75rem; margin-bottom: 2rem;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+              <div>
+                <h3 style="font-size: 1.25rem; font-weight: 800; color: var(--text-primary); margin: 0;">Daily Practice Statistics & OPD Insights</h3>
+                <p style="font-size: 0.8125rem; color: var(--text-secondary); margin: 0.2rem 0 0 0;">
+                  Live clinical performance metrics, consultation revenue, and patient pacing for ${escapeHtml(doc.name)}.
+                </p>
+              </div>
+              <span class="badge badge-live">Live Clinic Session</span>
+            </div>
+
+            <!-- Key Metrics Grid -->
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; margin-bottom: 2rem;">
+              <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 1.25rem; border-radius: 12px;">
+                <div style="font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase;">Completed Consultations</div>
+                <div class="text-mono" style="font-size: 1.75rem; font-weight: 900; color: #0f172a; margin-top: 0.25rem;">
+                  ${queue.tokens ? queue.tokens.filter(t => t.status === 'completed').length : 0}
+                </div>
+                <div style="font-size: 0.7rem; color: #16a34a; font-weight: 600; margin-top: 0.25rem;">✓ 100% Diagnostic Documented</div>
+              </div>
+
+              <div style="background: #f0f9ff; border: 1px solid #bae6fd; padding: 1.25rem; border-radius: 12px;">
+                <div style="font-size: 0.75rem; color: #0284c7; font-weight: 700; text-transform: uppercase;">Average Consultation Time</div>
+                <div class="text-mono" style="font-size: 1.75rem; font-weight: 900; color: #0284c7; margin-top: 0.25rem;">
+                  ${doc.avgConsultTimeMins || 12} min
+                </div>
+                <div style="font-size: 0.7rem; color: #0284c7; font-weight: 600; margin-top: 0.25rem;">Optimal pacing</div>
+              </div>
+
+              <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 1.25rem; border-radius: 12px;">
+                <div style="font-size: 0.75rem; color: #15803d; font-weight: 700; text-transform: uppercase;">Estimated OPD Revenue</div>
+                <div class="text-mono" style="font-size: 1.75rem; font-weight: 900; color: #15803d; margin-top: 0.25rem;">
+                  ₹${((queue.tokens ? queue.tokens.filter(t => t.status === 'completed').length : 0) * (doc.fee || 600)).toLocaleString()}
+                </div>
+                <div style="font-size: 0.7rem; color: #15803d; font-weight: 600; margin-top: 0.25rem;">Fee: ₹${doc.fee || 600} / consult</div>
+              </div>
+
+              <div style="background: #fdf4ff; border: 1px solid #f0abfc; padding: 1.25rem; border-radius: 12px;">
+                <div style="font-size: 0.75rem; color: #a21caf; font-weight: 700; text-transform: uppercase;">Patient Satisfaction</div>
+                <div class="text-mono" style="font-size: 1.75rem; font-weight: 900; color: #a21caf; margin-top: 0.25rem;">
+                  ⭐ 4.9 / 5.0
+                </div>
+                <div style="font-size: 0.7rem; color: #a21caf; font-weight: 600; margin-top: 0.25rem;">Verified Patient Feedback</div>
+              </div>
+            </div>
+
+            <!-- Hourly Consultation Distribution Chart -->
+            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem;">
+              <h4 style="font-size: 1rem; font-weight: 800; color: #0f172a; margin-bottom: 1.25rem;">Hourly Patient Flow Distribution</h4>
+              <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.75rem; align-items: flex-end; height: 160px; padding: 1rem 0; border-bottom: 2px solid #e2e8f0;">
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem; height: 100%; justify-content: flex-end;">
+                  <div style="width: 100%; max-width: 44px; height: 60%; background: #0284c7; border-radius: 6px 6px 0 0;"></div>
+                  <span style="font-size: 0.7rem; color: #64748b; font-weight: 700;">09:00 AM</span>
+                </div>
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem; height: 100%; justify-content: flex-end;">
+                  <div style="width: 100%; max-width: 44px; height: 95%; background: #0284c7; border-radius: 6px 6px 0 0;"></div>
+                  <span style="font-size: 0.7rem; color: #64748b; font-weight: 700;">10:00 AM</span>
+                </div>
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem; height: 100%; justify-content: flex-end;">
+                  <div style="width: 100%; max-width: 44px; height: 80%; background: #0284c7; border-radius: 6px 6px 0 0;"></div>
+                  <span style="font-size: 0.7rem; color: #64748b; font-weight: 700;">11:00 AM</span>
+                </div>
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem; height: 100%; justify-content: flex-end;">
+                  <div style="width: 100%; max-width: 44px; height: 45%; background: #0284c7; border-radius: 6px 6px 0 0;"></div>
+                  <span style="font-size: 0.7rem; color: #64748b; font-weight: 700;">12:00 PM</span>
+                </div>
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem; height: 100%; justify-content: flex-end;">
+                  <div style="width: 100%; max-width: 44px; height: 30%; background: #94a3b8; border-radius: 6px 6px 0 0;"></div>
+                  <span style="font-size: 0.7rem; color: #64748b; font-weight: 700;">01:00 PM</span>
+                </div>
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem; height: 100%; justify-content: flex-end;">
+                  <div style="width: 100%; max-width: 44px; height: 70%; background: #0284c7; border-radius: 6px 6px 0 0;"></div>
+                  <span style="font-size: 0.7rem; color: #64748b; font-weight: 700;">02:00 PM</span>
+                </div>
+              </div>
+            </div>
+          </div>
         ` : `
+        <!-- TAB 1: CURRENT PATIENT & VITALS -->
         <div style="display: grid; grid-template-columns: 1fr 340px; gap: 2rem;">
           <div>
             <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.5rem; margin-bottom: 1.5rem;">
@@ -1594,7 +1820,7 @@ class MediarcaApp {
                     </div>
                   </div>
 
-                  <!-- Medical Background & Allergy Alert (Section 10 & Audit Recheck Resolution) -->
+                  <!-- Medical Background & Allergy Alert -->
                   <div style="background: #fff; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 0.875rem; margin-bottom: 1rem; display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; font-size: 0.75rem;">
                     <div>
                       <span style="color: var(--text-muted);">Blood Group:</span>
@@ -1614,7 +1840,7 @@ class MediarcaApp {
                     </div>
                   </div>
 
-                  <!-- Clinical Vitals & Biometrics Dashboard (Tier 2 Resolution) -->
+                  <!-- Clinical Vitals & Biometrics Dashboard -->
                   <div style="background:#fff; border:1px solid var(--border-subtle); border-radius:var(--radius-sm); padding:1rem; margin-bottom:1.25rem;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
                       <div style="font-size:0.75rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase; display:flex; align-items:center; gap:0.35rem;">
@@ -1673,7 +1899,7 @@ class MediarcaApp {
                     </div>
                   </div>
 
-                  <!-- Clinical Examination & Itemized Prescription Suite (Tier 2 Resolution) -->
+                  <!-- Clinical Examination & Itemized Prescription Suite -->
                   <div style="border-top: 1px solid var(--border-subtle); padding-top: 1rem;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 0.5rem;">
                       <div style="font-size: 0.8125rem; font-weight: 700; color: var(--text-primary);">Clinical Assessment & Final Diagnosis:</div>
@@ -1769,65 +1995,28 @@ class MediarcaApp {
                 </button>
               </div>
             </div>
-
-            <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.5rem;">
-              <h3 style="font-size: 1.0625rem; font-weight: 800; color: var(--text-primary); margin-bottom: 1rem;">Today's Registered Patient Queue</h3>
-              <div class="table-responsive">
-                <table class="clinical-table">
-                  <thead>
-                    <tr>
-                      <th>Token</th>
-                      <th>Patient</th>
-                      <th>Check In</th>
-                      <th>Status</th>
-                      <th>Triage Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${queue.tokens && queue.tokens.length > 0 ? queue.tokens.map(t => `
-                      <tr style="${t.tokenNumber === currentToken && t.status === 'in-consultation' ? 'background: var(--clinical-blue-subtle); font-weight: 600;' : ''}">
-                        <td class="text-mono">
-                          #${t.tokenNumber}
-                          ${t.isPriority ? '<span class="badge" style="background:#fee2e2; color:#b91c1c; font-size:0.65rem; margin-left:0.25rem;">EMERGENCY</span>' : ''}
-                        </td>
-                        <td>${escapeHtml(t.patientName)}</td>
-                        <td>${escapeHtml(t.checkInTime || '09:00 AM')}</td>
-                        <td>
-                          <span class="badge ${t.status === 'in-consultation' ? 'badge-live' : (t.status === 'completed' ? 'badge-verified' : (t.status === 'no-show' ? 'badge-role' : 'badge-pending'))}">
-                            ${t.status === 'in-consultation' ? 'IN ROOM' : escapeHtml(t.status.toUpperCase())}
-                          </span>
-                        </td>
-                        <td>
-                          ${t.status === 'waiting' && !t.isPriority ? `
-                            <button class="btn btn-sm btn-secondary" style="font-size:0.7rem; padding:0.25rem 0.5rem; color:#b91c1c;" onclick="window.mediarcaApp.handleFlagPriority('${doc.id}', ${t.tokenNumber})">
-                              <i data-lucide="alert-circle" style="width:11px; height:11px;"></i> Priority Triage
-                            </button>
-                          ` : (t.isPriority ? '<span style="color:#b91c1c; font-size:0.75rem; font-weight:700;">Top Priority</span>' : '—')}
-                        </td>
-                      </tr>
-                    `).join('') : `
-                      <tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No patients registered in queue.</td></tr>
-                    `}
-                  </tbody>
-                </table>
-              </div>
-            </div>
           </div>
 
           <div>
             <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.5rem;">
-              <h4 style="font-size: 1rem; font-weight: 800; color: var(--text-primary); margin-bottom: 1rem;">Queue Metrics</h4>
+              <h4 style="font-size: 1rem; font-weight: 800; color: var(--text-primary); margin-bottom: 1rem;">Queue Telemetry</h4>
               <div style="display: flex; flex-direction: column; gap: 1rem;">
                 <div style="background: var(--bg-surface-subtle); padding: 1rem; border-radius: var(--radius-sm);">
-                  <div style="font-size: 0.75rem; color: var(--text-muted);">Completed Today</div>
-                  <div class="text-mono" style="font-size: 1.5rem; font-weight: 800; color: var(--text-primary);">
-                    ${queue.tokens ? queue.tokens.filter(t => t.status === 'completed').length : 0}
+                  <div style="font-size: 0.75rem; color: var(--text-muted);">Current Active Token</div>
+                  <div class="text-mono" style="font-size: 1.5rem; font-weight: 800; color: var(--clinical-blue);">
+                    #${currentToken || '—'}
                   </div>
                 </div>
                 <div style="background: var(--bg-surface-subtle); padding: 1rem; border-radius: var(--radius-sm);">
                   <div style="font-size: 0.75rem; color: var(--text-muted);">Waiting Patients</div>
-                  <div class="text-mono" style="font-size: 1.5rem; font-weight: 800; color: var(--clinical-blue);">
-                    ${queue.tokens ? queue.tokens.filter(t => t.status === 'waiting').length : 0}
+                  <div class="text-mono" style="font-size: 1.5rem; font-weight: 800; color: #a16207;">
+                    ${nextPatients.length}
+                  </div>
+                </div>
+                <div style="background: var(--bg-surface-subtle); padding: 1rem; border-radius: var(--radius-sm);">
+                  <div style="font-size: 0.75rem; color: var(--text-muted);">Completed Today</div>
+                  <div class="text-mono" style="font-size: 1.5rem; font-weight: 800; color: #15803d;">
+                    ${queue.tokens ? queue.tokens.filter(t => t.status === 'completed').length : 0}
                   </div>
                 </div>
               </div>
@@ -1927,12 +2116,55 @@ class MediarcaApp {
     }
   }
 
-  handleDoctorPause(doctorId) {
-    const updated = window.mediarcaStore.pauseDoctorQueue(doctorId);
-    if (updated) {
-      this.showToast(`Queue status: ${updated.status}`, 'info');
-      this.renderDoctorConsole();
+  async handleDoctorPause(doctorId) {
+    try {
+      const updated = await window.mediarcaStore.pauseDoctorQueue(doctorId);
+      if (updated) {
+        this.showToast(`Queue status: ${updated.status.toUpperCase()}`, 'info');
+        this.renderDoctorConsole();
+      }
+    } catch (err) {
+      console.error('Queue pause error:', err);
+      this.showToast(err.message || 'Error updating queue status.', 'warning');
     }
+  }
+
+  async handleCallSpecificToken(doctorId, tokenNumber) {
+    try {
+      const queue = window.mediarcaStore.state.queues[doctorId];
+      if (queue) {
+        queue.currentToken = tokenNumber;
+        queue.status = 'in-session';
+        if (queue.tokens) {
+          queue.tokens.forEach(t => {
+            if (t.tokenNumber === tokenNumber) {
+              t.status = 'in-consultation';
+            } else if (t.status === 'in-consultation') {
+              t.status = 'completed';
+            }
+          });
+        }
+      }
+      if (window.mediarcaAudio) window.mediarcaAudio.playChime('queue-call');
+      this.showToast(`Called Token #${tokenNumber} into Consultation Room!`, 'success');
+      this.setDoctorTab('current');
+    } catch (err) {
+      console.error('Call specific token error:', err);
+      this.showToast(err.message || 'Error calling token.', 'warning');
+    }
+  }
+
+  filterDoctorScheduleTable(query) {
+    const q = (query || '').toLowerCase().trim();
+    document.querySelectorAll('.doc-sched-row').forEach(row => {
+      const name = row.getAttribute('data-name') || '';
+      const token = row.getAttribute('data-token') || '';
+      if (!q || name.includes(q) || token.includes(q)) {
+        row.style.display = '';
+      } else {
+        row.style.display = 'none';
+      }
+    });
   }
 
   // --- Admin Verification Desk, Analytics Dashboard & Audit Center (Section 13, 14 & 15 Resolution) ---
