@@ -681,14 +681,15 @@ class MediarcaStore {
     // If doctor profile exists, sync doctor state
     if (sessionData.doctorProfile) {
       const doc = sessionData.doctorProfile;
-      const existingIdx = this.state.doctors.findIndex(d => d.id === doc.id || d.email.toLowerCase() === doc.email.toLowerCase());
+      const docEmail = (doc.email || '').toLowerCase().trim();
+      const existingIdx = this.state.doctors.findIndex(d => (doc.id && d.id === doc.id) || (docEmail && d.email && d.email.toLowerCase().trim() === docEmail));
       if (existingIdx >= 0) {
         this.state.doctors[existingIdx] = {
           ...this.state.doctors[existingIdx],
-          id: doc.id,
-          name: doc.name,
-          verificationStatus: doc.verification_status,
-          mediarcaId: doc.mediarca_id
+          id: doc.id || this.state.doctors[existingIdx].id,
+          name: doc.name || this.state.doctors[existingIdx].name,
+          verificationStatus: doc.verification_status || this.state.doctors[existingIdx].verificationStatus,
+          mediarcaId: doc.mediarca_id || this.state.doctors[existingIdx].mediarcaId
         };
       }
     }
