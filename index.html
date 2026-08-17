@@ -6,8 +6,8 @@
   <title>Mediarca - Modern Clinical Appointments & Live Queue Tracking</title>
   <meta name="description" content="Mediarca provides transparent doctor appointments with real-time live queue progression tracking, verified physician credentials, and digital token management.">
   
-  <!-- Clinical CSS Design System -->
-  <link rel="stylesheet" href="css/mediarca.css">
+  <!-- Clinical CSS Design System (Cache-busted) -->
+  <link rel="stylesheet" href="css/mediarca.css?v=3.5">
   
   <!-- Pinned Lucide Icons -->
   <script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.min.js"></script>
@@ -47,103 +47,117 @@
          VIEW 1: PUBLIC HOME & DOCTOR DIRECTORY
          ========================================== -->
     <div id="view-home" class="section-view active">
-      <!-- Clean Hero Section -->
-      <section class="hero-wrapper">
-        <div class="container">
-          <div class="hero-grid">
-            <div>
-              <div class="hero-live-pill">
-                <span class="pulse-beacon"></span>
-                <span>Real-Time Clinical Queue Telemetry</span>
-              </div>
-              <h1 class="hero-headline">
-                Track your doctor's queue live. <span class="accent-highlight">Know exactly when to arrive.</span>
-              </h1>
-              <p class="hero-subtitle">
-                Mediarca eliminates crowded hospital waiting rooms. Book verified specialists, receive digital queue tokens, and follow your live turn in real-time.
-              </p>
-              
-              <div class="hero-cta-group">
-                <button class="btn btn-lg btn-primary" onclick="document.getElementById('directorySection').scrollIntoView({behavior: 'smooth'})">
-                  <i data-lucide="search" style="width: 16px; height: 16px;"></i> Find & Book Doctors
-                </button>
-                <button class="btn btn-lg btn-secondary" onclick="window.mediarcaApp.switchView('queue-radar')">
-                  <i data-lucide="radio" style="width: 16px; height: 16px; color: #0284c7;"></i> Track Live Queue
-                </button>
-              </div>
+      <!-- Modern High-End Centered Hero Section -->
+      <section class="hero-wrapper" style="padding: 3.5rem 0 3rem; background: radial-gradient(1200px circle at 50% 0%, rgba(2, 132, 199, 0.08), transparent 60%), #f8fafc; border-bottom: 1px solid #e2e8f0;">
+        <div class="container" style="max-width: 1180px;">
+          <!-- Centered Hero Headline & Value Pitch -->
+          <div style="text-align: center; max-width: 780px; margin: 0 auto 2.5rem;">
+            <div class="hero-live-pill" style="margin-bottom: 1rem;">
+              <span class="pulse-beacon"></span>
+              <span>Real-Time Clinical Queue Telemetry • Live Cloud OPD Sync</span>
+            </div>
+            
+            <h1 style="font-family: var(--font-display); font-size: 2.85rem; font-weight: 900; line-height: 1.15; letter-spacing: -0.035em; color: #090d16; margin-bottom: 1rem;">
+              Skip crowded waiting rooms. <br>
+              <span style="background: linear-gradient(135deg, #0284c7 0%, #0d9488 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Track your doctor's queue live.</span>
+            </h1>
+            
+            <p style="font-size: 1.05rem; color: #475569; line-height: 1.6; margin-bottom: 1.75rem;">
+              Mediarca eliminates unpredictable clinic wait times. Book verified medical specialists, receive live token alerts on your device, and arrive precisely when your turn begins.
+            </p>
 
-              <div class="hero-metrics-row">
-                <div class="hero-metric-card">
-                  <div class="hero-metric-val">100%</div>
-                  <div class="hero-metric-lbl">Board-Verified Doctors</div>
+            <!-- Hero Action Buttons -->
+            <div style="display: flex; justify-content: center; gap: 0.85rem; flex-wrap: wrap; margin-bottom: 2rem;">
+              <button class="btn btn-lg btn-primary" onclick="document.getElementById('directorySection').scrollIntoView({behavior: 'smooth'})" style="padding: 0.8rem 1.6rem; font-size: 0.95rem; font-weight: 700; border-radius: 12px;">
+                <i data-lucide="search" style="width: 16px; height: 16px;"></i> Find & Book Specialists
+              </button>
+              <button class="btn btn-lg btn-secondary" onclick="window.mediarcaApp.switchView('queue-radar')" style="padding: 0.8rem 1.6rem; font-size: 0.95rem; font-weight: 700; border-radius: 12px; background: #ffffff; border: 1px solid #cbd5e1; color: #0f172a;">
+                <i data-lucide="radio" style="width: 16px; height: 16px; color: #0284c7;"></i> Open Live Queue Radar
+              </button>
+            </div>
+
+            <!-- Key Metric Counters -->
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; max-width: 680px; margin: 0 auto; padding-top: 1.5rem; border-top: 1px solid #e2e8f0;">
+              <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 0.75rem 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+                <div style="font-family: var(--font-mono); font-size: 1.35rem; font-weight: 800; color: #090d16;">100%</div>
+                <div style="font-size: 0.75rem; color: #64748b; font-weight: 600;">Board-Verified Doctors</div>
+              </div>
+              <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 0.75rem 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+                <div style="font-family: var(--font-mono); font-size: 1.35rem; font-weight: 800; color: #090d16;">~38 min</div>
+                <div style="font-size: 0.75rem; color: #64748b; font-weight: 600;">Avg. Wait Time Saved</div>
+              </div>
+              <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 0.75rem 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+                <div style="font-family: var(--font-mono); font-size: 1.35rem; font-weight: 800; color: #059669; display: flex; align-items: center; justify-content: center; gap: 0.35rem;">
+                  <span class="pulse-beacon" style="background:#10b981;"></span> Live
                 </div>
-                <div class="hero-metric-card">
-                  <div class="hero-metric-val">~38 min</div>
-                  <div class="hero-metric-lbl">Avg. Clinic Wait Saved</div>
-                </div>
-                <div class="hero-metric-card">
-                  <div class="hero-metric-val" style="color: #059669; display: flex; align-items: center; gap: 0.35rem;">
-                    <span class="pulse-beacon" style="background:#10b981;"></span> Live
-                  </div>
-                  <div class="hero-metric-lbl">Cloud OPD Sync</div>
-                </div>
+                <div style="font-size: 0.75rem; color: #64748b; font-weight: 600;">Cloud OPD Sync Active</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Live OPD Telemetry Dock Card (Integrated Visual Cockpit) -->
+          <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 18px; padding: 1.5rem; box-shadow: 0 10px 30px -8px rgba(15, 23, 42, 0.06); max-width: 960px; margin: 0 auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid #f1f5f9;">
+              <div style="display: flex; align-items: center; gap: 0.5rem; font-weight: 800; font-size: 0.95rem; color: #090d16;">
+                <i data-lucide="activity" style="width: 17px; height: 17px; color: #0284c7;"></i>
+                <span>Live Clinic Telemetry Radar</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span class="badge badge-verified" style="font-size: 0.7rem; padding: 0.2rem 0.6rem;">
+                  <span class="pulse-beacon"></span> In-Session Stream
+                </span>
               </div>
             </div>
 
-            <!-- Quick Live Queue Cockpit Terminal -->
-            <div>
-              <div class="cockpit-card">
-                <div class="cockpit-header">
-                  <h3 class="cockpit-title">
-                    <i data-lucide="activity" style="width: 18px; height: 18px; color: #0284c7;"></i>
-                    Live Clinic Telemetry HUD
-                  </h3>
-                  <span class="badge badge-verified" style="font-size: 0.725rem;">
-                    <span class="pulse-beacon"></span> Active Stream
-                  </span>
-                </div>
-
-                <!-- Live Doctor Status Preview Strip -->
-                <div class="cockpit-live-feed">
-                  <div class="cockpit-feed-top">
-                    <div class="cockpit-doctor-info">
-                      <div class="cockpit-doctor-name">Dr. Aris Thorne • Cardiology</div>
-                      <div class="cockpit-doctor-room">Metro Heart Institute • Room 304</div>
+            <!-- 2-Column Grid inside the Dock Card -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; align-items: stretch;">
+              <!-- Left: Live Doctor In-Session Preview -->
+              <div style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border: 1px solid #bae6fd; border-radius: 12px; padding: 1.15rem; display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                  <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
+                    <div>
+                      <div style="font-weight: 800; font-size: 0.95rem; color: #0369a1;">Dr. Aris Thorne • Cardiology</div>
+                      <div style="font-size: 0.775rem; color: #64748b; font-weight: 500;">Metro Heart Institute • Room 304</div>
                     </div>
-                    <div class="cockpit-token-badge" title="Live In-Consultation Token">#4</div>
+                    <div style="background: #ffffff; border: 1.5px solid #7dd3fc; border-radius: 8px; padding: 0.25rem 0.75rem; font-family: var(--font-mono); font-size: 1.25rem; font-weight: 900; color: #0284c7; box-shadow: 0 2px 6px rgba(2, 132, 199, 0.15);">
+                      #4
+                    </div>
                   </div>
                   
-                  <div style="display: flex; justify-content: space-between; font-size: 0.775rem; font-weight: 600; color: #0369a1; margin-top: 0.4rem;">
+                  <div style="display: flex; justify-content: space-between; font-size: 0.775rem; font-weight: 600; color: #0369a1; margin-bottom: 0.6rem;">
                     <span>Consultation in Session</span>
                     <span>Next Up: <strong>Token #5</strong> (~8 min)</span>
                   </div>
+                </div>
 
-                  <!-- 4-Stage Patient Journey Step Tracker -->
-                  <div class="cockpit-timeline-steps">
-                    <div class="cockpit-step completed">1. Check-in ✓</div>
-                    <div class="cockpit-step completed">2. Triage ✓</div>
-                    <div class="cockpit-step active">3. Consult ●</div>
-                    <div class="cockpit-step">4. Pharmacy</div>
+                <!-- 4-Stage Patient Journey Step Tracker -->
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.35rem; padding-top: 0.6rem; border-top: 1px dashed #bae6fd;">
+                  <div style="font-size: 0.6875rem; font-weight: 700; text-align: center; padding: 0.25rem 0.1rem; border-radius: 4px; background: #ecfdf5; color: #059669;">1. Check-in ✓</div>
+                  <div style="font-size: 0.6875rem; font-weight: 700; text-align: center; padding: 0.25rem 0.1rem; border-radius: 4px; background: #ecfdf5; color: #059669;">2. Triage ✓</div>
+                  <div style="font-size: 0.6875rem; font-weight: 700; text-align: center; padding: 0.25rem 0.1rem; border-radius: 4px; background: #0284c7; color: #ffffff; box-shadow: 0 2px 6px rgba(2, 132, 199, 0.25);">3. Consult ●</div>
+                  <div style="font-size: 0.6875rem; font-weight: 700; text-align: center; padding: 0.25rem 0.1rem; border-radius: 4px; background: rgba(255,255,255,0.7); color: #64748b;">4. Pharmacy</div>
+                </div>
+              </div>
+
+              <!-- Right: Quick Live Token Lookup -->
+              <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.15rem; display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                  <div style="font-size: 0.8125rem; font-weight: 700; color: #090d16; margin-bottom: 0.35rem;">Track Your Live OPD Token</div>
+                  <p style="font-size: 0.75rem; color: #64748b; margin-bottom: 0.75rem;">Enter your Booking ID or Doctor name to follow your position in real-time:</p>
+                  
+                  <div style="position: relative; margin-bottom: 0.65rem;">
+                    <i data-lucide="search" style="position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; color: #94a3b8; pointer-events: none;"></i>
+                    <input type="text" id="quickLookupInput" placeholder="e.g. MED-BK-7890 or Dr. Thorne" style="width: 100%; padding: 0.6rem 0.85rem 0.6rem 2.25rem; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.84rem; font-family: inherit; background: #ffffff;">
                   </div>
                 </div>
 
-                <div class="cockpit-search-box">
-                  <div class="cockpit-input-wrap">
-                    <i data-lucide="search" class="cockpit-input-icon" style="width: 16px; height: 16px;"></i>
-                    <input type="text" id="quickLookupInput" placeholder="Enter Booking ID (e.g. MED-BK-7890) or Doctor Name...">
-                  </div>
-                  <button class="btn btn-clinical btn-block" onclick="const val = document.getElementById('quickLookupInput').value; if(val){ window.mediarcaApp.switchView('queue-radar'); window.mediarcaQueueEngine.lookupByQuery(val); } else { window.mediarcaApp.switchView('queue-radar'); }">
-                    <i data-lucide="radio" style="width: 16px; height: 16px;"></i> Track Live Queue Position
+                <div style="display: flex; gap: 0.5rem;">
+                  <button class="btn btn-clinical" style="flex: 1; padding: 0.55rem 0.85rem; font-size: 0.8125rem; font-weight: 700; border-radius: 8px;" onclick="const val = document.getElementById('quickLookupInput').value; if(val){ window.mediarcaApp.switchView('queue-radar'); window.mediarcaQueueEngine.lookupByQuery(val); } else { window.mediarcaApp.switchView('queue-radar'); }">
+                    <i data-lucide="radio" style="width: 13px; height: 13px;"></i> Track Queue
                   </button>
-                </div>
-
-                <div style="border-top: 1px solid #f1f5f9; padding-top: 0.85rem;">
-                  <div style="font-size: 0.725rem; color: var(--text-muted); font-weight: 700; margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.04em;">Live Telemetry Channels:</div>
-                  <div class="quick-chips-row">
-                    <span class="quick-chip" onclick="document.getElementById('quickLookupInput').value='Dr. Thorne'; window.mediarcaApp.switchView('queue-radar'); window.mediarcaQueueEngine.lookupByQuery('Dr. Thorne');">🩺 Dr. Thorne (Cardio)</span>
-                    <span class="quick-chip" onclick="document.getElementById('quickLookupInput').value='Dr. Sarah'; window.mediarcaApp.switchView('queue-radar'); window.mediarcaQueueEngine.lookupByQuery('Dr. Sarah');">🧬 Dr. Sarah Chen</span>
-                    <span class="quick-chip" onclick="window.mediarcaApp.switchView('queue-radar')">⚡ View All Active Queues</span>
-                  </div>
+                  <button class="btn btn-secondary" style="padding: 0.55rem 0.85rem; font-size: 0.8125rem; font-weight: 700; border-radius: 8px; background: #ffffff;" onclick="window.mediarcaApp.switchView('queue-radar')">
+                    All Queues
+                  </button>
                 </div>
               </div>
             </div>
@@ -152,18 +166,23 @@
       </section>
 
       <!-- Doctor Discovery Section -->
-      <section id="directorySection" style="padding: 3.5rem 0 4rem;">
-        <div class="container">
-          <div style="margin-bottom: 2rem;">
-            <h2 style="font-size: 1.75rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.35rem;">Verified Medical Specialists</h2>
-            <p style="color: var(--text-secondary); font-size: 0.9rem;">Browse accredited physicians, check live queue status, and book instant consultation tokens.</p>
+      <section id="directorySection" style="padding: 3.5rem 0 4.5rem; background: #ffffff;">
+        <div class="container" style="max-width: 1180px;">
+          <div style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 1rem;">
+            <div>
+              <div style="font-size: 0.775rem; font-weight: 700; color: #0284c7; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">Accredited Medical Directory</div>
+              <h2 style="font-family: var(--font-display); font-size: 2rem; font-weight: 900; color: #090d16; margin: 0;">Verified Medical Specialists</h2>
+            </div>
+            <p style="color: #64748b; font-size: 0.875rem; margin: 0; max-width: 460px;">
+              Check real-time live OPD queue telemetry, physician accreditation, and book direct consultation tokens.
+            </p>
           </div>
 
           <!-- Search & Filter Bar -->
-          <div class="filter-bar">
-            <div class="search-input-wrap">
-              <i data-lucide="search" class="search-icon" style="width: 16px; height: 16px;"></i>
-              <input type="text" id="doctorSearchInput" placeholder="Search doctor name, specialty, or clinic...">
+          <div class="filter-bar" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 0.85rem 1.15rem; margin-bottom: 2rem; display: flex; align-items: center; gap: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+            <div class="search-input-wrap" style="flex: 1; min-width: 240px; position: relative;">
+              <i data-lucide="search" class="search-icon" style="position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; color: #94a3b8; pointer-events: none;"></i>
+              <input type="text" id="doctorSearchInput" placeholder="Search doctor name, specialty, or clinic..." style="width: 100%; padding: 0.65rem 0.85rem 0.65rem 2.35rem; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.875rem; font-family: inherit; background: #ffffff;">
             </div>
             <div class="specialty-pills" id="specialtyPillsContainer">
               <!-- Rendered by JS -->
