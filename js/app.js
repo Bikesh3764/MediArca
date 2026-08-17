@@ -114,8 +114,12 @@ class MediarcaApp {
 
       navActionsContainer.innerHTML = `
         <div style="display:flex; align-items:center; gap:0.75rem;">
+          <button class="btn btn-sm btn-secondary" onclick="window.mediarcaApp.switchView('patient-portal'); window.mediarcaApp.setPatientTab('profile');" style="display:flex; align-items:center; gap:0.4rem; padding:0.35rem 0.65rem; border-color: #93c5fd; background: #eff6ff;">
+            <i data-lucide="user" style="width:13px;height:13px; color:var(--clinical-blue);"></i>
+            <span style="font-size:0.75rem; font-weight:700; color:var(--clinical-blue);">My Profile</span>
+          </button>
           <div style="text-align:right;">
-            <div style="font-size:0.8125rem; font-weight:700; color:var(--text-primary);">${user.name}</div>
+            <div style="font-size:0.8125rem; font-weight:700; color:var(--text-primary);">${escapeHtml(user.name || 'Patient')}</div>
             <div style="font-size:0.7rem; color:var(--text-muted);">Patient Account</div>
           </div>
           <button class="btn btn-sm btn-secondary" onclick="window.mediarcaApp.handleLogout()">
@@ -138,9 +142,13 @@ class MediarcaApp {
 
       navActionsContainer.innerHTML = `
         <div style="display:flex; align-items:center; gap:0.75rem;">
+          <button class="btn btn-sm btn-secondary" onclick="window.mediarcaApp.switchView('doctor-portal'); window.mediarcaApp.setDoctorTab('profile');" style="display:flex; align-items:center; gap:0.4rem; padding:0.35rem 0.65rem; border-color: #99f6e4; background: #f0fdfa;">
+            <i data-lucide="user-check" style="width:13px;height:13px; color:var(--clinical-teal);"></i>
+            <span style="font-size:0.75rem; font-weight:700; color:var(--clinical-teal);">Doctor Profile</span>
+          </button>
           <div style="text-align:right;">
-            <div style="font-size:0.8125rem; font-weight:700; color:var(--text-primary);">${doc.name || user.name}</div>
-            <div style="font-size:0.7rem; color:var(--clinical-blue); font-family:var(--font-mono); font-weight:700;">${doc.mediarcaId || 'VERIFIED PRACTITIONER'}</div>
+            <div style="font-size:0.8125rem; font-weight:700; color:var(--text-primary);">${escapeHtml(doc.name || user.name)}</div>
+            <div style="font-size:0.7rem; color:var(--clinical-blue); font-family:var(--font-mono); font-weight:700;">${escapeHtml(doc.mediarcaId || 'VERIFIED PRACTITIONER')}</div>
           </div>
           <button class="btn btn-sm btn-secondary" onclick="window.mediarcaApp.handleLogout()">
             <i data-lucide="log-out" style="width:14px;height:14px"></i> Logout
@@ -497,9 +505,15 @@ class MediarcaApp {
     document.getElementById('bookingModalEstimatedToken').textContent = '#' + nextToken;
     document.getElementById('bookingModalFee').textContent = '₹' + (doc.fee || 600);
 
-    document.getElementById('bookingPatientName').value = currentUser.name || '';
-    document.getElementById('bookingPatientPhone').value = currentUser.phone || '';
-    document.getElementById('bookingPatientAge').value = currentUser.age || '30';
+    const nameEl = document.getElementById('bookingPatientName');
+    const phoneEl = document.getElementById('bookingPatientPhone');
+    const ageEl = document.getElementById('bookingPatientAge');
+    const genderEl = document.getElementById('bookingPatientGender');
+
+    if (nameEl) nameEl.value = currentUser.name || currentUser.patientProfile?.full_name || currentUser.email?.split('@')[0] || '';
+    if (phoneEl) phoneEl.value = currentUser.phone || currentUser.patientProfile?.phone || currentUser.clinicalProfile?.emergency_contact || '+91 98765 43210';
+    if (ageEl) ageEl.value = currentUser.clinicalProfile?.age || currentUser.age || 30;
+    if (genderEl) genderEl.value = currentUser.clinicalProfile?.gender || currentUser.gender || 'Male';
     
     const dateInput = document.getElementById('bookingDateInput');
     if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
@@ -736,6 +750,74 @@ class MediarcaApp {
     } catch (err) {
       console.error('Doctor onboarding error:', err);
       this.showToast(err.message || 'Error processing application', 'warning');
+    }
+  }
+
+  async handlePatientProfileSubmit(e) {
+    if (e) e.preventDefault();
+    const form = e.target;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<i data-lucide="loader-2" style="width:14px;height:14px;animation:spin 1s linear infinite;"></i> Saving...';
+    }
+
+    try {
+      const formData = new FormData(form);
+      await window.mediarcaStore.updatePatientProfile({
+        name: formData.get('name')?.trim(),
+        phone: formData.get('phone')?.trim(),
+        emergencyContact: formData.get('emergencyContact')?.trim(),
+        age: formData.get('age'),
+        gender: formData.get('gender'),
+        bloodGroup: formData.get('bloodGroup'),
+        insurancePolicy: formData.get('insurancePolicy')?.trim(),
+        allergies: formData.get('allergies')?.trim()
+      });
+
+      this.showToast('Health Profile & EMR Demographics updated successfully!', 'success');
+      this.renderPatientDashboard();
+    } catch (err) {
+      console.error('Profile update error:', err);
+      this.showToast(err.message || 'Could not update profile.', 'warning');
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i data-lucide="save" style="width:14px;height:14px;"></i> Save & Update Health Profile';
+      }
+      if (window.lucide) window.lucide.createIcons();
+    }
+  }
+
+  async handleDoctorProfileSubmit(e) {
+    if (e) e.preventDefault();
+    const form = e.target;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<i data-lucide="loader-2" style="width:14px;height:14px;animation:spin 1s linear infinite;"></i> Updating...';
+    }
+
+    try {
+      const formData = new FormData(form);
+      await window.mediarcaStore.updateDoctorProfile({
+        fee: formData.get('fee'),
+        hospital: formData.get('hospital')?.trim(),
+        schedule: formData.get('schedule')?.trim(),
+        bio: formData.get('bio')?.trim()
+      });
+
+      this.showToast('Practice Settings & Consultation Fee updated successfully!', 'success');
+      this.renderDoctorDashboard();
+    } catch (err) {
+      console.error('Doctor profile update error:', err);
+      this.showToast(err.message || 'Could not update practice details.', 'warning');
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i data-lucide="save" style="width:14px;height:14px;"></i> Update Practice Details';
+      }
+      if (window.lucide) window.lucide.createIcons();
     }
   }
 
@@ -1038,19 +1120,125 @@ class MediarcaApp {
           </div>
         ` : ''}
 
-        <!-- TAB 6: PROFILE & INSURANCE (Audit v10 Resolution: Dynamic Authenticated Demographics) -->
+        <!-- TAB 6: PROFILE & INSURANCE (Audit v10 Resolution: Dynamic Authenticated Demographics & Digital Health ID) -->
         ${activeTab === 'profile' ? `
-          <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.5rem; max-width: 650px;">
-            <h3 style="font-size: 1.0625rem; font-weight: 800; color: var(--text-primary); margin-bottom: 1rem;">Medical Demographics & Policy</h3>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; font-size: 0.875rem;">
-              <div><span style="color: var(--text-muted);">Full Name:</span> <strong>${escapeHtml(user.name || 'Verified Patient')}</strong></div>
-              <div><span style="color: var(--text-muted);">Email:</span> <strong>${escapeHtml(user.email || 'N/A')}</strong></div>
-              <div><span style="color: var(--text-muted);">Phone:</span> <strong>${escapeHtml(user.phone || 'On file')}</strong></div>
-              <div><span style="color: var(--text-muted);">Blood Group:</span> <strong class="badge" style="background:#fee2e2; color:#b91c1c; font-size:0.8rem;">${escapeHtml(user.clinicalProfile?.blood_group || user.bloodGroup || 'Not Recorded')}</strong></div>
-              <div><span style="color: var(--text-muted);">Allergies:</span> <span class="badge" style="background:#fef3c7; color:#92400e; font-size:0.75rem;">${escapeHtml(user.clinicalProfile?.allergies || 'None Documented')}</span></div>
-              <div><span style="color: var(--text-muted);">Chronic Conditions:</span> <strong>${escapeHtml(user.clinicalProfile?.chronic_conditions || 'None Documented')}</strong></div>
-              <div><span style="color: var(--text-muted);">Emergency Contact:</span> <strong>${escapeHtml(user.clinicalProfile?.emergency_contact || 'On file')}</strong></div>
-              <div><span style="color: var(--text-muted);">Insurance Policy:</span> <strong>${escapeHtml(user.clinicalProfile?.insurance_policy || 'Self-Pay / Direct')}</strong></div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; align-items: start;">
+            <!-- Left: Digital Health Card (ABDM / MediArca) -->
+            <div>
+              <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #fff; border-radius: var(--radius-md); padding: 1.5rem; box-shadow: var(--shadow-lg); border: 1px solid #334155; position: relative; overflow: hidden;">
+                <div style="position: absolute; right: -20px; bottom: -20px; opacity: 0.05; font-size: 10rem; font-weight: 900; pointer-events: none;">+</div>
+                
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.25rem; border-bottom: 1px solid rgba(255,255,255,0.15); padding-bottom: 0.75rem;">
+                  <div>
+                    <div style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; color: #38bdf8; font-weight: 700;">Ayushman Bharat Digital Mission (ABDM)</div>
+                    <div style="font-size: 1.1rem; font-weight: 800; color: #fff;">MediArca Digital Health Card</div>
+                  </div>
+                  <span class="badge" style="background: rgba(16,185,129,0.2); color: #34d399; border: 1px solid #059669; font-size: 0.65rem;">
+                    <i data-lucide="shield-check" style="width:10px;height:10px;"></i> VERIFIED EMR
+                  </span>
+                </div>
+
+                <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1.25rem;">
+                  <div style="width: 54px; height: 54px; border-radius: 50%; background: linear-gradient(135deg, #38bdf8, #0284c7); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 800; color: #fff; border: 2px solid #fff;">
+                    ${(user.name || 'P').charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <div style="font-size: 1.15rem; font-weight: 800; color: #fff;">${escapeHtml(user.name || 'Verified Patient')}</div>
+                    <div style="font-size: 0.75rem; color: #94a3b8;">${escapeHtml(user.email || 'N/A')}</div>
+                    <div style="font-size: 0.75rem; color: #38bdf8; font-family: var(--font-mono); font-weight: 700; margin-top: 0.2rem;">
+                      ABHA ID: ${escapeHtml(user.mediarcaId || ('MED-PAT-' + user.id.substring(0, 6).toUpperCase()))}
+                    </div>
+                  </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; background: rgba(255,255,255,0.06); padding: 0.875rem; border-radius: var(--radius-sm); font-size: 0.75rem;">
+                  <div>
+                    <div style="color: #94a3b8; font-size: 0.65rem; text-transform: uppercase;">Blood Group</div>
+                    <div style="font-weight: 800; color: #f87171; font-size: 0.95rem;">${escapeHtml(user.clinicalProfile?.blood_group || user.bloodGroup || 'O+')}</div>
+                  </div>
+                  <div>
+                    <div style="color: #94a3b8; font-size: 0.65rem; text-transform: uppercase;">Age / Gender</div>
+                    <div style="font-weight: 700; color: #f1f5f9;">${user.clinicalProfile?.age || user.age || 30} Yrs • ${escapeHtml(user.clinicalProfile?.gender || user.gender || 'Male')}</div>
+                  </div>
+                  <div>
+                    <div style="color: #94a3b8; font-size: 0.65rem; text-transform: uppercase;">Mobile (India)</div>
+                    <div style="font-weight: 700; color: #f1f5f9;">${escapeHtml(user.phone || '+91 98765 43210')}</div>
+                  </div>
+                </div>
+
+                <div style="margin-top: 1rem; display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem; color: #94a3b8;">
+                  <span>Policy: <strong>${escapeHtml(user.clinicalProfile?.insurance_policy || 'Ayushman Bharat (AB-PMJAY)')}</strong></span>
+                  <span>Emergency: <strong>${escapeHtml(user.clinicalProfile?.emergency_contact || user.phone || 'On file')}</strong></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right: Editable Details Form -->
+            <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.5rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h3 style="font-size: 1.0625rem; font-weight: 800; color: var(--text-primary);">Update Health Profile Details</h3>
+                <span style="font-size: 0.7rem; color: #16a34a; font-weight: 700;">🔒 Auto-Synced to Bookings</span>
+              </div>
+
+              <form id="patientProfileUpdateForm" onsubmit="window.mediarcaApp.handlePatientProfileSubmit(event)">
+                <div class="form-group" style="margin-bottom: 0.75rem;">
+                  <label class="form-label" style="font-size: 0.75rem;">Full Name *</label>
+                  <input type="text" name="name" class="form-input" value="${escapeHtml(user.name || '')}" required>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
+                  <div class="form-group">
+                    <label class="form-label" style="font-size: 0.75rem;">Phone / WhatsApp *</label>
+                    <input type="tel" name="phone" class="form-input" value="${escapeHtml(user.phone || '+91 98765 43210')}" required>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" style="font-size: 0.75rem;">Emergency Contact</label>
+                    <input type="tel" name="emergencyContact" class="form-input" value="${escapeHtml(user.clinicalProfile?.emergency_contact || '')}" placeholder="+91 98765 43210">
+                  </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
+                  <div class="form-group">
+                    <label class="form-label" style="font-size: 0.75rem;">Age</label>
+                    <input type="number" name="age" class="form-input" value="${user.clinicalProfile?.age || user.age || 30}" min="1" max="120">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" style="font-size: 0.75rem;">Gender</label>
+                    <select name="gender" class="form-select">
+                      <option value="Male" ${(user.clinicalProfile?.gender || user.gender) === 'Male' ? 'selected' : ''}>Male</option>
+                      <option value="Female" ${(user.clinicalProfile?.gender || user.gender) === 'Female' ? 'selected' : ''}>Female</option>
+                      <option value="Other" ${(user.clinicalProfile?.gender || user.gender) === 'Other' ? 'selected' : ''}>Other</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" style="font-size: 0.75rem;">Blood Group</label>
+                    <select name="bloodGroup" class="form-select">
+                      <option value="O+" ${(user.clinicalProfile?.blood_group || user.bloodGroup) === 'O+' ? 'selected' : ''}>O+</option>
+                      <option value="A+" ${(user.clinicalProfile?.blood_group || user.bloodGroup) === 'A+' ? 'selected' : ''}>A+</option>
+                      <option value="B+" ${(user.clinicalProfile?.blood_group || user.bloodGroup) === 'B+' ? 'selected' : ''}>B+</option>
+                      <option value="AB+" ${(user.clinicalProfile?.blood_group || user.bloodGroup) === 'AB+' ? 'selected' : ''}>AB+</option>
+                      <option value="O-" ${(user.clinicalProfile?.blood_group || user.bloodGroup) === 'O-' ? 'selected' : ''}>O-</option>
+                      <option value="A-" ${(user.clinicalProfile?.blood_group || user.bloodGroup) === 'A-' ? 'selected' : ''}>A-</option>
+                      <option value="B-" ${(user.clinicalProfile?.blood_group || user.bloodGroup) === 'B-' ? 'selected' : ''}>B-</option>
+                      <option value="AB-" ${(user.clinicalProfile?.blood_group || user.bloodGroup) === 'AB-' ? 'selected' : ''}>AB-</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 0.75rem;">
+                  <label class="form-label" style="font-size: 0.75rem;">Insurance / AB-PMJAY Policy</label>
+                  <input type="text" name="insurancePolicy" class="form-input" value="${escapeHtml(user.clinicalProfile?.insurance_policy || 'Ayushman Bharat (AB-PMJAY)')}" placeholder="e.g. Star Health #SH-88902">
+                </div>
+
+                <div class="form-group" style="margin-bottom: 1rem;">
+                  <label class="form-label" style="font-size: 0.75rem;">Known Allergies</label>
+                  <input type="text" name="allergies" class="form-input" value="${escapeHtml(user.clinicalProfile?.allergies || 'None Documented')}" placeholder="e.g. Penicillin, Sulfa drugs">
+                </div>
+
+                <button type="submit" class="btn btn-block btn-primary" style="font-weight: 700;">
+                  <i data-lucide="save" style="width: 14px; height: 14px;"></i> Save & Update Health Profile
+                </button>
+              </form>
             </div>
           </div>
         ` : ''}
@@ -1166,8 +1354,95 @@ class MediarcaApp {
           <button class="btn btn-sm ${activeTab === 'statistics' ? 'btn-primary' : 'btn-secondary'}" onclick="window.mediarcaApp.setDoctorTab('statistics')">
             <i data-lucide="bar-chart-2" style="width:13px;height:13px"></i> Daily Statistics
           </button>
+          <button class="btn btn-sm ${activeTab === 'profile' ? 'btn-primary' : 'btn-secondary'}" onclick="window.mediarcaApp.setDoctorTab('profile')">
+            <i data-lucide="award" style="width:13px;height:13px"></i> Doctor Profile & Credentials
+          </button>
         </div>
 
+        ${activeTab === 'profile' ? `
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; align-items: start;">
+            <!-- Left: Official Medical Board Practitioner Credentials Card -->
+            <div style="background: linear-gradient(135deg, #042f2e 0%, #0f172a 100%); color: #fff; border-radius: var(--radius-md); padding: 1.75rem; box-shadow: var(--shadow-lg); border: 1px solid #115e59; position: relative; overflow: hidden;">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.25rem; border-bottom: 1px solid rgba(255,255,255,0.15); padding-bottom: 0.75rem;">
+                <div>
+                  <div style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; color: #2dd4bf; font-weight: 700;">National Medical Commission (NMC) Accreditation</div>
+                  <div style="font-size: 1.15rem; font-weight: 800; color: #fff;">MediArca Registered Practitioner</div>
+                </div>
+                <span class="badge" style="background: rgba(45,212,191,0.2); color: #2dd4bf; border: 1px solid #0d9488; font-size: 0.65rem;">
+                  <i data-lucide="shield-check" style="width:10px;height:10px;"></i> VERIFIED & ACTIVE
+                </span>
+              </div>
+
+              <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1.25rem;">
+                <img src="${escapeHtml(doc.avatar || 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=300&h=300&fit=crop&crop=faces&q=80')}" alt="Doctor Avatar" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid #2dd4bf;">
+                <div>
+                  <div style="font-size: 1.2rem; font-weight: 800; color: #fff;">${escapeHtml(doc.name)}</div>
+                  <div style="font-size: 0.8125rem; color: #99f6e4;">${escapeHtml(doc.title || doc.specialty)}</div>
+                  <div style="font-size: 0.75rem; color: #cbd5e1; margin-top: 0.15rem;">${escapeHtml(doc.degrees || 'MBBS, MD')}</div>
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; background: rgba(255,255,255,0.06); padding: 0.875rem; border-radius: var(--radius-sm); font-size: 0.75rem; margin-bottom: 1rem;">
+                <div>
+                  <div style="color: #94a3b8; font-size: 0.65rem; text-transform: uppercase;">Medical Reg No</div>
+                  <div style="font-weight: 800; color: #38bdf8; font-family: var(--font-mono);">${escapeHtml(doc.regNumber)}</div>
+                </div>
+                <div>
+                  <div style="color: #94a3b8; font-size: 0.65rem; text-transform: uppercase;">OPD Fee (INR)</div>
+                  <div style="font-weight: 800; color: #4ade80; font-size: 0.95rem;">₹${doc.fee || 600}</div>
+                </div>
+                <div>
+                  <div style="color: #94a3b8; font-size: 0.65rem; text-transform: uppercase;">Experience</div>
+                  <div style="font-weight: 700; color: #f1f5f9;">${doc.experienceYears || 12} Years</div>
+                </div>
+              </div>
+
+              <div style="font-size: 0.75rem; color: #cbd5e1; line-height: 1.5; background: rgba(0,0,0,0.2); padding: 0.75rem; border-radius: var(--radius-sm); margin-bottom: 0.75rem;">
+                <div style="font-weight: 700; color: #2dd4bf; margin-bottom: 0.2rem;">Hospital & Clinic Room:</div>
+                ${escapeHtml(doc.hospital || 'Apex Healthcare Center')}
+              </div>
+
+              <div style="font-size: 0.75rem; color: #cbd5e1; line-height: 1.5; background: rgba(0,0,0,0.2); padding: 0.75rem; border-radius: var(--radius-sm);">
+                <div style="font-weight: 700; color: #2dd4bf; margin-bottom: 0.2rem;">Consultation Hours:</div>
+                ${escapeHtml(doc.schedule || 'Mon - Sat | 09:00 AM - 03:00 PM')}
+              </div>
+            </div>
+
+            <!-- Right: Editable Practice Settings Form -->
+            <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.5rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h3 style="font-size: 1.0625rem; font-weight: 800; color: var(--text-primary);">Practice Settings & Details</h3>
+                <span style="font-size: 0.7rem; color: #0d9488; font-weight: 700;">🔒 Live In Directory</span>
+              </div>
+
+              <form id="doctorProfileUpdateForm" onsubmit="window.mediarcaApp.handleDoctorProfileSubmit(event)">
+                <div class="form-group" style="margin-bottom: 0.75rem;">
+                  <label class="form-label" style="font-size: 0.75rem;">Consultation Fee (₹ INR) *</label>
+                  <input type="number" name="fee" class="form-input" value="${doc.fee || 600}" min="100" max="10000" step="50" required>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 0.75rem;">
+                  <label class="form-label" style="font-size: 0.75rem;">Hospital Affiliation & Room / Wing *</label>
+                  <input type="text" name="hospital" class="form-input" value="${escapeHtml(doc.hospital || '')}" required>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 0.75rem;">
+                  <label class="form-label" style="font-size: 0.75rem;">OPD Consultation Schedule *</label>
+                  <input type="text" name="schedule" class="form-input" value="${escapeHtml(doc.schedule || 'Mon - Sat | 09:00 AM - 03:00 PM')}" required>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 1rem;">
+                  <label class="form-label" style="font-size: 0.75rem;">Professional Bio & Clinical Focus</label>
+                  <textarea name="bio" class="form-textarea" style="min-height: 80px;" placeholder="Brief clinical background and areas of expertise...">${escapeHtml(doc.bio || '')}</textarea>
+                </div>
+
+                <button type="submit" class="btn btn-block btn-teal" style="font-weight: 700;">
+                  <i data-lucide="save" style="width: 14px; height: 14px;"></i> Update Practice Details
+                </button>
+              </form>
+            </div>
+          </div>
+        ` : `
         <div style="display: grid; grid-template-columns: 1fr 340px; gap: 2rem;">
           <div>
             <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.5rem; margin-bottom: 1.5rem;">
@@ -1450,7 +1725,7 @@ class MediarcaApp {
               </div>
             </div>
           </div>
-        </div>
+        </div>`}
       </div>
     `;
 

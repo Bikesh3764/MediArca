@@ -647,15 +647,27 @@ class MediarcaStore {
 
   // --- Supabase Auth Integration & State Hydration ---
   setAuthSession(sessionData) {
+    const patientProf = sessionData.patientProfile || {};
+    const clinicalProf = sessionData.clinicalProfile || {};
+    const docProf = sessionData.doctorProfile || {};
+
     // Zero JWT in app state (C-02 Resolution)
     this.state.currentUser = {
       id: sessionData.id,
+      userId: sessionData.id,
       email: sessionData.email,
       role: sessionData.role || 'patient',
-      name: sessionData.name || sessionData.email.split('@')[0],
+      name: sessionData.name || patientProf.full_name || docProf.name || sessionData.email?.split('@')[0] || 'User',
+      phone: patientProf.phone || clinicalProf.emergency_contact || sessionData.phone || '+91 98765 43210',
+      age: clinicalProf.age || patientProf.age || 30,
+      gender: clinicalProf.gender || patientProf.gender || 'Male',
+      bloodGroup: clinicalProf.blood_group || patientProf.blood_group || 'O+',
+      avatar: sessionData.avatar || docProf.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&h=200&fit=crop&crop=faces&q=80',
       clinicalProfile: sessionData.clinicalProfile || null,
       patientProfile: sessionData.patientProfile || null,
-      doctorProfile: sessionData.doctorProfile || null
+      doctorProfile: sessionData.doctorProfile || null,
+      doctorId: docProf.id || null,
+      mediarcaId: docProf.mediarca_id || (sessionData.role === 'admin' ? 'MED-ADMIN-01' : null)
     };
 
     // If doctor profile exists, sync doctor state
@@ -674,6 +686,77 @@ class MediarcaStore {
     }
 
     this.saveState();
+  }
+
+  async updatePatientProfile(profileData) {
+    if (!this.state.currentUser || this.state.currentUser.role !== 'patient') {
+      throw new Error('Only authenticated patients can update their profile.');
+    }
+
+    const userId = this.state.currentUser.id;
+
+    if (window.mediarcaSupabase && window.mediarcaSupabase.isConnected && userId) {
+      await window.mediarcaSupabase.cloudUpdatePatientProfile(userId, profileData);
+    }
+
+    this.state.currentUser.name = profileData.name || this.state.currentUser.name;
+    this.state.currentUser.phone = profileData.phone || this.state.currentUser.phone;
+    this.state.currentUser.age = parseInt(profileData.age) || this.state.currentUser.age;
+    this.state.currentUser.gender = profileData.gender || this.state.currentUser.gender;
+    this.state.currentUser.bloodGroup = profileData.bloodGroup || this.state.currentUser.bloodGroup;
+
+    if (!this.state.currentUser.clinicalProfile) this.state.currentUser.clinicalProfile = {};
+    this.state.currentUser.clinicalProfile.age = this.state.currentUser.age;
+    this.state.currentUser.clinicalProfile.gender = this.state.currentUser.gender;
+    this.state.currentUser.clinicalProfile.blood_group = this.state.currentUser.bloodGroup;
+    this.state.currentUser.clinicalProfile.emergency_contact = profileData.emergencyContact || this.state.currentUser.clinicalProfile.emergency_contact;
+    this.state.currentUser.clinicalProfile.insurance_policy = profileData.insurancePolicy || this.state.currentUser.clinicalProfile.insurance_policy;
+    this.state.currentUser.clinicalProfile.allergies = profileData.allergies || this.state.currentUser.clinicalProfile.allergies;
+
+    this.recordAuditLog({
+      action: 'PATIENT_PROFILE_UPDATED',
+      entity: 'patient_clinical_profiles',
+      entityId: userId,
+      afterState: profileData
+    });
+
+    this.saveState();
+    this.notifySubscribers();
+    return this.state.currentUser;
+  }
+
+  async updateDoctorProfile(doctorData) {
+    if (!this.state.currentUser || this.state.currentUser.role !== 'doctor') {
+      throw new Error('Only authenticated doctors can update practice details.');
+    }
+
+    const docId = this.state.currentUser.doctorId || this.state.currentUser.id;
+
+    if (window.mediarcaSupabase && window.mediarcaSupabase.isConnected) {
+      await window.mediarcaSupabase.cloudUpdateDoctorProfile(docId, doctorData);
+    }
+
+    const docIdx = this.state.doctors.findIndex(d => d.id === docId || d.userId === this.state.currentUser.id);
+    if (docIdx >= 0) {
+      this.state.doctors[docIdx] = {
+        ...this.state.doctors[docIdx],
+        fee: parseFloat(doctorData.fee) || this.state.doctors[docIdx].fee,
+        hospital: doctorData.hospital || this.state.doctors[docIdx].hospital,
+        schedule: doctorData.schedule || this.state.doctors[docIdx].schedule,
+        bio: doctorData.bio || this.state.doctors[docIdx].bio
+      };
+    }
+
+    this.recordAuditLog({
+      action: 'DOCTOR_PROFILE_UPDATED',
+      entity: 'doctors',
+      entityId: docId,
+      afterState: doctorData
+    });
+
+    this.saveState();
+    this.notifySubscribers();
+    return this.state.currentUser;
   }
 
 async login(email, password) {

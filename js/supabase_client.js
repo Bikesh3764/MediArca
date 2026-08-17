@@ -218,6 +218,41 @@ class MediarcaSupabaseClient {
     return data.session;
   }
 
+  async cloudUpdatePatientProfile(userId, profileData) {
+    if (!this.client) throw new Error('Supabase client unavailable');
+
+    // 1. Update user core table
+    if (profileData.name || profileData.phone) {
+      await this.client.from('users').update({
+        full_name: profileData.name,
+        phone: profileData.phone
+      }).eq('id', userId);
+    }
+
+    // 2. Upsert patient clinical profile
+    await this.client.from('patient_clinical_profiles').upsert({
+      user_id: userId,
+      age: parseInt(profileData.age) || null,
+      gender: profileData.gender || null,
+      blood_group: profileData.bloodGroup || null,
+      emergency_contact: profileData.emergencyContact || null,
+      insurance_policy: profileData.insurancePolicy || null,
+      allergies: profileData.allergies ? [profileData.allergies] : []
+    }, { onConflict: 'user_id' });
+  }
+
+  async cloudUpdateDoctorProfile(doctorId, doctorData) {
+    if (!this.client) throw new Error('Supabase client unavailable');
+
+    const updatePayload = {};
+    if (doctorData.fee !== undefined) updatePayload.fee = parseFloat(doctorData.fee);
+    if (doctorData.hospital !== undefined) updatePayload.hospital = doctorData.hospital;
+    if (doctorData.schedule !== undefined) updatePayload.schedule = doctorData.schedule;
+    if (doctorData.bio !== undefined) updatePayload.bio = doctorData.bio;
+
+    await this.client.from('doctors').update(updatePayload).eq('id', doctorId);
+  }
+
   // --- 2. PRIVACY-SAFE REALTIME TELEMETRY SUBSCRIPTIONS (P-03 Resolution) ---
   setupRealtimeSubscriptions() {
     if (!this.client) return;
