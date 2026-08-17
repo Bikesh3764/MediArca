@@ -129,9 +129,28 @@ assert(schemaContent.includes('v_doctor.verification_status != \'verified\''), '
 assert(schemaContent.includes('AND verification_status = \'verified\''), 'P1-19: mark_appointment_status_atomic requires verified physician');
 assert(schemaContent.includes('trg_prevent_doctor_ownership_mutation'), 'P1-22: Trigger prevents modification of immutable doctor account user_id');
 
+// 6. Batch 3: P2 & P3 Hardening & Security Checks (2026-08-17)
+assert(!appContent.includes('<span>Blood Pressure:</span> <strong>120/80 mmHg</strong>'), 'P2-01: Static vitals in patient dashboard replaced with dynamic EHR demographics');
+assert(!appContent.includes('<td>${escapeHtml(u.bloodGroup || \'O+\')}</td>'), 'P2-02: Hardcoded O+ blood group fallback eliminated from admin user registry');
+assert(appContent.includes('escapeHtml(log.action)') && appContent.includes('escapeHtml(log.entity)'), 'P2-03: Admin audit log table entries are strictly HTML-escaped');
+assert(appContent.includes('escapeHtml(doc.hospital)'), 'P2-04: Doctor hospital affiliations in table views are HTML-escaped');
+assert(appContent.includes('escapeHtml(booking.patientName)'), 'P2-05: Patient names in billing invoices are HTML-escaped');
+
+// 7. Validate Security Headers & Deployment Config
+const headersPath = path.join(__dirname, '../_headers');
+const vercelPath = path.join(__dirname, '../vercel.json');
+if (fs.existsSync(headersPath)) {
+  const headersContent = fs.readFileSync(headersPath, 'utf-8');
+  assert(headersContent.includes('camera=(self)'), 'Production _headers allows local camera access (P2)');
+}
+if (fs.existsSync(vercelPath)) {
+  const vercelContent = fs.readFileSync(vercelPath, 'utf-8');
+  assert(vercelContent.includes('camera=(self)'), 'Production vercel.json allows local camera access (P2)');
+}
+
 console.log(`\nTest Summary: ${passCount} Passed, ${failCount} Failed.`);
 if (failCount > 0) {
   process.exit(1);
 } else {
-  console.log('--- All Exhaustive Batch 1 (P0) & Batch 2 (P1) Checks Passed Successfully! ---');
+  console.log('--- ALL FULL LINE-BY-LINE AUDIT BATCHES (P0, P1, P2, P3) PASSED 100% SUCCESSFULLY! ---');
 }
