@@ -2662,15 +2662,15 @@ class MediarcaApp {
       if (window.mediarcaSupabase && window.mediarcaSupabase.isConnected && storagePath) {
         this.showToast('Generating fresh cryptographic signed URL...', 'info');
         const signedUrl = await window.mediarcaSupabase.getClinicalDocumentSignedUrl(storagePath);
-        if (signedUrl) {
-          window.open(signedUrl, '_blank');
+        if (signedUrl && signedUrl.startsWith('http')) {
+          window.open(signedUrl, '_blank', 'noopener,noreferrer');
           return;
         }
       }
-      if (fallbackUrl) {
-        window.open(fallbackUrl, '_blank');
+      if (fallbackUrl && fallbackUrl.startsWith('http')) {
+        window.open(fallbackUrl, '_blank', 'noopener,noreferrer');
       } else {
-        this.showToast('Document download link unavailable.', 'warning');
+        this.showToast('Secure signed document download link unavailable.', 'warning');
       }
     } catch (err) {
       console.error('Vault document download error:', err);
@@ -3028,7 +3028,10 @@ class MediarcaApp {
       this.showToast('Follow-up scheduled as SOS / When Needed.', 'info');
     } else {
       const targetDate = new Date(Date.now() + numDays * 24 * 60 * 60 * 1000);
-      input.value = targetDate.toISOString().split('T')[0];
+      const yyyy = targetDate.getFullYear();
+      const mm = String(targetDate.getMonth() + 1).padStart(2, '0');
+      const dd = String(targetDate.getDate()).padStart(2, '0');
+      input.value = `${yyyy}-${mm}-${dd}`;
       this.showToast(`Follow-up reminder set for ${targetDate.toLocaleDateString()} (${numDays} days)`, 'info');
     }
   }

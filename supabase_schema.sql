@@ -1140,11 +1140,14 @@ BEGIN
     UPDATE appointments
     SET is_priority = true,
         priority_reason = p_reason
-    WHERE doctor_id = p_doctor_id AND scheduled_date = CURRENT_DATE AND token_number = p_token_number
+    WHERE doctor_id = p_doctor_id 
+      AND scheduled_date = CURRENT_DATE 
+      AND token_number = p_token_number
+      AND status NOT IN ('completed', 'cancelled', 'no-show')
     RETURNING id INTO v_appointment_id;
 
     IF v_appointment_id IS NULL THEN
-        RAISE EXCEPTION 'Appointment Token #% not found on %', p_token_number, CURRENT_DATE;
+        RAISE EXCEPTION 'Active Appointment Token #% not found on % (or consultation is already concluded).', p_token_number, CURRENT_DATE;
     END IF;
 
     -- Log immutable audit event for priority override
