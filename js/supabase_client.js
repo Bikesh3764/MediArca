@@ -263,20 +263,22 @@ class MediarcaSupabaseClient {
 
   async cloudUpdateDoctorProfile(doctorId, doctorData) {
     if (!this.client || !doctorId) throw new Error('Supabase client unavailable');
-
+    const authRes = await this.client.auth.getUser();
+    const authUid = authRes?.data?.user?.id;
+    if (!authUid) throw new Error('Authentication required.');
     const updatePayload = {};
+    if (doctorData.name !== undefined) updatePayload.name = doctorData.name;
+    if (doctorData.specialty !== undefined) { updatePayload.specialty = doctorData.specialty; updatePayload.specialty_id = doctorData.specialty.toLowerCase().replace(/\s+/g, ''); }
+    if (doctorData.title !== undefined) updatePayload.title = doctorData.title;
+    if (doctorData.degrees !== undefined) updatePayload.degrees = doctorData.degrees;
+    if (doctorData.experienceYears !== undefined) updatePayload.experience_years = parseInt(doctorData.experienceYears, 10);
     if (doctorData.fee !== undefined) updatePayload.fee = parseFloat(doctorData.fee);
     if (doctorData.hospital !== undefined) updatePayload.hospital = doctorData.hospital;
     if (doctorData.schedule !== undefined) updatePayload.schedule = doctorData.schedule;
     if (doctorData.bio !== undefined) updatePayload.bio = doctorData.bio;
-
-    const { data, error } = await this.client
-      .from('doctors')
-      .update(updatePayload)
-      .eq('id', doctorId)
-      .select('*')
-      .maybeSingle();
-
+    if (doctorData.avatar !== undefined) updatePayload.avatar = doctorData.avatar;
+    if (doctorData.avgConsultTimeMins !== undefined) updatePayload.avg_consult_time_mins = parseInt(doctorData.avgConsultTimeMins, 10);
+    const { data, error } = await this.client.from('doctors').update(updatePayload).eq('id', doctorId).eq('user_id', authUid).select('*').maybeSingle();
     if (error) throw error;
     if (!data) throw new Error('Doctor profile update was not persisted.');
     return data;
