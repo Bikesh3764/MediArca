@@ -221,36 +221,48 @@ class MediarcaSupabaseClient {
   async cloudUpdatePatientProfile(userId, profileData) {
     if (!this.client || !userId) return;
 
+    const name = profileData.name || null;
+    const phone = profileData.phone || null;
+    const age = profileData.age ? parseInt(profileData.age) : null;
+    const gender = profileData.gender || null;
+    const bloodGroup = profileData.bloodGroup || null;
+
     try {
-      // 1. Update user core table
-      if (profileData.name || profileData.phone) {
-        const userUpdate = {};
-        if (profileData.name) userUpdate.full_name = profileData.name;
-        if (profileData.phone) userUpdate.phone = profileData.phone;
-        await this.client.from('users').update(userUpdate).eq('id', userId);
-      }
+      // 1. Try atomic RPC update first
+      const { data, error } = await this.client.rpc('update_patient_profile_atomic', {
+        p_name: name,
+        p_phone: phone,
+        p_age: age,
+        p_gender: gender,
+        p_blood_group: bloodGroup
+      });
 
-      // 2. Format allergies into array
-      let allergyArr = [];
-      if (profileData.allergies && typeof profileData.allergies === 'string') {
-        allergyArr = profileData.allergies.split(',').map(s => s.trim()).filter(Boolean);
-      } else if (Array.isArray(profileData.allergies)) {
-        allergyArr = profileData.allergies;
+      if (!error && data) {
+        return data;
       }
+    } catch (rpcErr) {
+      console.warn('RPC profile update fallback notice:', rpcErr);
+    }
 
-      // 3. Upsert patient clinical profile
+    try {
+      // 2. Direct fallback updates
+      const userUpdate = {};
+      if (name) userUpdate.full_name = name;
+      if (phone) userUpdate.phone = phone;
+      if (age) userUpdate.age = age;
+      if (gender) userUpdate.gender = gender;
+      if (bloodGroup) userUpdate.blood_group = bloodGroup;
+
+      await this.client.from('users').update(userUpdate).eq('id', userId);
+
       await this.client.from('patient_clinical_profiles').upsert({
         user_id: userId,
-        age: profileData.age ? parseInt(profileData.age) : null,
-        gender: profileData.gender || null,
-        blood_group: profileData.bloodGroup || null,
-        emergency_contact: profileData.emergencyContact || null,
-        insurance_provider: profileData.insurancePolicy || null,
-        insurance_policy_number: profileData.insurancePolicy || null,
-        allergies: allergyArr
+        age: age,
+        gender: gender,
+        blood_group: bloodGroup
       }, { onConflict: 'user_id' });
-    } catch (err) {
-      console.warn('Non-blocking cloud profile update notice:', err);
+    } catch (fallbackErr) {
+      console.warn('Direct fallback profile update notice:', fallbackErr);
     }
   }
 

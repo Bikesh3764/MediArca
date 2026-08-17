@@ -707,6 +707,13 @@ class MediarcaStore {
     this.state.currentUser.clinicalProfile.gender = this.state.currentUser.gender;
     this.state.currentUser.clinicalProfile.blood_group = this.state.currentUser.bloodGroup;
 
+    if (!this.state.currentUser.patientProfile) this.state.currentUser.patientProfile = {};
+    this.state.currentUser.patientProfile.full_name = this.state.currentUser.name;
+    this.state.currentUser.patientProfile.phone = this.state.currentUser.phone;
+    this.state.currentUser.patientProfile.age = this.state.currentUser.age;
+    this.state.currentUser.patientProfile.gender = this.state.currentUser.gender;
+    this.state.currentUser.patientProfile.blood_group = this.state.currentUser.bloodGroup;
+
     this.recordAuditLog({
       action: 'PATIENT_PROFILE_UPDATED',
       entity: 'patient_clinical_profiles',
@@ -717,11 +724,16 @@ class MediarcaStore {
     this.saveState();
     this.notifySubscribers();
 
-    // 2. Non-blocking cloud background persistence
+    // 2. Authoritative Supabase Cloud persistence
     if (window.mediarcaSupabase && window.mediarcaSupabase.isConnected && userId) {
-      window.mediarcaSupabase.cloudUpdatePatientProfile(userId, profileData).catch(err => {
-        console.warn('Background profile cloud sync notice:', err);
-      });
+      try {
+        await Promise.race([
+          window.mediarcaSupabase.cloudUpdatePatientProfile(userId, profileData),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Cloud sync timeout')), 4000))
+        ]);
+      } catch (cloudErr) {
+        console.warn('Cloud sync background note:', cloudErr);
+      }
     }
 
     return this.state.currentUser;
