@@ -126,6 +126,14 @@ class MediarcaQueueEngine {
           <button class="btn btn-sm btn-secondary" onclick="window.mediarcaApp.switchView('patient-portal')" style="background: #ffffff; border: 1px solid #cbd5e1; color: #0f172a; font-weight: 700;">
             <i data-lucide="arrow-left" style="width: 14px; height: 14px;"></i> Back to My Appointments
           </button>
+          
+          <div style="display: flex; align-items: center; gap: 0.5rem; flex: 1; max-width: 380px;">
+            <input type="text" id="radarSearchInput" placeholder="Lookup Doctor ID or Booking Ref..." class="form-input" style="padding: 0.4rem 0.75rem; font-size: 0.8125rem; background: #ffffff;" onkeydown="if(event.key === 'Enter') window.mediarcaQueueEngine.handleSearchSubmit()">
+            <button class="btn btn-sm btn-primary" onclick="window.mediarcaQueueEngine.handleSearchSubmit()" style="padding: 0.4rem 0.75rem; font-size: 0.8125rem;">
+              <i data-lucide="search" style="width: 13px; height: 13px;"></i>
+            </button>
+          </div>
+
           <div style="display: flex; align-items: center; gap: 0.5rem;">
             <span class="badge badge-verified" style="font-size: 0.75rem; padding: 0.3rem 0.75rem;">
               <span class="pulse-beacon"></span> Live OPD Telemetry Feed

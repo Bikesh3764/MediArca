@@ -754,16 +754,34 @@ class MediarcaStore {
     }
 
     const docId = this.state.currentUser.doctorId || this.state.currentUser.id;
+    const userId = this.state.currentUser.id;
 
-    const docIdx = this.state.doctors.findIndex(d => d.id === docId || d.userId === this.state.currentUser.id);
+    const docIdx = this.state.doctors.findIndex(d => 
+      d.id === docId || 
+      d.userId === userId || 
+      (d.email && this.state.currentUser.email && d.email.toLowerCase().trim() === this.state.currentUser.email.toLowerCase().trim())
+    );
+
     if (docIdx >= 0) {
       this.state.doctors[docIdx] = {
         ...this.state.doctors[docIdx],
+        name: doctorData.name || this.state.doctors[docIdx].name,
+        title: doctorData.title || this.state.doctors[docIdx].title,
+        specialty: doctorData.specialty || this.state.doctors[docIdx].specialty,
+        specialtyId: (doctorData.specialty || this.state.doctors[docIdx].specialty || 'general').toLowerCase().replace(/\s+/g, ''),
+        degrees: doctorData.degrees || this.state.doctors[docIdx].degrees,
+        experienceYears: parseInt(doctorData.experienceYears) || this.state.doctors[docIdx].experienceYears || 10,
         fee: parseFloat(doctorData.fee) || this.state.doctors[docIdx].fee,
         hospital: doctorData.hospital || this.state.doctors[docIdx].hospital,
         schedule: doctorData.schedule || this.state.doctors[docIdx].schedule,
-        bio: doctorData.bio || this.state.doctors[docIdx].bio
+        bio: doctorData.bio !== undefined ? doctorData.bio : this.state.doctors[docIdx].bio,
+        avatar: doctorData.avatar || this.state.doctors[docIdx].avatar,
+        avgConsultTimeMins: parseInt(doctorData.avgConsultTimeMins) || this.state.doctors[docIdx].avgConsultTimeMins || 12
       };
+
+      if (doctorData.name) {
+        this.state.currentUser.name = doctorData.name;
+      }
     }
 
     this.recordAuditLog({
@@ -776,10 +794,16 @@ class MediarcaStore {
     this.saveState();
     this.notifySubscribers();
 
-    if (window.mediarcaSupabase && window.mediarcaSupabase.isConnected) {
-      window.mediarcaSupabase.cloudUpdateDoctorProfile(docId, doctorData).catch(err => {
+    if (window.mediarcaSupabase && window.mediarcaSupabase.isConnected && window.mediarcaSupabase.client) {
+      try {
+        const targetDocId = (docIdx >= 0 && this.state.doctors[docIdx].id) ? this.state.doctors[docIdx].id : docId;
+        await window.mediarcaSupabase.cloudUpdateDoctorProfile(targetDocId, doctorData);
+        if (doctorData.name && userId) {
+          await window.mediarcaSupabase.client.from('users').update({ full_name: doctorData.name }).eq('id', userId);
+        }
+      } catch (err) {
         console.warn('Background doctor profile cloud sync notice:', err);
-      });
+      }
     }
 
     return this.state.currentUser;

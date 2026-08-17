@@ -2178,7 +2178,7 @@ CREATE POLICY "Practitioners can submit accreditation application" ON doctors FO
 
 DROP POLICY IF EXISTS "Doctor can update own practitioner profile" ON doctors;
 CREATE POLICY "Doctor can update own practitioner profile" ON doctors FOR UPDATE USING (
-    auth.uid() = user_id OR is_admin(auth.uid())
+    user_id = (SELECT auth.uid()) OR is_admin((SELECT auth.uid()))
 );
 
 -- Audit v8 Resolution: Doctor Self-Verification Prevention Trigger

@@ -780,37 +780,95 @@ class MediarcaApp {
     }
   }
 
+  toggleScheduleDay(dayBtn, dayCode) {
+    if (!dayBtn) return;
+    dayBtn.classList.toggle('active-day-pill');
+    const isActive = dayBtn.classList.contains('active-day-pill');
+    dayBtn.style.background = isActive ? '#0284c7' : '#f1f5f9';
+    dayBtn.style.color = isActive ? '#ffffff' : '#334155';
+    dayBtn.style.borderColor = isActive ? '#0284c7' : '#cbd5e1';
+    this.updateSchedulePreview();
+  }
+
+  updateSchedulePreview() {
+    const dayOrder = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const activeDays = [];
+    document.querySelectorAll('.doc-day-pill.active-day-pill').forEach(btn => {
+      const d = btn.getAttribute('data-day');
+      if (d && !activeDays.includes(d)) activeDays.push(d);
+    });
+
+    const sortedDays = dayOrder.filter(d => activeDays.includes(d));
+
+    const startTime = document.getElementById('docSchedStart')?.value || '09:00 AM';
+    const endTime = document.getElementById('docSchedEnd')?.value || '03:00 PM';
+
+    let daysText = 'Mon - Sat';
+    if (sortedDays.length === 0) {
+      daysText = 'Consultation by Appointment';
+    } else if (sortedDays.length === 7) {
+      daysText = 'Daily (All Days)';
+    } else if (sortedDays.length === 6 && !sortedDays.includes('Sun')) {
+      daysText = 'Mon - Sat';
+    } else if (sortedDays.length === 5 && !sortedDays.includes('Sat') && !sortedDays.includes('Sun')) {
+      daysText = 'Mon - Fri';
+    } else {
+      daysText = sortedDays.join(', ');
+    }
+
+    const formattedSchedule = `${daysText} | ${startTime} - ${endTime}`;
+    const previewEl = document.getElementById('docSchedulePreviewText');
+    const inputEl = document.getElementById('docScheduleFormatted');
+
+    if (previewEl) previewEl.textContent = formattedSchedule;
+    if (inputEl) inputEl.value = formattedSchedule;
+  }
+
   async handleDoctorProfileSubmit(e) {
     if (e) e.preventDefault();
     const form = e.target || document.getElementById('doctorProfileUpdateForm');
     const submitBtn = form?.querySelector('button[type="submit"]');
     if (submitBtn) {
       submitBtn.disabled = true;
-      submitBtn.innerText = 'Updating...';
+      submitBtn.innerText = 'Saving Doctor Profile...';
     }
 
     try {
       const formData = new FormData(form);
-      const fee = formData.get('fee') || form.querySelector('[name="fee"]')?.value;
+      const name = (formData.get('name') || form.querySelector('[name="name"]')?.value || '').trim();
+      const title = (formData.get('title') || form.querySelector('[name="title"]')?.value || '').trim();
+      const specialty = formData.get('specialty') || form.querySelector('[name="specialty"]')?.value || 'General Medicine';
+      const degrees = (formData.get('degrees') || form.querySelector('[name="degrees"]')?.value || '').trim();
+      const fee = formData.get('fee') || form.querySelector('[name="fee"]')?.value || 600;
+      const experienceYears = formData.get('experienceYears') || form.querySelector('[name="experienceYears"]')?.value || 10;
       const hospital = (formData.get('hospital') || form.querySelector('[name="hospital"]')?.value || '').trim();
       const schedule = (formData.get('schedule') || form.querySelector('[name="schedule"]')?.value || '').trim();
+      const avatar = (formData.get('avatar') || form.querySelector('[name="avatar"]')?.value || '').trim();
       const bio = (formData.get('bio') || form.querySelector('[name="bio"]')?.value || '').trim();
+      const avgConsultTimeMins = formData.get('avgConsultTimeMins') || form.querySelector('[name="avgConsultTimeMins"]')?.value || 12;
 
       await window.mediarcaStore.updateDoctorProfile({
+        name,
+        title,
+        specialty,
+        degrees,
         fee,
+        experienceYears,
         hospital,
         schedule,
-        bio
+        avatar,
+        bio,
+        avgConsultTimeMins
       });
 
-      this.showToast('Practice settings updated successfully!', 'success');
+      this.showToast('Doctor profile and OPD schedule saved successfully!', 'success');
       this.renderDoctorConsole();
     } catch (err) {
       console.error('Doctor profile update error:', err);
       this.showToast(err.message || 'Could not update practice details.', 'warning');
       if (submitBtn) {
         submitBtn.disabled = false;
-        submitBtn.innerText = 'Update Practice Details';
+        submitBtn.innerText = 'Save Doctor Profile & OPD Schedule';
       }
     }
   }
@@ -1295,87 +1353,217 @@ class MediarcaApp {
         </div>
 
         ${activeTab === 'profile' ? `
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; align-items: start;">
-            <!-- Left: Official Medical Board Practitioner Credentials Card -->
-            <div style="background: linear-gradient(135deg, #042f2e 0%, #0f172a 100%); color: #fff; border-radius: var(--radius-md); padding: 1.75rem; box-shadow: var(--shadow-lg); border: 1px solid #115e59; position: relative; overflow: hidden;">
-              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.25rem; border-bottom: 1px solid rgba(255,255,255,0.15); padding-bottom: 0.75rem;">
-                <div>
-                  <div style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; color: #2dd4bf; font-weight: 700;">National Medical Commission (NMC) Accreditation</div>
-                  <div style="font-size: 1.15rem; font-weight: 800; color: #fff;">MediArca Registered Practitioner</div>
-                </div>
-                <span class="badge" style="background: rgba(45,212,191,0.2); color: #2dd4bf; border: 1px solid #0d9488; font-size: 0.65rem;">
-                  <i data-lucide="shield-check" style="width:10px;height:10px;"></i> VERIFIED & ACTIVE
-                </span>
-              </div>
-
-              <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1.25rem;">
-                <img src="${escapeHtml(doc.avatar || 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=300&h=300&fit=crop&crop=faces&q=80')}" alt="Doctor Avatar" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid #2dd4bf;">
-                <div>
-                  <div style="font-size: 1.2rem; font-weight: 800; color: #fff;">${escapeHtml(doc.name)}</div>
-                  <div style="font-size: 0.8125rem; color: #99f6e4;">${escapeHtml(doc.title || doc.specialty)}</div>
-                  <div style="font-size: 0.75rem; color: #cbd5e1; margin-top: 0.15rem;">${escapeHtml(doc.degrees || 'MBBS, MD')}</div>
-                </div>
-              </div>
-
-              <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; background: rgba(255,255,255,0.06); padding: 0.875rem; border-radius: var(--radius-sm); font-size: 0.75rem; margin-bottom: 1rem;">
-                <div>
-                  <div style="color: #94a3b8; font-size: 0.65rem; text-transform: uppercase;">Medical Reg No</div>
-                  <div style="font-weight: 800; color: #38bdf8; font-family: var(--font-mono);">${escapeHtml(doc.regNumber)}</div>
+          <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: var(--radius-md); padding: 1.75rem; box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.04); margin-bottom: 2rem;">
+            
+            <!-- Doctor Profile Header Banner -->
+            <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding-bottom: 1.25rem; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+              <div style="display: flex; align-items: center; gap: 1.25rem;">
+                <div style="position: relative;">
+                  <img id="docAvatarPreview" src="${escapeHtml(doc.avatar || 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=300&h=300&fit=crop&crop=faces&q=80')}" alt="${escapeHtml(doc.name)}" style="width: 72px; height: 72px; border-radius: 16px; object-fit: cover; border: 2px solid #0284c7; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.15);">
+                  <span style="position: absolute; bottom: -4px; right: -4px; width: 14px; height: 14px; border-radius: 50%; background: #10b981; border: 2px solid #fff;"></span>
                 </div>
                 <div>
-                  <div style="color: #94a3b8; font-size: 0.65rem; text-transform: uppercase;">OPD Fee (INR)</div>
-                  <div style="font-weight: 800; color: #4ade80; font-size: 0.95rem;">₹${doc.fee || 600}</div>
-                </div>
-                <div>
-                  <div style="color: #94a3b8; font-size: 0.65rem; text-transform: uppercase;">Experience</div>
-                  <div style="font-weight: 700; color: #f1f5f9;">${doc.experienceYears || 12} Years</div>
+                  <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.2rem;">
+                    <h3 style="font-size: 1.35rem; font-weight: 800; color: #0f172a; margin: 0;">${escapeHtml(doc.name || 'Practitioner Profile')}</h3>
+                    <span class="badge badge-verified" style="display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.7rem;">
+                      <i data-lucide="shield-check" style="width: 12px; height: 12px;"></i> Verified Specialist
+                    </span>
+                  </div>
+                  <div style="font-size: 0.85rem; font-weight: 600; color: #0284c7;">${escapeHtml(doc.title || doc.specialty || 'Medical Specialist')}</div>
+                  <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.15rem;">
+                    ${escapeHtml(doc.email || user.email || '')} • <strong>Mediarca ID:</strong> <span class="text-mono" style="color: #0f172a; font-weight: 700;">${escapeHtml(doc.mediarcaId || 'MED-DOC-7700')}</span>
+                  </div>
                 </div>
               </div>
-
-              <div style="font-size: 0.75rem; color: #cbd5e1; line-height: 1.5; background: rgba(0,0,0,0.2); padding: 0.75rem; border-radius: var(--radius-sm); margin-bottom: 0.75rem;">
-                <div style="font-weight: 700; color: #2dd4bf; margin-bottom: 0.2rem;">Hospital & Clinic Room:</div>
-                ${escapeHtml(doc.hospital || 'Apex Healthcare Center')}
-              </div>
-
-              <div style="font-size: 0.75rem; color: #cbd5e1; line-height: 1.5; background: rgba(0,0,0,0.2); padding: 0.75rem; border-radius: var(--radius-sm);">
-                <div style="font-weight: 700; color: #2dd4bf; margin-bottom: 0.2rem;">Consultation Hours:</div>
-                ${escapeHtml(doc.schedule || 'Mon - Sat | 09:00 AM - 03:00 PM')}
+              
+              <div style="display: flex; gap: 1rem; background: #f8fafc; border: 1px solid #e2e8f0; padding: 0.65rem 1rem; border-radius: 12px; text-align: center;">
+                <div>
+                  <div style="font-size: 0.65rem; color: #64748b; text-transform: uppercase; font-weight: 700;">Registration No</div>
+                  <div class="text-mono" style="font-size: 0.85rem; font-weight: 800; color: #0f172a;">${escapeHtml(doc.regNumber || 'NMC-VERIFIED')}</div>
+                </div>
+                <div style="border-left: 1px solid #e2e8f0; padding-left: 1rem;">
+                  <div style="font-size: 0.65rem; color: #64748b; text-transform: uppercase; font-weight: 700;">Current Fee</div>
+                  <div style="font-size: 0.95rem; font-weight: 800; color: #16a34a;">₹${doc.fee || 600}</div>
+                </div>
               </div>
             </div>
 
-            <!-- Right: Editable Practice Settings Form -->
-            <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.5rem;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                <h3 style="font-size: 1.0625rem; font-weight: 800; color: var(--text-primary);">Practice Settings & Details</h3>
-                <span style="font-size: 0.7rem; color: #0d9488; font-weight: 700;">🔒 Live In Directory</span>
+            <!-- Profile & Schedule Edit Form -->
+            <form id="doctorProfileUpdateForm" onsubmit="window.mediarcaApp.handleDoctorProfileSubmit(event)">
+              <div style="display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 2rem; align-items: start;">
+                
+                <!-- SECTION 1: Doctor Information & Professional Credentials -->
+                <div>
+                  <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1.25rem;">
+                    <i data-lucide="user-check" style="width: 18px; height: 18px; color: #0284c7;"></i>
+                    <h4 style="font-size: 1.05rem; font-weight: 800; color: #0f172a; margin: 0;">Doctor Identity & Clinical Credentials</h4>
+                  </div>
+
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 0.85rem;">
+                    <div class="form-group">
+                      <label class="form-label" style="font-size: 0.775rem; font-weight: 700;">Doctor Full Name *</label>
+                      <input type="text" name="name" class="form-input" value="${escapeHtml(doc.name || '')}" placeholder="e.g. Dr. Bikesh Ray" required>
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label" style="font-size: 0.775rem; font-weight: 700;">Clinical Title / Designation</label>
+                      <input type="text" name="title" class="form-input" value="${escapeHtml(doc.title || '')}" placeholder="e.g. Consultant Interventional Cardiologist">
+                    </div>
+                  </div>
+
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 0.85rem;">
+                    <div class="form-group">
+                      <label class="form-label" style="font-size: 0.775rem; font-weight: 700;">Medical Specialty *</label>
+                      <select name="specialty" class="form-select" required>
+                        <option value="Cardiology" ${(doc.specialty || '').toLowerCase().includes('cardio') ? 'selected' : ''}>Cardiology & Heart Care</option>
+                        <option value="Dermatology" ${(doc.specialty || '').toLowerCase().includes('derma') ? 'selected' : ''}>Dermatology & Skin</option>
+                        <option value="Orthopedics" ${(doc.specialty || '').toLowerCase().includes('ortho') ? 'selected' : ''}>Orthopedics & Joint Surgery</option>
+                        <option value="Pediatrics" ${(doc.specialty || '').toLowerCase().includes('pediatr') ? 'selected' : ''}>Pediatrics & Child Care</option>
+                        <option value="Neurology" ${(doc.specialty || '').toLowerCase().includes('neuro') ? 'selected' : ''}>Neurology & Brain Care</option>
+                        <option value="General Medicine" ${(doc.specialty || '').toLowerCase().includes('general') ? 'selected' : ''}>General Medicine & Family Physician</option>
+                        <option value="Gastroenterology" ${(doc.specialty || '').toLowerCase().includes('gastro') ? 'selected' : ''}>Gastroenterology</option>
+                        <option value="Oncology" ${(doc.specialty || '').toLowerCase().includes('onco') ? 'selected' : ''}>Oncology</option>
+                        <option value="ENT" ${(doc.specialty || '').toLowerCase().includes('ent') ? 'selected' : ''}>ENT & Otorhinolaryngology</option>
+                        <option value="Ophthalmology" ${(doc.specialty || '').toLowerCase().includes('ophthal') ? 'selected' : ''}>Ophthalmology & Eye Care</option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label" style="font-size: 0.775rem; font-weight: 700;">Degrees & Qualifications *</label>
+                      <input type="text" name="degrees" class="form-input" value="${escapeHtml(doc.degrees || 'MBBS, MD')}" placeholder="e.g. MBBS, MD (Cardiology), FACC" required>
+                    </div>
+                  </div>
+
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 0.85rem;">
+                    <div class="form-group">
+                      <label class="form-label" style="font-size: 0.775rem; font-weight: 700;">Consultation Fee (₹ INR) *</label>
+                      <input type="number" name="fee" class="form-input" value="${doc.fee || 600}" min="50" max="10000" step="50" required>
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label" style="font-size: 0.775rem; font-weight: 700;">Experience (Years) *</label>
+                      <input type="number" name="experienceYears" class="form-input" value="${doc.experienceYears || 10}" min="1" max="60" required>
+                    </div>
+                  </div>
+
+                  <div class="form-group" style="margin-bottom: 0.85rem;">
+                    <label class="form-label" style="font-size: 0.775rem; font-weight: 700;">Hospital / Clinic Affiliation & Suite *</label>
+                    <input type="text" name="hospital" class="form-input" value="${escapeHtml(doc.hospital || '')}" placeholder="e.g. Apex Heart Institute & Research Center, Suite 402" required>
+                  </div>
+
+                  <div class="form-group" style="margin-bottom: 0.85rem;">
+                    <label class="form-label" style="font-size: 0.775rem; font-weight: 700;">Profile Photo / Avatar URL</label>
+                    <input type="url" name="avatar" class="form-input" value="${escapeHtml(doc.avatar || '')}" placeholder="https://images.unsplash.com/..." oninput="document.getElementById('docAvatarPreview').src = this.value">
+                  </div>
+
+                  <div class="form-group" style="margin-bottom: 0.85rem;">
+                    <label class="form-label" style="font-size: 0.775rem; font-weight: 700;">Clinical Summary & Bio</label>
+                    <textarea name="bio" class="form-textarea" style="min-height: 80px;" placeholder="Brief outline of your clinical practice, sub-specialties, and clinical philosophy...">${escapeHtml(doc.bio || '')}</textarea>
+                  </div>
+                </div>
+
+                <!-- SECTION 2: Interactive OPD Consultation Schedule Builder (NO MANUAL TYPING!) -->
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 1.5rem;">
+                  <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1.25rem;">
+                    <i data-lucide="calendar-clock" style="width: 18px; height: 18px; color: #0284c7;"></i>
+                    <h4 style="font-size: 1.05rem; font-weight: 800; color: #0f172a; margin: 0;">OPD Consultation Schedule</h4>
+                  </div>
+
+                  <!-- 1. Active Days Selector (Clickable Toggle Pills) -->
+                  <div class="form-group" style="margin-bottom: 1.25rem;">
+                    <label class="form-label" style="font-size: 0.775rem; font-weight: 700; margin-bottom: 0.5rem;">
+                      Active Consultation Days (Click to Select / Unselect) *
+                    </label>
+                    <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
+                      ${['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => {
+                        const isScheduled = (doc.schedule || 'Mon - Sat').includes(day) || ((doc.schedule || '').includes('Daily')) || ((doc.schedule || '').includes('Mon - Sat') && day !== 'Sun') || ((doc.schedule || '').includes('Mon - Fri') && day !== 'Sat' && day !== 'Sun');
+                        return `
+                          <button type="button" 
+                            class="doc-day-pill ${isScheduled ? 'active-day-pill' : ''}" 
+                            data-day="${day}" 
+                            onclick="window.mediarcaApp.toggleScheduleDay(this, '${day}')"
+                            style="padding: 0.4rem 0.75rem; border-radius: 8px; font-weight: 700; font-size: 0.8rem; cursor: pointer; transition: all 0.15s ease; border: 1px solid ${isScheduled ? '#0284c7' : '#cbd5e1'}; background: ${isScheduled ? '#0284c7' : '#f1f5f9'}; color: ${isScheduled ? '#ffffff' : '#334155'};">
+                            ${day}
+                          </button>
+                        `;
+                      }).join('')}
+                    </div>
+                  </div>
+
+                  <!-- 2. Consultation Timings (Dropdown Pickers) -->
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem;">
+                    <div class="form-group">
+                      <label class="form-label" style="font-size: 0.775rem; font-weight: 700;">OPD Start Time *</label>
+                      <select id="docSchedStart" class="form-select" onchange="window.mediarcaApp.updateSchedulePreview()">
+                        <option value="08:00 AM">08:00 AM</option>
+                        <option value="08:30 AM">08:30 AM</option>
+                        <option value="09:00 AM" selected>09:00 AM</option>
+                        <option value="09:30 AM">09:30 AM</option>
+                        <option value="10:00 AM">10:00 AM</option>
+                        <option value="10:30 AM">10:30 AM</option>
+                        <option value="11:00 AM">11:00 AM</option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label" style="font-size: 0.775rem; font-weight: 700;">OPD End Time *</label>
+                      <select id="docSchedEnd" class="form-select" onchange="window.mediarcaApp.updateSchedulePreview()">
+                        <option value="01:00 PM">01:00 PM</option>
+                        <option value="02:00 PM">02:00 PM</option>
+                        <option value="03:00 PM" selected>03:00 PM</option>
+                        <option value="04:00 PM">04:00 PM</option>
+                        <option value="05:00 PM">05:00 PM</option>
+                        <option value="06:00 PM">06:00 PM</option>
+                        <option value="07:00 PM">07:00 PM</option>
+                        <option value="08:00 PM">08:00 PM</option>
+                        <option value="09:00 PM">09:00 PM</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <!-- 3. Consultation Duration & Interval Settings -->
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem;">
+                    <div class="form-group">
+                      <label class="form-label" style="font-size: 0.775rem; font-weight: 700;">Avg Consult Duration *</label>
+                      <select name="avgConsultTimeMins" class="form-select" onchange="window.mediarcaApp.updateSchedulePreview()">
+                        <option value="8">8 Minutes / Patient</option>
+                        <option value="10">10 Minutes / Patient</option>
+                        <option value="12" selected>12 Minutes / Patient</option>
+                        <option value="15">15 Minutes / Patient</option>
+                        <option value="20">20 Minutes / Patient</option>
+                        <option value="30">30 Minutes / Patient</option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label" style="font-size: 0.775rem; font-weight: 700;">Lunch / Break Interval</label>
+                      <select id="docSchedBreak" class="form-select" onchange="window.mediarcaApp.updateSchedulePreview()">
+                        <option value="none">No Break (Continuous OPD)</option>
+                        <option value="01:00 PM - 02:00 PM" selected>01:00 PM - 02:00 PM (Lunch Break)</option>
+                        <option value="02:00 PM - 03:00 PM">02:00 PM - 03:00 PM (Afternoon Break)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <!-- 4. Formatted Schedule Computed String -->
+                  <input type="hidden" id="docScheduleFormatted" name="schedule" value="${escapeHtml(doc.schedule || 'Mon - Sat | 09:00 AM - 03:00 PM')}">
+
+                  <!-- 5. Computed Live Schedule Summary Card -->
+                  <div style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 10px; padding: 1rem; margin-bottom: 1.5rem;">
+                    <div style="font-size: 0.7rem; color: #166534; text-transform: uppercase; font-weight: 800; margin-bottom: 0.25rem;">
+                      🟢 Live OPD Display Format:
+                    </div>
+                    <div id="docSchedulePreviewText" style="font-size: 1rem; font-weight: 800; color: #14532d;">
+                      ${escapeHtml(doc.schedule || 'Mon - Sat | 09:00 AM - 03:00 PM')}
+                    </div>
+                    <div style="font-size: 0.75rem; color: #15803d; margin-top: 0.35rem;">
+                      ⚡ This exact schedule will be shown on your doctor card, queue radar, and patient booking calendar.
+                    </div>
+                  </div>
+
+                  <!-- Save Button -->
+                  <button type="submit" class="btn btn-primary btn-block" style="padding: 0.85rem; font-weight: 800; font-size: 1rem; background: #090d16; color: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                    <i data-lucide="check" style="width: 18px; height: 18px;"></i> Save Doctor Profile & OPD Schedule
+                  </button>
+                </div>
+
               </div>
-
-              <form id="doctorProfileUpdateForm" onsubmit="window.mediarcaApp.handleDoctorProfileSubmit(event)">
-                <div class="form-group" style="margin-bottom: 0.75rem;">
-                  <label class="form-label" style="font-size: 0.75rem;">Consultation Fee (₹ INR) *</label>
-                  <input type="number" name="fee" class="form-input" value="${doc.fee || 600}" min="100" max="10000" step="50" required>
-                </div>
-
-                <div class="form-group" style="margin-bottom: 0.75rem;">
-                  <label class="form-label" style="font-size: 0.75rem;">Hospital Affiliation & Room / Wing *</label>
-                  <input type="text" name="hospital" class="form-input" value="${escapeHtml(doc.hospital || '')}" required>
-                </div>
-
-                <div class="form-group" style="margin-bottom: 0.75rem;">
-                  <label class="form-label" style="font-size: 0.75rem;">OPD Consultation Schedule *</label>
-                  <input type="text" name="schedule" class="form-input" value="${escapeHtml(doc.schedule || 'Mon - Sat | 09:00 AM - 03:00 PM')}" required>
-                </div>
-
-                <div class="form-group" style="margin-bottom: 1rem;">
-                  <label class="form-label" style="font-size: 0.75rem;">Professional Bio & Clinical Focus</label>
-                  <textarea name="bio" class="form-textarea" style="min-height: 80px;" placeholder="Brief clinical background and areas of expertise...">${escapeHtml(doc.bio || '')}</textarea>
-                </div>
-
-                <button type="submit" class="btn btn-block btn-teal" style="font-weight: 700;">
-                  <i data-lucide="save" style="width: 14px; height: 14px;"></i> Update Practice Details
-                </button>
-              </form>
-            </div>
+            </form>
           </div>
         ` : `
         <div style="display: grid; grid-template-columns: 1fr 340px; gap: 2rem;">

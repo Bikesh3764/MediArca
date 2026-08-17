@@ -539,7 +539,7 @@ class MediarcaSupabaseClient {
                 reviewsCount: d.reviews_count || 0,
                 avatar: d.avatar || 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?w=300&h=300&fit=crop&crop=faces&q=80',
                 bio: d.bio,
-                schedule: 'Mon - Fri | 09:00 AM - 02:00 PM',
+                schedule: d.schedule || 'Mon - Sat | 09:00 AM - 03:00 PM',
                 mediarcaId: d.mediarca_id,
                 currentToken: d.current_token || 0,
                 totalTokens: d.total_tokens || 0,
@@ -1007,6 +1007,39 @@ class MediarcaSupabaseClient {
       throw error;
     }
 
+    return data;
+  }
+
+  async cloudUpdateDoctorProfile(doctorId, docData) {
+    if (!this.client) throw new Error('Cloud offline');
+
+    const updatePayload = {};
+    if (docData.name !== undefined) updatePayload.name = docData.name;
+    if (docData.specialty !== undefined) {
+      updatePayload.specialty = docData.specialty;
+      updatePayload.specialty_id = docData.specialty.toLowerCase().replace(/\s+/g, '');
+    }
+    if (docData.title !== undefined) updatePayload.title = docData.title;
+    if (docData.degrees !== undefined) updatePayload.degrees = docData.degrees;
+    if (docData.experienceYears !== undefined) updatePayload.experience_years = parseInt(docData.experienceYears);
+    if (docData.fee !== undefined) updatePayload.fee = parseFloat(docData.fee);
+    if (docData.hospital !== undefined) updatePayload.hospital = docData.hospital;
+    if (docData.schedule !== undefined) updatePayload.schedule = docData.schedule;
+    if (docData.bio !== undefined) updatePayload.bio = docData.bio;
+    if (docData.avatar !== undefined) updatePayload.avatar = docData.avatar;
+    if (docData.avgConsultTimeMins !== undefined) updatePayload.avg_consult_time_mins = parseInt(docData.avgConsultTimeMins);
+
+    const { data, error } = await this.client
+      .from('doctors')
+      .update(updatePayload)
+      .eq('id', doctorId)
+      .select()
+      .maybeSingle();
+
+    if (error) {
+      console.error('Doctor profile cloud update error:', error);
+      throw error;
+    }
     return data;
   }
 }
