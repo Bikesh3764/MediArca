@@ -959,7 +959,8 @@ p {
 
 .clinical-table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   text-align: left;
   font-size: 0.875rem;
 }
@@ -967,21 +968,23 @@ p {
 .clinical-table th {
   padding: 12px 16px;
   font-weight: 600;
-  color: var(--color-ink-muted-80);
-  background: var(--color-canvas-parchment);
-  border-bottom: 1px solid var(--border-subtle);
-  letter-spacing: -0.01em;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: #86868b;
+  background: #f5f5f7;
+  border: none;
+  letter-spacing: 0.03em;
 }
 
 .clinical-table td {
   padding: 14px 16px;
-  color: var(--color-ink);
-  border-bottom: 1px solid var(--color-hairline);
+  color: #1d1d1f;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   vertical-align: middle;
 }
 
 .clinical-table tr:hover td {
-  background: #fafafc;
+  background: #fbfbfd;
 }
 
 /* ==========================================================================
