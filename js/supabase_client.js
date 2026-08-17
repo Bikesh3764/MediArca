@@ -342,11 +342,11 @@ class MediarcaSupabaseClient {
                 regNumber: d.reg_number,
                 verificationStatus: d.verification_status,
                 experienceYears: d.experience_years,
-                hospital: d.hospital_affiliation || 'General Hospital',
-                fee: parseFloat(d.consultation_fee) || 50,
+                hospital: d.hospital || 'General Hospital',
+                fee: parseFloat(d.fee) || 50,
                 rating: parseFloat(d.rating) || 5.0,
                 reviewsCount: d.reviews_count || 0,
-                avatar: d.avatar_url || 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?w=300&h=300&fit=crop&crop=faces&q=80',
+                avatar: d.avatar || 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?w=300&h=300&fit=crop&crop=faces&q=80',
                 bio: d.bio,
                 schedule: 'Mon - Fri | 09:00 AM - 02:00 PM',
                 mediarcaId: d.mediarca_id,
@@ -362,18 +362,25 @@ class MediarcaSupabaseClient {
             });
           }
 
+          // BUG-018: Hydrate users along with clinical demographics from patient_clinical_profiles
           const { data: allUsers } = await this.client.from('users').select('*').order('created_at', { ascending: false });
+          const { data: allClinProfiles } = await this.client.from('patient_clinical_profiles').select('*');
+          const profMap = new Map((allClinProfiles || []).map(p => [p.user_id, p]));
+
           if (allUsers && allUsers.length > 0) {
-            window.mediarcaStore.state.users = allUsers.map(u => ({
-              id: u.id,
-              role: u.role,
-              email: u.email,
-              name: u.full_name,
-              phone: u.phone,
-              age: u.age,
-              gender: u.gender,
-              bloodGroup: u.blood_group
-            }));
+            window.mediarcaStore.state.users = allUsers.map(u => {
+              const cp = profMap.get(u.id);
+              return {
+                id: u.id,
+                role: u.role,
+                email: u.email,
+                name: u.full_name,
+                phone: u.phone,
+                age: cp ? cp.age : null,
+                gender: cp ? cp.gender : null,
+                bloodGroup: cp ? cp.blood_group : null
+              };
+            });
           }
         }
       }
@@ -729,14 +736,15 @@ class MediarcaSupabaseClient {
     return data;
   }
 
-  async cloudGenerateAndSettleInvoice(appointmentId, paymentMethod = 'Card', insuranceProvider = null, insuranceCoverage = 0) {
+  async cloudGenerateAndSettleInvoice(appointmentId, paymentMethod = 'Card', insuranceProvider = null, insuranceCoverage = 0, couponCode = null) {
     if (!this.client) throw new Error('Cloud offline');
 
     const { data, error } = await this.client.rpc('generate_and_settle_invoice_atomic', {
       p_appointment_id: appointmentId,
       p_payment_method: paymentMethod,
       p_insurance_provider: insuranceProvider,
-      p_insurance_coverage: parseFloat(insuranceCoverage) || 0
+      p_insurance_coverage: parseFloat(insuranceCoverage) || 0,
+      p_coupon_code: couponCode || null
     });
 
     if (error) {

@@ -69,7 +69,7 @@ CREATE TABLE IF NOT EXISTS doctors (
 -- 5. CLINIC LIVE QUEUES TABLE (Primary Source of Live Telemetry)
 CREATE TABLE IF NOT EXISTS clinic_queues (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    doctor_id UUID UNIQUE NOT NULL REFERENCES doctors(id) ON DELETE CASCADE,
+    doctor_id UUID NOT NULL REFERENCES doctors(id) ON DELETE CASCADE,
     queue_date DATE NOT NULL DEFAULT CURRENT_DATE,
     current_token INT DEFAULT 0 CHECK (current_token >= 0),
     total_tokens INT DEFAULT 0 CHECK (total_tokens >= 0),
@@ -95,7 +95,7 @@ CREATE TABLE IF NOT EXISTS appointments (
     is_priority BOOLEAN DEFAULT false,
     priority_reason TEXT,
     scheduled_slot VARCHAR(50) DEFAULT '09:00 AM',
-    checkin_token VARCHAR(255),
+    checkin_token VARCHAR(255) UNIQUE,
     checkin_token_expires_at TIMESTAMPTZ DEFAULT (NOW() + interval '24 hours'),
     checkin_token_used_at TIMESTAMPTZ,
     check_in_time TIMESTAMPTZ,
@@ -365,10 +365,14 @@ BEGIN
         RAISE EXCEPTION 'Authentication required. Please sign in as an authenticated patient.';
     END IF;
 
-    -- 2. Fetch authenticated patient record & clinical profile directly from database (D-02 Resolution)
+    -- 2. Fetch authenticated patient record & clinical profile directly from database (D-02 & BUG-004 Resolution)
     SELECT * INTO v_patient FROM users WHERE id = v_actor_id;
     IF v_patient.id IS NULL THEN
         RAISE EXCEPTION 'Patient profile not found for authenticated user ID: %', v_actor_id;
+    END IF;
+
+    IF v_patient.role != 'patient' AND NOT is_admin(v_actor_id) THEN
+        RAISE EXCEPTION 'Access Denied: Only authenticated users with patient role can book consultation tokens.';
     END IF;
 
     SELECT * INTO v_clinical FROM patient_clinical_profiles WHERE user_id = v_actor_id;
@@ -594,6 +598,11 @@ BEGIN
     SELECT * INTO v_patient FROM users WHERE id = v_actor_id;
     IF v_patient.id IS NULL THEN
         RAISE EXCEPTION 'Patient profile not found.';
+    END IF;
+
+    -- BUG-005: Require patient role
+    IF v_patient.role != 'patient' AND NOT is_admin(v_actor_id) THEN
+        RAISE EXCEPTION 'Access Denied: Only registered patients can schedule future appointments.';
     END IF;
 
     SELECT * INTO v_clinical FROM patient_clinical_profiles WHERE user_id = v_actor_id;
@@ -1190,13 +1199,13 @@ BEGIN
         RAISE EXCEPTION 'Cannot check-in. Consultation status is already %', v_appointment.status;
     END IF;
 
-    -- C-13: Authorize only receptionists, admins, attending physicians, or the patient who owns the booking
+    -- C-13 & BUG-019: Authorize only receptionists, admins, verified attending physicians, or the patient who owns the booking
     SELECT role INTO v_actor_role FROM users WHERE id = v_actor_id;
 
     v_is_authorized := (
         v_actor_role IN ('receptionist', 'admin')
         OR v_appointment.patient_id = v_actor_id
-        OR v_appointment.doctor_id IN (SELECT id FROM doctors WHERE user_id = v_actor_id)
+        OR v_appointment.doctor_id IN (SELECT id FROM doctors WHERE user_id = v_actor_id AND verification_status = 'verified')
         OR is_admin(v_actor_id)
     );
 
@@ -1634,9 +1643,13 @@ BEGIN
         RAISE EXCEPTION 'Authentication required to record statutory consent.';
     END IF;
 
-    -- C-06: Strict validation: Reject false/null terms acceptance
+    -- C-06 & BUG-022: Strict validation: Reject false/null terms acceptance and require patient or admin role
     IF p_terms_accepted IS NULL OR p_terms_accepted = false THEN
         RAISE EXCEPTION 'Consent not accepted: Statutory terms and HIPAA policies must be affirmatively accepted.';
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM users WHERE id = v_actor_id AND role IN ('patient', 'admin')) AND NOT is_admin(v_actor_id) THEN
+        RAISE EXCEPTION 'Access Denied: Statutory consent can only be recorded by authenticated patients.';
     END IF;
 
     INSERT INTO patient_consents (
@@ -1672,7 +1685,8 @@ CREATE OR REPLACE FUNCTION generate_and_settle_invoice_atomic(
     p_appointment_id UUID,
     p_payment_method VARCHAR DEFAULT 'Card',
     p_insurance_provider VARCHAR DEFAULT NULL,
-    p_insurance_coverage NUMERIC DEFAULT 0.00
+    p_insurance_coverage NUMERIC DEFAULT 0.00,
+    p_coupon_code VARCHAR DEFAULT NULL
 )
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -1685,6 +1699,8 @@ DECLARE
     v_appointment appointments%ROWTYPE;
     v_doctor doctors%ROWTYPE;
     v_base_fee NUMERIC;
+    v_discount NUMERIC := 0.00;
+    v_net_before_ins NUMERIC;
     v_insurance_paid NUMERIC;
     v_patient_paid NUMERIC;
     v_invoice_num VARCHAR;
@@ -1693,6 +1709,11 @@ BEGIN
     v_actor_id := auth.uid();
     IF v_actor_id IS NULL THEN
         RAISE EXCEPTION 'Authentication required.';
+    END IF;
+
+    -- BUG-012: Validate insurance coverage percentage bounds (0 to 100)
+    IF p_insurance_coverage < 0 OR p_insurance_coverage > 100 THEN
+        RAISE EXCEPTION 'Invalid insurance coverage percentage: must be between 0 and 100.';
     END IF;
 
     SELECT * INTO v_appointment FROM appointments WHERE id = p_appointment_id;
@@ -1714,9 +1735,16 @@ BEGIN
     -- Fetch authoritative doctor fee from database
     v_base_fee := COALESCE(v_doctor.fee, 50.00);
 
-    -- Calculate server-authoritative insurance breakdown
-    v_insurance_paid := ROUND(v_base_fee * (COALESCE(p_insurance_coverage, 0.00) / 100.0), 2);
-    v_patient_paid := v_base_fee - v_insurance_paid;
+    -- BUG-010 & BUG-021: Calculate server-authoritative discount and invoice amounts
+    IF p_coupon_code = 'HEALTH10' THEN
+        v_discount := ROUND(v_base_fee * 0.10, 2);
+    ELSIF p_coupon_code = 'PREVENT20' THEN
+        v_discount := LEAST(20.00, v_base_fee);
+    END IF;
+
+    v_net_before_ins := GREATEST(0.00, v_base_fee - v_discount);
+    v_insurance_paid := ROUND(v_net_before_ins * (COALESCE(p_insurance_coverage, 0.00) / 100.0), 2);
+    v_patient_paid := GREATEST(0.00, v_net_before_ins - v_insurance_paid);
 
     v_invoice_num := 'INV-2026-' || upper(to_hex(extract(epoch from now())::bigint)) || '-' || upper(substring(md5(random()::text) from 1 for 4));
 
@@ -1734,7 +1762,12 @@ BEGIN
         p_payment_method,
         COALESCE(p_insurance_provider, 'MediShield Global Health'),
         NOW()
-    ) RETURNING * INTO v_invoice;
+    ) ON CONFLICT (appointment_id) DO UPDATE
+    SET total_amount = EXCLUDED.total_amount,
+        insurance_covered_amount = EXCLUDED.insurance_covered_amount,
+        patient_paid_amount = EXCLUDED.patient_paid_amount,
+        settled_at = NOW()
+    RETURNING * INTO v_invoice;
 
     INSERT INTO audit_logs (actor_id, action, entity, entity_id, metadata)
     VALUES (
@@ -1745,8 +1778,10 @@ BEGIN
         jsonb_build_object(
             'invoice_number', v_invoice_num,
             'total_amount', v_base_fee,
+            'discount_amount', v_discount,
             'patient_paid', v_patient_paid,
             'payment_method', p_payment_method,
+            'coupon_applied', p_coupon_code,
             'timestamp', NOW()
         )
     );
@@ -1786,12 +1821,12 @@ BEGIN
     SELECT * INTO v_doctor FROM doctors WHERE id = v_appointment.doctor_id;
     SELECT role INTO v_actor_role FROM users WHERE id = v_actor_id;
 
-    -- C-03: Participant authorization: Only appointment patient, attending doctor, receptionist, or admin
+    -- C-03 & BUG-023: Participant authorization: Only appointment patient, verified attending doctor, receptionist, or admin
     IF v_actor_id != v_appointment.patient_id 
-       AND v_doctor.user_id != v_actor_id 
+       AND (v_doctor.user_id != v_actor_id OR v_doctor.verification_status != 'verified')
        AND v_actor_role NOT IN ('receptionist', 'admin') 
        AND NOT is_admin(v_actor_id) THEN
-        RAISE EXCEPTION 'Access Denied: Only registered consultation participants or clinical staff can initialize telemedicine rooms.';
+        RAISE EXCEPTION 'Access Denied: Only registered consultation participants or accredited clinical staff can initialize telemedicine rooms.';
     END IF;
 
     -- Generate high-entropy 128-bit session credential
@@ -2081,15 +2116,18 @@ CREATE POLICY "Patients and Doctors can access relevant appointments" ON appoint
 
 DROP POLICY IF EXISTS "Authenticated patient or doctor can create appointment" ON appointments;
 CREATE POLICY "Authenticated patient or doctor can create appointment" ON appointments FOR INSERT WITH CHECK (
-    patient_id = auth.uid() OR doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid() AND verification_status = 'verified')
+    patient_id = auth.uid() OR is_admin(auth.uid())
 );
 
 DROP POLICY IF EXISTS "Doctor can update consultation status and prescription" ON appointments;
 CREATE POLICY "Doctor can update consultation status and prescription" ON appointments FOR UPDATE USING (
-    doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid() AND verification_status = 'verified') OR is_admin(auth.uid())
+    is_admin(auth.uid()) OR (
+        doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid() AND verification_status = 'verified')
+        AND scheduled_date = CURRENT_DATE
+    )
 );
 
--- P0-09: Prevent direct mutation of core appointment identity fields on UPDATE
+-- P0-09 & BUG-007: Prevent direct mutation of core appointment identity fields on UPDATE
 CREATE OR REPLACE FUNCTION prevent_appointment_core_fields_mutation()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -2100,9 +2138,10 @@ BEGIN
        (OLD.doctor_id IS DISTINCT FROM NEW.doctor_id) OR
        (OLD.booking_id IS DISTINCT FROM NEW.booking_id) OR
        (OLD.token_number IS DISTINCT FROM NEW.token_number) OR
+       (OLD.scheduled_date IS DISTINCT FROM NEW.scheduled_date) OR
        (OLD.checkin_token IS DISTINCT FROM NEW.checkin_token) THEN
         IF NOT is_admin(auth.uid()) THEN
-            RAISE EXCEPTION 'Immutable Field Violation: Direct modification of appointment patient, doctor, booking ID, token, or check-in credentials is prohibited.';
+            RAISE EXCEPTION 'Immutable Field Violation: Direct modification of appointment patient, doctor, booking ID, date, token, or check-in credentials is prohibited.';
         END IF;
     END IF;
     RETURN NEW;
@@ -2144,10 +2183,10 @@ CREATE POLICY "Patients can view own encounters" ON clinical_encounters
 
 CREATE POLICY "Attending doctors can manage encounters" ON clinical_encounters
     FOR ALL TO authenticated
-    USING (doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid()) OR is_admin(auth.uid()))
-    WITH CHECK (doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid()) OR is_admin(auth.uid()));
+    USING (doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid() AND verification_status = 'verified') OR is_admin(auth.uid()))
+    WITH CHECK (doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid() AND verification_status = 'verified') OR is_admin(auth.uid()));
 
--- CLINICAL PRESCRIPTIONS RLS (C-20 Resolution: Patients Read-Only; Licensed Doctors Prescribe)
+-- CLINICAL PRESCRIPTIONS RLS (C-20 & BUG-008 Resolution: Patients Read-Only; Licensed Doctors Prescribe)
 ALTER TABLE clinical_prescriptions ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Prescription access" ON clinical_prescriptions;
 DROP POLICY IF EXISTS "Patients can view own prescriptions" ON clinical_prescriptions;
@@ -2159,10 +2198,10 @@ CREATE POLICY "Patients can view own prescriptions" ON clinical_prescriptions
 
 CREATE POLICY "Doctors can manage prescriptions" ON clinical_prescriptions
     FOR ALL TO authenticated
-    USING (doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid()) OR is_admin(auth.uid()))
-    WITH CHECK (doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid()) OR is_admin(auth.uid()));
+    USING (doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid() AND verification_status = 'verified') OR is_admin(auth.uid()))
+    WITH CHECK (doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid() AND verification_status = 'verified') OR is_admin(auth.uid()));
 
--- PRESCRIPTION ITEMS RLS (C-21 Resolution: Patients Read-Only; Doctors Mutate Items)
+-- PRESCRIPTION ITEMS RLS (C-21 & BUG-008 Resolution: Patients Read-Only; Verified Doctors Mutate Items)
 ALTER TABLE prescription_items ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Prescription items access" ON prescription_items;
 DROP POLICY IF EXISTS "Patients can view own prescription items" ON prescription_items;
@@ -2181,17 +2220,17 @@ CREATE POLICY "Doctors can manage prescription items" ON prescription_items
     USING (
         prescription_id IN (
             SELECT id FROM clinical_prescriptions 
-            WHERE doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid())
+            WHERE doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid() AND verification_status = 'verified')
         ) OR is_admin(auth.uid())
     )
     WITH CHECK (
         prescription_id IN (
             SELECT id FROM clinical_prescriptions 
-            WHERE doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid())
+            WHERE doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid() AND verification_status = 'verified')
         ) OR is_admin(auth.uid())
     );
 
--- LAB ORDERS & RESULTS RLS (C-22 Resolution: Patients Read-Only; Doctors/Labs Manage)
+-- LAB ORDERS & RESULTS RLS (C-22 & BUG-008 Resolution: Patients Read-Only; Verified Doctors/Labs Manage)
 ALTER TABLE lab_orders ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Lab orders access" ON lab_orders;
 DROP POLICY IF EXISTS "Patients can view own lab orders" ON lab_orders;
@@ -2203,8 +2242,8 @@ CREATE POLICY "Patients can view own lab orders" ON lab_orders
 
 CREATE POLICY "Doctors can manage lab orders" ON lab_orders
     FOR ALL TO authenticated
-    USING (doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid()) OR is_admin(auth.uid()))
-    WITH CHECK (doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid()) OR is_admin(auth.uid()));
+    USING (doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid() AND verification_status = 'verified') OR is_admin(auth.uid()))
+    WITH CHECK (doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid() AND verification_status = 'verified') OR is_admin(auth.uid()));
 
 ALTER TABLE lab_results ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Lab results access" ON lab_results;
@@ -2222,17 +2261,17 @@ CREATE POLICY "Doctors and lab techs can manage results" ON lab_results
     USING (
         order_id IN (
             SELECT id FROM lab_orders 
-            WHERE doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid())
+            WHERE doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid() AND verification_status = 'verified')
         ) OR is_admin(auth.uid())
     )
     WITH CHECK (
         order_id IN (
             SELECT id FROM lab_orders 
-            WHERE doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid())
+            WHERE doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid() AND verification_status = 'verified')
         ) OR is_admin(auth.uid())
     );
 
--- CLINICAL DOCUMENTS RLS (Patients Upload Own & View; Attending Doctors View)
+-- CLINICAL DOCUMENTS RLS (Patients Upload Own & View; Attending Doctors View - BUG-009 Scoped)
 ALTER TABLE clinical_documents ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Clinical documents access" ON clinical_documents;
 DROP POLICY IF EXISTS "Patients can view own documents" ON clinical_documents;
@@ -2250,10 +2289,12 @@ CREATE POLICY "Patients can upload own documents" ON clinical_documents
 CREATE POLICY "Attending doctors can view clinical documents" ON clinical_documents
     FOR SELECT TO authenticated
     USING (
-        doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid())
+        doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid() AND verification_status = 'verified')
         OR patient_id IN (
             SELECT patient_id FROM appointments 
-            WHERE doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid())
+            WHERE doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid() AND verification_status = 'verified')
+              AND scheduled_date = CURRENT_DATE
+              AND status IN ('waiting', 'in-consultation')
         ) OR is_admin(auth.uid())
     );
 
@@ -2409,6 +2450,13 @@ BEGIN
        AND NOT EXISTS (SELECT 1 FROM doctors WHERE id = v_appointment.doctor_id AND user_id = v_actor_id) THEN
         IF p_target_status != 'cancelled' THEN
             RAISE EXCEPTION 'Access Denied: Patients are only permitted to cancel their own appointments.';
+        END IF;
+    END IF;
+
+    -- BUG-013: Clinical lifecycle transitions ('in-consultation', 'completed') strictly require verified attending physician or admin
+    IF p_target_status IN ('in-consultation', 'completed') THEN
+        IF NOT EXISTS (SELECT 1 FROM doctors WHERE id = v_appointment.doctor_id AND user_id = v_actor_id AND verification_status = 'verified') AND NOT is_admin(v_actor_id) THEN
+            RAISE EXCEPTION 'Access Denied: Only accredited attending physicians or medical board administrators can start or complete clinical consultations.';
         END IF;
     END IF;
 

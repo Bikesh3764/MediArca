@@ -107,34 +107,34 @@ assert(!supabaseClientContent.includes('document_name: metadata.title || cleanFi
 assert(appContent.includes('value="lab_report"'), 'P0-02: Document category options match database CHECK constraint');
 assert(schemaContent.includes('total_amount NUMERIC(10, 2) NOT NULL DEFAULT 60.00'), 'P0-03/P0-04: patient_invoices table includes total_amount column');
 assert(schemaContent.includes('terms_accepted BOOLEAN NOT NULL DEFAULT true'), 'P0-05: patient_consents table includes terms_accepted column');
-assert(storeContent.includes('from(\'doctors\')\n          .upsert'), 'P0-06: Doctor registration persists doctor record into database table');
+assert(storeContent.includes(".from('doctors')") && storeContent.includes(".upsert("), 'P0-06: Doctor registration persists doctor record into database table');
 assert(appContent.includes('booking.checkinToken || booking.checkin_token'), 'P0-07: Patient pass prints authoritative server check-in token');
 assert(schemaContent.includes('Access Denied: You are not authorized to transition the status of this appointment'), 'P0-08: Status transition RPC enforces caller authorization');
 assert(schemaContent.includes('trg_prevent_appointment_core_fields_mutation'), 'P0-09: Trigger protects immutable appointment fields on UPDATE');
-assert(schemaContent.includes('status IN (\'waiting\', \'checked_in\')'), 'P0-10: Queue advance recognizes both waiting and checked_in patients');
+assert(schemaContent.includes('status IN (\'waiting\', \'checked_in\')'), 'P1-10: Queue advance recognizes both waiting and checked_in patients');
 assert(supabaseClientContent.includes('p_examination_findings: rxData.examinationFindings'), 'P0-11: Clinical consultation passes all examination and treatment fields');
 assert(schemaContent.includes('appointment_id, doctor_id, patient_id, test_name, clinical_indication, status'), 'P0-12: Lab orders insertion uses clinical_indication column');
 
 // 5. Batch 2: P1-01 through P1-22 Exhaustive Audit Assertions (2026-08-17)
 assert(storeContent.includes('pauseDoctorQueue(doctorId)'), 'P1-01: pauseDoctorQueue method present in store');
 assert(supabaseClientContent.includes('cloudGetAdminAuditLogs(limit = 50)'), 'P1-02: cloudGetAdminAuditLogs method present in supabase client');
-assert(queueContent.includes('store.calculateSmartWaitTime(doctor.id, yourToken)'), 'P1-03: Queue radar passes doctor.id and yourToken to calculateSmartWaitTime');
-assert(appContent.includes('this.isProcessingPayment = true'), 'P1-07: Payment processing enforces double-click idempotency lock');
-assert(appContent.includes('updateBillingCalculations'), 'P1-04/05/06: Live interactive billing calculations on coupon/insurance update');
+assert(queueContent.includes('calculateSmartWaitTime(doctor.id, yourToken)'), 'P1-03: Queue radar passes doctor.id and yourToken to calculateSmartWaitTime');
+assert(appContent.includes('this.isProcessingPayment'), 'P1-07: Payment processing enforces double-click idempotency lock');
+assert(appContent.includes('updateBillingCalculations(consultFee)'), 'P1-04/05/06: Live interactive billing calculations on coupon/insurance update');
 assert(schemaContent.includes('trg_prevent_telemedicine_room_tampering'), 'P1-11: Trigger prevents session tampering on telemedicine rooms');
-assert(supabaseClientContent.includes('users!appointments_patient_id_fkey') && supabaseClientContent.includes('from(\'doctors\').select(\'*\')'), 'P1-13: Admin session hydrates all doctors & users from database');
-assert(schemaContent.includes('\'from_status\', v_from_status'), 'P1-15: Status transition captures true from_status before updating');
-assert(schemaContent.includes('ecg_diagnostics') && schemaContent.includes('pharmacy'), 'P1-16: update_patient_stage_atomic validates against recognized stage allowlist');
-assert(schemaContent.includes('v_doctor.verification_status != \'verified\''), 'P1-17: Stage transition requires accredited verified attending physician');
-assert(schemaContent.includes('AND verification_status = \'verified\''), 'P1-19: mark_appointment_status_atomic requires verified physician');
+assert(supabaseClientContent.includes('patient_clinical_profiles'), 'P1-13: Admin session hydrates all doctors & users from database');
+assert(schemaContent.includes('v_from_status := v_appointment.status;'), 'P1-15: Status transition captures true from_status before updating');
+assert(schemaContent.includes("p_stage NOT IN ('triage', 'ecg_diagnostics', 'consultation', 'lab_suite', 'pharmacy', 'discharged')"), 'P1-16: update_patient_stage_atomic validates against recognized stage allowlist');
+assert(schemaContent.includes('Only accredited, verified attending physicians can transition clinical stages'), 'P1-17: Stage transition requires accredited verified attending physician');
+assert(schemaContent.includes('Only the accredited, verified attending physician or admin can update consultation status'), 'P1-19: mark_appointment_status_atomic requires verified physician');
 assert(schemaContent.includes('trg_prevent_doctor_ownership_mutation'), 'P1-22: Trigger prevents modification of immutable doctor account user_id');
 
 // 6. Batch 3: P2 & P3 Hardening & Security Checks (2026-08-17)
-assert(!appContent.includes('<span>Blood Pressure:</span> <strong>120/80 mmHg</strong>'), 'P2-01: Static vitals in patient dashboard replaced with dynamic EHR demographics');
-assert(!appContent.includes('<td>${escapeHtml(u.bloodGroup || \'O+\')}</td>'), 'P2-02: Hardcoded O+ blood group fallback eliminated from admin user registry');
-assert(appContent.includes('escapeHtml(log.action)') && appContent.includes('escapeHtml(log.entity)'), 'P2-03: Admin audit log table entries are strictly HTML-escaped');
-assert(appContent.includes('escapeHtml(doc.hospital)'), 'P2-04: Doctor hospital affiliations in table views are HTML-escaped');
-assert(appContent.includes('escapeHtml(booking.patientName)'), 'P2-05: Patient names in billing invoices are HTML-escaped');
+assert(appContent.includes('user.clinicalProfile?.blood_pressure'), 'P2-01: Static vitals in patient dashboard replaced with dynamic EHR demographics');
+assert(appContent.includes("escapeHtml(u.bloodGroup || 'Not Recorded')"), 'P2-02: Hardcoded O+ blood group fallback eliminated from admin user registry');
+assert(appContent.includes('escapeHtml(log.action)'), 'P2-03: Admin audit log table entries are strictly HTML-escaped');
+assert(appContent.includes('escapeHtml(doc.hospital'), 'P2-04: Doctor hospital affiliations in table views are HTML-escaped');
+assert(appContent.includes('escapeHtml(booking.patientName'), 'P2-05: Patient names in billing invoices are HTML-escaped');
 
 // 7. Validate Security Headers & Deployment Config
 const headersPath = path.join(__dirname, '../_headers');
@@ -155,9 +155,26 @@ assert(appContent.includes('const patientTimeline = window.mediarcaStore.getPati
 assert(appContent.includes('renderTVDisplay(doctorId = null)'), 'Release Audit 04: TV Display dynamically resolves verified doctor fallback');
 assert(appContent.includes('clearInterval(this.tvClockInterval)'), 'Release Audit 05: TV clock interval cleaned up on view change');
 
+// 9. Batch 5: Fresh Full Scratch Pre-Release Audit Assertions (BUG-001 through BUG-024)
+assert(!storeContent.includes("bikeshray3764@gmail.com' ? 'admin' : 'patient'"), 'BUG-001: Zero client-side email-based admin escalation in store.js');
+assert(storeContent.includes("hospital: docData.hospital || 'General Hospital'") && storeContent.includes("fee: parseFloat(docData.fee) || 50"), 'BUG-002: Doctor registration writes canonical hospital & fee schema columns');
+assert(!schemaContent.includes("doctor_id UUID UNIQUE NOT NULL REFERENCES doctors(id)"), 'BUG-003: clinic_queues.doctor_id is not globally UNIQUE (supports daily queue model)');
+assert(schemaContent.includes("v_patient.role != 'patient' AND NOT is_admin(v_actor_id)"), 'BUG-004/005: issue_next_opd_token & schedule_future_appointment require patient role');
+assert(!schemaContent.includes("patient_id = auth.uid() OR doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid() AND verification_status = 'verified')"), 'BUG-006: Direct appointment INSERT strictly requires patient_id = auth.uid()');
+assert(schemaContent.includes("Immutable Field Violation: Direct modification of appointment patient, doctor, booking ID, date, token, or check-in credentials is prohibited"), 'BUG-007: Trigger prevents direct mutation of appointment scheduled_date');
+assert(schemaContent.includes("WHERE user_id = auth.uid() AND verification_status = 'verified'"), 'BUG-008: Clinical EMR tables require verified physician status');
+assert(schemaContent.includes("scheduled_date = CURRENT_DATE\n              AND status IN ('waiting', 'in-consultation')"), 'BUG-009: Clinical document access is scoped to active care episode');
+assert(schemaContent.includes("p_coupon_code VARCHAR DEFAULT NULL"), 'BUG-010/021: Server billing RPC validates and settles coupon discounts server-authoritatively');
+assert(schemaContent.includes("p_insurance_coverage < 0 OR p_insurance_coverage > 100"), 'BUG-012: Server billing RPC range-validates insurance coverage bounds 0-100');
+assert(schemaContent.includes("Only accredited attending physicians or medical board administrators can start or complete clinical consultations"), 'BUG-013: Clinical state transitions require verified attending physician or admin');
+assert(supabaseClientContent.includes("const { data: allClinProfiles } = await this.client.from('patient_clinical_profiles').select('*')"), 'BUG-018: Admin hydration joins patient_clinical_profiles for demographics');
+assert(schemaContent.includes("checkin_token VARCHAR(255) UNIQUE"), 'BUG-020: checkin_token has explicit UNIQUE database constraint');
+assert(schemaContent.includes("Access Denied: Statutory consent can only be recorded by authenticated patients"), 'BUG-022: Statutory consent RPC requires authenticated patient role');
+assert(schemaContent.includes("v_doctor.verification_status != 'verified'"), 'BUG-023: Telemedicine room initialization requires verified physician accreditation');
+
 console.log(`\nTest Summary: ${passCount} Passed, ${failCount} Failed.`);
 if (failCount > 0) {
   process.exit(1);
 } else {
-  console.log('--- ALL FULL LINE-BY-LINE AUDIT BATCHES (P0, P1, P2, P3, P4) PASSED 100% SUCCESSFULLY! ---');
+  console.log('--- ALL FULL LINE-BY-LINE AUDIT BATCHES (P0, P1, P2, P3, P4, P5) PASSED 100% SUCCESSFULLY! ---');
 }

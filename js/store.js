@@ -673,66 +673,47 @@ class MediarcaStore {
     this.saveState();
   }
 
-  async login(email, password) {
+async login(email, password) {
     if (!email || !password) {
       throw new Error('Please enter both email and password.');
     }
 
     const cleanEmail = email.toLowerCase().trim();
 
-    // 1. Authoritative Supabase Auth Path (C-01 & C-03 Resolution: Strict Server-Side Authentication & Database Profile Role)
+    // 1. Authoritative Supabase Auth Path (C-01, C-03 & BUG-001: Strict Server-Side Authentication & Database Profile Role)
     if (window.mediarcaSupabase && window.mediarcaSupabase.isConnected) {
       try {
-        let authRes = null;
-        try {
-          authRes = await window.mediarcaSupabase.authSignIn(cleanEmail, password);
-        } catch (signInErr) {
-          // If admin logging in and account needs automatic registration on cloud:
-          if (cleanEmail === 'bikeshray3764@gmail.com' || cleanEmail === 'admin@mediarca.health') {
-            try {
-              const signUpRes = await window.mediarcaSupabase.authSignUp(cleanEmail, password, {
-                role: 'admin',
-                full_name: 'Dr. Bikesh Ray (Medical Board Administrator)'
-              });
-              if (signUpRes && signUpRes.user) {
-                authRes = signUpRes;
-              }
-            } catch (supErr) {
-              console.warn('Admin cloud registration note:', supErr);
-            }
-          }
-          if (!authRes) throw signInErr;
-        }
+        const authRes = await window.mediarcaSupabase.authSignIn(cleanEmail, password);
 
         if (authRes && authRes.user) {
           const user = authRes.user;
-          let role = (cleanEmail === 'bikeshray3764@gmail.com' || cleanEmail === 'admin@mediarca.health') ? 'admin' : 'patient';
-          let name = cleanEmail === 'bikeshray3764@gmail.com' ? 'Dr. Bikesh Ray (Medical Board Administrator)' : cleanEmail.split('@')[0];
+          let role = 'patient';
+          let name = cleanEmail.split('@')[0];
 
-          // Fetch authoritative profile from database (C-03: Never trust client metadata)
+          // Fetch authoritative profile from database (C-03 & BUG-001: Never trust client metadata or email substrings)
           if (window.mediarcaSupabase.client) {
             const { data: profile } = await window.mediarcaSupabase.client
               .from('users')
               .select('role, full_name')
               .eq('id', user.id)
-              .single();
+              .maybeSingle();
 
             const { data: doctorProfile } = await window.mediarcaSupabase.client
               .from('doctors')
               .select('id, name, verification_status, mediarca_id')
               .eq('user_id', user.id)
-              .single();
+              .maybeSingle();
 
             if (profile) {
-              role = (cleanEmail === 'bikeshray3764@gmail.com' || cleanEmail === 'admin@mediarca.health') ? 'admin' : profile.role;
+              role = profile.role;
               name = profile.full_name || name;
             } else if (doctorProfile) {
-              role = (cleanEmail === 'bikeshray3764@gmail.com' || cleanEmail === 'admin@mediarca.health') ? 'admin' : 'doctor';
+              role = 'doctor';
               name = doctorProfile.name || name;
             }
           }
 
-          const matchedDoctor = this.state.doctors.find(d => d.email && d.email.toLowerCase() === cleanEmail);
+          const matchedDoctor = this.state.doctors.find(d => (d.email && d.email.toLowerCase() === cleanEmail) || d.userId === user.id);
           if (matchedDoctor) {
             matchedDoctor.userId = user.id;
           }
@@ -757,23 +738,8 @@ class MediarcaStore {
         throw new Error(authErr.message || 'Invalid email or password. Please verify your credentials.');
       }
     } else {
-      // Offline / Local Simulation Mode
-      if ((cleanEmail === 'bikeshray3764@gmail.com' && password === 'admin3764') || (cleanEmail === 'admin@mediarca.health' && password === 'admin2026')) {
-        this.state.currentUser = {
-          id: 'a0000000-0000-0000-0000-000000000002',
-          userId: 'a0000000-0000-0000-0000-000000000002',
-          email: cleanEmail,
-          role: 'admin',
-          name: 'Dr. Bikesh Ray (Medical Board Administrator)',
-          mediarcaId: 'MED-ADMIN-01'
-        };
-        this.saveState();
-        this.notifySubscribers();
-        return this.state.currentUser;
-      }
+      throw new Error('Authentication service unavailable. Please check your network connection.');
     }
-
-    throw new Error('Authentication service unavailable. Please check your network connection.');
   }
 
   logout() {
@@ -787,6 +753,7 @@ class MediarcaStore {
       email: null
     };
     this.saveState();
+    this.notifySubscribers();
   }
 
   async registerPatient(data) {
@@ -818,42 +785,53 @@ class MediarcaStore {
         throw new Error(err.message || 'Patient registration failed. Please check your credentials.');
       }
     } else {
-      throw new Error('Authentication cloud service unavailable. Cannot register account.');
+      throw new Error('Authentication cloud service unavailable. Cannot register patient.');
     }
 
     const newPatient = {
-      id: userId,
-      role: 'patient',
-      email: cleanEmail,
+      id: userId || 'p_' + Date.now(),
       name: data.name.trim(),
-      phone: (data.phone || '').trim() || 'Not specified',
-      age: parseInt(data.age) || null,
-      gender: data.gender || 'Not specified',
-      bloodGroup: data.bloodGroup || 'Not specified'
+      email: cleanEmail,
+      phone: (data.phone || '').trim() || 'Not Provided',
+      age: parseInt(data.age) || 28,
+      gender: data.gender || 'Not Specified',
+      bloodGroup: data.bloodGroup || 'O+',
+      medicalHistory: [],
+      allergies: [],
+      role: 'patient'
     };
 
     this.state.users.push(newPatient);
-    this.state.currentUser = { ...newPatient };
+    this.state.currentUser = {
+      id: newPatient.id,
+      userId: userId || newPatient.id,
+      email: newPatient.email,
+      role: 'patient',
+      name: newPatient.name,
+      phone: newPatient.phone,
+      age: newPatient.age,
+      gender: newPatient.gender,
+      bloodGroup: newPatient.bloodGroup
+    };
     this.saveState();
-    return newPatient;
+    this.notifySubscribers();
+    return this.state.currentUser;
   }
 
   async registerDoctor(docData) {
-    if (!docData.email || !docData.name || !docData.regNumber || !docData.password) {
-      throw new Error('Doctor Name, Email, Medical Council Registration, and Password are required.');
+    if (!docData.email || !docData.password || !docData.name || !docData.regNumber) {
+      throw new Error('Please fill all required physician registration fields.');
     }
 
     const cleanEmail = docData.email.toLowerCase().trim();
-    let userId = null;
 
-    // 1. Authoritative Supabase Auth Registration (C-18 Resolution)
+    // 1. Authoritative Supabase Auth Registration
+    let userId = null;
     if (window.mediarcaSupabase && window.mediarcaSupabase.isConnected) {
       try {
         const authData = await window.mediarcaSupabase.authSignUp(cleanEmail, docData.password, {
           role: 'doctor',
-          name: docData.name.trim(),
-          regNumber: docData.regNumber.trim(),
-          specialty: docData.specialty
+          name: docData.name.trim()
         });
         if (authData && authData.user) {
           userId = authData.user.id;
@@ -870,32 +848,36 @@ class MediarcaStore {
 
     let docId = 'd_' + Date.now();
 
+    // BUG-002: Exact column names (hospital, fee) & Fail closed on database error
     if (window.mediarcaSupabase && window.mediarcaSupabase.isConnected && window.mediarcaSupabase.client && userId) {
-      try {
-        const { data: dbDoc } = await window.mediarcaSupabase.client
-          .from('doctors')
-          .upsert({
-            user_id: userId,
-            name: docData.name.trim(),
-            email: cleanEmail,
-            specialty: docData.specialty || 'General Medicine',
-            degrees: docData.degrees || 'MBBS, MD',
-            reg_number: docData.regNumber.trim(),
-            verification_status: 'pending',
-            experience_years: parseInt(docData.experienceYears) || 5,
-            hospital_affiliation: docData.hospital || 'General Hospital',
-            consultation_fee: parseFloat(docData.fee) || 50,
-            bio: docData.bio || 'Accredited specialist practicing clinical medicine.',
-            queue_active: false
-          }, { onConflict: 'user_id' })
-          .select()
-          .single();
+      const { data: dbDoc, error: dbDocErr } = await window.mediarcaSupabase.client
+        .from('doctors')
+        .upsert({
+          user_id: userId,
+          name: docData.name.trim(),
+          email: cleanEmail,
+          specialty: docData.specialty || 'General Medicine',
+          specialty_id: (docData.specialty || 'general').toLowerCase().replace(/\s+/g, ''),
+          title: 'Consultant ' + (docData.specialty || 'Physician'),
+          degrees: docData.degrees || 'MBBS, MD',
+          reg_number: docData.regNumber.trim(),
+          verification_status: 'pending',
+          experience_years: parseInt(docData.experienceYears) || 5,
+          hospital: docData.hospital || 'General Hospital',
+          fee: parseFloat(docData.fee) || 50,
+          bio: docData.bio || 'Accredited specialist practicing clinical medicine.',
+          queue_active: false
+        }, { onConflict: 'user_id' })
+        .select()
+        .single();
 
-        if (dbDoc) {
-          docId = dbDoc.id;
-        }
-      } catch (dbErr) {
-        console.warn('Doctor database registration notice:', dbErr);
+      if (dbDocErr) {
+        console.error('Doctor database registration error:', dbDocErr);
+        throw new Error(`Doctor profile could not be created in database: ${dbDocErr.message}`);
+      }
+
+      if (dbDoc) {
+        docId = dbDoc.id;
       }
     }
 
@@ -1920,7 +1902,8 @@ class MediarcaStore {
           invoiceData.appointmentId,
           invoiceData.paymentMethod || 'Card',
           invoiceData.hasInsurance ? 'MediShield Global Health #POL-99214' : null,
-          coveragePct
+          coveragePct,
+          invoiceData.couponCode || null
         );
       } catch (e) {
         console.error('Cloud invoice settlement failure:', e);
@@ -1936,11 +1919,11 @@ class MediarcaStore {
       appointmentId: invoiceData.appointmentId,
       patientName: invoiceData.patientName,
       doctorName: invoiceData.doctorName,
-      consultationFee: fee,
+      consultationFee: cloudInvoice ? parseFloat(cloudInvoice.total_amount) : fee,
       discountAmount: discount,
-      insuranceCoverage: insuranceCover,
+      insuranceCoverage: cloudInvoice ? parseFloat(cloudInvoice.insurance_covered_amount) : insuranceCover,
       insuranceProvider: invoiceData.hasInsurance ? 'MediShield Global Health #POL-99214' : 'Self-Pay',
-      netPayable: patientPayable,
+      netPayable: cloudInvoice ? parseFloat(cloudInvoice.patient_paid_amount) : patientPayable,
       paymentStatus: (window.mediarcaSupabase && window.mediarcaSupabase.isConnected && cloudInvoice) ? 'PAID (Settled)' : 'SIMULATED (Offline Demo)',
       paymentMethod: invoiceData.paymentMethod || 'Hospital Digital Pay',
       issuedAt: new Date().toISOString()
