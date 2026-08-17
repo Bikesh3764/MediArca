@@ -433,6 +433,8 @@ class MediarcaSupabaseClient {
             scheduledDate: a.scheduled_date,
             scheduledSlot: a.scheduled_slot,
             checkinToken: a.checkin_token,
+            isPriority: !!a.is_priority,
+            priorityReason: a.priority_reason || null,
             createdAt: a.created_at,
             startAt: a.start_at,
             endAt: a.end_at
@@ -470,7 +472,8 @@ class MediarcaSupabaseClient {
                 scheduledSlot: b.scheduledSlot,
                 checkInTime: b.scheduledSlot || (b.createdAt ? new Date(b.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '09:00 AM'),
                 symptoms: b.symptoms,
-                isPriority: false,
+                isPriority: b.isPriority,
+                priorityReason: b.priorityReason,
                 bookingId: b.id
               });
             }
@@ -865,8 +868,6 @@ class MediarcaSupabaseClient {
   }
 
   async cloudUpdatePatientStage(appointmentId, stage, notes = 'Clinical stage routing transition') {
-    if (!this.client) throw new Error('Cloud offline');
-
     return this.safeRpc('update_patient_stage_atomic', {
       p_appointment_id: appointmentId,
       p_stage: stage,
@@ -875,8 +876,6 @@ class MediarcaSupabaseClient {
   }
 
   async cloudRecordPatientConsent(consentType, version = 'v2026.1', termsAccepted = true, metadata = {}) {
-    if (!this.client) throw new Error('Cloud offline');
-
     return this.safeRpc('record_patient_consent_atomic', {
       p_consent_type: consentType,
       p_version: version,
@@ -886,8 +885,6 @@ class MediarcaSupabaseClient {
   }
 
   async cloudGenerateAndSettleInvoice(appointmentId, paymentMethod = 'Card', insuranceProvider = null, insuranceCoverage = 0, couponCode = null) {
-    if (!this.client) throw new Error('Cloud offline');
-
     return this.safeRpc('generate_and_settle_invoice_atomic', {
       p_appointment_id: appointmentId,
       p_payment_method: paymentMethod,
