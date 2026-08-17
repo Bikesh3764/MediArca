@@ -410,8 +410,7 @@ class MediarcaSupabaseClient {
       }
 
       // 3. Hydrate Authoritative Appointments & Queue Tokens (H-01 & Q-04 Resolution)
-      const user = (await this.client.auth.getUser())?.data?.user;
-      if (user) {
+      try {
         const { data: appts, error: apptErr } = await this.client
           .from('appointments')
           .select('*, users!appointments_patient_id_fkey(full_name, phone)')
@@ -428,7 +427,7 @@ class MediarcaSupabaseClient {
             patientGender: a.patient_gender || 'Not specified',
             patientPhone: a.patient_phone || a.users?.phone || 'Not specified',
             symptoms: a.symptoms,
-            tokenNumber: a.token_number,
+            tokenNumber: a.token_number || 0,
             status: a.status,
             currentStage: a.current_stage || 'triage',
             scheduledDate: a.scheduled_date,
@@ -446,36 +445,40 @@ class MediarcaSupabaseClient {
 
           // Distribute active tokens into respective doctor queues
           mappedBookings.forEach(b => {
-            if (b.scheduledDate === new Date().toISOString().split('T')[0] && b.tokenNumber > 0) {
-              if (!window.mediarcaStore.state.queues[b.doctorId]) {
-                window.mediarcaStore.state.queues[b.doctorId] = {
-                  doctorId: b.doctorId,
-                  currentToken: 0,
-                  status: 'in-session',
-                  avgConsultTimeMins: 12,
-                  tokens: []
-                };
-              }
-              const queue = window.mediarcaStore.state.queues[b.doctorId];
-              if (!queue.tokens) queue.tokens = [];
-              const tokenExists = queue.tokens.some(t => t.tokenNumber === b.tokenNumber);
-              if (!tokenExists) {
-                queue.tokens.push({
-                  tokenNumber: b.tokenNumber,
-                  patientName: b.patientName,
-                  patientAge: b.patientAge,
-                  patientGender: b.patientGender,
-                  status: b.status,
-                  currentStage: b.currentStage,
-                  checkInTime: b.createdAt ? new Date(b.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '09:00 AM',
-                  symptoms: b.symptoms,
-                  isPriority: false,
-                  bookingId: b.id
-                });
-              }
+            if (!window.mediarcaStore.state.queues[b.doctorId]) {
+              window.mediarcaStore.state.queues[b.doctorId] = {
+                doctorId: b.doctorId,
+                currentToken: 0,
+                status: 'in-session',
+                avgConsultTimeMins: 12,
+                tokens: []
+              };
+            }
+            const queue = window.mediarcaStore.state.queues[b.doctorId];
+            if (!queue.tokens) queue.tokens = [];
+            const tokenExists = queue.tokens.some(t => t.bookingId === b.id || (b.tokenNumber > 0 && t.tokenNumber === b.tokenNumber));
+            if (!tokenExists) {
+              queue.tokens.push({
+                tokenNumber: b.tokenNumber,
+                patientName: b.patientName,
+                patientAge: b.patientAge,
+                patientGender: b.patientGender,
+                patientPhone: b.patientPhone,
+                status: b.status,
+                currentStage: b.currentStage,
+                scheduledDate: b.scheduledDate,
+                scheduledSlot: b.scheduledSlot,
+                checkInTime: b.scheduledSlot || (b.createdAt ? new Date(b.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '09:00 AM'),
+                symptoms: b.symptoms,
+                isPriority: false,
+                bookingId: b.id
+              });
             }
           });
         }
+      } catch (apptSyncErr) {
+        console.warn('Appointments hydration notice:', apptSyncErr);
+      }
 
         // 4. Authenticated Doctor & Admin Full Hydration (Item 5 & P1-13 Resolution)
         const { data: userProfile } = await this.client.from('users').select('role').eq('id', user.id).single();
