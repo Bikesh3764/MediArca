@@ -985,15 +985,95 @@ p {
 }
 
 /* ==========================================================================
+   AUTHENTICATION CARDS (Apple ID Clean Centered Surface)
+   ========================================================================== */
+.auth-page-wrap {
+  min-height: calc(100vh - 220px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1.5rem;
+  background-color: var(--color-canvas-parchment);
+}
+
+.auth-card-container {
+  width: 100%;
+  max-width: 440px;
+  margin: 0 auto;
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 24px;
+  padding: 2.5rem 2rem;
+  box-shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.04);
+}
+
+.auth-card-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.auth-card-title {
+  font-family: var(--font-display);
+  font-size: 1.65rem;
+  font-weight: 600;
+  color: #1d1d1f;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.35rem;
+}
+
+.auth-card-desc {
+  font-size: 0.875rem;
+  color: #86868b;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* ==========================================================================
    FOOTER (Apple Parchment Dense Information Matrix)
    ========================================================================== */
 .site-footer {
   background-color: var(--color-canvas-parchment);
   color: var(--color-ink-muted-80);
-  padding: 4rem 0 2rem;
+  padding: 2.5rem 0 2rem;
   border-top: 1px solid rgba(0, 0, 0, 0.08);
   font-size: 0.8125rem;
   margin-top: auto;
+}
+
+.footer-grid {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+
+.footer-links {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+}
+
+.footer-link {
+  color: #515154 !important;
+  text-decoration: none !important;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer !important;
+  user-select: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+
+.footer-link:hover {
+  color: #0071e3 !important;
+  background: rgba(0, 113, 227, 0.08);
+  text-decoration: none !important;
 }
 
 .footer-nav-grid {
@@ -1024,6 +1104,7 @@ p {
   color: var(--color-ink-muted-80);
   text-decoration: none;
   font-size: 0.8125rem;
+  cursor: pointer !important;
   transition: color 0.15s ease;
 }
 
