@@ -583,22 +583,44 @@ class MediarcaSupabaseClient {
   }
 
   // --- 4. ATOMIC AUTHORIZED STORED PROCEDURES (C-04 & C-05) ---
-  async cloudBookAppointment(bookingObj) {
-    if (!this.client) throw new Error('Cloud offline');
+  async safeRpc(rpcName, params, timeoutMs = 8000) {
+    if (!this.client) throw new Error('Hospital database is offline. Please check your network connection.');
 
-    // Call authoritative RPC: patient identity derived via auth.uid() on server
-    const { data, error } = await this.client.rpc('issue_next_opd_token', {
-      p_doctor_id: bookingObj.doctorId,
-      p_symptoms: bookingObj.symptoms || 'General Consultation',
-      p_timezone: bookingObj.timezone || 'Asia/Kolkata'
-    });
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error(`Database request timed out (${rpcName}). Please check your connection.`)), timeoutMs)
+    );
+
+    const rpcPromise = this.client.rpc(rpcName, params);
+    const { data, error } = await Promise.race([rpcPromise, timeoutPromise]);
 
     if (error) {
-      console.error('RPC Booking Error:', error);
-      throw error;
+      console.error(`RPC [${rpcName}] Error:`, error);
+      throw new Error(error.message || `RPC ${rpcName} failed`);
     }
 
     return data;
+  }
+
+  async cloudBookAppointment(bookingObj) {
+    if (!this.client) throw new Error('Cloud offline');
+
+    const doctorId = typeof bookingObj === 'object' ? bookingObj.doctorId : arguments[0];
+    const symptoms = typeof bookingObj === 'object' ? (bookingObj.symptoms || 'General Consultation') : (arguments[1] || 'General Consultation');
+    const patientName = typeof bookingObj === 'object' ? bookingObj.patientName : null;
+    const patientPhone = typeof bookingObj === 'object' ? bookingObj.patientPhone : null;
+    const patientAge = typeof bookingObj === 'object' ? bookingObj.patientAge : null;
+    const patientGender = typeof bookingObj === 'object' ? bookingObj.patientGender : null;
+    const timezone = typeof bookingObj === 'object' ? (bookingObj.timezone || 'Asia/Kolkata') : 'Asia/Kolkata';
+
+    return this.safeRpc('issue_next_opd_token', {
+      p_doctor_id: doctorId,
+      p_symptoms: symptoms,
+      p_patient_name: patientName || null,
+      p_patient_phone: patientPhone || null,
+      p_patient_age: patientAge ? parseInt(patientAge) : null,
+      p_patient_gender: patientGender || null,
+      p_timezone: timezone
+    });
   }
 
   async cloudIssueReceptionWalkinToken(walkinObj) {
@@ -992,22 +1014,30 @@ class MediarcaSupabaseClient {
     return data;
   }
 
-  async cloudScheduleFutureAppointment(doctorId, scheduledDate, scheduledSlot, symptoms = 'General Consultation') {
+  async cloudScheduleFutureAppointment(bookingObj) {
     if (!this.client) throw new Error('Cloud offline');
 
-    const { data, error } = await this.client.rpc('schedule_future_appointment_atomic', {
+    const doctorId = typeof bookingObj === 'object' ? bookingObj.doctorId : arguments[0];
+    const scheduledDate = typeof bookingObj === 'object' ? bookingObj.scheduledDate : arguments[1];
+    const scheduledSlot = typeof bookingObj === 'object' ? bookingObj.scheduledSlot : arguments[2];
+    const symptoms = typeof bookingObj === 'object' ? (bookingObj.symptoms || 'General Consultation') : (arguments[3] || 'General Consultation');
+    const patientName = typeof bookingObj === 'object' ? bookingObj.patientName : null;
+    const patientPhone = typeof bookingObj === 'object' ? bookingObj.patientPhone : null;
+    const patientAge = typeof bookingObj === 'object' ? bookingObj.patientAge : null;
+    const patientGender = typeof bookingObj === 'object' ? bookingObj.patientGender : null;
+    const timezone = typeof bookingObj === 'object' ? (bookingObj.timezone || 'Asia/Kolkata') : 'Asia/Kolkata';
+
+    return this.safeRpc('schedule_future_appointment_atomic', {
       p_doctor_id: doctorId,
       p_scheduled_date: scheduledDate,
       p_scheduled_slot: scheduledSlot,
-      p_symptoms: symptoms
+      p_symptoms: symptoms,
+      p_patient_name: patientName || null,
+      p_patient_phone: patientPhone || null,
+      p_patient_age: patientAge ? parseInt(patientAge) : null,
+      p_patient_gender: patientGender || null,
+      p_timezone: timezone
     });
-
-    if (error) {
-      console.error('RPC Schedule Future Appointment Error:', error);
-      throw error;
-    }
-
-    return data;
   }
 
   async cloudUpdateDoctorProfile(doctorId, docData) {

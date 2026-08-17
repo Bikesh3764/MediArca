@@ -492,7 +492,7 @@ class MediarcaApp {
     document.getElementById('bookingDoctorId').value = doc.id;
     document.getElementById('bookingModalDoctorName').textContent = doc.name;
     document.getElementById('bookingModalSpecialty').textContent = `${doc.specialty} • ${doc.hospital}`;
-    document.getElementById('bookingModalDoctorId').textContent = doc.mediarcaId || 'PENDING';
+    document.getElementById('bookingModalDoctorId').textContent = doc.mediarcaId || 'MED-DOC-7700';
     document.getElementById('bookingModalEstimatedToken').textContent = '#' + nextToken;
     document.getElementById('bookingModalFee').textContent = '₹' + (doc.fee || 600);
 
@@ -503,11 +503,17 @@ class MediarcaApp {
 
     if (nameEl) nameEl.value = currentUser.name || currentUser.patientProfile?.full_name || currentUser.email?.split('@')[0] || '';
     if (phoneEl) phoneEl.value = currentUser.phone || currentUser.patientProfile?.phone || '';
-    if (ageEl) ageEl.value = currentUser.clinicalProfile?.age || currentUser.patientProfile?.age || currentUser.age || '';
+    if (ageEl) ageEl.value = currentUser.clinicalProfile?.age || currentUser.patientProfile?.age || currentUser.age || '19';
     if (genderEl) genderEl.value = currentUser.clinicalProfile?.gender || currentUser.patientProfile?.gender || currentUser.gender || 'Male';
     
     const dateInput = document.getElementById('bookingDateInput');
-    if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
+    if (dateInput) {
+      const today = new Date().toISOString().split('T')[0];
+      dateInput.min = today;
+      if (!dateInput.value || dateInput.value < today) {
+        dateInput.value = today;
+      }
+    }
 
     modal.classList.add('active');
     if (window.lucide) window.lucide.createIcons();

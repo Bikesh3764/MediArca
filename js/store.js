@@ -106,8 +106,8 @@ const SEED_USERS = [
 
 const SEED_DOCTORS = [
   {
-    id: 'd0000000-0000-0000-0000-000000000007',
-    userId: 'a0000000-0000-0000-0000-000000000002',
+    id: '77e1b063-f863-4199-bae3-3b30a87e87fd',
+    userId: 'f49bc1d0-7606-4485-8354-303bf30de487',
     name: 'Dr. Bikesh Ray',
     email: 'bikeshray3764@gmail.com',
     specialty: 'Cardiology & Critical Care',
@@ -1115,16 +1115,24 @@ async login(email, password) {
     if (window.mediarcaSupabase && window.mediarcaSupabase.isConnected) {
       try {
         if (isFutureBooking) {
-          cloudBooking = await window.mediarcaSupabase.cloudScheduleFutureAppointment(
-            doctor.id,
-            bookingData.scheduledDate,
-            bookingData.scheduledSlot || '10:00 AM',
-            bookingData.symptoms || 'General Consultation'
-          );
+          cloudBooking = await window.mediarcaSupabase.cloudScheduleFutureAppointment({
+            doctorId: doctor.id,
+            scheduledDate: bookingData.scheduledDate,
+            scheduledSlot: bookingData.scheduledSlot || '10:00 AM',
+            symptoms: bookingData.symptoms || 'General Consultation',
+            patientName: bookingData.patientName || this.state.currentUser.name || 'Patient',
+            patientPhone: bookingData.patientPhone || this.state.currentUser.phone || 'Not specified',
+            patientAge: bookingData.patientAge || this.state.currentUser.age || null,
+            patientGender: bookingData.patientGender || this.state.currentUser.gender || null
+          });
         } else {
           cloudBooking = await window.mediarcaSupabase.cloudBookAppointment({
             doctorId: doctor.id,
-            symptoms: bookingData.symptoms || 'General Consultation'
+            symptoms: bookingData.symptoms || 'General Consultation',
+            patientName: bookingData.patientName || this.state.currentUser.name || 'Patient',
+            patientPhone: bookingData.patientPhone || this.state.currentUser.phone || 'Not specified',
+            patientAge: bookingData.patientAge || this.state.currentUser.age || null,
+            patientGender: bookingData.patientGender || this.state.currentUser.gender || null
           });
         }
       } catch (cloudErr) {
