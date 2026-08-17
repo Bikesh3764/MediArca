@@ -187,19 +187,19 @@ class MediarcaApp {
     } else {
       // Public / Guest Navigation
       navLinksContainer.innerHTML = `
-        <li><button class="nav-link-btn ${this.currentView === 'home' ? 'active' : ''}" onclick="window.mediarcaApp.switchView('home')"><i data-lucide="compass" style="width:15px;height:15px"></i> Find Doctors</button></li>
-        <li><button class="nav-link-btn ${this.currentView === 'queue-radar' ? 'active' : ''}" onclick="window.mediarcaApp.switchView('queue-radar')"><i data-lucide="radio" style="width:15px;height:15px"></i> Live Queue Radar</button></li>
-        <li><button class="nav-link-btn ${this.currentView === 'doctor-onboarding' ? 'active' : ''}" onclick="window.mediarcaApp.switchView('doctor-onboarding')"><i data-lucide="stethoscope" style="width:15px;height:15px"></i> Join as Physician</button></li>
+        <li><button class="nav-link-btn ${this.currentView === 'home' ? 'active' : ''}" onclick="window.mediarcaApp.switchView('home')"><i data-lucide="compass" style="width:14px;height:14px"></i> Find Doctors</button></li>
+        <li><button class="nav-link-btn ${this.currentView === 'queue-radar' ? 'active' : ''}" onclick="window.mediarcaApp.switchView('queue-radar')"><i data-lucide="radio" style="width:14px;height:14px"></i> Live Radar</button></li>
+        <li><button class="nav-link-btn ${this.currentView === 'doctor-onboarding' ? 'active' : ''}" onclick="window.mediarcaApp.switchView('doctor-onboarding')"><i data-lucide="stethoscope" style="width:14px;height:14px"></i> Join as Physician</button></li>
       `;
 
       navActionsContainer.innerHTML = `
-        <button class="btn btn-sm btn-secondary" onclick="window.mediarcaApp.switchView('auth-patient')">
+        <button class="btn btn-sm btn-secondary" onclick="window.mediarcaApp.switchView('auth-patient')" style="background: transparent; border-color: transparent; color: #475569; font-weight: 600;">
           <i data-lucide="user" style="width:14px;height:14px"></i> Patient Login
         </button>
-        <button class="btn btn-sm btn-secondary" onclick="window.mediarcaApp.switchView('auth-reception')">
+        <button class="btn btn-sm btn-secondary" onclick="window.mediarcaApp.switchView('auth-reception')" style="background: #ffffff; border-color: #e2e8f0; color: #334155; font-weight: 600;">
           <i data-lucide="user-check" style="width:14px;height:14px"></i> Front Desk
         </button>
-        <button class="btn btn-sm btn-primary" onclick="window.mediarcaApp.switchView('auth-doctor')">
+        <button class="btn btn-sm btn-primary" onclick="window.mediarcaApp.switchView('auth-doctor')" style="background: #090d16; color: #ffffff; font-weight: 700;">
           <i data-lucide="stethoscope" style="width:14px;height:14px"></i> Doctor Portal
         </button>
       `;
