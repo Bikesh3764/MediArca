@@ -121,19 +121,15 @@ class MediarcaQueueEngine {
     container.innerHTML = `
       <div style="max-width: 960px; margin: 0 auto; padding-top: 1.5rem; padding-bottom: 3rem;">
         
-        <!-- Queue Lookup Bar -->
-        <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1rem; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
-          <div style="display: flex; align-items: center; gap: 0.75rem; flex: 1; min-width: 260px;">
-            <i data-lucide="search" style="width: 18px; height: 18px; color: var(--text-muted);"></i>
-            <input type="text" id="radarSearchInput" class="form-input" placeholder="Search by Booking ID (e.g. MED-BK-7890) or Doctor Name..." style="border:none; padding:0; box-shadow:none;">
-          </div>
-          <div style="display: flex; gap: 0.5rem;">
-            <button class="btn btn-sm btn-primary" onclick="window.mediarcaQueueEngine.handleSearchSubmit()">
-              Lookup Queue
-            </button>
-            <button class="btn btn-sm btn-secondary" onclick="const enabled = window.mediarcaAudio.toggleSound(); window.mediarcaApp.showToast(enabled ? 'Chime sound enabled' : 'Chime muted', 'info');">
-              <i data-lucide="${window.mediarcaAudio.enabled ? 'volume-2' : 'volume-x'}" style="width: 14px; height: 14px;"></i>
-            </button>
+        <!-- Back Navigation Bar -->
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;">
+          <button class="btn btn-sm btn-secondary" onclick="window.mediarcaApp.switchView('patient-portal')" style="background: #ffffff; border: 1px solid #cbd5e1; color: #0f172a; font-weight: 700;">
+            <i data-lucide="arrow-left" style="width: 14px; height: 14px;"></i> Back to My Appointments
+          </button>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span class="badge badge-verified" style="font-size: 0.75rem; padding: 0.3rem 0.75rem;">
+              <span class="pulse-beacon"></span> Live OPD Telemetry Feed
+            </span>
           </div>
         </div>
 

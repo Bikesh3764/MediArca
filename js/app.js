@@ -188,7 +188,6 @@ class MediarcaApp {
       // Public / Guest Navigation
       navLinksContainer.innerHTML = `
         <li><button class="nav-link-btn ${this.currentView === 'home' ? 'active' : ''}" onclick="window.mediarcaApp.switchView('home')"><i data-lucide="compass" style="width:14px;height:14px"></i> Find Doctors</button></li>
-        <li><button class="nav-link-btn ${this.currentView === 'queue-radar' ? 'active' : ''}" onclick="window.mediarcaApp.switchView('queue-radar')"><i data-lucide="radio" style="width:14px;height:14px"></i> Live Radar</button></li>
         <li><button class="nav-link-btn ${this.currentView === 'doctor-onboarding' ? 'active' : ''}" onclick="window.mediarcaApp.switchView('doctor-onboarding')"><i data-lucide="stethoscope" style="width:14px;height:14px"></i> Join as Physician</button></li>
       `;
 
@@ -545,10 +544,9 @@ class MediarcaApp {
       this.closeAllModals();
       if (window.mediarcaAudio) window.mediarcaAudio.playChime('success');
 
-      if (isToday && newBooking.tokenNumber && newBooking.tokenNumber > 0) {
-        const waitEst = window.mediarcaStore.calculateSmartWaitTime(doctorId, newBooking.tokenNumber);
-        this.showToast(`Token #${newBooking.tokenNumber} confirmed for today's session! Est. Wait: ${waitEst.rangeText} (Confidence: ${waitEst.confidence})`, 'success');
-        this.switchView('queue-radar', { doctorId });
+      if (isSameDay) {
+        this.showToast(`Token #${newBooking.tokenNumber} issued! Tracking available in your Patient Portal.`, 'success');
+        this.switchView('patient-portal');
       } else {
         this.showToast(`Appointment scheduled successfully for ${scheduledDate} (${scheduledSlot})! Booking ID: ${newBooking.bookingId}`, 'success');
         this.switchView('patient-portal');
@@ -561,6 +559,20 @@ class MediarcaApp {
         submitBtn.disabled = false;
         submitBtn.innerText = 'Confirm & Generate Live Token';
       }
+    }
+  }
+
+  trackAppointmentQueue(bookingIdentifier) {
+    const store = window.mediarcaStore;
+    const booking = store.state.bookings.find(b => b.bookingId === bookingIdentifier || b.id === bookingIdentifier);
+    if (booking) {
+      this.switchView('queue-radar', { doctorId: booking.doctorId, booking: booking });
+      if (window.mediarcaQueueEngine) {
+        window.mediarcaQueueEngine.selectedDoctorId = booking.doctorId;
+        window.mediarcaQueueEngine.renderQueueRadar(booking);
+      }
+    } else {
+      this.switchView('queue-radar');
     }
   }
 
@@ -866,12 +878,12 @@ class MediarcaApp {
                       <p style="font-size: 0.8125rem; color: var(--text-secondary);">${escapeHtml(b.specialty)} • ${escapeHtml(b.hospital)}</p>
                       <p style="font-size: 0.8125rem; color: var(--text-primary); margin-top: 0.35rem;"><strong>Chief Complaint:</strong> ${escapeHtml(b.symptoms)}</p>
                     </div>
-                    <div style="display:flex; gap:0.5rem;">
+                    <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
                       <button class="btn btn-sm btn-secondary" onclick="window.mediarcaApp.printPatientPass('${b.bookingId}')">
                         <i data-lucide="printer" style="width: 14px; height: 14px;"></i> Print Pass
                       </button>
-                      <button class="btn btn-sm btn-clinical" onclick="window.mediarcaApp.switchView('queue-radar', { doctorId: '${b.doctorId}' })">
-                        <i data-lucide="radio" style="width: 14px; height: 14px;"></i> Live Radar
+                      <button class="btn btn-sm btn-clinical" onclick="window.mediarcaApp.trackAppointmentQueue('${b.bookingId || b.id}')">
+                        <i data-lucide="radio" style="width: 14px; height: 14px;"></i> Track Live Queue
                       </button>
                     </div>
                   </div>
@@ -896,13 +908,48 @@ class MediarcaApp {
           </div>
         ` : ''}
 
-        <!-- TAB 2: LIVE QUEUE RADAR -->
+        <!-- TAB 2: LIVE QUEUE TRACKER -->
         ${activeTab === 'queue' ? `
-          <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 2rem; text-align: center;">
-            <i data-lucide="radio" style="width: 40px; height: 40px; color: var(--clinical-blue); margin: 0 auto 1rem;"></i>
-            <h3 style="font-size: 1.25rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.5rem;">Live OPD Queue Radar</h3>
-            <p style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 1.5rem;">View real-time token pacing, distance-to-call telemetry, and live chime notifications.</p>
-            <button class="btn btn-primary" onclick="window.mediarcaApp.switchView('queue-radar')">Open Live Queue Radar Screen</button>
+          <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.75rem;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.25rem; border-bottom:1px solid var(--border-subtle); padding-bottom:0.75rem; flex-wrap:wrap; gap:0.5rem;">
+              <div>
+                <h3 style="font-size: 1.15rem; font-weight: 800; color: var(--text-primary); margin:0;">
+                  Live OPD Queue Tracking
+                </h3>
+                <p style="color: var(--text-secondary); font-size: 0.8125rem; margin:0.25rem 0 0;">
+                  Real-time token telemetry for your booked appointments.
+                </p>
+              </div>
+            </div>
+            ${patientBookings.filter(b => b.status === 'waiting' || b.status === 'in-consultation' || b.status === 'checked_in' || b.status === 'booked').length === 0 ? `
+              <div style="padding: 2.5rem; text-align: center; border: 1px dashed var(--border-strong); border-radius: var(--radius-md);">
+                <i data-lucide="calendar-x" style="width:36px;height:36px;color:var(--text-muted);margin:0 auto 0.75rem;"></i>
+                <p style="color: var(--text-secondary); font-size: 0.875rem;">You don't have any active consultation tokens for today.</p>
+                <button class="btn btn-sm btn-primary" onclick="window.mediarcaApp.switchView('home')" style="margin-top:0.75rem;">Book a Doctor</button>
+              </div>
+            ` : patientBookings.filter(b => b.status === 'waiting' || b.status === 'in-consultation' || b.status === 'checked_in' || b.status === 'booked').map(b => `
+              <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: var(--radius-sm); padding: 1.25rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                <div>
+                  <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+                    <span class="badge ${b.status === 'in-consultation' ? 'badge-live' : 'badge-verified'}">${escapeHtml(b.status.toUpperCase())}</span>
+                    <strong style="font-size: 0.95rem; color: var(--text-primary);">${escapeHtml(b.doctorName)}</strong>
+                    <span style="font-size: 0.8125rem; color: var(--text-secondary);">(${escapeHtml(b.specialty)})</span>
+                  </div>
+                  <div style="font-size: 0.8125rem; color: var(--text-muted);">
+                    Pass Ref: <span class="text-mono">${escapeHtml(b.bookingId)}</span> • Scheduled: ${escapeHtml(b.scheduledSlot || 'Today')}
+                  </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                  <div style="text-align: right;">
+                    <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Your Token</div>
+                    <div class="text-mono" style="font-size: 1.35rem; font-weight: 900; color: var(--clinical-blue);">#${b.tokenNumber}</div>
+                  </div>
+                  <button class="btn btn-clinical" onclick="window.mediarcaApp.trackAppointmentQueue('${b.bookingId || b.id}')">
+                    <i data-lucide="radio" style="width: 14px; height: 14px;"></i> View Live Telemetry
+                  </button>
+                </div>
+              </div>
+            `).join('')}
           </div>
         ` : ''}
 
