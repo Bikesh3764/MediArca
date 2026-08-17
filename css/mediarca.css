@@ -709,6 +709,153 @@ p {
   letter-spacing: -0.02em;
 }
 
+/* ==========================================================================
+   APPLE LIVE QUEUE RADAR HUD & HORIZONTAL TOKEN PILLS
+   ========================================================================== */
+.radar-apple-card {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  border-radius: 24px;
+  padding: 2rem;
+  box-shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.04);
+}
+
+.radar-telemetry-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+  margin-top: 1.75rem;
+}
+
+.radar-pod {
+  background: #f5f5f7;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  border-radius: 18px;
+  padding: 1.5rem;
+  text-align: center;
+  transition: transform 0.15s ease;
+}
+
+.radar-pod-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: #86868b;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.4rem;
+}
+
+.radar-pod-val {
+  font-family: var(--font-display);
+  font-size: 2.75rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.radar-pod-sub {
+  font-size: 0.775rem;
+  color: #86868b;
+  font-weight: 500;
+  margin-top: 0.4rem;
+}
+
+.queue-tokens-horizontal {
+  display: flex;
+  gap: 0.75rem;
+  overflow-x: auto;
+  padding: 0.75rem 0.25rem 1rem;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+
+.queue-token-pill {
+  min-width: 86px;
+  height: 96px;
+  background: #ffffff;
+  border: 1.5px solid rgba(0, 0, 0, 0.08);
+  border-radius: 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+  flex-shrink: 0;
+  transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+}
+
+.queue-token-pill .pill-tag {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: #86868b;
+  margin-bottom: 0.2rem;
+}
+
+.queue-token-pill .pill-num {
+  font-family: var(--font-display);
+  font-size: 1.65rem;
+  font-weight: 700;
+  line-height: 1.1;
+  color: #1d1d1f;
+}
+
+.queue-token-pill .pill-slot {
+  font-size: 0.65rem;
+  color: #86868b;
+  font-weight: 500;
+  margin-top: 0.2rem;
+}
+
+/* Completed Tokens */
+.queue-token-pill.completed {
+  background: #f5f5f7;
+  border-color: rgba(0, 0, 0, 0.04);
+  opacity: 0.65;
+}
+.queue-token-pill.completed .pill-tag {
+  color: #86868b;
+}
+.queue-token-pill.completed .pill-num {
+  color: #515154;
+}
+
+/* Active Serving Token (Apple Blue) */
+.queue-token-pill.active {
+  background: #0071e3;
+  border-color: #0071e3;
+  box-shadow: 0 4px 16px rgba(0, 113, 227, 0.35);
+  transform: translateY(-2px);
+}
+.queue-token-pill.active .pill-tag {
+  color: rgba(255, 255, 255, 0.85);
+}
+.queue-token-pill.active .pill-num {
+  color: #ffffff;
+}
+.queue-token-pill.active .pill-slot {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* Patient's Own Token (Apple Emerald) */
+.queue-token-pill.yours {
+  background: #34c759;
+  border-color: #34c759;
+  box-shadow: 0 4px 16px rgba(52, 199, 89, 0.35);
+  transform: translateY(-2px);
+}
+.queue-token-pill.yours .pill-tag {
+  color: rgba(255, 255, 255, 0.9);
+}
+.queue-token-pill.yours .pill-num {
+  color: #ffffff;
+}
+.queue-token-pill.yours .pill-slot {
+  color: rgba(255, 255, 255, 0.9);
+}
+
 .search-input {
   width: 100%;
   height: 46px;

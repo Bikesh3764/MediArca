@@ -108,8 +108,7 @@ class MediarcaApp {
       // Authenticated Patient Navigation
       navLinksContainer.innerHTML = `
         <li><button class="nav-link-btn ${this.currentView === 'home' ? 'active' : ''}" onclick="window.mediarcaApp.switchView('home')"><i data-lucide="search" style="width:14px;height:14px"></i> Find Doctors</button></li>
-        <li><button class="nav-link-btn ${this.currentView === 'queue-radar' ? 'active' : ''}" onclick="window.mediarcaApp.switchView('queue-radar')"><i data-lucide="radio" style="width:14px;height:14px"></i> Live Queue</button></li>
-        <li><button class="nav-link-btn ${this.currentView === 'patient-portal' ? 'active' : ''}" onclick="window.mediarcaApp.switchView('patient-portal')"><i data-lucide="calendar" style="width:14px;height:14px"></i> My Appointments</button></li>
+        <li><button class="nav-link-btn ${this.currentView === 'patient-portal' ? 'active' : ''}" onclick="window.mediarcaApp.switchView('patient-portal')"><i data-lucide="calendar" style="width:14px;height:14px"></i> My Bookings</button></li>
       `;
 
       navActionsContainer.innerHTML = `
@@ -958,10 +957,7 @@ class MediarcaApp {
         <!-- Apple Segmented Tab Bar -->
         <div class="apple-segmented-bar" style="margin-bottom: 1.75rem;">
           <button class="apple-segmented-tab ${activeTab === 'upcoming' ? 'active' : ''}" onclick="window.mediarcaApp.setPatientTab('upcoming')">
-            <i data-lucide="calendar" style="width:13px;height:13px"></i> Upcoming Visits (${patientBookings.filter(b => b.status === 'booked' || b.status === 'checked_in').length})
-          </button>
-          <button class="apple-segmented-tab ${activeTab === 'queue' ? 'active' : ''}" onclick="window.mediarcaApp.setPatientTab('queue')">
-            <i data-lucide="radio" style="width:13px;height:13px"></i> Live Queue Radar
+            <i data-lucide="calendar" style="width:13px;height:13px"></i> My Bookings & Passes (${patientBookings.length})
           </button>
           <button class="apple-segmented-tab ${activeTab === 'history' ? 'active' : ''}" onclick="window.mediarcaApp.setPatientTab('history')">
             <i data-lucide="clock" style="width:13px;height:13px"></i> Medical History (${patientTimeline.length})
@@ -980,135 +976,81 @@ class MediarcaApp {
           </button>
         </div>
 
-        <!-- TAB 1: UPCOMING VISITS -->
+        <!-- TAB 1: UPCOMING VISITS & LIVE QUEUE ACCESS -->
         ${activeTab === 'upcoming' ? `
           <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem;">
             <div>
-              <h3 style="font-size: 1.15rem; font-weight: 600; color: #1d1d1f; margin-bottom: 1rem; letter-spacing: -0.02em;">
-                Scheduled Appointments & Passes
+              <h3 style="font-size: 1.25rem; font-weight: 600; color: #1d1d1f; margin-bottom: 1.25rem; letter-spacing: -0.02em;">
+                My Booked Consultations & Active Passes
               </h3>
               ${patientBookings.length === 0 ? `
-                <div style="padding: 3rem; text-align: center; background: #f5f5f7; border: 1px solid rgba(0,0,0,0.06); border-radius: 18px;">
-                  <p style="color: #86868b; font-size: 0.875rem;">No appointments scheduled yet. Search doctors on the home directory to book a slot.</p>
-                </div>
-              ` : patientBookings.map(b => `
-                <div class="apple-card" style="margin-bottom: 1.25rem;">
-                  <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(0,0,0,0.06); padding-bottom: 0.75rem; margin-bottom: 1rem;">
-                    <div>
-                      <span class="badge ${b.status === 'in-consultation' ? 'badge-live' : (b.status === 'waiting' ? 'badge-pending' : 'badge-verified')}">
-                        ${escapeHtml(b.status.toUpperCase())}
-                      </span>
-                      <span style="font-size: 0.75rem; color: #86868b; margin-left: 0.5rem;">Slot: ${escapeHtml(b.scheduledSlot || '09:00 AM')} • Ref: ${escapeHtml(b.bookingId)}</span>
-                    </div>
-                    <div style="font-size: 1.25rem; font-weight: 700; color: #0066cc;">
-                      Token #${b.tokenNumber}
-                    </div>
+                <div style="padding: 3.5rem 2rem; text-align: center; background: #f5f5f7; border: 1px solid rgba(0,0,0,0.06); border-radius: 20px;">
+                  <div style="width: 48px; height: 48px; background: #ffffff; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                    <i data-lucide="calendar" style="width: 20px; height: 20px; color: #86868b;"></i>
                   </div>
+                  <h4 style="font-size: 1.1rem; font-weight: 600; color: #1d1d1f; margin-bottom: 0.35rem;">No Active Appointments</h4>
+                  <p style="color: #86868b; font-size: 0.875rem; margin-bottom: 1.25rem; max-width: 400px; margin-left: auto; margin-right: auto;">
+                    You haven't booked any OPD consultation slots yet. Explore accredited doctors in the directory to generate a live token pass.
+                  </p>
+                  <button class="btn btn-primary" onclick="window.mediarcaApp.switchView('home')">
+                    <i data-lucide="search" style="width: 14px; height: 14px;"></i> Find & Book Doctors
+                  </button>
+                </div>
+              ` : patientBookings.map(b => {
+                const doc = window.mediarcaStore.state.doctors.find(d => d.id === b.doctorId) || { name: b.doctorName, hospital: b.hospital, specialty: b.specialty };
+                const q = window.mediarcaStore.state.queues[b.doctorId] || { currentToken: 0, status: 'in-session', avgConsultTimeMins: 12 };
+                const currToken = q.currentToken || 0;
+                return `
+                  <div class="apple-card" style="margin-bottom: 1.5rem; padding: 1.75rem;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(0,0,0,0.06); padding-bottom: 1rem; margin-bottom: 1.25rem;">
+                      <div>
+                        <span class="badge ${b.tokenNumber === currToken ? 'badge-live' : (b.status === 'completed' ? 'badge-verified' : 'badge-pending')}">
+                          ${b.tokenNumber === currToken ? '● NOW IN ROOM' : (b.status === 'completed' ? 'COMPLETED' : 'TOKEN ISSUED')}
+                        </span>
+                        <span style="font-size: 0.8125rem; color: #86868b; margin-left: 0.5rem;">Scheduled: <strong>${escapeHtml(b.scheduledSlot || 'Today')}</strong> • Ref: <span style="font-family: monospace; color: #1d1d1f; font-weight: 600;">${escapeHtml(b.bookingId || b.id)}</span></span>
+                      </div>
+                      <div style="text-align: right;">
+                        <span style="font-size: 0.7rem; color: #86868b; text-transform: uppercase; font-weight: 600; letter-spacing: 0.04em;">Your Token</span>
+                        <div style="font-family: var(--font-display); font-size: 1.75rem; font-weight: 700; color: #0071e3; line-height: 1;">
+                          #${b.tokenNumber}
+                        </div>
+                      </div>
+                    </div>
 
-                  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
-                    <div>
-                      <h4 style="font-size: 1.0625rem; font-weight: 700; color: var(--text-primary);">${escapeHtml(b.doctorName)}</h4>
-                      <p style="font-size: 0.8125rem; color: var(--text-secondary);">${escapeHtml(b.specialty)} • ${escapeHtml(b.hospital)}</p>
-                      <p style="font-size: 0.8125rem; color: var(--text-primary); margin-top: 0.35rem;"><strong>Chief Complaint:</strong> ${escapeHtml(b.symptoms)}</p>
-                    </div>
-                    <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
-                      <button class="btn btn-sm btn-secondary" onclick="window.mediarcaApp.printPatientPass('${b.bookingId}')">
-                        <i data-lucide="printer" style="width: 14px; height: 14px;"></i> Print Pass
-                      </button>
-                      <button class="btn btn-sm btn-clinical" onclick="window.mediarcaApp.trackAppointmentQueue('${b.bookingId || b.id}')">
-                        <i data-lucide="radio" style="width: 14px; height: 14px;"></i> Track Live Queue
-                      </button>
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.25rem;">
+                      <div>
+                        <h4 style="font-size: 1.15rem; font-weight: 600; color: #1d1d1f; margin: 0 0 0.2rem;">${escapeHtml(b.doctorName)}</h4>
+                        <p style="font-size: 0.875rem; color: #0066cc; font-weight: 500; margin: 0 0 0.35rem;">${escapeHtml(b.specialty)} • ${escapeHtml(b.hospital || doc.hospital || 'Hospital Suite')}</p>
+                        <p style="font-size: 0.8125rem; color: #515154; margin: 0;"><strong>Reason:</strong> ${escapeHtml(b.symptoms || 'General OPD Consultation')}</p>
+                      </div>
+                      <div style="display: flex; gap: 0.6rem; flex-wrap: wrap;">
+                        <button class="btn btn-sm btn-secondary" onclick="window.mediarcaApp.printPatientPass('${b.bookingId || b.id}')">
+                          <i data-lucide="printer" style="width: 14px; height: 14px;"></i> Print Pass
+                        </button>
+                        <button class="btn btn-sm btn-primary" onclick="window.mediarcaApp.trackAppointmentQueue('${b.bookingId || b.id}')">
+                          <i data-lucide="radio" style="width: 14px; height: 14px;"></i> Track Live Queue
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              `).join('')}
+                `;
+              }).join('')}
             </div>
 
             <!-- Vitals Summary Sidecard -->
             <div>
-              <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.25rem;">
-                <h4 style="font-size: 0.95rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.75rem; display:flex; align-items:center; gap:0.4rem;">
-                  <i data-lucide="heart-pulse" style="width:14px;height:14px; color:#ef4444;"></i> Recent Triage Vitals
+              <div style="background: #ffffff; border: 1px solid rgba(0,0,0,0.06); border-radius: 20px; padding: 1.5rem; box-shadow: 0 2px 12px rgba(0,0,0,0.02);">
+                <h4 style="font-size: 1rem; font-weight: 600; color: #1d1d1f; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.45rem;">
+                  <i data-lucide="heart-pulse" style="width: 16px; height: 16px; color: #ef4444;"></i> Recent Triage Vitals
                 </h4>
-                <div style="display:flex; flex-direction:column; gap:0.5rem; font-size:0.8125rem;">
-                  <div style="display:flex; justify-content:space-between;"><span>Blood Pressure:</span> <strong>${escapeHtml(user.clinicalProfile?.blood_pressure || user.bloodPressure || 'Unrecorded')}</strong></div>
-                  <div style="display:flex; justify-content:space-between;"><span>Pulse Rate:</span> <strong>${escapeHtml(user.clinicalProfile?.pulse_rate || user.pulseRate || 'Unrecorded')}</strong></div>
-                  <div style="display:flex; justify-content:space-between;"><span>SpO2 Oxygen:</span> <strong>${escapeHtml(user.clinicalProfile?.spo2 || user.spo2 || 'Unrecorded')}</strong></div>
-                  <div style="display:flex; justify-content:space-between;"><span>Blood Group:</span> <strong>${escapeHtml(user.clinicalProfile?.blood_group || user.bloodGroup || 'Unrecorded')}</strong></div>
+                <div style="display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.8125rem;">
+                  <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(0,0,0,0.04); padding-bottom: 0.5rem;"><span style="color: #86868b;">Blood Pressure:</span> <strong style="color: #1d1d1f;">${escapeHtml(user.clinicalProfile?.blood_pressure || user.bloodPressure || 'Unrecorded')}</strong></div>
+                  <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(0,0,0,0.04); padding-bottom: 0.5rem;"><span style="color: #86868b;">Pulse Rate:</span> <strong style="color: #1d1d1f;">${escapeHtml(user.clinicalProfile?.pulse_rate || user.pulseRate || 'Unrecorded')}</strong></div>
+                  <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(0,0,0,0.04); padding-bottom: 0.5rem;"><span style="color: #86868b;">SpO2 Oxygen:</span> <strong style="color: #1d1d1f;">${escapeHtml(user.clinicalProfile?.spo2 || user.spo2 || 'Unrecorded')}</strong></div>
+                  <div style="display: flex; justify-content: space-between;"><span style="color: #86868b;">Blood Group:</span> <strong style="color: #1d1d1f;">${escapeHtml(user.clinicalProfile?.blood_group || user.bloodGroup || 'Unrecorded')}</strong></div>
                 </div>
               </div>
             </div>
-          </div>
-        ` : ''}
-
-        <!-- TAB 2: LIVE QUEUE TRACKER -->
-        ${activeTab === 'queue' ? `
-          <div style="background: #ffffff; border: 1px solid rgba(0,0,0,0.06); border-radius: 18px; padding: 1.75rem;">
-            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; border-bottom:1px solid rgba(0,0,0,0.06); padding-bottom:0.85rem; flex-wrap:wrap; gap:0.5rem;">
-              <div>
-                <h3 style="font-size: 1.25rem; font-weight: 600; color: #1d1d1f; margin:0; letter-spacing: -0.02em;">
-                  Live OPD Queue Radar
-                </h3>
-                <p style="color: #86868b; font-size: 0.8125rem; margin:0.25rem 0 0;">
-                  Real-time token telemetry, estimated waiting times, and live doctor session status.
-                </p>
-              </div>
-              <button class="btn btn-sm btn-primary" onclick="window.mediarcaApp.switchView('queue-radar')">
-                <i data-lucide="maximize-2" style="width: 13px; height: 13px;"></i> Open Fullscreen Radar
-              </button>
-            </div>
-            ${patientBookings.length === 0 ? `
-              <div style="padding: 3rem; text-align: center; background: #f5f5f7; border: 1px dashed rgba(0,0,0,0.1); border-radius: 14px;">
-                <i data-lucide="calendar-x" style="width:36px;height:36px;color:#86868b;margin:0 auto 0.75rem;"></i>
-                <h4 style="font-size: 1.05rem; font-weight: 600; color: #1d1d1f; margin-bottom: 0.25rem;">No Active Appointments</h4>
-                <p style="color: #86868b; font-size: 0.875rem; margin-bottom: 1rem;">You don't have any booked consultation tokens yet. Book a doctor to start live tracking.</p>
-                <button class="btn btn-primary" onclick="window.mediarcaApp.switchView('home')">
-                  <i data-lucide="search" style="width: 14px; height: 14px;"></i> Find & Book Doctors
-                </button>
-              </div>
-            ` : patientBookings.map(b => {
-              const doc = window.mediarcaStore.state.doctors.find(d => d.id === b.doctorId) || { name: b.doctorName, hospital: b.hospital, specialty: b.specialty };
-              const q = window.mediarcaStore.state.queues[b.doctorId] || { currentToken: 0, status: 'in-session', avgConsultTimeMins: 12 };
-              const currToken = q.currentToken || 0;
-              const peopleAhead = Math.max(0, b.tokenNumber - currToken);
-              const waitEst = peopleAhead > 0 ? (peopleAhead * (q.avgConsultTimeMins || 12)) : 0;
-              return `
-                <div style="background: #fbfbfd; border: 1px solid rgba(0,0,0,0.06); border-radius: 16px; padding: 1.5rem; margin-bottom: 1.25rem;">
-                  <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.75rem;">
-                    <div>
-                      <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
-                        <span class="badge ${b.tokenNumber === currToken ? 'badge-live' : (b.status === 'completed' ? 'badge-verified' : 'badge-pending')}">
-                          ${b.tokenNumber === currToken ? '● IN CONSULTATION' : (b.status === 'completed' ? 'COMPLETED' : 'IN QUEUE')}
-                        </span>
-                        <strong style="font-size: 1.1rem; color: #1d1d1f;">${escapeHtml(b.doctorName)}</strong>
-                        <span style="font-size: 0.8125rem; color: #0066cc; font-weight: 500;">(${escapeHtml(b.specialty)})</span>
-                      </div>
-                      <div style="font-size: 0.8125rem; color: #86868b;">
-                        ${escapeHtml(b.hospital || doc.hospital || 'Hospital OPD')} • Pass: <span style="font-family: monospace; font-weight: 600; color: #1d1d1f;">${escapeHtml(b.bookingId || b.id)}</span>
-                      </div>
-                    </div>
-                    <button class="btn btn-sm btn-primary" onclick="window.mediarcaApp.trackAppointmentQueue('${b.bookingId || b.id}')">
-                      <i data-lucide="radio" style="width: 13px; height: 13px;"></i> Launch Radar HUD
-                    </button>
-                  </div>
-
-                  <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; background: #f5f5f7; padding: 1rem; border-radius: 12px;">
-                    <div style="text-align: center;">
-                      <div style="font-size: 0.7rem; color: #86868b; font-weight: 600; text-transform: uppercase;">Now Serving</div>
-                      <div style="font-size: 1.5rem; font-weight: 700; color: #0066cc;">${currToken > 0 ? '#' + currToken : 'IDLE'}</div>
-                    </div>
-                    <div style="text-align: center; border-left: 1px solid rgba(0,0,0,0.06); border-right: 1px solid rgba(0,0,0,0.06);">
-                      <div style="font-size: 0.7rem; color: #86868b; font-weight: 600; text-transform: uppercase;">Your Token</div>
-                      <div style="font-size: 1.5rem; font-weight: 700; color: #059669;">#${b.tokenNumber}</div>
-                    </div>
-                    <div style="text-align: center;">
-                      <div style="font-size: 0.7rem; color: #86868b; font-weight: 600; text-transform: uppercase;">Est. Wait</div>
-                      <div style="font-size: 1.5rem; font-weight: 700; color: #d97706;">${b.tokenNumber === currToken ? '0 min' : (waitEst > 0 ? '~' + waitEst + 'm' : '--')}</div>
-                    </div>
-                  </div>
-                </div>
-              `;
-            }).join('')}
           </div>
         ` : ''}
 
