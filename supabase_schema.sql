@@ -993,15 +993,16 @@ BEGIN
         RAISE EXCEPTION 'Invalid status transition: %', p_status;
     END IF;
 
-    -- Check physician authorization
+    -- Check verified physician authorization (P1-19 Resolution)
     SELECT EXISTS (
         SELECT 1 FROM doctors
         WHERE id = p_doctor_id 
           AND user_id = v_actor_id
+          AND verification_status = 'verified'
     ) INTO v_is_authorized;
 
     IF NOT v_is_authorized AND NOT is_admin(v_actor_id) THEN
-        RAISE EXCEPTION 'Not authorized. Only the attending physician or admin can update consultation status.';
+        RAISE EXCEPTION 'Not authorized. Only the accredited, verified attending physician or admin can update consultation status.';
     END IF;
 
     -- Update the specified appointment
@@ -1567,11 +1568,18 @@ BEGIN
     SELECT role INTO v_actor_role FROM users WHERE id = v_actor_id;
     SELECT * INTO v_doctor FROM doctors WHERE id = v_appointment.doctor_id;
 
-    -- C-05: Strict record authorization: Doctor must be the assigned attending physician, or staff must be receptionist/admin
-    IF v_actor_role = 'doctor' AND v_doctor.user_id != v_actor_id THEN
-        RAISE EXCEPTION 'Access Denied: Only the assigned attending physician can transition clinical stages for this appointment.';
+    -- C-05 & P1-17: Strict record authorization: Doctor must be assigned, verified attending physician
+    IF v_actor_role = 'doctor' THEN
+        IF v_doctor.user_id != v_actor_id OR v_doctor.verification_status != 'verified' THEN
+            RAISE EXCEPTION 'Access Denied: Only accredited, verified attending physicians can transition clinical stages for this appointment.';
+        END IF;
     ELSIF v_actor_role NOT IN ('doctor', 'receptionist', 'admin') AND NOT is_admin(v_actor_id) THEN
         RAISE EXCEPTION 'Access Denied: Administrative or clinical staff privileges required.';
+    END IF;
+
+    -- P1-16: Recognized hospital stage validation
+    IF p_stage NOT IN ('triage', 'ecg_diagnostics', 'consultation', 'lab_suite', 'pharmacy', 'discharged') THEN
+        RAISE EXCEPTION 'Invalid patient flow stage: % is not a recognized hospital routing stage.', p_stage;
     END IF;
 
     -- H-11: State transition workflow validation
@@ -2012,6 +2020,28 @@ BEFORE UPDATE ON doctors
 FOR EACH ROW
 EXECUTE FUNCTION prevent_doctor_self_verification();
 
+-- P1-22: Prevent modification of immutable user_id ownership on doctors table
+CREATE OR REPLACE FUNCTION prevent_doctor_ownership_mutation()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+    IF (OLD.user_id IS DISTINCT FROM NEW.user_id) THEN
+        IF NOT is_admin(auth.uid()) THEN
+            RAISE EXCEPTION 'Immutable Ownership Violation: Cannot transfer or modify doctor user account identity.';
+        END IF;
+    END IF;
+    RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_prevent_doctor_ownership_mutation ON doctors;
+CREATE TRIGGER trg_prevent_doctor_ownership_mutation
+BEFORE UPDATE ON doctors
+FOR EACH ROW
+EXECUTE FUNCTION prevent_doctor_ownership_mutation();
+
 -- CLINIC QUEUES TABLE POLICIES (M-01 & DB-05 Resolution: Verified Doctor Daily Queue Management)
 DROP POLICY IF EXISTS "Public can read live queue telemetry" ON clinic_queues;
 CREATE POLICY "Public can read live queue telemetry" ON clinic_queues FOR SELECT USING (
@@ -2310,6 +2340,31 @@ CREATE POLICY "Participants can update room status" ON telemedicine_rooms FOR UP
         ) OR is_admin(auth.uid())
     );
 
+-- P1-11: Prevent modification of core session identity and token in telemedicine_rooms
+CREATE OR REPLACE FUNCTION prevent_telemedicine_room_tampering()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+    IF (OLD.appointment_id IS DISTINCT FROM NEW.appointment_id) OR
+       (OLD.room_token IS DISTINCT FROM NEW.room_token) OR
+       (OLD.doctor_id IS DISTINCT FROM NEW.doctor_id) OR
+       (OLD.patient_id IS DISTINCT FROM NEW.patient_id) THEN
+        IF NOT is_admin(auth.uid()) THEN
+            RAISE EXCEPTION 'Immutable Session Violation: Modification of telemedicine appointment linkage or security token is prohibited.';
+        END IF;
+    END IF;
+    RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_prevent_telemedicine_room_tampering ON telemedicine_rooms;
+CREATE TRIGGER trg_prevent_telemedicine_room_tampering
+BEFORE UPDATE ON telemedicine_rooms
+FOR EACH ROW
+EXECUTE FUNCTION prevent_telemedicine_room_tampering();
+
 -- 23. CENTRALIZED APPOINTMENT LIFECYCLE STATE TRANSITION RPC (M-06 Resolution)
 CREATE OR REPLACE FUNCTION transition_appointment_status_atomic(
     p_appointment_id UUID,
@@ -2325,6 +2380,7 @@ DECLARE
     v_actor_id UUID;
     v_actor_role VARCHAR;
     v_appointment appointments%ROWTYPE;
+    v_from_status VARCHAR;
     v_valid BOOLEAN := false;
 BEGIN
     v_actor_id := auth.uid();
@@ -2375,6 +2431,8 @@ BEGIN
         RAISE EXCEPTION 'Invalid status transition: Cannot transition appointment from % to %.', v_appointment.status, p_target_status;
     END IF;
 
+    v_from_status := v_appointment.status;
+
     UPDATE appointments
     SET status = p_target_status,
         check_in_time = CASE WHEN p_target_status = 'checked_in' AND check_in_time IS NULL THEN NOW() ELSE check_in_time END,
@@ -2390,7 +2448,7 @@ BEGIN
         'appointments',
         p_appointment_id,
         jsonb_build_object(
-            'from_status', v_appointment.status,
+            'from_status', v_from_status,
             'to_status', p_target_status,
             'reason', p_reason,
             'actor_role', COALESCE(v_actor_role, 'user')

@@ -60,6 +60,7 @@ assert(fs.existsSync(supabaseClientPath), 'js/supabase_client.js exists');
 
 const appContent = fs.readFileSync(appPath, 'utf-8');
 const storeContent = fs.readFileSync(storePath, 'utf-8');
+const queueContent = fs.readFileSync(queuePath, 'utf-8');
 const supabaseClientContent = fs.readFileSync(supabaseClientPath, 'utf-8');
 
 assert(appContent.includes('async handleProcessPayment'), 'handleProcessPayment is async');
@@ -114,9 +115,23 @@ assert(schemaContent.includes('status IN (\'waiting\', \'checked_in\')'), 'P0-10
 assert(supabaseClientContent.includes('p_examination_findings: rxData.examinationFindings'), 'P0-11: Clinical consultation passes all examination and treatment fields');
 assert(schemaContent.includes('appointment_id, doctor_id, patient_id, test_name, clinical_indication, status'), 'P0-12: Lab orders insertion uses clinical_indication column');
 
+// 5. Batch 2: P1-01 through P1-22 Exhaustive Audit Assertions (2026-08-17)
+assert(storeContent.includes('pauseDoctorQueue(doctorId)'), 'P1-01: pauseDoctorQueue method present in store');
+assert(supabaseClientContent.includes('cloudGetAdminAuditLogs(limit = 50)'), 'P1-02: cloudGetAdminAuditLogs method present in supabase client');
+assert(queueContent.includes('store.calculateSmartWaitTime(doctor.id, yourToken)'), 'P1-03: Queue radar passes doctor.id and yourToken to calculateSmartWaitTime');
+assert(appContent.includes('this.isProcessingPayment = true'), 'P1-07: Payment processing enforces double-click idempotency lock');
+assert(appContent.includes('updateBillingCalculations'), 'P1-04/05/06: Live interactive billing calculations on coupon/insurance update');
+assert(schemaContent.includes('trg_prevent_telemedicine_room_tampering'), 'P1-11: Trigger prevents session tampering on telemedicine rooms');
+assert(supabaseClientContent.includes('users!appointments_patient_id_fkey') && supabaseClientContent.includes('from(\'doctors\').select(\'*\')'), 'P1-13: Admin session hydrates all doctors & users from database');
+assert(schemaContent.includes('\'from_status\', v_from_status'), 'P1-15: Status transition captures true from_status before updating');
+assert(schemaContent.includes('ecg_diagnostics') && schemaContent.includes('pharmacy'), 'P1-16: update_patient_stage_atomic validates against recognized stage allowlist');
+assert(schemaContent.includes('v_doctor.verification_status != \'verified\''), 'P1-17: Stage transition requires accredited verified attending physician');
+assert(schemaContent.includes('AND verification_status = \'verified\''), 'P1-19: mark_appointment_status_atomic requires verified physician');
+assert(schemaContent.includes('trg_prevent_doctor_ownership_mutation'), 'P1-22: Trigger prevents modification of immutable doctor account user_id');
+
 console.log(`\nTest Summary: ${passCount} Passed, ${failCount} Failed.`);
 if (failCount > 0) {
   process.exit(1);
 } else {
-  console.log('--- All Exhaustive Batch 1 (P0-01 through P0-12) Checks Passed Successfully! ---');
+  console.log('--- All Exhaustive Batch 1 (P0) & Batch 2 (P1) Checks Passed Successfully! ---');
 }

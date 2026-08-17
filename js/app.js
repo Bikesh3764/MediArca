@@ -2871,8 +2871,22 @@ class MediarcaApp {
     }
   }
 
-  // --- Hospital Billing & Insurance Drawer (Section 20 Resolution) ---
-  showBillingModal(bookingId = 'bk_live') {
+  // --- Hospital Billing & Insurance Drawer (Section 20 & Audit P1-04 to P1-09 Resolution) ---
+  showBillingModal(bookingId) {
+    const currentUserId = window.mediarcaStore.state.currentUser?.id;
+    const user = window.mediarcaStore.state.currentUser;
+
+    if (!bookingId) {
+      this.showToast('Please select a valid appointment ticket for billing settlement.', 'warning');
+      return;
+    }
+
+    const booking = window.mediarcaStore.state.bookings.find(b => b.bookingId === bookingId || b.id === bookingId);
+    if (!booking) {
+      this.showToast('Appointment record not found for billing settlement.', 'warning');
+      return;
+    }
+
     let modal = document.getElementById('billingModal');
     if (!modal) {
       modal = document.createElement('div');
@@ -2881,21 +2895,11 @@ class MediarcaApp {
       document.body.appendChild(modal);
     }
 
-    const currentUserId = window.mediarcaStore.state.currentUser?.id;
-    const user = window.mediarcaStore.state.currentUser;
-    const booking = window.mediarcaStore.state.bookings.find(b => b.bookingId === bookingId || b.id === bookingId || (b.patientId && b.patientId === currentUserId)) || {
-      bookingId: bookingId || 'bk_live',
-      patientName: user?.name || 'Verified Patient',
-      doctorName: 'Attending Practitioner',
-      tokenNumber: 1
-    };
-
     const doc = window.mediarcaStore.state.doctors.find(d => d.id === booking.doctorId || d.name === booking.doctorName);
-    const consultFee = doc?.consultFee || 60;
+    const consultFee = doc?.consultFee || doc?.fee || 60.00;
     const insurancePolicy = user?.clinicalProfile?.insurance_policy || user?.insurancePolicy || 'Standard Patient Co-Pay';
-    const discount = (consultFee * 0.10);
-    const insuranceCover = ((consultFee - discount) * 0.80);
-    const netCoPay = (consultFee - discount - insuranceCover).toFixed(2);
+    const insuranceCover = (consultFee * 0.80);
+    const netCoPay = (consultFee - insuranceCover).toFixed(2);
 
     modal.innerHTML = `
       <div class="modal-box" style="max-width: 520px;">
@@ -2928,37 +2932,37 @@ class MediarcaApp {
           <div class="form-group">
             <label class="form-label">Healthcare Promo / Voucher Code</label>
             <div style="display:flex; gap:0.5rem;">
-              <input type="text" id="billingCouponInput" class="form-input" placeholder="e.g. HEALTH10 or PREVENT20" value="HEALTH10">
-              <button class="btn btn-secondary" onclick="window.mediarcaApp.showToast('Coupon HEALTH10 applied! (10% Discount)', 'success')">Apply</button>
+              <input type="text" id="billingCouponInput" class="form-input" placeholder="e.g. HEALTH10 or PREVENT20" value="" oninput="window.mediarcaApp.updateBillingCalculations(${consultFee})">
+              <button type="button" class="btn btn-secondary" onclick="window.mediarcaApp.updateBillingCalculations(${consultFee})">Apply</button>
             </div>
           </div>
 
           <label style="display:flex; gap:0.5rem; align-items:center; font-size:0.8125rem; margin-bottom:1rem; cursor:pointer;">
-            <input type="checkbox" id="billingInsuranceCheck" checked>
+            <input type="checkbox" id="billingInsuranceCheck" checked onchange="window.mediarcaApp.updateBillingCalculations(${consultFee})">
             <span>Pre-Authorize with <strong>${escapeHtml(insurancePolicy)}</strong> [80% Co-pay Cover]</span>
           </label>
 
           <div style="background:#f0fdf4; border:1px solid #86efac; border-radius:var(--radius-sm); padding:0.875rem; margin-bottom:1.25rem;">
             <div style="display:flex; justify-content:space-between; font-size:0.8125rem; color:#166534; margin-bottom:0.25rem;">
               <span>Subtotal:</span>
-              <span>$${consultFee.toFixed(2)}</span>
+              <span id="billingSubtotalDisplay">$${consultFee.toFixed(2)}</span>
             </div>
             <div style="display:flex; justify-content:space-between; font-size:0.8125rem; color:#166534; margin-bottom:0.25rem;">
-              <span>Voucher Discount (10%):</span>
-              <span>-$${discount.toFixed(2)}</span>
+              <span>Voucher Discount:</span>
+              <span id="billingDiscountDisplay">-$0.00</span>
             </div>
             <div style="display:flex; justify-content:space-between; font-size:0.8125rem; color:#166534; margin-bottom:0.5rem;">
               <span>Insurance Settlement (80%):</span>
-              <span>-$${insuranceCover.toFixed(2)}</span>
+              <span id="billingInsuranceDisplay">-$${insuranceCover.toFixed(2)}</span>
             </div>
             <div style="display:flex; justify-content:space-between; font-size:1rem; font-weight:800; color:#14532d; border-top:1px dashed #86efac; padding-top:0.5rem;">
               <span>Net Patient Co-Pay:</span>
-              <span class="text-mono">$${netCoPay}</span>
+              <span class="text-mono" id="billingNetDisplay">$${netCoPay}</span>
             </div>
           </div>
 
-          <button class="btn btn-teal btn-block" onclick="window.mediarcaApp.handleProcessPayment('${booking.bookingId}')">
-            <i data-lucide="credit-card" style="width: 15px; height: 15px;"></i> Pay $${netCoPay} & Generate Official Invoice
+          <button id="billingPayButton" class="btn btn-teal btn-block" onclick="window.mediarcaApp.handleProcessPayment('${booking.bookingId || booking.id}')">
+            <i data-lucide="credit-card" style="width: 15px; height: 15px;"></i> Pay $${netCoPay} & Settle Invoice
           </button>
         </div>
       </div>
@@ -2968,7 +2972,33 @@ class MediarcaApp {
     if (window.lucide) window.lucide.createIcons();
   }
 
+  updateBillingCalculations(consultFee) {
+    const coupon = (document.getElementById('billingCouponInput')?.value || '').trim();
+    const hasInsurance = document.getElementById('billingInsuranceCheck')?.checked ?? true;
+    let discount = 0;
+    if (coupon === 'HEALTH10') discount = consultFee * 0.10;
+    else if (coupon === 'PREVENT20') discount = 20.00;
+
+    const afterDiscount = Math.max(0, consultFee - discount);
+    const insuranceCover = hasInsurance ? (afterDiscount * 0.80) : 0;
+    const netCoPay = Math.max(0, afterDiscount - insuranceCover).toFixed(2);
+
+    const discountEl = document.getElementById('billingDiscountDisplay');
+    const insuranceEl = document.getElementById('billingInsuranceDisplay');
+    const netEl = document.getElementById('billingNetDisplay');
+    const payBtnEl = document.getElementById('billingPayButton');
+
+    if (discountEl) discountEl.textContent = `-$${discount.toFixed(2)}`;
+    if (insuranceEl) insuranceEl.textContent = `-$${insuranceCover.toFixed(2)}`;
+    if (netEl) netEl.textContent = `$${netCoPay}`;
+    if (payBtnEl) payBtnEl.innerHTML = `<i data-lucide="credit-card" style="width: 15px; height: 15px;"></i> Pay $${netCoPay} & Settle Invoice`;
+    if (window.lucide) window.lucide.createIcons();
+  }
+
   async handleProcessPayment(bookingIdentifier) {
+    if (this.isProcessingPayment) return;
+    this.isProcessingPayment = true;
+
     const store = window.mediarcaStore;
     const currentUserId = store.state.currentUser?.id;
     const currentUserRole = store.state.currentUser?.role;
@@ -2976,11 +3006,13 @@ class MediarcaApp {
     const booking = store.state.bookings.find(b => b.bookingId === bookingIdentifier || b.id === bookingIdentifier);
     if (!booking) {
       this.showToast('Appointment record not found for billing settlement.', 'warning');
+      this.isProcessingPayment = false;
       return;
     }
 
     if (currentUserRole === 'patient' && booking.patientId && booking.patientId !== currentUserId) {
       this.showToast('Access Denied: You cannot settle invoices for another patient.', 'warning');
+      this.isProcessingPayment = false;
       return;
     }
 
@@ -3007,6 +3039,8 @@ class MediarcaApp {
     } catch (err) {
       console.error('Invoice settlement error:', err);
       this.showToast(err.message || 'Payment settlement failed.', 'warning');
+    } finally {
+      this.isProcessingPayment = false;
     }
   }
 }

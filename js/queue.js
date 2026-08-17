@@ -105,8 +105,8 @@ class MediarcaQueueEngine {
     if (yourToken && yourToken !== currentToken) {
       const activeAhead = (queue.tokens || []).filter(t => t.tokenNumber < yourToken && (t.status === 'waiting' || t.status === 'in-consultation'));
       peopleAhead = activeAhead.length;
-      smartWait = store.calculateSmartWaitTime(peopleAhead, queue.avgConsultTimeMins || doctor.avgConsultTimeMins || 12, doctor.id);
-      waitMins = smartWait.estimatedWaitMins;
+      smartWait = store.calculateSmartWaitTime(doctor.id, yourToken);
+      waitMins = smartWait.estimatedWaitMins || (peopleAhead * (queue.avgConsultTimeMins || 12));
     }
 
     // Sound chime trigger on token update

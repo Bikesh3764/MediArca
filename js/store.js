@@ -1650,7 +1650,6 @@ class MediarcaStore {
     if (!booking) throw new Error('Patient record not found.');
 
     const oldStage = booking.stage || 'triage';
-    booking.stage = newStage;
 
     if (window.mediarcaSupabase && window.mediarcaSupabase.isConnected && booking.id) {
       try {
@@ -1660,6 +1659,9 @@ class MediarcaStore {
         throw new Error(`Patient stage routing update failed on server: ${e.message || 'Routing transition rejected'}`);
       }
     }
+
+    // Commit local state only after cloud success (P1-18 Resolution)
+    booking.stage = newStage;
 
     // Log append-only audit entry
     this.recordAuditLog({
@@ -1939,7 +1941,7 @@ class MediarcaStore {
       insuranceCoverage: insuranceCover,
       insuranceProvider: invoiceData.hasInsurance ? 'MediShield Global Health #POL-99214' : 'Self-Pay',
       netPayable: patientPayable,
-      paymentStatus: 'PAID (Settled)',
+      paymentStatus: (window.mediarcaSupabase && window.mediarcaSupabase.isConnected && cloudInvoice) ? 'PAID (Settled)' : 'SIMULATED (Offline Demo)',
       paymentMethod: invoiceData.paymentMethod || 'Hospital Digital Pay',
       issuedAt: new Date().toISOString()
     };
