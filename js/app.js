@@ -946,47 +946,47 @@ class MediarcaApp {
 
     container.innerHTML = `
       <div class="container" style="padding-top: 2rem; padding-bottom: 4rem;">
-        <!-- Patient Header Banner -->
-        <div style="background: linear-gradient(135deg, #0284c7, #0369a1); color: #fff; border-radius: var(--radius-md); padding: 1.75rem; display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; box-shadow: var(--shadow-md); flex-wrap: wrap; gap: 1rem;">
+        <!-- Apple Dark Tile Patient Header Banner -->
+        <div class="apple-dark-tile" style="margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
           <div>
-            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
-              <span class="badge" style="background: rgba(255,255,255,0.2); color: #fff;"><i data-lucide="user" style="width:12px;height:12px"></i> PATIENT EMR PORTAL</span>
-              <span style="font-size: 0.75rem; color: #e0f2fe;">Medical ID: <strong>${escapeHtml(user.mediarcaId || ('MED-PAT-' + user.id.substring(0, 4).toUpperCase()))}</strong></span>
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem;">
+              <span class="badge badge-verified"><i data-lucide="user" style="width:12px;height:12px"></i> Patient Health Record</span>
+              <span style="font-size: 0.75rem; color: #86868b;">Medical ID: <strong style="color: #2997ff;">${escapeHtml(user.mediarcaId || ('MED-PAT-' + user.id.substring(0, 4).toUpperCase()))}</strong></span>
             </div>
-            <h2 style="font-size: 1.4rem; font-weight: 800;">Welcome, ${escapeHtml(user.name || 'Patient')}</h2>
-            <p style="font-size: 0.8125rem; color: #e0f2fe;">Manage your upcoming visits, active queue tokens, electronic prescriptions, and diagnostic vault.</p>
+            <h2 style="font-size: 1.5rem; font-weight: 600; color: #ffffff; margin: 0; letter-spacing: -0.02em;">Welcome, ${escapeHtml(user.name || 'Patient')}</h2>
+            <p style="font-size: 0.875rem; color: #86868b; margin: 0.25rem 0 0;">Manage your appointments, live token telemetry, prescriptions, and medical records.</p>
           </div>
-          <div style="display: flex; gap: 0.5rem;">
-            <button class="btn btn-secondary" onclick="window.mediarcaApp.showBillingModal('${activeBookingId}')" style="background: #fff; color: #0369a1; font-size:0.8125rem;">
-              <i data-lucide="receipt" style="width: 14px; height: 14px;"></i> Invoices & Pay
+          <div style="display: flex; gap: 0.6rem; align-items: center;">
+            <button class="btn btn-sm btn-pearl" onclick="window.mediarcaApp.showBillingModal('${activeBookingId}')">
+              <i data-lucide="receipt" style="width: 13px; height: 13px; color: #0066cc;"></i> Invoices & Pay
             </button>
-            <button class="btn btn-secondary" onclick="window.mediarcaApp.showUploadDocModal()" style="background: rgba(255,255,255,0.2); color: #fff; border: 1px solid rgba(255,255,255,0.4); font-size:0.8125rem;">
-              <i data-lucide="upload-cloud" style="width: 14px; height: 14px;"></i> Upload Record
+            <button class="btn btn-sm btn-primary" onclick="window.mediarcaApp.showUploadDocModal()">
+              <i data-lucide="upload-cloud" style="width: 13px; height: 13px;"></i> Upload Record
             </button>
           </div>
         </div>
 
-        <!-- Tabbed Navigation Bar (UX Resolution) -->
-        <div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.75rem; overflow-x: auto;">
-          <button class="btn btn-sm ${activeTab === 'upcoming' ? 'btn-primary' : 'btn-secondary'}" onclick="window.mediarcaApp.setPatientTab('upcoming')">
+        <!-- Apple Segmented Tab Bar -->
+        <div class="apple-segmented-bar" style="margin-bottom: 1.75rem;">
+          <button class="apple-segmented-tab ${activeTab === 'upcoming' ? 'active' : ''}" onclick="window.mediarcaApp.setPatientTab('upcoming')">
             <i data-lucide="calendar" style="width:13px;height:13px"></i> Upcoming Visits (${patientBookings.filter(b => b.status === 'booked' || b.status === 'checked_in').length})
           </button>
-          <button class="btn btn-sm ${activeTab === 'queue' ? 'btn-primary' : 'btn-secondary'}" onclick="window.mediarcaApp.setPatientTab('queue')">
+          <button class="apple-segmented-tab ${activeTab === 'queue' ? 'active' : ''}" onclick="window.mediarcaApp.setPatientTab('queue')">
             <i data-lucide="radio" style="width:13px;height:13px"></i> Live Queue Radar
           </button>
-          <button class="btn btn-sm ${activeTab === 'history' ? 'btn-primary' : 'btn-secondary'}" onclick="window.mediarcaApp.setPatientTab('history')">
+          <button class="apple-segmented-tab ${activeTab === 'history' ? 'active' : ''}" onclick="window.mediarcaApp.setPatientTab('history')">
             <i data-lucide="clock" style="width:13px;height:13px"></i> Medical History (${patientTimeline.length})
           </button>
-          <button class="btn btn-sm ${activeTab === 'prescriptions' ? 'btn-primary' : 'btn-secondary'}" onclick="window.mediarcaApp.setPatientTab('prescriptions')">
+          <button class="apple-segmented-tab ${activeTab === 'prescriptions' ? 'active' : ''}" onclick="window.mediarcaApp.setPatientTab('prescriptions')">
             <i data-lucide="file-text" style="width:13px;height:13px"></i> Prescriptions (${patientBookings.filter(b => b.prescription).length})
           </button>
-          <button class="btn btn-sm ${activeTab === 'reports' ? 'btn-primary' : 'btn-secondary'}" onclick="window.mediarcaApp.setPatientTab('reports')">
+          <button class="apple-segmented-tab ${activeTab === 'reports' ? 'active' : ''}" onclick="window.mediarcaApp.setPatientTab('reports')">
             <i data-lucide="folder-lock" style="width:13px;height:13px"></i> Document Vault (${patientDocs.length})
           </button>
-          <button class="btn btn-sm ${activeTab === 'profile' ? 'btn-primary' : 'btn-secondary'}" onclick="window.mediarcaApp.setPatientTab('profile')">
+          <button class="apple-segmented-tab ${activeTab === 'profile' ? 'active' : ''}" onclick="window.mediarcaApp.setPatientTab('profile')">
             <i data-lucide="user" style="width:13px;height:13px"></i> My Profile
           </button>
-          <button class="btn btn-sm ${activeTab === 'notifications' ? 'btn-primary' : 'btn-secondary'}" onclick="window.mediarcaApp.setPatientTab('notifications')">
+          <button class="apple-segmented-tab ${activeTab === 'notifications' ? 'active' : ''}" onclick="window.mediarcaApp.setPatientTab('notifications')">
             <i data-lucide="bell" style="width:13px;height:13px"></i> Notifications
           </button>
         </div>
@@ -995,23 +995,23 @@ class MediarcaApp {
         ${activeTab === 'upcoming' ? `
           <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem;">
             <div>
-              <h3 style="font-size: 1.0625rem; font-weight: 800; color: var(--text-primary); margin-bottom: 1rem;">
+              <h3 style="font-size: 1.15rem; font-weight: 600; color: #1d1d1f; margin-bottom: 1rem; letter-spacing: -0.02em;">
                 Scheduled Appointments & Passes
               </h3>
               ${patientBookings.length === 0 ? `
-                <div style="padding: 2.5rem; text-align: center; background: var(--bg-surface); border: 1px dashed var(--border-strong); border-radius: var(--radius-md);">
-                  <p style="color: var(--text-secondary);">No appointments scheduled yet. Search doctors on the home directory to book a slot.</p>
+                <div style="padding: 3rem; text-align: center; background: #f5f5f7; border: 1px solid rgba(0,0,0,0.06); border-radius: 18px;">
+                  <p style="color: #86868b; font-size: 0.875rem;">No appointments scheduled yet. Search doctors on the home directory to book a slot.</p>
                 </div>
               ` : patientBookings.map(b => `
-                <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.5rem; margin-bottom: 1.25rem; box-shadow: var(--shadow-sm);">
-                  <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.75rem; margin-bottom: 1rem;">
+                <div class="apple-card" style="margin-bottom: 1.25rem;">
+                  <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(0,0,0,0.06); padding-bottom: 0.75rem; margin-bottom: 1rem;">
                     <div>
-                      <span class="badge ${b.status === 'in-consultation' ? 'badge-live' : (b.status === 'waiting' ? 'badge-pending' : (b.status === 'checked_in' ? 'badge-verified' : 'badge-verified'))}">
+                      <span class="badge ${b.status === 'in-consultation' ? 'badge-live' : (b.status === 'waiting' ? 'badge-pending' : 'badge-verified')}">
                         ${escapeHtml(b.status.toUpperCase())}
                       </span>
-                      <span style="font-size: 0.75rem; color: var(--text-muted); margin-left: 0.5rem;">Slot: ${escapeHtml(b.scheduledSlot || '09:00 AM')} • Ref: ${escapeHtml(b.bookingId)}</span>
+                      <span style="font-size: 0.75rem; color: #86868b; margin-left: 0.5rem;">Slot: ${escapeHtml(b.scheduledSlot || '09:00 AM')} • Ref: ${escapeHtml(b.bookingId)}</span>
                     </div>
-                    <div class="text-mono" style="font-size: 1.25rem; font-weight: 800; color: var(--clinical-blue);">
+                    <div style="font-size: 1.25rem; font-weight: 700; color: #0066cc;">
                       Token #${b.tokenNumber}
                     </div>
                   </div>
@@ -1318,72 +1318,73 @@ class MediarcaApp {
 
     container.innerHTML = `
       <div class="container" style="padding-top: 2rem; padding-bottom: 4rem;">
-        <div style="background: var(--text-primary); color: #fff; border-radius: var(--radius-md); padding: 1.5rem; display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem;">
+        <!-- Apple Dark Tile Doctor Header Banner -->
+        <div class="apple-dark-tile" style="margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
           <div>
-            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
-              <span class="badge badge-verified"><i data-lucide="shield-check" style="width:12px;height:12px"></i> VERIFIED PRACTITIONER</span>
-              <span style="font-size: 0.75rem; color: #a1a1aa;">Reg No: ${escapeHtml(doc.regNumber)}</span>
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem;">
+              <span class="badge badge-verified"><i data-lucide="shield-check" style="width:12px;height:12px"></i> Verified Practitioner</span>
+              <span style="font-size: 0.75rem; color: #86868b;">Reg No: ${escapeHtml(doc.regNumber || 'NMC-VERIFIED')}</span>
             </div>
-            <h2 style="font-size: 1.35rem; font-weight: 800;">${escapeHtml(doc.name)}</h2>
-            <p style="font-size: 0.8125rem; color: #a1a1aa;">${escapeHtml(doc.specialty)} • ${escapeHtml(doc.hospital)}</p>
+            <h2 style="font-size: 1.5rem; font-weight: 600; color: #ffffff; margin: 0; letter-spacing: -0.02em;">${escapeHtml(doc.name)}</h2>
+            <p style="font-size: 0.875rem; color: #86868b; margin: 0.25rem 0 0;">${escapeHtml(doc.specialty)} • ${escapeHtml(doc.hospital)}</p>
           </div>
           <div style="text-align: right;">
-            <div style="font-size: 0.7rem; text-transform: uppercase; color: #a1a1aa;">Official Mediarca ID</div>
-            <div class="text-mono" style="font-size: 1.5rem; font-weight: 800; color: #38bdf8;">${escapeHtml(doc.mediarcaId || 'PENDING')}</div>
+            <div style="font-size: 0.6875rem; text-transform: uppercase; color: #86868b; font-weight: 600; letter-spacing: 0.04em;">Official Mediarca ID</div>
+            <div style="font-size: 1.35rem; font-weight: 700; color: #2997ff; letter-spacing: 0.02em;">${escapeHtml(doc.mediarcaId || 'PENDING')}</div>
           </div>
         </div>
 
-        <!-- Doctor Console Tabbed Navigation (UX Resolution) -->
-        <div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.75rem; overflow-x: auto;">
-          <button class="btn btn-sm ${activeTab === 'current' ? 'btn-primary' : 'btn-secondary'}" onclick="window.mediarcaApp.setDoctorTab('current')">
-            <i data-lucide="user-check" style="width:13px;height:13px"></i> Current Patient & Vitals
+        <!-- Apple Segmented Tab Bar -->
+        <div class="apple-segmented-bar" style="margin-bottom: 1.75rem;">
+          <button class="apple-segmented-tab ${activeTab === 'current' ? 'active' : ''}" onclick="window.mediarcaApp.setDoctorTab('current')">
+            <i data-lucide="user-check" style="width:14px;height:14px"></i> Current Patient & Vitals
           </button>
-          <button class="btn btn-sm ${activeTab === 'next' ? 'btn-primary' : 'btn-secondary'}" onclick="window.mediarcaApp.setDoctorTab('next')">
-            <i data-lucide="users" style="width:13px;height:13px"></i> Next in Line (${nextPatients.length})
+          <button class="apple-segmented-tab ${activeTab === 'next' ? 'active' : ''}" onclick="window.mediarcaApp.setDoctorTab('next')">
+            <i data-lucide="users" style="width:14px;height:14px"></i> Next in Line (${nextPatients.length})
           </button>
-          <button class="btn btn-sm ${activeTab === 'schedule' ? 'btn-primary' : 'btn-secondary'}" onclick="window.mediarcaApp.setDoctorTab('schedule')">
-            <i data-lucide="calendar" style="width:13px;height:13px"></i> Today's Schedule (${queue.tokens?.length || 0})
+          <button class="apple-segmented-tab ${activeTab === 'schedule' ? 'active' : ''}" onclick="window.mediarcaApp.setDoctorTab('schedule')">
+            <i data-lucide="calendar" style="width:14px;height:14px"></i> Today's Schedule (${queue.tokens?.length || 0})
           </button>
-          <button class="btn btn-sm ${activeTab === 'statistics' ? 'btn-primary' : 'btn-secondary'}" onclick="window.mediarcaApp.setDoctorTab('statistics')">
-            <i data-lucide="bar-chart-2" style="width:13px;height:13px"></i> Daily Statistics
+          <button class="apple-segmented-tab ${activeTab === 'statistics' ? 'active' : ''}" onclick="window.mediarcaApp.setDoctorTab('statistics')">
+            <i data-lucide="bar-chart-2" style="width:14px;height:14px"></i> Daily Statistics
           </button>
-          <button class="btn btn-sm ${activeTab === 'profile' ? 'btn-primary' : 'btn-secondary'}" onclick="window.mediarcaApp.setDoctorTab('profile')">
-            <i data-lucide="award" style="width:13px;height:13px"></i> Doctor Profile & Credentials
+          <button class="apple-segmented-tab ${activeTab === 'profile' ? 'active' : ''}" onclick="window.mediarcaApp.setDoctorTab('profile')">
+            <i data-lucide="award" style="width:14px;height:14px"></i> Doctor Profile & Credentials
           </button>
         </div>
 
         ${activeTab === 'profile' ? `
-          <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: var(--radius-md); padding: 1.75rem; box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.04); margin-bottom: 2rem;">
+          <div class="apple-card" style="margin-bottom: 2rem;">
             
             <!-- Doctor Profile Header Banner -->
-            <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding-bottom: 1.25rem; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+            <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(0,0,0,0.06); padding-bottom: 1.25rem; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
               <div style="display: flex; align-items: center; gap: 1.25rem;">
                 <div style="position: relative;">
-                  <img id="docAvatarPreview" src="${escapeHtml(doc.avatar || 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=300&h=300&fit=crop&crop=faces&q=80')}" alt="${escapeHtml(doc.name)}" style="width: 72px; height: 72px; border-radius: 16px; object-fit: cover; border: 2px solid #0284c7; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.15);">
-                  <span style="position: absolute; bottom: -4px; right: -4px; width: 14px; height: 14px; border-radius: 50%; background: #10b981; border: 2px solid #fff;"></span>
+                  <img id="docAvatarPreview" src="${escapeHtml(doc.avatar || 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=300&h=300&fit=crop&crop=faces&q=80')}" alt="${escapeHtml(doc.name)}" style="width: 68px; height: 68px; border-radius: 16px; object-fit: cover; border: 1px solid rgba(0,0,0,0.08);">
+                  <span style="position: absolute; bottom: -3px; right: -3px; width: 13px; height: 13px; border-radius: 50%; background: #10b981; border: 2px solid #fff;"></span>
                 </div>
                 <div>
                   <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.2rem;">
-                    <h3 style="font-size: 1.35rem; font-weight: 800; color: #0f172a; margin: 0;">${escapeHtml(doc.name || 'Practitioner Profile')}</h3>
-                    <span class="badge badge-verified" style="display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.7rem;">
+                    <h3 style="font-size: 1.25rem; font-weight: 600; color: #1d1d1f; margin: 0; letter-spacing: -0.02em;">${escapeHtml(doc.name || 'Practitioner Profile')}</h3>
+                    <span class="badge badge-verified" style="display: inline-flex; align-items: center; gap: 0.25rem;">
                       <i data-lucide="shield-check" style="width: 12px; height: 12px;"></i> Verified Specialist
                     </span>
                   </div>
-                  <div style="font-size: 0.85rem; font-weight: 600; color: #0284c7;">${escapeHtml(doc.title || doc.specialty || 'Medical Specialist')}</div>
-                  <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.15rem;">
-                    ${escapeHtml(doc.email || user.email || '')} • <strong>Mediarca ID:</strong> <span class="text-mono" style="color: #0f172a; font-weight: 700;">${escapeHtml(doc.mediarcaId || 'MED-DOC-7700')}</span>
+                  <div style="font-size: 0.875rem; font-weight: 500; color: #0066cc;">${escapeHtml(doc.title || doc.specialty || 'Medical Specialist')}</div>
+                  <div style="font-size: 0.75rem; color: #86868b; margin-top: 0.15rem;">
+                    ${escapeHtml(doc.email || user.email || '')} • Mediarca ID: <strong style="color: #0066cc;">${escapeHtml(doc.mediarcaId || 'MED-DOC-7700')}</strong>
                   </div>
                 </div>
               </div>
               
-              <div style="display: flex; gap: 1rem; background: #f8fafc; border: 1px solid #e2e8f0; padding: 0.65rem 1rem; border-radius: 12px; text-align: center;">
+              <div style="display: flex; gap: 1.25rem; background: #f5f5f7; border: 1px solid rgba(0,0,0,0.06); padding: 0.65rem 1.15rem; border-radius: 14px; text-align: center;">
                 <div>
-                  <div style="font-size: 0.65rem; color: #64748b; text-transform: uppercase; font-weight: 700;">Registration No</div>
-                  <div class="text-mono" style="font-size: 0.85rem; font-weight: 800; color: #0f172a;">${escapeHtml(doc.regNumber || 'NMC-VERIFIED')}</div>
+                  <div style="font-size: 0.65rem; color: #86868b; text-transform: uppercase; font-weight: 600; letter-spacing: 0.02em;">Registration No</div>
+                  <div style="font-size: 0.875rem; font-weight: 600; color: #1d1d1f;">${escapeHtml(doc.regNumber || 'NMC-VERIFIED')}</div>
                 </div>
-                <div style="border-left: 1px solid #e2e8f0; padding-left: 1rem;">
-                  <div style="font-size: 0.65rem; color: #64748b; text-transform: uppercase; font-weight: 700;">Current Fee</div>
-                  <div style="font-size: 0.95rem; font-weight: 800; color: #16a34a;">₹${doc.fee || 600}</div>
+                <div style="border-left: 1px solid rgba(0,0,0,0.08); padding-left: 1.25rem;">
+                  <div style="font-size: 0.65rem; color: #86868b; text-transform: uppercase; font-weight: 600; letter-spacing: 0.02em;">Current Fee</div>
+                  <div style="font-size: 1rem; font-weight: 700; color: #0066cc;">₹${doc.fee || 600}</div>
                 </div>
               </div>
             </div>
@@ -1395,24 +1396,24 @@ class MediarcaApp {
                 <!-- SECTION 1: Doctor Information & Professional Credentials -->
                 <div>
                   <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1.25rem;">
-                    <i data-lucide="user-check" style="width: 18px; height: 18px; color: #0284c7;"></i>
-                    <h4 style="font-size: 1.05rem; font-weight: 800; color: #0f172a; margin: 0;">Doctor Identity & Clinical Credentials</h4>
+                    <i data-lucide="user-check" style="width: 16px; height: 16px; color: #0066cc;"></i>
+                    <h4 style="font-size: 1rem; font-weight: 600; color: #1d1d1f; margin: 0;">Doctor Identity & Clinical Credentials</h4>
                   </div>
 
                   <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 0.85rem;">
                     <div class="form-group">
-                      <label class="form-label" style="font-size: 0.775rem; font-weight: 700;">Doctor Full Name *</label>
+                      <label class="form-label">Doctor Full Name *</label>
                       <input type="text" name="name" class="form-input" value="${escapeHtml(doc.name || '')}" placeholder="e.g. Dr. Bikesh Ray" required>
                     </div>
                     <div class="form-group">
-                      <label class="form-label" style="font-size: 0.775rem; font-weight: 700;">Clinical Title / Designation</label>
+                      <label class="form-label">Clinical Title / Designation</label>
                       <input type="text" name="title" class="form-input" value="${escapeHtml(doc.title || '')}" placeholder="e.g. Consultant Interventional Cardiologist">
                     </div>
                   </div>
 
                   <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 0.85rem;">
                     <div class="form-group">
-                      <label class="form-label" style="font-size: 0.775rem; font-weight: 700;">Medical Specialty *</label>
+                      <label class="form-label">Medical Specialty *</label>
                       <select name="specialty" class="form-select" required>
                         <option value="Cardiology" ${(doc.specialty || '').toLowerCase().includes('cardio') ? 'selected' : ''}>Cardiology & Heart Care</option>
                         <option value="Dermatology" ${(doc.specialty || '').toLowerCase().includes('derma') ? 'selected' : ''}>Dermatology & Skin</option>
@@ -1427,48 +1428,48 @@ class MediarcaApp {
                       </select>
                     </div>
                     <div class="form-group">
-                      <label class="form-label" style="font-size: 0.775rem; font-weight: 700;">Degrees & Qualifications *</label>
+                      <label class="form-label">Degrees & Qualifications *</label>
                       <input type="text" name="degrees" class="form-input" value="${escapeHtml(doc.degrees || 'MBBS, MD')}" placeholder="e.g. MBBS, MD (Cardiology), FACC" required>
                     </div>
                   </div>
 
                   <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 0.85rem;">
                     <div class="form-group">
-                      <label class="form-label" style="font-size: 0.775rem; font-weight: 700;">Consultation Fee (₹ INR) *</label>
+                      <label class="form-label">Consultation Fee (₹ INR) *</label>
                       <input type="number" name="fee" class="form-input" value="${doc.fee || 600}" min="50" max="10000" step="50" required>
                     </div>
                     <div class="form-group">
-                      <label class="form-label" style="font-size: 0.775rem; font-weight: 700;">Experience (Years) *</label>
+                      <label class="form-label">Experience (Years) *</label>
                       <input type="number" name="experienceYears" class="form-input" value="${doc.experienceYears || 10}" min="1" max="60" required>
                     </div>
                   </div>
 
                   <div class="form-group" style="margin-bottom: 0.85rem;">
-                    <label class="form-label" style="font-size: 0.775rem; font-weight: 700;">Hospital / Clinic Affiliation & Suite *</label>
+                    <label class="form-label">Hospital / Clinic Affiliation & Suite *</label>
                     <input type="text" name="hospital" class="form-input" value="${escapeHtml(doc.hospital || '')}" placeholder="e.g. Apex Heart Institute & Research Center, Suite 402" required>
                   </div>
 
                   <div class="form-group" style="margin-bottom: 0.85rem;">
-                    <label class="form-label" style="font-size: 0.775rem; font-weight: 700;">Profile Photo / Avatar URL</label>
+                    <label class="form-label">Profile Photo / Avatar URL</label>
                     <input type="url" name="avatar" class="form-input" value="${escapeHtml(doc.avatar || '')}" placeholder="https://images.unsplash.com/..." oninput="document.getElementById('docAvatarPreview').src = this.value">
                   </div>
 
                   <div class="form-group" style="margin-bottom: 0.85rem;">
-                    <label class="form-label" style="font-size: 0.775rem; font-weight: 700;">Clinical Summary & Bio</label>
+                    <label class="form-label">Clinical Summary & Bio</label>
                     <textarea name="bio" class="form-textarea" style="min-height: 80px;" placeholder="Brief outline of your clinical practice, sub-specialties, and clinical philosophy...">${escapeHtml(doc.bio || '')}</textarea>
                   </div>
                 </div>
 
-                <!-- SECTION 2: Interactive OPD Consultation Schedule Builder (NO MANUAL TYPING!) -->
-                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 1.5rem;">
+                <!-- SECTION 2: Interactive OPD Consultation Schedule Builder -->
+                <div style="background: #f5f5f7; border: 1px solid rgba(0,0,0,0.06); border-radius: 18px; padding: 1.5rem;">
                   <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1.25rem;">
-                    <i data-lucide="calendar-clock" style="width: 18px; height: 18px; color: #0284c7;"></i>
-                    <h4 style="font-size: 1.05rem; font-weight: 800; color: #0f172a; margin: 0;">OPD Consultation Schedule</h4>
+                    <i data-lucide="calendar-clock" style="width: 16px; height: 16px; color: #0066cc;"></i>
+                    <h4 style="font-size: 1rem; font-weight: 600; color: #1d1d1f; margin: 0;">OPD Consultation Schedule</h4>
                   </div>
 
-                  <!-- 1. Active Days Selector (Clickable Toggle Pills) -->
+                  <!-- 1. Active Days Selector (Apple Option Chips) -->
                   <div class="form-group" style="margin-bottom: 1.25rem;">
-                    <label class="form-label" style="font-size: 0.775rem; font-weight: 700; margin-bottom: 0.5rem;">
+                    <label class="form-label" style="margin-bottom: 0.5rem;">
                       Active Consultation Days (Click to Select / Unselect) *
                     </label>
                     <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
@@ -1476,10 +1477,9 @@ class MediarcaApp {
                         const isScheduled = (doc.schedule || 'Mon - Sat').includes(day) || ((doc.schedule || '').includes('Daily')) || ((doc.schedule || '').includes('Mon - Sat') && day !== 'Sun') || ((doc.schedule || '').includes('Mon - Fri') && day !== 'Sat' && day !== 'Sun');
                         return `
                           <button type="button" 
-                            class="doc-day-pill ${isScheduled ? 'active-day-pill' : ''}" 
+                            class="doc-day-chip ${isScheduled ? 'active' : ''}" 
                             data-day="${day}" 
-                            onclick="window.mediarcaApp.toggleScheduleDay(this, '${day}')"
-                            style="padding: 0.4rem 0.75rem; border-radius: 8px; font-weight: 700; font-size: 0.8rem; cursor: pointer; transition: all 0.15s ease; border: 1px solid ${isScheduled ? '#0284c7' : '#cbd5e1'}; background: ${isScheduled ? '#0284c7' : '#f1f5f9'}; color: ${isScheduled ? '#ffffff' : '#334155'};">
+                            onclick="window.mediarcaApp.toggleScheduleDay(this, '${day}')">
                             ${day}
                           </button>
                         `;
@@ -1490,7 +1490,7 @@ class MediarcaApp {
                   <!-- 2. Consultation Timings (Dropdown Pickers) -->
                   <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem;">
                     <div class="form-group">
-                      <label class="form-label" style="font-size: 0.775rem; font-weight: 700;">OPD Start Time *</label>
+                      <label class="form-label">OPD Start Time *</label>
                       <select id="docSchedStart" class="form-select" onchange="window.mediarcaApp.updateSchedulePreview()">
                         <option value="08:00 AM">08:00 AM</option>
                         <option value="08:30 AM">08:30 AM</option>
@@ -1502,7 +1502,7 @@ class MediarcaApp {
                       </select>
                     </div>
                     <div class="form-group">
-                      <label class="form-label" style="font-size: 0.775rem; font-weight: 700;">OPD End Time *</label>
+                      <label class="form-label">OPD End Time *</label>
                       <select id="docSchedEnd" class="form-select" onchange="window.mediarcaApp.updateSchedulePreview()">
                         <option value="01:00 PM">01:00 PM</option>
                         <option value="02:00 PM">02:00 PM</option>
@@ -1520,7 +1520,7 @@ class MediarcaApp {
                   <!-- 3. Consultation Duration & Interval Settings -->
                   <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem;">
                     <div class="form-group">
-                      <label class="form-label" style="font-size: 0.775rem; font-weight: 700;">Avg Consult Duration *</label>
+                      <label class="form-label">Avg Consult Duration *</label>
                       <select name="avgConsultTimeMins" class="form-select" onchange="window.mediarcaApp.updateSchedulePreview()">
                         <option value="8">8 Minutes / Patient</option>
                         <option value="10">10 Minutes / Patient</option>
@@ -1531,7 +1531,7 @@ class MediarcaApp {
                       </select>
                     </div>
                     <div class="form-group">
-                      <label class="form-label" style="font-size: 0.775rem; font-weight: 700;">Lunch / Break Interval</label>
+                      <label class="form-label">Lunch / Break Interval</label>
                       <select id="docSchedBreak" class="form-select" onchange="window.mediarcaApp.updateSchedulePreview()">
                         <option value="none">No Break (Continuous OPD)</option>
                         <option value="01:00 PM - 02:00 PM" selected>01:00 PM - 02:00 PM (Lunch Break)</option>
@@ -1544,21 +1544,21 @@ class MediarcaApp {
                   <input type="hidden" id="docScheduleFormatted" name="schedule" value="${escapeHtml(doc.schedule || 'Mon - Sat | 09:00 AM - 03:00 PM')}">
 
                   <!-- 5. Computed Live Schedule Summary Card -->
-                  <div style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 10px; padding: 1rem; margin-bottom: 1.5rem;">
-                    <div style="font-size: 0.7rem; color: #166534; text-transform: uppercase; font-weight: 800; margin-bottom: 0.25rem;">
-                      🟢 Live OPD Display Format:
+                  <div style="background: #ffffff; border: 1px solid rgba(0,0,0,0.06); border-radius: 12px; padding: 1rem; margin-bottom: 1.5rem;">
+                    <div style="font-size: 0.6875rem; color: #86868b; text-transform: uppercase; font-weight: 600; letter-spacing: 0.02em; margin-bottom: 0.25rem;">
+                      Live OPD Display Format:
                     </div>
-                    <div id="docSchedulePreviewText" style="font-size: 1rem; font-weight: 800; color: #14532d;">
+                    <div id="docSchedulePreviewText" style="font-size: 0.95rem; font-weight: 600; color: #1d1d1f;">
                       ${escapeHtml(doc.schedule || 'Mon - Sat | 09:00 AM - 03:00 PM')}
                     </div>
-                    <div style="font-size: 0.75rem; color: #15803d; margin-top: 0.35rem;">
-                      ⚡ This exact schedule will be shown on your doctor card, queue radar, and patient booking calendar.
+                    <div style="font-size: 0.75rem; color: #86868b; margin-top: 0.35rem;">
+                      This exact schedule will be shown on your doctor card, queue radar, and patient booking calendar.
                     </div>
                   </div>
 
                   <!-- Save Button -->
-                  <button type="submit" class="btn btn-primary btn-block" style="padding: 0.85rem; font-weight: 800; font-size: 1rem; background: #090d16; color: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
-                    <i data-lucide="check" style="width: 18px; height: 18px;"></i> Save Doctor Profile & OPD Schedule
+                  <button type="submit" class="btn btn-primary btn-block" style="padding: 12px; font-size: 0.9375rem;">
+                    <i data-lucide="check" style="width: 16px; height: 16px;"></i> Save Doctor Profile & OPD Schedule
                   </button>
                 </div>
 
@@ -2214,44 +2214,48 @@ class MediarcaApp {
 
     container.innerHTML = `
       <div class="container" style="padding-top: 2rem; padding-bottom: 4rem;">
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <!-- Apple Dark Tile Admin Header Banner -->
+        <div class="apple-dark-tile" style="margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
           <div>
-            <span class="badge badge-role" style="background: #b91c1c; margin-bottom: 0.5rem;">Hospital Executive Administration</span>
-            <h2 style="font-size: 1.75rem; font-weight: 800; color: var(--text-primary);">Medical Board & Operations Command Desk</h2>
-            <p style="color: var(--text-secondary); font-size: 0.875rem;">Audit compliance ledger, practitioner credentials, multi-hospital facility rooms, and clinical throughput analytics.</p>
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem;">
+              <span class="badge badge-emergency" style="font-size: 0.75rem;"><i data-lucide="shield-alert" style="width: 12px; height: 12px;"></i> Hospital Executive Command</span>
+              <span style="font-size: 0.75rem; color: #86868b;">Medical Board Audit Gateway</span>
+            </div>
+            <h2 style="font-size: 1.5rem; font-weight: 600; color: #ffffff; margin: 0; letter-spacing: -0.02em;">Medical Board & Operations Desk</h2>
+            <p style="font-size: 0.875rem; color: #86868b; margin: 0.25rem 0 0;">Accreditation ledger, practitioner credentials, hospital facilities, and clinical telemetry.</p>
           </div>
-          <button class="btn btn-secondary" onclick="window.mediarcaAudio.playChime('success'); window.mediarcaApp.showToast('Audit report exported.', 'info');">
-            <i data-lucide="download" style="width: 14px; height: 14px;"></i> Export Audit Log (CSV)
+          <button class="btn btn-sm btn-pearl" onclick="window.mediarcaAudio.playChime('success'); window.mediarcaApp.showToast('Audit report exported.', 'info');">
+            <i data-lucide="download" style="width: 13px; height: 13px; color: #0066cc;"></i> Export Audit Log (CSV)
           </button>
         </div>
 
-        <!-- Admin Tabbed Navigation Bar (UX Resolution) -->
-        <div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.75rem; overflow-x: auto;">
-          <button class="btn btn-sm ${activeTab === 'overview' ? 'btn-primary' : 'btn-secondary'}" onclick="window.mediarcaApp.setAdminTab('overview')">
+        <!-- Apple Segmented Tab Bar -->
+        <div class="apple-segmented-bar" style="margin-bottom: 1.75rem;">
+          <button class="apple-segmented-tab ${activeTab === 'overview' ? 'active' : ''}" onclick="window.mediarcaApp.setAdminTab('overview')">
             <i data-lucide="bar-chart-3" style="width:13px;height:13px"></i> Overview
           </button>
-          <button class="btn btn-sm ${activeTab === 'verification' ? 'btn-primary' : 'btn-secondary'}" onclick="window.mediarcaApp.setAdminTab('verification')">
+          <button class="apple-segmented-tab ${activeTab === 'verification' ? 'active' : ''}" onclick="window.mediarcaApp.setAdminTab('verification')">
             <i data-lucide="shield-check" style="width:13px;height:13px"></i> Doctor Verification (${pending.length})
           </button>
-          <button class="btn btn-sm ${activeTab === 'users' ? 'btn-primary' : 'btn-secondary'}" onclick="window.mediarcaApp.setAdminTab('users')">
+          <button class="apple-segmented-tab ${activeTab === 'users' ? 'active' : ''}" onclick="window.mediarcaApp.setAdminTab('users')">
             <i data-lucide="users" style="width:13px;height:13px"></i> Users (${users.length})
           </button>
-          <button class="btn btn-sm ${activeTab === 'facilities' ? 'btn-primary' : 'btn-secondary'}" onclick="window.mediarcaApp.setAdminTab('facilities')">
+          <button class="apple-segmented-tab ${activeTab === 'facilities' ? 'active' : ''}" onclick="window.mediarcaApp.setAdminTab('facilities')">
             <i data-lucide="building" style="width:13px;height:13px"></i> Facilities (${facilities.length})
           </button>
-          <button class="btn btn-sm ${activeTab === 'rooms' ? 'btn-primary' : 'btn-secondary'}" onclick="window.mediarcaApp.setAdminTab('rooms')">
+          <button class="apple-segmented-tab ${activeTab === 'rooms' ? 'active' : ''}" onclick="window.mediarcaApp.setAdminTab('rooms')">
             <i data-lucide="door-open" style="width:13px;height:13px"></i> Rooms (${rooms.length})
           </button>
-          <button class="btn btn-sm ${activeTab === 'queues' ? 'btn-primary' : 'btn-secondary'}" onclick="window.mediarcaApp.setAdminTab('queues')">
+          <button class="apple-segmented-tab ${activeTab === 'queues' ? 'active' : ''}" onclick="window.mediarcaApp.setAdminTab('queues')">
             <i data-lucide="radio" style="width:13px;height:13px"></i> Queues
           </button>
-          <button class="btn btn-sm ${activeTab === 'audit' ? 'btn-primary' : 'btn-secondary'}" onclick="window.mediarcaApp.setAdminTab('audit')">
+          <button class="apple-segmented-tab ${activeTab === 'audit' ? 'active' : ''}" onclick="window.mediarcaApp.setAdminTab('audit')">
             <i data-lucide="shield-alert" style="width:13px;height:13px"></i> Audit Logs (${auditLogs.length})
           </button>
-          <button class="btn btn-sm ${activeTab === 'reports' ? 'btn-primary' : 'btn-secondary'}" onclick="window.mediarcaApp.setAdminTab('reports')">
+          <button class="apple-segmented-tab ${activeTab === 'reports' ? 'active' : ''}" onclick="window.mediarcaApp.setAdminTab('reports')">
             <i data-lucide="file-spreadsheet" style="width:13px;height:13px"></i> Reports
           </button>
-          <button class="btn btn-sm ${activeTab === 'settings' ? 'btn-primary' : 'btn-secondary'}" onclick="window.mediarcaApp.setAdminTab('settings')">
+          <button class="apple-segmented-tab ${activeTab === 'settings' ? 'active' : ''}" onclick="window.mediarcaApp.setAdminTab('settings')">
             <i data-lucide="settings" style="width:13px;height:13px"></i> Settings
           </button>
         </div>

@@ -123,7 +123,7 @@ class MediarcaQueueEngine {
         
         <!-- Back Navigation Bar -->
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;">
-          <button class="btn btn-sm btn-secondary" onclick="window.mediarcaApp.switchView('patient-portal')" style="background: #ffffff; border: 1px solid #cbd5e1; color: #0f172a; font-weight: 700;">
+          <button class="btn btn-sm btn-pearl" onclick="window.mediarcaApp.switchView('patient-portal')">
             <i data-lucide="arrow-left" style="width: 14px; height: 14px;"></i> Back to My Appointments
           </button>
           
@@ -141,50 +141,48 @@ class MediarcaQueueEngine {
           </div>
         </div>
 
-        <!-- Clinical Radar Screen Box -->
-        <div class="radar-hud-box">
-          <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.12); padding-bottom: 1.25rem;">
+        <!-- Apple Dark Tile Clinical Radar Screen Box -->
+        <div class="apple-dark-tile" style="margin-bottom: 1.5rem;">
+          <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem;">
             <div style="display: flex; align-items: center; gap: 1rem;">
-              <img src="${sanitizeImageUrl(doctor.avatar)}" style="width: 48px; height: 48px; border-radius: var(--radius-sm); object-fit: cover; border: 1px solid rgba(255,255,255,0.2);">
+              <img src="${sanitizeImageUrl(doctor.avatar)}" style="width: 52px; height: 52px; border-radius: 14px; object-fit: cover; border: 1px solid rgba(255,255,255,0.15);">
               <div>
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
-                  <h3 style="font-size: 1.25rem; font-weight: 800; color: #ffffff;">${escapeHtml(doctor.name)}</h3>
+                  <h3 style="font-size: 1.25rem; font-weight: 600; color: #ffffff; margin: 0; letter-spacing: -0.02em;">${escapeHtml(doctor.name)}</h3>
                   <span class="badge badge-verified"><i data-lucide="shield-check" style="width: 12px; height: 12px;"></i> Verified</span>
                 </div>
-                <div style="font-size: 0.8125rem; color: #a1a1aa;">${escapeHtml(doctor.specialty)} • ${escapeHtml(doctor.hospital)}</div>
+                <div style="font-size: 0.8125rem; color: #86868b; margin-top: 0.15rem;">${escapeHtml(doctor.specialty)} • ${escapeHtml(doctor.hospital)}</div>
               </div>
             </div>
             <div style="text-align: right;">
-              <span class="doctor-id-tag text-mono" style="background: rgba(255,255,255,0.1); color: #38bdf8; border-color: rgba(255,255,255,0.2);">
+              <div style="font-size: 0.6875rem; color: #86868b; text-transform: uppercase; font-weight: 600; letter-spacing: 0.04em;">Official Mediarca ID</div>
+              <div style="font-size: 1.25rem; font-weight: 700; color: #2997ff; letter-spacing: 0.02em;">
                 ${escapeHtml(doctor.mediarcaId || 'PENDING')}
-              </span>
-              <div style="font-size: 0.75rem; color: #a1a1aa; margin-top: 0.25rem;">
-                Status: <strong style="color: #ffffff;">${escapeHtml(queue.status.toUpperCase())}</strong>
               </div>
             </div>
           </div>
 
-          <div class="radar-hud-grid">
-            <div class="radar-hud-metric-tile">
-              <div style="font-size: 0.75rem; text-transform: uppercase; color: #a1a1aa; font-weight: 700; margin-bottom: 0.35rem;">Now Serving</div>
-              <div class="radar-hud-num-large">${currentToken > 0 ? '#' + currentToken : 'IDLE'}</div>
-              <div style="font-size: 0.75rem; color: #38bdf8; font-weight: 600; margin-top: 0.35rem;">In Consultation</div>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; margin-top: 1.5rem;">
+            <div style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 14px; padding: 1.25rem; text-align: center;">
+              <div style="font-size: 0.75rem; text-transform: uppercase; color: #86868b; font-weight: 600; letter-spacing: 0.04em; margin-bottom: 0.35rem;">Now Serving</div>
+              <div style="font-size: 2.25rem; font-weight: 700; color: #2997ff; letter-spacing: -0.02em;">${currentToken > 0 ? '#' + currentToken : 'IDLE'}</div>
+              <div style="font-size: 0.75rem; color: #86868b; font-weight: 500; margin-top: 0.35rem;">In Consultation Room</div>
             </div>
 
-            <div class="radar-hud-metric-tile">
-              <div style="font-size: 0.75rem; text-transform: uppercase; color: #a1a1aa; font-weight: 700; margin-bottom: 0.35rem;">Your Token</div>
-              <div class="radar-hud-num-large" style="color: #4ade80;">${yourToken ? '#' + yourToken : '--'}</div>
-              <div style="font-size: 0.75rem; color: #86efac; font-weight: 600; margin-top: 0.35rem;">
+            <div style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 14px; padding: 1.25rem; text-align: center;">
+              <div style="font-size: 0.75rem; text-transform: uppercase; color: #86868b; font-weight: 600; letter-spacing: 0.04em; margin-bottom: 0.35rem;">Your Token</div>
+              <div style="font-size: 2.25rem; font-weight: 700; color: #34c759; letter-spacing: -0.02em;">${yourToken ? '#' + yourToken : '--'}</div>
+              <div style="font-size: 0.75rem; color: #86868b; font-weight: 500; margin-top: 0.35rem;">
                 ${yourToken === currentToken ? '✨ YOU ARE BEING CALLED' : (yourToken ? `${peopleAhead} ahead of you` : 'No active ticket')}
               </div>
             </div>
 
-            <div class="radar-hud-metric-tile">
-              <div style="font-size: 0.75rem; text-transform: uppercase; color: #a1a1aa; font-weight: 700; margin-bottom: 0.35rem;">Est. Wait Time</div>
-              <div class="radar-hud-num-large" style="color: #fbbf24; font-size: 2.25rem;">
+            <div style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 14px; padding: 1.25rem; text-align: center;">
+              <div style="font-size: 0.75rem; text-transform: uppercase; color: #86868b; font-weight: 600; letter-spacing: 0.04em; margin-bottom: 0.35rem;">Est. Wait Time</div>
+              <div style="font-size: 2.25rem; font-weight: 700; color: #ff9500; letter-spacing: -0.02em;">
                 ${yourToken && yourToken > currentToken ? '~' + waitMins + 'm' : (yourToken === currentToken ? '0 min' : '--')}
               </div>
-              <div style="font-size: 0.75rem; color: #fde047; font-weight: 600; margin-top: 0.35rem;">
+              <div style="font-size: 0.75rem; color: #86868b; font-weight: 500; margin-top: 0.35rem;">
                 Avg ${queue.avgConsultTimeMins}m / patient
               </div>
             </div>
@@ -192,11 +190,11 @@ class MediarcaQueueEngine {
         </div>
 
         <!-- Progression Strip -->
-        <div class="queue-track-card">
+        <div class="apple-card" style="margin-bottom: 1.5rem;">
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
             <div>
-              <h4 style="font-size: 1rem; font-weight: 800; color: var(--text-primary);">Live Line Sequence</h4>
-              <p style="font-size: 0.8125rem; color: var(--text-secondary);">Today's queue order for ${escapeHtml(doctor.name)}</p>
+              <h4 style="font-size: 1.05rem; font-weight: 600; color: #1d1d1f; margin: 0; letter-spacing: -0.02em;">Live Line Sequence</h4>
+              <p style="font-size: 0.8125rem; color: #86868b; margin: 0.2rem 0 0;">Today's queue sequence for ${escapeHtml(doctor.name)}</p>
             </div>
           </div>
 
@@ -207,10 +205,10 @@ class MediarcaQueueEngine {
 
         <!-- Digital Pass Card -->
         ${userBooking ? `
-          <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1.5rem;">
+          <div class="apple-card" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1.5rem;">
             <div style="display: flex; align-items: center; gap: 1.25rem;">
-              <div style="width: 72px; height: 72px; background: #ffffff; border: 2px solid var(--border-strong); padding: 4px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center;">
-                <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <div style="width: 68px; height: 68px; background: #f5f5f7; border: 1px solid rgba(0,0,0,0.08); padding: 6px; border-radius: 14px; display: flex; align-items: center; justify-content: center;">
+                <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#1d1d1f" stroke-width="2">
                   <rect x="3" y="3" width="7" height="7" rx="1"></rect>
                   <rect x="14" y="3" width="7" height="7" rx="1"></rect>
                   <rect x="3" y="14" width="7" height="7" rx="1"></rect>
@@ -220,23 +218,22 @@ class MediarcaQueueEngine {
                 </svg>
               </div>
               <div>
-                <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Digital Hospital OPD Pass</div>
-                <div style="font-size: 1.125rem; font-weight: 800; color: var(--text-primary);">Booking: ${escapeHtml(userBooking.bookingId)} • Token #${userBooking.tokenNumber}</div>
-                <div style="font-size: 0.8125rem; color: var(--text-secondary);">Patient: <strong>${escapeHtml(userBooking.patientName)}</strong> (${userBooking.patientAge}y) • ${escapeHtml(userBooking.hospital)}</div>
+                <div style="font-size: 0.6875rem; color: #86868b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;">Digital Hospital OPD Pass</div>
+                <div style="font-size: 1.15rem; font-weight: 600; color: #1d1d1f; letter-spacing: -0.01em;">Booking: ${escapeHtml(userBooking.bookingId)} • Token #${userBooking.tokenNumber}</div>
+                <div style="font-size: 0.8125rem; color: #86868b; margin-top: 0.15rem;">Patient: <strong style="color: #1d1d1f;">${escapeHtml(userBooking.patientName)}</strong> (${userBooking.patientAge}y) • ${escapeHtml(userBooking.hospital)}</div>
               </div>
             </div>
-            <button class="btn btn-secondary" onclick="window.print()">
-              <i data-lucide="printer" style="width: 15px; height: 15px;"></i> Print Token Pass
+            <button class="btn btn-sm btn-pearl" onclick="window.print()">
+              <i data-lucide="printer" style="width: 14px; height: 14px; color: #0066cc;"></i> Print Token Pass
             </button>
           </div>
         ` : `
-          <div style="text-align: center; padding: 2rem; background: var(--bg-surface); border: 1px dashed var(--border-strong); border-radius: var(--radius-md);">
-            <p style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 1rem;">Need an appointment with ${escapeHtml(doctor.name)}?</p>
+          <div style="text-align: center; padding: 2.5rem; background: #f5f5f7; border: 1px solid rgba(0,0,0,0.06); border-radius: 18px;">
+            <p style="color: #86868b; font-size: 0.875rem; margin-bottom: 1rem;">Need an appointment with ${escapeHtml(doctor.name)}?</p>
             <button class="btn btn-primary" onclick="window.mediarcaApp.openBookingModal('${doctor.id}')">
               <i data-lucide="calendar-plus" style="width: 15px; height: 15px;"></i> Book Next Available Token
             </button>
           </div>
-        `}
       </div>
     `;
 
