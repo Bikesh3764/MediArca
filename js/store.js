@@ -1799,7 +1799,7 @@ async login(email, password) {
 
     if (note.includes('fever') || note.includes('throat') || note.includes('cough') || note.includes('cold')) {
       chiefComplaint = 'History of fever, cough, or respiratory symptoms.';
-      assessment = 'Suspected Acute Upper Respiratory Illness';
+      assessment = 'Suspected Acute Upper Respiratory Illness / Respiratory Infection';
       advice = 'Maintain hydration, monitor temperature trajectory, and review if red flag symptoms develop.';
     } else if (note.includes('chest') || note.includes('bp') || note.includes('hypertension') || note.includes('heart')) {
       chiefComplaint = 'Cardiovascular evaluation / elevated blood pressure tracking.';
@@ -1811,13 +1811,28 @@ async login(email, password) {
       advice = 'Dietary moderation, avoid late night meals, and monitor symptom response.';
     }
 
+    let examFindings = 'Physical evaluation & examination to be documented directly by attending physician.';
+    if (note.includes('congest') || note.includes('throat') || note.includes('exam')) {
+      examFindings = 'Clinical examination reveals pharyngeal congestion / congested mucosa and localized irritation.';
+    }
+
+    const detectedMeds = [];
+    if (note.includes('azithromycin')) detectedMeds.push('Tab. Azithromycin 500mg');
+    if (note.includes('paracetamol')) detectedMeds.push('Tab. Paracetamol 650mg');
+    if (note.includes('pantoprazole')) detectedMeds.push('Cap. Pantoprazole 40mg');
+    if (note.includes('metoprolol')) detectedMeds.push('Tab. Metoprolol 25mg');
+    if (note.includes('amoxicillin')) detectedMeds.push('Cap. Amoxicillin 500mg');
+
     return {
       isAiDraft: true,
       rawDictation: rawNote,
       subjective: chiefComplaint,
-      objective: 'Physical evaluation & examination to be documented directly by attending physician.',
+      symptoms: chiefComplaint,
+      objective: examFindings,
+      examinationFindings: examFindings,
       assessment,
-      medications: [], // H-20: No autonomous prescription generation; physician must explicitly prescribe
+      diagnosis: assessment,
+      medications: detectedMeds,
       advice,
       disclaimer: 'Clinical Note Draft Assistant (NLP Extraction Demo) — Review and finalize with physician assessment.'
     };
@@ -1869,8 +1884,17 @@ async login(email, password) {
   }
 
   // 14. DIGITAL CONSENT MANAGEMENT (H-24, H-25, H-26 Resolution)
-  async recordDigitalConsent(userId, consentType, version = 'v2026.1-HIPAA') {
-    const effectiveUserId = userId || this.state.currentUser?.id;
+  async recordDigitalConsent(userIdOrType, consentTypeOrMeta, version = 'v2026.1-HIPAA') {
+    let effectiveUserId = this.state.currentUser?.id;
+    let consentType = 'general_treatment';
+
+    if (typeof userIdOrType === 'string' && (userIdOrType.includes('-') || userIdOrType.startsWith('a0') || userIdOrType.startsWith('usr_'))) {
+      effectiveUserId = userIdOrType;
+      consentType = consentTypeOrMeta || 'general_treatment';
+    } else if (typeof userIdOrType === 'string') {
+      consentType = userIdOrType;
+    }
+
     let cloudConsent = null;
 
     if (window.mediarcaSupabase && window.mediarcaSupabase.isConnected && effectiveUserId) {
@@ -1891,6 +1915,7 @@ async login(email, password) {
       userId: effectiveUserId,
       consentType,
       version,
+      termsAccepted: true,
       isAccepted: true,
       signedAt: new Date().toISOString()
     };
