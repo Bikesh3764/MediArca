@@ -47,6 +47,7 @@ class MediarcaQueueEngine {
     // Check if query matches doctor ID, Mediarca ID, name, or specialty
     const doc = store.state.doctors.find(d => 
       (d.id || '').toUpperCase() === q || 
+      (d.userId || '').toUpperCase() === q ||
       (d.mediarcaId && d.mediarcaId.toUpperCase() === q) ||
       (d.name || '').toUpperCase().includes(q) ||
       (d.specialty || '').toUpperCase().includes(q)
@@ -57,10 +58,10 @@ class MediarcaQueueEngine {
       return true;
     }
 
-    // Check user's own active pass reference (P-04 Resolution)
+    // Check user's own active pass reference
     const booking = store.state.bookings.find(b => 
-      b.patientId === store.state.currentUser?.id &&
-      (b.bookingId || '').toUpperCase() === q
+      (b.patientId === store.state.currentUser?.id || store.state.currentUser?.role === 'doctor') &&
+      ((b.bookingId || '').toUpperCase() === q || (b.id || '').toUpperCase() === q)
     );
     if (booking) {
       this.selectedDoctorId = booking.doctorId;
@@ -77,8 +78,19 @@ class MediarcaQueueEngine {
 
     const store = window.mediarcaStore;
     const verifiedDocs = (store.state.doctors || []).filter(d => d.verificationStatus === 'verified');
-    const doctor = store.state.doctors.find(d => d.id === this.selectedDoctorId) || verifiedDocs[0] || store.state.doctors[0];
-    if (!doctor) return;
+    const doctor = store.state.doctors.find(d => 
+      d.id === this.selectedDoctorId || 
+      d.userId === this.selectedDoctorId ||
+      (d.email && store.state.currentUser?.email && d.email.toLowerCase() === store.state.currentUser.email.toLowerCase())
+    ) || verifiedDocs[0] || (store.state.doctors || [])[0] || {
+      id: 'default_doc',
+      name: 'Dr. Aris Thorne',
+      specialty: 'Cardiology',
+      hospital: 'Metro Heart Institute',
+      mediarcaId: 'MED-DOC-1082',
+      avgConsultTimeMins: 12
+    };
+
     this.selectedDoctorId = doctor.id;
 
     const queue = store.state.queues[doctor.id] || {
@@ -94,7 +106,11 @@ class MediarcaQueueEngine {
     // Determine user token
     let userBooking = highlightBooking;
     if (!userBooking && store.state.currentUser?.role === 'patient') {
-      userBooking = store.state.bookings.find(b => b.doctorId === doctor.id && (b.status === 'waiting' || b.status === 'in-consultation'));
+      userBooking = store.state.bookings.find(b => 
+        (b.patientId === store.state.currentUser.id || (b.patientPhone && b.patientPhone === store.state.currentUser.phone)) &&
+        b.doctorId === doctor.id && 
+        (b.status === 'waiting' || b.status === 'in-consultation' || b.status === 'checked_in')
+      );
     }
     const yourToken = userBooking ? userBooking.tokenNumber : null;
 
@@ -105,8 +121,12 @@ class MediarcaQueueEngine {
     if (yourToken && yourToken !== currentToken) {
       const activeAhead = (queue.tokens || []).filter(t => t.tokenNumber < yourToken && (t.status === 'waiting' || t.status === 'in-consultation'));
       peopleAhead = activeAhead.length;
-      smartWait = store.calculateSmartWaitTime(doctor.id, yourToken);
-      waitMins = smartWait.estimatedWaitMins || (peopleAhead * (queue.avgConsultTimeMins || 12));
+      if (typeof store.calculateSmartWaitTime === 'function') {
+        smartWait = store.calculateSmartWaitTime(doctor.id, yourToken);
+        waitMins = smartWait.estimatedWaitMins || (peopleAhead * (queue.avgConsultTimeMins || 12));
+      } else {
+        waitMins = peopleAhead * (queue.avgConsultTimeMins || 12);
+      }
     }
 
     // Sound chime trigger on token update
@@ -118,13 +138,17 @@ class MediarcaQueueEngine {
     }
     this.lastServedToken = currentToken;
 
+    // Back destination based on role
+    const backView = store.state.currentUser?.role === 'doctor' ? 'doctor-portal' : (store.state.currentUser?.role === 'admin' ? 'admin-portal' : 'patient-portal');
+    const backLabel = store.state.currentUser?.role === 'doctor' ? 'Back to Practice Console' : (store.state.currentUser?.role === 'admin' ? 'Back to Admin Desk' : 'Back to My Appointments');
+
     container.innerHTML = `
       <div style="max-width: 960px; margin: 0 auto; padding-top: 1.5rem; padding-bottom: 3rem;">
         
         <!-- Back Navigation Bar -->
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;">
-          <button class="btn btn-sm btn-pearl" onclick="window.mediarcaApp.switchView('patient-portal')">
-            <i data-lucide="arrow-left" style="width: 14px; height: 14px;"></i> Back to My Appointments
+          <button class="btn btn-sm btn-pearl" onclick="window.mediarcaApp.switchView('${backView}')">
+            <i data-lucide="arrow-left" style="width: 14px; height: 14px;"></i> ${backLabel}
           </button>
           
           <div style="display: flex; align-items: center; gap: 0.5rem; flex: 1; max-width: 380px;">
@@ -151,13 +175,13 @@ class MediarcaQueueEngine {
                   <h3 style="font-size: 1.25rem; font-weight: 600; color: #ffffff; margin: 0; letter-spacing: -0.02em;">${escapeHtml(doctor.name)}</h3>
                   <span class="badge badge-verified"><i data-lucide="shield-check" style="width: 12px; height: 12px;"></i> Verified</span>
                 </div>
-                <div style="font-size: 0.8125rem; color: #86868b; margin-top: 0.15rem;">${escapeHtml(doctor.specialty)} • ${escapeHtml(doctor.hospital)}</div>
+                <div style="font-size: 0.8125rem; color: #86868b; margin-top: 0.15rem;">${escapeHtml(doctor.specialty || 'Specialist')} • ${escapeHtml(doctor.hospital || 'Hospital')}</div>
               </div>
             </div>
             <div style="text-align: right;">
               <div style="font-size: 0.6875rem; color: #86868b; text-transform: uppercase; font-weight: 600; letter-spacing: 0.04em;">Official Mediarca ID</div>
               <div style="font-size: 1.25rem; font-weight: 700; color: #2997ff; letter-spacing: 0.02em;">
-                ${escapeHtml(doctor.mediarcaId || 'PENDING')}
+                ${escapeHtml(doctor.mediarcaId || 'MED-DOC-7700')}
               </div>
             </div>
           </div>
@@ -183,7 +207,7 @@ class MediarcaQueueEngine {
                 ${yourToken && yourToken > currentToken ? '~' + waitMins + 'm' : (yourToken === currentToken ? '0 min' : '--')}
               </div>
               <div style="font-size: 0.75rem; color: #86868b; font-weight: 500; margin-top: 0.35rem;">
-                Avg ${queue.avgConsultTimeMins}m / patient
+                Avg ${queue.avgConsultTimeMins || 12}m / patient
               </div>
             </div>
           </div>
@@ -203,7 +227,7 @@ class MediarcaQueueEngine {
           </div>
         </div>
 
-        <!-- Digital Pass Card -->
+        <!-- Digital Pass or Booking Action Card -->
         ${userBooking ? `
           <div class="apple-card" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1.5rem;">
             <div style="display: flex; align-items: center; gap: 1.25rem;">
@@ -219,8 +243,8 @@ class MediarcaQueueEngine {
               </div>
               <div>
                 <div style="font-size: 0.6875rem; color: #86868b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;">Digital Hospital OPD Pass</div>
-                <div style="font-size: 1.15rem; font-weight: 600; color: #1d1d1f; letter-spacing: -0.01em;">Booking: ${escapeHtml(userBooking.bookingId)} • Token #${userBooking.tokenNumber}</div>
-                <div style="font-size: 0.8125rem; color: #86868b; margin-top: 0.15rem;">Patient: <strong style="color: #1d1d1f;">${escapeHtml(userBooking.patientName)}</strong> (${userBooking.patientAge}y) • ${escapeHtml(userBooking.hospital)}</div>
+                <div style="font-size: 1.15rem; font-weight: 600; color: #1d1d1f; letter-spacing: -0.01em;">Booking: ${escapeHtml(userBooking.bookingId || userBooking.id)} • Token #${userBooking.tokenNumber}</div>
+                <div style="font-size: 0.8125rem; color: #86868b; margin-top: 0.15rem;">Patient: <strong style="color: #1d1d1f;">${escapeHtml(userBooking.patientName || 'Patient')}</strong> (${userBooking.patientAge || '30'}y) • ${escapeHtml(doctor.hospital || 'Hospital OPD')}</div>
               </div>
             </div>
             <button class="btn btn-sm btn-pearl" onclick="window.print()">
@@ -234,6 +258,7 @@ class MediarcaQueueEngine {
               <i data-lucide="calendar-plus" style="width: 15px; height: 15px;"></i> Book Next Available Token
             </button>
           </div>
+        `}
       </div>
     `;
 

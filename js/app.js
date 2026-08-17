@@ -571,14 +571,11 @@ class MediarcaApp {
   trackAppointmentQueue(bookingIdentifier) {
     const store = window.mediarcaStore;
     const booking = store.state.bookings.find(b => b.bookingId === bookingIdentifier || b.id === bookingIdentifier);
-    if (booking) {
-      this.switchView('queue-radar', { doctorId: booking.doctorId, booking: booking });
-      if (window.mediarcaQueueEngine) {
-        window.mediarcaQueueEngine.selectedDoctorId = booking.doctorId;
-        window.mediarcaQueueEngine.renderQueueRadar(booking);
-      }
-    } else {
-      this.switchView('queue-radar');
+    const doctorId = booking ? booking.doctorId : null;
+    this.switchView('queue-radar', { doctorId: doctorId, booking: booking });
+    if (window.mediarcaQueueEngine) {
+      if (doctorId) window.mediarcaQueueEngine.selectedDoctorId = doctorId;
+      window.mediarcaQueueEngine.renderQueueRadar(booking);
     }
   }
 
@@ -1046,46 +1043,72 @@ class MediarcaApp {
 
         <!-- TAB 2: LIVE QUEUE TRACKER -->
         ${activeTab === 'queue' ? `
-          <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.75rem;">
-            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.25rem; border-bottom:1px solid var(--border-subtle); padding-bottom:0.75rem; flex-wrap:wrap; gap:0.5rem;">
+          <div style="background: #ffffff; border: 1px solid rgba(0,0,0,0.06); border-radius: 18px; padding: 1.75rem;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; border-bottom:1px solid rgba(0,0,0,0.06); padding-bottom:0.85rem; flex-wrap:wrap; gap:0.5rem;">
               <div>
-                <h3 style="font-size: 1.15rem; font-weight: 800; color: var(--text-primary); margin:0;">
-                  Live OPD Queue Tracking
+                <h3 style="font-size: 1.25rem; font-weight: 600; color: #1d1d1f; margin:0; letter-spacing: -0.02em;">
+                  Live OPD Queue Radar
                 </h3>
-                <p style="color: var(--text-secondary); font-size: 0.8125rem; margin:0.25rem 0 0;">
-                  Real-time token telemetry for your booked appointments.
+                <p style="color: #86868b; font-size: 0.8125rem; margin:0.25rem 0 0;">
+                  Real-time token telemetry, estimated waiting times, and live doctor session status.
                 </p>
               </div>
+              <button class="btn btn-sm btn-primary" onclick="window.mediarcaApp.switchView('queue-radar')">
+                <i data-lucide="maximize-2" style="width: 13px; height: 13px;"></i> Open Fullscreen Radar
+              </button>
             </div>
-            ${patientBookings.filter(b => b.status === 'waiting' || b.status === 'in-consultation' || b.status === 'checked_in' || b.status === 'booked').length === 0 ? `
-              <div style="padding: 2.5rem; text-align: center; border: 1px dashed var(--border-strong); border-radius: var(--radius-md);">
-                <i data-lucide="calendar-x" style="width:36px;height:36px;color:var(--text-muted);margin:0 auto 0.75rem;"></i>
-                <p style="color: var(--text-secondary); font-size: 0.875rem;">You don't have any active consultation tokens for today.</p>
-                <button class="btn btn-sm btn-primary" onclick="window.mediarcaApp.switchView('home')" style="margin-top:0.75rem;">Book a Doctor</button>
+            ${patientBookings.length === 0 ? `
+              <div style="padding: 3rem; text-align: center; background: #f5f5f7; border: 1px dashed rgba(0,0,0,0.1); border-radius: 14px;">
+                <i data-lucide="calendar-x" style="width:36px;height:36px;color:#86868b;margin:0 auto 0.75rem;"></i>
+                <h4 style="font-size: 1.05rem; font-weight: 600; color: #1d1d1f; margin-bottom: 0.25rem;">No Active Appointments</h4>
+                <p style="color: #86868b; font-size: 0.875rem; margin-bottom: 1rem;">You don't have any booked consultation tokens yet. Book a doctor to start live tracking.</p>
+                <button class="btn btn-primary" onclick="window.mediarcaApp.switchView('home')">
+                  <i data-lucide="search" style="width: 14px; height: 14px;"></i> Find & Book Doctors
+                </button>
               </div>
-            ` : patientBookings.filter(b => b.status === 'waiting' || b.status === 'in-consultation' || b.status === 'checked_in' || b.status === 'booked').map(b => `
-              <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: var(--radius-sm); padding: 1.25rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
-                <div>
-                  <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
-                    <span class="badge ${b.status === 'in-consultation' ? 'badge-live' : 'badge-verified'}">${escapeHtml(b.status.toUpperCase())}</span>
-                    <strong style="font-size: 0.95rem; color: var(--text-primary);">${escapeHtml(b.doctorName)}</strong>
-                    <span style="font-size: 0.8125rem; color: var(--text-secondary);">(${escapeHtml(b.specialty)})</span>
+            ` : patientBookings.map(b => {
+              const doc = window.mediarcaStore.state.doctors.find(d => d.id === b.doctorId) || { name: b.doctorName, hospital: b.hospital, specialty: b.specialty };
+              const q = window.mediarcaStore.state.queues[b.doctorId] || { currentToken: 0, status: 'in-session', avgConsultTimeMins: 12 };
+              const currToken = q.currentToken || 0;
+              const peopleAhead = Math.max(0, b.tokenNumber - currToken);
+              const waitEst = peopleAhead > 0 ? (peopleAhead * (q.avgConsultTimeMins || 12)) : 0;
+              return `
+                <div style="background: #fbfbfd; border: 1px solid rgba(0,0,0,0.06); border-radius: 16px; padding: 1.5rem; margin-bottom: 1.25rem;">
+                  <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.75rem;">
+                    <div>
+                      <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+                        <span class="badge ${b.tokenNumber === currToken ? 'badge-live' : (b.status === 'completed' ? 'badge-verified' : 'badge-pending')}">
+                          ${b.tokenNumber === currToken ? '● IN CONSULTATION' : (b.status === 'completed' ? 'COMPLETED' : 'IN QUEUE')}
+                        </span>
+                        <strong style="font-size: 1.1rem; color: #1d1d1f;">${escapeHtml(b.doctorName)}</strong>
+                        <span style="font-size: 0.8125rem; color: #0066cc; font-weight: 500;">(${escapeHtml(b.specialty)})</span>
+                      </div>
+                      <div style="font-size: 0.8125rem; color: #86868b;">
+                        ${escapeHtml(b.hospital || doc.hospital || 'Hospital OPD')} • Pass: <span style="font-family: monospace; font-weight: 600; color: #1d1d1f;">${escapeHtml(b.bookingId || b.id)}</span>
+                      </div>
+                    </div>
+                    <button class="btn btn-sm btn-primary" onclick="window.mediarcaApp.trackAppointmentQueue('${b.bookingId || b.id}')">
+                      <i data-lucide="radio" style="width: 13px; height: 13px;"></i> Launch Radar HUD
+                    </button>
                   </div>
-                  <div style="font-size: 0.8125rem; color: var(--text-muted);">
-                    Pass Ref: <span class="text-mono">${escapeHtml(b.bookingId)}</span> • Scheduled: ${escapeHtml(b.scheduledSlot || 'Today')}
+
+                  <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; background: #f5f5f7; padding: 1rem; border-radius: 12px;">
+                    <div style="text-align: center;">
+                      <div style="font-size: 0.7rem; color: #86868b; font-weight: 600; text-transform: uppercase;">Now Serving</div>
+                      <div style="font-size: 1.5rem; font-weight: 700; color: #0066cc;">${currToken > 0 ? '#' + currToken : 'IDLE'}</div>
+                    </div>
+                    <div style="text-align: center; border-left: 1px solid rgba(0,0,0,0.06); border-right: 1px solid rgba(0,0,0,0.06);">
+                      <div style="font-size: 0.7rem; color: #86868b; font-weight: 600; text-transform: uppercase;">Your Token</div>
+                      <div style="font-size: 1.5rem; font-weight: 700; color: #059669;">#${b.tokenNumber}</div>
+                    </div>
+                    <div style="text-align: center;">
+                      <div style="font-size: 0.7rem; color: #86868b; font-weight: 600; text-transform: uppercase;">Est. Wait</div>
+                      <div style="font-size: 1.5rem; font-weight: 700; color: #d97706;">${b.tokenNumber === currToken ? '0 min' : (waitEst > 0 ? '~' + waitEst + 'm' : '--')}</div>
+                    </div>
                   </div>
                 </div>
-                <div style="display: flex; align-items: center; gap: 1rem;">
-                  <div style="text-align: right;">
-                    <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Your Token</div>
-                    <div class="text-mono" style="font-size: 1.35rem; font-weight: 900; color: var(--clinical-blue);">#${b.tokenNumber}</div>
-                  </div>
-                  <button class="btn btn-clinical" onclick="window.mediarcaApp.trackAppointmentQueue('${b.bookingId || b.id}')">
-                    <i data-lucide="radio" style="width: 14px; height: 14px;"></i> View Live Telemetry
-                  </button>
-                </div>
-              </div>
-            `).join('')}
+              `;
+            }).join('')}
           </div>
         ` : ''}
 
@@ -1743,11 +1766,11 @@ class MediarcaApp {
               </div>
 
               <div style="background: #fdf4ff; border: 1px solid #f0abfc; padding: 1.25rem; border-radius: 12px;">
-                <div style="font-size: 0.75rem; color: #a21caf; font-weight: 700; text-transform: uppercase;">Patient Satisfaction</div>
+                <div style="font-size: 0.75rem; color: #a21caf; font-weight: 700; text-transform: uppercase;">Total Registered Today</div>
                 <div class="text-mono" style="font-size: 1.75rem; font-weight: 900; color: #a21caf; margin-top: 0.25rem;">
-                  ⭐ 4.9 / 5.0
+                  ${queue.tokens ? queue.tokens.length : 0} Patients
                 </div>
-                <div style="font-size: 0.7rem; color: #a21caf; font-weight: 600; margin-top: 0.25rem;">Verified Patient Feedback</div>
+                <div style="font-size: 0.7rem; color: #a21caf; font-weight: 600; margin-top: 0.25rem;">Live OPD Caseload</div>
               </div>
             </div>
 
