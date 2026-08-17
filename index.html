@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
 
   <!-- Clinical CSS Design System (Apple Inspired - Cache-busted) -->
-  <link rel="stylesheet" href="css/mediarca.css?v=20260817_apple_v1">
+  <link rel="stylesheet" href="css/mediarca.css?v=20260817_apple_v2">
   
   <!-- Pinned Lucide Icons -->
   <script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.min.js"></script>
@@ -143,11 +143,11 @@
             </p>
           </div>
 
-          <!-- Search & Filter Bar (Apple Pill Search) -->
-          <div class="filter-bar" style="background: #ffffff; border: 1px solid rgba(0,0,0,0.08); border-radius: 9999px; padding: 0.65rem 1.25rem; margin-bottom: 2.25rem; display: flex; align-items: center; gap: 1rem; box-shadow: var(--shadow-product);">
+          <!-- Search & Filter Bar (Apple Pill Search & Category Carousel) -->
+          <div class="filter-bar">
             <div class="search-input-wrap" style="flex: 1; min-width: 240px; position: relative;">
-              <i data-lucide="search" class="search-icon" style="position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: #86868b; pointer-events: none;"></i>
-              <input type="text" id="doctorSearchInput" placeholder="Search doctor name, specialty, or hospital..." style="width: 100%; padding: 0.65rem 0.85rem 0.65rem 2.5rem; border-radius: 9999px; border: 1px solid #d2d2d7; font-size: 0.875rem; font-family: inherit; background: #ffffff;">
+              <i data-lucide="search" class="search-icon" style="position: absolute; left: 0.95rem; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: #86868b; pointer-events: none;"></i>
+              <input type="text" id="doctorSearchInput" placeholder="Search doctor name, specialty, or hospital..." class="search-input" style="width: 100%; padding-left: 2.6rem;">
             </div>
             <div class="specialty-pills" id="specialtyPillsContainer">
               <!-- Rendered by JS -->
@@ -631,13 +631,13 @@
     </div>
   </footer>
 
-  <!-- Supabase Cloud SDK & Core Scripts (Apple Design V3) -->
+  <!-- Supabase Cloud SDK & Core Scripts (Apple Design V3.2) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.8/dist/umd/supabase.min.js"></script>
-  <script src="js/audio.js?v=20260817_apple_v1"></script>
-  <script src="js/store.js?v=20260817_apple_v1"></script>
-  <script src="js/supabase_client.js?v=20260817_apple_v1"></script>
-  <script src="js/queue.js?v=20260817_apple_v1"></script>
-  <script src="js/app.js?v=20260817_apple_v1"></script>
+  <script src="js/audio.js?v=20260817_apple_v2"></script>
+  <script src="js/store.js?v=20260817_apple_v2"></script>
+  <script src="js/supabase_client.js?v=20260817_apple_v2"></script>
+  <script src="js/queue.js?v=20260817_apple_v2"></script>
+  <script src="js/app.js?v=20260817_apple_v2"></script>
 
 </body>
 </html>

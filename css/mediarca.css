@@ -193,33 +193,108 @@ p {
 .nav-links {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
+  gap: 0.35rem;
   list-style: none;
 }
 
-.nav-link-item a,
-.nav-links a {
-  font-size: 0.875rem;
-  font-weight: 400;
-  color: var(--color-ink);
-  text-decoration: none;
-  opacity: 0.8;
-  letter-spacing: -0.01em;
-  transition: opacity 0.15s ease, color 0.15s ease;
+.nav-link-btn {
+  background: transparent;
+  border: none;
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-ink-muted-80);
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: all 0.15s ease;
+  outline: none;
 }
 
-.nav-link-item a:hover,
-.nav-links a:hover,
-.nav-links a.active {
-  opacity: 1;
+.nav-link-btn:hover {
+  background: rgba(0, 0, 0, 0.04);
+  color: var(--color-ink);
+}
+
+.nav-link-btn.active {
+  background: var(--color-canvas-parchment);
   color: var(--color-primary);
+  font-weight: 600;
 }
 
 .nav-actions {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.6rem;
+}
+
+/* Specialty Filter Pills (Apple Horizontal Carousel) */
+.filter-bar {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: var(--radius-pill);
+  padding: 0.5rem 0.85rem;
+  margin-bottom: 2.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  box-shadow: var(--shadow-product);
+}
+
+.specialty-pills {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  overflow-x: auto;
+  padding: 2px 0;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.specialty-pills::-webkit-scrollbar {
+  display: none;
+}
+
+.specialty-pill-btn {
+  background: var(--color-canvas-parchment);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: var(--radius-pill);
+  padding: 6px 14px;
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-ink);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+  transition: all 0.15s cubic-bezier(0.25, 0.1, 0.25, 1);
+  flex-shrink: 0;
+  outline: none;
+}
+
+.specialty-pill-btn:hover {
+  background: #e5e5ea;
+}
+
+.specialty-pill-btn:active {
+  transform: scale(0.96);
+}
+
+.specialty-pill-btn.active {
+  background: var(--color-ink);
+  color: #ffffff;
+  border-color: var(--color-ink);
+}
+
+.specialty-pill-btn.active i,
+.specialty-pill-btn.active svg {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
 }
 
 /* ==========================================================================
