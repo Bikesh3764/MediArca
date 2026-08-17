@@ -262,19 +262,24 @@ class MediarcaSupabaseClient {
   }
 
   async cloudUpdateDoctorProfile(doctorId, doctorData) {
-    if (!this.client || !doctorId) return;
+    if (!this.client || !doctorId) throw new Error('Supabase client unavailable');
 
-    try {
-      const updatePayload = {};
-      if (doctorData.fee !== undefined) updatePayload.fee = parseFloat(doctorData.fee);
-      if (doctorData.hospital !== undefined) updatePayload.hospital = doctorData.hospital;
-      if (doctorData.schedule !== undefined) updatePayload.schedule = doctorData.schedule;
-      if (doctorData.bio !== undefined) updatePayload.bio = doctorData.bio;
+    const updatePayload = {};
+    if (doctorData.fee !== undefined) updatePayload.fee = parseFloat(doctorData.fee);
+    if (doctorData.hospital !== undefined) updatePayload.hospital = doctorData.hospital;
+    if (doctorData.schedule !== undefined) updatePayload.schedule = doctorData.schedule;
+    if (doctorData.bio !== undefined) updatePayload.bio = doctorData.bio;
 
-      await this.client.from('doctors').update(updatePayload).eq('id', doctorId);
-    } catch (err) {
-      console.warn('Non-blocking doctor profile update notice:', err);
-    }
+    const { data, error } = await this.client
+      .from('doctors')
+      .update(updatePayload)
+      .eq('id', doctorId)
+      .select('*')
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) throw new Error('Doctor profile update was not persisted.');
+    return data;
   }
 
   // --- 2. PRIVACY-SAFE REALTIME TELEMETRY SUBSCRIPTIONS (P-03 Resolution) ---
@@ -322,7 +327,7 @@ class MediarcaSupabaseClient {
         .select('*')
         .order('rating', { ascending: false });
 
-      if (!docErr && docs && docs.length > 0) {
+      if (!docErr && docs) {
         window.mediarcaStore.state.doctors = docs.map(d => ({
           id: d.id,
           name: d.name,
@@ -352,7 +357,8 @@ class MediarcaSupabaseClient {
         .select('*')
         .eq('queue_date', new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date()));
 
-      if (!qErr && queues && queues.length > 0) {
+      if (!qErr && queues) {
+        window.mediarcaStore.state.queues = {};
         queues.forEach(q => {
           if (!window.mediarcaStore.state.queues[q.doctor_id]) {
             window.mediarcaStore.state.queues[q.doctor_id] = {
@@ -377,7 +383,7 @@ class MediarcaSupabaseClient {
           .select('*, users!appointments_patient_id_fkey(full_name, phone)')
           .order('created_at', { ascending: false });
 
-        if (!apptErr && appts && appts.length > 0) {
+        if (!apptErr && appts) {
           const mappedBookings = appts.map(a => ({
             id: a.id,
             bookingId: a.booking_id || `MED-BK-${a.id.substring(0, 8).toUpperCase()}`,
