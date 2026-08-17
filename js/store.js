@@ -2002,11 +2002,11 @@ async login(email, password) {
   // 14. DIGITAL CONSENT MANAGEMENT (H-24, H-25, H-26 Resolution)
   async recordDigitalConsent(userIdOrType, consentTypeOrMeta, version = 'v2026.1-HIPAA') {
     let effectiveUserId = this.state.currentUser?.id;
-    let consentType = 'general_treatment';
+    let consentType = 'treatment_consent';
 
     if (typeof userIdOrType === 'string' && (userIdOrType.includes('-') || userIdOrType.startsWith('a0') || userIdOrType.startsWith('usr_'))) {
       effectiveUserId = userIdOrType;
-      consentType = consentTypeOrMeta || 'general_treatment';
+      consentType = consentTypeOrMeta || 'treatment_consent';
     } else if (typeof userIdOrType === 'string') {
       consentType = userIdOrType;
     }

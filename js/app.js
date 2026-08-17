@@ -558,7 +558,7 @@ class MediarcaApp {
       this.closeAllModals();
       if (window.mediarcaAudio) window.mediarcaAudio.playChime('success');
 
-      if (isSameDay) {
+      if (isToday) {
         this.showToast(`Token #${newBooking.tokenNumber} issued! Tracking available in your Patient Portal.`, 'success');
         this.switchView('patient-portal');
       } else {
@@ -804,7 +804,7 @@ class MediarcaApp {
       });
 
       this.showToast('Practice settings updated successfully!', 'success');
-      this.renderDoctorDashboard();
+      this.renderDoctorConsole();
     } catch (err) {
       console.error('Doctor profile update error:', err);
       this.showToast(err.message || 'Could not update practice details.', 'warning');
