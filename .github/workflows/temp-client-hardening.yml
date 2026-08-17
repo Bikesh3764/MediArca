@@ -1,0 +1,63 @@
+name: Temporary Client Hardening
+
+on:
+  push:
+    branches: [audit-write-access-fixes]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: !startsWith(github.event.head_commit.message, '[temp-hardening]')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch and validate
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          p = Path('js/supabase_client.js')
+          s = p.read_text(encoding='utf-8')
+
+          required = [
+              ("if (!docErr && docs && docs.length > 0) {", "if (!docErr && docs) {"),
+              ("if (!qErr && queues && queues.length > 0) {", "if (!qErr && queues) {"),
+              ("if (!apptErr && appts && appts.length > 0) {", "if (!apptErr && appts) {")
+          ]
+          for old, new in required:
+              if old not in s:
+                  raise SystemExit(f'missing expected condition: {old}')
+              s = s.replace(old, new, 1)
+
+          method = re.compile(r"  async cloudUpdateDoctorProfile\(doctorId, doctorData\) \{.*?\n  \}\n\n  // --- 2\. PRIVACY-SAFE", re.S)
+          m = method.search(s)
+          if not m:
+              raise SystemExit('doctor profile method not found')
+          replacement = """  async cloudUpdateDoctorProfile(doctorId, doctorData) {\n    if (!this.client || !doctorId) throw new Error('Supabase client unavailable');\n\n    const updatePayload = {};\n    if (doctorData.fee !== undefined) updatePayload.fee = parseFloat(doctorData.fee);\n    if (doctorData.hospital !== undefined) updatePayload.hospital = doctorData.hospital;\n    if (doctorData.schedule !== undefined) updatePayload.schedule = doctorData.schedule;\n    if (doctorData.bio !== undefined) updatePayload.bio = doctorData.bio;\n\n    const { data, error } = await this.client\n      .from('doctors')\n      .update(updatePayload)\n      .eq('id', doctorId)\n      .select('*')\n      .maybeSingle();\n\n    if (error) throw error;\n    if (!data) throw new Error('Doctor profile update was not persisted.');\n    return data;\n  }\n\n  // --- 2. PRIVACY-SAFE"""
+          s = s[:m.start()] + replacement + s[m.end():]
+          p.write_text(s, encoding='utf-8')
+          PY
+
+          echo 'Remaining UTC date patterns:'
+          grep -Rni "toISOString().split('T')\[0\]" js || true
+
+      - name: Validate application JavaScript
+        run: |
+          node --check js/supabase_client.js
+          node --check js/store.js
+          node --check js/app.js
+          node --check js/queue.js
+          node --check js/audio.js
+
+      - name: Commit final client hardening
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add js/supabase_client.js
+          git diff --cached --check
+          git commit -m "[temp-hardening] close client consistency gaps"
+          git push origin HEAD:audit-write-access-fixes
