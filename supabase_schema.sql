@@ -418,7 +418,7 @@ BEGIN
     v_booking_id := 'MED-BK-' || upper(to_hex(extract(epoch from now())::bigint)) || '-' || upper(substring(md5(random()::text) from 1 for 4));
     
     -- C-24 & C-27: Server-side cryptographic 128-bit check-in token generation
-    v_checkin_token := 'MED-QR-' || lower(encode(gen_random_bytes(16), 'hex'));
+    v_checkin_token := 'MED-QR-' || lower(replace(gen_random_uuid()::text, '-', ''));
 
     -- 7. All new same-day bookings start in 'waiting' queue line until called by doctor (H-11 Resolution)
     UPDATE clinic_queues 
@@ -526,7 +526,7 @@ BEGIN
 
     v_next_token := COALESCE(v_next_token, 0) + 1;
     v_booking_id := 'MED-WLK-' || upper(to_hex(extract(epoch from now())::bigint)) || '-' || upper(substring(md5(random()::text) from 1 for 4));
-    v_checkin_token := 'MED-QR-' || lower(encode(gen_random_bytes(16), 'hex'));
+    v_checkin_token := 'MED-QR-' || lower(replace(gen_random_uuid()::text, '-', ''));
 
     UPDATE clinic_queues
     SET total_tokens = v_next_token, status = 'in-session', updated_at = NOW()
@@ -626,7 +626,7 @@ BEGIN
     END IF;
 
     v_booking_id := 'MED-BK-' || upper(to_hex(extract(epoch from now())::bigint)) || '-' || upper(substring(md5(random()::text) from 1 for 4));
-    v_checkin_token := 'MED-QR-' || lower(encode(gen_random_bytes(16), 'hex'));
+    v_checkin_token := 'MED-QR-' || lower(replace(gen_random_uuid()::text, '-', ''));
 
     INSERT INTO appointments (
         booking_id, patient_id, doctor_id, patient_name, patient_phone, patient_age, patient_gender,
@@ -1524,7 +1524,7 @@ BEGIN
     END IF;
 
     -- RS-04 Resolution: Invalidate old check-in token and issue fresh 128-bit CSPRNG token for new date window
-    v_checkin_token := 'MED-QR-' || lower(encode(gen_random_bytes(16), 'hex'));
+    v_checkin_token := 'MED-QR-' || lower(replace(gen_random_uuid()::text, '-', ''));
 
     UPDATE appointments
     SET scheduled_date = p_new_date,
@@ -1921,7 +1921,7 @@ BEGIN
     END IF;
 
     -- Generate high-entropy 128-bit session credential
-    v_token := 'MED-RTC-' || lower(encode(gen_random_bytes(16), 'hex'));
+    v_token := 'MED-RTC-' || lower(replace(gen_random_uuid()::text, '-', ''));
 
     INSERT INTO telemedicine_rooms (
         appointment_id, doctor_id, patient_id, room_name, room_token, session_status, expires_at
