@@ -755,69 +755,79 @@ class MediarcaApp {
 
   async handlePatientProfileSubmit(e) {
     if (e) e.preventDefault();
-    const form = e.target;
-    const submitBtn = form.querySelector('button[type="submit"]');
+    const form = e.target || document.getElementById('patientProfileUpdateForm');
+    const submitBtn = form?.querySelector('button[type="submit"]') || document.getElementById('patientProfileSaveBtn');
     if (submitBtn) {
       submitBtn.disabled = true;
-      submitBtn.innerHTML = '<i data-lucide="loader-2" style="width:14px;height:14px;animation:spin 1s linear infinite;"></i> Saving...';
+      submitBtn.innerText = 'Saving...';
     }
 
     try {
       const formData = new FormData(form);
+      const name = (formData.get('name') || form.querySelector('[name="name"]')?.value || '').trim();
+      const phone = (formData.get('phone') || form.querySelector('[name="phone"]')?.value || '').trim();
+      const emergencyContact = (formData.get('emergencyContact') || form.querySelector('[name="emergencyContact"]')?.value || '').trim();
+      const age = formData.get('age') || form.querySelector('[name="age"]')?.value || 30;
+      const gender = formData.get('gender') || form.querySelector('[name="gender"]')?.value || 'Male';
+      const bloodGroup = formData.get('bloodGroup') || form.querySelector('[name="bloodGroup"]')?.value || 'O+';
+      const insurancePolicy = (formData.get('insurancePolicy') || form.querySelector('[name="insurancePolicy"]')?.value || '').trim();
+      const allergies = (formData.get('allergies') || form.querySelector('[name="allergies"]')?.value || '').trim();
+
       await window.mediarcaStore.updatePatientProfile({
-        name: formData.get('name')?.trim(),
-        phone: formData.get('phone')?.trim(),
-        emergencyContact: formData.get('emergencyContact')?.trim(),
-        age: formData.get('age'),
-        gender: formData.get('gender'),
-        bloodGroup: formData.get('bloodGroup'),
-        insurancePolicy: formData.get('insurancePolicy')?.trim(),
-        allergies: formData.get('allergies')?.trim()
+        name,
+        phone,
+        emergencyContact,
+        age,
+        gender,
+        bloodGroup,
+        insurancePolicy,
+        allergies
       });
 
-      this.showToast('Health Profile & EMR Demographics updated successfully!', 'success');
+      this.showToast('Profile details saved successfully!', 'success');
       this.renderPatientDashboard();
     } catch (err) {
       console.error('Profile update error:', err);
       this.showToast(err.message || 'Could not update profile.', 'warning');
-    } finally {
       if (submitBtn) {
         submitBtn.disabled = false;
-        submitBtn.innerHTML = '<i data-lucide="save" style="width:14px;height:14px;"></i> Save & Update Health Profile';
+        submitBtn.innerText = 'Save Details';
       }
-      if (window.lucide) window.lucide.createIcons();
     }
   }
 
   async handleDoctorProfileSubmit(e) {
     if (e) e.preventDefault();
-    const form = e.target;
-    const submitBtn = form.querySelector('button[type="submit"]');
+    const form = e.target || document.getElementById('doctorProfileUpdateForm');
+    const submitBtn = form?.querySelector('button[type="submit"]');
     if (submitBtn) {
       submitBtn.disabled = true;
-      submitBtn.innerHTML = '<i data-lucide="loader-2" style="width:14px;height:14px;animation:spin 1s linear infinite;"></i> Updating...';
+      submitBtn.innerText = 'Updating...';
     }
 
     try {
       const formData = new FormData(form);
+      const fee = formData.get('fee') || form.querySelector('[name="fee"]')?.value;
+      const hospital = (formData.get('hospital') || form.querySelector('[name="hospital"]')?.value || '').trim();
+      const schedule = (formData.get('schedule') || form.querySelector('[name="schedule"]')?.value || '').trim();
+      const bio = (formData.get('bio') || form.querySelector('[name="bio"]')?.value || '').trim();
+
       await window.mediarcaStore.updateDoctorProfile({
-        fee: formData.get('fee'),
-        hospital: formData.get('hospital')?.trim(),
-        schedule: formData.get('schedule')?.trim(),
-        bio: formData.get('bio')?.trim()
+        fee,
+        hospital,
+        schedule,
+        bio
       });
 
-      this.showToast('Practice Settings & Consultation Fee updated successfully!', 'success');
+      this.showToast('Practice settings updated successfully!', 'success');
       this.renderDoctorDashboard();
     } catch (err) {
       console.error('Doctor profile update error:', err);
       this.showToast(err.message || 'Could not update practice details.', 'warning');
-    } finally {
       if (submitBtn) {
         submitBtn.disabled = false;
-        submitBtn.innerHTML = '<i data-lucide="save" style="width:14px;height:14px;"></i> Update Practice Details';
+        submitBtn.innerText = 'Update Practice Details';
       }
-      if (window.lucide) window.lucide.createIcons();
     }
   }
 
@@ -1120,126 +1130,83 @@ class MediarcaApp {
           </div>
         ` : ''}
 
-        <!-- TAB 6: PROFILE & INSURANCE (Audit v10 Resolution: Dynamic Authenticated Demographics & Digital Health ID) -->
+        <!-- TAB 6: PROFILE DETAILS (Clean, Simple & Direct) -->
         ${activeTab === 'profile' ? `
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; align-items: start;">
-            <!-- Left: Digital Health Card (ABDM / MediArca) -->
-            <div>
-              <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #fff; border-radius: var(--radius-md); padding: 1.5rem; box-shadow: var(--shadow-lg); border: 1px solid #334155; position: relative; overflow: hidden;">
-                <div style="position: absolute; right: -20px; bottom: -20px; opacity: 0.05; font-size: 10rem; font-weight: 900; pointer-events: none;">+</div>
-                
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.25rem; border-bottom: 1px solid rgba(255,255,255,0.15); padding-bottom: 0.75rem;">
-                  <div>
-                    <div style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; color: #38bdf8; font-weight: 700;">Ayushman Bharat Digital Mission (ABDM)</div>
-                    <div style="font-size: 1.1rem; font-weight: 800; color: #fff;">MediArca Digital Health Card</div>
-                  </div>
-                  <span class="badge" style="background: rgba(16,185,129,0.2); color: #34d399; border: 1px solid #059669; font-size: 0.65rem;">
-                    <i data-lucide="shield-check" style="width:10px;height:10px;"></i> VERIFIED EMR
-                  </span>
+          <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 2rem; max-width: 650px; margin: 0 auto; box-shadow: var(--shadow-sm);">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 1rem;">
+              <div style="display: flex; align-items: center; gap: 1rem;">
+                <div style="width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #0284c7, #0369a1); display: flex; align-items: center; justify-content: center; font-size: 1.25rem; font-weight: 800; color: #fff;">
+                  ${(user.name || 'P').charAt(0).toUpperCase()}
                 </div>
-
-                <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1.25rem;">
-                  <div style="width: 54px; height: 54px; border-radius: 50%; background: linear-gradient(135deg, #38bdf8, #0284c7); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 800; color: #fff; border: 2px solid #fff;">
-                    ${(user.name || 'P').charAt(0).toUpperCase()}
-                  </div>
-                  <div>
-                    <div style="font-size: 1.15rem; font-weight: 800; color: #fff;">${escapeHtml(user.name || 'Verified Patient')}</div>
-                    <div style="font-size: 0.75rem; color: #94a3b8;">${escapeHtml(user.email || 'N/A')}</div>
-                    <div style="font-size: 0.75rem; color: #38bdf8; font-family: var(--font-mono); font-weight: 700; margin-top: 0.2rem;">
-                      ABHA ID: ${escapeHtml(user.mediarcaId || ('MED-PAT-' + user.id.substring(0, 6).toUpperCase()))}
-                    </div>
-                  </div>
-                </div>
-
-                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; background: rgba(255,255,255,0.06); padding: 0.875rem; border-radius: var(--radius-sm); font-size: 0.75rem;">
-                  <div>
-                    <div style="color: #94a3b8; font-size: 0.65rem; text-transform: uppercase;">Blood Group</div>
-                    <div style="font-weight: 800; color: #f87171; font-size: 0.95rem;">${escapeHtml(user.clinicalProfile?.blood_group || user.bloodGroup || 'O+')}</div>
-                  </div>
-                  <div>
-                    <div style="color: #94a3b8; font-size: 0.65rem; text-transform: uppercase;">Age / Gender</div>
-                    <div style="font-weight: 700; color: #f1f5f9;">${user.clinicalProfile?.age || user.age || 30} Yrs • ${escapeHtml(user.clinicalProfile?.gender || user.gender || 'Male')}</div>
-                  </div>
-                  <div>
-                    <div style="color: #94a3b8; font-size: 0.65rem; text-transform: uppercase;">Mobile (India)</div>
-                    <div style="font-weight: 700; color: #f1f5f9;">${escapeHtml(user.phone || '+91 98765 43210')}</div>
-                  </div>
-                </div>
-
-                <div style="margin-top: 1rem; display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem; color: #94a3b8;">
-                  <span>Policy: <strong>${escapeHtml(user.clinicalProfile?.insurance_policy || 'Ayushman Bharat (AB-PMJAY)')}</strong></span>
-                  <span>Emergency: <strong>${escapeHtml(user.clinicalProfile?.emergency_contact || user.phone || 'On file')}</strong></span>
+                <div>
+                  <h3 style="font-size: 1.15rem; font-weight: 800; color: var(--text-primary); margin: 0;">${escapeHtml(user.name || 'Patient Profile')}</h3>
+                  <div style="font-size: 0.8125rem; color: var(--text-muted);">${escapeHtml(user.email || '')}</div>
                 </div>
               </div>
+              <span class="badge" style="background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; font-size: 0.75rem;">
+                <i data-lucide="check-circle" style="width: 12px; height: 12px;"></i> Verified Patient
+              </span>
             </div>
 
-            <!-- Right: Editable Details Form -->
-            <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.5rem;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                <h3 style="font-size: 1.0625rem; font-weight: 800; color: var(--text-primary);">Update Health Profile Details</h3>
-                <span style="font-size: 0.7rem; color: #16a34a; font-weight: 700;">🔒 Auto-Synced to Bookings</span>
+            <form id="patientProfileUpdateForm" onsubmit="window.mediarcaApp.handlePatientProfileSubmit(event)">
+              <div class="form-group" style="margin-bottom: 1rem;">
+                <label class="form-label">Full Name *</label>
+                <input type="text" name="name" class="form-input" value="${escapeHtml(user.name || '')}" placeholder="e.g. Rahul Sharma" required>
               </div>
 
-              <form id="patientProfileUpdateForm" onsubmit="window.mediarcaApp.handlePatientProfileSubmit(event)">
-                <div class="form-group" style="margin-bottom: 0.75rem;">
-                  <label class="form-label" style="font-size: 0.75rem;">Full Name *</label>
-                  <input type="text" name="name" class="form-input" value="${escapeHtml(user.name || '')}" required>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                <div class="form-group">
+                  <label class="form-label">Phone / WhatsApp Number *</label>
+                  <input type="tel" name="phone" class="form-input" value="${escapeHtml(user.phone || '+91 98765 43210')}" placeholder="+91 98765 43210" required>
                 </div>
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
-                  <div class="form-group">
-                    <label class="form-label" style="font-size: 0.75rem;">Phone / WhatsApp *</label>
-                    <input type="tel" name="phone" class="form-input" value="${escapeHtml(user.phone || '+91 98765 43210')}" required>
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label" style="font-size: 0.75rem;">Emergency Contact</label>
-                    <input type="tel" name="emergencyContact" class="form-input" value="${escapeHtml(user.clinicalProfile?.emergency_contact || '')}" placeholder="+91 98765 43210">
-                  </div>
+                <div class="form-group">
+                  <label class="form-label">Emergency Contact Phone</label>
+                  <input type="tel" name="emergencyContact" class="form-input" value="${escapeHtml(user.clinicalProfile?.emergency_contact || '')}" placeholder="+91 98765 43210">
                 </div>
+              </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
-                  <div class="form-group">
-                    <label class="form-label" style="font-size: 0.75rem;">Age</label>
-                    <input type="number" name="age" class="form-input" value="${user.clinicalProfile?.age || user.age || 30}" min="1" max="120">
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label" style="font-size: 0.75rem;">Gender</label>
-                    <select name="gender" class="form-select">
-                      <option value="Male" ${(user.clinicalProfile?.gender || user.gender) === 'Male' ? 'selected' : ''}>Male</option>
-                      <option value="Female" ${(user.clinicalProfile?.gender || user.gender) === 'Female' ? 'selected' : ''}>Female</option>
-                      <option value="Other" ${(user.clinicalProfile?.gender || user.gender) === 'Other' ? 'selected' : ''}>Other</option>
-                    </select>
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label" style="font-size: 0.75rem;">Blood Group</label>
-                    <select name="bloodGroup" class="form-select">
-                      <option value="O+" ${(user.clinicalProfile?.blood_group || user.bloodGroup) === 'O+' ? 'selected' : ''}>O+</option>
-                      <option value="A+" ${(user.clinicalProfile?.blood_group || user.bloodGroup) === 'A+' ? 'selected' : ''}>A+</option>
-                      <option value="B+" ${(user.clinicalProfile?.blood_group || user.bloodGroup) === 'B+' ? 'selected' : ''}>B+</option>
-                      <option value="AB+" ${(user.clinicalProfile?.blood_group || user.bloodGroup) === 'AB+' ? 'selected' : ''}>AB+</option>
-                      <option value="O-" ${(user.clinicalProfile?.blood_group || user.bloodGroup) === 'O-' ? 'selected' : ''}>O-</option>
-                      <option value="A-" ${(user.clinicalProfile?.blood_group || user.bloodGroup) === 'A-' ? 'selected' : ''}>A-</option>
-                      <option value="B-" ${(user.clinicalProfile?.blood_group || user.bloodGroup) === 'B-' ? 'selected' : ''}>B-</option>
-                      <option value="AB-" ${(user.clinicalProfile?.blood_group || user.bloodGroup) === 'AB-' ? 'selected' : ''}>AB-</option>
-                    </select>
-                  </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                <div class="form-group">
+                  <label class="form-label">Age</label>
+                  <input type="number" name="age" class="form-input" value="${user.clinicalProfile?.age || user.age || 30}" min="1" max="120">
                 </div>
-
-                <div class="form-group" style="margin-bottom: 0.75rem;">
-                  <label class="form-label" style="font-size: 0.75rem;">Insurance / AB-PMJAY Policy</label>
-                  <input type="text" name="insurancePolicy" class="form-input" value="${escapeHtml(user.clinicalProfile?.insurance_policy || 'Ayushman Bharat (AB-PMJAY)')}" placeholder="e.g. Star Health #SH-88902">
+                <div class="form-group">
+                  <label class="form-label">Gender</label>
+                  <select name="gender" class="form-select">
+                    <option value="Male" ${(user.clinicalProfile?.gender || user.gender) === 'Male' ? 'selected' : ''}>Male</option>
+                    <option value="Female" ${(user.clinicalProfile?.gender || user.gender) === 'Female' ? 'selected' : ''}>Female</option>
+                    <option value="Other" ${(user.clinicalProfile?.gender || user.gender) === 'Other' ? 'selected' : ''}>Other</option>
+                  </select>
                 </div>
-
-                <div class="form-group" style="margin-bottom: 1rem;">
-                  <label class="form-label" style="font-size: 0.75rem;">Known Allergies</label>
-                  <input type="text" name="allergies" class="form-input" value="${escapeHtml(user.clinicalProfile?.allergies || 'None Documented')}" placeholder="e.g. Penicillin, Sulfa drugs">
+                <div class="form-group">
+                  <label class="form-label">Blood Group</label>
+                  <select name="bloodGroup" class="form-select">
+                    <option value="O+" ${(user.clinicalProfile?.blood_group || user.bloodGroup) === 'O+' ? 'selected' : ''}>O+</option>
+                    <option value="A+" ${(user.clinicalProfile?.blood_group || user.bloodGroup) === 'A+' ? 'selected' : ''}>A+</option>
+                    <option value="B+" ${(user.clinicalProfile?.blood_group || user.bloodGroup) === 'B+' ? 'selected' : ''}>B+</option>
+                    <option value="AB+" ${(user.clinicalProfile?.blood_group || user.bloodGroup) === 'AB+' ? 'selected' : ''}>AB+</option>
+                    <option value="O-" ${(user.clinicalProfile?.blood_group || user.bloodGroup) === 'O-' ? 'selected' : ''}>O-</option>
+                    <option value="A-" ${(user.clinicalProfile?.blood_group || user.bloodGroup) === 'A-' ? 'selected' : ''}>A-</option>
+                    <option value="B-" ${(user.clinicalProfile?.blood_group || user.bloodGroup) === 'B-' ? 'selected' : ''}>B-</option>
+                    <option value="AB-" ${(user.clinicalProfile?.blood_group || user.bloodGroup) === 'AB-' ? 'selected' : ''}>AB-</option>
+                  </select>
                 </div>
+              </div>
 
-                <button type="submit" class="btn btn-block btn-primary" style="font-weight: 700;">
-                  <i data-lucide="save" style="width: 14px; height: 14px;"></i> Save & Update Health Profile
-                </button>
-              </form>
-            </div>
+              <div class="form-group" style="margin-bottom: 1rem;">
+                <label class="form-label">Insurance Provider / Policy</label>
+                <input type="text" name="insurancePolicy" class="form-input" value="${escapeHtml(user.clinicalProfile?.insurance_policy || user.clinicalProfile?.insurance_provider || '')}" placeholder="e.g. Star Health / Ayushman Bharat">
+              </div>
+
+              <div class="form-group" style="margin-bottom: 1.5rem;">
+                <label class="form-label">Known Allergies / Medical Notes</label>
+                <input type="text" name="allergies" class="form-input" value="${escapeHtml(Array.isArray(user.clinicalProfile?.allergies) ? user.clinicalProfile.allergies.join(', ') : (user.clinicalProfile?.allergies || ''))}" placeholder="e.g. Penicillin, Pollen (or leave empty)">
+              </div>
+
+              <button type="submit" id="patientProfileSaveBtn" class="btn btn-block btn-primary" style="font-weight: 700; padding: 0.75rem;">
+                <i data-lucide="check" style="width: 16px; height: 16px;"></i> Save Profile Details
+              </button>
+            </form>
           </div>
         ` : ''}
 

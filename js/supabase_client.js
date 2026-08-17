@@ -219,38 +219,55 @@ class MediarcaSupabaseClient {
   }
 
   async cloudUpdatePatientProfile(userId, profileData) {
-    if (!this.client) throw new Error('Supabase client unavailable');
+    if (!this.client || !userId) return;
 
-    // 1. Update user core table
-    if (profileData.name || profileData.phone) {
-      await this.client.from('users').update({
-        full_name: profileData.name,
-        phone: profileData.phone
-      }).eq('id', userId);
+    try {
+      // 1. Update user core table
+      if (profileData.name || profileData.phone) {
+        const userUpdate = {};
+        if (profileData.name) userUpdate.full_name = profileData.name;
+        if (profileData.phone) userUpdate.phone = profileData.phone;
+        await this.client.from('users').update(userUpdate).eq('id', userId);
+      }
+
+      // 2. Format allergies into array
+      let allergyArr = [];
+      if (profileData.allergies && typeof profileData.allergies === 'string') {
+        allergyArr = profileData.allergies.split(',').map(s => s.trim()).filter(Boolean);
+      } else if (Array.isArray(profileData.allergies)) {
+        allergyArr = profileData.allergies;
+      }
+
+      // 3. Upsert patient clinical profile
+      await this.client.from('patient_clinical_profiles').upsert({
+        user_id: userId,
+        age: profileData.age ? parseInt(profileData.age) : null,
+        gender: profileData.gender || null,
+        blood_group: profileData.bloodGroup || null,
+        emergency_contact: profileData.emergencyContact || null,
+        insurance_provider: profileData.insurancePolicy || null,
+        insurance_policy_number: profileData.insurancePolicy || null,
+        allergies: allergyArr
+      }, { onConflict: 'user_id' });
+    } catch (err) {
+      console.warn('Non-blocking cloud profile update notice:', err);
     }
-
-    // 2. Upsert patient clinical profile
-    await this.client.from('patient_clinical_profiles').upsert({
-      user_id: userId,
-      age: parseInt(profileData.age) || null,
-      gender: profileData.gender || null,
-      blood_group: profileData.bloodGroup || null,
-      emergency_contact: profileData.emergencyContact || null,
-      insurance_policy: profileData.insurancePolicy || null,
-      allergies: profileData.allergies ? [profileData.allergies] : []
-    }, { onConflict: 'user_id' });
   }
 
   async cloudUpdateDoctorProfile(doctorId, doctorData) {
-    if (!this.client) throw new Error('Supabase client unavailable');
+    if (!this.client || !doctorId) return;
 
-    const updatePayload = {};
-    if (doctorData.fee !== undefined) updatePayload.fee = parseFloat(doctorData.fee);
-    if (doctorData.hospital !== undefined) updatePayload.hospital = doctorData.hospital;
-    if (doctorData.schedule !== undefined) updatePayload.schedule = doctorData.schedule;
-    if (doctorData.bio !== undefined) updatePayload.bio = doctorData.bio;
+    try {
+      const updatePayload = {};
+      if (doctorData.fee !== undefined) updatePayload.fee = parseFloat(doctorData.fee);
+      if (doctorData.hospital !== undefined) updatePayload.hospital = doctorData.hospital;
+      if (doctorData.schedule !== undefined) updatePayload.schedule = doctorData.schedule;
+      if (doctorData.bio !== undefined) updatePayload.bio = doctorData.bio;
 
-    await this.client.from('doctors').update(updatePayload).eq('id', doctorId);
+      await this.client.from('doctors').update(updatePayload).eq('id', doctorId);
+    } catch (err) {
+      console.warn('Non-blocking doctor profile update notice:', err);
+    }
   }
 
   // --- 2. PRIVACY-SAFE REALTIME TELEMETRY SUBSCRIPTIONS (P-03 Resolution) ---
