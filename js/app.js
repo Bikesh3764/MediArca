@@ -2575,7 +2575,7 @@ class MediarcaApp {
             <div class="form-group">
               <label class="form-label">Attach File (PDF, PNG, JPEG) *</label>
               <input type="file" id="uploadDocFileInput" class="form-input" style="padding: 0.4rem;" accept=".pdf,.png,.jpg,.jpeg,.webp" required>
-              <span class="form-hint">🔒 Files are encrypted and stored in private Supabase Storage buckets.</span>
+              <span class="form-hint">🔒 Files are authenticated and stored in private Supabase Storage buckets.</span>
             </div>
             <button type="submit" class="btn btn-primary btn-block" style="margin-top: 1rem;">
               <i data-lucide="shield-check" style="width: 15px; height: 15px;"></i> Upload to Secure Vault
