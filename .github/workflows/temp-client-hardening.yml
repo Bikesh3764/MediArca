@@ -9,20 +9,20 @@ permissions:
 
 jobs:
   patch:
-    if: !startsWith(github.event.head_commit.message, '[temp-hardening]')
+    if: ${{ !startsWith(github.event.head_commit.message, '[temp-hardening]') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Patch and validate
+      - name: Patch existing client flows
         shell: bash
         run: |
           python - <<'PY'
           from pathlib import Path
           import re
 
+          # supabase_client.js
           p = Path('js/supabase_client.js')
           s = p.read_text(encoding='utf-8')
-
           required = [
               ("if (!docErr && docs && docs.length > 0) {", "if (!docErr && docs) {"),
               ("if (!qErr && queues && queues.length > 0) {", "if (!qErr && queues) {"),
@@ -40,12 +40,45 @@ jobs:
           replacement = """  async cloudUpdateDoctorProfile(doctorId, doctorData) {\n    if (!this.client || !doctorId) throw new Error('Supabase client unavailable');\n\n    const updatePayload = {};\n    if (doctorData.fee !== undefined) updatePayload.fee = parseFloat(doctorData.fee);\n    if (doctorData.hospital !== undefined) updatePayload.hospital = doctorData.hospital;\n    if (doctorData.schedule !== undefined) updatePayload.schedule = doctorData.schedule;\n    if (doctorData.bio !== undefined) updatePayload.bio = doctorData.bio;\n\n    const { data, error } = await this.client\n      .from('doctors')\n      .update(updatePayload)\n      .eq('id', doctorId)\n      .select('*')\n      .maybeSingle();\n\n    if (error) throw error;\n    if (!data) throw new Error('Doctor profile update was not persisted.');\n    return data;\n  }\n\n  // --- 2. PRIVACY-SAFE"""
           s = s[:m.start()] + replacement + s[m.end():]
           p.write_text(s, encoding='utf-8')
+
+          # store.js: remove fabricated demographic defaults from the current-user session.
+          p = Path('js/store.js')
+          s = p.read_text(encoding='utf-8')
+          for old, new in [
+              ("age: clinicalProf.age || patientProf.age || this.state.currentUser?.age || 19,", "age: clinicalProf.age ?? patientProf.age ?? this.state.currentUser?.age ?? null,"),
+              ("gender: clinicalProf.gender || patientProf.gender || this.state.currentUser?.gender || 'Male',", "gender: clinicalProf.gender ?? patientProf.gender ?? this.state.currentUser?.gender ?? null,"),
+              ("bloodGroup: clinicalProf.blood_group || patientProf.blood_group || this.state.currentUser?.bloodGroup || 'B+',", "bloodGroup: clinicalProf.blood_group ?? patientProf.blood_group ?? this.state.currentUser?.bloodGroup ?? null,")
+          ]:
+              if old not in s:
+                  raise SystemExit(f'missing store fallback: {old}')
+              s = s.replace(old, new, 1)
+          p.write_text(s, encoding='utf-8')
+
+          # Ensure clean server hydration can clear stale seed operational data.
+          # This only changes behavior after a successful cloud query; it does not remove seed definitions.
+          p = Path('js/supabase_client.js')
+          s = p.read_text(encoding='utf-8')
+          old = """      if (!docErr && docs) {\n        window.mediarcaStore.state.doctors = docs.map"""
+          new = """      if (!docErr && docs) {\n        window.mediarcaStore.state.doctors = docs.map"""
+          if old not in s:
+              raise SystemExit('doctor hydrate anchor missing')
+          # already authoritative; no change needed for doctors.
+
+          old = """      if (!qErr && queues) {\n        queues.forEach(q => {"""
+          new = """      if (!qErr && queues) {\n        window.mediarcaStore.state.queues = {};\n        queues.forEach(q => {"""
+          if old not in s:
+              raise SystemExit('queue hydrate block missing')
+          s = s.replace(old, new, 1)
+
+          old = """        if (!apptErr && appts) {\n          const mappedBookings = appts.map"""
+          new = """        if (!apptErr && appts) {\n          const mappedBookings = appts.map"""
+          if old not in s:
+              raise SystemExit('appointment hydrate block missing')
+          # bookings already authoritative; no change needed.
+          p.write_text(s, encoding='utf-8')
           PY
 
-          echo 'Remaining UTC date patterns:'
-          grep -Rni "toISOString().split('T')\[0\]" js || true
-
-      - name: Validate application JavaScript
+      - name: Validate syntax
         run: |
           node --check js/supabase_client.js
           node --check js/store.js
@@ -53,11 +86,11 @@ jobs:
           node --check js/queue.js
           node --check js/audio.js
 
-      - name: Commit final client hardening
+      - name: Commit final client fixes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add js/supabase_client.js
+          git add js/supabase_client.js js/store.js
           git diff --cached --check
-          git commit -m "[temp-hardening] close client consistency gaps"
+          git commit -m "[temp-hardening] finish existing client consistency fixes"
           git push origin HEAD:audit-write-access-fixes
