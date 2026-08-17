@@ -113,16 +113,14 @@ class MediarcaApp {
       `;
 
       navActionsContainer.innerHTML = `
-        <div style="display:flex; align-items:center; gap:0.6rem;">
-          <button class="btn btn-sm btn-pearl" onclick="window.mediarcaApp.switchView('patient-portal'); window.mediarcaApp.setPatientTab('profile');">
-            <i data-lucide="user" style="width:13px;height:13px; color: #0066cc;"></i>
-            <span>My Profile</span>
+        <div style="display:flex; align-items:center; gap:0.5rem;">
+          <button class="btn btn-sm btn-secondary" onclick="window.mediarcaApp.switchView('patient-portal'); window.mediarcaApp.setPatientTab('profile');" style="display:flex; align-items:center; gap:0.45rem;">
+            <div style="width:22px; height:22px; border-radius:50%; background:#0066cc; color:#fff; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700;">
+              ${escapeHtml((user.name || 'P').charAt(0).toUpperCase())}
+            </div>
+            <span style="font-weight:600; color:#1d1d1f;">${escapeHtml(user.name || 'Patient')}</span>
           </button>
-          <div style="text-align:right;">
-            <div style="font-size:0.8125rem; font-weight:600; color: #1d1d1f;">${escapeHtml(user.name || 'Patient')}</div>
-            <div style="font-size:0.6875rem; color: #86868b;">Patient Account</div>
-          </div>
-          <button class="btn btn-sm btn-dark" onclick="window.mediarcaApp.handleLogout()">
+          <button class="btn btn-sm btn-ghost" onclick="window.mediarcaApp.handleLogout()">
             <i data-lucide="log-out" style="width:13px;height:13px"></i> Logout
           </button>
         </div>
@@ -138,19 +136,21 @@ class MediarcaApp {
       navLinksContainer.innerHTML = `
         <li><button class="nav-link-btn ${this.currentView === 'doctor-portal' ? 'active' : ''}" onclick="window.mediarcaApp.switchView('doctor-portal')"><i data-lucide="layout-dashboard" style="width:14px;height:14px"></i> Practice Console</button></li>
         <li><button class="nav-link-btn ${this.currentView === 'queue-radar' ? 'active' : ''}" onclick="window.mediarcaApp.switchView('queue-radar', { doctorId: '${doc.id}' })"><i data-lucide="radio" style="width:14px;height:14px"></i> Public Radar View</button></li>
+        <li><button class="nav-link-btn ${this.currentView === 'home' ? 'active' : ''}" onclick="window.mediarcaApp.switchView('home')"><i data-lucide="compass" style="width:14px;height:14px"></i> Directory</button></li>
       `;
 
       navActionsContainer.innerHTML = `
-        <div style="display:flex; align-items:center; gap:0.6rem;">
-          <button class="btn btn-sm btn-pearl" onclick="window.mediarcaApp.switchView('doctor-portal'); window.mediarcaApp.setDoctorTab('profile');">
-            <i data-lucide="user-check" style="width:13px;height:13px; color: #0066cc;"></i>
-            <span>Doctor Profile</span>
+        <div style="display:flex; align-items:center; gap:0.5rem;">
+          <button class="btn btn-sm btn-secondary" onclick="window.mediarcaApp.switchView('doctor-portal'); window.mediarcaApp.setDoctorTab('profile');" style="display:flex; align-items:center; gap:0.45rem;">
+            <div style="width:22px; height:22px; border-radius:50%; background:#0066cc; color:#fff; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700;">
+              ${escapeHtml((doc.name || 'D').replace('Dr. ', '').charAt(0).toUpperCase())}
+            </div>
+            <div style="text-align:left; line-height:1.2;">
+              <span style="font-weight:600; color:#1d1d1f;">${escapeHtml(doc.name || user.name)}</span>
+              <span style="font-size:0.6875rem; color:#86868b; margin-left:0.25rem;">(${escapeHtml(doc.mediarcaId || 'MED-DOC-7700')})</span>
+            </div>
           </button>
-          <div style="text-align:right;">
-            <div style="font-size:0.8125rem; font-weight:600; color: #1d1d1f;">${escapeHtml(doc.name || user.name)}</div>
-            <div style="font-size:0.6875rem; color: #0066cc; font-family: var(--font-mono); font-weight: 600;">${escapeHtml(doc.mediarcaId || 'VERIFIED')}</div>
-          </div>
-          <button class="btn btn-sm btn-dark" onclick="window.mediarcaApp.handleLogout()">
+          <button class="btn btn-sm btn-ghost" onclick="window.mediarcaApp.handleLogout()">
             <i data-lucide="log-out" style="width:13px;height:13px"></i> Logout
           </button>
         </div>
@@ -160,15 +160,15 @@ class MediarcaApp {
       navLinksContainer.innerHTML = `
         <li><button class="nav-link-btn ${this.currentView === 'admin-portal' ? 'active' : ''}" onclick="window.mediarcaApp.switchView('admin-portal')"><i data-lucide="shield-check" style="width:14px;height:14px"></i> Verification Desk</button></li>
         <li><button class="nav-link-btn ${this.currentView === 'home' ? 'active' : ''}" onclick="window.mediarcaApp.switchView('home')"><i data-lucide="globe" style="width:14px;height:14px"></i> Public Directory</button></li>
+        <li><button class="nav-link-btn ${this.currentView === 'tv-display' ? 'active' : ''}" onclick="window.mediarcaApp.switchView('tv-display')"><i data-lucide="tv" style="width:14px;height:14px"></i> TV Display</button></li>
       `;
 
       navActionsContainer.innerHTML = `
-        <div style="display:flex; align-items:center; gap:0.6rem;">
-          <div style="text-align:right;">
-            <div style="font-size:0.8125rem; font-weight:600; color: #1d1d1f;">Medical Board Admin</div>
-            <div style="font-size:0.6875rem; color: #ef4444; font-weight: 600;">Audit Authority</div>
+        <div style="display:flex; align-items:center; gap:0.5rem;">
+          <div style="background:#f5f5f7; border:1px solid rgba(0,0,0,0.08); padding:5px 12px; border-radius:9999px; font-size:0.8125rem; font-weight:600; color:#1d1d1f;">
+            🛡️ Medical Board Admin
           </div>
-          <button class="btn btn-sm btn-dark" onclick="window.mediarcaApp.handleLogout()">
+          <button class="btn btn-sm btn-ghost" onclick="window.mediarcaApp.handleLogout()">
             <i data-lucide="log-out" style="width:13px;height:13px"></i> Logout
           </button>
         </div>
@@ -182,32 +182,32 @@ class MediarcaApp {
       `;
 
       navActionsContainer.innerHTML = `
-        <div style="display:flex; align-items:center; gap:0.6rem;">
-          <div style="text-align:right;">
-            <div style="font-size:0.8125rem; font-weight:600; color: #1d1d1f;">${user.name || 'Front Desk Staff'}</div>
-            <div style="font-size:0.6875rem; color: #0066cc; font-weight: 600;">Reception Desk</div>
+        <div style="display:flex; align-items:center; gap:0.5rem;">
+          <div style="background:#f5f5f7; border:1px solid rgba(0,0,0,0.08); padding:5px 12px; border-radius:9999px; font-size:0.8125rem; font-weight:600; color:#1d1d1f;">
+            🏥 ${escapeHtml(user.name || 'Front Desk')}
           </div>
-          <button class="btn btn-sm btn-dark" onclick="window.mediarcaApp.handleLogout()">
+          <button class="btn btn-sm btn-ghost" onclick="window.mediarcaApp.handleLogout()">
             <i data-lucide="log-out" style="width:13px;height:13px"></i> Logout
           </button>
         </div>
       `;
     } else {
-      // Public / Guest Navigation
+      // Public / Guest Navigation (Clean Apple Standard)
       navLinksContainer.innerHTML = `
         <li><button class="nav-link-btn ${this.currentView === 'home' ? 'active' : ''}" onclick="window.mediarcaApp.switchView('home')"><i data-lucide="compass" style="width:14px;height:14px"></i> Find Doctors</button></li>
-        <li><button class="nav-link-btn ${this.currentView === 'doctor-onboarding' ? 'active' : ''}" onclick="window.mediarcaApp.switchView('doctor-onboarding')"><i data-lucide="stethoscope" style="width:14px;height:14px"></i> Join as Physician</button></li>
+        <li><button class="nav-link-btn ${this.currentView === 'queue-radar' ? 'active' : ''}" onclick="window.mediarcaApp.switchView('queue-radar')"><i data-lucide="radio" style="width:14px;height:14px"></i> Live Queue Radar</button></li>
+        <li><button class="nav-link-btn ${this.currentView === 'tv-display' ? 'active' : ''}" onclick="window.mediarcaApp.switchView('tv-display')"><i data-lucide="tv" style="width:14px;height:14px"></i> Hospital TV</button></li>
+        <li><button class="nav-link-btn ${this.currentView === 'doctor-onboarding' ? 'active' : ''}" onclick="window.mediarcaApp.switchView('doctor-onboarding')"><i data-lucide="stethoscope" style="width:14px;height:14px"></i> For Physicians</button></li>
       `;
 
       navActionsContainer.innerHTML = `
-        <button class="btn btn-sm btn-pearl" onclick="window.mediarcaApp.switchView('auth-patient')">
-          <i data-lucide="user" style="width:13px;height:13px"></i> Patient Login
+        <button class="btn btn-sm btn-secondary" onclick="window.mediarcaApp.switchView('auth-doctor')">
+          <i data-lucide="stethoscope" style="width:13px;height:13px; color:#0066cc;"></i>
+          <span>Doctor Sign In</span>
         </button>
-        <button class="btn btn-sm btn-pearl" onclick="window.mediarcaApp.switchView('auth-reception')">
-          <i data-lucide="user-check" style="width:13px;height:13px"></i> Front Desk
-        </button>
-        <button class="btn btn-sm btn-primary" onclick="window.mediarcaApp.switchView('auth-doctor')">
-          <i data-lucide="stethoscope" style="width:13px;height:13px"></i> Doctor Portal
+        <button class="btn btn-sm btn-primary" onclick="window.mediarcaApp.switchView('auth-patient')">
+          <i data-lucide="user" style="width:13px;height:13px;"></i>
+          <span>Patient Sign In</span>
         </button>
       `;
     }
@@ -294,7 +294,9 @@ class MediarcaApp {
       this.renderDoctorCards();
     } else if (viewName === 'queue-radar') {
       const docId = params.doctorId || defaultDocId;
-      window.mediarcaQueueEngine.setDoctor(docId);
+      if (window.mediarcaQueueEngine && typeof window.mediarcaQueueEngine.setDoctor === 'function') {
+        window.mediarcaQueueEngine.setDoctor(docId);
+      }
     } else if (viewName === 'patient-portal') {
       this.renderPatientDashboard();
     } else if (viewName === 'doctor-portal') {
@@ -417,7 +419,7 @@ class MediarcaApp {
                   </span>
                 </div>
                 
-                <div class="doc-specialty-text" style="font-size: 0.875rem; font-weight: 500; color: #0066cc; margin-bottom: 0.35rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${escapeHtml(doc.specialty)}">${escapeHtml(doc.specialty)}</div>
+                <div class="doc-specialty-text" style="font-size: 0.875rem; font-weight: 500; color: #515154; margin-bottom: 0.35rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${escapeHtml(doc.specialty)}">${escapeHtml(doc.specialty)}</div>
                 
                 <div class="doc-exp-row" style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.75rem; color: #86868b; flex-wrap: wrap;">
                   <span class="doc-exp-pill" style="background: #f5f5f7; color: #1d1d1f; font-weight: 600; padding: 0.15rem 0.5rem; border-radius: 6px; font-size: 0.7rem;">${doc.experienceYears}+ Yrs</span>
@@ -429,12 +431,12 @@ class MediarcaApp {
             <!-- Rating, Reviews Count & Hospital Distance Strip -->
             <div class="doc-metrics-strip" style="display: flex; justify-content: space-between; align-items: center; background: #f5f5f7; border-radius: 10px; padding: 0.55rem 0.85rem; margin-bottom: 0.85rem; font-size: 0.775rem;">
               <div class="doc-rating" style="display: flex; align-items: center; gap: 0.3rem;">
-                <i data-lucide="star" class="star-icon" style="width: 13px; height: 13px; fill: #f59e0b; color: #f59e0b;"></i>
+                <i data-lucide="star" class="star-icon" style="width: 13px; height: 13px; fill: #ff9500; color: #ff9500;"></i>
                 <strong style="font-weight: 600; color: #1d1d1f;">${doc.rating}</strong>
                 <span class="reviews-count" style="color: #86868b; font-weight: 400;">(${doc.reviewsCount} reviews)</span>
               </div>
               <div class="doc-location-tag" style="display: flex; align-items: center; gap: 0.3rem; color: #515154; font-weight: 500;">
-                <i data-lucide="map-pin" class="pin-icon" style="width: 12px; height: 12px; color: #0066cc;"></i>
+                <i data-lucide="map-pin" class="pin-icon" style="width: 12px; height: 12px; color: #86868b;"></i>
                 <span>${escapeHtml(doc.hospitalDistance || '0.8 km • Main Wing')}</span>
               </div>
             </div>
@@ -457,8 +459,8 @@ class MediarcaApp {
                 <div class="queue-label" style="font-size: 0.7rem; color: #86868b; text-transform: uppercase; font-weight: 600; letter-spacing: 0.02em;">Next Slot: <span class="slot-val" style="color: #1d1d1f; font-weight: 600; text-transform: none;">${escapeHtml(doc.nextSlot || 'Today, 10:30 AM')}</span></div>
                 <div class="queue-wait-text" style="font-size: 0.775rem; color: #515154; font-weight: 400;">⏱ Est. Wait ~<strong style="color: #1d1d1f; font-weight: 600;">${waitTime.rangeText}</strong></div>
               </div>
-              <button class="btn btn-sm btn-secondary" onclick="window.mediarcaApp.switchView('queue-radar', { doctorId: '${doc.id}' })" style="padding: 5px 12px; font-size: 0.75rem;" title="Open Live OPD Queue Radar">
-                <i data-lucide="radio" style="width: 11px; height: 11px;"></i>
+              <button class="btn btn-sm btn-secondary" onclick="window.mediarcaApp.switchView('queue-radar', { doctorId: '${doc.id}' })" style="padding: 6px 14px; font-size: 0.775rem;" title="Open Live OPD Queue Radar">
+                <i data-lucide="radio" style="width: 12px; height: 12px; color: #0066cc;"></i>
                 <span>Live Radar</span>
               </button>
             </div>
@@ -470,7 +472,7 @@ class MediarcaApp {
               <span class="fee-label" style="font-size: 0.65rem; text-transform: uppercase; color: #86868b; font-weight: 600; letter-spacing: 0.04em; display: block;">Consultation Fee</span>
               <div class="fee-amount" style="font-size: 1.35rem; font-weight: 700; color: #1d1d1f; line-height: 1.1;">₹${doc.fee || 600} <span class="fee-sub" style="font-size: 0.75rem; font-weight: 400; color: #86868b;">/ visit</span></div>
             </div>
-            <button class="btn btn-primary" onclick="window.mediarcaApp.openBookingModal('${doc.id}')" style="font-size: 0.875rem; padding: 8px 18px;">
+            <button class="btn btn-sm btn-primary" onclick="window.mediarcaApp.openBookingModal('${doc.id}')" style="font-size: 0.875rem; padding: 8px 20px;">
               <i data-lucide="calendar-plus" style="width: 14px; height: 14px;"></i>
               <span>Book Slot</span>
             </button>

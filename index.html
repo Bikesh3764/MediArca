@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
 
   <!-- Clinical CSS Design System (Apple Inspired - Cache-busted) -->
-  <link rel="stylesheet" href="css/mediarca.css?v=20260817_apple_v3">
+  <link rel="stylesheet" href="css/mediarca.css?v=20260817_apple_v4">
   
   <!-- Pinned Lucide Icons -->
   <script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.min.js"></script>
@@ -176,11 +176,11 @@
          ========================================== -->
     <div id="view-doctor-onboarding" class="section-view">
       <div class="container" style="max-width: 760px; padding: 3rem 1.5rem 5rem;">
-        <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 2.25rem; box-shadow: var(--shadow-md);">
+        <div class="apple-card" style="padding: 2.5rem;">
           <div style="margin-bottom: 1.75rem;">
             <span class="badge badge-verified" style="margin-bottom: 0.5rem;"><i data-lucide="shield-check" style="width:12px;height:12px"></i> Medical Practitioner Program</span>
-            <h2 style="font-size: 1.625rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.35rem;">Physician Registration & Credentialing</h2>
-            <p style="color: var(--text-secondary); font-size: 0.875rem;">
+            <h2 style="font-size: 1.5rem; font-weight: 600; color: #1d1d1f; margin-bottom: 0.35rem; letter-spacing: -0.02em;">Physician Registration & Credentialing</h2>
+            <p style="color: #86868b; font-size: 0.875rem; margin: 0;">
               Join Mediarca to streamline clinic queues. All applications are validated by the Medical Board before issuing an official Mediarca Doctor ID.
             </p>
           </div>
@@ -218,8 +218,8 @@
             <div style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 1rem;">
               <div class="form-group">
                 <label class="form-label">Medical Council Registration No. *</label>
-                <input type="text" name="docRegNumber" class="form-input text-mono" placeholder="e.g. NMC-99412-MED" required>
-                <span class="form-hint">Verified against National Medical Commission (NMC) & State Registries.</span>
+                <input type="text" name="docRegNumber" class="form-input" placeholder="e.g. NMC-99412-MED" required>
+                <span class="form-hint" style="color: #86868b; font-size: 0.75rem;">Verified against National Medical Commission (NMC) & State Registries.</span>
               </div>
               <div class="form-group">
                 <label class="form-label">Clinical Experience (Years) *</label>
@@ -248,7 +248,7 @@
               <textarea name="docBio" class="form-textarea" placeholder="Brief outline of your clinical practice and sub-specialty interests..."></textarea>
             </div>
 
-            <button type="submit" class="btn btn-block btn-teal" style="margin-top: 1rem;">
+            <button type="submit" class="btn btn-block btn-primary" style="margin-top: 1rem; padding: 13px; font-size: 0.95rem;">
               <i data-lucide="file-check" style="width: 16px; height: 16px;"></i> Submit for Medical Board Verification
             </button>
           </form>
@@ -633,11 +633,11 @@
 
   <!-- Supabase Cloud SDK & Core Scripts (Apple Design V3.2) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.8/dist/umd/supabase.min.js"></script>
-  <script src="js/audio.js?v=20260817_apple_v3"></script>
-  <script src="js/store.js?v=20260817_apple_v3"></script>
-  <script src="js/supabase_client.js?v=20260817_apple_v3"></script>
-  <script src="js/queue.js?v=20260817_apple_v3"></script>
-  <script src="js/app.js?v=20260817_apple_v3"></script>
+  <script src="js/audio.js?v=20260817_apple_v4"></script>
+  <script src="js/store.js?v=20260817_apple_v4"></script>
+  <script src="js/supabase_client.js?v=20260817_apple_v4"></script>
+  <script src="js/queue.js?v=20260817_apple_v4"></script>
+  <script src="js/app.js?v=20260817_apple_v4"></script>
 
 </body>
 </html>
