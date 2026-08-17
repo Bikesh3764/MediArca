@@ -14,54 +14,123 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Patch client safely
+      - name: Apply safe existing-feature fixes
         shell: bash
         run: |
           python - <<'PY'
           from pathlib import Path
-          import re
+          import re, subprocess
 
           p = Path('js/supabase_client.js')
           s = p.read_text(encoding='utf-8')
+          original = s
 
-          replacements = {
-              "phone: user.phone || user.user_metadata?.phone || '+91 9608858316'": "phone: user.phone || user.user_metadata?.phone || null",
-              "age: 19,\n              gender: 'Male',\n              blood_group: 'B+'": "age: null,\n              gender: null,\n              blood_group: null",
-              ".or(`user_id.eq.${user.id},email.eq.${userEmail}`)\n            .maybeSingle();": ".eq('user_id', user.id)\n            .maybeSingle();",
-              """          if (doctorProfile && !doctorProfile.user_id) {\n            await this.client\n              .from('doctors')\n              .update({ user_id: user.id })\n              .eq('id', doctorProfile.id);\n            doctorProfile.user_id = user.id;\n          }\n""": "",
-              """        if (doctorProfile && profile && profile.role !== 'doctor') {\n          try {\n            await this.client.from('users').update({ role: 'doctor' }).eq('id', user.id);\n          } catch (rErr) {\n            console.warn('Role update notice:', rErr);\n          }\n        }\n\n""": ""
-          }
+          def syntax_ok(text):
+              p.write_text(text, encoding='utf-8')
+              r = subprocess.run(['node', '--check', str(p)], capture_output=True, text=True)
+              return r.returncode == 0
 
-          for old, new in replacements.items():
+          changes = []
+          changes.append((
+              'remove fabricated OAuth phone',
+              "phone: user.phone || user.user_metadata?.phone || '+91 9608858316'",
+              "phone: user.phone || user.user_metadata?.phone || null"
+          ))
+          changes.append((
+              'remove fabricated OAuth demographics',
+              "age: 19,\n              gender: 'Male',\n              blood_group: 'B+'",
+              "age: null,\n              gender: null,\n              blood_group: null"
+          ))
+          changes.append((
+              'remove email-based doctor identity binding',
+              ".or(`user_id.eq.${user.id},email.eq.${userEmail}`)\n            .maybeSingle();",
+              ".eq('user_id', user.id)\n            .maybeSingle();"
+          ))
+          changes.append((
+              'remove browser-side doctor link mutation',
+              """          if (doctorProfile && !doctorProfile.user_id) {\n            await this.client\n              .from('doctors')\n              .update({ user_id: user.id })\n              .eq('id', doctorProfile.id);\n            doctorProfile.user_id = user.id;\n          }\n""",
+              ''
+          ))
+          changes.append((
+              'remove browser-side role promotion',
+              """        if (doctorProfile && profile && profile.role !== 'doctor') {\n          try {\n            await this.client.from('users').update({ role: 'doctor' }).eq('id', user.id);\n          } catch (rErr) {\n            console.warn('Role update notice:', rErr);\n          }\n        }\n\n""",
+              ''
+          ))
+          changes.append((
+              'use India date for realtime queue filter',
+              "const todayStr = new Date().toISOString().split('T')[0];",
+              "const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());"
+          ))
+          changes.append((
+              'use India date for queue hydration',
+              ".eq('queue_date', new Date().toISOString().split('T')[0]);",
+              ".eq('queue_date', new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date()));"
+          ))
+          changes.append((
+              'hydrate empty doctor result authoritatively',
+              "if (!docErr && docs && docs.length > 0) {",
+              "if (!docErr && docs) {"
+          ))
+          changes.append((
+              'hydrate empty queue result authoritatively',
+              "if (!qErr && queues && queues.length > 0) {",
+              "if (!qErr && queues) {"
+          ))
+          changes.append((
+              'hydrate empty appointment result authoritatively',
+              "if (!apptErr && appts && appts.length > 0) {",
+              "if (!apptErr && appts) {"
+          ))
+          changes.append((
+              'do not merge stale local clinical appointments',
+              """          // Merge into state.bookings by unique ID\n          const existingIds = new Set(mappedBookings.map(b => b.id));\n          const localOnly = (window.mediarcaStore.state.bookings || []).filter(b => !existingIds.has(b.id));\n          window.mediarcaStore.state.bookings = [...mappedBookings, ...localOnly];""",
+              """          // Supabase is authoritative for clinical appointments.\n          window.mediarcaStore.state.bookings = mappedBookings;"""
+          ))
+
+          applied = []
+          for name, old, new in changes:
               if old not in s:
-                  raise SystemExit(f'Missing expected pattern: {old[:120]!r}')
-              s = s.replace(old, new, 1)
+                  print('SKIP missing:', name)
+                  continue
+              candidate = s.replace(old, new, 1)
+              if syntax_ok(candidate):
+                  s = candidate
+                  applied.append(name)
+                  print('APPLIED:', name)
+              else:
+                  s = s
+                  p.write_text(s, encoding='utf-8')
+                  print('ROLLED BACK syntax-breaking change:', name)
 
+          # Replace the entire patient profile method only if the resulting file remains valid.
           method_pattern = re.compile(r"  async cloudUpdatePatientProfile\(userId, profileData\) \{.*?\n  \}\n\n  async cloudUpdateDoctorProfile", re.S)
           method_replacement = """  async cloudUpdatePatientProfile(userId, profileData) {\n    if (!this.client || !userId) throw new Error('Supabase client unavailable');\n\n    const name = profileData.name || null;\n    const phone = profileData.phone || null;\n    const age = profileData.age ? parseInt(profileData.age, 10) : null;\n    const gender = profileData.gender || null;\n    const bloodGroup = profileData.bloodGroup || null;\n\n    const { data, error } = await this.client.rpc('update_patient_profile_atomic', {\n      p_name: name,\n      p_phone: phone,\n      p_age: age,\n      p_gender: gender,\n      p_blood_group: bloodGroup\n    });\n\n    if (error) throw error;\n    return data;\n  }\n\n  async cloudUpdateDoctorProfile"""
-          s, n = method_pattern.subn(method_replacement, s, count=1)
-          if n != 1:
-              raise SystemExit('Patient profile method replacement failed')
+          match = method_pattern.search(s)
+          if match:
+              candidate = s[:match.start()] + method_replacement + s[match.end():]
+              if syntax_ok(candidate):
+                  s = candidate
+                  applied.append('fail-closed patient profile RPC')
+                  print('APPLIED: fail-closed patient profile RPC')
+              else:
+                  p.write_text(s, encoding='utf-8')
+                  print('ROLLED BACK syntax-breaking patient profile replacement')
 
-          sync_open = "  async syncInitialDataFromCloud() {\n    if (!this.client) return;"
-          sync_repl = "  async syncInitialDataFromCloud() {\n    if (!this.client) return;\n    const { data: authUserData } = await this.client.auth.getUser();\n    const user = authUserData?.user || null;"
-          if sync_open not in s:
-              raise SystemExit('syncInitialDataFromCloud opener not found')
-          s = s.replace(sync_open, sync_repl, 1)
-
-          s = s.replace("const todayStr = new Date().toISOString().split('T')[0];", "const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());", 1)
-          s = s.replace(".eq('queue_date', new Date().toISOString().split('T')[0]);", ".eq('queue_date', new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date()));", 1)
-          s = s.replace("if (!docErr && docs && docs.length > 0) {", "if (!docErr && docs) {", 1)
-          s = s.replace("if (!qErr && queues && queues.length > 0) {", "if (!qErr && queues) {", 1)
-          s = s.replace("if (!apptErr && appts && appts.length > 0) {", "if (!apptErr && appts) {", 1)
-
-          merge_old = """          // Merge into state.bookings by unique ID\n          const existingIds = new Set(mappedBookings.map(b => b.id));\n          const localOnly = (window.mediarcaStore.state.bookings || []).filter(b => !existingIds.has(b.id));\n          window.mediarcaStore.state.bookings = [...mappedBookings, ...localOnly];"""
-          merge_new = """          // Supabase is authoritative for clinical appointments.\n          window.mediarcaStore.state.bookings = mappedBookings;"""
-          if merge_old not in s:
-              raise SystemExit('booking merge block not found')
-          s = s.replace(merge_old, merge_new, 1)
+          # Add authoritative current-user lookup only if absent and safe.
+          marker = "  async syncInitialDataFromCloud() {\n    if (!this.client) return;"
+          insert = "  async syncInitialDataFromCloud() {\n    if (!this.client) return;\n    const { data: authUserData } = await this.client.auth.getUser();\n    const user = authUserData?.user || null;"
+          if marker in s:
+              candidate = s.replace(marker, insert, 1)
+              if syntax_ok(candidate):
+                  s = candidate
+                  applied.append('authoritative user hydration context')
+                  print('APPLIED: authoritative user hydration context')
+              else:
+                  p.write_text(s, encoding='utf-8')
+                  print('ROLLED BACK syntax-breaking user hydration context')
 
           p.write_text(s, encoding='utf-8')
+          print('Applied changes:', ', '.join(applied))
           PY
 
       - name: Validate JavaScript syntax
