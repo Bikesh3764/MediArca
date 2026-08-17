@@ -2657,6 +2657,7 @@ WHERE d.verification_status = 'verified';
 GRANT SELECT ON public_doctor_directory TO anon, authenticated;
 
 -- 15. AUDIT LOG ACCESS POLICIES & ADMIN RETRIEVAL RPC (C-12 Resolution: Administrator Authentication Required)
+ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Admins can view audit logs" ON audit_logs;
 CREATE POLICY "Admins can view audit logs" ON audit_logs FOR SELECT USING (
     is_admin(auth.uid())

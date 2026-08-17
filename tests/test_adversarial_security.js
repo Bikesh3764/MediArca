@@ -24,10 +24,10 @@ const storePath = path.join(__dirname, '../js/store.js');
 const clientPath = path.join(__dirname, '../js/supabase_client.js');
 const appPath = path.join(__dirname, '../js/app.js');
 
-const schema = fs.readFileSync(schemaPath, 'utf8');
-const storeJs = fs.readFileSync(storePath, 'utf8');
-const clientJs = fs.readFileSync(clientPath, 'utf8');
-const appJs = fs.readFileSync(appPath, 'utf8');
+const schema = fs.readFileSync(schemaPath, 'utf8').replace(/\r\n/g, '\n');
+const storeJs = fs.readFileSync(storePath, 'utf8').replace(/\r\n/g, '\n');
+const clientJs = fs.readFileSync(clientPath, 'utf8').replace(/\r\n/g, '\n');
+const appJs = fs.readFileSync(appPath, 'utf8').replace(/\r\n/g, '\n');
 
 let totalTests = 0;
 let passedTests = 0;
