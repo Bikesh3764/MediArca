@@ -652,7 +652,10 @@ class MediarcaStore {
       id: sessionData.id,
       email: sessionData.email,
       role: sessionData.role || 'patient',
-      name: sessionData.name || sessionData.email.split('@')[0]
+      name: sessionData.name || sessionData.email.split('@')[0],
+      clinicalProfile: sessionData.clinicalProfile || null,
+      patientProfile: sessionData.patientProfile || null,
+      doctorProfile: sessionData.doctorProfile || null
     };
 
     // If doctor profile exists, sync doctor state
@@ -1296,6 +1299,8 @@ async login(email, password) {
         console.error('Cloud appointment status error:', cloudErr);
         throw new Error(`Failed to update clinical consultation status on server: ${cloudErr.message || 'Status transition rejected'}`);
       }
+    } else {
+      throw new Error('Hospital server network is unreachable. Cannot update consultation status offline.');
     }
 
     const booking = this.state.bookings.find(b => b.doctorId === doctorId && b.tokenNumber === tokenNumber);
@@ -1309,18 +1314,11 @@ async login(email, password) {
       if (token) token.status = status;
     }
 
-    if (!cloudRes) {
-      if (queue && queue.currentToken === tokenNumber) {
-        await this.advanceDoctorQueue(doctorId);
-      }
-    } else {
-      if (queue) {
-        queue.currentToken = cloudRes.currentToken || 0;
-        queue.status = cloudRes.currentToken > 0 ? 'in-session' : 'completed';
-      }
-      this.notifySubscribers();
+    if (queue) {
+      queue.currentToken = cloudRes?.currentToken || 0;
+      queue.status = cloudRes?.currentToken > 0 ? 'in-session' : 'completed';
     }
-
+    this.notifySubscribers();
     return booking;
   }
 
@@ -1332,7 +1330,14 @@ async login(email, password) {
 
     let cloudRes = null;
     if (window.mediarcaSupabase && window.mediarcaSupabase.isConnected) {
-      cloudRes = await window.mediarcaSupabase.cloudFlagPriorityAppointment(doctorId, tokenNumber, reason);
+      try {
+        cloudRes = await window.mediarcaSupabase.cloudFlagPriorityAppointment(doctorId, tokenNumber, reason);
+      } catch (err) {
+        console.error('Cloud priority flag error:', err);
+        throw new Error(`Failed to flag clinical priority on server: ${err.message}`);
+      }
+    } else {
+      throw new Error('Hospital server network is unreachable. Cannot flag clinical priority offline.');
     }
 
     const booking = this.state.bookings.find(b => b.doctorId === doctorId && b.tokenNumber === tokenNumber);
@@ -1419,13 +1424,17 @@ async login(email, password) {
 
     let cloudRes = null;
     if (window.mediarcaSupabase && window.mediarcaSupabase.isConnected) {
-      cloudRes = await window.mediarcaSupabase.cloudCheckInPatientQr(checkinToken);
+      try {
+        cloudRes = await window.mediarcaSupabase.cloudCheckInPatientQr(checkinToken);
+      } catch (err) {
+        console.error('Cloud QR check-in error:', err);
+        throw new Error(`Failed to check in on hospital server: ${err.message}`);
+      }
+    } else {
+      throw new Error('Hospital server network is unreachable. Cannot validate QR check-in offline.');
     }
 
     const booking = this.state.bookings.find(b => b.checkinToken === checkinToken || (b.bookingId && b.bookingId === checkinToken) || b.id === checkinToken);
-    if (!booking && !cloudRes) {
-      throw new Error('Invalid or expired check-in QR token.');
-    }
 
     if (booking) {
       booking.status = 'checked_in';
@@ -1445,7 +1454,14 @@ async login(email, password) {
 
     let cloudRes = null;
     if (window.mediarcaSupabase && window.mediarcaSupabase.isConnected) {
-      cloudRes = await window.mediarcaSupabase.cloudTransferPatientQueue(appointmentId, targetDoctorId, reason);
+      try {
+        cloudRes = await window.mediarcaSupabase.cloudTransferPatientQueue(appointmentId, targetDoctorId, reason);
+      } catch (err) {
+        console.error('Cloud queue transfer error:', err);
+        throw new Error(`Failed to transfer queue on hospital server: ${err.message}`);
+      }
+    } else {
+      throw new Error('Hospital server network is unreachable. Cannot transfer clinical queues offline.');
     }
 
     const booking = this.state.bookings.find(b => b.id === appointmentId || b.bookingId === appointmentId);
@@ -1467,7 +1483,14 @@ async login(email, password) {
 
     let cloudRes = null;
     if (window.mediarcaSupabase && window.mediarcaSupabase.isConnected) {
-      cloudRes = await window.mediarcaSupabase.cloudRescheduleAppointment(appointmentId, newDate, newSlot);
+      try {
+        cloudRes = await window.mediarcaSupabase.cloudRescheduleAppointment(appointmentId, newDate, newSlot);
+      } catch (err) {
+        console.error('Cloud appointment reschedule error:', err);
+        throw new Error(`Failed to reschedule appointment on hospital server: ${err.message}`);
+      }
+    } else {
+      throw new Error('Hospital server network is unreachable. Cannot reschedule appointments offline.');
     }
 
     const booking = this.state.bookings.find(b => b.id === appointmentId || b.bookingId === appointmentId);
@@ -1913,9 +1936,11 @@ async login(email, password) {
         console.error('Cloud invoice settlement failure:', e);
         throw new Error(`Billing transaction could not be settled on the server: ${e.message || 'Settlement declined'}`);
       }
+    } else {
+      throw new Error('Hospital server network is unreachable. Cannot process and settle billing transactions offline.');
     }
 
-    const invoiceNumber = cloudInvoice?.invoice_number || `INV-2026-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+    const invoiceNumber = cloudInvoice?.invoice_number || `INV-2026-${Date.now().toString(36).toUpperCase()}`;
 
     const invoice = {
       id: cloudInvoice?.id || ('inv_' + Date.now()),
@@ -1923,12 +1948,12 @@ async login(email, password) {
       appointmentId: invoiceData.appointmentId,
       patientName: invoiceData.patientName,
       doctorName: invoiceData.doctorName,
-      consultationFee: cloudInvoice ? parseFloat(cloudInvoice.total_amount) : fee,
+      consultationFee: parseFloat(cloudInvoice.total_amount),
       discountAmount: discount,
-      insuranceCoverage: cloudInvoice ? parseFloat(cloudInvoice.insurance_covered_amount) : insuranceCover,
+      insuranceCoverage: parseFloat(cloudInvoice.insurance_covered_amount),
       insuranceProvider: invoiceData.hasInsurance ? 'MediShield Global Health #POL-99214' : 'Self-Pay',
-      netPayable: cloudInvoice ? parseFloat(cloudInvoice.patient_paid_amount) : patientPayable,
-      paymentStatus: (window.mediarcaSupabase && window.mediarcaSupabase.isConnected && cloudInvoice) ? 'PAID (Settled)' : 'SIMULATED (Offline Demo)',
+      netPayable: parseFloat(cloudInvoice.patient_paid_amount),
+      paymentStatus: 'PAID (Settled)',
       paymentMethod: invoiceData.paymentMethod || 'Hospital Digital Pay',
       issuedAt: new Date().toISOString()
     };

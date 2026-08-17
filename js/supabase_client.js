@@ -91,6 +91,13 @@ class MediarcaSupabaseClient {
           patientProfile: profile || null,
           clinicalProfile: clinicalProfile || null
         });
+
+        // P0-07 Resolution: Trigger immediate authoritative data sync after successful login
+        try {
+          await this.syncInitialDataFromCloud();
+        } catch (syncErr) {
+          console.warn('Post-login cloud sync notice:', syncErr);
+        }
       }
     });
   }

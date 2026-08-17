@@ -2025,8 +2025,8 @@ GRANT EXECUTE ON FUNCTION update_patient_stage_atomic(UUID, VARCHAR, TEXT) TO au
 REVOKE ALL ON FUNCTION record_patient_consent_atomic(VARCHAR, VARCHAR, BOOLEAN, JSONB) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION record_patient_consent_atomic(VARCHAR, VARCHAR, BOOLEAN, JSONB) TO authenticated;
 
-REVOKE ALL ON FUNCTION generate_and_settle_invoice_atomic(UUID, VARCHAR, VARCHAR, NUMERIC) FROM PUBLIC, anon;
-GRANT EXECUTE ON FUNCTION generate_and_settle_invoice_atomic(UUID, VARCHAR, VARCHAR, NUMERIC) TO authenticated;
+REVOKE ALL ON FUNCTION generate_and_settle_invoice_atomic(UUID, VARCHAR, VARCHAR, NUMERIC, VARCHAR) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION generate_and_settle_invoice_atomic(UUID, VARCHAR, VARCHAR, NUMERIC, VARCHAR) TO authenticated;
 
 REVOKE ALL ON FUNCTION create_telemedicine_room_atomic(UUID, VARCHAR) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION create_telemedicine_room_atomic(UUID, VARCHAR) TO authenticated;

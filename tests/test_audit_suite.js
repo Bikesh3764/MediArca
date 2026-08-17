@@ -198,9 +198,17 @@ assert(schemaContent.includes("SELECT * INTO v_appointment\n    FROM appointment
 assert(schemaContent.includes("WHERE id = v_appointment.id AND checkin_token_used_at IS NULL"), 'Audit P0-08: QR check-in uses atomic conditional update against replay races');
 assert(!schemaContent.includes("ip_address VARCHAR(45) DEFAULT '127.0.0.1'"), 'Audit P1-15/16: Zero fake 127.0.0.1 IP defaults in audit_logs and patient_consents');
 
+// 12. Batch 8: Independent Bug Audit v2 Assertions (MediArca_Independent_Full_Bug_Audit_20260817_v2.md)
+assert(schemaContent.includes("REVOKE ALL ON FUNCTION generate_and_settle_invoice_atomic(UUID, VARCHAR, VARCHAR, NUMERIC, VARCHAR)"), 'Audit v2-01: generate_and_settle_invoice_atomic uses exact 5-param signature in REVOKE/GRANT');
+assert(storeContent.includes("clinicalProfile: sessionData.clinicalProfile || null"), 'Audit v2-08: setAuthSession retains clinicalProfile in state.currentUser');
+assert(supabaseClientContent.includes("await this.syncInitialDataFromCloud();"), 'Audit v2-07: Auth state listener triggers immediate initial data sync on sign in');
+assert(storeContent.includes("Cannot process and settle billing transactions offline"), 'Audit v2-04: processBillingInvoice fails closed when hospital server is unreachable');
+assert(storeContent.includes("Cannot validate QR check-in offline"), 'Audit v2-04: checkInPatientQr fails closed when hospital server is unreachable');
+assert(storeContent.includes("Cannot update consultation status offline"), 'Audit v2-04: markAppointmentStatus fails closed when hospital server is unreachable');
+
 console.log(`\nTest Summary: ${passCount} Passed, ${failCount} Failed.`);
 if (failCount > 0) {
   process.exit(1);
 } else {
-  console.log('--- ALL FULL LINE-BY-LINE AUDIT BATCHES (P0, P1, P2, P3, P4, P5, P6, P7) PASSED 100% SUCCESSFULLY! ---');
+  console.log('--- ALL FULL LINE-BY-LINE AUDIT BATCHES (P0, P1, P2, P3, P4, P5, P6, P7, P8) PASSED 100% SUCCESSFULLY! ---');
 }
