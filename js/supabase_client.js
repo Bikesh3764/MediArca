@@ -82,14 +82,23 @@ class MediarcaSupabaseClient {
           }
         }
 
-        // C-17: Query doctor profile independently with maybeSingle() (returns null cleanly for normal patients)
+        // Query doctor profile by user_id OR email
         try {
+          const userEmail = (user.email || '').toLowerCase().trim();
           const { data } = await this.client
             .from('doctors')
             .select('*')
-            .eq('user_id', user.id)
+            .or(`user_id.eq.${user.id},email.eq.${userEmail}`)
             .maybeSingle();
           doctorProfile = data;
+
+          if (doctorProfile && !doctorProfile.user_id) {
+            await this.client
+              .from('doctors')
+              .update({ user_id: user.id })
+              .eq('id', doctorProfile.id);
+            doctorProfile.user_id = user.id;
+          }
         } catch (e) {
           console.warn('Doctor profile fetch notice:', e);
         }
@@ -106,9 +115,17 @@ class MediarcaSupabaseClient {
           console.warn('Clinical profile fetch notice:', e);
         }
 
-        // Authoritative role resolution from DB (never client user_metadata)
-        const role = profile?.role || (doctorProfile ? 'doctor' : 'patient');
-        const name = profile?.full_name || doctorProfile?.name || user.user_metadata?.full_name || user.email.split('@')[0];
+        // Authoritative role resolution from DB (doctor profile takes precedence if registered doctor)
+        const role = doctorProfile ? 'doctor' : (profile?.role || 'patient');
+        const name = doctorProfile?.name || profile?.full_name || user.user_metadata?.full_name || user.email.split('@')[0];
+
+        if (doctorProfile && profile && profile.role !== 'doctor') {
+          try {
+            await this.client.from('users').update({ role: 'doctor' }).eq('id', user.id);
+          } catch (rErr) {
+            console.warn('Role update notice:', rErr);
+          }
+        }
 
         window.mediarcaStore.setAuthSession({
           id: user.id,
@@ -125,6 +142,19 @@ class MediarcaSupabaseClient {
           await this.syncInitialDataFromCloud();
         } catch (syncErr) {
           console.warn('Post-login cloud sync notice:', syncErr);
+        }
+
+        // Auto navigate to role-specific portal on fresh login
+        if (window.mediarcaApp) {
+          if (role === 'doctor') {
+            window.mediarcaApp.switchView('doctor-portal');
+          } else if (role === 'admin') {
+            window.mediarcaApp.switchView('admin-portal');
+          } else if (role === 'receptionist') {
+            window.mediarcaApp.switchView('reception-portal');
+          } else if (role === 'patient' && window.mediarcaApp.currentView.startsWith('auth-')) {
+            window.mediarcaApp.switchView('patient-portal');
+          }
         }
       }
     });
