@@ -1151,9 +1151,13 @@ async login(email, password) {
     const doctor = this.state.doctors.find(d => d.id === walkinData.doctorId);
     if (!doctor) throw new Error('Doctor not found in accredited directory.');
 
-    let cloudBooking = null;
-    if (window.mediarcaSupabase && window.mediarcaSupabase.isConnected) {
-      cloudBooking = await window.mediarcaSupabase.cloudIssueReceptionWalkinToken({
+    if (!window.mediarcaSupabase?.isConnected || !window.mediarcaSupabase.cloudIssueReceptionWalkinToken) {
+      throw new Error('Hospital server is unavailable. Walk-in tokens cannot be issued offline.');
+    }
+
+    let cloudBooking;
+    try {
+      const response = await window.mediarcaSupabase.cloudIssueReceptionWalkinToken({
         doctorId: doctor.id,
         patientName: walkinData.patientName,
         patientPhone: walkinData.patientPhone || 'Not specified',
@@ -1164,6 +1168,13 @@ async login(email, password) {
         priorityReason: walkinData.priorityReason || null,
         timezone: 'Asia/Kolkata'
       });
+      cloudBooking = Array.isArray(response) ? response[0] : response;
+    } catch (err) {
+      console.error('Cloud walk-in token issuance error:', err);
+      throw new Error(`Walk-in token was not issued on the server: ${err.message || 'Request rejected'}`);
+    }
+    if (!cloudBooking?.id || !cloudBooking?.booking_id || !cloudBooking?.token_number) {
+      throw new Error('Server returned an incomplete walk-in token record. No local token was created.');
     }
 
     const queue = this.state.queues[doctor.id] || {
@@ -1174,14 +1185,13 @@ async login(email, password) {
       tokens: []
     };
 
-    const existingTokens = queue.tokens ? queue.tokens.map(t => t.tokenNumber) : [];
-    const nextTokenNumber = cloudBooking ? cloudBooking.token_number : (existingTokens.length > 0 ? Math.max(...existingTokens) + 1 : (doctor.totalTokens || 0) + 1);
-    const bookingId = cloudBooking ? cloudBooking.booking_id : ('MED-WLK-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase());
+    const nextTokenNumber = Number(cloudBooking.token_number);
+    const bookingId = cloudBooking.booking_id;
 
     const newBooking = {
-      id: cloudBooking?.id || null,
+      id: cloudBooking.id,
       bookingId: bookingId,
-      patientId: null,
+      patientId: cloudBooking.patient_id || null,
       patientName: cloudBooking?.patient_name || walkinData.patientName,
       patientAge: cloudBooking?.patient_age || (walkinData.patientAge ? parseInt(walkinData.patientAge) : null),
       patientGender: cloudBooking?.patient_gender || walkinData.patientGender || null,
@@ -1194,8 +1204,8 @@ async login(email, password) {
       date: this.getIndiaTodayDate(),
       timeSlot: 'Walk-in Desk',
       tokenNumber: nextTokenNumber,
-      status: 'checked_in',
-      checkinToken: cloudBooking?.checkin_token || null,
+      status: cloudBooking.status || 'checked_in',
+      checkinToken: cloudBooking.checkin_token || null,
       checkin_token: cloudBooking?.checkin_token || null,
       isPriority: !!walkinData.isPriority,
       priorityReason: walkinData.priorityReason || null,
@@ -1216,7 +1226,7 @@ async login(email, password) {
     if (!tokenExists) {
       queue.tokens.push({
         tokenNumber: nextTokenNumber,
-        status: 'checked_in',
+        status: newBooking.status,
         isPriority: newBooking.isPriority,
         patientName: newBooking.patientName,
         checkInTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -1299,6 +1309,9 @@ async login(email, password) {
     if (!this.state.currentUser || !this.state.currentUser.id || (this.state.currentUser.role !== 'doctor' && this.state.currentUser.role !== 'admin')) {
       throw new Error('Access Denied: Only the attending physician can issue prescriptions.');
     }
+    if (!rxData?.diagnosis?.trim() || !rxData?.advice?.trim()) {
+      throw new Error('A physician diagnosis and patient-specific advice are required to finalize the encounter.');
+    }
 
     let cloudRes = null;
 
@@ -1324,9 +1337,9 @@ async login(email, password) {
     if (booking) {
       booking.status = 'completed';
       booking.prescription = {
-        diagnosis: rxData.diagnosis || 'Clinical evaluation concluded.',
-        medications: Array.isArray(rxData.medications) ? rxData.medications : [rxData.medications],
-        advice: rxData.advice || 'Follow prescription dosage as directed.'
+        diagnosis: rxData.diagnosis.trim(),
+        medications: Array.isArray(rxData.medications) ? rxData.medications : [],
+        advice: rxData.advice.trim()
       };
     }
 
@@ -1500,11 +1513,11 @@ async login(email, password) {
   generateSignedCheckInToken(bookingId, patientId) {
     // Generate high-entropy 128-bit CSPRNG token (16 bytes = 32 hex chars)
     const randomBuffer = new Uint8Array(16);
-    if (typeof window !== 'undefined' && window.crypto && window.crypto.getRandomValues) {
-      window.crypto.getRandomValues(randomBuffer);
-    } else {
-      for (let i = 0; i < 16; i++) randomBuffer[i] = Math.floor(Math.random() * 256);
+    const cryptoApi = globalThis.crypto;
+    if (!cryptoApi?.getRandomValues) {
+      throw new Error('Secure random source unavailable. Check-in token was not generated.');
     }
+    cryptoApi.getRandomValues(randomBuffer);
     const tokenHex = Array.from(randomBuffer).map(b => b.toString(16).padStart(2, '0')).join('');
     return `MED-QR-${tokenHex}`;
   }
@@ -1748,22 +1761,30 @@ async login(email, password) {
 
   // 9. PATIENT-FLOW ENGINE: MULTI-STAGE ROUTING (Section 13 & H-42 Resolution)
   async updatePatientStage(bookingId, newStage, reason = 'Clinical routing transition') {
+    const role = this.state.currentUser?.role;
+    if (!['doctor', 'receptionist', 'admin'].includes(role)) {
+      throw new Error('Access Denied: Only doctors, receptionists, and administrators can route patients.');
+    }
+
     const booking = this.state.bookings.find(b => b.bookingId === bookingId || b.id === bookingId);
-    if (!booking) throw new Error('Patient record not found.');
+    if (!booking || !booking.id) throw new Error('Patient record not found. Refresh the queue and try again.');
+    if (!window.mediarcaSupabase?.isConnected || !window.mediarcaSupabase.cloudUpdatePatientStage) {
+      throw new Error('Hospital server is unavailable. Patient stage was not changed.');
+    }
 
-    const oldStage = booking.stage || 'triage';
-
-    if (window.mediarcaSupabase && window.mediarcaSupabase.isConnected && booking.id) {
-      try {
-        await window.mediarcaSupabase.cloudUpdatePatientStage(booking.id, newStage, reason);
-      } catch (e) {
-        console.error('Cloud patient stage sync error:', e);
-        throw new Error(`Patient stage routing update failed on server: ${e.message || 'Routing transition rejected'}`);
-      }
+    const oldStage = booking.stage || booking.currentStage || 'triage';
+    let serverStage;
+    try {
+      const response = await window.mediarcaSupabase.cloudUpdatePatientStage(booking.id, newStage, reason);
+      serverStage = Array.isArray(response) ? response[0] : response;
+    } catch (e) {
+      console.error('Cloud patient stage sync error:', e);
+      throw new Error(`Patient stage routing update failed on server: ${e.message || 'Routing transition rejected'}`);
     }
 
     // Commit local state only after cloud success (P1-18 Resolution)
-    booking.stage = newStage;
+    booking.stage = serverStage?.current_stage || newStage;
+    booking.currentStage = booking.stage;
 
     // Log append-only audit entry
     this.recordAuditLog({
@@ -1797,8 +1818,8 @@ async login(email, password) {
             waiting,
             activeQueues: cloudAnalytics.activeQueues || 0,
             noShowRate: `${noShowRate}%`,
-            avgWaitTimeMins: `${cloudAnalytics.averageWaitTimeMins || '0.0'} min`,
-            avgConsultDurationMins: `${cloudAnalytics.averageWaitTimeMins ? '12.0' : '0.0'} min`,
+            avgWaitTimeMins: `${Number(cloudAnalytics.averageWaitTimeMins || 0).toFixed(1)} min`,
+            avgConsultDurationMins: `${Number(cloudAnalytics.averageConsultDurationMins || 0).toFixed(1)} min`,
             todayRevenue: `$${(cloudAnalytics.todayRevenue || 0).toFixed(2)}`,
             peakHours: total > 0 ? '10:00 AM – 01:00 PM' : 'No traffic recorded',
             hourlyDistribution: [
@@ -1818,11 +1839,24 @@ async login(email, password) {
     const allBookings = this.state.bookings || [];
     const totalAppointments = allBookings.length;
     const completed = allBookings.filter(b => b.status === 'completed').length;
-    const noShows = allBookings.filter(b => b.status === 'no_show').length;
+    const noShows = allBookings.filter(b => b.status === 'no_show' || b.status === 'no-show').length;
     const waiting = allBookings.filter(b => b.status === 'booked' || b.status === 'checked_in').length;
     const activeQueuesCount = Object.values(this.state.queues || {}).filter(q => q.status === 'in-session').length;
     const noShowRate = totalAppointments > 0 ? ((noShows / totalAppointments) * 100).toFixed(1) : '0.0';
-    const avgConsultDurationMins = completed > 0 ? '12.0' : '0.0';
+    const measuredDurations = allBookings
+      .filter(b => b.status === 'completed' && b.startAt && b.endAt)
+      .map(b => (new Date(b.endAt).getTime() - new Date(b.startAt).getTime()) / 60000)
+      .filter(minutes => Number.isFinite(minutes) && minutes >= 0);
+    const measuredWaits = allBookings
+      .filter(b => b.startAt && b.checkInTime)
+      .map(b => (new Date(b.startAt).getTime() - new Date(b.checkInTime).getTime()) / 60000)
+      .filter(minutes => Number.isFinite(minutes) && minutes >= 0);
+    const avgConsultDurationMins = measuredDurations.length
+      ? (measuredDurations.reduce((sum, value) => sum + value, 0) / measuredDurations.length).toFixed(1)
+      : '0.0';
+    const avgWaitTimeMins = measuredWaits.length
+      ? (measuredWaits.reduce((sum, value) => sum + value, 0) / measuredWaits.length).toFixed(1)
+      : '0.0';
 
     // AN-03 Resolution: Authentically derive hourly patient arrival from real bookings
     const hourBuckets = {
@@ -1853,7 +1887,7 @@ async login(email, password) {
       waiting,
       activeQueues: activeQueuesCount,
       noShowRate: `${noShowRate}%`,
-      avgWaitTimeMins: `${avgConsultDurationMins} min`,
+      avgWaitTimeMins: `${avgWaitTimeMins} min`,
       avgConsultDurationMins: `${avgConsultDurationMins} min`,
       todayRevenue: `₹${(completed * 600).toFixed(2)}`,
       peakHours: totalAppointments > 0 ? '10:00 AM – 01:00 PM' : 'No traffic recorded',
@@ -1864,7 +1898,7 @@ async login(email, password) {
   // 11. AUDIT LOGGING RECORD ENGINE (H-43 Resolution)
   recordAuditLog(auditData) {
     const logEntry = {
-      id: 'audit_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+      id: `audit_${Date.now()}_${globalThis.crypto?.randomUUID ? globalThis.crypto.randomUUID() : String(Date.now())}`,
       actorId: this.state.currentUser?.id || null,
       action: auditData.action || 'ACTIVITY_LOG',
       entity: auditData.entity || 'general',
@@ -1879,63 +1913,48 @@ async login(email, password) {
     return logEntry;
   }
 
-  // 12. AMBIENT CLINICAL NOTE DRAFT ASSISTANT (H-18, H-19, H-20 Resolution: Extraction without Fabrication)
+  // 12. CLINICAL DICTATION DRAFT ASSISTANT (transcription only; no clinical inference)
   parseAmbientClinicalNote(rawNote) {
-    if (!rawNote || !rawNote.trim()) {
-      throw new Error('Dictation note cannot be empty.');
-    }
-
-    const note = rawNote.toLowerCase();
-    let chiefComplaint = 'Dictated Clinical Consultation Note';
-    let assessment = 'Provisional Clinical Assessment';
-    let advice = 'Clinical care plan formulated per attending physician examination.';
-
-    if (note.includes('fever') || note.includes('throat') || note.includes('cough') || note.includes('cold')) {
-      chiefComplaint = 'History of fever, cough, or respiratory symptoms.';
-      assessment = 'Suspected Acute Upper Respiratory Illness / Respiratory Infection';
-      advice = 'Maintain hydration, monitor temperature trajectory, and review if red flag symptoms develop.';
-    } else if (note.includes('chest') || note.includes('bp') || note.includes('hypertension') || note.includes('heart')) {
-      chiefComplaint = 'Cardiovascular evaluation / elevated blood pressure tracking.';
-      assessment = 'Hypertension / Cardiovascular Review';
-      advice = 'Dietary sodium reduction, daily blood pressure log, and scheduled follow-up.';
-    } else if (note.includes('stomach') || note.includes('acidity') || note.includes('gerd') || note.includes('gas') || note.includes('pain')) {
-      chiefComplaint = 'Gastrointestinal discomfort / dyspepsia.';
-      assessment = 'Dyspeptic Symptoms / Gastrointestinal Evaluation';
-      advice = 'Dietary moderation, avoid late night meals, and monitor symptom response.';
-    }
-
-    let examFindings = 'Physical evaluation & examination to be documented directly by attending physician.';
-    if (note.includes('congest') || note.includes('throat') || note.includes('exam')) {
-      examFindings = 'Clinical examination reveals pharyngeal congestion / congested mucosa and localized irritation.';
-    }
-
-    const detectedMeds = [];
-    if (note.includes('azithromycin')) detectedMeds.push('Tab. Azithromycin 500mg');
-    if (note.includes('paracetamol')) detectedMeds.push('Tab. Paracetamol 650mg');
-    if (note.includes('pantoprazole')) detectedMeds.push('Cap. Pantoprazole 40mg');
-    if (note.includes('metoprolol')) detectedMeds.push('Tab. Metoprolol 25mg');
-    if (note.includes('amoxicillin')) detectedMeds.push('Cap. Amoxicillin 500mg');
+    const dictatedText = String(rawNote || '').trim();
+    if (!dictatedText) throw new Error('Dictation note cannot be empty.');
 
     return {
-      isAiDraft: true,
-      rawDictation: rawNote,
-      subjective: chiefComplaint,
-      symptoms: chiefComplaint,
-      objective: examFindings,
-      examinationFindings: examFindings,
-      assessment,
-      diagnosis: assessment,
-      medications: detectedMeds,
-      advice,
-      disclaimer: 'Clinical Note Draft Assistant (NLP Extraction Demo) — Review and finalize with physician assessment.'
+      isAiDraft: false,
+      rawDictation: dictatedText,
+      subjective: dictatedText,
+      symptoms: dictatedText,
+      objective: null,
+      examinationFindings: null,
+      assessment: null,
+      diagnosis: null,
+      medications: [],
+      advice: null,
+      disclaimer: 'Transcription draft only. No diagnosis, examination finding, medication, dosage, or advice was inferred. A physician must document and verify every clinical field.'
     };
   }
 
   // 13. DYNAMIC QUEUE OPTIMIZATION ENGINE (H-21 & H-22 Resolution: Live Doctor Workload Derived)
   getQueueOptimizationRecommendations() {
     const allBookings = this.state.bookings || [];
-    const waitingCount = allBookings.filter(b => b.status === 'waiting' || b.status === 'checked_in').length;
+    const waitingBookings = allBookings.filter(b => b.status === 'waiting' || b.status === 'checked_in');
+    const waitingCount = waitingBookings.length;
+    const totalRelevant = allBookings.filter(b => ['completed', 'no-show', 'no_show', 'cancelled'].includes(b.status)).length + waitingCount;
+    const noShowCount = allBookings.filter(b => b.status === 'no-show' || b.status === 'no_show').length;
+    const observedNoShowRate = totalRelevant > 0 ? noShowCount / totalRelevant : null;
     const congestionScore = Math.min(95, Math.max(15, waitingCount * 8 + 20));
+    const avgWaitMinutes = waitingBookings
+      .map(b => {
+        const checkIn = b.checkInTime || b.createdAt;
+        return checkIn ? (Date.now() - new Date(checkIn).getTime()) / 60000 : null;
+      })
+      .filter(value => Number.isFinite(value) && value >= 0);
+    const meanWait = avgWaitMinutes.length
+      ? avgWaitMinutes.reduce((sum, value) => sum + value, 0) / avgWaitMinutes.length
+      : 0;
+    const nextWaitingToken = waitingBookings
+      .map(b => Number(b.tokenNumber))
+      .filter(Number.isFinite)
+      .sort((a, b) => a - b)[0] || null;
 
     const doctors = this.state.doctors || [];
     const availableDocs = doctors.filter(d => d.verificationStatus === 'verified');
@@ -1945,14 +1964,14 @@ async login(email, password) {
 
     return {
       predictedNoShowRisk: {
-        probability: waitingCount > 5 ? '12.4%' : '6.2%',
-        tokenNumber: 4,
-        confidence: 'High',
-        factor: 'Dynamic queue cadence & automated SMS notifications'
+        probability: observedNoShowRate === null ? 'Insufficient data' : `${(observedNoShowRate * 100).toFixed(1)}% observed rate`,
+        tokenNumber: nextWaitingToken,
+        confidence: observedNoShowRate === null ? 'Unavailable' : 'Observed',
+        factor: observedNoShowRate === null ? 'No appointment outcome history is loaded' : `Based on ${totalRelevant} observed appointment outcomes`
       },
       doctorDelayIndex: {
-        delayMinutes: waitingCount > 5 ? 8 : 3,
-        status: waitingCount > 5 ? 'High OPD Load (+8 min consult pacing)' : 'Optimal (+3 min consult pacing)'
+        delayMinutes: Number(meanWait.toFixed(1)),
+        status: waitingCount === 0 ? 'No active waiting patients' : `Observed waiting time: ${meanWait.toFixed(1)} min`
       },
       congestionIndex: congestionScore,
       recommendations: [

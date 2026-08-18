@@ -153,7 +153,7 @@ class MediarcaQueueEngine {
           
           <div style="display: flex; align-items: center; gap: 0.5rem; flex: 1; max-width: 360px;">
             <input type="text" id="radarSearchInput" placeholder="Lookup Doctor ID or Booking Ref..." class="search-input" style="height: 38px; font-size: 0.8125rem; padding-left: 1rem !important;" onkeydown="if(event.key === 'Enter') window.mediarcaQueueEngine.handleSearchSubmit()">
-            <button class="btn btn-sm btn-primary" onclick="window.mediarcaQueueEngine.handleSearchSubmit()" style="padding: 0 16px; height: 38px;">
+            <button class="btn btn-sm btn-primary" aria-label="Search queue" onclick="window.mediarcaQueueEngine.handleSearchSubmit()" style="padding: 0 16px; height: 38px;">
               <i data-lucide="search" style="width: 14px; height: 14px;"></i>
             </button>
           </div>

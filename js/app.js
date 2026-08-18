@@ -84,6 +84,24 @@ class MediarcaApp {
       }
     });
 
+    // Accessible mobile navigation for dynamically rendered RBAC links.
+    document.addEventListener('click', (e) => {
+      const toggle = e.target.closest('#mobileNavToggle');
+      const nav = document.getElementById('mainNavLinks');
+      if (toggle && nav) {
+        const isOpen = nav.classList.toggle('mobile-open');
+        toggle.setAttribute('aria-expanded', String(isOpen));
+        toggle.setAttribute('aria-label', isOpen ? 'Close navigation menu' : 'Open navigation menu');
+        return;
+      }
+      if (nav && nav.classList.contains('mobile-open') && e.target.closest('#mainNavLinks button')) {
+        nav.classList.remove('mobile-open');
+        const currentToggle = document.getElementById('mobileNavToggle');
+        currentToggle?.setAttribute('aria-expanded', 'false');
+        currentToggle?.setAttribute('aria-label', 'Open navigation menu');
+      }
+    });
+
     // Global search input
     const searchInput = document.getElementById('doctorSearchInput');
     if (searchInput) {
@@ -1903,7 +1921,9 @@ class MediarcaApp {
                       </div>
                     </div>
 
-                    <input type="text" id="docDiagnosisInput" class="form-input" placeholder="Primary Diagnosis (e.g. Tension Headache, Hypertension)" value="" style="margin-bottom: 1rem; border-radius: 12px;">
+                    <textarea id="docChiefComplaintInput" class="form-input" rows="2" placeholder="Chief complaint / symptoms (physician verification required)" style="margin-bottom: 0.75rem; border-radius: 12px;"></textarea>
+                    <input type="text" id="docDiagnosisInput" class="form-input" placeholder="Primary Diagnosis (physician entry required)" value="" style="margin-bottom: 0.75rem; border-radius: 12px;">
+                    <textarea id="docExaminationInput" class="form-input" rows="3" placeholder="Document examination findings (optional; do not leave inferred text)" style="margin-bottom: 1rem; border-radius: 12px;"></textarea>
                     
                     <div style="font-size: 0.875rem; font-weight: 600; color: #1d1d1f; margin-bottom: 0.5rem;">Structured Prescription Regimen</div>
                     <div id="docPrescriptionItemsContainer" style="background: #ffffff; border: 1px solid rgba(0,0,0,0.06); border-radius: 14px; padding: 1rem; margin-bottom: 1rem;">
@@ -2068,7 +2088,7 @@ class MediarcaApp {
   }
 
   async handleCompleteWithRx(doctorId, tokenNumber) {
-    const diagnosis = document.getElementById('docDiagnosisInput')?.value.trim() || 'Clinical evaluation concluded.';
+    const diagnosis = document.getElementById('docDiagnosisInput')?.value.trim() || '';
     const bp = document.getElementById('docBpInput')?.value.trim() || null;
     const pulse = document.getElementById('docPulseInput')?.value.trim() || null;
     const temp = document.getElementById('docTempInput')?.value.trim() || null;
@@ -2090,7 +2110,7 @@ class MediarcaApp {
         const route = routeInput?.value?.trim();
         const dur = durInput?.value?.trim();
         if (drug) {
-          medications.push(`${drug}${route ? ' ' + route : ''} [${freq || 'OD'}] (${dur || '5 Days'})`);
+          medications.push([drug, route, freq ? `[${freq}]` : '', dur ? `(${dur})` : ''].filter(Boolean).join(' '));
         }
       });
     }
@@ -2102,13 +2122,20 @@ class MediarcaApp {
       const med2Drug = document.getElementById('docMed2Drug')?.value.trim();
       const med2Freq = document.getElementById('docMed2Freq')?.value.trim();
       const med2Dur = document.getElementById('docMed2Dur')?.value.trim();
-      if (med1Drug) medications.push(`${med1Drug} [${med1Freq || 'OD'}] (${med1Dur || '5 Days'})`);
-      if (med2Drug) medications.push(`${med2Drug} [${med2Freq || 'TID'}] (${med2Dur || '3 Days'})`);
+      if (med1Drug) medications.push([med1Drug, med1Freq ? `[${med1Freq}]` : '', med1Dur ? `(${med1Dur})` : ''].filter(Boolean).join(' '));
+      if (med2Drug) medications.push([med2Drug, med2Freq ? `[${med2Freq}]` : '', med2Dur ? `(${med2Dur})` : ''].filter(Boolean).join(' '));
     }
-    if (medications.length === 0) medications.push('Prescribed supportive oral medication as indicated');
 
     const labOrders = document.getElementById('docLabOrderInput')?.value.trim() || '';
-    const advice = document.getElementById('docAdviceInput')?.value.trim() || 'Take prescribed medications with plenty of water. Follow up if needed.';
+    const advice = document.getElementById('docAdviceInput')?.value.trim() || '';
+    const examinationFindings = document.getElementById('docExaminationInput')?.value.trim() || null;
+    const booking = (window.mediarcaStore.state.bookings || []).find(
+      b => b.doctorId === doctorId && Number(b.tokenNumber) === Number(tokenNumber)
+    );
+    if (!diagnosis || !advice) {
+      this.showToast('Enter the physician diagnosis and patient-specific advice before finalizing the encounter.', 'warning');
+      return;
+    }
     const followUpDate = document.getElementById('docFollowUpDate')?.value || '';
 
     try {
@@ -2119,9 +2146,9 @@ class MediarcaApp {
         followUpDate,
         vitals: vitalsObj,
         labOrders: labOrders || null,
-        examinationFindings: 'Clinical physical examination conducted and documented.',
+        examinationFindings,
         treatmentPlan: advice,
-        symptoms: 'Documented chief complaints and clinical indications'
+        symptoms: booking?.symptoms || null
       });
 
       if (window.mediarcaAudio) window.mediarcaAudio.playChime('success');
@@ -2165,59 +2192,46 @@ class MediarcaApp {
   }
 
   async handleCallSpecificToken(doctorId, tokenNumber) {
-    try {
-      const queue = window.mediarcaStore.state.queues[doctorId];
-      if (queue) {
-        queue.currentToken = tokenNumber;
-        queue.status = 'in-session';
-        if (queue.tokens) {
-          queue.tokens.forEach(t => {
-            if (t.tokenNumber === tokenNumber) {
-              t.status = 'in-consultation';
-            } else if (t.status === 'in-consultation') {
-              t.status = 'completed';
-            }
-          });
-        }
-      }
-      if (window.mediarcaAudio) window.mediarcaAudio.playChime('queue-call');
-      this.showToast(`Called Token #${tokenNumber} into Consultation Room!`, 'success');
-      this.setDoctorTab('current');
-    } catch (err) {
-      console.error('Call specific token error:', err);
-      this.showToast(err.message || 'Error calling token.', 'warning');
-    }
+    // There is no server RPC that safely reorders or arbitrarily calls a token.
+    // Never mutate the local queue for a clinical action that the server cannot audit.
+    console.warn('Rejected unsupported specific-token call:', { doctorId, tokenNumber });
+    this.showToast('Individual token calling is unavailable. Use the authoritative Advance Queue action.', 'warning');
   }
 
   async handleStartConsultation(appointmentId, doctorId) {
     try {
       const bookings = window.mediarcaStore.state.bookings || [];
       const appt = bookings.find(b => b.id === appointmentId || b.bookingId === appointmentId);
-      if (appt) {
-        appt.status = 'in-consultation';
-        // Ensure other in-consultation bookings for this doctor are set to completed or waiting
-        bookings.forEach(b => {
-          if (b.id !== appt.id && b.doctorId === appt.doctorId && b.status === 'in-consultation') {
-            b.status = 'completed';
-          }
-        });
-        if (window.mediarcaSupabase?.safeRpc) {
-          try {
-            await window.mediarcaSupabase.safeRpc('mark_appointment_status_atomic', {
-              p_doctor_id: doctorId || appt.doctorId,
-              p_token_number: appt.tokenNumber || 0,
-              p_status: 'in-consultation',
-              p_reason: 'Doctor started consultation from roster.'
-            });
-          } catch (_) {}
-        }
+      if (!appt || !appt.id) {
+        throw new Error('Appointment record not found. Refresh the roster and try again.');
       }
+      if (!window.mediarcaSupabase?.isConnected || !window.mediarcaSupabase.cloudTransitionAppointmentStatus) {
+        throw new Error('Hospital server is unavailable. Consultation status was not changed.');
+      }
+
+      const serverAppointment = await window.mediarcaSupabase.cloudTransitionAppointmentStatus(
+        appt.id,
+        'in-consultation',
+        'Doctor started consultation from roster.'
+      );
+      const authoritativeAppointment = Array.isArray(serverAppointment)
+        ? serverAppointment[0]
+        : serverAppointment;
+      if (!authoritativeAppointment || authoritativeAppointment.status !== 'in-consultation') {
+        throw new Error('Server did not confirm the consultation start.');
+      }
+
+      // Update the cache only after the server has committed the transition.
+      appt.status = authoritativeAppointment.status;
+      appt.startAt = authoritativeAppointment.start_at || appt.startAt || new Date().toISOString();
+      window.mediarcaStore.notifySubscribers();
+
       if (window.mediarcaAudio) window.mediarcaAudio.playChime('queue-call');
-      this.showToast(`Started consultation with ${appt ? appt.patientName : 'patient'}!`, 'success');
+      this.showToast(`Started consultation with ${appt.patientName || 'patient'}!`, 'success');
       this.setDoctorTab('current');
     } catch (err) {
       console.error('Start consultation error:', err);
-      this.showToast(err.message || 'Error starting consultation.', 'warning');
+      this.showToast(err.message || 'Error starting consultation. No local changes were made.', 'warning');
     }
   }
 
@@ -2734,25 +2748,42 @@ class MediarcaApp {
     }
   }
 
-  handleSaveAdminSettings() {
-    const buffer = parseInt(document.getElementById('adminSettingSlotBuffer')?.value) || 12;
-    const name = document.getElementById('adminSettingGroupName')?.value?.trim() || 'Apex Healthcare Network International';
-    
-    if (!window.mediarcaStore.state.hospitalSettings) {
-      window.mediarcaStore.state.hospitalSettings = {};
+  async handleSaveAdminSettings() {
+    const store = window.mediarcaStore;
+    if (store.state.currentUser?.role !== 'admin') {
+      this.showToast('Access Denied: Only administrators can change hospital settings.', 'warning');
+      return;
     }
-    window.mediarcaStore.state.hospitalSettings.slotBufferMins = buffer;
-    window.mediarcaStore.state.hospitalSettings.hospitalName = name;
 
-    window.mediarcaStore.recordAuditLog({
-      action: 'ADMIN_HOSPITAL_SETTINGS_SAVED',
-      entity: 'system_settings',
-      entityId: 'global_config',
-      afterState: { slotBufferMins: buffer, hospitalName: name }
-    });
+    const buffer = Number.parseInt(document.getElementById('adminSettingSlotBuffer')?.value, 10);
+    const name = document.getElementById('adminSettingGroupName')?.value?.trim() || '';
+    if (!Number.isInteger(buffer) || buffer < 1 || buffer > 120 || name.length < 2 || name.length > 255) {
+      this.showToast('Enter a hospital name and a slot buffer between 1 and 120 minutes.', 'warning');
+      return;
+    }
+    if (!window.mediarcaSupabase?.isConnected || !window.mediarcaSupabase.cloudSaveHospitalSettings) {
+      this.showToast('Hospital server is unavailable. Settings were not saved.', 'warning');
+      return;
+    }
 
-    window.mediarcaStore.saveState();
-    this.showToast('Hospital configuration parameters saved and audited!', 'success');
+    try {
+      this.showToast('Saving hospital configuration to the secure server...', 'info');
+      const response = await window.mediarcaSupabase.cloudSaveHospitalSettings(buffer, name);
+      const settings = Array.isArray(response) ? response[0] : response;
+      if (!settings || settings.id !== 'global') throw new Error('Server did not confirm the settings update.');
+
+      store.state.hospitalSettings = {
+        slotBufferMins: settings.slot_buffer_mins,
+        hospitalName: settings.hospital_name,
+        updatedAt: settings.updated_at
+      };
+      store.saveState();
+      this.showToast('Hospital configuration saved on the server and audited.', 'success');
+      this.renderAdminHub();
+    } catch (err) {
+      console.error('Hospital settings save error:', err);
+      this.showToast(err.message || 'Hospital settings were not saved.', 'warning');
+    }
   }
 
   async handleAdminVerify(doctorId, approved) {
@@ -3294,7 +3325,7 @@ class MediarcaApp {
       <div class="modal-box">
         <div class="modal-header">
           <h3 style="font-size: 1.125rem; font-weight: 800; color: var(--text-primary);">Upload Clinical Document</h3>
-          <button class="modal-close-btn" onclick="document.getElementById('uploadDocModal').classList.remove('active')" style="background:none; border:none; cursor:pointer;">
+          <button class="modal-close-btn" aria-label="Close document upload dialog" onclick="document.getElementById('uploadDocModal').classList.remove('active')" style="background:none; border:none; cursor:pointer;">
             <i data-lucide="x" style="width: 16px; height: 16px;"></i>
           </button>
         </div>
@@ -3388,7 +3419,7 @@ class MediarcaApp {
 
       resContainer.innerHTML = `
         <div style="font-size:0.75rem; font-weight:800; color:#4338ca; margin-bottom:0.5rem; display:flex; justify-content:space-between; align-items:center;">
-          <span>🤖 AI STRUCTURED SOAP DRAFT</span>
+          <span>DICTATION TRANSCRIPTION DRAFT</span>
           <span style="color:#b91c1c; font-size:0.65rem;">${escapeHtml(draft.disclaimer)}</span>
         </div>
 
@@ -3396,19 +3427,18 @@ class MediarcaApp {
           <strong>[S] Chief Complaint:</strong> ${escapeHtml(draft.subjective)}
         </div>
         <div style="font-size:0.75rem; color:var(--text-primary); margin-bottom:0.35rem;">
-          <strong>[O] Objective Exam:</strong> ${escapeHtml(draft.objective)}
+          <strong>[O] Objective Exam:</strong> Not extracted — physician entry required.
         </div>
         <div style="font-size:0.75rem; color:var(--text-primary); margin-bottom:0.35rem;">
-          <strong>[A] Assessment:</strong> <span style="color:#0284c7; font-weight:bold;">${escapeHtml(draft.assessment)}</span>
-          <span class="badge" style="background:#fef3c7; color:#92400e; font-size:0.65rem; margin-left:0.35rem;">Possible assessment — physician verification required</span>
+          <strong>[A] Assessment:</strong> Not generated — physician entry required.
         </div>
         <div style="font-size:0.75rem; color:var(--text-primary); margin-bottom:0.5rem;">
-          <strong>[P] Recommended Regimen:</strong> ${escapeHtml(draft.medications.length > 0 ? draft.medications.join(' • ') : 'To be prescribed by attending physician')}
+          <strong>[P] Plan / Medications:</strong> Not generated — physician entry required.
         </div>
 
         <div style="display:flex; gap:0.5rem;">
           <button type="button" class="btn btn-sm btn-teal" onclick="window.mediarcaApp.applyAiScribeDraft()" style="font-size:0.7rem; padding:0.25rem 0.5rem;">
-            <i data-lucide="check" style="width:12px;height:12px;"></i> Confirm & Insert into Encounter
+            <i data-lucide="file-input" style="width:12px;height:12px;"></i> Insert Dictation into Chief Complaint
           </button>
           <button type="button" class="btn btn-sm btn-secondary" onclick="document.getElementById('aiScribeDraftResult').style.display='none'" style="font-size:0.7rem; padding:0.25rem 0.5rem;">
             Dismiss
@@ -3427,158 +3457,102 @@ class MediarcaApp {
   applyAiScribeDraft() {
     if (!this.currentAiDraft) return;
     const draft = this.currentAiDraft;
-
-    const diagInput = document.getElementById('docDiagnosisInput');
-    if (diagInput) diagInput.value = draft.assessment;
-
-    const adviceInput = document.getElementById('docAdviceInput');
-    if (adviceInput) adviceInput.value = draft.advice;
-
-    const container = document.getElementById('docPrescriptionItemsContainer');
-    if (container && draft.medications.length > 0) {
-      container.innerHTML = draft.medications.map((medStr, idx) => `
-        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 0.5rem; margin-bottom: 0.5rem;">
-          <input type="text" id="docMed${idx+1}Drug" class="form-input" value="${escapeHtml(medStr)}" placeholder="Medicine Name">
-          <input type="text" id="docMed${idx+1}Freq" class="form-input" value="OD / Indicated" placeholder="Frequency">
-          <input type="text" id="docMed${idx+1}Route" class="form-input" value="Oral" placeholder="Route">
-          <input type="text" id="docMed${idx+1}Dur" class="form-input" value="5 Days" placeholder="Duration">
-        </div>
-      `).join('');
+    const chiefComplaintInput = document.getElementById('docChiefComplaintInput');
+    if (chiefComplaintInput) {
+      chiefComplaintInput.value = draft.rawDictation;
+    } else {
+      this.showToast('Dictation preserved. Enter it manually in the encounter complaint field.', 'info');
     }
 
     document.getElementById('aiScribeDraftResult').style.display = 'none';
-    this.showToast('AI SOAP Draft confirmed and populated into Clinical Encounter.', 'success');
+    this.showToast('Dictation inserted without generating clinical conclusions or prescriptions.', 'info');
   }
 
-  // --- Dynamic Queue Optimization Actions (H-21 & H-22 Resolution) ---
+  // --- Queue Optimization Recommendations ---
   applyQueueOptimization(recId) {
-    const store = window.mediarcaStore;
-    
-    // Dynamically adjust active doctor queue pacing and allocate buffer room
-    const doctorKeys = Object.keys(store.state.queues || {});
-    if (doctorKeys.length > 0) {
-      doctorKeys.forEach(docId => {
-        if (store.state.queues[docId]) {
-          store.state.queues[docId].avgConsultTimeMins = Math.max(8, (store.state.queues[docId].avgConsultTimeMins || 12) - 2);
-        }
-      });
-    }
-
-    store.recordAuditLog({
-      action: `QUEUE_OPTIMIZATION_APPLIED_${recId.toUpperCase()}`,
-      entity: 'clinic_queues',
-      afterState: { recId, action: 'Buffer suite activated & queue throughput pacing adjusted' }
-    });
-
-    store.saveState();
-    if (window.mediarcaAudio) window.mediarcaAudio.playChime('success');
-    this.showToast('Buffer Consultation Suite activated & Queue Pacing dynamically balanced!', 'success');
-    this.renderAdminHub();
+    // Recommendations are informational until a dedicated, audited backend workflow
+    // exists for room allocation or queue-pacing changes. Do not mutate clinical state.
+    console.info('Queue optimization recommendation acknowledged:', recId);
+    this.showToast('Recommendation acknowledged. Queue pacing and room allocation require an authorized staff workflow.', 'info');
   }
 
   // --- Telemedicine Virtual Consultation Suite (Section 18 Resolution) ---
-  showTelemedicineSuite(bookingId) {
-    let modal = document.getElementById('telemedModal');
-    if (!modal) {
-      modal = document.createElement('div');
-      modal.id = 'telemedModal';
-      modal.className = 'modal-overlay';
-      document.body.appendChild(modal);
+  async showTelemedicineSuite(bookingId) {
+    const store = window.mediarcaStore;
+    const booking = (store.state.bookings || []).find(
+      b => b.bookingId === bookingId || b.id === bookingId
+    );
+
+    if (!booking || !booking.id) {
+      this.showToast('Appointment record not found. The teleconsultation room was not created.', 'warning');
+      return;
+    }
+    if (!window.mediarcaSupabase?.isConnected || !window.mediarcaSupabase.cloudCreateTelemedicineRoom) {
+      this.showToast('Hospital server is unavailable. The teleconsultation room was not created.', 'warning');
+      return;
     }
 
-    const booking = window.mediarcaStore.state.bookings.find(b => b.bookingId === bookingId) || {
-      patientName: 'Sarah Jenkins',
-      doctorName: 'Dr. Bikesh Ray',
-      tokenNumber: 2
-    };
+    try {
+      this.showToast('Creating a secure teleconsultation room...', 'info');
+      const response = await window.mediarcaSupabase.cloudCreateTelemedicineRoom(booking.id);
+      const room = Array.isArray(response) ? response[0] : response;
+      if (!room || !room.id) {
+        throw new Error('Server did not return a valid teleconsultation room.');
+      }
 
-    modal.innerHTML = `
-      <div class="modal-box" style="max-width: 850px; background: #09090b; color: #fff; border: 1px solid #27272a;">
-        <div class="modal-header" style="border-bottom: 1px solid #27272a; padding: 1rem 1.5rem;">
-          <div style="display:flex; align-items:center; gap:0.5rem;">
-            <div style="width:10px; height:10px; background:#22c55e; border-radius:50%; box-shadow:0 0 10px #22c55e;"></div>
-            <h3 style="font-size: 1.125rem; font-weight: 800; color: #fff;">MediArca Teleconsultation Suite (Interactive Preview)</h3>
+      let modal = document.getElementById('telemedModal');
+      if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'telemedModal';
+        modal.className = 'modal-overlay';
+        document.body.appendChild(modal);
+      }
+
+      modal.innerHTML = `
+        <div class="modal-box" style="max-width: 760px; background: #09090b; color: #fff; border: 1px solid #27272a;">
+          <div class="modal-header" style="border-bottom: 1px solid #27272a; padding: 1rem 1.5rem;">
+            <div style="display:flex; align-items:center; gap:0.5rem;">
+              <div style="width:10px; height:10px; background:#22c55e; border-radius:50%; box-shadow:0 0 10px #22c55e;"></div>
+              <h3 style="font-size: 1.125rem; font-weight: 800; color: #fff;">Secure Teleconsultation Room</h3>
+            </div>
+            <button class="modal-close-btn" aria-label="Close teleconsultation room" onclick="document.getElementById('telemedModal').classList.remove('active')" style="background:none; border:none; color:#a1a1aa; cursor:pointer;">
+              <i data-lucide="x" style="width: 18px; height: 18px;"></i>
+            </button>
           </div>
-          <button class="modal-close-btn" onclick="document.getElementById('telemedModal').classList.remove('active')" style="background:none; border:none; color:#a1a1aa; cursor:pointer;">
-            <i data-lucide="x" style="width: 18px; height: 18px;"></i>
-          </button>
-        </div>
-
-        <div class="modal-body" style="padding: 1.5rem;">
-          <!-- Telemedicine Hardware Self-Test & Video Stream -->
-          <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.25rem;">
-            <div style="background: #18181b; border: 1px solid #27272a; border-radius: 12px; height: 340px; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center;">
-              <!-- Simulated Video Canvas -->
-              <img src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=600&fit=crop&q=80" style="width: 100%; height: 100%; object-fit: cover; filter: brightness(0.9);" alt="Doctor Video">
-              
-              <!-- Patient PiP Inset -->
-              <div style="position: absolute; bottom: 12px; right: 12px; width: 110px; height: 80px; background: #27272a; border: 2px solid #0284c7; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
-                <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&fit=crop&q=80" style="width: 100%; height: 100%; object-fit: cover;" alt="Self View">
-                <div style="position: absolute; bottom: 2px; left: 4px; font-size: 9px; background: rgba(0,0,0,0.7); padding: 1px 3px; border-radius: 2px;">Patient (You)</div>
+          <div class="modal-body" style="padding: 1.5rem;">
+            <div style="background:#18181b; border:1px solid #27272a; border-radius:12px; min-height:260px; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; padding:2rem;">
+              <i data-lucide="video-off" style="width:42px;height:42px;color:#facc15;margin-bottom:1rem;"></i>
+              <h4 style="font-size:1rem; margin-bottom:0.5rem;">Room created; media connection is not enabled</h4>
+              <p style="font-size:0.8125rem; line-height:1.5; color:#a1a1aa; max-width:520px; margin:0;">
+                The appointment room was created by the authorized server. WebRTC media signaling and camera/microphone controls are not integrated in this release, so no live video is being shown.
+              </p>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; margin-top:1rem;">
+              <div style="background:#18181b; border:1px solid #27272a; border-radius:8px; padding:0.875rem;">
+                <div style="font-size:0.7rem; color:#a1a1aa; text-transform:uppercase; margin-bottom:0.35rem;">Patient</div>
+                <div style="font-size:0.8125rem; color:#fff;">${escapeHtml(booking.patientName || 'Registered Patient')}</div>
               </div>
-
-              <!-- Stream Status Bar -->
-              <div style="position: absolute; top: 12px; left: 12px; display: flex; gap: 0.5rem; align-items: center;">
-                <span class="badge" style="background: rgba(34, 197, 94, 0.2); color: #4ade80; font-size: 0.7rem; border: 1px solid #22c55e;">
-                  ● Teleconsultation Room Preview (Interactive Clinical Interface)
-                </span>
-              </div>
-
-              <!-- Video Controls HUD -->
-              <div style="position: absolute; bottom: 12px; left: 12px; display: flex; gap: 0.5rem;">
-                <button class="btn btn-sm btn-secondary" onclick="window.mediarcaApp.showToast('Microphone muted/unmuted', 'info')" style="background: #27272a; color: #fff; border: 1px solid #3f3f46;">
-                  <i data-lucide="mic" style="width: 13px; height: 13px;"></i>
-                </button>
-                <button class="btn btn-sm btn-secondary" onclick="window.mediarcaApp.showToast('Camera toggled', 'info')" style="background: #27272a; color: #fff; border: 1px solid #3f3f46;">
-                  <i data-lucide="video" style="width: 13px; height: 13px;"></i>
-                </button>
-                <button class="btn btn-sm btn-secondary" onclick="window.mediarcaApp.showToast('Screen share active', 'info')" style="background: #27272a; color: #fff; border: 1px solid #3f3f46;">
-                  <i data-lucide="share-2" style="width: 13px; height: 13px;"></i>
-                </button>
+              <div style="background:#18181b; border:1px solid #27272a; border-radius:8px; padding:0.875rem;">
+                <div style="font-size:0.7rem; color:#a1a1aa; text-transform:uppercase; margin-bottom:0.35rem;">Attending</div>
+                <div style="font-size:0.8125rem; color:#fff;">${escapeHtml(booking.doctorName || 'Attending Physician')}</div>
               </div>
             </div>
-
-            <!-- Side Consultation Notes & Device Diagnostic -->
-            <div style="display: flex; flex-direction: column; justify-content: space-between;">
-              <div style="background: #18181b; border: 1px solid #27272a; border-radius: 8px; padding: 1rem; margin-bottom: 0.75rem;">
-                <div style="font-size: 0.75rem; font-weight: 700; color: #a1a1aa; text-transform: uppercase; margin-bottom: 0.5rem;">
-                  WebRTC Media & Connection State
-                </div>
-                <div style="font-size: 0.75rem; color: #4ade80; margin-bottom: 0.25rem;">
-                  ✓ Media Stream: ${navigator.mediaDevices ? 'WebRTC Media API Ready' : 'Standard WebRTC Client'}
-                </div>
-                <div style="font-size: 0.75rem; color: #4ade80; margin-bottom: 0.25rem;">
-                  ✓ Network Status: ${navigator.onLine ? 'Online (Authenticated)' : 'Offline/Local'}
-                </div>
-                <div style="font-size: 0.75rem; color: #4ade80;">
-                  ✓ Round-Trip Latency: ${navigator.connection?.rtt ? navigator.connection.rtt + 'ms' : 'Low (<50ms LAN/Wi-Fi)'}
-                </div>
-              </div>
-
-              <div style="background: #18181b; border: 1px solid #27272a; border-radius: 8px; padding: 1rem;">
-                <div style="font-size: 0.75rem; font-weight: 700; color: #a1a1aa; text-transform: uppercase; margin-bottom: 0.5rem;">
-                  Live Teleconsult Notes
-                </div>
-                <div style="font-size: 0.75rem; color: #fff; margin-bottom: 0.25rem;">
-                  <strong>Patient:</strong> ${escapeHtml(booking.patientName)}
-                </div>
-                <div style="font-size: 0.75rem; color: #fff; margin-bottom: 0.5rem;">
-                  <strong>Attending:</strong> ${escapeHtml(booking.doctorName)}
-                </div>
-                <textarea class="form-textarea" placeholder="Live teleconsult clinical observations..." style="background: #27272a; border: 1px solid #3f3f46; color: #fff; font-size: 0.75rem; min-height: 60px;">Chief Complaint: ${escapeHtml(booking.symptoms || 'General Clinical Consultation')}. Teleconsultation active.</textarea>
-              </div>
-
-              <button class="btn btn-danger btn-block" onclick="document.getElementById('telemedModal').classList.remove('active'); window.mediarcaApp.showToast('Teleconsultation session concluded.', 'info');" style="margin-top: 0.75rem;">
-                <i data-lucide="phone-off" style="width: 14px; height: 14px;"></i> Conclude Call & Finalize EMR
-              </button>
+            <div style="background:#18181b; border:1px solid #27272a; border-radius:8px; padding:0.875rem; margin-top:0.75rem; font-size:0.75rem; color:#a1a1aa;">
+              <div><strong style="color:#fff;">Room:</strong> ${escapeHtml(room.room_name || 'MediArca Virtual Suite')}</div>
+              <div style="margin-top:0.25rem;"><strong style="color:#fff;">Status:</strong> ${escapeHtml(room.session_status || 'active')}</div>
+              <div style="margin-top:0.25rem;"><strong style="color:#fff;">Expires:</strong> ${room.expires_at ? escapeHtml(new Date(room.expires_at).toLocaleString()) : 'Not provided'}</div>
             </div>
+            <p style="font-size:0.75rem; color:#facc15; margin:1rem 0 0;">Do not begin a clinical teleconsultation until a compliant media connection is available.</p>
           </div>
         </div>
-      </div>
-    `;
+      `;
 
-    modal.classList.add('active');
-    if (window.lucide) window.lucide.createIcons();
+      modal.classList.add('active');
+      if (window.lucide) window.lucide.createIcons();
+    } catch (err) {
+      console.error('Teleconsultation room creation error:', err);
+      this.showToast(err.message || 'Unable to create a secure teleconsultation room.', 'warning');
+    }
   }
 
   // --- Digital Consent System (Section 19 Resolution) ---
@@ -3598,7 +3572,7 @@ class MediarcaApp {
             <i data-lucide="file-signature" style="width: 18px; height: 18px; color: var(--clinical-blue);"></i>
             <h3 style="font-size: 1.125rem; font-weight: 800; color: var(--text-primary);">Digital Statutory Consent (v2.4-HIPAA)</h3>
           </div>
-          <button class="modal-close-btn" onclick="document.getElementById('consentModal').classList.remove('active')" style="background:none; border:none; cursor:pointer;">
+          <button class="modal-close-btn" aria-label="Close consent dialog" onclick="document.getElementById('consentModal').classList.remove('active')" style="background:none; border:none; cursor:pointer;">
             <i data-lucide="x" style="width: 16px; height: 16px;"></i>
           </button>
         </div>
@@ -3681,7 +3655,7 @@ class MediarcaApp {
             <i data-lucide="receipt" style="width:18px;height:18px; color:#15803d;"></i>
             <h3 style="font-size: 1.125rem; font-weight: 800; color: var(--text-primary);">Hospital Invoice & Insurance Settlement</h3>
           </div>
-          <button class="modal-close-btn" onclick="document.getElementById('billingModal').classList.remove('active')" style="background:none; border:none; cursor:pointer;">
+          <button class="modal-close-btn" aria-label="Close billing dialog" onclick="document.getElementById('billingModal').classList.remove('active')" style="background:none; border:none; cursor:pointer;">
             <i data-lucide="x" style="width: 16px; height: 16px;"></i>
           </button>
         </div>

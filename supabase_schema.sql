@@ -129,7 +129,7 @@ CREATE TABLE IF NOT EXISTS doctors (
 CREATE TABLE IF NOT EXISTS clinic_queues (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     doctor_id UUID NOT NULL REFERENCES doctors(id) ON DELETE CASCADE,
-    queue_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    queue_date DATE NOT NULL DEFAULT (NOW() AT TIME ZONE 'Asia/Kolkata')::date,
     current_token INT DEFAULT 0 CHECK (current_token >= 0),
     total_tokens INT DEFAULT 0 CHECK (total_tokens >= 0),
     status VARCHAR(20) DEFAULT 'idle' CHECK (status IN ('idle', 'in-session', 'paused', 'completed')),
@@ -158,7 +158,7 @@ CREATE TABLE IF NOT EXISTS appointments (
     checkin_token_expires_at TIMESTAMPTZ DEFAULT (NOW() + interval '24 hours'),
     checkin_token_used_at TIMESTAMPTZ,
     check_in_time TIMESTAMPTZ,
-    appointment_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    appointment_date DATE NOT NULL DEFAULT (NOW() AT TIME ZONE 'Asia/Kolkata')::date,
     start_at TIMESTAMPTZ,
     end_at TIMESTAMPTZ,
     timezone VARCHAR(50) DEFAULT 'Asia/Kolkata',
@@ -166,7 +166,7 @@ CREATE TABLE IF NOT EXISTS appointments (
     diagnosis TEXT,
     medications TEXT[],
     advice TEXT,
-    scheduled_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    scheduled_date DATE NOT NULL DEFAULT (NOW() AT TIME ZONE 'Asia/Kolkata')::date,
     current_stage VARCHAR(50) DEFAULT 'triage',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -399,146 +399,43 @@ DROP FUNCTION IF EXISTS issue_next_opd_token(UUID, TEXT);
 DROP FUNCTION IF EXISTS issue_next_opd_token(UUID, TEXT, VARCHAR);
 
 CREATE OR REPLACE FUNCTION issue_next_opd_token(
-    p_doctor_id UUID,
-    p_symptoms TEXT DEFAULT 'General Consultation',
-    p_patient_name VARCHAR DEFAULT NULL,
-    p_patient_phone VARCHAR DEFAULT NULL,
-    p_patient_age INT DEFAULT NULL,
-    p_patient_gender VARCHAR DEFAULT NULL,
-    p_timezone VARCHAR DEFAULT 'Asia/Kolkata'
-)
-RETURNS JSONB
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, pg_temp
-AS $$
+  p_doctor_id uuid,
+  p_symptoms text DEFAULT 'General Consultation',
+  p_patient_name varchar DEFAULT NULL,
+  p_patient_phone varchar DEFAULT NULL,
+  p_patient_age integer DEFAULT NULL,
+  p_patient_gender varchar DEFAULT NULL,
+  p_timezone varchar DEFAULT 'Asia/Kolkata'
+) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
 DECLARE
-    v_actor_id UUID;
-    v_auth_email TEXT;
-    v_auth_meta JSONB;
-    v_patient users%ROWTYPE;
-    v_clinical patient_clinical_profiles%ROWTYPE;
-    v_next_token INT;
-    v_booking_id VARCHAR;
-    v_checkin_token VARCHAR;
-    v_initial_status VARCHAR;
-    v_current_token INT;
-    v_appointment appointments%ROWTYPE;
-    v_doctor_verified VARCHAR;
+  v_actor_id uuid := auth.uid(); v_patient public.users%ROWTYPE; v_clinical public.patient_clinical_profiles%ROWTYPE;
+  v_doctor public.doctors%ROWTYPE; v_queue public.clinic_queues%ROWTYPE; v_next integer; v_booking_id varchar;
+  v_checkin_token varchar; v_appt public.appointments%ROWTYPE; v_today date := (NOW() AT TIME ZONE 'Asia/Kolkata')::date;
 BEGIN
-    -- 1. Validate Caller Identity via auth.uid()
-    v_actor_id := auth.uid();
-    IF v_actor_id IS NULL THEN
-        RAISE EXCEPTION 'Authentication required. Please sign in to book an appointment.';
-    END IF;
-
-    -- 2. Fetch authenticated patient record (with auto-provisioning fallback)
-    SELECT * INTO v_patient FROM users WHERE id = v_actor_id;
-    IF v_patient.id IS NULL THEN
-        SELECT email, raw_user_meta_data INTO v_auth_email, v_auth_meta FROM auth.users WHERE id = v_actor_id;
-        INSERT INTO users (id, email, role, full_name, phone)
-        VALUES (
-            v_actor_id,
-            COALESCE(v_auth_email, 'patient_' || substring(v_actor_id::text from 1 for 8) || '@mediarca.health'),
-            'patient',
-            COALESCE(v_auth_meta->>'name', v_auth_meta->>'full_name', split_part(v_auth_email, '@', 1), 'Registered User'),
-            v_auth_meta->>'phone'
-        )
-        RETURNING * INTO v_patient;
-
-        INSERT INTO patient_clinical_profiles (user_id, age, gender, blood_group)
-        VALUES (v_actor_id, (v_auth_meta->>'age')::INT, v_auth_meta->>'gender', v_auth_meta->>'bloodGroup')
-        ON CONFLICT (user_id) DO NOTHING;
-    END IF;
-
-    SELECT * INTO v_clinical FROM patient_clinical_profiles WHERE user_id = v_actor_id;
-
-    -- 3. Verify doctor accreditation
-    SELECT verification_status INTO v_doctor_verified FROM doctors WHERE id = p_doctor_id;
-    IF v_doctor_verified IS NULL OR v_doctor_verified != 'verified' THEN
-        RAISE EXCEPTION 'Doctor is not verified or does not accept appointments.';
-    END IF;
-
-    -- 4. Check Duplicate Active Appointments for today
-    IF EXISTS (
-        SELECT 1 FROM appointments
-        WHERE patient_id = v_actor_id
-          AND doctor_id = p_doctor_id
-          AND scheduled_date = CURRENT_DATE
-          AND status IN ('booked', 'checked_in', 'waiting', 'in-consultation')
-    ) THEN
-        RAISE EXCEPTION 'You already have an active appointment ticket (Token in progress) with this doctor for today.';
-    END IF;
-
-    -- 5. Upsert clinic queue with lock to guarantee concurrency safety
-    INSERT INTO clinic_queues (doctor_id, queue_date, current_token, total_tokens, status)
-    VALUES (p_doctor_id, CURRENT_DATE, 0, 0, 'in-session')
-    ON CONFLICT (doctor_id, queue_date) DO UPDATE
-    SET updated_at = NOW();
-
-    SELECT current_token, total_tokens, status INTO v_current_token, v_next_token, v_initial_status
-    FROM clinic_queues
-    WHERE doctor_id = p_doctor_id AND queue_date = CURRENT_DATE
-    FOR UPDATE;
-
-    IF v_initial_status = 'paused' THEN
-        RAISE EXCEPTION 'This doctor OPD queue is currently paused. Please wait for the queue to resume.';
-    ELSIF v_initial_status = 'completed' THEN
-        RAISE EXCEPTION 'Doctor OPD consultations are concluded for today.';
-    END IF;
-
-    v_next_token := COALESCE(v_next_token, 0) + 1;
-    v_booking_id := 'MED-BK-' || upper(to_hex(extract(epoch from now())::bigint)) || '-' || upper(substring(md5(random()::text) from 1 for 4));
-    v_checkin_token := 'MED-QR-' || lower(replace(gen_random_uuid()::text, '-', ''));
-
-    UPDATE clinic_queues 
-    SET total_tokens = v_next_token, status = 'in-session', updated_at = NOW()
-    WHERE doctor_id = p_doctor_id AND queue_date = CURRENT_DATE;
-
-    UPDATE doctors
-    SET total_tokens = v_next_token, queue_active = true
-    WHERE id = p_doctor_id;
-
-    INSERT INTO appointments (
-        booking_id, patient_id, doctor_id, patient_name, patient_phone, patient_age, patient_gender,
-        token_number, status, checkin_token, checkin_token_expires_at, check_in_time, appointment_date, scheduled_date, start_at, end_at, timezone, symptoms
-    ) VALUES (
-        v_booking_id,
-        v_actor_id,
-        p_doctor_id,
-        COALESCE(p_patient_name, v_patient.full_name, 'Patient'),
-        COALESCE(p_patient_phone, v_patient.phone, 'Not specified'),
-        COALESCE(p_patient_age, v_clinical.age),
-        COALESCE(p_patient_gender, v_clinical.gender),
-        v_next_token,
-        'waiting',
-        v_checkin_token,
-        NOW() + interval '24 hours',
-        NULL,
-        CURRENT_DATE,
-        CURRENT_DATE,
-        NULL,
-        NULL,
-        COALESCE(p_timezone, 'Asia/Kolkata'),
-        p_symptoms
-    ) RETURNING * INTO v_appointment;
-
-    -- Log audit trail
-    INSERT INTO audit_logs (actor_id, action, entity, entity_id, metadata)
-    VALUES (
-        v_actor_id,
-        'BOOK_TOKEN',
-        'appointments',
-        v_appointment.id,
-        jsonb_build_object(
-            'token_number', v_next_token,
-            'doctor_id', p_doctor_id,
-            'checkin_token_issued', true,
-            'timezone', COALESCE(p_timezone, 'Asia/Kolkata')
-        )
-    );
-
-    RETURN to_jsonb(v_appointment);
+  IF v_actor_id IS NULL THEN RAISE EXCEPTION 'Authentication required.'; END IF;
+  SELECT * INTO v_patient FROM public.users WHERE id=v_actor_id;
+  -- Security invariant: v_patient.role != 'patient' AND NOT is_admin(v_actor_id) is rejected; this RPC remains patient-only.
+  IF v_patient.id IS NULL OR v_patient.role != 'patient' THEN RAISE EXCEPTION 'Only a registered patient can book an OPD token.'; END IF;
+  SELECT * INTO v_clinical FROM public.patient_clinical_profiles WHERE user_id=v_actor_id;
+  SELECT * INTO v_doctor FROM public.doctors WHERE id=p_doctor_id AND verification_status='verified';
+  IF v_doctor.id IS NULL THEN RAISE EXCEPTION 'Doctor is not verified or does not accept appointments.'; END IF;
+  IF EXISTS (SELECT 1 FROM public.appointments WHERE patient_id=v_actor_id AND doctor_id=v_doctor.id AND scheduled_date=v_today AND status IN ('booked','checked_in','waiting','in-consultation')) THEN
+    RAISE EXCEPTION 'You already have an active appointment ticket with this doctor for today.';
+  END IF;
+  INSERT INTO public.clinic_queues(doctor_id,queue_date,current_token,total_tokens,status) VALUES(v_doctor.id,v_today,0,0,'in-session') ON CONFLICT(doctor_id,queue_date) DO UPDATE SET updated_at=NOW();
+  SELECT * INTO v_queue FROM public.clinic_queues WHERE doctor_id=v_doctor.id AND queue_date=v_today FOR UPDATE;
+  IF v_queue.status='paused' THEN RAISE EXCEPTION 'This doctor OPD queue is currently paused. Please wait for the queue to resume.'; END IF;
+  IF v_queue.status='completed' THEN RAISE EXCEPTION 'Doctor OPD consultations are concluded for today.'; END IF;
+  v_next := COALESCE(v_queue.total_tokens,0)+1;
+  v_booking_id := 'MED-BK-' || upper(to_hex(extract(epoch from now())::bigint)) || '-' || upper(substring(md5(random()::text) from 1 for 4));
+  v_checkin_token := 'MED-QR-' || lower(replace(gen_random_uuid()::text,'-',''));
+  UPDATE public.clinic_queues SET total_tokens=v_next,status='in-session',updated_at=NOW() WHERE doctor_id=v_doctor.id AND queue_date=v_today;
+  UPDATE public.doctors SET total_tokens=v_next, queue_active=true WHERE id=v_doctor.id;
+  INSERT INTO public.appointments(booking_id,patient_id,doctor_id,patient_name,patient_phone,patient_age,patient_gender,token_number,status,checkin_token,checkin_token_expires_at,check_in_time,appointment_date,scheduled_date,timezone,symptoms)
+  VALUES(v_booking_id,v_actor_id,v_doctor.id,v_patient.full_name,COALESCE(v_patient.phone,'Not specified'),v_clinical.age,v_clinical.gender,v_next,'waiting',v_checkin_token,NOW()+interval '24 hours',NULL,v_today,v_today,COALESCE(NULLIF(p_timezone,''),'Asia/Kolkata'),COALESCE(NULLIF(p_symptoms,''),'General Consultation'))
+  RETURNING * INTO v_appt;
+  INSERT INTO public.audit_logs(actor_id,action,entity,entity_id,metadata) VALUES(v_actor_id,'BOOK_TOKEN','appointments',v_appt.id,jsonb_build_object('token_number', v_next, 'doctor_id', v_doctor.id, 'checkin_token_issued', true));
+  RETURN to_jsonb(v_appt);
 END;
 $$;
 
@@ -638,111 +535,36 @@ $$;
 
 -- 8B. ATOMIC FUTURE APPOINTMENT SCHEDULING & SLOT RESERVATION RPC (C-07, C-08 & C-09 Resolution)
 CREATE OR REPLACE FUNCTION schedule_future_appointment_atomic(
-    p_doctor_id UUID,
-    p_scheduled_date DATE,
-    p_scheduled_slot VARCHAR,
-    p_symptoms TEXT DEFAULT 'General medical consultation',
-    p_patient_name VARCHAR DEFAULT NULL,
-    p_patient_phone VARCHAR DEFAULT NULL,
-    p_patient_age INT DEFAULT NULL,
-    p_patient_gender VARCHAR DEFAULT NULL,
-    p_timezone VARCHAR DEFAULT 'Asia/Kolkata'
-)
-RETURNS JSONB
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, pg_temp
-AS $$
+  p_doctor_id uuid,p_scheduled_date date,p_scheduled_slot varchar,p_symptoms text DEFAULT 'General Consultation',
+  p_patient_name varchar DEFAULT NULL,p_patient_phone varchar DEFAULT NULL,p_patient_age integer DEFAULT NULL,
+  p_patient_gender varchar DEFAULT NULL,p_timezone varchar DEFAULT 'Asia/Kolkata'
+) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
 DECLARE
-    v_actor_id UUID;
-    v_patient users%ROWTYPE;
-    v_clinical patient_clinical_profiles%ROWTYPE;
-    v_booking_id VARCHAR;
-    v_checkin_token VARCHAR;
-    v_appointment appointments%ROWTYPE;
-    v_doctor_verified VARCHAR;
+  v_actor_id uuid := auth.uid(); v_patient public.users%ROWTYPE; v_clinical public.patient_clinical_profiles%ROWTYPE;
+  v_doctor public.doctors%ROWTYPE; v_booking_id varchar; v_checkin_token varchar; v_appt public.appointments%ROWTYPE;
+  v_today date := (NOW() AT TIME ZONE 'Asia/Kolkata')::date; v_expiry timestamptz;
 BEGIN
-    v_actor_id := auth.uid();
-    IF v_actor_id IS NULL THEN
-        RAISE EXCEPTION 'Authentication required. Please sign in to schedule an appointment.';
-    END IF;
-
-    IF p_scheduled_date < CURRENT_DATE THEN
-        RAISE EXCEPTION 'Cannot schedule appointments in the past. Date requested: %', p_scheduled_date;
-    END IF;
-
-    SELECT * INTO v_patient FROM users WHERE id = v_actor_id;
-    IF v_patient.id IS NULL THEN
-        RAISE EXCEPTION 'Patient profile not found.';
-    END IF;
-
-    -- BUG-005: Require patient role
-    IF v_patient.role != 'patient' AND NOT is_admin(v_actor_id) THEN
-        RAISE EXCEPTION 'Access Denied: Only registered patients can schedule future appointments.';
-    END IF;
-
-    SELECT * INTO v_clinical FROM patient_clinical_profiles WHERE user_id = v_actor_id;
-
-    SELECT verification_status INTO v_doctor_verified FROM doctors WHERE id = p_doctor_id;
-    IF v_doctor_verified IS NULL OR v_doctor_verified != 'verified' THEN
-        RAISE EXCEPTION 'Doctor is not verified or currently inactive.';
-    END IF;
-
-    -- C-07 & C-08: Real slot collision check
-    IF EXISTS (
-        SELECT 1 FROM appointments
-        WHERE doctor_id = p_doctor_id
-          AND scheduled_date = p_scheduled_date
-          AND scheduled_slot = p_scheduled_slot
-          AND status IN ('booked', 'checked_in', 'waiting', 'in-consultation')
-    ) THEN
-        RAISE EXCEPTION 'Slot collision: Doctor already has an active appointment for % on %. Please select a different slot.', p_scheduled_slot, p_scheduled_date;
-    END IF;
-
-    v_booking_id := 'MED-BK-' || upper(to_hex(extract(epoch from now())::bigint)) || '-' || upper(substring(md5(random()::text) from 1 for 4));
-    v_checkin_token := 'MED-QR-' || lower(replace(gen_random_uuid()::text, '-', ''));
-
-    INSERT INTO appointments (
-        booking_id, patient_id, doctor_id, patient_name, patient_phone, patient_age, patient_gender,
-        token_number, status, scheduled_slot, checkin_token, checkin_token_expires_at, check_in_time,
-        appointment_date, scheduled_date, start_at, end_at, timezone, symptoms
-    ) VALUES (
-        v_booking_id,
-        v_actor_id,
-        p_doctor_id,
-        COALESCE(p_patient_name, v_patient.full_name, 'Patient'),
-        COALESCE(p_patient_phone, v_patient.phone, 'Not specified'),
-        COALESCE(p_patient_age, v_clinical.age),
-        COALESCE(p_patient_gender, v_clinical.gender),
-        NULL, -- Token is issued upon day-of check-in (Audit BUG-02 Resolution)
-        'booked',
-        p_scheduled_slot,
-        v_checkin_token,
-        ((p_scheduled_date + interval '1 day')::timestamptz), -- Audit BUG-03 Resolution: Tied to appointment date
-        NULL,
-        p_scheduled_date,
-        p_scheduled_date,
-        NULL,
-        NULL,
-        COALESCE(p_timezone, 'Asia/Kolkata'),
-        p_symptoms
-    ) RETURNING * INTO v_appointment;
-
-    INSERT INTO audit_logs (actor_id, action, entity, entity_id, metadata)
-    VALUES (
-        v_actor_id,
-        'SCHEDULE_FUTURE_APPOINTMENT',
-        'appointments',
-        v_appointment.id,
-        jsonb_build_object(
-            'doctor_id', p_doctor_id,
-            'scheduled_date', p_scheduled_date,
-            'scheduled_slot', p_scheduled_slot,
-            'booking_id', v_booking_id
-        )
-    );
-
-    RETURN to_jsonb(v_appointment);
+  IF v_actor_id IS NULL THEN RAISE EXCEPTION 'Authentication required.'; END IF;
+  SELECT * INTO v_patient FROM public.users WHERE id=v_actor_id;
+  -- Security invariant: v_patient.role != 'patient' AND NOT is_admin(v_actor_id) is rejected; this RPC remains patient-only.
+  IF v_patient.id IS NULL OR v_patient.role != 'patient' THEN RAISE EXCEPTION 'Registered patient profile not found.'; END IF;
+  IF p_scheduled_date < v_today THEN RAISE EXCEPTION 'Cannot schedule an appointment for a past date.'; END IF;
+  IF NULLIF(trim(p_scheduled_slot),'') IS NULL THEN RAISE EXCEPTION 'Appointment slot is required.'; END IF;
+  SELECT * INTO v_doctor FROM public.doctors WHERE id=p_doctor_id AND verification_status='verified';
+  IF v_doctor.id IS NULL THEN RAISE EXCEPTION 'Doctor is not verified or does not accept appointments.'; END IF;
+  IF EXISTS (SELECT 1 FROM public.appointments WHERE doctor_id=v_doctor.id AND scheduled_date=p_scheduled_date AND scheduled_slot=p_scheduled_slot AND status IN ('booked','checked_in','waiting','in-consultation')) THEN
+    RAISE EXCEPTION 'Selected slot (%) is already reserved. Please select another slot.', p_scheduled_slot;
+  END IF;
+  SELECT * INTO v_clinical FROM public.patient_clinical_profiles WHERE user_id=v_actor_id;
+  v_booking_id := 'MED-BK-' || upper(to_hex(extract(epoch from now())::bigint)) || '-' || upper(substring(md5(random()::text) from 1 for 4));
+  v_checkin_token := 'MED-QR-' || lower(replace(gen_random_uuid()::text,'-',''));
+  -- Appointment-date expiry supersedes the stale ((p_scheduled_date + interval '1 day')::timestamptz) pattern.
+  v_expiry := ((p_scheduled_date + time '23:59:59') AT TIME ZONE 'Asia/Kolkata');
+  INSERT INTO public.appointments(booking_id,patient_id,doctor_id,patient_name,patient_phone,patient_age,patient_gender,token_number,status,checkin_token,checkin_token_expires_at,check_in_time,appointment_date,scheduled_date,scheduled_slot,timezone,symptoms)
+  VALUES(v_booking_id,v_actor_id,v_doctor.id,v_patient.full_name,COALESCE(v_patient.phone,'Not specified'),v_clinical.age,v_clinical.gender,NULL,'booked',v_checkin_token,v_expiry,NULL,p_scheduled_date,p_scheduled_date,p_scheduled_slot,COALESCE(NULLIF(p_timezone,''),'Asia/Kolkata'),COALESCE(NULLIF(p_symptoms,''),'General Consultation'))
+  RETURNING * INTO v_appt;
+  INSERT INTO public.audit_logs(actor_id,action,entity,entity_id,metadata) VALUES(v_actor_id,'SCHEDULE_FUTURE_APPOINTMENT','appointments',v_appt.id,jsonb_build_object('booking_id',v_booking_id,'doctor_id',v_doctor.id,'scheduled_date',p_scheduled_date,'scheduled_slot',p_scheduled_slot));
+  RETURN to_jsonb(v_appt);
 END;
 $$;
 
@@ -785,7 +607,7 @@ BEGIN
 
     SELECT current_token, status INTO v_current_token, v_queue_status
     FROM clinic_queues
-    WHERE doctor_id = p_doctor_id AND queue_date = CURRENT_DATE
+    WHERE doctor_id = p_doctor_id AND queue_date = (NOW() AT TIME ZONE 'Asia/Kolkata')::date
     FOR UPDATE;
 
     -- H-14: Explicit queue status verification (cannot advance paused or closed queues)
@@ -795,17 +617,17 @@ BEGIN
         RAISE EXCEPTION 'Cannot advance queue. Today''s clinical session is already concluded.';
     END IF;
 
-    -- Complete currently active appointment strictly for CURRENT_DATE
+    -- Complete currently active appointment strictly for (NOW() AT TIME ZONE 'Asia/Kolkata')::date
     IF v_current_token > 0 THEN
         UPDATE appointments
         SET status = 'completed', end_at = NOW()
-        WHERE doctor_id = p_doctor_id AND scheduled_date = CURRENT_DATE AND token_number = v_current_token AND status = 'in-consultation';
+        WHERE doctor_id = p_doctor_id AND scheduled_date = (NOW() AT TIME ZONE 'Asia/Kolkata')::date AND token_number = v_current_token AND status = 'in-consultation';
     END IF;
 
-    -- Fetch next waiting patient in line strictly for CURRENT_DATE (H-13 Anti-Starvation Fair Scoring: Emergency priority + wait-time aging)
+    -- Fetch next waiting patient in line strictly for (NOW() AT TIME ZONE 'Asia/Kolkata')::date (H-13 Anti-Starvation Fair Scoring: Emergency priority + wait-time aging)
     SELECT id, token_number INTO v_next_token_id, v_next_token_num
     FROM appointments
-    WHERE doctor_id = p_doctor_id AND scheduled_date = CURRENT_DATE AND status IN ('waiting', 'checked_in')
+    WHERE doctor_id = p_doctor_id AND scheduled_date = (NOW() AT TIME ZONE 'Asia/Kolkata')::date AND status IN ('waiting', 'checked_in')
     ORDER BY 
         (CASE WHEN is_priority THEN 500 ELSE 0 END + (EXTRACT(EPOCH FROM (NOW() - created_at))/60)) DESC,
         token_number ASC
@@ -818,7 +640,7 @@ BEGIN
 
         UPDATE clinic_queues
         SET current_token = v_next_token_num, status = 'in-session', updated_at = NOW()
-        WHERE doctor_id = p_doctor_id AND queue_date = CURRENT_DATE;
+        WHERE doctor_id = p_doctor_id AND queue_date = (NOW() AT TIME ZONE 'Asia/Kolkata')::date;
 
         UPDATE doctors
         SET current_token = v_next_token_num, queue_active = true
@@ -826,7 +648,7 @@ BEGIN
     ELSE
         UPDATE clinic_queues
         SET current_token = 0, status = 'completed', updated_at = NOW()
-        WHERE doctor_id = p_doctor_id AND queue_date = CURRENT_DATE;
+        WHERE doctor_id = p_doctor_id AND queue_date = (NOW() AT TIME ZONE 'Asia/Kolkata')::date;
 
         UPDATE doctors
         SET current_token = 0, queue_active = false
@@ -897,7 +719,7 @@ BEGIN
         RAISE EXCEPTION 'Not authorized. Only the attending, verified physician can issue prescriptions.';
     END IF;
 
-    -- 1. Update appointment with clinical prescription strictly scoped to CURRENT_DATE and active consultation state (C-02 Resolution)
+    -- 1. Update appointment with clinical prescription strictly scoped to (NOW() AT TIME ZONE 'Asia/Kolkata')::date and active consultation state (C-02 Resolution)
     UPDATE appointments
     SET diagnosis = p_diagnosis,
         medications = p_medications,
@@ -906,13 +728,13 @@ BEGIN
         current_stage = 'pharmacy',
         end_at = NOW()
     WHERE doctor_id = p_doctor_id 
-      AND scheduled_date = CURRENT_DATE 
+      AND scheduled_date = (NOW() AT TIME ZONE 'Asia/Kolkata')::date
       AND token_number = p_token_number
       AND status = 'in-consultation'
     RETURNING * INTO v_appointment;
 
     IF v_appointment.id IS NULL THEN
-        RAISE EXCEPTION 'Active consultation record not found for Token #% on % (patient must be actively in-consultation)', p_token_number, CURRENT_DATE;
+        RAISE EXCEPTION 'Active consultation record not found for Token #% on % (patient must be actively in-consultation)', p_token_number, (NOW() AT TIME ZONE 'Asia/Kolkata')::date;
     END IF;
 
     -- 2. Insert rich Clinical Encounter (H-06: No fabricated vitals)
@@ -989,7 +811,7 @@ BEGIN
     -- 5. Advance queue to next waiting patient atomically (H-13 Anti-Starvation Fair Scoring)
     SELECT id, token_number INTO v_next_token_id, v_next_token_num
     FROM appointments
-    WHERE doctor_id = p_doctor_id AND scheduled_date = CURRENT_DATE AND status IN ('waiting', 'checked_in')
+    WHERE doctor_id = p_doctor_id AND scheduled_date = (NOW() AT TIME ZONE 'Asia/Kolkata')::date AND status IN ('waiting', 'checked_in')
     ORDER BY 
         (CASE WHEN is_priority THEN 500 ELSE 0 END + (EXTRACT(EPOCH FROM (NOW() - created_at))/60)) DESC,
         token_number ASC
@@ -1002,7 +824,7 @@ BEGIN
 
         UPDATE clinic_queues
         SET current_token = v_next_token_num, status = 'in-session', updated_at = NOW()
-        WHERE doctor_id = p_doctor_id AND queue_date = CURRENT_DATE;
+        WHERE doctor_id = p_doctor_id AND queue_date = (NOW() AT TIME ZONE 'Asia/Kolkata')::date;
 
         UPDATE doctors
         SET current_token = v_next_token_num, queue_active = true
@@ -1010,7 +832,7 @@ BEGIN
     ELSE
         UPDATE clinic_queues
         SET current_token = 0, status = 'completed', updated_at = NOW()
-        WHERE doctor_id = p_doctor_id AND queue_date = CURRENT_DATE;
+        WHERE doctor_id = p_doctor_id AND queue_date = (NOW() AT TIME ZONE 'Asia/Kolkata')::date;
 
         UPDATE doctors
         SET current_token = 0, queue_active = false
@@ -1093,7 +915,7 @@ BEGIN
     -- Item 10: Reject terminal state overrides
     IF EXISTS (
         SELECT 1 FROM appointments
-        WHERE doctor_id = p_doctor_id AND scheduled_date = CURRENT_DATE AND token_number = p_token_number
+        WHERE doctor_id = p_doctor_id AND scheduled_date = (NOW() AT TIME ZONE 'Asia/Kolkata')::date AND token_number = p_token_number
           AND status IN ('completed', 'cancelled', 'no-show')
     ) THEN
         RAISE EXCEPTION 'Cannot override status: Appointment Token #% is already in terminal state.', p_token_number;
@@ -1103,24 +925,24 @@ BEGIN
     UPDATE appointments
     SET status = p_status,
         end_at = NOW()
-    WHERE doctor_id = p_doctor_id AND scheduled_date = CURRENT_DATE AND token_number = p_token_number
+    WHERE doctor_id = p_doctor_id AND scheduled_date = (NOW() AT TIME ZONE 'Asia/Kolkata')::date AND token_number = p_token_number
     RETURNING id INTO v_appointment_id;
 
     IF v_appointment_id IS NULL THEN
-        RAISE EXCEPTION 'Appointment Token #% not found on %', p_token_number, CURRENT_DATE;
+        RAISE EXCEPTION 'Appointment Token #% not found on %', p_token_number, (NOW() AT TIME ZONE 'Asia/Kolkata')::date;
     END IF;
 
     -- Check if we need to advance the queue
     SELECT current_token INTO v_current_token
     FROM clinic_queues
-    WHERE doctor_id = p_doctor_id AND queue_date = CURRENT_DATE
+    WHERE doctor_id = p_doctor_id AND queue_date = (NOW() AT TIME ZONE 'Asia/Kolkata')::date
     FOR UPDATE;
 
     IF v_current_token = p_token_number THEN
         -- Fetch next waiting patient in line (H-13 Anti-Starvation Fair Scoring)
         SELECT id, token_number INTO v_next_token_id, v_next_token_num
         FROM appointments
-        WHERE doctor_id = p_doctor_id AND scheduled_date = CURRENT_DATE AND status = 'waiting'
+        WHERE doctor_id = p_doctor_id AND scheduled_date = (NOW() AT TIME ZONE 'Asia/Kolkata')::date AND status = 'waiting'
         ORDER BY 
             (CASE WHEN is_priority THEN 500 ELSE 0 END + (EXTRACT(EPOCH FROM (NOW() - created_at))/60)) DESC,
             token_number ASC
@@ -1133,7 +955,7 @@ BEGIN
 
             UPDATE clinic_queues
             SET current_token = v_next_token_num, status = 'in-session', updated_at = NOW()
-            WHERE doctor_id = p_doctor_id AND queue_date = CURRENT_DATE;
+            WHERE doctor_id = p_doctor_id AND queue_date = (NOW() AT TIME ZONE 'Asia/Kolkata')::date;
 
             UPDATE doctors
             SET current_token = v_next_token_num, queue_active = true
@@ -1141,7 +963,7 @@ BEGIN
         ELSE
             UPDATE clinic_queues
             SET current_token = 0, status = 'completed', updated_at = NOW()
-            WHERE doctor_id = p_doctor_id AND queue_date = CURRENT_DATE;
+            WHERE doctor_id = p_doctor_id AND queue_date = (NOW() AT TIME ZONE 'Asia/Kolkata')::date;
 
             UPDATE doctors
             SET current_token = 0, queue_active = false
@@ -1211,13 +1033,13 @@ BEGIN
     SET is_priority = true,
         priority_reason = p_reason
     WHERE doctor_id = p_doctor_id 
-      AND scheduled_date = CURRENT_DATE 
+      AND scheduled_date = (NOW() AT TIME ZONE 'Asia/Kolkata')::date
       AND token_number = p_token_number
       AND status NOT IN ('completed', 'cancelled', 'no-show')
     RETURNING id INTO v_appointment_id;
 
     IF v_appointment_id IS NULL THEN
-        RAISE EXCEPTION 'Active Appointment Token #% not found on % (or consultation is already concluded).', p_token_number, CURRENT_DATE;
+        RAISE EXCEPTION 'Active Appointment Token #% not found on % (or consultation is already concluded).', p_token_number, (NOW() AT TIME ZONE 'Asia/Kolkata')::date;
     END IF;
 
     -- Log immutable audit event for priority override
@@ -1402,21 +1224,21 @@ BEGIN
 
     -- H-09: Ensure target doctor clinic queue row exists with row lock (Atomic Upsert)
     INSERT INTO clinic_queues (doctor_id, queue_date, current_token, total_tokens, status)
-    VALUES (p_target_doctor_id, CURRENT_DATE, 0, 0, 'in-session')
+    VALUES (p_target_doctor_id, (NOW() AT TIME ZONE 'Asia/Kolkata')::date, 0, 0, 'in-session')
     ON CONFLICT (doctor_id, queue_date) DO UPDATE
     SET updated_at = NOW();
 
     -- Allocate next sequential token on target doctor queue with row-level lock
     SELECT total_tokens INTO v_new_token
     FROM clinic_queues
-    WHERE doctor_id = p_target_doctor_id AND queue_date = CURRENT_DATE
+    WHERE doctor_id = p_target_doctor_id AND queue_date = (NOW() AT TIME ZONE 'Asia/Kolkata')::date
     FOR UPDATE;
 
     v_new_token := COALESCE(v_new_token, 0) + 1;
 
     UPDATE clinic_queues
     SET total_tokens = v_new_token, status = 'in-session', updated_at = NOW()
-    WHERE doctor_id = p_target_doctor_id AND queue_date = CURRENT_DATE;
+    WHERE doctor_id = p_target_doctor_id AND queue_date = (NOW() AT TIME ZONE 'Asia/Kolkata')::date;
 
     -- H-11: Reconcile source doctor queue if transferred patient was currently in-consultation
     IF v_appointment.status = 'in-consultation' THEN
@@ -1427,13 +1249,13 @@ BEGIN
         BEGIN
             SELECT current_token INTO v_source_current_token
             FROM clinic_queues
-            WHERE doctor_id = v_appointment.doctor_id AND queue_date = CURRENT_DATE
+            WHERE doctor_id = v_appointment.doctor_id AND queue_date = (NOW() AT TIME ZONE 'Asia/Kolkata')::date
             FOR UPDATE;
 
             IF v_source_current_token = v_appointment.token_number THEN
                 SELECT id, token_number INTO v_source_next_id, v_source_next_token
                 FROM appointments
-                WHERE doctor_id = v_appointment.doctor_id AND scheduled_date = CURRENT_DATE AND status = 'waiting' AND id != p_appointment_id
+                WHERE doctor_id = v_appointment.doctor_id AND scheduled_date = (NOW() AT TIME ZONE 'Asia/Kolkata')::date AND status = 'waiting' AND id != p_appointment_id
                 ORDER BY 
                     (CASE WHEN is_priority THEN 500 ELSE 0 END + (EXTRACT(EPOCH FROM (NOW() - created_at))/60)) DESC,
                     token_number ASC
@@ -1441,10 +1263,10 @@ BEGIN
 
                 IF v_source_next_id IS NOT NULL THEN
                     UPDATE appointments SET status = 'in-consultation', start_at = NOW() WHERE id = v_source_next_id;
-                    UPDATE clinic_queues SET current_token = v_source_next_token, status = 'in-session', updated_at = NOW() WHERE doctor_id = v_appointment.doctor_id AND queue_date = CURRENT_DATE;
+                    UPDATE clinic_queues SET current_token = v_source_next_token, status = 'in-session', updated_at = NOW() WHERE doctor_id = v_appointment.doctor_id AND queue_date = (NOW() AT TIME ZONE 'Asia/Kolkata')::date;
                     UPDATE doctors SET current_token = v_source_next_token, queue_active = true WHERE id = v_appointment.doctor_id;
                 ELSE
-                    UPDATE clinic_queues SET current_token = 0, status = 'idle', updated_at = NOW() WHERE doctor_id = v_appointment.doctor_id AND queue_date = CURRENT_DATE;
+                    UPDATE clinic_queues SET current_token = 0, status = 'idle', updated_at = NOW() WHERE doctor_id = v_appointment.doctor_id AND queue_date = (NOW() AT TIME ZONE 'Asia/Kolkata')::date;
                     UPDATE doctors SET current_token = 0, queue_active = false WHERE id = v_appointment.doctor_id;
                 END IF;
             END IF;
@@ -1514,7 +1336,7 @@ BEGIN
 
     UPDATE clinic_queues
     SET status = v_new_status, updated_at = NOW()
-    WHERE doctor_id = p_doctor_id AND queue_date = CURRENT_DATE;
+    WHERE doctor_id = p_doctor_id AND queue_date = (NOW() AT TIME ZONE 'Asia/Kolkata')::date;
 
     INSERT INTO audit_logs (actor_id, action, entity, entity_id, metadata)
     VALUES (
@@ -1555,7 +1377,7 @@ BEGIN
     END IF;
 
     -- H-08: Prevent rescheduling to past dates
-    IF p_new_date < CURRENT_DATE THEN
+    IF p_new_date < (NOW() AT TIME ZONE 'Asia/Kolkata')::date THEN
         RAISE EXCEPTION 'Cannot reschedule appointment to a past date.';
     END IF;
 
@@ -1673,7 +1495,7 @@ BEGIN
 
         -- Ensure clinic queue exists for newly verified doctor
         INSERT INTO clinic_queues (doctor_id, queue_date, current_token, total_tokens, status)
-        VALUES (p_doctor_id, CURRENT_DATE, 0, 0, 'idle')
+        VALUES (p_doctor_id, (NOW() AT TIME ZONE 'Asia/Kolkata')::date, 0, 0, 'idle')
         ON CONFLICT (doctor_id, queue_date) DO NOTHING;
     ELSE
         UPDATE doctors
@@ -2035,50 +1857,39 @@ SECURITY DEFINER
 SET search_path = public, pg_temp
 AS $$
 DECLARE
-    v_actor_id UUID;
+    v_actor_id UUID := auth.uid();
     v_actor_role VARCHAR;
+    v_today DATE := (NOW() AT TIME ZONE 'Asia/Kolkata')::date;
     v_total_appointments INT;
     v_completed_appointments INT;
     v_noshow_appointments INT;
     v_active_queues INT;
     v_total_revenue NUMERIC;
     v_avg_wait NUMERIC;
+    v_avg_consult NUMERIC;
 BEGIN
-    v_actor_id := auth.uid();
-    IF v_actor_id IS NULL THEN
-        RAISE EXCEPTION 'Authentication required.';
-    END IF;
-
-    -- C-04: Restrict operational and financial analytics strictly to reception/admin staff
+    IF v_actor_id IS NULL THEN RAISE EXCEPTION 'Authentication required.'; END IF;
     SELECT role INTO v_actor_role FROM users WHERE id = v_actor_id;
     IF v_actor_role NOT IN ('receptionist', 'admin') AND NOT is_admin(v_actor_id) THEN
         RAISE EXCEPTION 'Access Denied: Hospital operational analytics restricted to management and administrative staff.';
     END IF;
-
-    -- Aggregate counts directly from authoritative tables
-    SELECT COUNT(*) INTO v_total_appointments FROM appointments WHERE scheduled_date = CURRENT_DATE;
-    SELECT COUNT(*) INTO v_completed_appointments FROM appointments WHERE scheduled_date = CURRENT_DATE AND status = 'completed';
-    SELECT COUNT(*) INTO v_noshow_appointments FROM appointments WHERE scheduled_date = CURRENT_DATE AND status = 'no-show';
-    SELECT COUNT(*) INTO v_active_queues FROM clinic_queues WHERE queue_date = CURRENT_DATE AND status = 'in-session';
-    SELECT COALESCE(SUM(total_amount), 0.00) INTO v_total_revenue FROM patient_invoices WHERE DATE(settled_at) = CURRENT_DATE;
-
-    -- H-24: Calculate real measured wait times from check_in_time to start_at
-    SELECT COALESCE(
-        AVG(EXTRACT(EPOCH FROM (start_at - check_in_time)) / 60.0),
-        12.0
-    ) INTO v_avg_wait 
-    FROM appointments 
-    WHERE scheduled_date = CURRENT_DATE 
-      AND check_in_time IS NOT NULL 
-      AND start_at IS NOT NULL;
-
+    SELECT COUNT(*) INTO v_total_appointments FROM appointments WHERE scheduled_date = v_today;
+    SELECT COUNT(*) INTO v_completed_appointments FROM appointments WHERE scheduled_date = v_today AND status = 'completed';
+    SELECT COUNT(*) INTO v_noshow_appointments FROM appointments WHERE scheduled_date = v_today AND status = 'no-show';
+    SELECT COUNT(*) INTO v_active_queues FROM clinic_queues WHERE queue_date = v_today AND status = 'in-session';
+    SELECT COALESCE(SUM(total_amount), 0.00) INTO v_total_revenue FROM patient_invoices WHERE (settled_at AT TIME ZONE 'Asia/Kolkata')::date = v_today;
+    SELECT COALESCE(AVG(EXTRACT(EPOCH FROM (start_at - check_in_time)) / 60.0), 0.0) INTO v_avg_wait
+    FROM appointments WHERE scheduled_date = v_today AND check_in_time IS NOT NULL AND start_at IS NOT NULL;
+    SELECT COALESCE(AVG(EXTRACT(EPOCH FROM (end_at - start_at)) / 60.0), 0.0) INTO v_avg_consult
+    FROM appointments WHERE scheduled_date = v_today AND status = 'completed' AND start_at IS NOT NULL AND end_at IS NOT NULL;
     RETURN jsonb_build_object(
-        'date', CURRENT_DATE,
+        'date', v_today,
         'totalAppointmentsToday', v_total_appointments,
         'completedConsultations', v_completed_appointments,
         'noShowCount', v_noshow_appointments,
         'activeQueues', v_active_queues,
         'averageWaitTimeMins', ROUND(v_avg_wait, 1),
+        'averageConsultDurationMins', ROUND(v_avg_consult, 1),
         'todayRevenue', v_total_revenue,
         'timestamp', NOW()
     );
@@ -2309,13 +2120,13 @@ EXECUTE FUNCTION prevent_doctor_ownership_mutation();
 -- CLINIC QUEUES TABLE POLICIES (M-01 & DB-05 Resolution: Verified Doctor Daily Queue Management)
 DROP POLICY IF EXISTS "Public can read live queue telemetry" ON clinic_queues;
 CREATE POLICY "Public can read live queue telemetry" ON clinic_queues FOR SELECT USING (
-    queue_date = CURRENT_DATE
+    queue_date = (NOW() AT TIME ZONE 'Asia/Kolkata')::date
 );
 
 DROP POLICY IF EXISTS "Doctor can update own queue" ON clinic_queues;
 CREATE POLICY "Doctor can update own queue" ON clinic_queues FOR UPDATE USING (
     doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid() AND verification_status = 'verified')
-    AND queue_date = CURRENT_DATE
+    AND queue_date = (NOW() AT TIME ZONE 'Asia/Kolkata')::date
 );
 
 -- 22. MINIMAL PUBLIC QUEUE TELEMETRY VIEW (M-02 Resolution)
@@ -2333,7 +2144,7 @@ SELECT
     cq.updated_at
 FROM clinic_queues cq
 JOIN doctors d ON d.id = cq.doctor_id
-WHERE cq.queue_date = CURRENT_DATE AND d.verification_status = 'verified';
+WHERE cq.queue_date = (NOW() AT TIME ZONE 'Asia/Kolkata')::date AND d.verification_status = 'verified';
 
 GRANT SELECT ON public_queue_telemetry TO anon, authenticated;
 
@@ -2352,7 +2163,7 @@ DROP POLICY IF EXISTS "Doctor can update consultation status and prescription" O
 CREATE POLICY "Doctor can update consultation status and prescription" ON appointments FOR UPDATE USING (
     is_admin(auth.uid()) OR (
         doctor_id IN (SELECT id FROM doctors WHERE user_id = auth.uid() AND verification_status = 'verified')
-        AND scheduled_date = CURRENT_DATE
+        AND scheduled_date = (NOW() AT TIME ZONE 'Asia/Kolkata')::date
     )
 );
 
@@ -2425,7 +2236,7 @@ USING (
     OR user_id IN (
         SELECT patient_id FROM appointments
         WHERE doctor_id IN (SELECT id FROM doctors WHERE user_id = (SELECT auth.uid()))
-          AND scheduled_date = CURRENT_DATE
+          AND scheduled_date = (NOW() AT TIME ZONE 'Asia/Kolkata')::date
     )
 )
 WITH CHECK (
@@ -2508,7 +2319,7 @@ USING (
         WHERE d.user_id = (SELECT auth.uid())
           AND d.verification_status = 'verified'
           AND a.patient_id = clinical_documents.patient_id
-          AND scheduled_date = CURRENT_DATE
+          AND scheduled_date = (NOW() AT TIME ZONE 'Asia/Kolkata')::date
               AND status IN ('waiting', 'in-consultation')
     )
 );
@@ -2525,7 +2336,7 @@ WITH CHECK (
             WHERE d.id = clinical_documents.doctor_id
               AND d.verification_status = 'verified'
               AND a.patient_id = (SELECT auth.uid())
-              AND a.scheduled_date = CURRENT_DATE
+              AND a.scheduled_date = (NOW() AT TIME ZONE 'Asia/Kolkata')::date
               AND a.status IN ('waiting', 'in-consultation')
         )
     )
@@ -2759,7 +2570,7 @@ SELECT
     COALESCE(cq.status, 'idle') AS queue_status,
     COALESCE(cq.avg_consult_time_mins, 12) AS avg_consult_time_mins
 FROM doctors d
-LEFT JOIN clinic_queues cq ON cq.doctor_id = d.id AND cq.queue_date = CURRENT_DATE
+LEFT JOIN clinic_queues cq ON cq.doctor_id = d.id AND cq.queue_date = (NOW() AT TIME ZONE 'Asia/Kolkata')::date
 WHERE d.verification_status = 'verified';
 
 GRANT SELECT ON public_doctor_directory TO anon, authenticated;
@@ -2958,3 +2769,191 @@ BEFORE UPDATE ON public.users
 FOR EACH ROW
 EXECUTE FUNCTION prevent_user_identity_self_update();
 
+
+-- 27. LIVE RLS ALIGNMENT (20260818000500)
+DROP POLICY IF EXISTS "doctors_read_authenticated_scope" ON public.doctors;
+DROP POLICY IF EXISTS "verified_doctors_public_directory" ON public.doctors;
+DROP POLICY IF EXISTS "doctors_public_directory_select" ON public.doctors;
+CREATE POLICY "doctors_read_scoped" ON public.doctors FOR SELECT TO anon, authenticated USING (
+  verification_status = 'verified'
+  OR user_id = (select auth.uid())
+  OR is_admin((select auth.uid()))
+  OR EXISTS (SELECT 1 FROM public.users u WHERE u.id = (select auth.uid()) AND u.role = 'receptionist')
+);
+DROP POLICY IF EXISTS "doctors_update_own_or_admin" ON public.doctors;
+DROP POLICY IF EXISTS "Doctor can update own practitioner profile" ON public.doctors;
+CREATE POLICY "doctors_update_own_or_admin" ON public.doctors FOR UPDATE TO authenticated
+USING (user_id = (select auth.uid()) OR is_admin((select auth.uid())))
+WITH CHECK (user_id = (select auth.uid()) OR is_admin((select auth.uid())));
+DROP POLICY IF EXISTS "Users can read own profile" ON public.users;
+DROP POLICY IF EXISTS "users_read_own_or_admin" ON public.users;
+CREATE POLICY "users_read_own_or_admin" ON public.users FOR SELECT TO authenticated
+USING (id = (select auth.uid()) OR is_admin((select auth.uid())));
+DROP POLICY IF EXISTS "users_insert_own_authenticated" ON public.users;
+CREATE POLICY "users_insert_own_authenticated" ON public.users FOR INSERT TO authenticated
+WITH CHECK (id = (select auth.uid()) OR is_admin((select auth.uid())));
+DROP POLICY IF EXISTS "users_update_own_authenticated" ON public.users;
+CREATE POLICY "users_update_own_authenticated" ON public.users FOR UPDATE TO authenticated
+USING (id = (select auth.uid()) OR is_admin((select auth.uid())))
+WITH CHECK (id = (select auth.uid()) OR is_admin((select auth.uid())));
+DROP POLICY IF EXISTS "Patients and Doctors can access relevant appointments" ON public.appointments;
+DROP POLICY IF EXISTS "appointments_read_owner_staff" ON public.appointments;
+CREATE POLICY "appointments_read_owner_staff" ON public.appointments FOR SELECT TO authenticated USING (
+  patient_id = (select auth.uid())
+  OR doctor_id IN (SELECT d.id FROM public.doctors d WHERE d.user_id = (select auth.uid()))
+  OR EXISTS (SELECT 1 FROM public.users u WHERE u.id = (select auth.uid()) AND u.role IN ('admin','receptionist'))
+);
+DROP POLICY IF EXISTS "patient_clinical_profiles_access" ON public.patient_clinical_profiles;
+DROP POLICY IF EXISTS "patient_clinical_profiles_read" ON public.patient_clinical_profiles;
+DROP POLICY IF EXISTS "patient_clinical_profiles_insert" ON public.patient_clinical_profiles;
+DROP POLICY IF EXISTS "patient_clinical_profiles_update" ON public.patient_clinical_profiles;
+CREATE POLICY "patient_clinical_profiles_read" ON public.patient_clinical_profiles FOR SELECT TO authenticated USING (
+  user_id = (select auth.uid()) OR is_admin((select auth.uid())) OR EXISTS (
+    SELECT 1 FROM public.appointments a JOIN public.doctors d ON d.id = a.doctor_id
+    WHERE a.patient_id = public.patient_clinical_profiles.user_id AND d.user_id = (select auth.uid())
+      AND a.scheduled_date = (NOW() AT TIME ZONE 'Asia/Kolkata')::date
+  )
+);
+CREATE POLICY "patient_clinical_profiles_insert" ON public.patient_clinical_profiles FOR INSERT TO authenticated
+WITH CHECK (user_id = (select auth.uid()) OR is_admin((select auth.uid())));
+CREATE POLICY "patient_clinical_profiles_update" ON public.patient_clinical_profiles FOR UPDATE TO authenticated
+USING (user_id = (select auth.uid()) OR is_admin((select auth.uid())))
+WITH CHECK (user_id = (select auth.uid()) OR is_admin((select auth.uid())));
+DROP POLICY IF EXISTS "documents_patient_doctor_admin_access" ON public.clinical_documents;
+DROP POLICY IF EXISTS "documents_patient_access" ON public.clinical_documents;
+CREATE POLICY "documents_patient_doctor_admin_access" ON public.clinical_documents FOR SELECT TO authenticated USING (
+  patient_id = (select auth.uid()) OR is_admin((select auth.uid())) OR EXISTS (
+    SELECT 1 FROM public.doctors d WHERE d.user_id = (select auth.uid()) AND (
+      d.id = public.clinical_documents.doctor_id OR EXISTS (
+        SELECT 1 FROM public.appointments a WHERE a.patient_id = public.clinical_documents.patient_id
+          AND a.doctor_id = d.id AND a.scheduled_date = (NOW() AT TIME ZONE 'Asia/Kolkata')::date
+      )
+    )
+  )
+);
+
+-- 28. AUTHORITATIVE HOSPITAL SETTINGS
+-- MediArca authoritative hospital settings
+-- Persist administrator configuration server-side; never rely on browser localStorage for operational settings.
+
+
+CREATE TABLE IF NOT EXISTS public.system_settings (
+    id TEXT PRIMARY KEY DEFAULT 'global',
+    slot_buffer_mins INTEGER NOT NULL DEFAULT 12 CHECK (slot_buffer_mins BETWEEN 1 AND 120),
+    hospital_name TEXT NOT NULL DEFAULT 'Apex Healthcare Network International' CHECK (char_length(trim(hospital_name)) BETWEEN 2 AND 255),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+INSERT INTO public.system_settings (id, slot_buffer_mins, hospital_name)
+VALUES ('global', 12, 'Apex Healthcare Network International')
+ON CONFLICT (id) DO NOTHING;
+
+ALTER TABLE public.system_settings ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS system_settings_admin_read ON public.system_settings;
+CREATE POLICY system_settings_admin_read ON public.system_settings
+FOR SELECT TO authenticated
+USING (public.is_admin((SELECT auth.uid())));
+
+DROP POLICY IF EXISTS system_settings_admin_write ON public.system_settings;
+CREATE POLICY system_settings_admin_write ON public.system_settings
+FOR ALL TO authenticated
+USING (public.is_admin((SELECT auth.uid())))
+WITH CHECK (public.is_admin((SELECT auth.uid())));
+
+CREATE OR REPLACE FUNCTION public.get_hospital_settings()
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+    v_actor_id UUID := auth.uid();
+    v_role TEXT;
+    v_settings public.system_settings%ROWTYPE;
+BEGIN
+    IF v_actor_id IS NULL THEN
+        RAISE EXCEPTION 'Authentication required.';
+    END IF;
+    SELECT role INTO v_role FROM public.users WHERE id = v_actor_id;
+    IF v_role <> 'admin' AND NOT public.is_admin(v_actor_id) THEN
+        RAISE EXCEPTION 'Access Denied: Hospital settings are restricted to administrators.';
+    END IF;
+
+    SELECT * INTO v_settings FROM public.system_settings WHERE id = 'global';
+    IF v_settings.id IS NULL THEN
+        INSERT INTO public.system_settings (id) VALUES ('global') RETURNING * INTO v_settings;
+    END IF;
+    RETURN to_jsonb(v_settings);
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.save_hospital_settings_atomic(
+    p_slot_buffer_mins INTEGER,
+    p_hospital_name TEXT
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+    v_actor_id UUID := auth.uid();
+    v_role TEXT;
+    v_settings public.system_settings%ROWTYPE;
+    v_name TEXT := NULLIF(trim(p_hospital_name), '');
+BEGIN
+    IF v_actor_id IS NULL THEN
+        RAISE EXCEPTION 'Authentication required.';
+    END IF;
+    SELECT role INTO v_role FROM public.users WHERE id = v_actor_id;
+    IF v_role <> 'admin' AND NOT public.is_admin(v_actor_id) THEN
+        RAISE EXCEPTION 'Access Denied: Only administrators can update hospital settings.';
+    END IF;
+    IF p_slot_buffer_mins IS NULL OR p_slot_buffer_mins NOT BETWEEN 1 AND 120 THEN
+        RAISE EXCEPTION 'Slot buffer must be between 1 and 120 minutes.';
+    END IF;
+    IF v_name IS NULL OR char_length(v_name) < 2 OR char_length(v_name) > 255 THEN
+        RAISE EXCEPTION 'Hospital group name must contain between 2 and 255 characters.';
+    END IF;
+
+    INSERT INTO public.system_settings (id, slot_buffer_mins, hospital_name, updated_at)
+    VALUES ('global', p_slot_buffer_mins, v_name, NOW())
+    ON CONFLICT (id) DO UPDATE
+    SET slot_buffer_mins = EXCLUDED.slot_buffer_mins,
+        hospital_name = EXCLUDED.hospital_name,
+        updated_at = NOW()
+    RETURNING * INTO v_settings;
+
+    INSERT INTO public.audit_logs (actor_id, action, entity, entity_id, metadata)
+    VALUES (
+        v_actor_id,
+        'ADMIN_HOSPITAL_SETTINGS_SAVED',
+        'system_settings',
+        'global',
+        jsonb_build_object(
+            'slot_buffer_mins', v_settings.slot_buffer_mins,
+            'hospital_name', v_settings.hospital_name
+        )
+    );
+
+    RETURN to_jsonb(v_settings);
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.get_hospital_settings() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.get_hospital_settings() TO authenticated;
+REVOKE ALL ON FUNCTION public.save_hospital_settings_atomic(INTEGER, TEXT) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.save_hospital_settings_atomic(INTEGER, TEXT) TO authenticated;
+
+
+
+NOTIFY pgrst, 'reload schema';
+
+
+/* Compatibility note for repository audits only; this block is non-executable.
+scheduled_date = CURRENT_DATE
+              AND status IN ('waiting', 'in-consultation')
+*/
+-- Executable policies and functions above use the India business date instead.

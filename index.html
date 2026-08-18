@@ -37,14 +37,17 @@
         </a>
 
         <!-- Main Navigation Links (Dynamically populated by RBAC) -->
-        <nav>
+        <nav class="main-navigation" aria-label="Primary navigation">
+          <button type="button" id="mobileNavToggle" class="mobile-nav-toggle" aria-label="Open navigation menu" aria-expanded="false" aria-controls="mainNavLinks">
+            <i data-lucide="menu" style="width:18px;height:18px;"></i>
+          </button>
           <ul class="nav-links" id="mainNavLinks">
             <!-- Rendered by app.js -->
           </ul>
         </nav>
 
         <!-- Right Side Nav Actions (Login / User Profile / Logout) -->
-        <div class="nav-actions" id="navActionsContainer">
+        <div class="nav-actions" id="navActionsContainer" aria-label="Account actions">
           <!-- Rendered by app.js -->
         </div>
       </div>
@@ -482,7 +485,7 @@
     <div class="modal-box">
       <div class="modal-header">
         <h3 style="font-size: 1.125rem; font-weight: 800; color: var(--text-primary);">Book Doctor Appointment</h3>
-        <button class="modal-close-btn" onclick="window.mediarcaApp.closeAllModals()" style="background:none; border:none; cursor:pointer;">
+        <button class="modal-close-btn" aria-label="Close booking dialog" onclick="window.mediarcaApp.closeAllModals()" style="background:none; border:none; cursor:pointer;">
           <i data-lucide="x" style="width: 16px; height: 16px;"></i>
         </button>
       </div>
@@ -534,7 +537,7 @@
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
             <div class="form-group">
               <label class="form-label" for="bookingPatientAge">Patient Age</label>
-              <input type="number" id="bookingPatientAge" name="patientAge" class="form-input" value="32" min="1" max="120">
+              <input type="number" id="bookingPatientAge" name="patientAge" class="form-input" value="" min="0" max="125">
             </div>
             <div class="form-group">
               <label class="form-label" for="bookingPatientGender">Gender</label>

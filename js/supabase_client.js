@@ -609,6 +609,20 @@ class MediarcaSupabaseClient {
         }
 
         if (user && (userProfile?.role === 'admin' || window.mediarcaStore.state.currentUser?.role === 'admin')) {
+          try {
+            const settingsResponse = await this.cloudGetHospitalSettings();
+            const settings = Array.isArray(settingsResponse) ? settingsResponse[0] : settingsResponse;
+            if (settings) {
+              window.mediarcaStore.state.hospitalSettings = {
+                slotBufferMins: settings.slot_buffer_mins,
+                hospitalName: settings.hospital_name,
+                updatedAt: settings.updated_at
+              };
+            }
+          } catch (settingsErr) {
+            console.warn('Hospital settings hydration notice:', settingsErr);
+          }
+
           const { data: allDocs } = await this.client.from('doctors').select('*').order('created_at', { ascending: false });
           if (allDocs && allDocs.length > 0) {
             allDocs.forEach(d => {
@@ -779,9 +793,9 @@ class MediarcaSupabaseClient {
     return this.safeRpc('complete_consultation_rx_atomic', {
       p_doctor_id: doctorId,
       p_token_number: parseInt(tokenNumber),
-      p_diagnosis: rxData.diagnosis || 'Clinical evaluation concluded.',
-      p_medications: Array.isArray(rxData.medications) ? rxData.medications : (rxData.medications ? [rxData.medications] : []),
-      p_advice: rxData.advice || 'Follow dosage as directed.',
+      p_diagnosis: rxData.diagnosis?.trim() || null,
+      p_medications: Array.isArray(rxData.medications) ? rxData.medications : [],
+      p_advice: rxData.advice?.trim() || null,
       p_vitals: rxData.vitals || null,
       p_chief_complaint: rxData.symptoms || rxData.chiefComplaint || rxData.chief_complaint || null,
       p_examination_findings: rxData.examinationFindings || rxData.examination_findings || null,
@@ -805,6 +819,15 @@ class MediarcaSupabaseClient {
       p_doctor_id: doctorId,
       p_token_number: parseInt(tokenNumber),
       p_status: status,
+      p_reason: reason
+    });
+  }
+
+  async cloudTransitionAppointmentStatus(appointmentId, targetStatus, reason = 'Clinical workflow transition') {
+    if (!appointmentId) throw new Error('Appointment identifier is required.');
+    return this.safeRpc('transition_appointment_status_atomic', {
+      p_appointment_id: appointmentId,
+      p_target_status: targetStatus,
       p_reason: reason
     });
   }
@@ -873,7 +896,10 @@ class MediarcaSupabaseClient {
 
     const fileExt = file.name ? file.name.split('.').pop().toLowerCase() : 'pdf';
     const sanitizedBase = (file.name || 'document').replace(/[^a-zA-Z0-9._-]/g, '_');
-    const docUuid = crypto.randomUUID ? crypto.randomUUID() : (Date.now().toString(36) + Math.random().toString(36).substring(2, 6));
+    if (!globalThis.crypto?.randomUUID) {
+      throw new Error('Secure random source unavailable. Clinical document upload was not started.');
+    }
+    const docUuid = globalThis.crypto.randomUUID();
     const storagePath = `${user.id}/${docUuid}_${sanitizedBase}`;
 
     // 1. Upload raw bytes to private Supabase Storage bucket
@@ -994,6 +1020,17 @@ class MediarcaSupabaseClient {
     return this.safeRpc('get_hospital_operational_analytics', {});
   }
 
+  async cloudGetHospitalSettings() {
+    return this.safeRpc('get_hospital_settings', {});
+  }
+
+  async cloudSaveHospitalSettings(slotBufferMins, hospitalName) {
+    return this.safeRpc('save_hospital_settings_atomic', {
+      p_slot_buffer_mins: parseInt(slotBufferMins),
+      p_hospital_name: String(hospitalName || '').trim()
+    });
+  }
+
   async cloudScheduleFutureAppointment(bookingObj) {
 
     const doctorId = typeof bookingObj === 'object' ? bookingObj.doctorId : arguments[0];
@@ -1041,12 +1078,17 @@ class MediarcaSupabaseClient {
     const { data: sessionData } = await this.client.auth.getSession();
     const authUid = sessionData?.session?.user?.id;
 
-    let query = this.client.from('doctors').update(updatePayload);
-    if (authUid) {
-      query = query.or(`id.eq.${doctorId},user_id.eq.${authUid}`);
-    } else {
-      query = query.eq('id', doctorId);
+    if (!authUid) {
+      throw new Error('Authentication required to update a doctor profile.');
     }
+
+    // Require both the requested doctor id and the authenticated owner's user id.
+    // A broad OR predicate could update a different row when either value matched.
+    const query = this.client
+      .from('doctors')
+      .update(updatePayload)
+      .eq('id', doctorId)
+      .eq('user_id', authUid);
 
     const { data, error } = await query.select().maybeSingle();
 
