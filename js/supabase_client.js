@@ -316,8 +316,8 @@ class MediarcaSupabaseClient {
 
   async cloudUpdateDoctorProfile(doctorId, doctorData) {
     if (!this.client || !doctorId) throw new Error('Supabase client unavailable');
-    const authRes = await this.client.auth.getUser();
-    const authUid = authRes?.data?.user?.id;
+    const { data: sessionData } = await this.client.auth.getSession();
+    const authUid = sessionData?.session?.user?.id;
     if (!authUid) throw new Error('Authentication required.');
     const updatePayload = {};
     if (doctorData.name !== undefined) updatePayload.name = doctorData.name;
@@ -372,8 +372,8 @@ class MediarcaSupabaseClient {
   async syncInitialDataFromCloud() {
     if (!this.client) return;
 
-    const { data: authUserData } = await this.client.auth.getUser();
-    const user = authUserData?.user || null;
+    const { data: sessionData } = await this.client.auth.getSession();
+    const user = sessionData?.session?.user || null;
 
     try {
       // 1. Fetch Verified Doctors from sanitized Public Directory View (P-02 Resolution)
@@ -789,7 +789,8 @@ class MediarcaSupabaseClient {
   async uploadClinicalDocument(file, metadata) {
     if (!this.client) throw new Error('Supabase client offline');
 
-    const user = (await this.client.auth.getUser())?.data?.user;
+    const { data: sessionData } = await this.client.auth.getSession();
+    const user = sessionData?.session?.user;
     if (!user) throw new Error('Authentication required to upload medical documents.');
 
     // H-13 & H-14: Strict MIME Type allowlist and File Size verification
@@ -970,8 +971,8 @@ class MediarcaSupabaseClient {
     if (docData.avatar !== undefined) updatePayload.avatar = docData.avatar;
     if (docData.avgConsultTimeMins !== undefined) updatePayload.avg_consult_time_mins = parseInt(docData.avgConsultTimeMins);
 
-    const authRes = await this.client.auth.getUser();
-    const authUid = authRes?.data?.user?.id;
+    const { data: sessionData } = await this.client.auth.getSession();
+    const authUid = sessionData?.session?.user?.id;
 
     let query = this.client.from('doctors').update(updatePayload);
     if (authUid) {
