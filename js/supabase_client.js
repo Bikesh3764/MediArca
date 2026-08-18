@@ -56,139 +56,149 @@ class MediarcaSupabaseClient {
   setupAuthListener() {
     if (!this.client) return;
 
-    this.client.auth.onAuthStateChange(async (event, session) => {
-      console.log('⚡ Supabase Auth State Changed:', event, session?.user?.email);
-      if (session && session.user) {
-        const user = session.user;
-        let profile = null;
-        let doctorProfile = null;
-        let clinicalProfile = null;
+    const handleSession = async (event, session) => {
+      if (!session || !session.user) return;
+      console.log('⚡ Supabase Auth Session Active:', event, session.user.email);
+      const user = session.user;
+      let profile = null;
+      let doctorProfile = null;
+      let clinicalProfile = null;
 
-        // C-17: Query user identity profile independently with maybeSingle()
+      // C-17: Query user identity profile independently with maybeSingle()
+      try {
+        const { data } = await this.client
+          .from('users')
+          .select('*')
+          .eq('id', user.id)
+          .maybeSingle();
+        profile = data;
+      } catch (e) {
+        console.warn('User profile fetch notice:', e);
+      }
+
+      // Auto-provision user record if signed in via Google OAuth for first time
+      if (!profile && user.id) {
+        const googleName = (user.user_metadata?.full_name || user.user_metadata?.name || user.email.split('@')[0]).trim();
         try {
-          const { data } = await this.client
+          const { data: newProfile } = await this.client
             .from('users')
+            .upsert({
+              id: user.id,
+              email: user.email.toLowerCase().trim(),
+              full_name: googleName,
+              role: 'patient',
+              phone: user.phone || user.user_metadata?.phone || null
+            }, { onConflict: 'id' })
             .select('*')
-            .eq('id', user.id)
             .maybeSingle();
-          profile = data;
-        } catch (e) {
-          console.warn('User profile fetch notice:', e);
+          if (newProfile) profile = newProfile;
+
+          await this.client.from('patient_clinical_profiles').upsert({
+            user_id: user.id,
+            age: null,
+            gender: null,
+            blood_group: null
+          }, { onConflict: 'user_id' });
+        } catch (upsertErr) {
+          console.warn('OAuth profile provisioning notice:', upsertErr);
         }
+      }
 
-        // Auto-provision user record if signed in via Google OAuth for first time
-        if (!profile && user.id) {
-          const googleName = (user.user_metadata?.full_name || user.user_metadata?.name || user.email.split('@')[0]).trim();
-          try {
-            const { data: newProfile } = await this.client
-              .from('users')
-              .upsert({
-                id: user.id,
-                email: user.email.toLowerCase().trim(),
-                full_name: googleName,
-                role: 'patient',
-                phone: user.phone || user.user_metadata?.phone || null
-              }, { onConflict: 'id' })
-              .select('*')
-              .maybeSingle();
-            if (newProfile) profile = newProfile;
+      // Query doctor profile by user_id OR email
+      try {
+        const userEmail = (user.email || '').toLowerCase().trim();
+        const { data } = await this.client
+          .from('doctors')
+          .select('*')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        doctorProfile = data;
+      } catch (e) {
+        console.warn('Doctor profile fetch notice:', e);
+      }
 
-            await this.client.from('patient_clinical_profiles').upsert({
-              user_id: user.id,
-              age: null,
-              gender: null,
-              blood_group: null
-            }, { onConflict: 'user_id' });
-          } catch (upsertErr) {
-            console.warn('OAuth profile provisioning notice:', upsertErr);
-          }
-        }
+      // C-17: Query patient clinical profile independently
+      try {
+        const { data } = await this.client
+          .from('patient_clinical_profiles')
+          .select('*')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        clinicalProfile = data;
+      } catch (e) {
+        console.warn('Clinical profile fetch notice:', e);
+      }
 
-        // Query doctor profile by user_id OR email
-        try {
-          const userEmail = (user.email || '').toLowerCase().trim();
-          const { data } = await this.client
-            .from('doctors')
-            .select('*')
-            .eq('user_id', user.id)
-            .maybeSingle();
-          doctorProfile = data;
+      // Authoritative role resolution from DB (doctor profile takes precedence if registered doctor)
+      const role = doctorProfile ? 'doctor' : (profile?.role || 'patient');
+      const name = doctorProfile?.name || profile?.full_name || user.user_metadata?.full_name || user.email.split('@')[0];
 
-        } catch (e) {
-          console.warn('Doctor profile fetch notice:', e);
-        }
+      const sessionPayload = {
+        id: user.id,
+        email: user.email,
+        role: role,
+        name: name,
+        doctorProfile: doctorProfile || null,
+        patientProfile: profile || null,
+        clinicalProfile: clinicalProfile || null
+      };
+      this.pendingSession = sessionPayload;
 
-        // C-17: Query patient clinical profile independently
-        try {
-          const { data } = await this.client
-            .from('patient_clinical_profiles')
-            .select('*')
-            .eq('user_id', user.id)
-            .maybeSingle();
-          clinicalProfile = data;
-        } catch (e) {
-          console.warn('Clinical profile fetch notice:', e);
-        }
+      if (window.mediarcaStore) {
+        window.mediarcaStore.setAuthSession(sessionPayload);
+      }
 
-        // Authoritative role resolution from DB (doctor profile takes precedence if registered doctor)
-        const role = doctorProfile ? 'doctor' : (profile?.role || 'patient');
-        const name = doctorProfile?.name || profile?.full_name || user.user_metadata?.full_name || user.email.split('@')[0];
-
-        const sessionPayload = {
-          id: user.id,
-          email: user.email,
-          role: role,
-          name: name,
-          doctorProfile: doctorProfile || null,
-          patientProfile: profile || null,
-          clinicalProfile: clinicalProfile || null
-        };
-        this.pendingSession = sessionPayload;
-
+      const applyAppRouting = () => {
         if (window.mediarcaStore) {
           window.mediarcaStore.setAuthSession(sessionPayload);
         }
-
-        // P0-07 Resolution: Trigger immediate authoritative data sync after successful login
-        try {
-          await this.syncInitialDataFromCloud();
-        } catch (syncErr) {
-          console.warn('Post-login cloud sync notice:', syncErr);
-        }
-
-        const applyAppRouting = () => {
-          if (window.mediarcaStore && (!window.mediarcaStore.state.currentUser || !window.mediarcaStore.state.currentUser.id)) {
-            window.mediarcaStore.setAuthSession(sessionPayload);
-          }
-          if (window.mediarcaApp) {
-            if (role === 'doctor') {
-              window.mediarcaApp.switchView('doctor-portal');
-            } else if (role === 'admin') {
-              window.mediarcaApp.switchView('admin-portal');
-            } else if (role === 'receptionist') {
-              window.mediarcaApp.switchView('reception-portal');
-            } else if (role === 'patient') {
-              window.mediarcaApp.switchView('patient-portal');
-            }
-            if (typeof window.mediarcaApp.updateHeaderNav === 'function') {
-              window.mediarcaApp.updateHeaderNav();
-            }
-          }
-        };
-
         if (window.mediarcaApp) {
-          applyAppRouting();
-        } else {
-          setTimeout(applyAppRouting, 200);
+          if (role === 'doctor') {
+            window.mediarcaApp.switchView('doctor-portal');
+          } else if (role === 'admin') {
+            window.mediarcaApp.switchView('admin-portal');
+          } else if (role === 'receptionist') {
+            window.mediarcaApp.switchView('reception-portal');
+          } else if (role === 'patient') {
+            window.mediarcaApp.switchView('patient-portal');
+          }
+          if (typeof window.mediarcaApp.updateHeaderNav === 'function') {
+            window.mediarcaApp.updateHeaderNav();
+          }
         }
+      };
+
+      // Immediate UI routing
+      applyAppRouting();
+      setTimeout(applyAppRouting, 100);
+      setTimeout(applyAppRouting, 350);
+
+      // Clean hash from address bar
+      if (window.location.hash && window.location.hash.includes('access_token')) {
+        try {
+          history.replaceState(null, '', window.location.pathname + window.location.search);
+        } catch (_) {}
       }
+
+      // Sync cloud data asynchronously in background without blocking UI
+      this.syncInitialDataFromCloud().catch(syncErr => console.warn('Post-login cloud sync notice:', syncErr));
+    };
+
+    this.client.auth.onAuthStateChange(async (event, session) => {
+      await handleSession(event, session);
     });
+
+    // Proactively check existing session on launch
+    this.client.auth.getSession().then(({ data }) => {
+      if (data?.session) {
+        handleSession('INITIAL_SESSION', data.session);
+      }
+    }).catch(e => console.warn('Initial session check error:', e));
   }
 
   async authSignUp(email, password, metadata = {}) {
     if (!this.client) throw new Error('Supabase client unavailable');
 
-    // Audit v8 Resolution: Public signup strictly creates 'patient' (or 'doctor' with pending accreditation). Block any self-assignment of 'receptionist' or 'admin'!
     const assignedRole = metadata.role === 'doctor' ? 'doctor' : 'patient';
     const cleanEmail = email.toLowerCase().trim();
 
