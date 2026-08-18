@@ -1301,7 +1301,7 @@ class MediarcaApp {
       (doc.name && b.doctorName && b.doctorName.toLowerCase().trim() === doc.name.toLowerCase().trim())
     );
 
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = window.mediarcaStore.getIndiaTodayDate();
     const todayBookings = docBookings.filter(b => (b.scheduledDate || b.date) === todayStr);
     const upcomingBookings = docBookings.filter(b => (b.scheduledDate || b.date) > todayStr);
     const waitingPatients = docBookings.filter(b => b.status === 'waiting' || b.status === 'checked_in');
@@ -2560,7 +2560,7 @@ class MediarcaApp {
     let bookings = [];
     if (window.mediarcaSupabase && window.mediarcaSupabase.isConnected) {
       try {
-        const todayStr = new Date().toISOString().split('T')[0];
+        const todayStr = window.mediarcaStore.getIndiaTodayDate();
         const { data: serverAppts, error } = await window.mediarcaSupabase.client
           .from('appointments')
           .select('*, doctor:doctors(name, specialty), patient:users!appointments_patient_id_fkey(full_name, phone)')
@@ -3758,7 +3758,7 @@ class MediarcaApp {
 
       document.getElementById('billingModal')?.classList.remove('active');
       if (window.mediarcaAudio) window.mediarcaAudio.playChime('success');
-      this.showToast(`Invoice #${invoice.invoiceNumber} paid & officially settled ($${invoice.netPayable.toFixed(2)})!`, 'success');
+      this.showToast(`Invoice #${invoice.invoiceNumber} paid & officially settled (₹${invoice.netPayable.toFixed(2)})!`, 'success');
       this.renderPatientDashboard();
     } catch (err) {
       console.error('Invoice settlement error:', err);

@@ -501,6 +501,7 @@ DECLARE
     v_checkin_token VARCHAR;
     v_next_token INT;
     v_appointment appointments%ROWTYPE;
+    v_today DATE := (NOW() AT TIME ZONE 'Asia/Kolkata')::date;
 BEGIN
     v_actor_id := auth.uid();
     IF v_actor_id IS NULL THEN
@@ -520,12 +521,12 @@ BEGIN
 
     -- Ensure queue exists and acquire row lock
     INSERT INTO clinic_queues (doctor_id, queue_date, current_token, total_tokens, status)
-    VALUES (p_doctor_id, CURRENT_DATE, 0, 0, 'in-session')
+    VALUES (p_doctor_id, v_today, 0, 0, 'in-session')
     ON CONFLICT (doctor_id, queue_date) DO UPDATE SET updated_at = NOW();
 
     SELECT total_tokens INTO v_next_token
     FROM clinic_queues
-    WHERE doctor_id = p_doctor_id AND queue_date = CURRENT_DATE
+    WHERE doctor_id = p_doctor_id AND queue_date = v_today
     FOR UPDATE;
 
     v_next_token := COALESCE(v_next_token, 0) + 1;
@@ -534,7 +535,7 @@ BEGIN
 
     UPDATE clinic_queues
     SET total_tokens = v_next_token, status = 'in-session', updated_at = NOW()
-    WHERE doctor_id = p_doctor_id AND queue_date = CURRENT_DATE;
+    WHERE doctor_id = p_doctor_id AND queue_date = v_today;
 
     UPDATE doctors
     SET total_tokens = v_next_token, queue_active = true
@@ -548,7 +549,7 @@ BEGIN
     ) VALUES (
         v_booking_id, NULL, p_doctor_id, p_patient_name, COALESCE(p_patient_phone, 'Not specified'),
         p_patient_age, p_patient_gender, v_next_token, 'waiting', p_is_priority, p_priority_reason,
-        v_checkin_token, NOW() + interval '24 hours', NOW(), NOW(), CURRENT_DATE, CURRENT_DATE,
+        v_checkin_token, NOW() + interval '24 hours', NOW(), NOW(), v_today, v_today,
         NULL, NULL, COALESCE(p_timezone, 'Asia/Kolkata'), p_symptoms
     ) RETURNING * INTO v_appointment;
 

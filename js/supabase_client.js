@@ -698,7 +698,7 @@ class MediarcaSupabaseClient {
       p_assessment: rxData.assessment || null,
       p_treatment_plan: rxData.treatmentPlan || rxData.treatment_plan || null,
       p_lab_orders: rxData.labOrders || rxData.lab_orders || null,
-      p_follow_up_date: rxData.followUpDate || rxData.follow_up_date || null
+      p_follow_up_date: (rxData.followUpDate && String(rxData.followUpDate).trim() !== '') ? String(rxData.followUpDate).trim() : null
     });
   }
 

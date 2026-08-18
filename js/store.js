@@ -983,7 +983,7 @@ async login(email, password) {
       currentToken: 0,
       totalTokens: 0,
       avgConsultTimeMins: 12,
-      appliedDate: new Date().toISOString().split('T')[0]
+      appliedDate: this.getIndiaTodayDate()
     };
 
     this.state.doctors.push(newDoc);
@@ -1180,7 +1180,7 @@ async login(email, password) {
       specialty: doctor.specialty,
       hospital: doctor.hospital,
       mediarcaId: doctor.mediarcaId || 'VERIFIED',
-      date: new Date().toISOString().split('T')[0],
+      date: this.getIndiaTodayDate(),
       timeSlot: 'Walk-in Desk',
       tokenNumber: nextTokenNumber,
       status: 'checked_in',
@@ -1648,7 +1648,7 @@ async login(email, password) {
       fileSizeBytes: fileSizeBytes,
       mimeType: mimeType,
       storagePath: cloudDoc?.storage_path || null,
-      uploadedDate: new Date().toISOString().split('T')[0],
+      uploadedDate: this.getIndiaTodayDate(),
       doctorName: docData.doctorName || 'Self-Uploaded by Patient',
       downloadUrl: downloadUrl
     };
@@ -1681,7 +1681,7 @@ async login(email, password) {
         events.push({
           id: 'tl_appt_' + (b.id || b.bookingId),
           patientId: b.patientId,
-          date: b.date || b.scheduledDate || new Date().toISOString().split('T')[0],
+          date: b.date || b.scheduledDate || this.getIndiaTodayDate(),
           type: 'encounter',
           title: `OPD Consultation with ${b.doctorName || 'Attending Physician'}`,
           doctorName: b.doctorName || 'Specialist',
@@ -1698,7 +1698,7 @@ async login(email, password) {
         events.push({
           id: 'tl_doc_' + doc.id,
           patientId: doc.patientId,
-          date: doc.uploadedDate || new Date().toISOString().split('T')[0],
+          date: doc.uploadedDate || this.getIndiaTodayDate(),
           type: 'document',
           title: `Clinical Vault: ${doc.fileName}`,
           doctorName: doc.doctorName || 'Self-Uploaded',
@@ -1723,7 +1723,7 @@ async login(email, password) {
     const newEvent = {
       id: 'tl_' + Date.now(),
       patientId: eventData.patientId || this.state.currentUser.id,
-      date: eventData.date || new Date().toISOString().split('T')[0],
+      date: eventData.date || this.getIndiaTodayDate(),
       type: eventData.type || 'encounter',
       title: eventData.title || 'Clinical Event',
       doctorName: eventData.doctorName || 'Attending Physician',
@@ -1844,7 +1844,7 @@ async login(email, password) {
       noShowRate: `${noShowRate}%`,
       avgWaitTimeMins: `${avgConsultDurationMins} min`,
       avgConsultDurationMins: `${avgConsultDurationMins} min`,
-      todayRevenue: `$${(completed * 60).toFixed(2)}`,
+      todayRevenue: `₹${(completed * 600).toFixed(2)}`,
       peakHours: totalAppointments > 0 ? '10:00 AM – 01:00 PM' : 'No traffic recorded',
       hourlyDistribution
     };
