@@ -159,8 +159,13 @@ class MediarcaSupabaseClient {
             window.mediarcaApp.switchView('admin-portal');
           } else if (role === 'receptionist') {
             window.mediarcaApp.switchView('reception-portal');
-          } else if (role === 'patient' && window.mediarcaApp.currentView.startsWith('auth-')) {
-            window.mediarcaApp.switchView('patient-portal');
+          } else if (role === 'patient') {
+            if (window.mediarcaApp.currentView.startsWith('auth-') || event === 'SIGNED_IN') {
+              window.mediarcaApp.switchView('patient-portal');
+            }
+          }
+          if (typeof window.mediarcaApp.updateHeaderNav === 'function') {
+            window.mediarcaApp.updateHeaderNav();
           }
         }
       }

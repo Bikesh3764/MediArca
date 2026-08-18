@@ -2796,10 +2796,51 @@ NOTIFY pgrst, 'reload schema';
 
 
 -- MEDIARCA_FINAL_HARDENING_2026_08_17
-REVOKE ALL ON FUNCTION public.issue_next_opd_token(uuid,text,varchar,varchar,integer,varchar,varchar) FROM anon;
-REVOKE ALL ON FUNCTION public.schedule_future_appointment_atomic(uuid,date,varchar,text,varchar,varchar,integer,varchar,varchar) FROM anon;
 DROP POLICY IF EXISTS "Allow public read users" ON public.users;
 DROP POLICY IF EXISTS "Allow public read appointments" ON public.appointments;
 DROP POLICY IF EXISTS "Allow public read doctors" ON public.doctors;
 UPDATE public.users SET password_hash=NULL WHERE password_hash IS NOT NULL;
 ALTER TABLE public.users DROP COLUMN IF EXISTS password_hash;
+
+-- User identity immutability trigger (Allows background OAuth worker upserts while guarding self-escalation)
+CREATE OR REPLACE FUNCTION prevent_user_identity_self_update()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE 
+    v_actor uuid := auth.uid();
+BEGIN
+    -- If executed by database background workers, auth triggers, or service role during OAuth callbacks
+    IF v_actor IS NULL THEN
+        RETURN NEW;
+    END IF;
+
+    -- Admins can update any user profile
+    IF is_admin(v_actor) THEN
+        RETURN NEW;
+    END IF;
+
+    -- Non-admin users cannot alter immutable security fields (id, email, role)
+    IF NEW.id IS DISTINCT FROM OLD.id
+       OR NEW.email IS DISTINCT FROM OLD.email
+       OR NEW.role IS DISTINCT FROM OLD.role
+    THEN
+        RAISE EXCEPTION 'Identity and role fields are server-managed.';
+    END IF;
+
+    -- User can only update their own record
+    IF OLD.id IS DISTINCT FROM v_actor THEN
+        RAISE EXCEPTION 'Not authorized to update this user profile.';
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_prevent_user_identity_self_update ON public.users;
+CREATE TRIGGER trg_prevent_user_identity_self_update
+BEFORE UPDATE ON public.users
+FOR EACH ROW
+EXECUTE FUNCTION prevent_user_identity_self_update();
+
