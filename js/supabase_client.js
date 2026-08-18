@@ -134,7 +134,7 @@ class MediarcaSupabaseClient {
         const role = doctorProfile ? 'doctor' : (profile?.role || 'patient');
         const name = doctorProfile?.name || profile?.full_name || user.user_metadata?.full_name || user.email.split('@')[0];
 
-        window.mediarcaStore.setAuthSession({
+        const sessionPayload = {
           id: user.id,
           email: user.email,
           role: role,
@@ -142,7 +142,12 @@ class MediarcaSupabaseClient {
           doctorProfile: doctorProfile || null,
           patientProfile: profile || null,
           clinicalProfile: clinicalProfile || null
-        });
+        };
+        this.pendingSession = sessionPayload;
+
+        if (window.mediarcaStore) {
+          window.mediarcaStore.setAuthSession(sessionPayload);
+        }
 
         // P0-07 Resolution: Trigger immediate authoritative data sync after successful login
         try {
@@ -151,22 +156,30 @@ class MediarcaSupabaseClient {
           console.warn('Post-login cloud sync notice:', syncErr);
         }
 
-        // Auto navigate to role-specific portal on fresh login
-        if (window.mediarcaApp) {
-          if (role === 'doctor') {
-            window.mediarcaApp.switchView('doctor-portal');
-          } else if (role === 'admin') {
-            window.mediarcaApp.switchView('admin-portal');
-          } else if (role === 'receptionist') {
-            window.mediarcaApp.switchView('reception-portal');
-          } else if (role === 'patient') {
-            if (window.mediarcaApp.currentView.startsWith('auth-') || event === 'SIGNED_IN') {
+        const applyAppRouting = () => {
+          if (window.mediarcaStore && (!window.mediarcaStore.state.currentUser || !window.mediarcaStore.state.currentUser.id)) {
+            window.mediarcaStore.setAuthSession(sessionPayload);
+          }
+          if (window.mediarcaApp) {
+            if (role === 'doctor') {
+              window.mediarcaApp.switchView('doctor-portal');
+            } else if (role === 'admin') {
+              window.mediarcaApp.switchView('admin-portal');
+            } else if (role === 'receptionist') {
+              window.mediarcaApp.switchView('reception-portal');
+            } else if (role === 'patient') {
               window.mediarcaApp.switchView('patient-portal');
             }
+            if (typeof window.mediarcaApp.updateHeaderNav === 'function') {
+              window.mediarcaApp.updateHeaderNav();
+            }
           }
-          if (typeof window.mediarcaApp.updateHeaderNav === 'function') {
-            window.mediarcaApp.updateHeaderNav();
-          }
+        };
+
+        if (window.mediarcaApp) {
+          applyAppRouting();
+        } else {
+          setTimeout(applyAppRouting, 200);
         }
       }
     });
@@ -253,6 +266,9 @@ class MediarcaSupabaseClient {
       }
     });
     if (error) throw error;
+    if (data?.url) {
+      window.location.href = data.url;
+    }
     return data;
   }
 

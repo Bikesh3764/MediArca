@@ -47,6 +47,16 @@ class MediarcaApp {
     this.updateHeaderNav();
     this.renderDoctorCards();
     this.renderSpecialties();
+
+    // If Supabase already authenticated a session during early load
+    if (window.mediarcaSupabase?.pendingSession) {
+      const sess = window.mediarcaSupabase.pendingSession;
+      window.mediarcaStore.setAuthSession(sess);
+      if (sess.role === 'doctor') this.switchView('doctor-portal');
+      else if (sess.role === 'admin') this.switchView('admin-portal');
+      else if (sess.role === 'receptionist') this.switchView('reception-portal');
+      else if (sess.role === 'patient') this.switchView('patient-portal');
+    }
   }
 
   bindEvents() {
