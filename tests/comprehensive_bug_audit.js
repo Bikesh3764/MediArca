@@ -19,7 +19,7 @@ const findings = [];
 // 1. Check window.mediarcaApp methods called across codebase vs defined
 const appCalls = new Set();
 const allContent = html + appJs + queueJs + storeJs;
-for (const m of allContent.matchAll(/window\.mediarcaApp\.([a-zA-Z0-9_]+)/g)) {
+for (const m of allContent.matchAll(/window\.mediarcaApp\.([a-zA-Z0-9_]+)\s*\(/g)) {
   appCalls.add(m[1]);
 }
 
@@ -36,7 +36,7 @@ for (const method of appCalls) {
 
 // 2. Check window.mediarcaStore methods called across codebase vs defined
 const storeCalls = new Set();
-for (const m of allContent.matchAll(/window\.mediarcaStore\.([a-zA-Z0-9_]+)/g)) {
+for (const m of allContent.matchAll(/window\.mediarcaStore\.([a-zA-Z0-9_]+)\s*\(/g)) {
   storeCalls.add(m[1]);
 }
 for (const method of storeCalls) {
@@ -52,7 +52,7 @@ for (const method of storeCalls) {
 
 // 3. Check window.mediarcaSupabase methods called across codebase vs defined
 const clientCalls = new Set();
-for (const m of allContent.matchAll(/window\.mediarcaSupabase\.([a-zA-Z0-9_]+)/g)) {
+for (const m of allContent.matchAll(/window\.mediarcaSupabase\.([a-zA-Z0-9_]+)\s*\(/g)) {
   clientCalls.add(m[1]);
 }
 for (const method of clientCalls) {

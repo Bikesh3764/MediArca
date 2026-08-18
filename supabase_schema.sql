@@ -342,6 +342,10 @@ DROP FUNCTION IF EXISTS issue_next_opd_token(UUID, TEXT, VARCHAR);
 CREATE OR REPLACE FUNCTION issue_next_opd_token(
     p_doctor_id UUID,
     p_symptoms TEXT DEFAULT 'General Consultation',
+    p_patient_name VARCHAR DEFAULT NULL,
+    p_patient_phone VARCHAR DEFAULT NULL,
+    p_patient_age INT DEFAULT NULL,
+    p_patient_gender VARCHAR DEFAULT NULL,
     p_timezone VARCHAR DEFAULT 'Asia/Kolkata'
 )
 RETURNS JSONB
@@ -351,6 +355,8 @@ SET search_path = public, pg_temp
 AS $$
 DECLARE
     v_actor_id UUID;
+    v_auth_email TEXT;
+    v_auth_meta JSONB;
     v_patient users%ROWTYPE;
     v_clinical patient_clinical_profiles%ROWTYPE;
     v_next_token INT;
@@ -441,10 +447,10 @@ BEGIN
         v_booking_id,
         v_actor_id,
         p_doctor_id,
-        COALESCE(v_patient.full_name, 'Patient'),
-        COALESCE(v_patient.phone, 'Not specified'),
-        COALESCE(v_clinical.age, 30),
-        COALESCE(v_clinical.gender, 'Not specified'),
+        COALESCE(p_patient_name, v_patient.full_name, 'Patient'),
+        COALESCE(p_patient_phone, v_patient.phone, 'Not specified'),
+        COALESCE(p_patient_age, v_clinical.age),
+        COALESCE(p_patient_gender, v_clinical.gender),
         v_next_token,
         'waiting',
         v_checkin_token,
@@ -577,6 +583,10 @@ CREATE OR REPLACE FUNCTION schedule_future_appointment_atomic(
     p_scheduled_date DATE,
     p_scheduled_slot VARCHAR,
     p_symptoms TEXT DEFAULT 'General medical consultation',
+    p_patient_name VARCHAR DEFAULT NULL,
+    p_patient_phone VARCHAR DEFAULT NULL,
+    p_patient_age INT DEFAULT NULL,
+    p_patient_gender VARCHAR DEFAULT NULL,
     p_timezone VARCHAR DEFAULT 'Asia/Kolkata'
 )
 RETURNS JSONB
@@ -641,10 +651,10 @@ BEGIN
         v_booking_id,
         v_actor_id,
         p_doctor_id,
-        v_patient.full_name,
-        COALESCE(v_patient.phone, 'Not specified'),
-        v_clinical.age,
-        v_clinical.gender,
+        COALESCE(p_patient_name, v_patient.full_name, 'Patient'),
+        COALESCE(p_patient_phone, v_patient.phone, 'Not specified'),
+        COALESCE(p_patient_age, v_clinical.age),
+        COALESCE(p_patient_gender, v_clinical.gender),
         NULL, -- Token is issued upon day-of check-in (Audit BUG-02 Resolution)
         'booked',
         p_scheduled_slot,
@@ -2076,8 +2086,8 @@ $$;
 REVOKE ALL ON FUNCTION update_patient_profile_atomic(TEXT, TEXT, INT, TEXT, TEXT) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION update_patient_profile_atomic(TEXT, TEXT, INT, TEXT, TEXT) TO authenticated;
 
-REVOKE ALL ON FUNCTION issue_next_opd_token(UUID, TEXT, VARCHAR) FROM PUBLIC, anon;
-GRANT EXECUTE ON FUNCTION issue_next_opd_token(UUID, TEXT, VARCHAR) TO authenticated;
+REVOKE ALL ON FUNCTION issue_next_opd_token(UUID, TEXT, VARCHAR, VARCHAR, INT, VARCHAR, VARCHAR) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION issue_next_opd_token(UUID, TEXT, VARCHAR, VARCHAR, INT, VARCHAR, VARCHAR) TO authenticated;
 
 REVOKE ALL ON FUNCTION advance_doctor_queue_atomic(UUID) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION advance_doctor_queue_atomic(UUID) TO authenticated;
@@ -2121,8 +2131,8 @@ GRANT EXECUTE ON FUNCTION reschedule_appointment_atomic(UUID, DATE, VARCHAR) TO 
 REVOKE ALL ON FUNCTION issue_reception_walkin_token(UUID, VARCHAR, VARCHAR, INT, VARCHAR, TEXT, BOOLEAN, TEXT, VARCHAR) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION issue_reception_walkin_token(UUID, VARCHAR, VARCHAR, INT, VARCHAR, TEXT, BOOLEAN, TEXT, VARCHAR) TO authenticated;
 
-REVOKE ALL ON FUNCTION schedule_future_appointment_atomic(UUID, DATE, VARCHAR, TEXT, VARCHAR) FROM PUBLIC, anon;
-GRANT EXECUTE ON FUNCTION schedule_future_appointment_atomic(UUID, DATE, VARCHAR, TEXT, VARCHAR) TO authenticated;
+REVOKE ALL ON FUNCTION schedule_future_appointment_atomic(UUID, DATE, VARCHAR, TEXT, VARCHAR, VARCHAR, INT, VARCHAR, VARCHAR) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION schedule_future_appointment_atomic(UUID, DATE, VARCHAR, TEXT, VARCHAR, VARCHAR, INT, VARCHAR, VARCHAR) TO authenticated;
 
 REVOKE ALL ON FUNCTION transition_appointment_status_atomic(UUID, VARCHAR, TEXT) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION transition_appointment_status_atomic(UUID, VARCHAR, TEXT) TO authenticated;
@@ -2423,10 +2433,48 @@ DROP POLICY IF EXISTS "Patients can view own documents" ON clinical_documents;
 DROP POLICY IF EXISTS "Patients can upload own documents" ON clinical_documents;
 DROP POLICY IF EXISTS "Attending doctors can view clinical documents" ON clinical_documents;
 DROP POLICY IF EXISTS "documents_patient_access" ON clinical_documents;
+DROP POLICY IF EXISTS "documents_patient_doctor_admin_access" ON clinical_documents;
+DROP POLICY IF EXISTS "documents_admin_manage" ON clinical_documents;
 
-CREATE POLICY "documents_patient_access" ON clinical_documents FOR ALL TO authenticated
-USING (patient_id = (SELECT auth.uid()) OR is_admin((SELECT auth.uid())))
-WITH CHECK (patient_id = (SELECT auth.uid()) OR is_admin((SELECT auth.uid())));
+-- Patients retain access to their own vault; administrators retain compliance access.
+-- A physician can access only documents belonging to a patient with an active same-day care episode.
+CREATE POLICY "documents_patient_doctor_admin_access" ON clinical_documents FOR SELECT TO authenticated
+USING (
+    patient_id = (SELECT auth.uid())
+    OR is_admin((SELECT auth.uid()))
+    OR EXISTS (
+        SELECT 1
+        FROM doctors d
+        JOIN appointments a ON a.doctor_id = d.id
+        WHERE d.user_id = (SELECT auth.uid())
+          AND d.verification_status = 'verified'
+          AND a.patient_id = clinical_documents.patient_id
+          AND scheduled_date = CURRENT_DATE
+              AND status IN ('waiting', 'in-consultation')
+    )
+);
+
+CREATE POLICY "Patients can upload own documents" ON clinical_documents FOR INSERT TO authenticated
+WITH CHECK (
+    patient_id = (SELECT auth.uid())
+    AND (
+        doctor_id IS NULL
+        OR EXISTS (
+            SELECT 1
+            FROM doctors d
+            JOIN appointments a ON a.doctor_id = d.id
+            WHERE d.id = clinical_documents.doctor_id
+              AND d.verification_status = 'verified'
+              AND a.patient_id = (SELECT auth.uid())
+              AND a.scheduled_date = CURRENT_DATE
+              AND a.status IN ('waiting', 'in-consultation')
+        )
+    )
+);
+
+CREATE POLICY "documents_admin_manage" ON clinical_documents FOR ALL TO authenticated
+USING (is_admin((SELECT auth.uid())))
+WITH CHECK (is_admin((SELECT auth.uid())));
 
 -- 14. MULTI-HOSPITAL & FACILITY RLS POLICIES
 ALTER TABLE organizations ENABLE ROW LEVEL SECURITY;

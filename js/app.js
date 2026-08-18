@@ -660,7 +660,7 @@ class MediarcaApp {
     if (e) e.preventDefault();
     const form = e.target || document.getElementById('patientLoginForm');
     const email = (form.querySelector('[name="email"]')?.value || document.getElementById('patientLoginEmail')?.value || '').trim();
-    const password = (form.querySelector('[name="password"]')?.value || document.getElementById('patientLoginPassword')?.value || '').trim();
+    const password = form.querySelector('[name="password"]')?.value ?? document.getElementById('patientLoginPassword')?.value ?? '';
 
     try {
       const user = await window.mediarcaStore.login(email, password);
@@ -679,7 +679,7 @@ class MediarcaApp {
 
     const name = (formData.get('name') || form.querySelector('[name="name"]')?.value || '').trim();
     const email = (formData.get('email') || form.querySelector('[name="email"]')?.value || '').trim();
-    const password = (formData.get('password') || form.querySelector('[name="password"]')?.value || '').trim();
+    const password = formData.get('password') ?? form.querySelector('[name="password"]')?.value ?? '';
     const phone = (formData.get('phone') || form.querySelector('[name="phone"]')?.value || '').trim();
     const age = formData.get('age') || form.querySelector('[name="age"]')?.value || null;
     const gender = formData.get('gender') || form.querySelector('[name="gender"]')?.value || 'Not specified';
@@ -712,7 +712,7 @@ class MediarcaApp {
     if (e) e.preventDefault();
     const form = e.target || document.querySelector('#view-auth-doctor form');
     const email = (form.querySelector('[name="email"]')?.value || document.getElementById('doctorLoginEmail')?.value || '').trim();
-    const password = (form.querySelector('[name="password"]')?.value || document.getElementById('doctorLoginPassword')?.value || '').trim();
+    const password = form.querySelector('[name="password"]')?.value ?? document.getElementById('doctorLoginPassword')?.value ?? '';
 
     try {
       const doc = await window.mediarcaStore.login(email, password);
@@ -731,7 +731,7 @@ class MediarcaApp {
 
     const docName = (formData.get('docName') || form.querySelector('[name="docName"]')?.value || '').trim();
     const docEmail = (formData.get('docEmail') || form.querySelector('[name="docEmail"]')?.value || '').trim();
-    const docPassword = (formData.get('docPassword') || form.querySelector('[name="docPassword"]')?.value || '').trim();
+    const docPassword = formData.get('docPassword') ?? form.querySelector('[name="docPassword"]')?.value ?? '';
     const docSpecialty = formData.get('docSpecialty') || form.querySelector('[name="docSpecialty"]')?.value || 'Cardiology';
     const docRegNumber = (formData.get('docRegNumber') || form.querySelector('[name="docRegNumber"]')?.value || '').trim();
     const docDegrees = (formData.get('docDegrees') || form.querySelector('[name="docDegrees"]')?.value || '').trim();
@@ -773,9 +773,9 @@ class MediarcaApp {
     const formData = new FormData(form);
     const name = (formData.get('name') || form.querySelector('[name="name"]')?.value || '').trim();
     const phone = (formData.get('phone') || form.querySelector('[name="phone"]')?.value || '').trim();
-    const age = formData.get('age') || form.querySelector('[name="age"]')?.value || 30;
-    const gender = formData.get('gender') || form.querySelector('[name="gender"]')?.value || 'Male';
-    const bloodGroup = formData.get('bloodGroup') || form.querySelector('[name="bloodGroup"]')?.value || 'O+';
+    const age = formData.get('age') ?? form.querySelector('[name="age"]')?.value ?? null;
+    const gender = formData.get('gender') ?? form.querySelector('[name="gender"]')?.value ?? null;
+    const bloodGroup = formData.get('bloodGroup') ?? form.querySelector('[name="bloodGroup"]')?.value ?? null;
 
     try {
       await window.mediarcaStore.updatePatientProfile({
@@ -891,7 +891,7 @@ class MediarcaApp {
     if (e) e.preventDefault();
     const form = e.target || document.querySelector('#view-auth-admin form');
     const email = (form.querySelector('[name="email"]')?.value || document.getElementById('adminLoginEmail')?.value || '').trim();
-    const password = (form.querySelector('[name="password"]')?.value || document.getElementById('adminLoginPassword')?.value || '').trim();
+    const password = form.querySelector('[name="password"]')?.value ?? document.getElementById('adminLoginPassword')?.value ?? '';
 
     try {
       await window.mediarcaStore.login(email, password);
@@ -1325,6 +1325,10 @@ class MediarcaApp {
     const currentToken = inConsultationPatient ? inConsultationPatient.tokenNumber : (queue.currentToken || 0);
     const currentPatient = inConsultationPatient || (queue.tokens && queue.tokens.find(t => t.status === 'in-consultation'));
     const nextWaitingPatient = waitingPatients[0] || (todayBookings.find(b => b.status === 'booked') || upcomingBookings[0]);
+    const patientClinicalProfile = currentPatient?.patientClinicalProfile || {};
+    const patientAge = currentPatient?.patientAge ?? patientClinicalProfile.age ?? null;
+    const patientGender = currentPatient?.patientGender || patientClinicalProfile.gender || null;
+    const patientBloodGroup = currentPatient?.patientBloodGroup || patientClinicalProfile.blood_group || null;
 
     container.innerHTML = `
       <div class="container" style="padding-top: 2rem; padding-bottom: 4rem;">
@@ -1823,11 +1827,11 @@ class MediarcaApp {
                   <div style="background: #ffffff; border: 1px solid rgba(0,0,0,0.06); border-radius: 14px; padding: 1rem; margin-bottom: 1.25rem; display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; font-size: 0.75rem;">
                     <div>
                       <span style="color: #86868b; font-weight: 500;">Patient Age / Gender</span>
-                      <div style="font-weight: 600; color: #1d1d1f; font-size: 0.875rem; margin-top: 0.1rem;">${currentPatient.patientAge ? currentPatient.patientAge + ' yrs' : '19 yrs'} • ${escapeHtml(currentPatient.patientGender || 'Male')}</div>
+                      <div style="font-weight: 600; color: #1d1d1f; font-size: 0.875rem; margin-top: 0.1rem;">${patientAge ? escapeHtml(String(patientAge)) + ' yrs' : 'Not recorded'} • ${escapeHtml(patientGender || 'Not recorded')}</div>
                     </div>
                     <div>
                       <span style="color: #86868b; font-weight: 500;">Blood Group</span>
-                      <div style="font-weight: 600; color: #b91c1c; font-size: 0.875rem; margin-top: 0.1rem;">B+</div>
+                      <div style="font-weight: 600; color: #b91c1c; font-size: 0.875rem; margin-top: 0.1rem;">${escapeHtml(patientBloodGroup || 'Not recorded')}</div>
                     </div>
                     <div>
                       <span style="color: #86868b; font-weight: 500;">Chief Symptoms</span>
@@ -1845,21 +1849,42 @@ class MediarcaApp {
                     <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.85rem;">
                       <div class="form-group" style="margin: 0;">
                         <label class="form-label" style="font-size: 0.75rem;">BP (mmHg)</label>
-                        <input type="text" id="docBpInput" class="form-input" placeholder="120/80" value="120/80" style="border-radius: 10px; font-size: 0.8125rem;">
+                        <input type="text" id="docBpInput" class="form-input" placeholder="120/80" value="" style="border-radius: 10px; font-size: 0.8125rem;">
                       </div>
                       <div class="form-group" style="margin: 0;">
                         <label class="form-label" style="font-size: 0.75rem;">Pulse (bpm)</label>
-                        <input type="text" id="docPulseInput" class="form-input" placeholder="72" value="74 bpm" style="border-radius: 10px; font-size: 0.8125rem;">
+                        <input type="text" id="docPulseInput" class="form-input" placeholder="72" value="" style="border-radius: 10px; font-size: 0.8125rem;">
                       </div>
                       <div class="form-group" style="margin: 0;">
                         <label class="form-label" style="font-size: 0.75rem;">SpO2 (%)</label>
-                        <input type="text" id="docSpo2Input" class="form-input" placeholder="98%" value="99%" style="border-radius: 10px; font-size: 0.8125rem;">
+                        <input type="text" id="docSpo2Input" class="form-input" placeholder="98%" value="" style="border-radius: 10px; font-size: 0.8125rem;">
                       </div>
                       <div class="form-group" style="margin: 0;">
                         <label class="form-label" style="font-size: 0.75rem;">Temp (°F)</label>
-                        <input type="text" id="docTempInput" class="form-input" placeholder="98.6" value="98.4 °F" style="border-radius: 10px; font-size: 0.8125rem;">
+                        <input type="text" id="docTempInput" class="form-input" placeholder="98.6" value="" style="border-radius: 10px; font-size: 0.8125rem;">
                       </div>
                     </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1.5fr; gap: 0.85rem; margin-top: 0.85rem; align-items: end;">
+                      <div class="form-group" style="margin: 0;">
+                        <label class="form-label" style="font-size: 0.75rem;">Weight (kg)</label>
+                        <input type="number" id="docWeightInput" class="form-input" min="0" step="0.1" placeholder="Not recorded" oninput="window.mediarcaApp.updateDoctorBmiLive()" style="border-radius: 10px; font-size: 0.8125rem;">
+                      </div>
+                      <div class="form-group" style="margin: 0;">
+                        <label class="form-label" style="font-size: 0.75rem;">Height (cm)</label>
+                        <input type="number" id="docHeightInput" class="form-input" min="0" step="0.1" placeholder="Not recorded" oninput="window.mediarcaApp.updateDoctorBmiLive()" style="border-radius: 10px; font-size: 0.8125rem;">
+                      </div>
+                      <span id="docBmiBadge" class="badge" style="background: #f1f5f9; color: #475569; min-height: 32px; display: inline-flex; align-items: center; justify-content: center;">BMI: Not calculated</span>
+                    </div>
+                  </div>
+
+                  <!-- Ambient Clinical Scribe -->
+                  <div style="background: #faf5ff; border: 1px solid #e9d5ff; border-radius: 14px; padding: 1rem; margin-bottom: 1.25rem;">
+                    <div style="font-size: 0.875rem; font-weight: 700; color: #6b21a8; margin-bottom: 0.5rem;">Clinical Note Draft Assistant</div>
+                    <textarea id="aiScribeInput" class="form-input" rows="3" placeholder="Dictate or type objective encounter notes for an extraction-only draft. Physician review is required."></textarea>
+                    <div style="display: flex; justify-content: flex-end; margin-top: 0.5rem;">
+                      <button type="button" class="btn btn-sm btn-secondary" onclick="window.mediarcaApp.handleProcessAiScribe()">Generate Draft</button>
+                    </div>
+                    <div id="aiScribeDraftResult" style="display: none; margin-top: 0.75rem; padding: 0.75rem; background: #ffffff; border-radius: 10px;"></div>
                   </div>
 
                   <!-- Prescription Composer -->
@@ -1899,6 +1924,17 @@ class MediarcaApp {
                         <input type="text" id="docMed3Freq" class="form-input" value="" placeholder="Frequency" style="border-radius: 10px;">
                         <input type="text" id="docMed3Route" class="form-input" value="Oral" placeholder="Route" style="border-radius: 10px;">
                         <input type="text" id="docMed3Dur" class="form-input" value="" placeholder="Duration" style="border-radius: 10px;">
+                      </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 0.85rem; margin-bottom: 1.25rem;">
+                      <div class="form-group" style="margin: 0;">
+                        <label class="form-label" style="font-size: 0.75rem;">Clinical Advice & Treatment Plan</label>
+                        <textarea id="docAdviceInput" class="form-input" rows="3" placeholder="Document patient-specific advice and follow-up instructions."></textarea>
+                      </div>
+                      <div class="form-group" style="margin: 0;">
+                        <label class="form-label" style="font-size: 0.75rem;">Lab Orders</label>
+                        <input type="text" id="docLabOrderInput" class="form-input" placeholder="e.g. CBC, HbA1c">
                       </div>
                     </div>
 
@@ -3071,7 +3107,7 @@ class MediarcaApp {
   async handleReceptionLoginSubmit(e) {
     if (e) e.preventDefault();
     const email = document.getElementById('receptionLoginEmail')?.value.trim();
-    const password = document.getElementById('receptionLoginPassword')?.value.trim();
+    const password = document.getElementById('receptionLoginPassword')?.value ?? '';
 
     if (!email || !password) {
       this.showToast('Please enter both reception email and password.', 'warning');

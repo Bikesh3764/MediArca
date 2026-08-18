@@ -1383,7 +1383,7 @@ async login(email, password) {
         throw new Error(`Failed to update clinical consultation status on server: ${cloudErr.message || 'Status transition rejected'}`);
       }
     } else {
-      throw new Error('Hospital server network is unreachable. Cannot update consultation status offline.');
+      throw new Error('Hospital server is unavailable. Clinical status was not changed. Cannot update consultation status offline.');
     }
 
     const booking = this.state.bookings.find(b => b.doctorId === doctorId && b.tokenNumber === tokenNumber);
@@ -1420,7 +1420,7 @@ async login(email, password) {
         throw new Error(`Failed to flag clinical priority on server: ${err.message}`);
       }
     } else {
-      throw new Error('Hospital server network is unreachable. Cannot flag clinical priority offline.');
+      throw new Error('Hospital server is unavailable. Emergency priority was not changed.');
     }
 
     const booking = this.state.bookings.find(b => b.doctorId === doctorId && b.tokenNumber === tokenNumber);
@@ -1514,7 +1514,7 @@ async login(email, password) {
         throw new Error(`Failed to check in on hospital server: ${err.message}`);
       }
     } else {
-      throw new Error('Hospital server network is unreachable. Cannot validate QR check-in offline.');
+      throw new Error('Hospital server is unavailable. QR check-in was not completed. Cannot validate QR check-in offline.');
     }
 
     const booking = this.state.bookings.find(b => b.checkinToken === checkinToken || (b.bookingId && b.bookingId === checkinToken) || b.id === checkinToken);
@@ -1544,7 +1544,7 @@ async login(email, password) {
         throw new Error(`Failed to transfer queue on hospital server: ${err.message}`);
       }
     } else {
-      throw new Error('Hospital server network is unreachable. Cannot transfer clinical queues offline.');
+      throw new Error('Hospital server is unavailable. Queue transfer was not changed.');
     }
 
     const booking = this.state.bookings.find(b => b.id === appointmentId || b.bookingId === appointmentId);
@@ -1573,7 +1573,7 @@ async login(email, password) {
         throw new Error(`Failed to reschedule appointment on hospital server: ${err.message}`);
       }
     } else {
-      throw new Error('Hospital server network is unreachable. Cannot reschedule appointments offline.');
+      throw new Error('Hospital server is unavailable. Appointment was not rescheduled.');
     }
 
     const booking = this.state.bookings.find(b => b.id === appointmentId || b.bookingId === appointmentId);
@@ -1630,7 +1630,7 @@ async login(email, password) {
           throw new Error(`Clinical Document Vault upload failed: ${e.message || 'Storage transmission error'}`);
         }
       } else {
-        downloadUrl = URL.createObjectURL(file);
+        throw new Error('Hospital server is unavailable. Clinical document was not uploaded.');
       }
     } else if (docData.downloadUrl) {
       downloadUrl = docData.downloadUrl;
@@ -1991,6 +1991,8 @@ async login(email, password) {
         console.error('Cloud consent record error:', e);
         throw new Error(`Digital consent signature could not be recorded on server: ${e.message || 'Consent storage rejected'}`);
       }
+    } else {
+      throw new Error('Hospital server is unavailable. Digital consent was not recorded.');
     }
 
     const newConsent = {

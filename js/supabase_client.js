@@ -47,7 +47,6 @@ class MediarcaSupabaseClient {
   }
 
   init() {
-    this.isConnected = true;
 
     // Check for OAuth error in URL hash or query params
     try {
@@ -94,6 +93,7 @@ class MediarcaSupabaseClient {
     if (window.supabase) {
       try {
         this.client = window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.key);
+        this.isConnected = true;
         console.log('✅ Mediarca Cloud DB & Supabase Auth Connected:', SUPABASE_CONFIG.url);
         this.setupAuthListener();
         this.setupRealtimeSubscriptions();
@@ -101,7 +101,7 @@ class MediarcaSupabaseClient {
         console.warn('⚠️ Supabase connection notice:', err);
       }
     }
-    this.syncInitialDataFromCloud();
+    this.syncInitialDataFromCloud().catch(syncErr => console.warn('Initial cloud sync notice:', syncErr));
   }
 
   // --- 1. SUPABASE AUTH INTEGRATION (C-01, C-02, C-03 & C-17 Resolution) ---
@@ -237,8 +237,9 @@ class MediarcaSupabaseClient {
         } catch (_) {}
       }
 
-      // Sync cloud data asynchronously in background without blocking UI
-      this.syncInitialDataFromCloud().catch(syncErr => console.warn('Post-login cloud sync notice:', syncErr));
+      // Complete the first authoritative cloud sync before resolving the auth event.
+      // Routing/state are already available above, so a slow network cannot blank the UI.
+      await this.syncInitialDataFromCloud();
     };
 
     this.client.auth.onAuthStateChange(async (event, session) => {
@@ -492,11 +493,14 @@ class MediarcaSupabaseClient {
       try {
         const { data: appts, error: apptErr } = await this.client
           .from('appointments')
-          .select('*, users!appointments_patient_id_fkey(full_name, phone)')
+          .select('*, users!appointments_patient_id_fkey(full_name, phone, patient_clinical_profiles!patient_clinical_profiles_user_id_fkey(age, gender, blood_group, allergies, chronic_conditions, past_surgeries, family_history, emergency_contact, preferred_language, updated_at))')
           .order('created_at', { ascending: false });
 
         if (!apptErr && appts) {
-          const mappedBookings = appts.map(a => ({
+          const mappedBookings = appts.map(a => {
+            const embeddedProfile = a.users?.patient_clinical_profiles;
+            const patientClinicalProfile = Array.isArray(embeddedProfile) ? (embeddedProfile[0] || null) : (embeddedProfile || null);
+            return {
             id: a.id,
             bookingId: a.booking_id || `MED-BK-${a.id.substring(0, 8).toUpperCase()}`,
             patientId: a.patient_id,
@@ -505,6 +509,8 @@ class MediarcaSupabaseClient {
             patientAge: a.patient_age || null,
             patientGender: a.patient_gender || 'Not specified',
             patientPhone: a.patient_phone || a.users?.phone || 'Not specified',
+            patientBloodGroup: patientClinicalProfile?.blood_group || null,
+            patientClinicalProfile,
             symptoms: a.symptoms,
             tokenNumber: a.token_number || 0,
             status: a.status,
@@ -517,7 +523,8 @@ class MediarcaSupabaseClient {
             createdAt: a.created_at,
             startAt: a.start_at,
             endAt: a.end_at
-          }));
+          };
+          });
 
           // Supabase is authoritative for clinical appointments.
           window.mediarcaStore.state.bookings = mappedBookings;
@@ -852,7 +859,10 @@ class MediarcaSupabaseClient {
 
     // H-13 & H-14: Strict MIME Type allowlist and File Size verification
     const allowedMimes = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
-    const mimeType = (file.type || 'application/pdf').toLowerCase();
+    const mimeType = (file.type || '').toLowerCase();
+    if (!mimeType) {
+      throw new Error('File type could not be determined. Please choose a PDF, JPEG, PNG, or WebP file.');
+    }
     if (!allowedMimes.includes(mimeType)) {
       throw new Error(`Invalid file format '${mimeType}'. Only PDF and image records (JPEG, PNG, WebP) are permitted.`);
     }
@@ -904,7 +914,7 @@ class MediarcaSupabaseClient {
           storage_path: storagePath,
           file_name: sanitizedBase,
           file_size_bytes: file.size || 0,
-          mime_type: file.type || 'application/pdf',
+          mime_type: mimeType,
           is_encrypted: false, // Transparent storage-level encryption at rest, not app-layer PKI
           notes: metadata.notes || 'Secured in private authenticated storage vault with server-side encryption at rest'
         })
