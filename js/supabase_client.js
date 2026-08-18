@@ -4,8 +4,8 @@
  */
 
 const SUPABASE_CONFIG = {
-  url: 'https://pquwoxvrfoisjxxjknzs.supabase.co',
-  key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxdXdveHZyZm9pc2p4eGprbnpzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcwNDE2NjcsImV4cCI6MjEwMjYxNzY2N30.QWRKzQPeeaceLcKxv2LOlF1DWR13pAfgOHyhxBZGDQ0'
+  url: 'https://pkvwnsigucncdwrjtggs.supabase.co',
+  key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBrdnduc2lndWNuY2R3cmp0Z2dzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY4Nzg5NzAsImV4cCI6MjEwMjQ1NDk3MH0._VAaiZ0DiNHeMmiS9VoaSdNsluOaz5sOTgM0Qi4Lbok'
 };
 
 class MediarcaSupabaseClient {
@@ -13,6 +13,37 @@ class MediarcaSupabaseClient {
     this.client = null;
     this.isConnected = false;
     this.init();
+  }
+
+  parseOAuthHash() {
+    try {
+      const hash = window.location.hash ? window.location.hash.replace(/^#/, '') : '';
+      if (!hash || !hash.includes('access_token=')) return null;
+
+      const params = new URLSearchParams(hash);
+      const token = params.get('access_token');
+      if (!token) return null;
+
+      const parts = token.split('.');
+      if (parts.length < 2) return null;
+
+      const payloadBase64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+      const payloadStr = decodeURIComponent(atob(payloadBase64).split('').map(c => {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join(''));
+      const payload = JSON.parse(payloadStr);
+
+      return {
+        id: payload.sub || payload.id,
+        email: payload.email,
+        user_metadata: payload.user_metadata || {},
+        app_metadata: payload.app_metadata || {},
+        token: token
+      };
+    } catch (e) {
+      console.warn('OAuth hash parsing notice:', e);
+      return null;
+    }
   }
 
   init() {
@@ -31,13 +62,34 @@ class MediarcaSupabaseClient {
             window.mediarcaApp.showToast(`Sign in notice: ${errorMsg.replace(/\+/g, ' ')}`, 'warning');
           }
         }, 600);
-        // Clean URL to prevent persisting error query string
         if (window.history?.replaceState) {
           const cleanUrl = window.location.pathname;
           window.history.replaceState(null, '', cleanUrl);
         }
       }
     } catch (_) {}
+
+    // Immediate zero-latency hydration from OAuth hash token
+    const oAuthUser = this.parseOAuthHash();
+    if (oAuthUser && oAuthUser.id) {
+      console.log('⚡ Direct OAuth Hash Token Detected:', oAuthUser.email);
+      let authIntent = null;
+      try { authIntent = sessionStorage.getItem('mediarca_auth_intent'); } catch (_) {}
+
+      const name = oAuthUser.user_metadata?.full_name || oAuthUser.user_metadata?.name || oAuthUser.email.split('@')[0];
+      const sessionPayload = {
+        id: oAuthUser.id,
+        email: oAuthUser.email,
+        role: authIntent === 'doctor' ? 'doctor' : 'patient',
+        name: name,
+        avatar: oAuthUser.user_metadata?.avatar_url || oAuthUser.user_metadata?.picture || null
+      };
+
+      this.pendingSession = sessionPayload;
+      if (window.mediarcaStore) {
+        window.mediarcaStore.setAuthSession(sessionPayload);
+      }
+    }
 
     if (window.supabase) {
       try {
