@@ -2705,6 +2705,12 @@ WHERE d.verification_status = 'verified';
 
 GRANT SELECT ON public_doctor_directory TO anon, authenticated;
 
+-- Public directory access is restricted to verified doctors while the view executes under caller RLS.
+DROP POLICY IF EXISTS "doctors_public_directory_select" ON doctors;
+CREATE POLICY "doctors_public_directory_select" ON doctors FOR SELECT TO anon, authenticated
+USING (verification_status = 'verified');
+ALTER VIEW public_doctor_directory SET (security_invoker = true);
+
 -- 15. AUDIT LOG ACCESS POLICIES & ADMIN RETRIEVAL RPC (C-12 Resolution: Administrator Authentication Required)
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Admins can view audit logs" ON audit_logs;
