@@ -75,16 +75,20 @@ Open [http://localhost:8080](http://localhost:8080) in your browser.
 
 ---
 
-## 🔑 Test Accounts & Demo Credentials
+## 🔑 Test Accounts & Demo Sessions
 
-| Role | Email | Password | Access Level |
-| :--- | :--- | :--- | :--- |
-| **Patient** | `sarah@mediarca.health` | `patient123` | Active tickets, Document Vault & Prescriptions |
-| **Receptionist** | `reception@mediarca.health` | `reception123` | Walk-in registration, QR check-in & transfers |
-| **Verified Doctor** | `thorne@mediarca.health` | `doc123` | Dr. Aris Thorne (Cardiology Practice Console) |
-| **Pending Doctor** | `vance@mediarca.health` | `doc123` | Dr. Elena Vance (Pending Accreditation) |
-| **Admin** | `bikeshray3764@gmail.com` | `admin3764` | Dr. Bikesh Ray (Medical Board Admin Desk & Analytics) |
-| **Admin (Alt)** | `admin@mediarca.health` | `admin2026` | Medical Board Desk & Compliance Analytics |
+The automated browser suite uses **mocked in-browser sessions** for deterministic role and UI coverage; it does not depend on hosted passwords. The email addresses below identify the seeded role fixtures used by the local schema and test data, but hosted Supabase credentials are environment-specific and must be provisioned through Supabase Auth rather than copied from this README.
+
+| Role | Seeded identity | Access level |
+| :--- | :--- | :--- |
+| **Patient** | `sarah@mediarca.health` | Active tickets, Document Vault & Prescriptions |
+| **Receptionist** | `reception@mediarca.health` | Walk-in registration, QR check-in & transfers |
+| **Verified Doctor** | `thorne@mediarca.health` | Dr. Aris Thorne (Cardiology Practice Console) |
+| **Pending Doctor** | `vance@mediarca.health` | Dr. Elena Vance (Pending Accreditation) |
+| **Admin** | `bikeshray3764@gmail.com` | Dr. Bikesh Ray (Medical Board Admin Desk & Analytics) |
+| **Admin (Alt)** | `admin@mediarca.health` | Medical Board Desk & Compliance Analytics |
+
+For a real deployment, create or invite role-appropriate users through Supabase Auth and verify the corresponding `public.users` role/profile record. Never commit or reuse production passwords in documentation.
 
 ---
 

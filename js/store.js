@@ -804,8 +804,18 @@ async login(email, password) {
           throw new Error('Authentication failed. Please verify your credentials.');
         }
       } catch (authErr) {
-        console.error('Supabase Auth error:', authErr.message || authErr);
-        throw new Error(authErr.message || 'Invalid email or password. Please verify your credentials.');
+        const rawMessage = String(authErr?.message || '').trim();
+        console.error('Supabase Auth error:', rawMessage || authErr);
+
+        if (/database error querying schema|authretryablefetcherror|temporarily unavailable/i.test(rawMessage)) {
+          throw new Error('Authentication service is temporarily unavailable. Please try again in a moment.');
+        }
+
+        if (/invalid login credentials|invalid email or password/i.test(rawMessage) || authErr?.status === 400) {
+          throw new Error('Invalid email or password. Please verify your credentials.');
+        }
+
+        throw new Error(rawMessage || 'Unable to sign in. Please try again.');
       }
     } else {
       throw new Error('Authentication service unavailable. Please check your network connection.');
