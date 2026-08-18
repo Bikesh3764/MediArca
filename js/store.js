@@ -998,8 +998,9 @@ async login(email, password) {
   }
 
   isAuthorized(requiredRole) {
-    if (!this.state.currentUser || !this.state.currentUser.id) return false;
+    if (!this.state.currentUser || !this.state.currentUser.id || this.state.currentUser.role === 'guest') return false;
     if (this.state.currentUser.role === 'admin') return true;
+    if (requiredRole === 'patient') return true; // All authenticated users have access to patient booking & history
     return this.state.currentUser.role === requiredRole;
   }
 

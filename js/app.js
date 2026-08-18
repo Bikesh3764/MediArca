@@ -144,6 +144,7 @@ class MediarcaApp {
       // Authenticated Doctor Navigation
       navLinksContainer.innerHTML = `
         <li><button class="nav-link-btn ${this.currentView === 'doctor-portal' ? 'active' : ''}" onclick="window.mediarcaApp.switchView('doctor-portal')"><i data-lucide="layout-dashboard" style="width:14px;height:14px"></i> Practice Console</button></li>
+        <li><button class="nav-link-btn ${this.currentView === 'patient-portal' ? 'active' : ''}" onclick="window.mediarcaApp.switchView('patient-portal')"><i data-lucide="calendar" style="width:14px;height:14px"></i> My Bookings</button></li>
         <li><button class="nav-link-btn ${this.currentView === 'queue-radar' ? 'active' : ''}" onclick="window.mediarcaApp.switchView('queue-radar', { doctorId: '${doc.id}' })"><i data-lucide="radio" style="width:14px;height:14px"></i> Public Radar View</button></li>
         <li><button class="nav-link-btn ${this.currentView === 'home' ? 'active' : ''}" onclick="window.mediarcaApp.switchView('home')"><i data-lucide="compass" style="width:14px;height:14px"></i> Directory</button></li>
       `;
@@ -645,6 +646,8 @@ class MediarcaApp {
 
   async handleGoogleAuth() {
     try {
+      const intent = this.currentView === 'auth-doctor' ? 'doctor' : 'patient';
+      try { sessionStorage.setItem('mediarca_auth_intent', intent); } catch (_) {}
       this.showToast('Connecting to Google Authentication...', 'info');
       await window.mediarcaStore.loginWithGoogle();
     } catch (err) {

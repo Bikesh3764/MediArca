@@ -148,18 +148,23 @@ class MediarcaSupabaseClient {
         window.mediarcaStore.setAuthSession(sessionPayload);
       }
 
+      let authIntent = null;
+      try { authIntent = sessionStorage.getItem('mediarca_auth_intent'); } catch (_) {}
+
       const applyAppRouting = () => {
         if (window.mediarcaStore) {
           window.mediarcaStore.setAuthSession(sessionPayload);
         }
         if (window.mediarcaApp) {
-          if (role === 'doctor') {
+          if (authIntent === 'patient' || role === 'patient') {
+            window.mediarcaApp.switchView('patient-portal');
+          } else if (role === 'doctor') {
             window.mediarcaApp.switchView('doctor-portal');
           } else if (role === 'admin') {
             window.mediarcaApp.switchView('admin-portal');
           } else if (role === 'receptionist') {
             window.mediarcaApp.switchView('reception-portal');
-          } else if (role === 'patient') {
+          } else {
             window.mediarcaApp.switchView('patient-portal');
           }
           if (typeof window.mediarcaApp.updateHeaderNav === 'function') {
