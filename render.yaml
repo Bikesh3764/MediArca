@@ -3,7 +3,7 @@ services:
     name: mediarca-api
     env: node
     plan: free
-    region: oregon
+    region: singapore
     rootDir: backend
     buildCommand: npm install && npm run build
     startCommand: node dist/server.js
@@ -15,8 +15,8 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: DATABASE_URL
-        sync: false # Set to your live Supabase PostgreSQL URI
-      - key: GOOGLE_CLIENT_ID
-        sync: false # Set to your Google Cloud OAuth Client ID
+        sync: false # Enter your Supabase pooler connection URL
+      - key: DIRECT_URL
+        sync: false # Enter your Supabase direct connection URL
       - key: FRONTEND_URL
-        sync: false # Set to your live frontend URL (e.g. https://your-site.vercel.app)
+        value: https://bikesh3764.github.io
