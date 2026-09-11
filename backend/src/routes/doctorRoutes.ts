@@ -5,6 +5,7 @@ import {
   updateSchedule,
   getDoctorAffiliations,
   addDoctorClinic,
+  respondToClinicAffiliation,
   removeDoctorClinic,
   addDoctorReceptionist,
   removeDoctorReceptionist,
@@ -16,6 +17,8 @@ const router = Router();
 router.get('/', getDoctors);
 router.get('/me/affiliations', authenticate, authorize('DOCTOR'), getDoctorAffiliations);
 router.post('/me/clinics', authenticate, authorize('DOCTOR'), addDoctorClinic);
+router.put('/me/affiliations/:affiliationId/respond', authenticate, authorize('DOCTOR'), respondToClinicAffiliation);
+router.put('/me/clinics/:affiliationId/respond', authenticate, authorize('DOCTOR'), respondToClinicAffiliation);
 router.delete('/me/clinics/:clinicId', authenticate, authorize('DOCTOR'), removeDoctorClinic);
 router.post('/me/receptionists', authenticate, authorize('DOCTOR'), addDoctorReceptionist);
 router.delete('/me/receptionists/:receptionistId', authenticate, authorize('DOCTOR'), removeDoctorReceptionist);

@@ -16,6 +16,7 @@ model User {
   phone         String?
   role          String         @default("PATIENT") // "PATIENT", "DOCTOR", "ADMIN"
   avatarUrl     String?
+  mustChangePassword Boolean   @default(false)
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
@@ -90,6 +91,10 @@ model Appointment {
   vitals          String?        // JSON string: { bp, pulse, temp, weight }
   clinicalNotes   String?
   slotId          String?        // ID of specific doctor checking slot
+  isForOther      Boolean        @default(false)
+  patientName     String?
+  patientAge      String?
+  patientGender   String?
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 
@@ -174,13 +179,14 @@ model ReceptionistProfile {
 }
 
 model ClinicDoctor {
-  id        String        @id @default(uuid())
-  clinicId  String
-  clinic    ClinicProfile @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-  doctorId  String
-  doctor    DoctorProfile @relation(fields: [doctorId], references: [id], onDelete: Cascade)
-  status    String        @default("ACTIVE")
-  createdAt DateTime      @default(now())
+  id          String        @id @default(uuid())
+  clinicId    String
+  clinic      ClinicProfile @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  doctorId    String
+  doctor      DoctorProfile @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  status      String        @default("PENDING") // "PENDING", "ACCEPTED", "REJECTED", "ACTIVE"
+  requestedBy String        @default("CLINIC")  // "CLINIC" or "DOCTOR"
+  createdAt   DateTime      @default(now())
 
   @@unique([clinicId, doctorId])
 }

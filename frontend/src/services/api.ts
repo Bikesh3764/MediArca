@@ -371,12 +371,16 @@ export interface User {
   phone?: string;
   role: 'PATIENT' | 'DOCTOR' | 'ADMIN' | 'CLINIC' | 'RECEPTIONIST';
   avatarUrl?: string;
+  mustChangePassword?: boolean;
   patientProfile?: {
     id: string;
     bloodGroup?: string;
     allergies?: string;
     existingConditions?: string;
     emergencyContact?: string;
+    dateOfBirth?: string;
+    gender?: string;
+    currentMedications?: string;
   };
   doctorProfile?: {
     id: string;
@@ -464,6 +468,8 @@ export interface ClinicAppointment {
 export interface ClinicDashboardData {
   clinic: ClinicProfile;
   doctors: ClinicDoctorStat[];
+  incomingRequests?: Array<ClinicDoctorStat & { requestedAt?: string }>;
+  outgoingRequests?: Array<ClinicDoctorStat & { requestedAt?: string }>;
   receptionists?: ClinicReceptionistItem[];
   totalDoctors: number;
   totalBookings: number;
@@ -518,23 +524,31 @@ export interface ReceptionistQueueItem {
   reasonForVisit?: string;
   symptoms?: string;
   hasPrescription: boolean;
+  isForOther?: boolean;
+  patientAge?: string;
   createdAt: string;
 }
 
+export interface DoctorAffiliationClinic {
+  affiliationId: string;
+  clinicId: string;
+  clinicName: string;
+  address: string;
+  city?: string;
+  phone?: string;
+  email?: string;
+  bookingCount?: number;
+  revenue?: number;
+  status: string;
+  requestedBy?: string;
+  joinedAt?: string;
+  requestedAt?: string;
+}
+
 export interface DoctorAffiliationsData {
-  clinics: Array<{
-    affiliationId: string;
-    clinicId: string;
-    clinicName: string;
-    address: string;
-    city?: string;
-    phone?: string;
-    email?: string;
-    bookingCount: number;
-    revenue: number;
-    status: string;
-    joinedAt: string;
-  }>;
+  clinics: DoctorAffiliationClinic[];
+  incomingRequests?: DoctorAffiliationClinic[];
+  outgoingRequests?: DoctorAffiliationClinic[];
   receptionists: Array<{
     affiliationId: string;
     receptionistId: string;
@@ -624,6 +638,10 @@ export interface Appointment {
   symptoms?: string;
   vitals?: string;
   clinicalNotes?: string;
+  isForOther?: boolean;
+  patientName?: string;
+  patientAge?: string;
+  patientGender?: string;
   doctor: Doctor;
   patient?: {
     id: string;
@@ -725,6 +743,24 @@ export const api = {
 
   async updateProfile(body: any): Promise<User> {
     const res = await fetch(`${API_BASE_URL}/auth/profile`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(body),
+    });
+    return handleResponse(res);
+  },
+
+  async updateUserProfile(body: any): Promise<User> {
+    const res = await fetch(`${API_BASE_URL}/users/profile`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(body),
+    });
+    return handleResponse(res);
+  },
+
+  async updateDoctorProfile(body: any): Promise<User> {
+    const res = await fetch(`${API_BASE_URL}/doctors/profile`, {
       method: 'PUT',
       headers: getHeaders(),
       body: JSON.stringify(body),
@@ -843,6 +879,10 @@ export const api = {
     reasonForVisit?: string;
     symptoms?: string;
     clinicId?: string;
+    isForOther?: boolean;
+    patientName?: string;
+    patientAge?: string;
+    patientGender?: string;
   }): Promise<Appointment> {
     const clientMinutes = new Date().getHours() * 60 + new Date().getMinutes();
     const res = await fetch(`${API_BASE_URL}/appointments/book`, {
@@ -1109,6 +1149,8 @@ export const api = {
     patientName: string;
     patientPhone: string;
     gender?: string;
+    patientAge?: string;
+    isForOther?: boolean;
     appointmentDate?: string;
     slotId?: string;
     reasonForVisit?: string;
@@ -1132,6 +1174,25 @@ export const api = {
     return handleResponse(res);
   },
 
+  async changeReceptionistPassword(data: { currentPassword: string; newPassword: string }): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/receptionists/change-password`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
+  // Clinic Doctor Affiliation Response
+  async respondToDoctorAffiliation(affiliationId: string, action: 'ACCEPT' | 'REJECT'): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/clinic/affiliations/${affiliationId}/respond`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify({ action }),
+    });
+    return handleResponse(res);
+  },
+
   // Doctor Affiliations
   async getDoctorAffiliations(): Promise<DoctorAffiliationsData> {
     const res = await fetch(`${API_BASE_URL}/doctors/me/affiliations`, { headers: getHeaders() });
@@ -1143,6 +1204,15 @@ export const api = {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
+  async respondToClinicAffiliation(affiliationId: string, action: 'ACCEPT' | 'REJECT'): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/doctors/me/affiliations/${affiliationId}/respond`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify({ action }),
     });
     return handleResponse(res);
   },

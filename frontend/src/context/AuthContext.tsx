@@ -10,6 +10,7 @@ interface AuthContextType {
   register: (data: any) => Promise<User>;
   logout: () => void;
   refreshUser: () => Promise<void>;
+  updateUser: (updatedUser: User) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -84,8 +85,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
   };
 
+  const updateUser = (updatedUser: User) => {
+    setUser(updatedUser);
+    try {
+      localStorage.setItem('mediarca_user', JSON.stringify(updatedUser));
+    } catch (e) {
+      console.error('Failed to persist updated user:', e);
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, loginWithGoogle, register, logout, refreshUser }}>
+    <AuthContext.Provider value={{ user, token, loading, login, loginWithGoogle, register, logout, refreshUser, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

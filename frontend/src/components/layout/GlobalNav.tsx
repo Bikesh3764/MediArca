@@ -104,6 +104,16 @@ export const GlobalNav: React.FC = () => {
                 <FileText className="w-3.5 h-3.5" />
                 Medical Vault
               </Link>
+              <Link
+                to="/patient/profile"
+                className={`px-3 py-1 rounded-full transition-all text-xs ${
+                  isActive('/patient/profile')
+                    ? 'bg-white/10 text-white font-medium shadow-sm'
+                    : 'hover:text-white'
+                }`}
+              >
+                Profile
+              </Link>
             </>
           )}
 
@@ -129,6 +139,16 @@ export const GlobalNav: React.FC = () => {
                 }`}
               >
                 Manage Schedule
+              </Link>
+              <Link
+                to="/doctor/profile"
+                className={`px-3 py-1 rounded-full transition-all text-xs ${
+                  isActive('/doctor/profile')
+                    ? 'bg-white/10 text-white font-medium shadow-sm'
+                    : 'hover:text-white'
+                }`}
+              >
+                Profile & Settings
               </Link>
             </>
           )}
@@ -180,7 +200,21 @@ export const GlobalNav: React.FC = () => {
         <div className="hidden md:flex items-center gap-3">
           {user ? (
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
+              <Link
+                to={
+                  user.role === 'PATIENT'
+                    ? '/patient/profile'
+                    : user.role === 'DOCTOR'
+                    ? '/doctor/profile'
+                    : user.role === 'CLINIC'
+                    ? '/clinic/dashboard'
+                    : user.role === 'RECEPTIONIST'
+                    ? '/receptionist/dashboard'
+                    : '/admin'
+                }
+                className="flex items-center gap-2 hover:opacity-85 transition-opacity"
+                title="Manage Profile & Settings"
+              >
                 <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-[#0066cc] to-[#2997ff] flex items-center justify-center text-[11px] font-bold text-white border border-white/20 overflow-hidden shadow-sm">
                   {user.avatarUrl ? (
                     <img src={user.avatarUrl} alt={user.fullName} className="w-full h-full object-cover" />
@@ -194,7 +228,7 @@ export const GlobalNav: React.FC = () => {
                 <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/10 text-[#2997ff] font-semibold border border-white/10">
                   {user.role}
                 </span>
-              </div>
+              </Link>
               <button
                 onClick={handleLogout}
                 className="text-[#a1a1a6] hover:text-rose-400 transition-colors p-1 rounded-full hover:bg-white/10"

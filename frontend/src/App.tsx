@@ -14,9 +14,11 @@ import { DoctorDetail } from './pages/Patient/DoctorDetail';
 import { BookAppointment } from './pages/Patient/BookAppointment';
 import { MyAppointments } from './pages/Patient/MyAppointments';
 import { MedicalRecords } from './pages/Patient/MedicalRecords';
+import { PatientProfile } from './pages/Patient/PatientProfile';
 import { DoctorDashboard } from './pages/Doctor/DoctorDashboard';
 import { ConsultationView } from './pages/Doctor/ConsultationView';
 import { ManageSchedule } from './pages/Doctor/ManageSchedule';
+import { DoctorProfile } from './pages/Doctor/DoctorProfile';
 import { AdminDashboard } from './pages/Admin/AdminDashboard';
 import { AdminLogin } from './pages/Auth/AdminLogin';
 import { ClinicAuth } from './pages/Clinic/ClinicAuth';
@@ -100,6 +102,14 @@ export function App() {
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path="/patient/profile"
+                element={
+                  <ProtectedRoute allowedRoles={['PATIENT']}>
+                    <PatientProfile />
+                  </ProtectedRoute>
+                }
+              />
 
               {/* Doctor Routes */}
               <Route
@@ -123,6 +133,14 @@ export function App() {
                 element={
                   <ProtectedRoute allowedRoles={['DOCTOR']}>
                     <ManageSchedule />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/doctor/profile"
+                element={
+                  <ProtectedRoute allowedRoles={['DOCTOR']}>
+                    <DoctorProfile />
                   </ProtectedRoute>
                 }
               />

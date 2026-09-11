@@ -56,7 +56,7 @@ export const getMyReceptionist = async (req: AuthRequest, res: Response): Promis
           await prisma.clinicDoctor.findMany({
             where: {
               clinicId: receptionist.clinicId,
-              status: 'ACTIVE',
+              status: { in: ['ACTIVE', 'ACCEPTED'] },
             },
             select: { doctorId: true },
           })
@@ -287,6 +287,8 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
       patientName,
       patientPhone,
       gender,
+      patientAge,
+      isForOther,
       appointmentDate: requestedDate,
       slotId,
       reasonForVisit,
@@ -348,7 +350,7 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
           },
         },
       });
-      if (!isAffiliated || isAffiliated.status !== 'ACTIVE') {
+      if (!isAffiliated || (isAffiliated.status !== 'ACTIVE' && isAffiliated.status !== 'ACCEPTED')) {
         res.status(403).json({
           success: false,
           message: 'Access denied: Practitioner is not currently affiliated with your facility.',
@@ -435,7 +437,7 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
           let targetClinicId = receptionist.clinicId || clinicId;
           if (!targetClinicId) {
             const activeAffiliation = await tx.clinicDoctor.findFirst({
-              where: { doctorId: doctor.id, status: 'ACTIVE' },
+              where: { doctorId: doctor.id, status: { in: ['ACTIVE', 'ACCEPTED'] } },
             });
             if (activeAffiliation) {
               targetClinicId = activeAffiliation.clinicId;
@@ -460,6 +462,10 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
               status: 'WAITING',
               reasonForVisit: reasonForVisit || 'Walk-in Consultation',
               symptoms: symptoms || null,
+              isForOther: Boolean(isForOther),
+              patientName: isForOther && patientName ? String(patientName).trim() : null,
+              patientAge: patientAge ? String(patientAge).trim() : null,
+              patientGender: gender || null,
             },
             include: {
               doctor: {
@@ -526,5 +532,66 @@ export const updateAppointmentStatus = async (req: AuthRequest, res: Response): 
   } catch (error: any) {
     console.error('updateAppointmentStatus error:', error);
     res.status(500).json({ success: false, message: 'Failed to update appointment status', error: error.message });
+  }
+};
+
+/**
+ * Mandatory first-login or on-demand password change for receptionists
+ */
+export const changeReceptionistPassword = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user || req.user.role !== 'RECEPTIONIST') {
+      res.status(403).json({ success: false, message: 'Access denied: receptionist role required' });
+      return;
+    }
+
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      res.status(400).json({ success: false, message: 'Current password and new password are required' });
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      res.status(400).json({ success: false, message: 'New password must be at least 6 characters long' });
+      return;
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+    });
+
+    if (!user) {
+      res.status(404).json({ success: false, message: 'User account not found' });
+      return;
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!isMatch) {
+      res.status(400).json({ success: false, message: 'Current temporary password does not match' });
+      return;
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const newHash = await bcrypt.hash(newPassword, salt);
+
+    const updatedUser = await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordHash: newHash,
+        mustChangePassword: false,
+      },
+      include: { receptionistProfile: true },
+    });
+
+    const { passwordHash: _, ...safeUser } = updatedUser;
+    res.json({
+      success: true,
+      message: 'Password updated successfully. Desk access unlocked.',
+      data: safeUser,
+    });
+  } catch (error: any) {
+    console.error('changeReceptionistPassword error:', error);
+    res.status(500).json({ success: false, message: 'Failed to update password', error: error.message });
   }
 };

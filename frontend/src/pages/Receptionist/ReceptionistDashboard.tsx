@@ -8,7 +8,7 @@ import {
 } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { AppleButton } from '../../components/ui/AppleButton';
-import { SubNav } from '../../components/layout/SubNav';
+import { DashboardLayout, DashboardNavItem } from '../../components/layout/DashboardLayout';
 import {
   Clock,
   UserPlus,
@@ -38,7 +38,9 @@ export const ReceptionistDashboard: React.FC = () => {
   const [walkinClinicId, setWalkinClinicId] = useState<string>('');
   const [appointmentDate, setAppointmentDate] = useState<string>(getLocalDateString());
   const [slotId, setSlotId] = useState<string>('');
+  const [bookingFor, setBookingFor] = useState<'self' | 'other'>('self');
   const [patientName, setPatientName] = useState('');
+  const [patientAge, setPatientAge] = useState('');
   const [patientPhone, setPatientPhone] = useState('');
   const [gender, setGender] = useState('Not Specified');
   const [reasonForVisit, setReasonForVisit] = useState('');
@@ -133,6 +135,8 @@ export const ReceptionistDashboard: React.FC = () => {
         patientName: patientName.trim(),
         patientPhone: patientPhone.trim(),
         gender,
+        patientAge: patientAge.trim() || undefined,
+        isForOther: bookingFor === 'other',
         appointmentDate,
         slotId: slotId || undefined,
         clinicId: walkinClinicId || undefined,
@@ -144,6 +148,7 @@ export const ReceptionistDashboard: React.FC = () => {
 
       // Reset form
       setPatientName('');
+      setPatientAge('');
       setPatientPhone('');
       setReasonForVisit('');
 
@@ -167,26 +172,41 @@ export const ReceptionistDashboard: React.FC = () => {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-[#f5f5f7] pb-16">
-      <SubNav
-        title={data?.clinic?.clinicName ? `${data.clinic.clinicName} Desk` : (data?.receptionist.fullName || user?.fullName || 'Receptionist Desk')}
-        subtitle={`${data?.clinic?.address || 'Front Desk Operations'}${data?.clinic?.city ? ` • ${data.clinic.city}` : ''} | Staff: ${data?.receptionist.fullName || user?.fullName || 'Desk Operator'}`}
-      >
-        <div className="flex items-center gap-2">
-          {data?.clinic && (
-            <span className="text-xs px-2.5 py-1 rounded-full bg-[#0066cc]/10 text-[#0066cc] font-medium border border-[#0066cc]/20 flex items-center gap-1.5">
-              <Building2 className="w-3.5 h-3.5" />
-              {data.clinic.clinicName}
-            </span>
-          )}
-          <span className="text-xs text-[#86868b] font-medium hidden sm:inline-block">
-            {linkedDoctors.length} Assigned Doctor{linkedDoctors.length === 1 ? '' : 's'}
-          </span>
-        </div>
-      </SubNav>
+  const navItems: DashboardNavItem[] = [
+    {
+      id: 'walkin',
+      label: 'New Walk-in Patient',
+      icon: UserPlus,
+      active: activeTab === 'walkin',
+      onClick: () => setActiveTab('walkin'),
+    },
+    {
+      id: 'queue',
+      label: 'Live Queue Tracker',
+      icon: Clock,
+      active: activeTab === 'queue',
+      onClick: () => setActiveTab('queue'),
+      badge: queueAppointments.length > 0 ? queueAppointments.length : undefined,
+    },
+    {
+      id: 'doctors',
+      label: 'Assigned Doctors',
+      icon: Stethoscope,
+      active: activeTab === 'doctors',
+      onClick: () => setActiveTab('doctors'),
+      badge: linkedDoctors.length,
+    },
+  ];
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-8 space-y-8">
+  return (
+    <DashboardLayout
+      portalType="RECEPTIONIST"
+      portalSubtitle="RECEPTION DESK"
+      navItems={navItems}
+      title={data?.clinic?.clinicName ? `${data.clinic.clinicName} Desk` : (data?.receptionist.fullName || user?.fullName || 'Receptionist Desk')}
+      subtitle={`${data?.clinic?.address || 'Front Desk Operations'}${data?.clinic?.city ? ` • ${data.clinic.city}` : ''} | Staff: ${data?.receptionist.fullName || user?.fullName || 'Desk Operator'}`}
+    >
+      <div className="space-y-8">
         {/* Banner Feedback */}
         {successMsg && (
           <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center justify-between shadow-xs">
@@ -428,33 +448,77 @@ export const ReceptionistDashboard: React.FC = () => {
                     </div>
                   )}
 
-                  {/* Patient Name & Phone */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
+                  {/* Booking For Toggle */}
+                  <div>
+                    <label className="block text-xs font-semibold text-[#1d1d1f] mb-1.5">
+                      Booking For:
+                    </label>
+                    <div className="flex rounded-xl bg-[#f5f5f7] p-1 border border-[#e5e5ea] max-w-xs mb-3">
+                      <button
+                        type="button"
+                        onClick={() => setBookingFor('self')}
+                        className={`flex-1 py-1 text-xs font-medium rounded-lg transition-all ${
+                          bookingFor === 'self'
+                            ? 'bg-white text-[#1d1d1f] shadow-xs font-semibold'
+                            : 'text-[#86868b] hover:text-[#1d1d1f]'
+                        }`}
+                      >
+                        Patient Themselves
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setBookingFor('other')}
+                        className={`flex-1 py-1 text-xs font-medium rounded-lg transition-all ${
+                          bookingFor === 'other'
+                            ? 'bg-white text-[#1d1d1f] shadow-xs font-semibold'
+                            : 'text-[#86868b] hover:text-[#1d1d1f]'
+                        }`}
+                      >
+                        Dependent / Family
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Patient Name, Age & Phone */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="sm:col-span-1">
                       <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
-                        Patient Full Name
+                        Patient Full Name *
                       </label>
                       <input
                         type="text"
                         required
                         value={patientName}
                         onChange={(e) => setPatientName(e.target.value)}
-                        placeholder="e.g. John Smith"
-                        className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white focus:outline-none focus:border-[#0066cc]"
+                        placeholder="e.g. Rahul Ray"
+                        className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white focus:outline-none focus:border-[#0066cc]"
                       />
                     </div>
 
                     <div>
                       <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
-                        Contact Phone Number
+                        Patient Age
+                      </label>
+                      <input
+                        type="text"
+                        value={patientAge}
+                        onChange={(e) => setPatientAge(e.target.value)}
+                        placeholder="e.g. 12"
+                        className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white focus:outline-none focus:border-[#0066cc]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
+                        Contact Phone *
                       </label>
                       <input
                         type="tel"
                         required
                         value={patientPhone}
                         onChange={(e) => setPatientPhone(e.target.value)}
-                        placeholder="+1 555-0144"
-                        className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white focus:outline-none focus:border-[#0066cc]"
+                        placeholder="+91 98765 43210"
+                        className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white focus:outline-none focus:border-[#0066cc]"
                       />
                     </div>
                   </div>
@@ -787,6 +851,6 @@ export const ReceptionistDashboard: React.FC = () => {
           </div>
         </div>
       )}
-    </div>
+    </DashboardLayout>
   );
 };

@@ -2,11 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api, Appointment } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
-import { SubNav } from '../../components/layout/SubNav';
+import { DashboardLayout, DashboardNavItem } from '../../components/layout/DashboardLayout';
 import { LiveQueueTicket } from '../../components/queue/LiveQueueTicket';
 import { PrescriptionModal } from '../../components/ui/PrescriptionModal';
 import { AppleButton } from '../../components/ui/AppleButton';
-import { Calendar, Plus, RefreshCw } from 'lucide-react';
+import { Calendar, Plus, RefreshCw, FileText, Stethoscope, User as UserIcon } from 'lucide-react';
 
 export const MyAppointments: React.FC = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -59,30 +59,66 @@ export const MyAppointments: React.FC = () => {
     (a) => a.status === 'COMPLETED' || a.status === 'CANCELLED'
   );
 
-  return (
-    <div className="min-h-screen bg-[#f5f5f7] pb-16">
-      <SubNav title="My Appointments" subtitle="Live queue passes and consultations">
-        <AppleButton
-          variant="ghost"
-          size="sm"
-          onClick={fetchAppointments}
-          className="flex items-center gap-1.5"
-        >
-          <RefreshCw className="w-3.5 h-3.5" />
-          Refresh
-        </AppleButton>
-        <AppleButton
-          variant="primary"
-          size="sm"
-          onClick={() => navigate('/doctors')}
-          className="flex items-center gap-1.5"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          Book Specialist
-        </AppleButton>
-      </SubNav>
+  const navItems: DashboardNavItem[] = [
+    {
+      id: 'appointments',
+      label: 'Live Queue & Passes',
+      icon: Calendar,
+      path: '/patient/appointments',
+      active: true,
+      badge: upcomingList.length > 0 ? upcomingList.length : undefined,
+    },
+    {
+      id: 'records',
+      label: 'Medical Records Vault',
+      icon: FileText,
+      path: '/patient/records',
+    },
+    {
+      id: 'find-doctors',
+      label: 'Find Specialists',
+      icon: Stethoscope,
+      path: '/doctors',
+    },
+    {
+      id: 'profile',
+      label: 'Patient Profile',
+      icon: UserIcon,
+      path: '/patient/profile',
+    },
+  ];
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-8">
+  return (
+    <DashboardLayout
+      portalType="PATIENT"
+      portalSubtitle="PATIENT PORTAL"
+      navItems={navItems}
+      title="My Appointments & Live Passes"
+      subtitle="Track your live queue position and view consultation boarding passes"
+      headerAction={
+        <div className="flex items-center gap-2">
+          <AppleButton
+            variant="ghost"
+            size="sm"
+            onClick={fetchAppointments}
+            className="flex items-center gap-1.5"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            Refresh
+          </AppleButton>
+          <AppleButton
+            variant="primary"
+            size="sm"
+            onClick={() => navigate('/doctors')}
+            className="flex items-center gap-1.5 shadow-sm"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Book Specialist
+          </AppleButton>
+        </div>
+      }
+    >
+      <div className="max-w-4xl mx-auto space-y-6">
         {/* Apple Pill Segmented Filter */}
         <div className="flex justify-center mb-8">
           <div className="bg-white/90 p-1 rounded-full border border-[#e5e5ea] flex shadow-sm">
@@ -171,6 +207,6 @@ export const MyAppointments: React.FC = () => {
         appointment={selectedPrescriptionAppt}
         onClose={() => setSelectedPrescriptionAppt(null)}
       />
-    </div>
+    </DashboardLayout>
   );
 };

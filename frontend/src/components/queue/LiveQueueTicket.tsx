@@ -117,6 +117,31 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
           </div>
         </div>
 
+        {/* Patient Details (When booked for dependent/family member) */}
+        {appointment.isForOther && (
+          <div className="my-3 p-3 rounded-xl bg-[#0066cc]/5 border border-[#0066cc]/20 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+            <div className="flex items-center gap-2">
+              <span className="px-2 py-0.5 rounded-full bg-[#0066cc] text-white font-semibold text-[10px]">
+                Dependent / Family
+              </span>
+              <span className="font-semibold text-[#1d1d1f]">
+                Patient: {appointment.patientName || 'Family Member'}
+              </span>
+              {appointment.patientAge && (
+                <span className="text-[#86868b]">
+                  • Age {appointment.patientAge}
+                  {appointment.patientGender ? ` (${appointment.patientGender})` : ''}
+                </span>
+              )}
+            </div>
+            {appointment.patient?.user?.fullName && (
+              <span className="text-[11px] text-[#86868b]">
+                Booked by account: {appointment.patient.user.fullName}
+              </span>
+            )}
+          </div>
+        )}
+
         {/* Live Queue Position Tracker */}
         {(status === 'WAITING' || status === 'IN_CONSULTATION') && liveQueue && (
           <div className="my-5 p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea]/80">

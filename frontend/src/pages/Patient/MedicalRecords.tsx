@@ -1,10 +1,24 @@
 import React, { useEffect, useState } from 'react';
 import { api, MedicalRecord, getFileUrl } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
-import { SubNav } from '../../components/layout/SubNav';
+import { DashboardLayout, DashboardNavItem } from '../../components/layout/DashboardLayout';
 import { AppleButton } from '../../components/ui/AppleButton';
 import { UtilityCard } from '../../components/ui/UtilityCard';
-import { FileText, Upload, Trash2, Eye, X, AlertCircle, ExternalLink, Download, Layers, ShieldCheck } from 'lucide-react';
+import {
+  FileText,
+  Upload,
+  Trash2,
+  Eye,
+  X,
+  AlertCircle,
+  ExternalLink,
+  Download,
+  Layers,
+  ShieldCheck,
+  Calendar,
+  Stethoscope,
+  User as UserIcon,
+} from 'lucide-react';
 
 const CATEGORIES = ['All', 'Prescription', 'Lab Report', 'Scan', 'Discharge Summary', 'Other'];
 
@@ -108,25 +122,57 @@ export const MedicalRecords: React.FC = () => {
     return ext === 'png' || ext === 'jpg' || ext === 'jpeg' || record.fileType?.includes('image');
   };
 
-  return (
-    <div className="min-h-screen bg-[#f5f5f7] pb-16">
-      <SubNav title="Medical Vault" subtitle="Secure prescriptions & diagnostic reports">
-        <div className="flex items-center gap-3">
-          <AppleButton
-            variant="primary"
-            size="sm"
-            onClick={() => setShowUploadModal(true)}
-            className="flex items-center gap-1.5"
-          >
-            <Upload className="w-3.5 h-3.5" />
-            Upload Document
-          </AppleButton>
-        </div>
-      </SubNav>
+  const navItems: DashboardNavItem[] = [
+    {
+      id: 'appointments',
+      label: 'Live Queue & Passes',
+      icon: Calendar,
+      path: '/patient/appointments',
+    },
+    {
+      id: 'records',
+      label: 'Medical Records Vault',
+      icon: FileText,
+      path: '/patient/records',
+      active: true,
+      badge: records.length > 0 ? records.length : undefined,
+    },
+    {
+      id: 'find-doctors',
+      label: 'Find Specialists',
+      icon: Stethoscope,
+      path: '/doctors',
+    },
+    {
+      id: 'profile',
+      label: 'Patient Profile',
+      icon: UserIcon,
+      path: '/patient/profile',
+    },
+  ];
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-8">
+  return (
+    <DashboardLayout
+      portalType="PATIENT"
+      portalSubtitle="PATIENT HEALTH RECORD"
+      navItems={navItems}
+      title="Medical Records Vault"
+      subtitle="Secure storage for diagnostic reports, imaging scans, and digital prescriptions"
+      headerAction={
+        <AppleButton
+          variant="primary"
+          size="sm"
+          onClick={() => setShowUploadModal(true)}
+          className="flex items-center gap-1.5 shadow-sm"
+        >
+          <Upload className="w-3.5 h-3.5" />
+          Upload Document
+        </AppleButton>
+      }
+    >
+      <div className="space-y-6">
         {/* Category Filters Bar */}
-        <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-4 mb-6 shadow-sm flex items-center gap-2 overflow-x-auto scrollbar-none">
+        <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-4 shadow-sm flex items-center gap-2 overflow-x-auto scrollbar-none">
           <span className="text-xs font-semibold text-[#86868b] mr-2 flex items-center gap-1 flex-shrink-0">
             <Layers className="w-3.5 h-3.5 text-[#0066cc]" />
             Categories:
@@ -449,6 +495,6 @@ export const MedicalRecords: React.FC = () => {
           </div>
         </div>
       )}
-    </div>
+    </DashboardLayout>
   );
 };

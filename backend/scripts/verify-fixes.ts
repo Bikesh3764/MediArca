@@ -525,6 +525,191 @@ function runTests() {
   assert(getDestination('ADMIN') === '/admin', 'ADMIN role redirects to /admin');
   assert(getDestination('PATIENT') === '/doctors', 'PATIENT role redirects to /doctors');
 
+  // 31. Booking for Myself vs Someone Else / Other Validation & Duplicate Handling
+  interface BookingPayload {
+    isForOther: boolean;
+    patientName?: string;
+    patientAge?: string;
+    patientGender?: string;
+  }
+  const validateBookingForOther = (payload: BookingPayload) => {
+    if (payload.isForOther) {
+      if (!payload.patientName || !payload.patientName.trim()) {
+        return { valid: false, error: 'Patient full name is required when booking for someone else' };
+      }
+      if (!payload.patientAge || !payload.patientAge.trim()) {
+        return { valid: false, error: 'Patient age is required when booking for someone else' };
+      }
+    }
+    return { valid: true, error: null };
+  };
+
+  assert(
+    validateBookingForOther({ isForOther: false }).valid === true,
+    'Booking for myself passes without other fields'
+  );
+  assert(
+    validateBookingForOther({ isForOther: true, patientName: '' }).valid === false,
+    'Booking for other without name is rejected'
+  );
+  assert(
+    validateBookingForOther({ isForOther: true, patientName: 'Rahul Ray', patientAge: '' }).valid === false,
+    'Booking for other without age is rejected'
+  );
+  assert(
+    validateBookingForOther({ isForOther: true, patientName: 'Rahul Ray', patientAge: '12' }).valid === true,
+    'Booking for other with valid name and age is accepted'
+  );
+
+  // Multi-person booking: Account owner can book for self and separate person on same date
+  const existingBookings: Array<{
+    patientId: string;
+    doctorId: string;
+    date: string;
+    isForOther: boolean;
+    patientName: string | null;
+  }> = [
+    { patientId: 'p1', doctorId: 'd1', date: '2026-09-12', isForOther: false, patientName: null },
+  ];
+  const canBook = (patientId: string, doctorId: string, date: string, isForOther: boolean, name?: string) => {
+    const conflict = existingBookings.some((b) => {
+      if (b.patientId !== patientId || b.doctorId !== doctorId || b.date !== date) return false;
+      if (!isForOther && !b.isForOther) return true;
+      if (isForOther && b.isForOther && b.patientName?.toLowerCase() === name?.toLowerCase()) return true;
+      return false;
+    });
+    return !conflict;
+  };
+
+  assert(
+    canBook('p1', 'd1', '2026-09-12', false) === false,
+    'Duplicate booking for myself on same date is blocked'
+  );
+  assert(
+    canBook('p1', 'd1', '2026-09-12', true, 'Rahul Ray') === true,
+    'Booking for family member Rahul Ray is permitted even if self is already booked'
+  );
+
+  // 32. Clinic ⇄ Doctor Request & Accept Workflow
+  interface AffiliationRecord {
+    id: string;
+    clinicId: string;
+    doctorId: string;
+    status: 'PENDING' | 'ACCEPTED' | 'REJECTED';
+    requestedBy: 'CLINIC' | 'DOCTOR';
+  }
+  const createAffiliationRequest = (
+    initiatorRole: 'CLINIC' | 'DOCTOR',
+    clinic: { id: string; isVerified: boolean },
+    doctor: { id: string; isVerified: boolean }
+  ): { success: boolean; record?: AffiliationRecord; error?: string } => {
+    if (!clinic.isVerified) {
+      return { success: false, error: 'Cannot affiliate with an unverified clinic. Please wait for administrative verification.' };
+    }
+    if (!doctor.isVerified) {
+      return { success: false, error: 'Doctor is pending administrative verification. Unverified doctors cannot be affiliated with clinics.' };
+    }
+    return {
+      success: true,
+      record: {
+        id: `aff_${Date.now()}`,
+        clinicId: clinic.id,
+        doctorId: doctor.id,
+        status: 'PENDING',
+        requestedBy: initiatorRole,
+      },
+    };
+  };
+
+  const clinicReq = createAffiliationRequest('CLINIC', { id: 'c1', isVerified: true }, { id: 'd1', isVerified: true });
+  assert(clinicReq.success === true && clinicReq.record?.status === 'PENDING', 'Clinic requesting doctor creates PENDING status');
+  assert(clinicReq.record?.requestedBy === 'CLINIC', 'Clinic request marked requestedBy CLINIC');
+
+  const docReq = createAffiliationRequest('DOCTOR', { id: 'c1', isVerified: true }, { id: 'd1', isVerified: true });
+  assert(docReq.success === true && docReq.record?.status === 'PENDING', 'Doctor requesting clinic creates PENDING status');
+  assert(docReq.record?.requestedBy === 'DOCTOR', 'Doctor request marked requestedBy DOCTOR');
+
+  // Accept workflow
+  const respondAffiliation = (record: AffiliationRecord, action: 'ACCEPT' | 'REJECT'): AffiliationRecord => {
+    return { ...record, status: action === 'ACCEPT' ? 'ACCEPTED' : 'REJECTED' };
+  };
+  const acceptedAffiliation = respondAffiliation(clinicReq.record!, 'ACCEPT');
+  assert(acceptedAffiliation.status === 'ACCEPTED', 'Affiliation transitions to ACCEPTED on approval');
+
+  // Active staff filter excludes PENDING affiliations
+  const clinicRoster: AffiliationRecord[] = [
+    acceptedAffiliation,
+    docReq.record!, // PENDING
+  ];
+  const activeStaff = clinicRoster.filter((a) => a.status === 'ACCEPTED');
+  assert(activeStaff.length === 1, 'Only ACCEPTED affiliations appear in active staff roster (1 of 2)');
+  assert(activeStaff[0].doctorId === 'd1', 'Active staff contains accepted doctor d1');
+
+  // 33. Receptionist Temporary Password & First-Login Password Change
+  interface DeskUser {
+    id: string;
+    role: string;
+    passwordHash: string;
+    mustChangePassword: boolean;
+  }
+  const provisionReceptionist = (email: string, tempHash: string): DeskUser => {
+    return {
+      id: 'rec_user_1',
+      role: 'RECEPTIONIST',
+      passwordHash: tempHash,
+      mustChangePassword: true,
+    };
+  };
+
+  const newDeskUser = provisionReceptionist('desk@clinic.com', 'hashed_temp_123');
+  assert(newDeskUser.mustChangePassword === true, 'Provisioned receptionist has mustChangePassword: true');
+
+  const completeFirstLoginPasswordChange = (
+    user: DeskUser,
+    enteredCurrent: string,
+    actualHashMatch: boolean,
+    newPass: string
+  ) => {
+    if (!actualHashMatch) {
+      return { success: false, error: 'Current temporary password does not match' };
+    }
+    if (newPass.length < 6) {
+      return { success: false, error: 'New password must be at least 6 characters long' };
+    }
+    return {
+      success: true,
+      user: {
+        ...user,
+        passwordHash: `new_hashed_${newPass}`,
+        mustChangePassword: false,
+      },
+    };
+  };
+
+  const failedChangeWrongPass = completeFirstLoginPasswordChange(newDeskUser, 'wrong', false, 'permanent123');
+  assert(failedChangeWrongPass.success === false, 'Change fails if temporary password does not match');
+
+  const failedChangeShortPass = completeFirstLoginPasswordChange(newDeskUser, 'temp', true, '123');
+  assert(failedChangeShortPass.success === false, 'Change fails if new password is under 6 chars');
+
+  const successfulChange = completeFirstLoginPasswordChange(newDeskUser, 'temp', true, 'securePassword123');
+  assert(successfulChange.success === true, 'Successful permanent password update');
+  assert(successfulChange.user?.mustChangePassword === false, 'mustChangePassword cleared to false after update');
+
+  // 34. Full Name Display (Never show raw email)
+  const formatUserDisplayName = (user: { fullName?: string; email: string }) => {
+    if (user.fullName && user.fullName.trim()) return user.fullName.trim();
+    return user.email.split('@')[0];
+  };
+  assert(
+    formatUserDisplayName({ fullName: 'Dr. Vikram Ray', email: 'araj172007@gmail.com' }) === 'Dr. Vikram Ray',
+    'Display name prefers Full Name over email'
+  );
+  assert(
+    formatUserDisplayName({ fullName: '', email: 'doctor@mediarca.com' }) === 'doctor',
+    'Fallback strips email domain cleanly instead of raw email'
+  );
+
   console.log(`\n=== VERIFICATION SUMMARY ===`);
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);

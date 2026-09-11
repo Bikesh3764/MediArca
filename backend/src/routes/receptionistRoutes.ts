@@ -6,6 +6,7 @@ import {
   getDoctorQueue,
   bookWalkin,
   updateAppointmentStatus,
+  changeReceptionistPassword,
 } from '../controllers/receptionistController';
 import { authenticate } from '../middleware/authMiddleware';
 
@@ -19,5 +20,6 @@ router.delete('/doctors/:doctorId', removeDoctorFromReceptionist);
 router.get('/doctors/:doctorId/queue', getDoctorQueue);
 router.post('/book-walkin', bookWalkin);
 router.patch('/appointments/:appointmentId/status', updateAppointmentStatus);
+router.put('/change-password', changeReceptionistPassword);
 
 export default router;

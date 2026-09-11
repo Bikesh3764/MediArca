@@ -39,6 +39,10 @@ export const BookAppointment: React.FC = () => {
   const [queuePreview, setQueuePreview] = useState<QueuePreview | null>(null);
   const [loading, setLoading] = useState(true);
   const [previewLoading, setPreviewLoading] = useState(false);
+  const [bookingFor, setBookingFor] = useState<'myself' | 'other'>('myself');
+  const [patientName, setPatientName] = useState('');
+  const [patientAge, setPatientAge] = useState('');
+  const [patientGender, setPatientGender] = useState('Male');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -110,6 +114,18 @@ export const BookAppointment: React.FC = () => {
     setError(null);
     setSubmitting(true);
 
+    const isForOther = bookingFor === 'other';
+    if (isForOther && !patientName.trim()) {
+      setError('Please provide the patient full name.');
+      setSubmitting(false);
+      return;
+    }
+    if (isForOther && !patientAge.trim()) {
+      setError('Please provide the patient age.');
+      setSubmitting(false);
+      return;
+    }
+
     try {
       await api.bookAppointment({
         doctorId: doctor.id,
@@ -118,6 +134,10 @@ export const BookAppointment: React.FC = () => {
         slotId: selectedSlotId || undefined,
         reasonForVisit: reasonForVisit.trim() || 'General Medical Consultation',
         symptoms: symptoms.trim() || undefined,
+        isForOther,
+        patientName: isForOther ? patientName.trim() : undefined,
+        patientAge: isForOther ? patientAge.trim() : undefined,
+        patientGender: isForOther ? patientGender : undefined,
       });
 
       // Redirect immediately to My Appointments to view the live pass
@@ -403,6 +423,87 @@ export const BookAppointment: React.FC = () => {
 
           {/* Booking Form */}
           <form onSubmit={handleBooking} className="space-y-4">
+            {/* Booking For Segmented Control */}
+            <div className="py-2 border-b border-[#e5e5ea] pb-4">
+              <label className="block text-xs font-semibold text-[#1d1d1f] mb-2">
+                Booking For:
+              </label>
+              <div className="flex rounded-xl bg-[#f5f5f7] p-1 border border-[#e5e5ea] max-w-sm">
+                <button
+                  type="button"
+                  onClick={() => setBookingFor('myself')}
+                  className={`flex-1 py-1.5 text-xs font-medium rounded-lg transition-all ${
+                    bookingFor === 'myself'
+                      ? 'bg-white text-[#1d1d1f] shadow-xs font-semibold'
+                      : 'text-[#86868b] hover:text-[#1d1d1f]'
+                  }`}
+                >
+                  Myself
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBookingFor('other')}
+                  className={`flex-1 py-1.5 text-xs font-medium rounded-lg transition-all ${
+                    bookingFor === 'other'
+                      ? 'bg-white text-[#1d1d1f] shadow-xs font-semibold'
+                      : 'text-[#86868b] hover:text-[#1d1d1f]'
+                  }`}
+                >
+                  Someone Else / Family
+                </button>
+              </div>
+
+              {bookingFor === 'other' && (
+                <div className="mt-3 p-4 rounded-2xl bg-[#0066cc]/5 border border-[#0066cc]/20 space-y-3 animate-fadeIn">
+                  <div className="text-xs font-semibold text-[#0066cc]">
+                    Patient Details (Dependent / Family Member)
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="sm:col-span-1">
+                      <label className="block text-[11px] font-semibold text-[#1d1d1f] mb-1">
+                        Patient Full Name *
+                      </label>
+                      <input
+                        type="text"
+                        required={bookingFor === 'other'}
+                        value={patientName}
+                        onChange={(e) => setPatientName(e.target.value)}
+                        placeholder="e.g. Rahul Ray"
+                        className="w-full h-10 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0066cc]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-[#1d1d1f] mb-1">
+                        Patient Age *
+                      </label>
+                      <input
+                        type="text"
+                        required={bookingFor === 'other'}
+                        value={patientAge}
+                        onChange={(e) => setPatientAge(e.target.value)}
+                        placeholder="e.g. 12"
+                        className="w-full h-10 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0066cc]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-[#1d1d1f] mb-1">
+                        Gender
+                      </label>
+                      <select
+                        value={patientGender}
+                        onChange={(e) => setPatientGender(e.target.value)}
+                        className="w-full h-10 px-2.5 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0066cc]"
+                      >
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="block text-xs font-medium text-[#1d1d1f]">

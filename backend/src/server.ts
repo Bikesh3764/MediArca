@@ -14,6 +14,8 @@ import adminRoutes from './routes/adminRoutes';
 import clinicRoutes from './routes/clinicRoutes';
 import receptionistRoutes from './routes/receptionistRoutes';
 import prisma from './config/database';
+import { authenticate } from './middleware/authMiddleware';
+import { updateProfile } from './controllers/authController';
 
 // Non-blocking automatic schema sync for multi-slot, clinic, and receptionist support
 async function ensureSchema() {
@@ -168,6 +170,54 @@ async function ensureSchema() {
       `);
     } catch {}
   }
+
+  // Ensure User.mustChangePassword
+  try {
+    await prisma.$executeRawUnsafe(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "mustChangePassword" BOOLEAN NOT NULL DEFAULT FALSE;`);
+  } catch {
+    try {
+      await prisma.$executeRawUnsafe(`ALTER TABLE "User" ADD COLUMN "mustChangePassword" BOOLEAN NOT NULL DEFAULT 0;`);
+    } catch {}
+  }
+
+  // Ensure Appointment columns for booking for other
+  try {
+    await prisma.$executeRawUnsafe(`ALTER TABLE "Appointment" ADD COLUMN IF NOT EXISTS "isForOther" BOOLEAN NOT NULL DEFAULT FALSE;`);
+  } catch {
+    try {
+      await prisma.$executeRawUnsafe(`ALTER TABLE "Appointment" ADD COLUMN "isForOther" BOOLEAN NOT NULL DEFAULT 0;`);
+    } catch {}
+  }
+  try {
+    await prisma.$executeRawUnsafe(`ALTER TABLE "Appointment" ADD COLUMN IF NOT EXISTS "patientName" TEXT;`);
+  } catch {
+    try {
+      await prisma.$executeRawUnsafe(`ALTER TABLE "Appointment" ADD COLUMN "patientName" TEXT;`);
+    } catch {}
+  }
+  try {
+    await prisma.$executeRawUnsafe(`ALTER TABLE "Appointment" ADD COLUMN IF NOT EXISTS "patientAge" TEXT;`);
+  } catch {
+    try {
+      await prisma.$executeRawUnsafe(`ALTER TABLE "Appointment" ADD COLUMN "patientAge" TEXT;`);
+    } catch {}
+  }
+  try {
+    await prisma.$executeRawUnsafe(`ALTER TABLE "Appointment" ADD COLUMN IF NOT EXISTS "patientGender" TEXT;`);
+  } catch {
+    try {
+      await prisma.$executeRawUnsafe(`ALTER TABLE "Appointment" ADD COLUMN "patientGender" TEXT;`);
+    } catch {}
+  }
+
+  // Ensure ClinicDoctor.requestedBy
+  try {
+    await prisma.$executeRawUnsafe(`ALTER TABLE "ClinicDoctor" ADD COLUMN IF NOT EXISTS "requestedBy" TEXT NOT NULL DEFAULT 'CLINIC';`);
+  } catch {
+    try {
+      await prisma.$executeRawUnsafe(`ALTER TABLE "ClinicDoctor" ADD COLUMN "requestedBy" TEXT NOT NULL DEFAULT 'CLINIC';`);
+    } catch {}
+  }
 }
 ensureSchema().catch((e) => console.warn('Schema sync notice:', e?.message));
 
@@ -200,6 +250,8 @@ app.get(['/healthz', '/api/health', '/'], (_req: Request, res: Response) => {
 
 // Mount Routes
 app.use('/api/auth', authRoutes);
+app.put(['/api/users/profile', '/api/user/profile'], authenticate, updateProfile);
+app.put(['/api/doctors/profile', '/api/doctor/profile'], authenticate, updateProfile);
 app.use('/api/doctors', doctorRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/consultations', consultationRoutes);

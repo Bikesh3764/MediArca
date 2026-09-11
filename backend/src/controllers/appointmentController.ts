@@ -137,11 +137,34 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
       return;
     }
 
-    const { doctorId, appointmentDate, slotId, reasonForVisit, symptoms, clientMinutes, clinicId } = req.body;
+    const {
+      doctorId,
+      appointmentDate,
+      slotId,
+      reasonForVisit,
+      symptoms,
+      clientMinutes,
+      clinicId,
+      isForOther,
+      patientName,
+      patientAge,
+      patientGender,
+    } = req.body;
 
     if (!doctorId || !appointmentDate) {
       res.status(400).json({ success: false, message: 'Doctor ID and appointment date are required' });
       return;
+    }
+
+    if (isForOther) {
+      if (!patientName || !String(patientName).trim()) {
+        res.status(400).json({ success: false, message: 'Patient full name is required when booking for someone else' });
+        return;
+      }
+      if (!patientAge || !String(patientAge).trim()) {
+        res.status(400).json({ success: false, message: 'Patient age is required when booking for someone else' });
+        return;
+      }
     }
 
     let patient = await prisma.patientProfile.findUnique({
@@ -181,14 +204,19 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
         patientId: patient.id,
         doctorId: doctor.id,
         appointmentDate,
+        isForOther: Boolean(isForOther),
+        ...(isForOther && patientName
+          ? { patientName: { equals: String(patientName).trim(), mode: 'insensitive' } }
+          : {}),
         status: { in: ['WAITING', 'IN_CONSULTATION'] },
       },
     });
 
     if (existingPatientBooking) {
+      const recipient = isForOther ? `for ${patientName}` : 'for yourself';
       res.status(400).json({
         success: false,
-        message: `You already have an active booking (Queue #${existingPatientBooking.queueNumber}) with this doctor on this date.`,
+        message: `You already have an active booking (Queue #${existingPatientBooking.queueNumber}) ${recipient} with this doctor on this date.`,
       });
       return;
     }
@@ -258,7 +286,7 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
             const activeAffiliation = await tx.clinicDoctor.findFirst({
               where: {
                 doctorId: doctor.id,
-                status: 'ACTIVE',
+                status: { in: ['ACTIVE', 'ACCEPTED'] },
                 clinic: { isVerified: true },
               },
             });
@@ -280,6 +308,10 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
               status: 'WAITING',
               reasonForVisit: reasonForVisit || 'General Medical Consultation',
               symptoms: symptoms || null,
+              isForOther: Boolean(isForOther),
+              patientName: isForOther && patientName ? String(patientName).trim() : null,
+              patientAge: isForOther && patientAge ? String(patientAge).trim() : null,
+              patientGender: isForOther && patientGender ? String(patientGender).trim() : null,
             },
             include: {
               doctor: {

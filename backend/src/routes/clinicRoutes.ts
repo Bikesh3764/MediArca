@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   getMyClinic,
   addDoctorToClinic,
+  respondToDoctorAffiliation,
   removeDoctorFromClinic,
   getPublicClinics,
   addClinicReceptionist,
@@ -20,6 +21,8 @@ router.get('/public', getPublicClinics);
 router.use(authenticate);
 router.get('/my-clinic', getMyClinic);
 router.post('/doctors', addDoctorToClinic);
+router.put('/affiliations/:affiliationId/respond', respondToDoctorAffiliation);
+router.put('/doctors/:affiliationId/respond', respondToDoctorAffiliation);
 router.delete('/doctors/:doctorId', removeDoctorFromClinic);
 
 // Receptionist provisioning and management by Clinic

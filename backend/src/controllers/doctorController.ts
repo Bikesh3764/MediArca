@@ -51,7 +51,7 @@ export const getDoctors = async (req: Request, res: Response): Promise<void> => 
           },
         },
         clinics: {
-          where: { clinic: { isVerified: true } },
+          where: { clinic: { isVerified: true }, status: { in: ['ACTIVE', 'ACCEPTED'] } },
           include: {
             clinic: true,
           },
@@ -96,7 +96,7 @@ export const getDoctorById = async (req: Request, res: Response): Promise<void> 
           },
         },
         clinics: {
-          where: { clinic: { isVerified: true } },
+          where: { clinic: { isVerified: true }, status: { in: ['ACTIVE', 'ACCEPTED'] } },
           include: {
             clinic: true,
           },
@@ -267,9 +267,20 @@ export const getDoctorAffiliations = async (req: AuthRequest, res: Response): Pr
       return;
     }
 
+    // Partition affiliations by status & direction
+    const activeClinics = doctor.clinics.filter(
+      (cd) => cd.status === 'ACCEPTED' || cd.status === 'ACTIVE'
+    );
+    const incomingClinicRequests = doctor.clinics.filter(
+      (cd) => cd.status === 'PENDING' && (cd as any).requestedBy === 'CLINIC'
+    );
+    const outgoingClinicRequests = doctor.clinics.filter(
+      (cd) => cd.status === 'PENDING' && (cd as any).requestedBy === 'DOCTOR'
+    );
+
     // Get clinic-specific stats for each affiliated clinic
     const clinicsWithStats = await Promise.all(
-      doctor.clinics.map(async (cd) => {
+      activeClinics.map(async (cd) => {
         const appointmentsAtClinic = await prisma.appointment.findMany({
           where: {
             doctorId: doctor.id,
@@ -291,13 +302,27 @@ export const getDoctorAffiliations = async (req: AuthRequest, res: Response): Pr
           bookingCount: appointmentsAtClinic.length,
           revenue,
           status: cd.status,
+          requestedBy: (cd as any).requestedBy || 'CLINIC',
           joinedAt: cd.createdAt,
         };
       })
     );
 
+    const mapClinicReq = (cd: typeof doctor.clinics[0]) => ({
+      affiliationId: cd.id,
+      clinicId: cd.clinic.id,
+      clinicName: cd.clinic.clinicName,
+      address: cd.clinic.address,
+      city: cd.clinic.city,
+      phone: cd.clinic.phone || cd.clinic.user.phone,
+      email: cd.clinic.user.email,
+      status: cd.status,
+      requestedBy: (cd as any).requestedBy || 'CLINIC',
+      requestedAt: cd.createdAt,
+    });
+
     // Only include receptionists whose parent clinic is actively affiliated with this doctor
-    const affiliatedClinicIds = new Set(doctor.clinics.map((cd) => cd.clinicId));
+    const affiliatedClinicIds = new Set(activeClinics.map((cd) => cd.clinicId));
     const receptionists = doctor.receptionists
       .filter((dr) => dr.receptionist.clinicId && affiliatedClinicIds.has(dr.receptionist.clinicId))
       .map((dr) => ({
@@ -316,6 +341,8 @@ export const getDoctorAffiliations = async (req: AuthRequest, res: Response): Pr
       success: true,
       data: {
         clinics: clinicsWithStats,
+        incomingRequests: incomingClinicRequests.map(mapClinicReq),
+        outgoingRequests: outgoingClinicRequests.map(mapClinicReq),
         receptionists,
       },
     });
@@ -326,7 +353,7 @@ export const getDoctorAffiliations = async (req: AuthRequest, res: Response): Pr
 };
 
 /**
- * Doctor attaches an affiliated clinic
+ * Doctor requests to affiliate with a clinic
  */
 export const addDoctorClinic = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -349,6 +376,14 @@ export const addDoctorClinic = async (req: AuthRequest, res: Response): Promise<
       return;
     }
 
+    if (!doctor.isVerified) {
+      res.status(400).json({
+        success: false,
+        message: 'Doctor is pending administrative verification. Unverified doctors cannot be affiliated with clinics.',
+      });
+      return;
+    }
+
     let clinic: any;
     if (clinicId) {
       clinic = await prisma.clinicProfile.findUnique({ where: { id: clinicId } });
@@ -366,27 +401,142 @@ export const addDoctorClinic = async (req: AuthRequest, res: Response): Promise<
     }
 
     if (!clinic.isVerified) {
-      res.status(400).json({ success: false, message: 'Clinic is pending verification by MediArca administration' });
+      res.status(400).json({
+        success: false,
+        message: 'Cannot affiliate with an unverified clinic. Please wait for administrative verification.',
+      });
       return;
     }
 
     const existing = await prisma.clinicDoctor.findUnique({
       where: { clinicId_doctorId: { clinicId: clinic.id, doctorId: doctor.id } },
     });
+
     if (existing) {
-      res.status(400).json({ success: false, message: 'Already affiliated with this clinic' });
-      return;
+      if (existing.status === 'ACCEPTED' || existing.status === 'ACTIVE') {
+        res.status(400).json({ success: false, message: 'Already affiliated with this clinic' });
+        return;
+      }
+      if (existing.status === 'PENDING') {
+        if ((existing as any).requestedBy === 'CLINIC') {
+          // Clinic already requested doctor, auto-accept
+          const accepted = await prisma.clinicDoctor.update({
+            where: { id: existing.id },
+            data: { status: 'ACCEPTED' },
+            include: { clinic: true },
+          });
+          res.status(200).json({
+            success: true,
+            message: `Affiliation with ${clinic.clinicName} accepted successfully`,
+            data: accepted,
+          });
+          return;
+        }
+        res.status(400).json({
+          success: false,
+          message: 'An affiliation request has already been sent to this clinic and is pending acceptance',
+        });
+        return;
+      }
+      if (existing.status === 'REJECTED') {
+        const renewed = await prisma.clinicDoctor.update({
+          where: { id: existing.id },
+          data: { status: 'PENDING', requestedBy: 'DOCTOR' },
+          include: { clinic: true },
+        });
+        res.status(201).json({
+          success: true,
+          message: `Affiliation request sent to ${clinic.clinicName}. Waiting for clinic acceptance.`,
+          data: renewed,
+        });
+        return;
+      }
     }
 
     const link = await prisma.clinicDoctor.create({
-      data: { clinicId: clinic.id, doctorId: doctor.id, status: 'ACTIVE' },
+      data: {
+        clinicId: clinic.id,
+        doctorId: doctor.id,
+        status: 'PENDING',
+        requestedBy: 'DOCTOR',
+      },
       include: { clinic: true },
     });
 
-    res.status(201).json({ success: true, message: `Affiliated with ${clinic.clinicName} successfully`, data: link });
+    res.status(201).json({
+      success: true,
+      message: `Affiliation request sent to ${clinic.clinicName}. Waiting for clinic acceptance.`,
+      data: link,
+    });
   } catch (error: any) {
     console.error('addDoctorClinic error:', error);
     res.status(500).json({ success: false, message: 'Failed to affiliate clinic', error: error.message });
+  }
+};
+
+/**
+ * Respond to an affiliation request from a clinic (ACCEPT or REJECT)
+ */
+export const respondToClinicAffiliation = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user || req.user.role !== 'DOCTOR') {
+      res.status(403).json({ success: false, message: 'Access denied: doctor role required' });
+      return;
+    }
+
+    const affiliationId = String(req.params.affiliationId);
+    const { action } = req.body;
+
+    if (!action || !['ACCEPT', 'REJECT'].includes(action.toUpperCase())) {
+      res.status(400).json({ success: false, message: 'Action must be ACCEPT or REJECT' });
+      return;
+    }
+
+    const doctor = await prisma.doctorProfile.findUnique({
+      where: { userId: req.user.id },
+    });
+    if (!doctor) {
+      res.status(404).json({ success: false, message: 'Doctor profile not found' });
+      return;
+    }
+
+    const affiliation = await prisma.clinicDoctor.findFirst({
+      where: {
+        id: affiliationId,
+        doctorId: doctor.id,
+      },
+      include: { clinic: true },
+    });
+
+    if (!affiliation) {
+      res.status(404).json({ success: false, message: 'Affiliation request not found' });
+      return;
+    }
+
+    const clinicName = affiliation.clinic.clinicName;
+
+    if (action.toUpperCase() === 'ACCEPT') {
+      const updated = await prisma.clinicDoctor.update({
+        where: { id: affiliation.id },
+        data: { status: 'ACCEPTED' },
+      });
+      res.json({
+        success: true,
+        message: `Accepted affiliation with ${clinicName}. It is now in your active clinics roster.`,
+        data: updated,
+      });
+    } else {
+      await prisma.clinicDoctor.delete({
+        where: { id: affiliation.id },
+      });
+      res.json({
+        success: true,
+        message: `Rejected affiliation request from ${clinicName}.`,
+      });
+    }
+  } catch (error: any) {
+    console.error('respondToClinicAffiliation error:', error);
+    res.status(500).json({ success: false, message: 'Failed to process affiliation response', error: error.message });
   }
 };
 

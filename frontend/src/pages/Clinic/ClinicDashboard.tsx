@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { api, ClinicDashboardData, ClinicReceptionistItem, Doctor } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { AppleButton } from '../../components/ui/AppleButton';
-import { SubNav } from '../../components/layout/SubNav';
+import { DashboardLayout, DashboardNavItem } from '../../components/layout/DashboardLayout';
 import {
   Building2,
   Users,
@@ -19,6 +19,9 @@ import {
   UserCheck,
   Check,
   ShieldAlert,
+  LayoutDashboard,
+  Clock3,
+  Stethoscope,
 } from 'lucide-react';
 
 export const ClinicDashboard: React.FC = () => {
@@ -134,6 +137,18 @@ export const ClinicDashboard: React.FC = () => {
     }
   };
 
+  const handleRespondDoctorAffiliation = async (affiliationId: string, action: 'ACCEPT' | 'REJECT') => {
+    setError(null);
+    setSuccessMsg(null);
+    try {
+      const res = await api.respondToDoctorAffiliation(affiliationId, action);
+      setSuccessMsg(res.message || `Doctor affiliation request ${action.toLowerCase()}ed successfully`);
+      fetchClinicData();
+    } catch (err: any) {
+      setError(err.message || 'Failed to respond to doctor affiliation request');
+    }
+  };
+
   const handleProvisionReceptionist = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!recFullName.trim() || !recEmail.trim() || !recPassword.trim()) {
@@ -221,16 +236,59 @@ export const ClinicDashboard: React.FC = () => {
 
   const clinic = data?.clinic;
   const doctors = data?.doctors || [];
+  const totalPendingRequests = data?.incomingRequests?.length || 0;
+
+  const navItems: DashboardNavItem[] = [
+    {
+      id: 'overview',
+      label: 'Clinic Operations',
+      icon: LayoutDashboard,
+      active: true,
+      onClick: () => window.scrollTo({ top: 0, behavior: 'smooth' }),
+    },
+    {
+      id: 'doctors',
+      label: 'Affiliated Doctors',
+      icon: Users,
+      badge: totalPendingRequests > 0 ? `${totalPendingRequests} new` : undefined,
+      onClick: () => {
+        const el = document.getElementById('practitioners-section');
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+      },
+    },
+    {
+      id: 'receptionists',
+      label: 'Desk Staff & Reception',
+      icon: UserCheck,
+      badge: data?.receptionists?.length || undefined,
+      onClick: () => {
+        const el = document.getElementById('receptionists-section');
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+      },
+    },
+    {
+      id: 'appointments',
+      label: 'Facility Bookings',
+      icon: CalendarCheck,
+      badge: data?.totalBookings || undefined,
+      onClick: () => {
+        const el = document.getElementById('appointments-section');
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+      },
+    },
+  ];
 
   return (
-    <div className="min-h-screen bg-[#f5f5f7] pb-16">
-      <SubNav
-        title={clinic?.clinicName || user?.fullName || 'Clinic Partner Portal'}
-        subtitle={`${clinic?.address || 'Clinical Operations Dashboard'} ${
-          clinic?.city ? `• ${clinic.city}` : ''
-        }`}
-      >
-        <div className="flex items-center gap-3">
+    <DashboardLayout
+      portalType="CLINIC"
+      portalSubtitle="CLINIC PORTAL"
+      navItems={navItems}
+      title={clinic?.clinicName || user?.fullName || 'Clinic Partner Portal'}
+      subtitle={`${clinic?.address || 'Clinical Operations Dashboard'} ${
+        clinic?.city ? `• ${clinic.city}` : ''
+      }`}
+      headerAction={
+        <div className="flex items-center gap-2.5">
           <AppleButton
             variant="secondary"
             size="sm"
@@ -244,15 +302,15 @@ export const ClinicDashboard: React.FC = () => {
             variant="primary"
             size="sm"
             onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-1.5"
+            className="flex items-center gap-1.5 shadow-sm"
           >
             <UserPlus className="w-3.5 h-3.5" />
-            Onboard Doctor
+            Invite Doctor
           </AppleButton>
         </div>
-      </SubNav>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-8 space-y-8">
+      }
+    >
+      <div className="space-y-8">
         {/* Verification Warning if clinic not yet verified */}
         {clinic && clinic.isVerified === false && (
           <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start gap-3 shadow-xs">
@@ -345,7 +403,7 @@ export const ClinicDashboard: React.FC = () => {
         </div>
 
         {/* 2. Affiliated Doctors Section */}
-        <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-6 sm:p-8 shadow-xs">
+        <div id="practitioners-section" className="bg-white rounded-[24px] border border-[#e5e5ea] p-6 sm:p-8 shadow-xs">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-[#f0f0f0] mb-6">
             <div>
               <h2 className="text-lg font-semibold text-[#1d1d1f] tracking-tight">
@@ -363,9 +421,90 @@ export const ClinicDashboard: React.FC = () => {
               className="flex items-center gap-1.5 self-start sm:self-auto"
             >
               <UserPlus className="w-3.5 h-3.5" />
-              Onboard Doctor
+              Invite Doctor
             </AppleButton>
           </div>
+
+          {/* Incoming Doctor Affiliation Requests */}
+          {data?.incomingRequests && data.incomingRequests.length > 0 && (
+            <div className="mb-6 p-4 rounded-2xl bg-[#0066cc]/5 border-2 border-[#0066cc]/20 animate-fadeIn">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Stethoscope className="w-4 h-4 text-[#0066cc]" />
+                  <h3 className="text-sm font-semibold text-[#1d1d1f]">
+                    Incoming Doctor Affiliation Requests ({data.incomingRequests.length})
+                  </h3>
+                </div>
+                <span className="text-[11px] text-[#0066cc] font-medium">Requires Clinic Approval</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {data.incomingRequests.map((doc) => (
+                  <div
+                    key={doc.affiliationId || doc.doctorId}
+                    className="p-3.5 rounded-xl bg-white border border-[#e5e5ea] flex flex-col justify-between gap-3 shadow-xs"
+                  >
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-semibold text-xs text-[#1d1d1f]">Dr. {doc.fullName}</h4>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 text-[#0066cc] font-medium">
+                          {doc.specialty}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-[#86868b] mt-0.5">{doc.email}</p>
+                    </div>
+                    <div className="flex items-center gap-2 pt-2 border-t border-[#f0f0f0]">
+                      <AppleButton
+                        size="sm"
+                        variant="primary"
+                        onClick={() => handleRespondDoctorAffiliation(doc.affiliationId!, 'ACCEPT')}
+                        className="flex-1 flex items-center justify-center gap-1 text-[11px] py-1.5"
+                      >
+                        <Check className="w-3 h-3" />
+                        Accept Doctor
+                      </AppleButton>
+                      <AppleButton
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleRespondDoctorAffiliation(doc.affiliationId!, 'REJECT')}
+                        className="flex-1 flex items-center justify-center gap-1 text-rose-600 hover:bg-rose-50 text-[11px] py-1.5"
+                      >
+                        <X className="w-3 h-3" />
+                        Decline
+                      </AppleButton>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Pending Doctor Invitations (Outgoing) */}
+          {data?.outgoingRequests && data.outgoingRequests.length > 0 && (
+            <div className="mb-6 p-4 rounded-2xl bg-amber-50/60 border border-amber-200/80 animate-fadeIn">
+              <div className="flex items-center gap-2 mb-3">
+                <Clock3 className="w-4 h-4 text-amber-600" />
+                <h3 className="text-sm font-semibold text-[#1d1d1f]">
+                  Pending Doctor Invitations ({data.outgoingRequests.length})
+                </h3>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {data.outgoingRequests.map((doc) => (
+                  <div
+                    key={doc.affiliationId || doc.doctorId}
+                    className="p-3.5 rounded-xl bg-white border border-amber-200 flex items-center justify-between shadow-xs"
+                  >
+                    <div>
+                      <h4 className="font-semibold text-xs text-[#1d1d1f]">Dr. {doc.fullName}</h4>
+                      <p className="text-[11px] text-[#86868b]">{doc.specialty} • {doc.email}</p>
+                    </div>
+                    <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 border border-amber-300">
+                      Pending Doctor Approval
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {loading ? (
             <div className="py-12 text-center text-xs text-[#86868b]">Loading roster data...</div>
@@ -1099,6 +1238,6 @@ export const ClinicDashboard: React.FC = () => {
           </div>
         </div>
       )}
-    </div>
+    </DashboardLayout>
   );
 };
