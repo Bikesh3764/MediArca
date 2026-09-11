@@ -1,63 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Activity, Shield, Clock, Heart } from 'lucide-react';
 import { getBackendBaseUrl } from '../../services/api';
 
 export const Footer: React.FC = () => {
   return (
     <footer className="bg-[#f5f5f7] border-t border-[#e0e0e0] text-[#7a7a7a] mt-auto">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-12 pb-10">
-        {/* Core Value Pillars */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 pb-10 border-b border-[#e0e0e0]">
-          <div className="flex items-start gap-3">
-            <div className="p-2 rounded-full bg-white border border-[#e0e0e0] text-[#0066cc]">
-              <Clock className="w-5 h-5" />
-            </div>
-            <div>
-              <h4 className="text-[14px] font-semibold text-[#1d1d1f]">Live Queue Tokens</h4>
-              <p className="text-[12px] leading-relaxed mt-1 text-[#7a7a7a]">
-                Never wait aimlessly. Track doctor checking hours and your exact queue position in real-time.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-start gap-3">
-            <div className="p-2 rounded-full bg-white border border-[#e0e0e0] text-[#0066cc]">
-              <Shield className="w-5 h-5" />
-            </div>
-            <div>
-              <h4 className="text-[14px] font-semibold text-[#1d1d1f]">Verified Practitioners</h4>
-              <p className="text-[12px] leading-relaxed mt-1 text-[#7a7a7a]">
-                Every healthcare provider is verified by platform administrators before accepting appointments.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-start gap-3">
-            <div className="p-2 rounded-full bg-white border border-[#e0e0e0] text-[#0066cc]">
-              <Activity className="w-5 h-5" />
-            </div>
-            <div>
-              <h4 className="text-[14px] font-semibold text-[#1d1d1f]">Digital Prescriptions</h4>
-              <p className="text-[12px] leading-relaxed mt-1 text-[#7a7a7a]">
-                Instant digital prescriptions, dosage guidelines, and medical reports stored safely in your vault.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-start gap-3">
-            <div className="p-2 rounded-full bg-white border border-[#e0e0e0] text-[#0066cc]">
-              <Heart className="w-5 h-5" />
-            </div>
-            <div>
-              <h4 className="text-[14px] font-semibold text-[#1d1d1f]">Zero Booking Friction</h4>
-              <p className="text-[12px] leading-relaxed mt-1 text-[#7a7a7a]">
-                Direct booking without upfront paywalls or forced multi-field medical forms during signup.
-              </p>
-            </div>
-          </div>
-        </div>
-
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-10 pb-10">
         {/* Directory Links */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 py-8 text-[12px] leading-relaxed border-b border-[#e0e0e0]">
           <div>

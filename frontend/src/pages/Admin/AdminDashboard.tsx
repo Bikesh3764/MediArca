@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { api, Doctor } from '../../services/api';
+import { api, Doctor, format12Hour } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { SubNav } from '../../components/layout/SubNav';
@@ -95,8 +95,8 @@ export const AdminDashboard: React.FC = () => {
           <UtilityCard>
             <div className="flex items-center justify-between">
               <div>
-                <span className="text-[11px] text-[#7a7a7a] uppercase font-semibold">Patients</span>
-                <h3 className="text-3xl font-bold text-[#1d1d1f] mt-1">{stats?.totalPatients || 0}</h3>
+                <span className="text-[11px] text-[#86868b] uppercase font-semibold">Patients</span>
+                <h3 className="text-3xl font-semibold text-[#1d1d1f] mt-1">{stats?.totalPatients || 0}</h3>
               </div>
               <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#0066cc] flex items-center justify-center">
                 <Users className="w-5 h-5" />
@@ -107,8 +107,8 @@ export const AdminDashboard: React.FC = () => {
           <UtilityCard>
             <div className="flex items-center justify-between">
               <div>
-                <span className="text-[11px] text-[#7a7a7a] uppercase font-semibold">Doctors</span>
-                <h3 className="text-3xl font-bold text-[#1d1d1f] mt-1">{stats?.totalDoctors || 0}</h3>
+                <span className="text-[11px] text-[#86868b] uppercase font-semibold">Doctors</span>
+                <h3 className="text-3xl font-semibold text-[#1d1d1f] mt-1">{stats?.totalDoctors || 0}</h3>
               </div>
               <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
                 <ShieldCheck className="w-5 h-5" />
@@ -119,8 +119,8 @@ export const AdminDashboard: React.FC = () => {
           <UtilityCard>
             <div className="flex items-center justify-between">
               <div>
-                <span className="text-[11px] text-[#7a7a7a] uppercase font-semibold">Pending Review</span>
-                <h3 className="text-3xl font-bold text-amber-600 mt-1">{stats?.pendingDoctors || 0}</h3>
+                <span className="text-[11px] text-[#86868b] uppercase font-semibold">Pending Review</span>
+                <h3 className="text-3xl font-semibold text-amber-600 mt-1">{stats?.pendingDoctors || 0}</h3>
               </div>
               <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
                 <AlertCircle className="w-5 h-5" />
@@ -131,8 +131,8 @@ export const AdminDashboard: React.FC = () => {
           <UtilityCard>
             <div className="flex items-center justify-between">
               <div>
-                <span className="text-[11px] text-[#7a7a7a] uppercase font-semibold">Total Bookings</span>
-                <h3 className="text-3xl font-bold text-[#1d1d1f] mt-1">{stats?.totalAppointments || 0}</h3>
+                <span className="text-[11px] text-[#86868b] uppercase font-semibold">Total Bookings</span>
+                <h3 className="text-3xl font-semibold text-[#1d1d1f] mt-1">{stats?.totalAppointments || 0}</h3>
               </div>
               <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
                 <Calendar className="w-5 h-5" />
@@ -192,8 +192,8 @@ export const AdminDashboard: React.FC = () => {
                       </div>
                     </td>
                     <td className="py-3.5 px-3 font-medium text-[#1d1d1f]">{doc.specialty}</td>
-                    <td className="py-3.5 px-3 text-[#7a7a7a]">
-                      {doc.checkingStartTime} – {doc.checkingEndTime}
+                    <td className="py-3.5 px-3 text-[#86868b]">
+                      {doc.checkingStartTime ? `${format12Hour(doc.checkingStartTime)} – ${format12Hour(doc.checkingEndTime)}` : 'Flexible'}
                     </td>
                     <td className="py-3.5 px-3 font-semibold text-[#1d1d1f]">${doc.consultationFee}</td>
                     <td className="py-3.5 px-3">
@@ -334,8 +334,10 @@ export const AdminDashboard: React.FC = () => {
                   <strong className="text-[#1d1d1f]">${selectedDoctor.consultationFee}</strong>
                 </div>
                 <div>
-                  <span className="text-[#7a7a7a] block">Checking Window:</span>
-                  <strong className="text-[#0066cc]">{selectedDoctor.checkingStartTime} – {selectedDoctor.checkingEndTime}</strong>
+                  <span className="text-[#86868b] block">Checking Window:</span>
+                  <strong className="text-[#0066cc]">
+                    {selectedDoctor.checkingStartTime ? `${format12Hour(selectedDoctor.checkingStartTime)} – ${format12Hour(selectedDoctor.checkingEndTime)}` : 'Flexible'}
+                  </strong>
                 </div>
               </div>
 

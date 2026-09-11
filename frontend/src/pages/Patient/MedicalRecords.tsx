@@ -106,15 +106,21 @@ export const MedicalRecords: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#f5f5f7] pb-16">
       <SubNav title="Medical Vault" subtitle="Secure prescriptions & diagnostic reports">
-        <AppleButton
-          variant="primary"
-          size="sm"
-          onClick={() => setShowUploadModal(true)}
-          className="flex items-center gap-1.5"
-        >
-          <Upload className="w-3.5 h-3.5" />
-          Upload Document
-        </AppleButton>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-[#86868b] font-medium hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-[#e5e5ea]">
+            <ShieldCheck className="w-3.5 h-3.5 text-[#0066cc]" />
+            Free Cloud Vault (1 GB)
+          </span>
+          <AppleButton
+            variant="primary"
+            size="sm"
+            onClick={() => setShowUploadModal(true)}
+            className="flex items-center gap-1.5"
+          >
+            <Upload className="w-3.5 h-3.5" />
+            Upload Document
+          </AppleButton>
+        </div>
       </SubNav>
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-8">
@@ -369,20 +375,37 @@ export const MedicalRecords: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
-                  File (PDF, PNG, JPG)
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-medium text-[#1d1d1f]">
+                    File (PDF, PNG, JPG)
+                  </label>
+                  {selectedFile && (
+                    <span className="text-[11px] font-mono text-[#0066cc]">
+                      {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
+                    </span>
+                  )}
+                </div>
                 <input
                   type="file"
                   required
                   disabled={uploading}
                   accept=".pdf,.png,.jpg,.jpeg"
-                  onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0] || null;
+                    if (f && f.size > 10 * 1024 * 1024) {
+                      setError('Selected file exceeds the 10 MB limit. Please choose a file under 10 MB.');
+                      setSelectedFile(null);
+                      e.target.value = '';
+                      return;
+                    }
+                    setError(null);
+                    setSelectedFile(f);
+                  }}
                   className="w-full text-xs text-[#86868b] file:mr-3 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#0066cc] file:text-white hover:file:bg-[#0071e3] file:cursor-pointer"
                 />
                 <p className="text-[11px] text-[#86868b] mt-1.5 flex items-center gap-1">
                   <ShieldCheck className="w-3.5 h-3.5 text-[#0066cc]" />
-                  <span>Max file size: 10 MB. Recommended under 2 MB for faster loading.</span>
+                  <span>Max file size: 10 MB. Recommended &lt; 2 MB. Free tier capacity: ~1,000 documents.</span>
                 </p>
               </div>
 
