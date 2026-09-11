@@ -1,7 +1,13 @@
 import React from 'react';
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+
+function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
 
 interface AppleButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'ghost' | 'dark' | 'icon';
+  variant?: 'primary' | 'secondary' | 'secondary-dark' | 'glass' | 'ghost' | 'dark' | 'icon';
   size?: 'sm' | 'md' | 'lg';
   children: React.ReactNode;
 }
@@ -25,6 +31,11 @@ export const AppleButton: React.FC<AppleButtonProps> = ({
     case 'secondary':
       // Apple secondary pill with subtle border
       variantClass = 'bg-white text-[#0066cc] border border-[#0066cc]/40 hover:border-[#0066cc] hover:bg-[#0066cc]/5 rounded-full';
+      break;
+    case 'secondary-dark':
+    case 'glass':
+      // Apple translucent glass pill for dark backgrounds
+      variantClass = 'bg-white/10 text-white border border-white/30 hover:bg-white/20 hover:border-white backdrop-blur-md rounded-full shadow-sm';
       break;
     case 'ghost':
       // Apple pearl capsule button
@@ -53,7 +64,7 @@ export const AppleButton: React.FC<AppleButtonProps> = ({
   }
 
   return (
-    <button className={`${baseClass} ${variantClass} ${sizeClass} ${className}`} {...props}>
+    <button className={cn(baseClass, variantClass, sizeClass, className)} {...props}>
       {children}
     </button>
   );

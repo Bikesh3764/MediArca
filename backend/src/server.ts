@@ -11,6 +11,26 @@ import appointmentRoutes from './routes/appointmentRoutes';
 import consultationRoutes from './routes/consultationRoutes';
 import recordRoutes from './routes/recordRoutes';
 import adminRoutes from './routes/adminRoutes';
+import prisma from './config/database';
+
+// Non-blocking automatic schema sync for multi-slot support on live Postgres/SQLite
+async function ensureSchema() {
+  try {
+    await prisma.$executeRawUnsafe(`ALTER TABLE "DoctorProfile" ADD COLUMN IF NOT EXISTS "slots" TEXT;`);
+  } catch {
+    try {
+      await prisma.$executeRawUnsafe(`ALTER TABLE "DoctorProfile" ADD COLUMN "slots" TEXT;`);
+    } catch {}
+  }
+  try {
+    await prisma.$executeRawUnsafe(`ALTER TABLE "Appointment" ADD COLUMN IF NOT EXISTS "slotId" TEXT;`);
+  } catch {
+    try {
+      await prisma.$executeRawUnsafe(`ALTER TABLE "Appointment" ADD COLUMN "slotId" TEXT;`);
+    } catch {}
+  }
+}
+ensureSchema().catch((e) => console.warn('Schema sync notice:', e?.message));
 
 const app = express();
 const PORT = process.env.PORT || 5000;

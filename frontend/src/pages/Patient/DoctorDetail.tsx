@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { api, Doctor, QueuePreview } from '../../services/api';
+import { api, Doctor, QueuePreview, parseDoctorSlots, format12Hour } from '../../services/api';
 import { SubNav } from '../../components/layout/SubNav';
 import { AppleButton } from '../../components/ui/AppleButton';
 import { UtilityCard } from '../../components/ui/UtilityCard';
@@ -21,6 +21,7 @@ export const DoctorDetail: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<string>(() => {
     return new Date().toISOString().split('T')[0];
   });
+  const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
   const [queuePreview, setQueuePreview] = useState<QueuePreview | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingQueue, setLoadingQueue] = useState(false);
@@ -33,6 +34,10 @@ export const DoctorDetail: React.FC = () => {
       try {
         const data = await api.getDoctorById(id);
         setDoctor(data);
+        const slots = parseDoctorSlots(data);
+        if (slots.length > 0 && !selectedSlotId) {
+          setSelectedSlotId(slots[0].id);
+        }
       } catch (err) {
         console.error('Failed to load doctor:', err);
       } finally {
@@ -47,8 +52,11 @@ export const DoctorDetail: React.FC = () => {
       if (!id || !selectedDate) return;
       setLoadingQueue(true);
       try {
-        const preview = await api.getQueuePreview(id, selectedDate);
+        const preview = await api.getQueuePreview(id, selectedDate, selectedSlotId || undefined);
         setQueuePreview(preview);
+        if (preview.selectedSlotId && !selectedSlotId) {
+          setSelectedSlotId(preview.selectedSlotId);
+        }
       } catch (err) {
         console.error('Failed to calculate queue preview:', err);
       } finally {
@@ -56,7 +64,7 @@ export const DoctorDetail: React.FC = () => {
       }
     };
     fetchQueue();
-  }, [id, selectedDate]);
+  }, [id, selectedDate, selectedSlotId]);
 
   if (loading || !doctor) {
     return (
@@ -108,6 +116,30 @@ export const DoctorDetail: React.FC = () => {
                       {doctor.experienceYears} Years Experience
                     </span>
                   </div>
+                </div>
+              </div>
+
+              {/* Checking Shifts & Practice Hours */}
+              <div className="py-6 border-b border-[#f0f0f0]">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-[#7a7a7a] mb-3 flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-[#0066cc]" />
+                  Active Practice Shifts & Capacities
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {parseDoctorSlots(doctor).map((slot, idx) => (
+                    <div key={slot.id || idx} className="p-3.5 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0]">
+                      <span className="text-xs font-semibold text-[#1d1d1f] block mb-1">
+                        {slot.name}
+                      </span>
+                      <div className="text-xs text-[#0066cc] font-medium mb-1">
+                        {format12Hour(slot.startTime)} – {format12Hour(slot.endTime)}
+                      </div>
+                      <div className="flex justify-between text-[11px] text-[#7a7a7a]">
+                        <span>Capacity: {slot.maxPatients} patients</span>
+                        <span className="font-medium text-[#1d1d1f]">~{slot.avgConsultationMinutes}m pace</span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
 
@@ -164,7 +196,7 @@ export const DoctorDetail: React.FC = () => {
               <h3 className="text-xl font-semibold text-[#1d1d1f] mb-4">Book Your Token</h3>
 
               {/* Date Selector */}
-              <div className="mb-5">
+              <div className="mb-4">
                 <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 flex items-center gap-1">
                   <Calendar className="w-3.5 h-3.5 text-[#0066cc]" />
                   Select Appointment Date
@@ -178,13 +210,33 @@ export const DoctorDetail: React.FC = () => {
                 />
               </div>
 
+              {/* Slot Selector */}
+              {parseDoctorSlots(doctor).length > 1 && (
+                <div className="mb-4">
+                  <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5">
+                    Select Checking Shift
+                  </label>
+                  <select
+                    value={selectedSlotId || ''}
+                    onChange={(e) => setSelectedSlotId(e.target.value)}
+                    className="w-full h-10 px-3 rounded-xl border border-[#e0e0e0] text-xs bg-white focus:outline-none focus:border-[#0066cc]"
+                  >
+                    {parseDoctorSlots(doctor).map((slot) => (
+                      <option key={slot.id} value={slot.id}>
+                        {slot.name} ({format12Hour(slot.startTime)} - {format12Hour(slot.endTime)})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               {/* Dynamic Queue Preview Card */}
               {loadingQueue ? (
                 <div className="p-6 rounded-2xl bg-[#f5f5f7] animate-pulse h-40"></div>
               ) : queuePreview ? (
                 <div className="p-5 rounded-2xl bg-[#0066cc]/5 border border-[#0066cc]/20 mb-5 space-y-3">
                   <div className="flex justify-between items-center pb-2 border-b border-[#0066cc]/10">
-                    <span className="text-xs text-[#7a7a7a]">Checking Hours:</span>
+                    <span className="text-xs text-[#7a7a7a]">Checking Shift:</span>
                     <strong className="text-xs text-[#0066cc] flex items-center gap-1">
                       <Clock className="w-3.5 h-3.5" />
                       {queuePreview.checkingWindow}
@@ -200,7 +252,11 @@ export const DoctorDetail: React.FC = () => {
                     </div>
                     <div className="text-right">
                       <span className="text-[11px] text-[#7a7a7a] uppercase block">Est. Start Time</span>
-                      <strong className="text-base text-[#0066cc]">
+                      <strong
+                        className={`text-base ${
+                          queuePreview.isPassed ? 'text-rose-600' : 'text-[#0066cc]'
+                        }`}
+                      >
                         {queuePreview.estimatedTime}
                       </strong>
                     </div>
@@ -210,8 +266,8 @@ export const DoctorDetail: React.FC = () => {
                     <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
                     <span>
                       {queuePreview.patientsAhead === 0
-                        ? 'No patients ahead of you! You will be first.'
-                        : `${queuePreview.patientsAhead} patient(s) ahead in line today.`}
+                        ? 'No patients ahead! You will be first in this shift.'
+                        : `${queuePreview.patientsAhead} patient(s) ahead • ~${queuePreview.avgConsultationMinutes}m pace`}
                     </span>
                   </div>
                 </div>
@@ -229,20 +285,32 @@ export const DoctorDetail: React.FC = () => {
                 </div>
               </div>
 
-              {queuePreview?.isFull && (
-                <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
-                  <span>Doctor's maximum capacity reached for this date. Please select another date.</span>
+              {queuePreview?.isPassed ? (
+                <div className="mb-4 p-3 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-xs flex items-center gap-2">
+                  <span>This shift has concluded for today. Pick an upcoming shift or future date.</span>
                 </div>
-              )}
+              ) : queuePreview?.isFull ? (
+                <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
+                  <span>Doctor's maximum capacity reached for this shift. Please select another slot or date.</span>
+                </div>
+              ) : null}
 
               <AppleButton
                 variant="primary"
                 size="lg"
-                disabled={Boolean(queuePreview?.isFull)}
-                onClick={() => navigate(`/book/${doctor.id}?date=${selectedDate}`)}
+                disabled={Boolean(queuePreview?.isFull || queuePreview?.isPassed)}
+                onClick={() =>
+                  navigate(
+                    `/book/${doctor.id}?date=${selectedDate}${selectedSlotId ? `&slot=${selectedSlotId}` : ''}`
+                  )
+                }
                 className="w-full"
               >
-                {queuePreview?.isFull ? 'Fully Booked for Date' : 'Proceed to Confirm Queue'}
+                {queuePreview?.isPassed
+                  ? 'Shift Ended — Choose Next'
+                  : queuePreview?.isFull
+                  ? 'Fully Booked for Shift'
+                  : 'Proceed to Confirm Queue'}
               </AppleButton>
             </UtilityCard>
           </div>

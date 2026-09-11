@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { api, Doctor } from '../services/api';
+import { api, Doctor, parseDoctorSlots, format12Hour } from '../services/api';
 import { AppleButton } from '../components/ui/AppleButton';
 import { UtilityCard } from '../components/ui/UtilityCard';
 import { Clock, ShieldCheck, ArrowRight, Star, MapPin } from 'lucide-react';
@@ -196,10 +196,12 @@ export const Home: React.FC = () => {
                     </p>
 
                     <div className="p-3 rounded-xl bg-[#f5f5f7] space-y-1 text-xs text-[#1d1d1f] mb-5">
-                      <div className="flex justify-between">
-                        <span className="text-[#7a7a7a]">Checking Shift:</span>
+                      <div className="flex justify-between items-center">
+                        <span className="text-[#7a7a7a]">Practice Shift:</span>
                         <strong className="text-[#0066cc]">
-                          {doctor.checkingStartTime} – {doctor.checkingEndTime}
+                          {parseDoctorSlots(doctor).length > 1
+                            ? `${parseDoctorSlots(doctor).length} Shifts (${format12Hour(parseDoctorSlots(doctor)[0].startTime)})`
+                            : `${format12Hour(doctor.checkingStartTime)} – ${format12Hour(doctor.checkingEndTime)}`}
                         </strong>
                       </div>
                       <div className="flex justify-between">
@@ -251,10 +253,9 @@ export const Home: React.FC = () => {
               Browse Doctor Catalog
             </AppleButton>
             <AppleButton
-              variant="secondary"
+              variant="secondary-dark"
               size="lg"
               onClick={() => navigate('/signup')}
-              className="bg-transparent text-white border-white/40 hover:bg-white/10 hover:border-white"
             >
               Create Account
             </AppleButton>

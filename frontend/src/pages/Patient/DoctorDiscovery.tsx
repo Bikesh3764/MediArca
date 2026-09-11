@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { api, Doctor } from '../../services/api';
+import { api, Doctor, parseDoctorSlots, format12Hour } from '../../services/api';
 import { SearchInput } from '../../components/ui/SearchInput';
 import { AppleButton } from '../../components/ui/AppleButton';
 import { UtilityCard } from '../../components/ui/UtilityCard';
@@ -187,10 +187,12 @@ export const DoctorDiscovery: React.FC = () => {
                     <div className="flex items-center justify-between">
                       <span className="text-[#7a7a7a] flex items-center gap-1">
                         <Clock className="w-3 h-3 text-[#0066cc]" />
-                        Checking Hours:
+                        Practice Shifts:
                       </span>
                       <strong className="text-[#0066cc] font-semibold">
-                        {doctor.checkingStartTime} – {doctor.checkingEndTime}
+                        {parseDoctorSlots(doctor).length > 1
+                          ? `${parseDoctorSlots(doctor).length} Shifts (${format12Hour(parseDoctorSlots(doctor)[0].startTime)})`
+                          : `${format12Hour(doctor.checkingStartTime)} – ${format12Hour(doctor.checkingEndTime)}`}
                       </strong>
                     </div>
                     <div className="flex justify-between">

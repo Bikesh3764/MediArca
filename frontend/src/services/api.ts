@@ -15,6 +15,115 @@ export const getFileUrl = (filePath?: string): string => {
   return `${backendBase}${filePath.startsWith('/') ? '' : '/'}${filePath}`;
 };
 
+export interface DoctorSlot {
+  id: string;
+  name: string;
+  startTime: string; // "09:00"
+  endTime: string; // "11:00"
+  maxPatients: number; // e.g. 50
+  avgConsultationMinutes: number; // calculated: durationInMinutes / maxPatients (e.g. 120/50 = 2.4)
+}
+
+export interface SlotStatusResult {
+  slot: DoctorSlot;
+  isToday: boolean;
+  isPassed: boolean;
+  isInProgress: boolean;
+  isUpcoming: boolean;
+  isFull: boolean;
+  totalBooked: number;
+  patientsAhead: number;
+  estimatedTime: string;
+  statusLabel: string;
+}
+
+// Time calculation helpers
+export const timeToMinutes = (timeStr: string): number => {
+  if (!timeStr) return 0;
+  const clean = timeStr.replace(/\s*(AM|PM)/i, '').trim();
+  const [hStr, mStr] = clean.split(':');
+  let h = parseInt(hStr, 10) || 0;
+  const m = parseInt(mStr, 10) || 0;
+  if (timeStr.toUpperCase().includes('PM') && h < 12) h += 12;
+  if (timeStr.toUpperCase().includes('AM') && h === 12) h = 0;
+  return h * 60 + m;
+};
+
+export const minutesTo12Hour = (totalMinutes: number): string => {
+  const normalized = ((Math.floor(totalMinutes) % (24 * 60)) + (24 * 60)) % (24 * 60);
+  let hours = Math.floor(normalized / 60);
+  const minutes = normalized % 60;
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12;
+  hours = hours ? hours : 12;
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+};
+
+export const format12Hour = (time24: string): string => {
+  if (!time24) return '09:00 AM';
+  if (time24.includes('AM') || time24.includes('PM')) return time24;
+  return minutesTo12Hour(timeToMinutes(time24));
+};
+
+export const calculateSlotMetrics = (
+  startTime: string,
+  endTime: string,
+  maxPatients: number
+): { durationMinutes: number; avgConsultationMinutes: number } => {
+  const startMins = timeToMinutes(startTime);
+  let endMins = timeToMinutes(endTime);
+  if (endMins <= startMins) {
+    endMins += 24 * 60;
+  }
+  const durationMinutes = Math.max(1, endMins - startMins);
+  const safeMax = Math.max(1, maxPatients || 1);
+  const rawAvg = durationMinutes / safeMax;
+  const avgConsultationMinutes = Math.round(rawAvg * 10) / 10;
+  return { durationMinutes, avgConsultationMinutes };
+};
+
+export const parseDoctorSlots = (doctor: any): DoctorSlot[] => {
+  if (doctor?.slots) {
+    try {
+      const parsed = typeof doctor.slots === 'string' ? JSON.parse(doctor.slots) : doctor.slots;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed.map((s: any, idx: number) => {
+          const startTime = s.startTime || '09:00';
+          const endTime = s.endTime || '11:00';
+          const maxPatients = Number(s.maxPatients) || 50;
+          const { avgConsultationMinutes } = calculateSlotMetrics(startTime, endTime, maxPatients);
+          return {
+            id: s.id || `slot_${idx + 1}`,
+            name: s.name || `Slot ${idx + 1} (${format12Hour(startTime)} – ${format12Hour(endTime)})`,
+            startTime,
+            endTime,
+            maxPatients,
+            avgConsultationMinutes: s.avgConsultationMinutes || avgConsultationMinutes,
+          };
+        });
+      }
+    } catch (e) {
+      console.warn('Failed to parse doctor slots:', e);
+    }
+  }
+
+  const startTime = doctor?.checkingStartTime || '09:00';
+  const endTime = doctor?.checkingEndTime || '13:00';
+  const maxPatients = Number(doctor?.maxDailyPatients) || 25;
+  const { avgConsultationMinutes } = calculateSlotMetrics(startTime, endTime, maxPatients);
+
+  return [
+    {
+      id: 'slot_1',
+      name: `Shift 1 (${format12Hour(startTime)} – ${format12Hour(endTime)})`,
+      startTime,
+      endTime,
+      maxPatients,
+      avgConsultationMinutes: doctor?.avgConsultationMinutes || avgConsultationMinutes,
+    },
+  ];
+};
+
 export const DEMO_DOCTORS: Doctor[] = [
   {
     id: 'doc_sarah_01',
@@ -27,11 +136,29 @@ export const DEMO_DOCTORS: Doctor[] = [
     clinicAddress: 'City Heart & Vascular Institute, Suite 402, New York, NY',
     isVerified: true,
     checkingStartTime: '09:00',
-    checkingEndTime: '13:00',
-    avgConsultationMinutes: 20,
-    maxDailyPatients: 25,
+    checkingEndTime: '20:00',
+    avgConsultationMinutes: 2.7,
+    maxDailyPatients: 110,
     rating: 4.9,
     totalReviews: 128,
+    slots: [
+      {
+        id: 'slot_sarah_1',
+        name: 'Morning Shift (09:00 AM – 11:00 AM)',
+        startTime: '09:00',
+        endTime: '11:00',
+        maxPatients: 50,
+        avgConsultationMinutes: 2.4, // 120 mins / 50 = 2.4 mins
+      },
+      {
+        id: 'slot_sarah_2',
+        name: 'Evening Shift (05:00 PM – 08:00 PM)',
+        startTime: '17:00',
+        endTime: '20:00',
+        maxPatients: 60,
+        avgConsultationMinutes: 3.0, // 180 mins / 60 = 3.0 mins
+      },
+    ],
     user: {
       id: 'usr_sarah_02',
       fullName: 'Dr. Sarah Jenkins',
@@ -50,11 +177,29 @@ export const DEMO_DOCTORS: Doctor[] = [
     clinicAddress: 'Apex Skin & Aesthetics Clinic, Floor 2, San Francisco, CA',
     isVerified: true,
     checkingStartTime: '10:00',
-    checkingEndTime: '14:00',
-    avgConsultationMinutes: 15,
-    maxDailyPatients: 30,
+    checkingEndTime: '18:30',
+    avgConsultationMinutes: 4.4,
+    maxDailyPatients: 75,
     rating: 4.8,
     totalReviews: 94,
+    slots: [
+      {
+        id: 'slot_arjun_1',
+        name: 'Morning Clinic (10:00 AM – 01:00 PM)',
+        startTime: '10:00',
+        endTime: '13:00',
+        maxPatients: 45,
+        avgConsultationMinutes: 4.0, // 180 mins / 45 = 4.0 mins
+      },
+      {
+        id: 'slot_arjun_2',
+        name: 'Afternoon Clinic (04:00 PM – 06:30 PM)',
+        startTime: '16:00',
+        endTime: '18:30',
+        maxPatients: 30,
+        avgConsultationMinutes: 5.0, // 150 mins / 30 = 5.0 mins
+      },
+    ],
     user: {
       id: 'usr_arjun_03',
       fullName: 'Dr. Arjun Patel',
@@ -73,11 +218,29 @@ export const DEMO_DOCTORS: Doctor[] = [
     clinicAddress: 'Little Steps Children Care, Building B, Chicago, IL',
     isVerified: true,
     checkingStartTime: '08:30',
-    checkingEndTime: '12:30',
-    avgConsultationMinutes: 15,
-    maxDailyPatients: 28,
+    checkingEndTime: '18:00',
+    avgConsultationMinutes: 4.5,
+    maxDailyPatients: 80,
     rating: 5.0,
     totalReviews: 150,
+    slots: [
+      {
+        id: 'slot_elena_1',
+        name: 'Morning Wellness (08:30 AM – 11:30 AM)',
+        startTime: '08:30',
+        endTime: '11:30',
+        maxPatients: 40,
+        avgConsultationMinutes: 4.5, // 180 mins / 40 = 4.5 mins
+      },
+      {
+        id: 'slot_elena_2',
+        name: 'Afternoon Consults (03:00 PM – 06:00 PM)',
+        startTime: '15:00',
+        endTime: '18:00',
+        maxPatients: 40,
+        avgConsultationMinutes: 4.5, // 180 mins / 40 = 4.5 mins
+      },
+    ],
     user: {
       id: 'usr_elena_04',
       fullName: 'Dr. Elena Rostova',
@@ -116,6 +279,7 @@ export interface User {
     maxDailyPatients: number;
     rating: number;
     totalReviews: number;
+    slots?: DoctorSlot[];
   };
 }
 
@@ -135,6 +299,7 @@ export interface Doctor {
   maxDailyPatients: number;
   rating: number;
   totalReviews: number;
+  slots?: DoctorSlot[];
   user: {
     id: string;
     fullName: string;
@@ -155,6 +320,9 @@ export interface QueuePreview {
   doctorId: string;
   doctorName: string;
   appointmentDate: string;
+  selectedSlotId?: string;
+  selectedSlot?: SlotStatusResult;
+  availableSlots?: SlotStatusResult[];
   checkingWindow: string;
   checkingStartTime: string;
   checkingEndTime: string;
@@ -165,6 +333,9 @@ export interface QueuePreview {
   patientsAhead: number;
   estimatedTime: string;
   isFull: boolean;
+  isPassed?: boolean;
+  isInProgress?: boolean;
+  statusLabel?: string;
 }
 
 export interface Appointment {
@@ -173,6 +344,7 @@ export interface Appointment {
   doctorId: string;
   appointmentDate: string;
   queueNumber: number;
+  slotId?: string;
   checkingWindow: string;
   estimatedTime: string;
   status: 'WAITING' | 'IN_CONSULTATION' | 'COMPLETED' | 'CANCELLED';
@@ -338,30 +510,100 @@ export const api = {
   },
 
   // Appointments & Queue Preview
-  async getQueuePreview(doctorId: string, appointmentDate: string): Promise<QueuePreview> {
+  async getQueuePreview(doctorId: string, appointmentDate: string, slotId?: string): Promise<QueuePreview> {
     try {
+      const slotQuery = slotId ? `&slotId=${encodeURIComponent(slotId)}` : '';
       const res = await fetch(
-        `${API_BASE_URL}/appointments/queue-preview?doctorId=${doctorId}&appointmentDate=${appointmentDate}`
+        `${API_BASE_URL}/appointments/queue-preview?doctorId=${doctorId}&appointmentDate=${appointmentDate}${slotQuery}`
       );
       return await handleResponse(res);
     } catch (err) {
       console.warn('Queue preview API unavailable, using offline preview calculation fallback', err);
       const doctor = DEMO_DOCTORS.find((d) => d.id === doctorId) || DEMO_DOCTORS[0];
-      const checkingWindow = `${doctor.checkingStartTime} – ${doctor.checkingEndTime}`;
+      const slots = parseDoctorSlots(doctor);
+
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const todayStr = `${year}-${month}-${day}`;
+      const isToday = appointmentDate === todayStr;
+      const isPastDate = appointmentDate < todayStr;
+      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+      const availableSlots: SlotStatusResult[] = slots.map((slot) => {
+        const startMins = timeToMinutes(slot.startTime);
+        const endMins = timeToMinutes(slot.endTime);
+        let isPassed = false;
+        let isInProgress = false;
+        let isUpcoming = false;
+        let statusLabel = 'Available';
+        let estTime = '';
+
+        if (isPastDate) {
+          isPassed = true;
+          statusLabel = 'Date Expired';
+          estTime = 'Expired';
+        } else if (isToday) {
+          if (currentMinutes >= endMins) {
+            isPassed = true;
+            statusLabel = 'Shift Ended for Today';
+            estTime = 'Shift Ended';
+          } else if (currentMinutes >= startMins && currentMinutes < endMins) {
+            isInProgress = true;
+            statusLabel = 'Active Now • In Progress';
+            const estTotal = Math.max(startMins + slot.avgConsultationMinutes, currentMinutes + slot.avgConsultationMinutes);
+            estTime = minutesTo12Hour(estTotal);
+          } else {
+            isUpcoming = true;
+            statusLabel = 'Upcoming Today';
+            estTime = minutesTo12Hour(startMins + slot.avgConsultationMinutes);
+          }
+        } else {
+          isUpcoming = true;
+          statusLabel = 'Upcoming';
+          estTime = minutesTo12Hour(startMins + slot.avgConsultationMinutes);
+        }
+
+        return {
+          slot,
+          isToday,
+          isPassed,
+          isInProgress,
+          isUpcoming,
+          isFull: false,
+          totalBooked: 1,
+          patientsAhead: 1,
+          estimatedTime: estTime,
+          statusLabel,
+        };
+      });
+
+      let chosen = availableSlots.find((s) => s.slot.id === slotId);
+      if (!chosen) {
+        chosen = availableSlots.find((s) => !s.isPassed && !s.isFull) || availableSlots[0];
+      }
+
       return {
         doctorId: doctor.id,
         doctorName: doctor.user.fullName,
         appointmentDate,
-        checkingWindow,
-        checkingStartTime: doctor.checkingStartTime,
-        checkingEndTime: doctor.checkingEndTime,
-        avgConsultationMinutes: doctor.avgConsultationMinutes,
-        maxDailyPatients: doctor.maxDailyPatients,
-        totalBooked: 1,
+        selectedSlotId: chosen.slot.id,
+        selectedSlot: chosen,
+        availableSlots,
+        checkingWindow: chosen.slot.name,
+        checkingStartTime: chosen.slot.startTime,
+        checkingEndTime: chosen.slot.endTime,
+        avgConsultationMinutes: chosen.slot.avgConsultationMinutes,
+        maxDailyPatients: chosen.slot.maxPatients,
+        totalBooked: chosen.totalBooked,
         nextQueueNumber: 2,
-        patientsAhead: 1,
-        estimatedTime: '09:20 AM',
-        isFull: false,
+        patientsAhead: chosen.patientsAhead,
+        estimatedTime: chosen.estimatedTime,
+        isFull: chosen.isFull,
+        isPassed: chosen.isPassed,
+        isInProgress: chosen.isInProgress,
+        statusLabel: chosen.statusLabel,
       };
     }
   },
@@ -369,6 +611,7 @@ export const api = {
   async bookAppointment(body: {
     doctorId: string;
     appointmentDate: string;
+    slotId?: string;
     reasonForVisit?: string;
     symptoms?: string;
   }): Promise<Appointment> {

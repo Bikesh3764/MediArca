@@ -1,30 +1,23 @@
 import { Response } from 'express';
 import prisma from '../config/database';
 import { AuthRequest } from '../middleware/authMiddleware';
+import {
+  format12Hour,
+  calculateSlotMetrics,
+  parseDoctorSlots,
+  evaluateSlotStatus,
+  SlotStatusResult,
+} from '../utils/scheduleUtils';
 
-// Helper to convert "09:00" to 12-hour AM/PM string
-export const format12Hour = (time24: string): string => {
-  if (!time24) return '09:00 AM';
-  if (time24.includes('AM') || time24.includes('PM')) return time24;
-  const parts = time24.split(':');
-  let h = parseInt(parts[0], 10);
-  if (isNaN(h)) return time24;
-  const m = (parts[1] || '00').replace(/[^0-9]/g, '').slice(0, 2).padStart(2, '0');
-  const ampm = h >= 12 ? 'PM' : 'AM';
-  h = h % 12;
-  h = h ? h : 12; // 0 becomes 12
-  return `${h.toString().padStart(2, '0')}:${m} ${ampm}`;
-};
-
-// Helper to calculate estimated time given start time "09:00" and offset minutes
+// Helper to calculate estimated time given start time "09:00" and offset minutes (retained for backward compatibility)
 export const calculateEstimatedTime = (startTime24: string, offsetMinutes: number): string => {
   if (!startTime24) startTime24 = '09:00';
-  const cleanTime = startTime24.replace(/\s*(AM|PM)/i, '');
-  const [hStr, mStr] = cleanTime.split(':');
-  let startHour = parseInt(hStr, 10);
+  const { durationMinutes } = calculateSlotMetrics(startTime24, '23:59', 10);
+  const startParts = startTime24.replace(/\s*(AM|PM)/i, '').split(':');
+  let startHour = parseInt(startParts[0], 10) || 9;
   if (startTime24.toUpperCase().includes('PM') && startHour < 12) startHour += 12;
   if (startTime24.toUpperCase().includes('AM') && startHour === 12) startHour = 0;
-  const startTotalMinutes = (isNaN(startHour) ? 9 : startHour) * 60 + parseInt(mStr || '0', 10);
+  const startTotalMinutes = startHour * 60 + parseInt(startParts[1] || '0', 10);
   const totalMinutes = startTotalMinutes + offsetMinutes;
   const hours24 = Math.floor(totalMinutes / 60) % 24;
   const minutes = totalMinutes % 60;
@@ -33,7 +26,7 @@ export const calculateEstimatedTime = (startTime24: string, offsetMinutes: numbe
 
 export const getQueuePreview = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { doctorId, appointmentDate } = req.query;
+    const { doctorId, appointmentDate, slotId } = req.query;
 
     if (!doctorId || !appointmentDate) {
       res.status(400).json({ success: false, message: 'doctorId and appointmentDate are required' });
@@ -51,32 +44,44 @@ export const getQueuePreview = async (req: AuthRequest, res: Response): Promise<
     }
 
     const dateStr = String(appointmentDate);
+    const slots = parseDoctorSlots(doctor);
 
-    // Count active appointments for capacity & patients ahead
-    const activeCount = await prisma.appointment.count({
+    // Fetch all active appointments for this doctor on this date
+    const dayAppointments = await prisma.appointment.findMany({
       where: {
         doctorId: doctor.id,
         appointmentDate: dateStr,
         status: { in: ['WAITING', 'IN_CONSULTATION', 'COMPLETED'] },
       },
-    });
-
-    // Find highest assigned queue number to prevent duplicate key collisions
-    const maxQueueAppt = await prisma.appointment.findFirst({
-      where: {
-        doctorId: doctor.id,
-        appointmentDate: dateStr,
+      select: {
+        id: true,
+        queueNumber: true,
+        slotId: true,
+        checkingWindow: true,
+        status: true,
       },
-      orderBy: { queueNumber: 'desc' },
     });
 
-    const isFull = activeCount >= doctor.maxDailyPatients;
-    const nextQueueNumber = (maxQueueAppt?.queueNumber || 0) + 1;
-    const patientsAhead = activeCount;
+    // Highest queue number on this date to prevent duplicate collisions
+    const highestQueue = dayAppointments.reduce((max, a) => Math.max(max, a.queueNumber), 0);
+    const nextQueueNumber = highestQueue + 1;
 
-    const checkingWindow = `${format12Hour(doctor.checkingStartTime)} – ${format12Hour(doctor.checkingEndTime)}`;
-    const offsetMinutes = patientsAhead * doctor.avgConsultationMinutes;
-    const estimatedTime = calculateEstimatedTime(doctor.checkingStartTime, offsetMinutes);
+    // Evaluate status for each slot
+    const availableSlots: SlotStatusResult[] = slots.map((slot, index) => {
+      const bookedInSlot = dayAppointments.filter((a) => {
+        if (a.slotId) return a.slotId === slot.id;
+        if (a.checkingWindow && a.checkingWindow.includes(slot.startTime)) return true;
+        return index === 0;
+      }).length;
+
+      return evaluateSlotStatus(slot, dateStr, bookedInSlot);
+    });
+
+    // Target slot selection: chosen slotId, or first non-passed and non-full slot, or first slot
+    let selectedSlotStatus = availableSlots.find((s) => s.slot.id === String(slotId));
+    if (!selectedSlotStatus) {
+      selectedSlotStatus = availableSlots.find((s) => !s.isPassed && !s.isFull) || availableSlots[0];
+    }
 
     res.json({
       success: true,
@@ -84,16 +89,22 @@ export const getQueuePreview = async (req: AuthRequest, res: Response): Promise<
         doctorId: doctor.id,
         doctorName: doctor.user.fullName,
         appointmentDate: dateStr,
-        checkingWindow,
-        checkingStartTime: doctor.checkingStartTime,
-        checkingEndTime: doctor.checkingEndTime,
-        avgConsultationMinutes: doctor.avgConsultationMinutes,
-        maxDailyPatients: doctor.maxDailyPatients,
-        totalBooked: activeCount,
+        selectedSlotId: selectedSlotStatus.slot.id,
+        selectedSlot: selectedSlotStatus,
+        availableSlots,
+        checkingWindow: selectedSlotStatus.slot.name,
+        checkingStartTime: selectedSlotStatus.slot.startTime,
+        checkingEndTime: selectedSlotStatus.slot.endTime,
+        avgConsultationMinutes: selectedSlotStatus.slot.avgConsultationMinutes,
+        maxDailyPatients: selectedSlotStatus.slot.maxPatients,
+        totalBooked: selectedSlotStatus.totalBooked,
         nextQueueNumber,
-        patientsAhead,
-        estimatedTime,
-        isFull,
+        patientsAhead: selectedSlotStatus.patientsAhead,
+        estimatedTime: selectedSlotStatus.estimatedTime,
+        isFull: selectedSlotStatus.isFull,
+        isPassed: selectedSlotStatus.isPassed,
+        isInProgress: selectedSlotStatus.isInProgress,
+        statusLabel: selectedSlotStatus.statusLabel,
       },
     });
   } catch (error: any) {
@@ -109,7 +120,7 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
       return;
     }
 
-    const { doctorId, appointmentDate, reasonForVisit, symptoms } = req.body;
+    const { doctorId, appointmentDate, slotId, reasonForVisit, symptoms } = req.body;
 
     if (!doctorId || !appointmentDate) {
       res.status(400).json({ success: false, message: 'Doctor ID and appointment date are required' });
@@ -134,6 +145,15 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
     if (!doctor) {
       res.status(404).json({ success: false, message: 'Doctor not found' });
       return;
+    }
+
+    const slots = parseDoctorSlots(doctor);
+    let chosenSlot = slots.find((s) => s.id === slotId);
+    if (!chosenSlot) {
+      chosenSlot = slots.find((s) => {
+        const st = evaluateSlotStatus(s, appointmentDate, 0);
+        return !st.isPassed && !st.isFull;
+      }) || slots[0];
     }
 
     // Check if patient already has an active appointment with this doctor on this day
@@ -162,40 +182,52 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
     while (attempts < maxAttempts) {
       try {
         newAppointment = await prisma.$transaction(async (tx) => {
-          const activeCount = await tx.appointment.count({
+          const dayAppointments = await tx.appointment.findMany({
             where: {
               doctorId: doctor.id,
               appointmentDate,
               status: { in: ['WAITING', 'IN_CONSULTATION', 'COMPLETED'] },
             },
+            select: {
+              id: true,
+              slotId: true,
+              checkingWindow: true,
+              queueNumber: true,
+            },
           });
 
-          if (activeCount >= doctor.maxDailyPatients) {
-            throw new Error('Doctor schedule is fully booked for this date');
+          const bookedInSlot = dayAppointments.filter((a) => {
+            if (a.slotId) return a.slotId === chosenSlot!.id;
+            if (a.checkingWindow && a.checkingWindow.includes(chosenSlot!.startTime)) return true;
+            return false;
+          }).length;
+
+          // Check if slot has passed or reached max patients
+          const slotStatus = evaluateSlotStatus(chosenSlot!, appointmentDate, bookedInSlot);
+          if (slotStatus.isPassed) {
+            throw new Error(
+              `This checking slot (${chosenSlot!.name}) has already ended for today. Please pick an upcoming slot or a future date.`
+            );
           }
 
-          // Find highest queue number to avoid unique constraint collisions with cancelled appointments
-          const maxQueueAppt = await tx.appointment.findFirst({
-            where: {
-              doctorId: doctor.id,
-              appointmentDate,
-            },
-            orderBy: { queueNumber: 'desc' },
-          });
+          if (slotStatus.isFull) {
+            throw new Error(
+              `This checking slot (${chosenSlot!.name}) has reached its maximum patient capacity (${chosenSlot!.maxPatients} patients).`
+            );
+          }
 
-          const queueNumber = (maxQueueAppt?.queueNumber || 0) + 1;
-          const checkingWindow = `${format12Hour(doctor.checkingStartTime)} – ${format12Hour(doctor.checkingEndTime)}`;
-          const offsetMinutes = activeCount * doctor.avgConsultationMinutes;
-          const estimatedTime = calculateEstimatedTime(doctor.checkingStartTime, offsetMinutes);
+          const highestQueue = dayAppointments.reduce((max, a) => Math.max(max, a.queueNumber), 0);
+          const queueNumber = highestQueue + 1;
 
           const created = await tx.appointment.create({
             data: {
-              patientId: patient.id,
+              patientId: patient!.id,
               doctorId: doctor.id,
               appointmentDate,
               queueNumber,
-              checkingWindow,
-              estimatedTime,
+              slotId: chosenSlot!.id,
+              checkingWindow: chosenSlot!.name,
+              estimatedTime: slotStatus.estimatedTime,
               status: 'WAITING',
               reasonForVisit: reasonForVisit || 'General Medical Consultation',
               symptoms: symptoms || null,
@@ -230,7 +262,7 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
 
     res.status(201).json({
       success: true,
-      message: `Appointment confirmed! You are Queue #${newAppointment.queueNumber}`,
+      message: `Appointment confirmed! You are Queue #${newAppointment.queueNumber} (${chosenSlot.name})`,
       data: newAppointment,
     });
   } catch (error: any) {

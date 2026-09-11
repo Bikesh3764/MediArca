@@ -33,7 +33,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
       >
         <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider">
           <Clock className="w-3.5 h-3.5" />
-          <span>Doctor Checking Hours: {checkingWindow}</span>
+          <span>Doctor Shift: {checkingWindow}</span>
         </div>
         <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-white border border-current/20">
           {status === 'IN_CONSULTATION'
@@ -145,7 +145,15 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
             <Clock className="w-4 h-4 text-[#7a7a7a]" />
             <div>
               <span className="text-[#7a7a7a] block">Est. Consultation</span>
-              <strong className="text-[13px] text-[#0066cc]">{estimatedTime}</strong>
+              {status === 'IN_CONSULTATION' ? (
+                <strong className="text-[13px] text-emerald-600">Now in Cabin</strong>
+              ) : status === 'COMPLETED' ? (
+                <strong className="text-[13px] text-gray-600">Completed</strong>
+              ) : liveQueue?.isYourTurn ? (
+                <strong className="text-[13px] text-emerald-600 animate-pulse">Your Turn Now</strong>
+              ) : (
+                <strong className="text-[13px] text-[#0066cc]">{estimatedTime}</strong>
+              )}
             </div>
           </div>
 

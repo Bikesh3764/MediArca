@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { api, Appointment } from '../../services/api';
+import { api, Appointment, parseDoctorSlots, format12Hour } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { SubNav } from '../../components/layout/SubNav';
 import { AppleButton } from '../../components/ui/AppleButton';
@@ -127,14 +127,18 @@ export const DoctorDashboard: React.FC = () => {
                 {user?.doctorProfile?.specialty || 'Doctor'}
               </span>
             </div>
-            <p className="text-xs text-[#7a7a7a] mt-1 flex items-center gap-1.5">
+            <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-[#7a7a7a]">
               <Clock className="w-3.5 h-3.5 text-[#0066cc]" />
-              Configured Checking Shift:{' '}
-              <strong>
-                {user?.doctorProfile?.checkingStartTime || '09:00'} –{' '}
-                {user?.doctorProfile?.checkingEndTime || '13:00'}
-              </strong>
-            </p>
+              <span>Practice Shifts:</span>
+              {parseDoctorSlots(user?.doctorProfile).map((slot, i) => (
+                <span
+                  key={slot.id || i}
+                  className="font-semibold px-2 py-0.5 rounded-full bg-[#f5f5f7] border border-[#e0e0e0] text-[#1d1d1f]"
+                >
+                  {slot.name} ({format12Hour(slot.startTime)}–{format12Hour(slot.endTime)} • {slot.maxPatients} cap)
+                </span>
+              ))}
+            </div>
           </div>
 
           <div className="flex items-center gap-3">
