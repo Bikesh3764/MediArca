@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { AppleButton } from '../../components/ui/AppleButton';
 import { Activity, AlertCircle, UserCheck, Stethoscope } from 'lucide-react';
 import { GoogleLogin } from '@react-oauth/google';
+import { isGoogleConfigured } from '../../config/auth';
 
 export const Signup: React.FC = () => {
   const [role, setRole] = useState<'PATIENT' | 'DOCTOR'>('PATIENT');
@@ -113,11 +114,6 @@ export const Signup: React.FC = () => {
     }
   };
 
-  const isGoogleConfigured = Boolean(
-    import.meta.env.VITE_GOOGLE_CLIENT_ID &&
-    !import.meta.env.VITE_GOOGLE_CLIENT_ID.includes('1234567890') &&
-    !import.meta.env.VITE_GOOGLE_CLIENT_ID.includes('your-google-client-id')
-  );
 
   return (
     <div className="min-h-screen bg-[#f5f5f7] flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
