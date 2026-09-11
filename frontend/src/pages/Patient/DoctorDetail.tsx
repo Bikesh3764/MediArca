@@ -95,7 +95,7 @@ export const DoctorDetail: React.FC = () => {
           <div className="lg:col-span-2 space-y-6">
             <UtilityCard>
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 pb-6 border-b border-[#f0f0f0]">
-                <div className="w-24 h-24 rounded-full bg-[#f5f5f7] border border-[#e0e0e0] overflow-hidden flex-shrink-0">
+                <div className="w-24 h-24 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] overflow-hidden flex-shrink-0">
                   {doctor.user.avatarUrl ? (
                     <img src={doctor.user.avatarUrl} alt={doctor.user.fullName} className="w-full h-full object-cover" />
                   ) : (
@@ -106,18 +106,18 @@ export const DoctorDetail: React.FC = () => {
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h2 className="text-2xl font-semibold text-[#1d1d1f]">{doctor.user.fullName}</h2>
+                    <h2 className="text-2xl font-semibold text-[#1d1d1f] tracking-tight">{doctor.user.fullName}</h2>
                     <span title="Verified Practitioner"><ShieldCheck className="w-5 h-5 text-[#0066cc]" /></span>
                   </div>
-                  <p className="text-[16px] text-[#0066cc] font-medium mt-0.5">{doctor.specialty}</p>
-                  <p className="text-xs text-[#7a7a7a] mt-1">{doctor.qualifications}</p>
+                  <p className="text-[15px] text-[#0066cc] font-medium mt-0.5">{doctor.specialty}</p>
+                  <p className="text-xs text-[#86868b] mt-1">{doctor.qualifications}</p>
                   <div className="flex items-center gap-3 mt-3 text-xs text-[#1d1d1f]">
                     <span className="flex items-center gap-1">
                       <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                      <strong>{doctor.rating.toFixed(1)}</strong> ({doctor.totalReviews} reviews)
+                      <strong>{doctor.rating.toFixed(1)}</strong> <span className="text-[#86868b]">({doctor.totalReviews} reviews)</span>
                     </span>
-                    <span>•</span>
-                    <span className="flex items-center gap-1 text-[#7a7a7a]">
+                    <span className="text-[#d2d2d7]">•</span>
+                    <span className="flex items-center gap-1 text-[#86868b]">
                       <Award className="w-4 h-4" />
                       {doctor.experienceYears} Years Experience
                     </span>
@@ -127,20 +127,20 @@ export const DoctorDetail: React.FC = () => {
 
               {/* Checking Shifts & Practice Hours */}
               <div className="py-6 border-b border-[#f0f0f0]">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-[#7a7a7a] mb-3 flex items-center gap-1.5">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-[#86868b] mb-3 flex items-center gap-1.5">
                   <Clock className="w-3.5 h-3.5 text-[#0066cc]" />
                   Active Practice Shifts & Capacities
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {parseDoctorSlots(doctor).map((slot, idx) => (
-                    <div key={slot.id || idx} className="p-3.5 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0]">
+                    <div key={slot.id || idx} className="p-3.5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea]">
                       <span className="text-xs font-semibold text-[#1d1d1f] block mb-1">
                         {slot.name}
                       </span>
                       <div className="text-xs text-[#0066cc] font-medium mb-1">
                         {format12Hour(slot.startTime)} – {format12Hour(slot.endTime)}
                       </div>
-                      <div className="flex justify-between text-[11px] text-[#7a7a7a]">
+                      <div className="flex justify-between text-[11px] text-[#86868b]">
                         <span>Capacity: {slot.maxPatients} patients</span>
                         <span className="font-medium text-[#1d1d1f]">~{slot.avgConsultationMinutes}m pace</span>
                       </div>
@@ -151,27 +151,27 @@ export const DoctorDetail: React.FC = () => {
 
               {/* Bio & Clinic */}
               <div className="py-6 border-b border-[#f0f0f0]">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-[#7a7a7a] mb-2">About the Doctor</h3>
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-[#86868b] mb-2">About the Doctor</h3>
                 <p className="text-[15px] leading-relaxed text-[#1d1d1f]">{doctor.bio}</p>
 
-                <div className="mt-5 p-4 rounded-xl bg-[#f5f5f7] flex items-start gap-3">
+                <div className="mt-5 p-4 rounded-2xl bg-[#f5f5f7] flex items-start gap-3 border border-[#e5e5ea]">
                   <MapPin className="w-5 h-5 text-[#0066cc] flex-shrink-0 mt-0.5" />
                   <div>
                     <h4 className="text-xs font-semibold text-[#1d1d1f]">Clinic / Hospital Location</h4>
-                    <p className="text-xs text-[#7a7a7a] mt-0.5">{doctor.clinicAddress || 'MediArca Healthcare Facility'}</p>
+                    <p className="text-xs text-[#86868b] mt-0.5">{doctor.clinicAddress || 'MediArca Healthcare Facility'}</p>
                   </div>
                 </div>
               </div>
 
               {/* Patient Reviews */}
               <div className="pt-6">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-[#7a7a7a] mb-4">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-[#86868b] mb-4">
                   Patient Reviews ({doctor.reviews?.length || 0})
                 </h3>
                 <div className="space-y-3">
                   {doctor.reviews && doctor.reviews.length > 0 ? (
                     doctor.reviews.map((rev) => (
-                      <div key={rev.id} className="p-4 rounded-xl border border-[#f0f0f0] bg-[#fafafc]">
+                      <div key={rev.id} className="p-4 rounded-2xl border border-[#e5e5ea] bg-[#fafafc]">
                         <div className="flex justify-between items-center mb-1.5">
                           <span className="font-semibold text-xs text-[#1d1d1f]">
                             {rev.patientUser.fullName}
@@ -182,11 +182,11 @@ export const DoctorDetail: React.FC = () => {
                             ))}
                           </div>
                         </div>
-                        <p className="text-xs text-[#7a7a7a] italic">"{rev.comment}"</p>
+                        <p className="text-xs text-[#86868b] italic">"{rev.comment}"</p>
                       </div>
                     ))
                   ) : (
-                    <p className="text-xs text-[#7a7a7a]">No reviews yet for this doctor.</p>
+                    <p className="text-xs text-[#86868b]">No reviews yet for this doctor.</p>
                   )}
                 </div>
               </div>
@@ -215,7 +215,7 @@ export const DoctorDetail: React.FC = () => {
                       className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium transition-all ${
                         selectedDate === getLocalDateString()
                           ? 'bg-[#0066cc] text-white shadow-sm'
-                          : 'bg-[#f5f5f7] text-[#7a7a7a] hover:text-[#1d1d1f]'
+                          : 'bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f]'
                       }`}
                     >
                       Today
@@ -226,7 +226,7 @@ export const DoctorDetail: React.FC = () => {
                       className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium transition-all ${
                         selectedDate === getTomorrowDateString()
                           ? 'bg-[#0066cc] text-white shadow-sm'
-                          : 'bg-[#f5f5f7] text-[#7a7a7a] hover:text-[#1d1d1f]'
+                          : 'bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f]'
                       }`}
                     >
                       Tomorrow
@@ -238,7 +238,7 @@ export const DoctorDetail: React.FC = () => {
                   value={selectedDate}
                   min={getLocalDateString()}
                   onChange={(e) => setSelectedDate(e.target.value)}
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#e0e0e0] text-[14px] bg-white focus:outline-none focus:border-[#0066cc]"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-[14px] bg-white focus:outline-none focus:border-[#0066cc]"
                 />
               </div>
 
@@ -247,7 +247,7 @@ export const DoctorDetail: React.FC = () => {
                 <div className="mb-4">
                   <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 flex items-center justify-between">
                     <span>Select Checking Shift</span>
-                    <span className="text-[11px] text-[#7a7a7a]">
+                    <span className="text-[11px] text-[#86868b]">
                       {parseDoctorSlots(doctor).length} shifts
                     </span>
                   </label>
@@ -267,7 +267,7 @@ export const DoctorDetail: React.FC = () => {
                               ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed'
                               : isSelected
                               ? 'bg-[#0066cc]/10 border-[#0066cc] ring-1 ring-[#0066cc]/30 text-[#1d1d1f]'
-                              : 'bg-white border-[#e0e0e0] text-[#1d1d1f] hover:border-[#0066cc]/50'
+                              : 'bg-white border-[#e5e5ea] text-[#1d1d1f] hover:border-[#0066cc]/50'
                           }`}
                         >
                           <div>
@@ -277,7 +277,7 @@ export const DoctorDetail: React.FC = () => {
                             </span>
                           </div>
                           <div className="text-right">
-                            <span className="text-[10px] block text-[#7a7a7a]">Cap: {slot.maxPatients} pts</span>
+                            <span className="text-[10px] block text-[#86868b]">Cap: {slot.maxPatients} pts</span>
                             {isPassed ? (
                               <span className="text-[10px] text-gray-500 font-medium">Shift Ended</span>
                             ) : slotStatus?.isInProgress ? (
@@ -302,7 +302,7 @@ export const DoctorDetail: React.FC = () => {
               ) : queuePreview ? (
                 <div className="p-5 rounded-2xl bg-[#0066cc]/5 border border-[#0066cc]/20 mb-5 space-y-3">
                   <div className="flex justify-between items-center pb-2 border-b border-[#0066cc]/10">
-                    <span className="text-xs text-[#7a7a7a]">Checking Shift:</span>
+                    <span className="text-xs text-[#86868b]">Checking Shift:</span>
                     <strong className="text-xs text-[#0066cc] flex items-center gap-1">
                       <Clock className="w-3.5 h-3.5" />
                       {queuePreview.checkingWindow}
@@ -311,13 +311,13 @@ export const DoctorDetail: React.FC = () => {
 
                   <div className="flex items-center justify-between">
                     <div>
-                      <span className="text-[11px] text-[#7a7a7a] uppercase block">Assigned Token</span>
+                      <span className="text-[11px] text-[#86868b] uppercase block">Assigned Token</span>
                       <strong className="text-2xl text-[#1d1d1f]">
                         Queue #{queuePreview.nextQueueNumber}
                       </strong>
                     </div>
                     <div className="text-right">
-                      <span className="text-[11px] text-[#7a7a7a] uppercase block">Est. Start Time</span>
+                      <span className="text-[11px] text-[#86868b] uppercase block">Est. Start Time</span>
                       <strong
                         className={`text-base ${
                           queuePreview.isPassed ? 'text-rose-600' : 'text-[#0066cc]'
@@ -328,7 +328,7 @@ export const DoctorDetail: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="pt-2 border-t border-[#0066cc]/10 text-xs text-[#7a7a7a] flex items-center gap-1.5">
+                  <div className="pt-2 border-t border-[#0066cc]/10 text-xs text-[#86868b] flex items-center gap-1.5">
                     <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
                     <span>
                       {queuePreview.patientsAhead === 0
@@ -341,11 +341,11 @@ export const DoctorDetail: React.FC = () => {
 
               {/* Price summary & Proceed */}
               <div className="pt-2 border-t border-[#f0f0f0] mb-5">
-                <div className="flex justify-between text-xs mb-1 text-[#7a7a7a]">
+                <div className="flex justify-between text-xs mb-1 text-[#86868b]">
                   <span>Consultation Fee:</span>
                   <span className="font-semibold text-[#1d1d1f] text-sm">${doctor.consultationFee}</span>
                 </div>
-                <div className="flex justify-between text-xs text-[#7a7a7a]">
+                <div className="flex justify-between text-xs text-[#86868b]">
                   <span>Booking Fee:</span>
                   <span className="text-emerald-600 font-semibold">$0.00 (Zero Upfront Paywall)</span>
                 </div>

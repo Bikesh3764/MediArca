@@ -74,14 +74,8 @@ export const ManageSchedule: React.FC = () => {
   const handleAddSlot = () => {
     setSlots((prev) => {
       const newIndex = prev.length + 1;
-      const lastSlot = prev[prev.length - 1];
       let newStart = '17:00';
       let newEnd = '20:00';
-      if (lastSlot) {
-        // Default afternoon/evening slot
-        newStart = '17:00';
-        newEnd = '20:00';
-      }
       const maxPatients = 60;
       const { avgConsultationMinutes } = calculateSlotMetrics(newStart, newEnd, maxPatients);
       return [
@@ -178,7 +172,7 @@ export const ManageSchedule: React.FC = () => {
 
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Header & Capacity Summary Card */}
-            <div className="p-4 rounded-2xl bg-[#1d1d1f] text-white flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="p-5 rounded-2xl bg-[#1d1d1f] text-white flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div>
                 <span className="text-[10px] uppercase font-semibold text-[#2997ff] tracking-wider block">
                   Active Clinical Capacity
@@ -219,7 +213,7 @@ export const ManageSchedule: React.FC = () => {
                 </AppleButton>
               </div>
 
-              <p className="text-xs text-[#7a7a7a] mb-4">
+              <p className="text-xs text-[#86868b] mb-4">
                 Define distinct working windows (e.g. Morning 09:00–11:00 for 50 patients, Evening 17:00–20:00 for 60 patients). MediArca automatically computes the expected consultation duration (duration ÷ capacity).
               </p>
 
@@ -234,7 +228,7 @@ export const ManageSchedule: React.FC = () => {
                   return (
                     <div
                       key={slot.id || idx}
-                      className="p-4 sm:p-5 rounded-2xl bg-[#fafafc] border border-[#e0e0e0] space-y-4 relative transition-all duration-200 hover:border-[#0066cc]/40"
+                      className="p-4 sm:p-5 rounded-2xl bg-[#fafafc] border border-[#e5e5ea] space-y-4 relative transition-all duration-200 hover:border-[#0066cc]/40"
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
@@ -265,7 +259,7 @@ export const ManageSchedule: React.FC = () => {
                       {/* Time and Capacity Inputs */}
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div>
-                          <label className="block text-[11px] font-medium text-[#7a7a7a] mb-1">
+                          <label className="block text-[11px] font-medium text-[#86868b] mb-1">
                             Start Time
                           </label>
                           <input
@@ -273,12 +267,12 @@ export const ManageSchedule: React.FC = () => {
                             required
                             value={slot.startTime}
                             onChange={(e) => handleSlotChange(idx, 'startTime', e.target.value)}
-                            className="w-full h-10 px-3 rounded-xl border border-[#e0e0e0] text-xs bg-white focus:outline-none focus:border-[#0066cc]"
+                            className="w-full h-10 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0066cc]"
                           />
                         </div>
 
                         <div>
-                          <label className="block text-[11px] font-medium text-[#7a7a7a] mb-1">
+                          <label className="block text-[11px] font-medium text-[#86868b] mb-1">
                             End Time
                           </label>
                           <input
@@ -286,12 +280,12 @@ export const ManageSchedule: React.FC = () => {
                             required
                             value={slot.endTime}
                             onChange={(e) => handleSlotChange(idx, 'endTime', e.target.value)}
-                            className="w-full h-10 px-3 rounded-xl border border-[#e0e0e0] text-xs bg-white focus:outline-none focus:border-[#0066cc]"
+                            className="w-full h-10 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0066cc]"
                           />
                         </div>
 
                         <div>
-                          <label className="block text-[11px] font-medium text-[#7a7a7a] mb-1">
+                          <label className="block text-[11px] font-medium text-[#86868b] mb-1">
                             Max Patients (Capacity)
                           </label>
                           <input
@@ -301,21 +295,21 @@ export const ManageSchedule: React.FC = () => {
                             required
                             value={slot.maxPatients}
                             onChange={(e) => handleSlotChange(idx, 'maxPatients', Number(e.target.value))}
-                            className="w-full h-10 px-3 rounded-xl border border-[#e0e0e0] text-xs bg-white focus:outline-none focus:border-[#0066cc]"
+                            className="w-full h-10 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0066cc]"
                           />
                         </div>
                       </div>
 
                       {/* Live Calculation Indicator */}
-                      <div className="p-3 rounded-xl bg-white border border-[#e0e0e0]/70 flex flex-wrap items-center justify-between gap-2 text-xs">
-                        <div className="flex items-center gap-1.5 text-[#7a7a7a]">
+                      <div className="p-3 rounded-xl bg-white border border-[#e5e5ea] flex flex-wrap items-center justify-between gap-2 text-xs">
+                        <div className="flex items-center gap-1.5 text-[#86868b]">
                           <Sparkles className="w-3.5 h-3.5 text-[#0066cc]" />
                           <span>
                             Slot Window: <strong>{format12Hour(slot.startTime)} – {format12Hour(slot.endTime)}</strong> ({durationMinutes} mins)
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-[#7a7a7a]">Formula: {durationMinutes}m ÷ {slot.maxPatients} patients =</span>
+                          <span className="text-[#86868b]">Formula: {durationMinutes}m ÷ {slot.maxPatients} pts =</span>
                           <span className="px-2.5 py-1 rounded-full bg-[#0066cc]/10 text-[#0066cc] font-semibold">
                             ~{avgConsultationMinutes} mins / consultation
                           </span>
@@ -335,7 +329,7 @@ export const ManageSchedule: React.FC = () => {
               </h3>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-xs font-medium text-[#7a7a7a] mb-1">
+                  <label className="block text-xs font-medium text-[#86868b] mb-1">
                     Consultation Fee ($ USD)
                   </label>
                   <input
@@ -343,12 +337,12 @@ export const ManageSchedule: React.FC = () => {
                     min={0}
                     value={consultationFee}
                     onChange={(e) => setConsultationFee(Number(e.target.value))}
-                    className="w-full h-11 px-3.5 rounded-xl border border-[#e0e0e0] text-sm"
+                    className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-sm focus:outline-none focus:border-[#0066cc]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-[#7a7a7a] mb-1">
+                  <label className="block text-xs font-medium text-[#86868b] mb-1">
                     Clinic / Hospital Address
                   </label>
                   <input
@@ -356,12 +350,12 @@ export const ManageSchedule: React.FC = () => {
                     value={clinicAddress}
                     onChange={(e) => setClinicAddress(e.target.value)}
                     placeholder="e.g. Apex Health Center, Suite 300, New York, NY"
-                    className="w-full h-11 px-3.5 rounded-xl border border-[#e0e0e0] text-sm"
+                    className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-sm focus:outline-none focus:border-[#0066cc]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-[#7a7a7a] mb-1">
+                  <label className="block text-xs font-medium text-[#86868b] mb-1">
                     Professional Bio
                   </label>
                   <textarea
@@ -369,7 +363,7 @@ export const ManageSchedule: React.FC = () => {
                     value={bio}
                     onChange={(e) => setBio(e.target.value)}
                     placeholder="Describe your areas of clinical focus, background, and patient care philosophy..."
-                    className="w-full p-3 rounded-xl border border-[#e0e0e0] text-sm"
+                    className="w-full p-3 rounded-xl border border-[#e5e5ea] text-sm focus:outline-none focus:border-[#0066cc]"
                   ></textarea>
                 </div>
               </div>

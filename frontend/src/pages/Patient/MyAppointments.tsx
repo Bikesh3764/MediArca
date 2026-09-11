@@ -37,7 +37,7 @@ export const MyAppointments: React.FC = () => {
     }
     fetchAppointments();
 
-    // Auto-refresh queue every 15 seconds so patient sees live queue position updates!
+    // Auto-refresh queue every 15 seconds so patient sees live queue position updates
     const interval = setInterval(fetchAppointments, 15000);
     return () => clearInterval(interval);
   }, [user, loadingAuth, navigate]);
@@ -66,7 +66,7 @@ export const MyAppointments: React.FC = () => {
           variant="ghost"
           size="sm"
           onClick={fetchAppointments}
-          className="flex items-center gap-1"
+          className="flex items-center gap-1.5"
         >
           <RefreshCw className="w-3.5 h-3.5" />
           Refresh
@@ -75,7 +75,7 @@ export const MyAppointments: React.FC = () => {
           variant="primary"
           size="sm"
           onClick={() => navigate('/doctors')}
-          className="flex items-center gap-1"
+          className="flex items-center gap-1.5"
         >
           <Plus className="w-3.5 h-3.5" />
           Book Specialist
@@ -85,13 +85,13 @@ export const MyAppointments: React.FC = () => {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-8">
         {/* Apple Pill Segmented Filter */}
         <div className="flex justify-center mb-8">
-          <div className="bg-white/80 p-1 rounded-full border border-[#e0e0e0] flex shadow-sm">
+          <div className="bg-white/90 p-1 rounded-full border border-[#e5e5ea] flex shadow-sm">
             <button
               onClick={() => setActiveTab('upcoming')}
               className={`px-6 py-2 rounded-full text-xs font-medium transition-all ${
                 activeTab === 'upcoming'
                   ? 'bg-[#0066cc] text-white shadow-sm'
-                  : 'text-[#7a7a7a] hover:text-[#1d1d1f]'
+                  : 'text-[#86868b] hover:text-[#1d1d1f]'
               }`}
             >
               Active Queue Passes ({upcomingList.length})
@@ -101,7 +101,7 @@ export const MyAppointments: React.FC = () => {
               className={`px-6 py-2 rounded-full text-xs font-medium transition-all ${
                 activeTab === 'past'
                   ? 'bg-[#0066cc] text-white shadow-sm'
-                  : 'text-[#7a7a7a] hover:text-[#1d1d1f]'
+                  : 'text-[#86868b] hover:text-[#1d1d1f]'
               }`}
             >
               Past Consultations ({pastList.length})
@@ -113,22 +113,22 @@ export const MyAppointments: React.FC = () => {
         {loading ? (
           <div className="space-y-4">
             {[1, 2].map((i) => (
-              <div key={i} className="h-64 rounded-[20px] bg-white border border-[#e0e0e0] animate-pulse"></div>
+              <div key={i} className="h-64 rounded-[20px] bg-white border border-[#e5e5ea] animate-pulse"></div>
             ))}
           </div>
         ) : activeTab === 'upcoming' ? (
           upcomingList.length === 0 ? (
-            <div className="bg-white rounded-[20px] border border-[#e0e0e0] p-12 text-center">
-              <Calendar className="w-10 h-10 text-[#7a7a7a] mx-auto mb-3" />
+            <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-12 text-center max-w-lg mx-auto shadow-sm">
+              <Calendar className="w-10 h-10 text-[#86868b] mx-auto mb-3" />
               <h3 className="text-lg font-semibold text-[#1d1d1f]">No active queue tokens</h3>
-              <p className="text-xs text-[#7a7a7a] mt-1 max-w-sm mx-auto">
+              <p className="text-xs text-[#86868b] mt-1 max-w-sm mx-auto">
                 You have no scheduled appointments currently waiting in queue.
               </p>
               <AppleButton
                 variant="primary"
                 size="md"
                 onClick={() => navigate('/doctors')}
-                className="mt-5"
+                className="mt-6"
               >
                 Find and Book a Doctor
               </AppleButton>
@@ -146,10 +146,10 @@ export const MyAppointments: React.FC = () => {
             </div>
           )
         ) : pastList.length === 0 ? (
-          <div className="bg-white rounded-[20px] border border-[#e0e0e0] p-12 text-center">
-            <Calendar className="w-10 h-10 text-[#7a7a7a] mx-auto mb-3" />
+          <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-12 text-center max-w-lg mx-auto shadow-sm">
+            <Calendar className="w-10 h-10 text-[#86868b] mx-auto mb-3" />
             <h3 className="text-lg font-semibold text-[#1d1d1f]">No past consultations recorded</h3>
-            <p className="text-xs text-[#7a7a7a] mt-1">
+            <p className="text-xs text-[#86868b] mt-1">
               Completed consultations and digital prescriptions will appear here.
             </p>
           </div>

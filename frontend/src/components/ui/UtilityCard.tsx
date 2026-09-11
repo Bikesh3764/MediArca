@@ -13,7 +13,7 @@ export const UtilityCard: React.FC<UtilityCardProps> = ({
 }) => {
   return (
     <div
-      className={`bg-white rounded-[18px] border border-[#e0e0e0]/80 p-6 ${
+      className={`bg-white rounded-[20px] border border-[#e5e5ea] p-6 shadow-sm ${
         hoverEffect ? 'transition-all duration-200 hover:border-[#0066cc]/40 hover:shadow-apple-card' : ''
       } ${className}`}
       {...props}

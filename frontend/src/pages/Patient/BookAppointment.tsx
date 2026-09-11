@@ -159,7 +159,7 @@ export const BookAppointment: React.FC = () => {
 
           {/* Doctor Info Card */}
           <div className="flex items-center gap-4 pb-6 border-b border-[#f0f0f0]">
-            <div className="w-16 h-16 rounded-full bg-[#f5f5f7] border border-[#e0e0e0] overflow-hidden flex-shrink-0">
+            <div className="w-16 h-16 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] overflow-hidden flex-shrink-0">
               {doctor.user.avatarUrl ? (
                 <img src={doctor.user.avatarUrl} alt={doctor.user.fullName} className="w-full h-full object-cover" />
               ) : (
@@ -169,11 +169,11 @@ export const BookAppointment: React.FC = () => {
               )}
             </div>
             <div>
-              <h3 className="text-xl font-semibold text-[#1d1d1f]">{doctor.user.fullName}</h3>
+              <h3 className="text-xl font-semibold text-[#1d1d1f] tracking-tight">{doctor.user.fullName}</h3>
               <p className="text-xs text-[#0066cc] font-medium">
                 {doctor.specialty} • {doctor.qualifications}
               </p>
-              <p className="text-xs text-[#7a7a7a] mt-0.5">{doctor.clinicAddress || 'MediArca Clinic'}</p>
+              <p className="text-xs text-[#86868b] mt-0.5">{doctor.clinicAddress || 'MediArca Clinic'}</p>
             </div>
           </div>
 
@@ -191,7 +191,7 @@ export const BookAppointment: React.FC = () => {
                   className={`px-2.5 py-0.5 rounded-full text-xs font-medium transition-all ${
                     appointmentDate === getLocalDateString()
                       ? 'bg-[#0066cc] text-white shadow-sm'
-                      : 'bg-[#f5f5f7] text-[#7a7a7a] hover:text-[#1d1d1f]'
+                      : 'bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f]'
                   }`}
                 >
                   Today
@@ -202,7 +202,7 @@ export const BookAppointment: React.FC = () => {
                   className={`px-2.5 py-0.5 rounded-full text-xs font-medium transition-all ${
                     appointmentDate === getTomorrowDateString()
                       ? 'bg-[#0066cc] text-white shadow-sm'
-                      : 'bg-[#f5f5f7] text-[#7a7a7a] hover:text-[#1d1d1f]'
+                      : 'bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f]'
                   }`}
                 >
                   Tomorrow
@@ -215,7 +215,7 @@ export const BookAppointment: React.FC = () => {
               value={appointmentDate}
               min={getLocalDateString()}
               onChange={(e) => setAppointmentDate(e.target.value)}
-              className="w-full h-11 px-4 rounded-xl border border-[#e0e0e0] text-[14px] bg-white focus:outline-none focus:border-[#0066cc]"
+              className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[14px] bg-white focus:outline-none focus:border-[#0066cc]"
             />
           </div>
 
@@ -226,7 +226,7 @@ export const BookAppointment: React.FC = () => {
                 <Clock className="w-3.5 h-3.5 text-[#0066cc]" />
                 Choose Doctor Checking Slot (Shift)
               </span>
-              <span className="text-[11px] text-[#7a7a7a]">
+              <span className="text-[11px] text-[#86868b]">
                 {doctorSlots.length} available shift{doctorSlots.length > 1 ? 's' : ''}
               </span>
             </label>
@@ -250,7 +250,7 @@ export const BookAppointment: React.FC = () => {
                         ? 'bg-gray-100 border-gray-200 opacity-60 cursor-not-allowed'
                         : isSelected
                         ? 'bg-[#0066cc]/5 border-[#0066cc] ring-2 ring-[#0066cc]/20 shadow-sm'
-                        : 'bg-white border-[#e0e0e0] hover:border-[#0066cc]/50'
+                        : 'bg-white border-[#e5e5ea] hover:border-[#0066cc]/50'
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2 mb-1">
@@ -271,7 +271,7 @@ export const BookAppointment: React.FC = () => {
                       </span>
                     </div>
 
-                    <div className="flex items-center justify-between text-[11px] text-[#7a7a7a] mt-2 pt-2 border-t border-black/5">
+                    <div className="flex items-center justify-between text-[11px] text-[#86868b] mt-2 pt-2 border-t border-black/5">
                       <span>Max {s.maxPatients} patients</span>
                       <span className="text-[#1d1d1f] font-medium">
                         ~{s.avgConsultationMinutes}m pace
@@ -346,7 +346,7 @@ export const BookAppointment: React.FC = () => {
                 <label className="block text-xs font-medium text-[#1d1d1f]">
                   Reason for Visit
                 </label>
-                <span className="text-[11px] text-[#7a7a7a]">Quick Select:</span>
+                <span className="text-[11px] text-[#86868b]">Quick Select:</span>
               </div>
               <div className="flex flex-wrap gap-1.5 mb-2">
                 {[
@@ -360,9 +360,9 @@ export const BookAppointment: React.FC = () => {
                     key={tag}
                     type="button"
                     onClick={() => setReasonForVisit(tag)}
-                    className={`px-2.5 py-1 rounded-full text-[11px] transition-colors ${
+                    className={`px-3 py-1 rounded-full text-[11px] transition-colors ${
                       reasonForVisit === tag
-                        ? 'bg-[#0066cc] text-white font-medium'
+                        ? 'bg-[#0066cc] text-white font-medium shadow-sm'
                         : 'bg-[#f5f5f7] text-[#1d1d1f] hover:bg-[#e8e8ed]'
                     }`}
                   >
@@ -375,7 +375,7 @@ export const BookAppointment: React.FC = () => {
                 value={reasonForVisit}
                 onChange={(e) => setReasonForVisit(e.target.value)}
                 placeholder="e.g. Annual cardiac review, chest tightness, routine check"
-                className="w-full h-11 px-4 rounded-xl border border-[#e0e0e0] text-[14px] focus:outline-none focus:border-[#0066cc]"
+                className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[14px] focus:outline-none focus:border-[#0066cc]"
               />
             </div>
 
@@ -388,12 +388,12 @@ export const BookAppointment: React.FC = () => {
                 value={symptoms}
                 onChange={(e) => setSymptoms(e.target.value)}
                 placeholder="Describe any symptoms you are experiencing..."
-                className="w-full p-3 rounded-xl border border-[#e0e0e0] text-[14px] focus:outline-none focus:border-[#0066cc]"
+                className="w-full p-3 rounded-xl border border-[#e5e5ea] text-[14px] focus:outline-none focus:border-[#0066cc]"
               ></textarea>
             </div>
 
             {/* Zero Payment Policy Notice */}
-            <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-start gap-2.5">
+            <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-start gap-2.5">
               <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
               <div>
                 <strong>Direct Clinic Token (No Upfront Payment):</strong> Consultation fee of $
@@ -403,7 +403,7 @@ export const BookAppointment: React.FC = () => {
 
             {/* Warning if slot has ended for today */}
             {isSelectedSlotPassed && (
-              <div className="p-4 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-xs flex items-start gap-2.5">
+              <div className="p-4 rounded-2xl bg-amber-50 border border-amber-300 text-amber-900 text-xs flex items-start gap-2.5">
                 <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
                 <div>
                   <strong>This checking shift has already ended for today.</strong> Please select an upcoming shift above or pick a future appointment date to reserve your queue token.
@@ -412,7 +412,7 @@ export const BookAppointment: React.FC = () => {
             )}
 
             {isSelectedSlotFull && !isSelectedSlotPassed && (
-              <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
+              <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
                 <span>This checking slot has reached maximum capacity. Please pick another slot or date.</span>
               </div>

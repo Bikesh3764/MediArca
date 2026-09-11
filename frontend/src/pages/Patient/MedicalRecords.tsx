@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { SubNav } from '../../components/layout/SubNav';
 import { AppleButton } from '../../components/ui/AppleButton';
 import { UtilityCard } from '../../components/ui/UtilityCard';
-import { FileText, Upload, Trash2, Eye, X, AlertCircle, ExternalLink, Download, Layers } from 'lucide-react';
+import { FileText, Upload, Trash2, Eye, X, AlertCircle, ExternalLink, Download, Layers, ShieldCheck } from 'lucide-react';
 
 const CATEGORIES = ['All', 'Prescription', 'Lab Report', 'Scan', 'Discharge Summary', 'Other'];
 
@@ -119,8 +119,8 @@ export const MedicalRecords: React.FC = () => {
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-8">
         {/* Category Filters Bar */}
-        <div className="bg-white rounded-[20px] border border-[#e0e0e0] p-4 mb-6 shadow-sm flex items-center gap-2 overflow-x-auto scrollbar-none">
-          <span className="text-xs font-semibold text-[#7a7a7a] mr-2 flex items-center gap-1 flex-shrink-0">
+        <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-4 mb-6 shadow-sm flex items-center gap-2 overflow-x-auto scrollbar-none">
+          <span className="text-xs font-semibold text-[#86868b] mr-2 flex items-center gap-1 flex-shrink-0">
             <Layers className="w-3.5 h-3.5 text-[#0066cc]" />
             Categories:
           </span>
@@ -138,8 +138,8 @@ export const MedicalRecords: React.FC = () => {
                 }`}
               >
                 <span>{cat === 'Scan' ? 'Scans / Imaging' : cat === 'Prescription' ? 'Prescriptions' : cat}</span>
-                <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
-                  isSelected ? 'bg-white/20 text-white' : 'bg-white text-[#7a7a7a]'
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                  isSelected ? 'bg-white/20 text-white' : 'bg-white text-[#86868b]'
                 }`}>
                   {count}
                 </span>
@@ -152,16 +152,16 @@ export const MedicalRecords: React.FC = () => {
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-44 rounded-[20px] bg-white border border-[#e0e0e0] animate-pulse"></div>
+              <div key={i} className="h-44 rounded-[20px] bg-white border border-[#e5e5ea] animate-pulse"></div>
             ))}
           </div>
         ) : filteredRecords.length === 0 ? (
-          <div className="bg-white rounded-[20px] border border-[#e0e0e0] p-12 text-center max-w-md mx-auto shadow-sm">
-            <FileText className="w-12 h-12 text-[#7a7a7a] mx-auto mb-3" />
+          <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-12 text-center max-w-md mx-auto shadow-sm">
+            <FileText className="w-12 h-12 text-[#86868b] mx-auto mb-3" />
             <h3 className="text-lg font-semibold text-[#1d1d1f]">
               {selectedCategory === 'All' ? 'Your vault is empty' : `No ${selectedCategory} documents found`}
             </h3>
-            <p className="text-xs text-[#7a7a7a] mt-1 mb-5 leading-relaxed">
+            <p className="text-xs text-[#86868b] mt-1 mb-5 leading-relaxed">
               {selectedCategory === 'All'
                 ? 'Upload blood reports, scan documents, or discharge summaries to share directly with your doctors.'
                 : `Upload your ${selectedCategory} records to access them anytime.`}
@@ -185,7 +185,7 @@ export const MedicalRecords: React.FC = () => {
                     </span>
                     <button
                       onClick={() => handleDelete(rec.id)}
-                      className="text-[#7a7a7a] hover:text-rose-600 transition-colors p-1"
+                      className="text-[#86868b] hover:text-rose-600 transition-colors p-1"
                       title="Delete document"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -197,13 +197,13 @@ export const MedicalRecords: React.FC = () => {
                   >
                     {rec.title}
                   </h4>
-                  <span className="text-[11px] text-[#7a7a7a] block">
+                  <span className="text-[11px] text-[#86868b] block">
                     Uploaded: {new Date(rec.uploadedAt).toLocaleDateString()}
                   </span>
                 </div>
 
                 <div className="pt-4 mt-4 border-t border-[#f0f0f0] flex items-center justify-between">
-                  <span className="text-xs font-mono uppercase text-[#7a7a7a]">
+                  <span className="text-xs font-mono uppercase text-[#86868b]">
                     {rec.fileType || 'Doc'}
                   </span>
                   <div className="flex items-center gap-2">
@@ -218,7 +218,7 @@ export const MedicalRecords: React.FC = () => {
                       href={getFileUrl(rec.fileUrl)}
                       target="_blank"
                       rel="noreferrer"
-                      className="text-[#7a7a7a] hover:text-[#1d1d1f] transition-colors"
+                      className="text-[#86868b] hover:text-[#1d1d1f] transition-colors"
                       title="Open in new tab"
                     >
                       <ExternalLink className="w-3.5 h-3.5" />
@@ -234,7 +234,7 @@ export const MedicalRecords: React.FC = () => {
       {/* Instant In-App Document Preview Modal */}
       {previewRecord && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-[24px] border border-[#e0e0e0] max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+          <div className="bg-white rounded-[20px] border border-[#e5e5ea] max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
             <div className="flex justify-between items-center px-6 py-4 border-b border-[#f0f0f0]">
               <div className="flex items-center gap-2.5">
                 <FileText className="w-5 h-5 text-[#0066cc]" />
@@ -242,7 +242,7 @@ export const MedicalRecords: React.FC = () => {
                   <h3 className="text-base font-semibold text-[#1d1d1f] truncate max-w-[320px] sm:max-w-md">
                     {previewRecord.title}
                   </h3>
-                  <span className="text-[11px] text-[#7a7a7a]">{previewRecord.category}</span>
+                  <span className="text-[11px] text-[#86868b]">{previewRecord.category}</span>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -250,7 +250,7 @@ export const MedicalRecords: React.FC = () => {
                   href={getFileUrl(previewRecord.fileUrl)}
                   target="_blank"
                   rel="noreferrer"
-                  className="p-2 rounded-xl text-[#7a7a7a] hover:bg-gray-100 hover:text-[#1d1d1f] transition-colors"
+                  className="p-2 rounded-xl text-[#86868b] hover:bg-gray-100 hover:text-[#1d1d1f] transition-colors"
                   title="Open in new window"
                 >
                   <ExternalLink className="w-4 h-4" />
@@ -258,14 +258,14 @@ export const MedicalRecords: React.FC = () => {
                 <a
                   href={getFileUrl(previewRecord.fileUrl)}
                   download
-                  className="p-2 rounded-xl text-[#7a7a7a] hover:bg-gray-100 hover:text-[#1d1d1f] transition-colors"
+                  className="p-2 rounded-xl text-[#86868b] hover:bg-gray-100 hover:text-[#1d1d1f] transition-colors"
                   title="Download file"
                 >
                   <Download className="w-4 h-4" />
                 </a>
                 <button
                   onClick={() => setPreviewRecord(null)}
-                  className="p-2 rounded-xl hover:bg-gray-100 text-[#7a7a7a] transition-colors"
+                  className="p-2 rounded-xl hover:bg-gray-100 text-[#86868b] transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -278,16 +278,16 @@ export const MedicalRecords: React.FC = () => {
                 <img
                   src={getFileUrl(previewRecord.fileUrl)}
                   alt={previewRecord.title}
-                  className="max-h-[65vh] max-w-full object-contain rounded-xl shadow-sm border border-[#e0e0e0]"
+                  className="max-h-[65vh] max-w-full object-contain rounded-xl shadow-sm border border-[#e5e5ea]"
                 />
               ) : (
-                <div className="w-full h-[65vh] flex flex-col bg-white rounded-xl border border-[#e0e0e0] overflow-hidden shadow-inner">
+                <div className="w-full h-[65vh] flex flex-col bg-white rounded-xl border border-[#e5e5ea] overflow-hidden shadow-inner">
                   <iframe
                     src={getFileUrl(previewRecord.fileUrl)}
                     title={previewRecord.title}
                     className="w-full flex-1 border-0"
                   />
-                  <div className="px-4 py-2 bg-gray-50 border-t border-gray-200 flex items-center justify-between text-xs text-[#7a7a7a]">
+                  <div className="px-4 py-2 bg-gray-50 border-t border-gray-200 flex items-center justify-between text-xs text-[#86868b]">
                     <span>Viewing PDF preview</span>
                     <a
                       href={getFileUrl(previewRecord.fileUrl)}
@@ -315,13 +315,13 @@ export const MedicalRecords: React.FC = () => {
       {/* Upload Modal with Progress */}
       {showUploadModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-[22px] border border-[#e0e0e0] max-w-md w-full p-6 sm:p-8 shadow-2xl">
+          <div className="bg-white rounded-[20px] border border-[#e5e5ea] max-w-md w-full p-6 sm:p-8 shadow-2xl">
             <div className="flex justify-between items-center pb-4 border-b border-[#f0f0f0]">
               <h3 className="text-lg font-semibold text-[#1d1d1f]">Upload Medical Document</h3>
               <button
                 disabled={uploading}
                 onClick={() => setShowUploadModal(false)}
-                className="p-1.5 rounded-full hover:bg-gray-100 text-[#7a7a7a]"
+                className="p-1.5 rounded-full hover:bg-gray-100 text-[#86868b]"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -346,7 +346,7 @@ export const MedicalRecords: React.FC = () => {
                   value={uploadTitle}
                   onChange={(e) => setUploadTitle(e.target.value)}
                   placeholder="e.g. Lipid Profile, Chest X-Ray, Blood Test"
-                  className="w-full h-11 px-4 rounded-xl border border-[#e0e0e0] text-[14px] focus:outline-none focus:border-[#0066cc]"
+                  className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[14px] focus:outline-none focus:border-[#0066cc]"
                 />
               </div>
 
@@ -358,7 +358,7 @@ export const MedicalRecords: React.FC = () => {
                   disabled={uploading}
                   value={uploadCategory}
                   onChange={(e) => setUploadCategory(e.target.value)}
-                  className="w-full h-11 px-3 rounded-xl border border-[#e0e0e0] text-[14px] bg-white focus:outline-none focus:border-[#0066cc]"
+                  className="w-full h-11 px-3 rounded-xl border border-[#e5e5ea] text-[14px] bg-white focus:outline-none focus:border-[#0066cc]"
                 >
                   <option value="Lab Report">Lab Report</option>
                   <option value="Scan">Scan / Imaging (X-Ray, MRI)</option>
@@ -378,8 +378,12 @@ export const MedicalRecords: React.FC = () => {
                   disabled={uploading}
                   accept=".pdf,.png,.jpg,.jpeg"
                   onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
-                  className="w-full text-xs text-[#7a7a7a] file:mr-3 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#0066cc] file:text-white hover:file:bg-[#0071e3] file:cursor-pointer"
+                  className="w-full text-xs text-[#86868b] file:mr-3 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#0066cc] file:text-white hover:file:bg-[#0071e3] file:cursor-pointer"
                 />
+                <p className="text-[11px] text-[#86868b] mt-1.5 flex items-center gap-1">
+                  <ShieldCheck className="w-3.5 h-3.5 text-[#0066cc]" />
+                  <span>Max file size: 10 MB. Recommended under 2 MB for faster loading.</span>
+                </p>
               </div>
 
               {/* Upload Progress Bar */}

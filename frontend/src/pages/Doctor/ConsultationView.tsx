@@ -237,10 +237,10 @@ export const ConsultationView: React.FC = () => {
   if (!appointment) {
     return (
       <div className="min-h-screen bg-[#f5f5f7] flex flex-col items-center justify-center p-6 text-center">
-        <div className="bg-white p-8 rounded-[24px] border border-[#e0e0e0] max-w-md w-full shadow-sm">
+        <div className="bg-white p-8 rounded-[20px] border border-[#e5e5ea] max-w-md w-full shadow-sm">
           <AlertCircle className="w-12 h-12 text-rose-500 mx-auto mb-3" />
           <h3 className="text-lg font-semibold text-[#1d1d1f]">Appointment Not Found</h3>
-          <p className="text-xs text-[#7a7a7a] mt-1 mb-6">
+          <p className="text-xs text-[#86868b] mt-1 mb-6">
             {error || 'This consultation appointment could not be located or has been cancelled.'}
           </p>
           <AppleButton variant="primary" size="md" onClick={() => navigate('/doctor/dashboard')} className="w-full">
@@ -292,35 +292,35 @@ export const ConsultationView: React.FC = () => {
           <div className="lg:col-span-1 space-y-6">
             <UtilityCard>
               <div className="flex items-center gap-3 pb-4 border-b border-[#f0f0f0]">
-                <div className="w-12 h-12 rounded-full bg-[#f5f5f7] border border-[#e0e0e0] flex items-center justify-center font-bold text-lg text-[#0066cc]">
+                <div className="w-12 h-12 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] flex items-center justify-center font-bold text-lg text-[#0066cc]">
                   {patientUser?.fullName[0] || 'P'}
                 </div>
                 <div>
                   <h3 className="font-semibold text-[17px] text-[#1d1d1f]">{patientUser?.fullName}</h3>
-                  <p className="text-xs text-[#7a7a7a]">{patientUser?.email}</p>
+                  <p className="text-xs text-[#86868b]">{patientUser?.email}</p>
                 </div>
               </div>
 
               <div className="py-4 border-b border-[#f0f0f0] text-xs space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-[#7a7a7a]">Queue Token:</span>
+                  <span className="text-[#86868b]">Queue Token:</span>
                   <strong className="text-[#0066cc]">Queue #{appointment.queueNumber}</strong>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-[#7a7a7a]">Blood Group:</span>
-                  <span>{appointment.patient?.bloodGroup || 'Not specified'}</span>
+                  <span className="text-[#86868b]">Blood Group:</span>
+                  <span className="font-medium text-[#1d1d1f]">{appointment.patient?.bloodGroup || 'Not specified'}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-[#7a7a7a]">Allergies:</span>
+                  <span className="text-[#86868b]">Allergies:</span>
                   <span className="text-rose-600 font-medium">{appointment.patient?.allergies || 'None reported'}</span>
                 </div>
               </div>
 
               <div className="pt-4 text-xs">
-                <span className="text-[#7a7a7a] uppercase font-semibold block mb-1">Reason for Visit:</span>
+                <span className="text-[#86868b] uppercase font-semibold block mb-1">Reason for Visit:</span>
                 <p className="font-medium text-[#1d1d1f]">{appointment.reasonForVisit || 'General'}</p>
                 {appointment.symptoms && (
-                  <p className="mt-2 text-[#7a7a7a]">
+                  <p className="mt-2 text-[#86868b]">
                     <strong>Symptoms: </strong> {appointment.symptoms}
                   </p>
                 )}
@@ -338,43 +338,43 @@ export const ConsultationView: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-3 text-xs">
                 <div>
-                  <label className="block text-[#7a7a7a] mb-1">Blood Pressure</label>
+                  <label className="block text-[#86868b] mb-1">Blood Pressure</label>
                   <input
                     type="text"
                     value={bp}
                     onChange={(e) => setBp(e.target.value)}
                     placeholder="120/80 mmHg"
-                    className="w-full h-9 px-3 rounded-lg border border-[#e0e0e0] focus:border-[#0066cc]"
+                    className="w-full h-9 px-3 rounded-lg border border-[#e5e5ea] focus:border-[#0066cc]"
                   />
                 </div>
                 <div>
-                  <label className="block text-[#7a7a7a] mb-1">Pulse / Heart Rate</label>
+                  <label className="block text-[#86868b] mb-1">Pulse Rate</label>
                   <input
                     type="text"
                     value={pulse}
                     onChange={(e) => setPulse(e.target.value)}
                     placeholder="72 bpm"
-                    className="w-full h-9 px-3 rounded-lg border border-[#e0e0e0] focus:border-[#0066cc]"
+                    className="w-full h-9 px-3 rounded-lg border border-[#e5e5ea] focus:border-[#0066cc]"
                   />
                 </div>
                 <div>
-                  <label className="block text-[#7a7a7a] mb-1">Temperature</label>
+                  <label className="block text-[#86868b] mb-1">Temperature</label>
                   <input
                     type="text"
                     value={temp}
                     onChange={(e) => setTemp(e.target.value)}
                     placeholder="98.6 °F"
-                    className="w-full h-9 px-3 rounded-lg border border-[#e0e0e0] focus:border-[#0066cc]"
+                    className="w-full h-9 px-3 rounded-lg border border-[#e5e5ea] focus:border-[#0066cc]"
                   />
                 </div>
                 <div>
-                  <label className="block text-[#7a7a7a] mb-1">Weight</label>
+                  <label className="block text-[#86868b] mb-1">Weight</label>
                   <input
                     type="text"
                     value={weight}
                     onChange={(e) => setWeight(e.target.value)}
                     placeholder="70 kg"
-                    className="w-full h-9 px-3 rounded-lg border border-[#e0e0e0] focus:border-[#0066cc]"
+                    className="w-full h-9 px-3 rounded-lg border border-[#e5e5ea] focus:border-[#0066cc]"
                   />
                 </div>
               </div>
@@ -383,7 +383,7 @@ export const ConsultationView: React.FC = () => {
             {/* Patient Past Uploaded Records */}
             {appointment.patient?.medicalRecords && appointment.patient.medicalRecords.length > 0 && (
               <UtilityCard>
-                <h4 className="text-xs font-semibold uppercase tracking-wider text-[#7a7a7a] mb-3">
+                <h4 className="text-xs font-semibold uppercase tracking-wider text-[#86868b] mb-3">
                   Patient Vault Records ({appointment.patient.medicalRecords.length})
                 </h4>
                 <div className="space-y-2">
@@ -393,7 +393,7 @@ export const ConsultationView: React.FC = () => {
                       href={getFileUrl(doc.fileUrl)}
                       target="_blank"
                       rel="noreferrer"
-                      className="p-2 rounded-lg bg-[#f5f5f7] hover:bg-[#0066cc]/5 border border-[#e0e0e0] flex justify-between items-center text-xs text-[#1d1d1f] transition-colors"
+                      className="p-2.5 rounded-xl bg-[#f5f5f7] hover:bg-[#0066cc]/5 border border-[#e5e5ea] flex justify-between items-center text-xs text-[#1d1d1f] transition-colors"
                     >
                       <span className="truncate max-w-[170px]">{doc.title}</span>
                       <span className="text-[#0066cc] flex items-center gap-1 font-medium">
@@ -409,7 +409,7 @@ export const ConsultationView: React.FC = () => {
           {/* Right Column: Diagnosis, Prescription Builder & Completion (2 Columns) */}
           <div className="lg:col-span-2 space-y-6">
             <UtilityCard>
-              <h3 className="text-lg font-semibold text-[#1d1d1f] mb-4">
+              <h3 className="text-lg font-semibold text-[#1d1d1f] mb-4 tracking-tight">
                 Clinical Diagnosis & Consultation Notes
               </h3>
 
@@ -419,7 +419,7 @@ export const ConsultationView: React.FC = () => {
                     <label className="block text-xs font-medium text-[#1d1d1f]">
                       Primary Clinical Diagnosis *
                     </label>
-                    <span className="text-[11px] text-[#7a7a7a]">Common:</span>
+                    <span className="text-[11px] text-[#86868b]">Common:</span>
                   </div>
                   <div className="flex flex-wrap gap-1.5 mb-2">
                     {[
@@ -433,9 +433,9 @@ export const ConsultationView: React.FC = () => {
                         key={diag}
                         type="button"
                         onClick={() => setDiagnosis(diag)}
-                        className={`px-2.5 py-0.5 rounded-full text-[11px] transition-colors ${
+                        className={`px-3 py-1 rounded-full text-[11px] transition-colors ${
                           diagnosis === diag
-                            ? 'bg-[#0066cc] text-white font-medium'
+                            ? 'bg-[#0066cc] text-white font-medium shadow-sm'
                             : 'bg-[#f5f5f7] text-[#1d1d1f] hover:bg-[#e8e8ed]'
                         }`}
                       >
@@ -449,7 +449,7 @@ export const ConsultationView: React.FC = () => {
                     value={diagnosis}
                     onChange={(e) => setDiagnosis(e.target.value)}
                     placeholder="e.g. Acute Bronchitis, Essential Hypertension Grade 1"
-                    className="w-full h-11 px-4 rounded-xl border border-[#e0e0e0] text-[14px] focus:outline-none focus:border-[#0066cc]"
+                    className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[14px] focus:outline-none focus:border-[#0066cc]"
                   />
                 </div>
 
@@ -462,7 +462,7 @@ export const ConsultationView: React.FC = () => {
                     value={clinicalNotes}
                     onChange={(e) => setClinicalNotes(e.target.value)}
                     placeholder="Physical examination observations, lab interpretations, treatment rationale..."
-                    className="w-full p-3 rounded-xl border border-[#e0e0e0] text-[14px] focus:outline-none focus:border-[#0066cc]"
+                    className="w-full p-3 rounded-xl border border-[#e5e5ea] text-[14px] focus:outline-none focus:border-[#0066cc]"
                   ></textarea>
                 </div>
               </div>
@@ -472,8 +472,8 @@ export const ConsultationView: React.FC = () => {
             <UtilityCard>
               <div className="flex justify-between items-center mb-4">
                 <div>
-                  <h3 className="text-lg font-semibold text-[#1d1d1f]">Digital Prescription Writing Pad</h3>
-                  <p className="text-xs text-[#7a7a7a] mt-0.5">
+                  <h3 className="text-lg font-semibold text-[#1d1d1f] tracking-tight">Digital Prescription Writing Pad</h3>
+                  <p className="text-xs text-[#86868b] mt-0.5">
                     Prescribe medications with auto-calculating total dispense quantity.
                   </p>
                 </div>
@@ -495,15 +495,15 @@ export const ConsultationView: React.FC = () => {
                   return (
                     <div
                       key={idx}
-                      className="p-4 sm:p-5 rounded-2xl border border-[#e0e0e0] bg-[#fafafc] space-y-3.5 relative transition-all"
+                      className="p-4 sm:p-5 rounded-2xl border border-[#e5e5ea] bg-[#fafafc] space-y-3.5 relative transition-all"
                     >
-                      <div className="flex justify-between items-center pb-2 border-b border-gray-200/60">
+                      <div className="flex justify-between items-center pb-2 border-b border-[#f0f0f0]">
                         <span className="text-xs font-semibold text-[#0066cc]">Medication #{idx + 1}</span>
                         {medicines.length > 1 && (
                           <button
                             type="button"
                             onClick={() => handleRemoveMedicine(idx)}
-                            className="text-[#7a7a7a] hover:text-rose-600 transition-colors p-1 rounded hover:bg-rose-50"
+                            className="text-[#86868b] hover:text-rose-600 transition-colors p-1 rounded hover:bg-rose-50"
                             title="Remove medication"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -513,39 +513,37 @@ export const ConsultationView: React.FC = () => {
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                         <div>
-                          <label className="block text-[#7a7a7a] mb-1 font-medium">Medicine Name *</label>
+                          <label className="block text-[#86868b] mb-1 font-medium">Medicine Name *</label>
                           <input
                             type="text"
                             required
                             value={med.name}
                             onChange={(e) => handleMedicineChange(idx, 'name', e.target.value)}
                             placeholder="e.g. Amoxicillin 500mg, Paracetamol 650mg"
-                            className="w-full h-9 px-3 rounded-lg border border-[#e0e0e0] bg-white text-xs focus:border-[#0066cc]"
+                            className="w-full h-9 px-3 rounded-lg border border-[#e5e5ea] bg-white text-xs focus:border-[#0066cc]"
                           />
                         </div>
                         <div>
-                          <label className="block text-[#7a7a7a] mb-1 font-medium">Dosage Form</label>
+                          <label className="block text-[#86868b] mb-1 font-medium">Dosage Form</label>
                           <input
                             type="text"
                             value={med.dosage}
                             onChange={(e) => handleMedicineChange(idx, 'dosage', e.target.value)}
                             placeholder="1 Tablet / 5ml Syrup / 1 Capsule"
-                            className="w-full h-9 px-3 rounded-lg border border-[#e0e0e0] bg-white text-xs focus:border-[#0066cc]"
+                            className="w-full h-9 px-3 rounded-lg border border-[#e5e5ea] bg-white text-xs focus:border-[#0066cc]"
                           />
                         </div>
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                         <div>
-                          <div className="flex items-center justify-between mb-1">
-                            <label className="block text-[#7a7a7a] font-medium">Frequency</label>
-                          </div>
+                          <label className="block text-[#86868b] font-medium mb-1">Frequency</label>
                           <input
                             type="text"
                             value={med.frequency}
                             onChange={(e) => handleMedicineChange(idx, 'frequency', e.target.value)}
                             placeholder="Twice daily after meals"
-                            className="w-full h-9 px-3 rounded-lg border border-[#e0e0e0] bg-white text-xs focus:border-[#0066cc] mb-1"
+                            className="w-full h-9 px-3 rounded-lg border border-[#e5e5ea] bg-white text-xs focus:border-[#0066cc] mb-1"
                           />
                           <div className="flex flex-wrap gap-1">
                             {['Once daily', 'Twice daily', 'Thrice daily', 'As needed'].map((f) => (
@@ -556,7 +554,7 @@ export const ConsultationView: React.FC = () => {
                                 className={`text-[10px] px-2 py-0.5 rounded transition-colors ${
                                   med.frequency.toLowerCase().includes(f.toLowerCase())
                                     ? 'bg-[#0066cc] text-white'
-                                    : 'bg-white border border-[#e0e0e0] text-[#7a7a7a] hover:text-[#1d1d1f]'
+                                    : 'bg-white border border-[#e5e5ea] text-[#86868b] hover:text-[#1d1d1f]'
                                 }`}
                               >
                                 {f}
@@ -566,15 +564,13 @@ export const ConsultationView: React.FC = () => {
                         </div>
 
                         <div>
-                          <div className="flex items-center justify-between mb-1">
-                            <label className="block text-[#7a7a7a] font-medium">Duration</label>
-                          </div>
+                          <label className="block text-[#86868b] font-medium mb-1">Duration</label>
                           <input
                             type="text"
                             value={med.duration}
                             onChange={(e) => handleMedicineChange(idx, 'duration', e.target.value)}
                             placeholder="5 Days / 1 Week"
-                            className="w-full h-9 px-3 rounded-lg border border-[#e0e0e0] bg-white text-xs focus:border-[#0066cc] mb-1"
+                            className="w-full h-9 px-3 rounded-lg border border-[#e5e5ea] bg-white text-xs focus:border-[#0066cc] mb-1"
                           />
                           <div className="flex flex-wrap gap-1">
                             {['3 Days', '5 Days', '7 Days', '14 Days', '30 Days'].map((d) => (
@@ -585,7 +581,7 @@ export const ConsultationView: React.FC = () => {
                                 className={`text-[10px] px-2 py-0.5 rounded transition-colors ${
                                   med.duration.toLowerCase() === d.toLowerCase()
                                     ? 'bg-[#0066cc] text-white'
-                                    : 'bg-white border border-[#e0e0e0] text-[#7a7a7a] hover:text-[#1d1d1f]'
+                                    : 'bg-white border border-[#e5e5ea] text-[#86868b] hover:text-[#1d1d1f]'
                                 }`}
                               >
                                 {d}
@@ -596,8 +592,8 @@ export const ConsultationView: React.FC = () => {
                       </div>
 
                       {/* Auto-calculating Dosage Banner */}
-                      <div className="p-2.5 rounded-xl bg-white border border-[#e0e0e0] flex items-center justify-between text-[11px]">
-                        <span className="text-[#7a7a7a]">
+                      <div className="p-2.5 rounded-xl bg-white border border-[#e5e5ea] flex items-center justify-between text-[11px]">
+                        <span className="text-[#86868b]">
                           Auto-Calculated Schedule: <strong>{perDay}x daily</strong> for <strong>{days} day(s)</strong>
                         </span>
                         <span className="font-semibold px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
@@ -606,13 +602,13 @@ export const ConsultationView: React.FC = () => {
                       </div>
 
                       <div>
-                        <label className="block text-xs text-[#7a7a7a] mb-1 font-medium">Patient Instructions</label>
+                        <label className="block text-xs text-[#86868b] mb-1 font-medium">Patient Instructions</label>
                         <input
                           type="text"
                           value={med.instructions}
                           onChange={(e) => handleMedicineChange(idx, 'instructions', e.target.value)}
                           placeholder="e.g. Take after meals with plenty of water. Avoid skipping doses."
-                          className="w-full h-9 px-3 rounded-lg border border-[#e0e0e0] bg-white text-xs focus:border-[#0066cc]"
+                          className="w-full h-9 px-3 rounded-lg border border-[#e5e5ea] bg-white text-xs focus:border-[#0066cc]"
                         />
                       </div>
                     </div>
@@ -631,7 +627,7 @@ export const ConsultationView: React.FC = () => {
                     value={advice}
                     onChange={(e) => setAdvice(e.target.value)}
                     placeholder="e.g. Low sodium diet, hydrate well, rest for 3 days."
-                    className="w-full h-11 px-4 rounded-xl border border-[#e0e0e0] text-xs focus:border-[#0066cc]"
+                    className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-xs focus:border-[#0066cc]"
                   />
                 </div>
 
@@ -643,7 +639,7 @@ export const ConsultationView: React.FC = () => {
                     type="date"
                     value={followUpDate}
                     onChange={(e) => setFollowUpDate(e.target.value)}
-                    className="w-full h-11 px-4 rounded-xl border border-[#e0e0e0] text-xs bg-white focus:border-[#0066cc]"
+                    className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:border-[#0066cc]"
                   />
                 </div>
               </div>

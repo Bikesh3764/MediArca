@@ -79,7 +79,7 @@ export const DoctorDashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#f5f5f7] pb-16">
       <SubNav title="Doctor Console" subtitle="Real-time patient queue controller">
-        <AppleButton variant="ghost" size="sm" onClick={fetchQueue} className="flex items-center gap-1">
+        <AppleButton variant="ghost" size="sm" onClick={fetchQueue} className="flex items-center gap-1.5">
           <RefreshCw className="w-3.5 h-3.5" />
           Refresh
         </AppleButton>
@@ -120,21 +120,21 @@ export const DoctorDashboard: React.FC = () => {
         )}
 
         {/* Top Shift & Date Selector Header */}
-        <div className="bg-white rounded-[20px] border border-[#e0e0e0] p-6 mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm">
+        <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-6 mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm">
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-xl font-semibold text-[#1d1d1f]">{user?.fullName}</h2>
+              <h2 className="text-xl font-semibold text-[#1d1d1f] tracking-tight">{user?.fullName}</h2>
               <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#0066cc]/10 text-[#0066cc]">
                 {user?.doctorProfile?.specialty || 'Doctor'}
               </span>
             </div>
-            <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-[#7a7a7a]">
+            <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-[#86868b]">
               <Clock className="w-3.5 h-3.5 text-[#0066cc]" />
               <span>Practice Shifts:</span>
               {parseDoctorSlots(user?.doctorProfile).map((slot, i) => (
                 <span
                   key={slot.id || i}
-                  className="font-semibold px-2 py-0.5 rounded-full bg-[#f5f5f7] border border-[#e0e0e0] text-[#1d1d1f]"
+                  className="font-semibold px-2.5 py-0.5 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f]"
                 >
                   {slot.name} ({format12Hour(slot.startTime)}–{format12Hour(slot.endTime)} • {slot.maxPatients} cap)
                 </span>
@@ -143,12 +143,12 @@ export const DoctorDashboard: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3">
-            <label className="text-xs font-medium text-[#7a7a7a]">Queue Date:</label>
+            <label className="text-xs font-medium text-[#86868b]">Queue Date:</label>
             <input
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="h-10 px-3 rounded-xl border border-[#e0e0e0] text-xs bg-white focus:outline-none focus:border-[#0066cc]"
+              className="h-10 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0066cc]"
             />
           </div>
         </div>
@@ -157,8 +157,8 @@ export const DoctorDashboard: React.FC = () => {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
           <UtilityCard className="flex items-center justify-between">
             <div>
-              <span className="text-xs text-[#7a7a7a] uppercase font-semibold">Total in Queue</span>
-              <h3 className="text-3xl font-bold text-[#1d1d1f] mt-1">
+              <span className="text-xs text-[#86868b] uppercase font-semibold">Total in Queue</span>
+              <h3 className="text-3xl font-bold text-[#1d1d1f] mt-1 tracking-tight">
                 {queueData?.totalQueue || 0}
               </h3>
             </div>
@@ -169,8 +169,8 @@ export const DoctorDashboard: React.FC = () => {
 
           <UtilityCard className="flex items-center justify-between">
             <div>
-              <span className="text-xs text-[#7a7a7a] uppercase font-semibold">Waiting to be Seen</span>
-              <h3 className="text-3xl font-bold text-[#0066cc] mt-1">
+              <span className="text-xs text-[#86868b] uppercase font-semibold">Waiting to be Seen</span>
+              <h3 className="text-3xl font-bold text-[#0066cc] mt-1 tracking-tight">
                 {queueData?.waitingQueue.length || 0}
               </h3>
             </div>
@@ -181,8 +181,8 @@ export const DoctorDashboard: React.FC = () => {
 
           <UtilityCard className="flex items-center justify-between">
             <div>
-              <span className="text-xs text-[#7a7a7a] uppercase font-semibold">Completed Consultations</span>
-              <h3 className="text-3xl font-bold text-emerald-600 mt-1">
+              <span className="text-xs text-[#86868b] uppercase font-semibold">Completed Consultations</span>
+              <h3 className="text-3xl font-bold text-emerald-600 mt-1 tracking-tight">
                 {queueData?.completedQueue.length || 0}
               </h3>
             </div>
@@ -196,7 +196,7 @@ export const DoctorDashboard: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Active In-Consultation Patient (1 Column) */}
           <div className="lg:col-span-1">
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-[#7a7a7a] mb-3">
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-[#86868b] mb-3">
               Active Patient in Cabin
             </h3>
 
@@ -211,21 +211,21 @@ export const DoctorDashboard: React.FC = () => {
                   </span>
                 </div>
 
-                <h4 className="text-xl font-semibold text-[#1d1d1f]">
+                <h4 className="text-xl font-semibold text-[#1d1d1f] tracking-tight">
                   {queueData.activeInConsultation.patient?.user.fullName}
                 </h4>
-                <p className="text-xs text-[#7a7a7a] mt-0.5">
+                <p className="text-xs text-[#86868b] mt-0.5">
                   Scheduled for {queueData.activeInConsultation.estimatedTime}
                 </p>
 
                 <div className="my-4 p-3 rounded-xl bg-[#f5f5f7] text-xs text-[#1d1d1f] space-y-1">
                   <div>
-                    <strong className="text-[#7a7a7a]">Reason: </strong>
+                    <strong className="text-[#86868b]">Reason: </strong>
                     {queueData.activeInConsultation.reasonForVisit || 'General Consultation'}
                   </div>
                   {queueData.activeInConsultation.symptoms && (
                     <div>
-                      <strong className="text-[#7a7a7a]">Symptoms: </strong>
+                      <strong className="text-[#86868b]">Symptoms: </strong>
                       {queueData.activeInConsultation.symptoms}
                     </div>
                   )}
@@ -244,10 +244,10 @@ export const DoctorDashboard: React.FC = () => {
                 </AppleButton>
               </div>
             ) : (
-              <div className="bg-white rounded-[20px] border border-[#e0e0e0] p-8 text-center">
-                <Stethoscope className="w-10 h-10 text-[#7a7a7a] mx-auto mb-2" />
+              <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-8 text-center">
+                <Stethoscope className="w-10 h-10 text-[#86868b] mx-auto mb-2" />
                 <h4 className="text-sm font-semibold text-[#1d1d1f]">Cabin is Free</h4>
-                <p className="text-xs text-[#7a7a7a] mt-1">
+                <p className="text-xs text-[#86868b] mt-1 leading-relaxed">
                   No patient currently in consultation. Click "Call Patient" on the waiting queue below.
                 </p>
               </div>
@@ -257,7 +257,7 @@ export const DoctorDashboard: React.FC = () => {
           {/* Waiting Queue List (2 Columns) */}
           <div className="lg:col-span-2">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold uppercase tracking-wider text-[#7a7a7a]">
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-[#86868b]">
                 Waiting Queue ({queueData?.waitingQueue.length || 0})
               </h3>
               {queueData && queueData.waitingQueue.length > 0 && (
@@ -279,14 +279,14 @@ export const DoctorDashboard: React.FC = () => {
             {loading ? (
               <div className="space-y-3">
                 {[1, 2, 3].map((i) => (
-                  <div key={i} className="h-24 rounded-[18px] bg-white border border-[#e0e0e0] animate-pulse"></div>
+                  <div key={i} className="h-24 rounded-[20px] bg-white border border-[#e5e5ea] animate-pulse"></div>
                 ))}
               </div>
             ) : queueData?.waitingQueue.length === 0 ? (
-              <div className="bg-white rounded-[20px] border border-[#e0e0e0] p-8 text-center">
+              <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-8 text-center">
                 <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto mb-2" />
-                <h4 className="text-base font-semibold text-[#1d1d1f]">Queue is Clear!</h4>
-                <p className="text-xs text-[#7a7a7a] mt-1">
+                <h4 className="text-base font-semibold text-[#1d1d1f]">Queue is Clear</h4>
+                <p className="text-xs text-[#86868b] mt-1">
                   All patients scheduled for this date have either completed consultation or not yet booked.
                 </p>
               </div>
@@ -295,7 +295,7 @@ export const DoctorDashboard: React.FC = () => {
                 {queueData?.waitingQueue.map((appt) => (
                   <div
                     key={appt.id}
-                    className="bg-white rounded-[18px] border border-[#e0e0e0] p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:border-[#0066cc]/30 transition-all"
+                    className="bg-white rounded-[20px] border border-[#e5e5ea] p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:border-[#0066cc]/40 transition-all duration-200"
                   >
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 rounded-2xl bg-[#1d1d1f] text-white flex flex-col items-center justify-center font-bold">
@@ -308,12 +308,12 @@ export const DoctorDashboard: React.FC = () => {
                             {appt.patient?.user.fullName}
                           </h4>
                           {appt.checkingWindow && (
-                            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-[#f5f5f7] border border-[#e0e0e0] text-[#0066cc]">
+                            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-[#0066cc]">
                               {appt.checkingWindow}
                             </span>
                           )}
                         </div>
-                        <p className="text-xs text-[#7a7a7a] flex items-center gap-1.5 mt-0.5">
+                        <p className="text-xs text-[#86868b] flex items-center gap-1.5 mt-0.5">
                           <span>Est. {appt.estimatedTime}</span>
                           <span>•</span>
                           <span className="text-[#0066cc]">
@@ -343,21 +343,21 @@ export const DoctorDashboard: React.FC = () => {
             {/* Completed List Accordion */}
             {queueData && queueData.completedQueue.length > 0 && (
               <div className="mt-8">
-                <h4 className="text-xs font-semibold uppercase tracking-wider text-[#7a7a7a] mb-3">
+                <h4 className="text-xs font-semibold uppercase tracking-wider text-[#86868b] mb-3">
                   Completed Today ({queueData.completedQueue.length})
                 </h4>
                 <div className="space-y-2">
                   {queueData.completedQueue.map((appt) => (
                     <div
                       key={appt.id}
-                      className="p-3.5 rounded-xl bg-white border border-[#e0e0e0] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs hover:border-[#0066cc]/30 transition-all"
+                      className="p-3.5 rounded-2xl bg-white border border-[#e5e5ea] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs hover:border-[#0066cc]/30 transition-all"
                     >
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold text-[#7a7a7a]">Queue #{appt.queueNumber}</span>
+                        <span className="font-semibold text-[#86868b]">Queue #{appt.queueNumber}</span>
                         <span className="font-medium text-[#1d1d1f]">{appt.patient?.user.fullName}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded font-medium border border-emerald-200">
+                        <span className="text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full font-medium border border-emerald-200">
                           Prescription Issued
                         </span>
                         <AppleButton

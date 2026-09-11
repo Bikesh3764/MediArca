@@ -26,40 +26,40 @@ export const AppleButton: React.FC<AppleButtonProps> = ({
   switch (variant) {
     case 'primary':
       // Action Blue (#0066cc) full-pill
-      variantClass = 'bg-[#0066cc] text-white hover:bg-[#0071e3] shadow-sm rounded-full';
+      variantClass = 'bg-[#0066cc] text-white hover:bg-[#0071e3] shadow-sm rounded-full font-medium';
       break;
     case 'secondary':
-      // Apple secondary pill with subtle border
-      variantClass = 'bg-white text-[#0066cc] border border-[#0066cc]/40 hover:border-[#0066cc] hover:bg-[#0066cc]/5 rounded-full';
+      // Apple secondary pill with Action Blue outline
+      variantClass = 'bg-white text-[#0066cc] border border-[#0066cc]/35 hover:border-[#0066cc] hover:bg-[#0066cc]/5 rounded-full font-medium';
       break;
     case 'secondary-dark':
     case 'glass':
-      // Apple translucent glass pill for dark backgrounds
-      variantClass = 'bg-white/10 text-white border border-white/30 hover:bg-white/20 hover:border-white backdrop-blur-md rounded-full shadow-sm';
+      // Apple translucent glass pill for dark backgrounds with high contrast white text
+      variantClass = 'bg-white/12 text-white border border-white/30 hover:bg-white/22 hover:border-white backdrop-blur-md rounded-full shadow-sm font-medium';
       break;
     case 'ghost':
-      // Apple pearl capsule button
-      variantClass = 'bg-[#fafafc] text-[#1d1d1f] border border-[#e0e0e0] hover:bg-white hover:border-[#cccccc] rounded-full';
+      // Apple soft parchment/pearl capsule button with dark text
+      variantClass = 'bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea] hover:bg-white hover:border-[#d2d2d7] rounded-full font-medium';
       break;
     case 'dark':
-      // Dark utility button
-      variantClass = 'bg-[#1d1d1f] text-white hover:bg-[#333333] rounded-[8px]';
+      // Dark utility button (SF Pro Text 14px / 400)
+      variantClass = 'bg-[#1d1d1f] text-white hover:bg-[#333333] rounded-[8px] font-medium';
       break;
     case 'icon':
-      variantClass = 'bg-[#d2d2d7]/50 hover:bg-[#d2d2d7]/80 text-[#1d1d1f] rounded-full p-2';
+      variantClass = 'bg-[#d2d2d7]/40 hover:bg-[#d2d2d7]/70 text-[#1d1d1f] rounded-full p-2';
       break;
   }
 
   let sizeClass = '';
   switch (size) {
     case 'sm':
-      sizeClass = variant === 'dark' ? 'px-3 py-1.5 text-[13px]' : 'px-4 py-1.5 text-[14px]';
+      sizeClass = variant === 'dark' ? 'px-3 py-1.5 text-[12px]' : 'px-4 py-1.5 text-[13px]';
       break;
     case 'md':
-      sizeClass = variant === 'dark' ? 'px-4 py-2 text-[14px]' : 'px-[22px] py-[11px] text-[15px]';
+      sizeClass = variant === 'dark' ? 'px-4 py-2 text-[14px]' : 'px-[22px] py-[10px] text-[14px] sm:text-[15px]';
       break;
     case 'lg':
-      sizeClass = 'px-7 py-3.5 text-[17px]';
+      sizeClass = 'px-7 py-3.5 text-[16px] sm:text-[17px]';
       break;
   }
 
