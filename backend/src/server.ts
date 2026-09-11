@@ -29,8 +29,8 @@ app.use(express.urlencoded({ extended: true }));
 // Serve static uploaded documents
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-// Health Check
-app.get('/api/health', (_req: Request, res: Response) => {
+// Health Check (Supports Render /healthz and /api/health)
+app.get(['/healthz', '/api/health', '/'], (_req: Request, res: Response) => {
   res.json({
     status: 'ok',
     service: 'MediArca Production Healthcare Platform API',
