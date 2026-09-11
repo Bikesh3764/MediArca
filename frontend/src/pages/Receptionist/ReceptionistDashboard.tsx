@@ -105,7 +105,9 @@ export const ReceptionistDashboard: React.FC = () => {
   const activeSelectedDoctor = linkedDoctors.find((d) => d.doctorId === selectedDoctorId);
 
   useEffect(() => {
-    if (activeSelectedDoctor?.clinics && activeSelectedDoctor.clinics.length > 0) {
+    if (data?.clinic?.id) {
+      setWalkinClinicId(data.clinic.id);
+    } else if (activeSelectedDoctor?.clinics && activeSelectedDoctor.clinics.length > 0) {
       setWalkinClinicId((prev) => {
         const stillValid = activeSelectedDoctor.clinics?.some((c) => c.clinicId === prev);
         return stillValid ? prev : activeSelectedDoctor.clinics![0].clinicId;
@@ -113,7 +115,7 @@ export const ReceptionistDashboard: React.FC = () => {
     } else {
       setWalkinClinicId('');
     }
-  }, [activeSelectedDoctor]);
+  }, [data?.clinic?.id, activeSelectedDoctor]);
 
   // Handle rapid walk-in booking
   const handleWalkinSubmit = async (e: React.FormEvent) => {

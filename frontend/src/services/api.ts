@@ -541,6 +541,8 @@ export interface DoctorAffiliationsData {
     fullName: string;
     email: string;
     phone?: string;
+    clinicId?: string;
+    clinicName?: string;
     status: string;
     joinedAt: string;
   }>;

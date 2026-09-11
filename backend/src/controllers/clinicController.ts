@@ -114,20 +114,26 @@ export const getMyClinic = async (req: AuthRequest, res: Response): Promise<void
           createdAt: clinic.createdAt,
         },
         doctors: doctorStats,
-        receptionists: (clinic.receptionists || []).map((r) => ({
-          id: r.id,
-          userId: r.userId,
-          fullName: r.user.fullName,
-          email: r.user.email,
-          phone: r.phone || r.user.phone || '',
-          doctorIds: r.doctors.map((d) => d.doctorId),
-          doctors: r.doctors.map((d) => ({
-            id: d.doctor.id,
-            fullName: d.doctor.user.fullName,
-            specialty: d.doctor.specialty,
-          })),
-          createdAt: r.createdAt,
-        })),
+        receptionists: (() => {
+          const activeDocIds = new Set(clinic.doctors.map((cd) => cd.doctorId));
+          return (clinic.receptionists || []).map((r) => {
+            const validDoctors = r.doctors.filter((d) => activeDocIds.has(d.doctorId));
+            return {
+              id: r.id,
+              userId: r.userId,
+              fullName: r.user.fullName,
+              email: r.user.email,
+              phone: r.phone || r.user.phone || '',
+              doctorIds: validDoctors.map((d) => d.doctorId),
+              doctors: validDoctors.map((d) => ({
+                id: d.doctor.id,
+                fullName: d.doctor.user.fullName,
+                specialty: d.doctor.specialty,
+              })),
+              createdAt: r.createdAt,
+            };
+          });
+        })(),
         totalDoctors,
         totalBookings,
         totalRevenue,
@@ -266,12 +272,31 @@ export const removeDoctorFromClinic = async (req: AuthRequest, res: Response): P
       return;
     }
 
-    await prisma.clinicDoctor.deleteMany({
-      where: {
-        clinicId: clinic.id,
-        doctorId,
-      },
+    // Find all receptionists belonging to this clinic
+    const clinicReceptionists = await prisma.receptionistProfile.findMany({
+      where: { clinicId: clinic.id },
+      select: { id: true },
     });
+    const recIds = clinicReceptionists.map((r) => r.id);
+
+    await prisma.$transaction([
+      prisma.clinicDoctor.deleteMany({
+        where: {
+          clinicId: clinic.id,
+          doctorId,
+        },
+      }),
+      ...(recIds.length > 0
+        ? [
+            prisma.doctorReceptionist.deleteMany({
+              where: {
+                doctorId,
+                receptionistId: { in: recIds },
+              },
+            }),
+          ]
+        : []),
+    ]);
 
     res.json({
       success: true,
@@ -286,10 +311,25 @@ export const removeDoctorFromClinic = async (req: AuthRequest, res: Response): P
 /**
  * Public listing of verified clinics
  */
-export const getPublicClinics = async (_req: any, res: Response): Promise<void> => {
+export const getPublicClinics = async (req: any, res: Response): Promise<void> => {
   try {
+    const { search, city } = req.query || {};
+    const whereClause: any = { isVerified: true };
+
+    if (city && typeof city === 'string' && city.trim()) {
+      whereClause.city = { contains: city.trim(), mode: 'insensitive' };
+    }
+
+    if (search && typeof search === 'string' && search.trim()) {
+      whereClause.OR = [
+        { clinicName: { contains: search.trim(), mode: 'insensitive' } },
+        { address: { contains: search.trim(), mode: 'insensitive' } },
+        { city: { contains: search.trim(), mode: 'insensitive' } },
+      ];
+    }
+
     const clinics = await prisma.clinicProfile.findMany({
-      where: { isVerified: true },
+      where: whereClause,
       select: {
         id: true,
         clinicName: true,
@@ -436,12 +476,15 @@ export const getClinicReceptionists = async (req: AuthRequest, res: Response): P
 
     const clinic = await prisma.clinicProfile.findUnique({
       where: { userId: req.user.id },
+      include: { doctors: true },
     });
 
     if (!clinic) {
       res.status(404).json({ success: false, message: 'Clinic profile not found' });
       return;
     }
+
+    const activeDoctorIds = new Set(clinic.doctors.map((cd) => cd.doctorId));
 
     const receptionists = await prisma.receptionistProfile.findMany({
       where: { clinicId: clinic.id },
@@ -462,20 +505,23 @@ export const getClinicReceptionists = async (req: AuthRequest, res: Response): P
 
     res.json({
       success: true,
-      data: receptionists.map((r) => ({
-        id: r.id,
-        userId: r.userId,
-        fullName: r.user.fullName,
-        email: r.user.email,
-        phone: r.phone || r.user.phone || '',
-        doctorIds: r.doctors.map((d) => d.doctorId),
-        doctors: r.doctors.map((d) => ({
-          id: d.doctor.id,
-          fullName: d.doctor.user.fullName,
-          specialty: d.doctor.specialty,
-        })),
-        createdAt: r.createdAt,
-      })),
+      data: receptionists.map((r) => {
+        const validDoctors = r.doctors.filter((d) => activeDoctorIds.has(d.doctorId));
+        return {
+          id: r.id,
+          userId: r.userId,
+          fullName: r.user.fullName,
+          email: r.user.email,
+          phone: r.phone || r.user.phone || '',
+          doctorIds: validDoctors.map((d) => d.doctorId),
+          doctors: validDoctors.map((d) => ({
+            id: d.doctor.id,
+            fullName: d.doctor.user.fullName,
+            specialty: d.doctor.specialty,
+          })),
+          createdAt: r.createdAt,
+        };
+      }),
     });
   } catch (error: any) {
     console.error('getClinicReceptionists error:', error);

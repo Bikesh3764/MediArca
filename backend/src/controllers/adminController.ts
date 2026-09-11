@@ -113,7 +113,14 @@ export const getClinicsList = async (_req: AuthRequest, res: Response): Promise<
       orderBy: [{ isVerified: 'asc' }, { createdAt: 'desc' }],
     });
 
-    res.json({ success: true, count: clinics.length, data: clinics });
+    const formattedClinics = clinics.map((c) => ({
+      ...c,
+      doctorsCount: c._count?.doctors || 0,
+      appointmentsCount: c._count?.appointments || 0,
+      receptionistsCount: c._count?.receptionists || 0,
+    }));
+
+    res.json({ success: true, count: formattedClinics.length, data: formattedClinics });
   } catch (error: any) {
     console.error('getClinicsList error:', error);
     res.status(500).json({ success: false, message: 'Failed to retrieve clinics', error: error.message });

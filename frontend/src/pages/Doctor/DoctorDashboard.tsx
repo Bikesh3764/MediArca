@@ -500,6 +500,11 @@ export const DoctorDashboard: React.FC = () => {
                             <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                               Active Desk
                             </span>
+                            {rec.clinicName && (
+                              <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 truncate max-w-[140px]">
+                                {rec.clinicName}
+                              </span>
+                            )}
                           </div>
                           <p className="text-xs text-[#86868b] truncate mt-0.5">{rec.email}</p>
                           {rec.phone && (

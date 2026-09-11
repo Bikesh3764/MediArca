@@ -245,10 +245,22 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
           const highestQueue = dayAppointments.reduce((max, a) => Math.max(max, a.queueNumber), 0);
           const queueNumber = highestQueue + 1;
 
-          let targetClinicId = clinicId;
+          let targetClinicId: string | null = null;
+          if (clinicId) {
+            const verifiedClinic = await tx.clinicProfile.findFirst({
+              where: { id: clinicId, isVerified: true },
+            });
+            if (verifiedClinic) {
+              targetClinicId = verifiedClinic.id;
+            }
+          }
           if (!targetClinicId) {
             const activeAffiliation = await tx.clinicDoctor.findFirst({
-              where: { doctorId: doctor.id, status: 'ACTIVE' },
+              where: {
+                doctorId: doctor.id,
+                status: 'ACTIVE',
+                clinic: { isVerified: true },
+              },
             });
             if (activeAffiliation) {
               targetClinicId = activeAffiliation.clinicId;

@@ -18,6 +18,8 @@ export const Login: React.FC = () => {
   const getDestination = (role: string) => {
     if (role === 'DOCTOR') return '/doctor/dashboard';
     if (role === 'ADMIN') return '/admin';
+    if (role === 'CLINIC') return '/clinic/dashboard';
+    if (role === 'RECEPTIONIST') return '/receptionist/dashboard';
     return '/doctors';
   };
 

@@ -48,6 +48,11 @@ export const ClinicDashboard: React.FC = () => {
   const [editDoctorIds, setEditDoctorIds] = useState<string[]>([]);
   const [savingAssignments, setSavingAssignments] = useState(false);
 
+  // Receptionist Credentials Handover Modal & Catalog Search
+  const [createdCredentials, setCreatedCredentials] = useState<{ fullName: string; email: string; password: string } | null>(null);
+  const [doctorSearchQuery, setDoctorSearchQuery] = useState('');
+  const [copiedCreds, setCopiedCreds] = useState(false);
+
   const fetchClinicData = async () => {
     try {
       setLoading(true);
@@ -147,7 +152,16 @@ export const ClinicDashboard: React.FC = () => {
         phone: recPhone.trim() || undefined,
         doctorIds: recDoctorIds,
       });
-      setSuccessMsg(res.message || 'Receptionist staff provisioned successfully.');
+      const savedName = recFullName.trim();
+      const savedEmail = recEmail.trim();
+      const savedPass = recPassword.trim();
+
+      setCreatedCredentials({
+        fullName: savedName,
+        email: savedEmail,
+        password: savedPass,
+      });
+      setSuccessMsg(res.message || 'Receptionist staff provisioned successfully. Share credentials with staff.');
       setShowRecModal(false);
       setRecFullName('');
       setRecEmail('');
@@ -663,38 +677,60 @@ export const ClinicDashboard: React.FC = () => {
               {/* Quick Select from Platform Doctors */}
               {allDoctors.length > 0 && (
                 <div>
-                  <label className="block text-xs font-medium text-[#86868b] mb-1.5">
-                    Or select from platform verified doctors:
-                  </label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-medium text-[#86868b]">
+                      Or search & pick from verified doctors:
+                    </label>
+                    <span className="text-[10px] text-[#86868b]">{allDoctors.length} available</span>
+                  </div>
+                  <input
+                    type="text"
+                    value={doctorSearchQuery}
+                    onChange={(e) => setDoctorSearchQuery(e.target.value)}
+                    placeholder="Filter by name, specialty, or email..."
+                    className="w-full h-8 px-3 rounded-lg border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white focus:outline-none focus:border-[#0066cc] mb-2"
+                  />
                   <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
-                    {allDoctors.map((d) => {
-                      const isAlreadyAdded = doctors.some((doc) => doc.doctorId === d.id);
-                      return (
-                        <div
-                          key={d.id}
-                          className="p-2 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] flex items-center justify-between text-xs"
-                        >
-                          <div>
-                            <div className="font-medium text-[#1d1d1f]">{d.user.fullName}</div>
-                            <div className="text-[10px] text-[#86868b]">{d.specialty} • {d.user.email}</div>
+                    {allDoctors
+                      .filter((d) => {
+                        if (!doctorSearchQuery.trim()) return true;
+                        const q = doctorSearchQuery.toLowerCase().trim();
+                        return (
+                          d.user.fullName.toLowerCase().includes(q) ||
+                          d.specialty.toLowerCase().includes(q) ||
+                          d.user.email.toLowerCase().includes(q)
+                        );
+                      })
+                      .map((d) => {
+                        const isAlreadyAdded = doctors.some((doc) => doc.doctorId === d.id);
+                        return (
+                          <div
+                            key={d.id}
+                            className="p-2 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] flex items-center justify-between text-xs"
+                          >
+                            <div>
+                              <div className="font-medium text-[#1d1d1f]">{d.user.fullName}</div>
+                              <div className="text-[10px] text-[#86868b]">
+                                {d.specialty} • {d.user.email}
+                              </div>
+                            </div>
+                            {isAlreadyAdded ? (
+                              <span className="text-[10px] text-[#86868b] px-2 py-0.5 rounded-full bg-[#e5e5ea]">
+                                Affiliated
+                              </span>
+                            ) : (
+                              <button
+                                type="button"
+                                disabled={adding}
+                                onClick={() => handleQuickAdd(d.user.email)}
+                                className="px-2.5 py-1 rounded-full bg-[#0066cc] text-white text-[11px] font-medium hover:bg-[#0071e3] cursor-pointer"
+                              >
+                                Add
+                              </button>
+                            )}
                           </div>
-                          {isAlreadyAdded ? (
-                            <span className="text-[10px] text-[#86868b] px-2 py-0.5 rounded-full bg-[#e5e5ea]">
-                              Affiliated
-                            </span>
-                          ) : (
-                            <button
-                              type="button"
-                              disabled={adding}
-                              onClick={() => handleQuickAdd(d.user.email)}
-                              className="px-2.5 py-1 rounded-full bg-[#0066cc] text-white text-[11px] font-medium hover:bg-[#0071e3]"
-                            >
-                              Add
-                            </button>
-                          )}
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
                   </div>
                 </div>
               )}
@@ -959,6 +995,107 @@ export const ClinicDashboard: React.FC = () => {
                 </AppleButton>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Receptionist Credentials Handover Modal */}
+      {createdCredentials && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-6 sm:p-8 shadow-2xl space-y-5">
+            <div className="flex justify-between items-start pb-4 border-b border-[#f0f0f0]">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
+                  <UserCheck className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-base font-semibold text-[#1d1d1f]">Desk Credentials Ready</h3>
+                  <p className="text-xs text-[#86868b]">Provide these credentials to your front desk staff</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setCreatedCredentials(null)}
+                className="p-1 rounded-full text-[#86868b] hover:bg-gray-100 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200/80 text-amber-900 text-xs space-y-1 leading-relaxed">
+              <p className="font-semibold">Handover Notice:</p>
+              <p className="text-[11px] text-amber-800">
+                Direct public receptionist signup is disabled. Your receptionist must log in using the credentials below via the Receptionist Portal link at the bottom of the landing page.
+              </p>
+            </div>
+
+            <div className="bg-[#f5f5f7] rounded-2xl p-4 border border-[#e5e5ea] space-y-3 font-mono text-xs">
+              <div>
+                <span className="text-[10px] text-[#86868b] uppercase tracking-wider font-sans font-semibold block">
+                  Staff Member Name
+                </span>
+                <span className="text-[#1d1d1f] font-sans font-semibold text-sm">
+                  {createdCredentials.fullName}
+                </span>
+              </div>
+
+              <div>
+                <span className="text-[10px] text-[#86868b] uppercase tracking-wider font-sans font-semibold block">
+                  Login Email (Desk ID)
+                </span>
+                <span className="text-[#1d1d1f] select-all bg-white px-2.5 py-1 rounded-lg border border-[#e5e5ea] block mt-0.5 font-bold text-[#0066cc]">
+                  {createdCredentials.email}
+                </span>
+              </div>
+
+              <div>
+                <span className="text-[10px] text-[#86868b] uppercase tracking-wider font-sans font-semibold block">
+                  Temporary Password
+                </span>
+                <span className="text-[#1d1d1f] select-all bg-white px-2.5 py-1 rounded-lg border border-[#e5e5ea] block mt-0.5 font-bold">
+                  {createdCredentials.password}
+                </span>
+              </div>
+
+              <div>
+                <span className="text-[10px] text-[#86868b] uppercase tracking-wider font-sans font-semibold block">
+                  Portal Login URL
+                </span>
+                <span className="text-[#86868b] text-[11px] block mt-0.5">
+                  /receptionist/login (or Landing Page &rarr; Receptionist Desk)
+                </span>
+              </div>
+            </div>
+
+            <div className="pt-2 flex flex-col sm:flex-row justify-end gap-2">
+              <AppleButton
+                variant="secondary"
+                size="sm"
+                onClick={() => {
+                  const text = `MediArca Receptionist Desk Credentials\nFacility: ${clinic?.clinicName || 'Clinic'}\nName: ${createdCredentials.fullName}\nEmail (Desk ID): ${createdCredentials.email}\nPassword: ${createdCredentials.password}\nLogin Portal: ${window.location.origin}/receptionist/login`;
+                  navigator.clipboard.writeText(text);
+                  setCopiedCreds(true);
+                  setTimeout(() => setCopiedCreds(false), 2500);
+                }}
+                className="flex items-center justify-center gap-1.5"
+              >
+                {copiedCreds ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 text-emerald-600" />
+                    Copied to Clipboard!
+                  </>
+                ) : (
+                  'Copy All Credentials'
+                )}
+              </AppleButton>
+
+              <AppleButton
+                variant="primary"
+                size="sm"
+                onClick={() => setCreatedCredentials(null)}
+              >
+                Done
+              </AppleButton>
+            </div>
           </div>
         </div>
       )}

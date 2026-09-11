@@ -50,9 +50,26 @@ export const getMyReceptionist = async (req: AuthRequest, res: Response): Promis
 
     const todayStr = getLocalDateString();
 
+    // Only include doctors currently actively affiliated with receptionist's parent clinic
+    const activeDoctorIds = receptionist.clinicId
+      ? (
+          await prisma.clinicDoctor.findMany({
+            where: {
+              clinicId: receptionist.clinicId,
+              status: 'ACTIVE',
+            },
+            select: { doctorId: true },
+          })
+        ).map((cd) => cd.doctorId)
+      : [];
+
+    const activeAssignments = receptionist.doctors.filter((dr) =>
+      activeDoctorIds.includes(dr.doctorId)
+    );
+
     // Compute today's queue count for each linked doctor
     const doctorsWithQueue = await Promise.all(
-      receptionist.doctors.map(async (dr) => {
+      activeAssignments.map(async (dr) => {
         const todayCount = await prisma.appointment.count({
           where: {
             doctorId: dr.doctorId,
@@ -166,6 +183,24 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
             message: 'Access denied: You do not have queue management access for this doctor.',
           });
           return;
+        }
+
+        if (receptionist.clinicId) {
+          const isAffiliated = await prisma.clinicDoctor.findUnique({
+            where: {
+              clinicId_doctorId: {
+                clinicId: receptionist.clinicId,
+                doctorId,
+              },
+            },
+          });
+          if (!isAffiliated || isAffiliated.status !== 'ACTIVE') {
+            res.status(403).json({
+              success: false,
+              message: 'Access denied: Practitioner is not currently affiliated with your clinic.',
+            });
+            return;
+          }
         }
       }
     }
@@ -301,6 +336,25 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
         message: 'Access denied: You are only authorized to book appointments for doctors assigned to your desk by your clinic.',
       });
       return;
+    }
+
+    // Verify doctor is actively affiliated with this receptionist's clinic
+    if (receptionist.clinicId) {
+      const isAffiliated = await prisma.clinicDoctor.findUnique({
+        where: {
+          clinicId_doctorId: {
+            clinicId: receptionist.clinicId,
+            doctorId: doctor.id,
+          },
+        },
+      });
+      if (!isAffiliated || isAffiliated.status !== 'ACTIVE') {
+        res.status(403).json({
+          success: false,
+          message: 'Access denied: Practitioner is not currently affiliated with your facility.',
+        });
+        return;
+      }
     }
 
     // Find or create walk-in patient profile

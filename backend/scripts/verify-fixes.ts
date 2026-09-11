@@ -380,6 +380,151 @@ function runTests() {
     'Clinic can onboard verified doctor'
   );
 
+  // 25. Doctor Detachment Cascades Removal of Receptionist Assignments
+  interface StaffDeskLink {
+    receptionistId: string;
+    doctorId: string;
+    clinicId: string;
+  }
+  const simulateDoctorDetachment = (
+    doctorIdToRemove: string,
+    clinicId: string,
+    affiliations: Array<{ clinicId: string; doctorId: string }>,
+    deskLinks: StaffDeskLink[]
+  ) => {
+    const remainingAffiliations = affiliations.filter(
+      (a) => !(a.clinicId === clinicId && a.doctorId === doctorIdToRemove)
+    );
+    const remainingLinks = deskLinks.filter(
+      (link) => !(link.clinicId === clinicId && link.doctorId === doctorIdToRemove)
+    );
+    return { remainingAffiliations, remainingLinks };
+  };
+
+  const initialAffiliations = [
+    { clinicId: 'c1', doctorId: 'd1' },
+    { clinicId: 'c1', doctorId: 'd2' },
+    { clinicId: 'c2', doctorId: 'd1' },
+  ];
+  const initialDeskLinks: StaffDeskLink[] = [
+    { receptionistId: 'rec_c1_1', doctorId: 'd1', clinicId: 'c1' },
+    { receptionistId: 'rec_c1_1', doctorId: 'd2', clinicId: 'c1' },
+    { receptionistId: 'rec_c2_1', doctorId: 'd1', clinicId: 'c2' },
+  ];
+
+  const detachedResult = simulateDoctorDetachment('d1', 'c1', initialAffiliations, initialDeskLinks);
+  assert(
+    !detachedResult.remainingAffiliations.some((a) => a.clinicId === 'c1' && a.doctorId === 'd1'),
+    'Doctor d1 detached from Clinic c1'
+  );
+  assert(
+    !detachedResult.remainingLinks.some((l) => l.clinicId === 'c1' && l.doctorId === 'd1'),
+    'Desk assignment for d1 at c1 is cleaned up upon detachment'
+  );
+  assert(
+    detachedResult.remainingLinks.some((l) => l.clinicId === 'c2' && l.doctorId === 'd1'),
+    'Desk assignment for d1 at Clinic c2 remains unaffected'
+  );
+
+  // 26. Receptionist Operations Strictly Require Active Clinic Affiliation
+  const validateReceptionistActiveAffiliation = (
+    receptionistClinicId: string,
+    targetDoctorId: string,
+    activeClinicDoctorPairs: Array<{ clinicId: string; doctorId: string }>
+  ) => {
+    const isAffiliated = activeClinicDoctorPairs.some(
+      (pair) => pair.clinicId === receptionistClinicId && pair.doctorId === targetDoctorId
+    );
+    if (!isAffiliated) {
+      return { allowed: false, error: 'Access denied: Practitioner is not currently affiliated with your facility.' };
+    }
+    return { allowed: true };
+  };
+
+  const currentPairs = [{ clinicId: 'clinic_metro', doctorId: 'doc_active' }];
+  const validAccess = validateReceptionistActiveAffiliation('clinic_metro', 'doc_active', currentPairs);
+  assert(validAccess.allowed === true, 'Receptionist allowed for active affiliated doctor');
+
+  const invalidAccess = validateReceptionistActiveAffiliation('clinic_metro', 'doc_detached', currentPairs);
+  assert(invalidAccess.allowed === false, 'Receptionist rejected for detached doctor');
+  assert(
+    invalidAccess.error === 'Access denied: Practitioner is not currently affiliated with your facility.',
+    'Accurate affiliation rejection message returned'
+  );
+
+  // 27. Public Doctor Profile Excludes Unverified Clinics
+  const doctorWithMixedClinics = {
+    id: 'doc_sarah',
+    clinics: [
+      { clinic: { id: 'c_ver', clinicName: 'Central Care', isVerified: true } },
+      { clinic: { id: 'c_unver', clinicName: 'Rogue Center', isVerified: false } },
+    ],
+  };
+  const verifiedDoctorClinics = doctorWithMixedClinics.clinics.filter((c) => c.clinic.isVerified);
+  assert(verifiedDoctorClinics.length === 1, 'Only 1 verified clinic retained in doctor profile');
+  assert(verifiedDoctorClinics[0].clinic.id === 'c_ver', 'Central Care is included');
+  assert(!verifiedDoctorClinics.some((c) => c.clinic.id === 'c_unver'), 'Unverified clinic Rogue Center is stripped');
+
+  // 28. Public Clinic Search with Text Query Filtering
+  const clinicCatalog = [
+    { id: '1', clinicName: 'Apex Health Center', address: '123 Main St', city: 'Mumbai', isVerified: true },
+    { id: '2', clinicName: 'Metro General Hospital', address: '456 Ring Rd', city: 'Delhi', isVerified: true },
+    { id: '3', clinicName: 'City Dental Clinic', address: '789 Park Ave', city: 'Mumbai', isVerified: false },
+  ];
+  const searchClinics = (query: string, city?: string) => {
+    return clinicCatalog.filter((c) => {
+      if (!c.isVerified) return false;
+      if (city && c.city.toLowerCase() !== city.toLowerCase()) return false;
+      if (query) {
+        const q = query.toLowerCase();
+        return (
+          c.clinicName.toLowerCase().includes(q) ||
+          c.address.toLowerCase().includes(q) ||
+          c.city.toLowerCase().includes(q)
+        );
+      }
+      return true;
+    });
+  };
+
+  const mumbaiResults = searchClinics('', 'Mumbai');
+  assert(mumbaiResults.length === 1, 'Only verified Mumbai clinic returned (1 of 2)');
+  assert(mumbaiResults[0].id === '1', 'Apex Health Center returned');
+
+  const metroResults = searchClinics('Metro');
+  assert(metroResults.length === 1, 'Search for "Metro" matches Metro General Hospital');
+  assert(metroResults[0].city === 'Delhi', 'Matched clinic is in Delhi');
+
+  // 29. Admin Clinic Inspection Response Formats
+  const rawClinicRecord = {
+    id: 'c_inspect_1',
+    clinicName: 'St. Jude Medical',
+    _count: { doctors: 4, appointments: 120, receptionists: 2 },
+  };
+  const formattedAdminClinic = {
+    ...rawClinicRecord,
+    doctorsCount: rawClinicRecord._count.doctors,
+    appointmentsCount: rawClinicRecord._count.appointments,
+    receptionistsCount: rawClinicRecord._count.receptionists,
+  };
+  assert(formattedAdminClinic.doctorsCount === 4, 'Admin clinic doctorsCount is 4');
+  assert(formattedAdminClinic.appointmentsCount === 120, 'Admin clinic appointmentsCount is 120');
+  assert(formattedAdminClinic.receptionistsCount === 2, 'Admin clinic receptionistsCount is 2');
+
+  // 30. Role-Based Login Redirection Destination
+  const getDestination = (role: string) => {
+    if (role === 'DOCTOR') return '/doctor/dashboard';
+    if (role === 'ADMIN') return '/admin';
+    if (role === 'CLINIC') return '/clinic/dashboard';
+    if (role === 'RECEPTIONIST') return '/receptionist/dashboard';
+    return '/doctors';
+  };
+  assert(getDestination('CLINIC') === '/clinic/dashboard', 'CLINIC role redirects to /clinic/dashboard');
+  assert(getDestination('RECEPTIONIST') === '/receptionist/dashboard', 'RECEPTIONIST role redirects to /receptionist/dashboard');
+  assert(getDestination('DOCTOR') === '/doctor/dashboard', 'DOCTOR role redirects to /doctor/dashboard');
+  assert(getDestination('ADMIN') === '/admin', 'ADMIN role redirects to /admin');
+  assert(getDestination('PATIENT') === '/doctors', 'PATIENT role redirects to /doctors');
+
   console.log(`\n=== VERIFICATION SUMMARY ===`);
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);

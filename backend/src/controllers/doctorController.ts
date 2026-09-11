@@ -51,6 +51,7 @@ export const getDoctors = async (req: Request, res: Response): Promise<void> => 
           },
         },
         clinics: {
+          where: { clinic: { isVerified: true } },
           include: {
             clinic: true,
           },
@@ -95,6 +96,7 @@ export const getDoctorById = async (req: Request, res: Response): Promise<void> 
           },
         },
         clinics: {
+          where: { clinic: { isVerified: true } },
           include: {
             clinic: true,
           },
@@ -251,6 +253,7 @@ export const getDoctorAffiliations = async (req: AuthRequest, res: Response): Pr
           include: {
             receptionist: {
               include: {
+                clinic: true,
                 user: { select: { fullName: true, email: true, phone: true } },
               },
             },
@@ -293,15 +296,21 @@ export const getDoctorAffiliations = async (req: AuthRequest, res: Response): Pr
       })
     );
 
-    const receptionists = doctor.receptionists.map((dr) => ({
-      affiliationId: dr.id,
-      receptionistId: dr.receptionist.id,
-      fullName: dr.receptionist.user.fullName,
-      email: dr.receptionist.user.email,
-      phone: dr.receptionist.phone || dr.receptionist.user.phone,
-      status: dr.status,
-      joinedAt: dr.createdAt,
-    }));
+    // Only include receptionists whose parent clinic is actively affiliated with this doctor
+    const affiliatedClinicIds = new Set(doctor.clinics.map((cd) => cd.clinicId));
+    const receptionists = doctor.receptionists
+      .filter((dr) => dr.receptionist.clinicId && affiliatedClinicIds.has(dr.receptionist.clinicId))
+      .map((dr) => ({
+        affiliationId: dr.id,
+        receptionistId: dr.receptionist.id,
+        fullName: dr.receptionist.user.fullName,
+        email: dr.receptionist.user.email,
+        phone: dr.receptionist.phone || dr.receptionist.user.phone,
+        clinicId: dr.receptionist.clinicId,
+        clinicName: dr.receptionist.clinic?.clinicName,
+        status: dr.status,
+        joinedAt: dr.createdAt,
+      }));
 
     res.json({
       success: true,
@@ -398,9 +407,28 @@ export const removeDoctorClinic = async (req: AuthRequest, res: Response): Promi
       return;
     }
 
-    await prisma.clinicDoctor.deleteMany({
-      where: { clinicId, doctorId: doctor.id },
+    // Find all receptionists belonging to the detached clinic
+    const clinicReceptionists = await prisma.receptionistProfile.findMany({
+      where: { clinicId },
+      select: { id: true },
     });
+    const recIds = clinicReceptionists.map((r) => r.id);
+
+    await prisma.$transaction([
+      prisma.clinicDoctor.deleteMany({
+        where: { clinicId, doctorId: doctor.id },
+      }),
+      ...(recIds.length > 0
+        ? [
+            prisma.doctorReceptionist.deleteMany({
+              where: {
+                doctorId: doctor.id,
+                receptionistId: { in: recIds },
+              },
+            }),
+          ]
+        : []),
+    ]);
 
     res.json({ success: true, message: 'Clinic affiliation removed successfully' });
   } catch (error: any) {
