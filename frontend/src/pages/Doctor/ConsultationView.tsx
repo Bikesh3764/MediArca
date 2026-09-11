@@ -24,6 +24,31 @@ interface MedicineRow {
   instructions: string;
 }
 
+const calculateTotalDose = (frequency: string, duration: string) => {
+  let perDay = 1;
+  const f = (frequency || '').toLowerCase();
+  if (f.includes('four') || f.includes('4') || f.includes('1-1-1-1')) perDay = 4;
+  else if (f.includes('thrice') || f.includes('three') || f.includes('3') || f.includes('1-1-1')) perDay = 3;
+  else if (f.includes('twice') || f.includes('two') || f.includes('2') || f.includes('1-0-1')) perDay = 2;
+  else if (f.includes('once') || f.includes('one') || f.includes('1') || f.includes('1-0-0')) perDay = 1;
+
+  let days = 5;
+  const d = (duration || '').toLowerCase();
+  if (d.includes('month')) {
+    const match = d.match(/\d+/);
+    days = (match ? parseInt(match[0], 10) : 1) * 30;
+  } else if (d.includes('week')) {
+    const match = d.match(/\d+/);
+    days = (match ? parseInt(match[0], 10) : 1) * 7;
+  } else {
+    const match = d.match(/\d+/);
+    if (match) days = parseInt(match[0], 10);
+  }
+
+  const total = perDay * days;
+  return { perDay, days, total };
+};
+
 export const ConsultationView: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -382,9 +407,34 @@ export const ConsultationView: React.FC = () => {
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
-                    Primary Clinical Diagnosis *
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-medium text-[#1d1d1f]">
+                      Primary Clinical Diagnosis *
+                    </label>
+                    <span className="text-[11px] text-[#7a7a7a]">Common:</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 mb-2">
+                    {[
+                      'Acute Upper Respiratory Infection',
+                      'Essential Hypertension',
+                      'Acute Bronchitis',
+                      'Type 2 Diabetes Review',
+                      'Gastroenteritis',
+                    ].map((diag) => (
+                      <button
+                        key={diag}
+                        type="button"
+                        onClick={() => setDiagnosis(diag)}
+                        className={`px-2.5 py-0.5 rounded-full text-[11px] transition-colors ${
+                          diagnosis === diag
+                            ? 'bg-[#0066cc] text-white font-medium'
+                            : 'bg-[#f5f5f7] text-[#1d1d1f] hover:bg-[#e8e8ed]'
+                        }`}
+                      >
+                        {diag}
+                      </button>
+                    ))}
+                  </div>
                   <input
                     type="text"
                     required
@@ -413,7 +463,12 @@ export const ConsultationView: React.FC = () => {
             {/* Digital Prescription Builder */}
             <UtilityCard>
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold text-[#1d1d1f]">Digital Prescription Builder</h3>
+                <div>
+                  <h3 className="text-lg font-semibold text-[#1d1d1f]">Digital Prescription Writing Pad</h3>
+                  <p className="text-xs text-[#7a7a7a] mt-0.5">
+                    Prescribe medications with auto-calculating total dispense quantity.
+                  </p>
+                </div>
                 <AppleButton
                   variant="ghost"
                   size="sm"
@@ -427,84 +482,134 @@ export const ConsultationView: React.FC = () => {
               </div>
 
               <div className="space-y-4">
-                {medicines.map((med, idx) => (
-                  <div
-                    key={idx}
-                    className="p-4 rounded-xl border border-[#e0e0e0] bg-[#fafafc] space-y-3 relative"
-                  >
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs font-semibold text-[#0066cc]">Medication #{idx + 1}</span>
-                      {medicines.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveMedicine(idx)}
-                          className="text-[#7a7a7a] hover:text-rose-600 transition-colors"
-                          title="Remove item"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
+                {medicines.map((med, idx) => {
+                  const { perDay, days, total } = calculateTotalDose(med.frequency, med.duration);
+                  return (
+                    <div
+                      key={idx}
+                      className="p-4 sm:p-5 rounded-2xl border border-[#e0e0e0] bg-[#fafafc] space-y-3.5 relative transition-all"
+                    >
+                      <div className="flex justify-between items-center pb-2 border-b border-gray-200/60">
+                        <span className="text-xs font-semibold text-[#0066cc]">Medication #{idx + 1}</span>
+                        {medicines.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveMedicine(idx)}
+                            className="text-[#7a7a7a] hover:text-rose-600 transition-colors p-1 rounded hover:bg-rose-50"
+                            title="Remove medication"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                      <div>
-                        <label className="block text-[#7a7a7a] mb-1">Medicine Name *</label>
-                        <input
-                          type="text"
-                          required
-                          value={med.name}
-                          onChange={(e) => handleMedicineChange(idx, 'name', e.target.value)}
-                          placeholder="e.g. Amoxicillin 500mg"
-                          className="w-full h-9 px-3 rounded-lg border border-[#e0e0e0] bg-white text-xs focus:border-[#0066cc]"
-                        />
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                        <div>
+                          <label className="block text-[#7a7a7a] mb-1 font-medium">Medicine Name *</label>
+                          <input
+                            type="text"
+                            required
+                            value={med.name}
+                            onChange={(e) => handleMedicineChange(idx, 'name', e.target.value)}
+                            placeholder="e.g. Amoxicillin 500mg, Paracetamol 650mg"
+                            className="w-full h-9 px-3 rounded-lg border border-[#e0e0e0] bg-white text-xs focus:border-[#0066cc]"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[#7a7a7a] mb-1 font-medium">Dosage Form</label>
+                          <input
+                            type="text"
+                            value={med.dosage}
+                            onChange={(e) => handleMedicineChange(idx, 'dosage', e.target.value)}
+                            placeholder="1 Tablet / 5ml Syrup / 1 Capsule"
+                            className="w-full h-9 px-3 rounded-lg border border-[#e0e0e0] bg-white text-xs focus:border-[#0066cc]"
+                          />
+                        </div>
                       </div>
-                      <div>
-                        <label className="block text-[#7a7a7a] mb-1">Dosage Form</label>
-                        <input
-                          type="text"
-                          value={med.dosage}
-                          onChange={(e) => handleMedicineChange(idx, 'dosage', e.target.value)}
-                          placeholder="1 Tablet / 5ml Syrup"
-                          className="w-full h-9 px-3 rounded-lg border border-[#e0e0e0] bg-white text-xs focus:border-[#0066cc]"
-                        />
-                      </div>
-                    </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                      <div>
-                        <label className="block text-[#7a7a7a] mb-1">Frequency</label>
-                        <input
-                          type="text"
-                          value={med.frequency}
-                          onChange={(e) => handleMedicineChange(idx, 'frequency', e.target.value)}
-                          placeholder="Twice daily after meals"
-                          className="w-full h-9 px-3 rounded-lg border border-[#e0e0e0] bg-white text-xs focus:border-[#0066cc]"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[#7a7a7a] mb-1">Duration</label>
-                        <input
-                          type="text"
-                          value={med.duration}
-                          onChange={(e) => handleMedicineChange(idx, 'duration', e.target.value)}
-                          placeholder="7 Days"
-                          className="w-full h-9 px-3 rounded-lg border border-[#e0e0e0] bg-white text-xs focus:border-[#0066cc]"
-                        />
-                      </div>
-                    </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="block text-[#7a7a7a] font-medium">Frequency</label>
+                          </div>
+                          <input
+                            type="text"
+                            value={med.frequency}
+                            onChange={(e) => handleMedicineChange(idx, 'frequency', e.target.value)}
+                            placeholder="Twice daily after meals"
+                            className="w-full h-9 px-3 rounded-lg border border-[#e0e0e0] bg-white text-xs focus:border-[#0066cc] mb-1"
+                          />
+                          <div className="flex flex-wrap gap-1">
+                            {['Once daily', 'Twice daily', 'Thrice daily', 'As needed'].map((f) => (
+                              <button
+                                key={f}
+                                type="button"
+                                onClick={() => handleMedicineChange(idx, 'frequency', f)}
+                                className={`text-[10px] px-2 py-0.5 rounded transition-colors ${
+                                  med.frequency.toLowerCase().includes(f.toLowerCase())
+                                    ? 'bg-[#0066cc] text-white'
+                                    : 'bg-white border border-[#e0e0e0] text-[#7a7a7a] hover:text-[#1d1d1f]'
+                                }`}
+                              >
+                                {f}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
 
-                    <div>
-                      <label className="block text-xs text-[#7a7a7a] mb-1">Patient Instructions</label>
-                      <input
-                        type="text"
-                        value={med.instructions}
-                        onChange={(e) => handleMedicineChange(idx, 'instructions', e.target.value)}
-                        placeholder="e.g. Avoid dairy 2 hours before and after taking."
-                        className="w-full h-9 px-3 rounded-lg border border-[#e0e0e0] bg-white text-xs focus:border-[#0066cc]"
-                      />
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="block text-[#7a7a7a] font-medium">Duration</label>
+                          </div>
+                          <input
+                            type="text"
+                            value={med.duration}
+                            onChange={(e) => handleMedicineChange(idx, 'duration', e.target.value)}
+                            placeholder="5 Days / 1 Week"
+                            className="w-full h-9 px-3 rounded-lg border border-[#e0e0e0] bg-white text-xs focus:border-[#0066cc] mb-1"
+                          />
+                          <div className="flex flex-wrap gap-1">
+                            {['3 Days', '5 Days', '7 Days', '14 Days', '30 Days'].map((d) => (
+                              <button
+                                key={d}
+                                type="button"
+                                onClick={() => handleMedicineChange(idx, 'duration', d)}
+                                className={`text-[10px] px-2 py-0.5 rounded transition-colors ${
+                                  med.duration.toLowerCase() === d.toLowerCase()
+                                    ? 'bg-[#0066cc] text-white'
+                                    : 'bg-white border border-[#e0e0e0] text-[#7a7a7a] hover:text-[#1d1d1f]'
+                                }`}
+                              >
+                                {d}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Auto-calculating Dosage Banner */}
+                      <div className="p-2.5 rounded-xl bg-white border border-[#e0e0e0] flex items-center justify-between text-[11px]">
+                        <span className="text-[#7a7a7a]">
+                          Auto-Calculated Schedule: <strong>{perDay}x daily</strong> for <strong>{days} day(s)</strong>
+                        </span>
+                        <span className="font-semibold px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
+                          Total: ~{total} Units
+                        </span>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs text-[#7a7a7a] mb-1 font-medium">Patient Instructions</label>
+                        <input
+                          type="text"
+                          value={med.instructions}
+                          onChange={(e) => handleMedicineChange(idx, 'instructions', e.target.value)}
+                          placeholder="e.g. Take after meals with plenty of water. Avoid skipping doses."
+                          className="w-full h-9 px-3 rounded-lg border border-[#e0e0e0] bg-white text-xs focus:border-[#0066cc]"
+                        />
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               {/* Lifestyle Advice & Follow-Up */}

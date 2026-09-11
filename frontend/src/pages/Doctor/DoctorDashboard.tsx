@@ -255,9 +255,25 @@ export const DoctorDashboard: React.FC = () => {
 
           {/* Waiting Queue List (2 Columns) */}
           <div className="lg:col-span-2">
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-[#7a7a7a] mb-3">
-              Waiting Queue ({queueData?.waitingQueue.length || 0})
-            </h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-[#7a7a7a]">
+                Waiting Queue ({queueData?.waitingQueue.length || 0})
+              </h3>
+              {queueData && queueData.waitingQueue.length > 0 && (
+                <AppleButton
+                  variant="primary"
+                  size="sm"
+                  disabled={callingId !== null}
+                  onClick={() => handleCallPatient(queueData.waitingQueue[0].id)}
+                  className="flex items-center gap-1.5 shadow-sm"
+                >
+                  <Play className="w-3.5 h-3.5 fill-current" />
+                  {callingId === queueData.waitingQueue[0].id
+                    ? 'Calling Next Patient...'
+                    : `Next Patient: Call Queue #${queueData.waitingQueue[0].queueNumber}`}
+                </AppleButton>
+              )}
+            </div>
 
             {loading ? (
               <div className="space-y-3">

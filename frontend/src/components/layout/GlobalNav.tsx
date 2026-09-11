@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Activity, User as UserIcon, LogOut, ShieldCheck, Stethoscope, Menu, X } from 'lucide-react';
+import { Activity, LogOut, ShieldCheck, Stethoscope, Menu, X, Calendar, FileText } from 'lucide-react';
 
 export const GlobalNav: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleLogout = () => {
@@ -15,6 +16,29 @@ export const GlobalNav: React.FC = () => {
   };
 
   const closeMenu = () => setMobileMenuOpen(false);
+
+  const isActive = (path: string) => {
+    if (path === '/') {
+      return location.pathname === '/';
+    }
+    if (path === '/doctors') {
+      return (
+        location.pathname.startsWith('/doctors') ||
+        location.pathname.startsWith('/doctor/') ||
+        location.pathname.startsWith('/book/')
+      );
+    }
+    return location.pathname.startsWith(path);
+  };
+
+  const getInitials = (name?: string) => {
+    if (!name) return 'U';
+    const parts = name.trim().split(/\s+/).filter(Boolean);
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
+  };
 
   return (
     <header className="sticky top-0 z-50 bg-[#000000] text-white border-b border-white/10 select-none">
@@ -26,40 +50,90 @@ export const GlobalNav: React.FC = () => {
         </Link>
 
         {/* Center Desktop Nav Links */}
-        <nav className="hidden md:flex items-center gap-6 text-[#cccccc]">
-          <Link to="/" className="hover:text-white transition-colors">
+        <nav className="hidden md:flex items-center gap-2 text-[#a1a1a6]">
+          <Link
+            to="/"
+            className={`px-3 py-1 rounded-full transition-all text-xs ${
+              isActive('/')
+                ? 'bg-white/10 text-white font-medium shadow-sm'
+                : 'hover:text-white'
+            }`}
+          >
             Home
           </Link>
-          <Link to="/doctors" className="hover:text-white transition-colors">
+          <Link
+            to="/doctors"
+            className={`px-3 py-1 rounded-full transition-all text-xs ${
+              isActive('/doctors')
+                ? 'bg-white/10 text-white font-medium shadow-sm'
+                : 'hover:text-white'
+            }`}
+          >
             Find Doctors
           </Link>
 
           {user?.role === 'PATIENT' && (
             <>
-              <Link to="/patient/appointments" className="hover:text-white transition-colors flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#2997ff]"></span>
+              <Link
+                to="/patient/appointments"
+                className={`px-3 py-1 rounded-full transition-all text-xs flex items-center gap-1.5 ${
+                  isActive('/patient/appointments')
+                    ? 'bg-[#2997ff]/20 text-[#2997ff] font-medium border border-[#2997ff]/30 shadow-sm'
+                    : 'hover:text-white'
+                }`}
+              >
+                <Calendar className="w-3.5 h-3.5" />
                 Live Queue & Passes
               </Link>
-              <Link to="/patient/records" className="hover:text-white transition-colors">
-                Medical Records
+              <Link
+                to="/patient/records"
+                className={`px-3 py-1 rounded-full transition-all text-xs flex items-center gap-1.5 ${
+                  isActive('/patient/records')
+                    ? 'bg-white/10 text-white font-medium shadow-sm'
+                    : 'hover:text-white'
+                }`}
+              >
+                <FileText className="w-3.5 h-3.5" />
+                Medical Vault
               </Link>
             </>
           )}
 
           {user?.role === 'DOCTOR' && (
             <>
-              <Link to="/doctor/dashboard" className="hover:text-white transition-colors flex items-center gap-1.5 text-[#2997ff]">
+              <Link
+                to="/doctor/dashboard"
+                className={`px-3 py-1 rounded-full transition-all text-xs flex items-center gap-1.5 ${
+                  isActive('/doctor/dashboard') || location.pathname.startsWith('/doctor/consultation')
+                    ? 'bg-[#2997ff]/20 text-[#2997ff] font-medium border border-[#2997ff]/30 shadow-sm'
+                    : 'text-[#2997ff] hover:text-white'
+                }`}
+              >
                 <Stethoscope className="w-3.5 h-3.5" />
                 Doctor Console
               </Link>
-              <Link to="/doctor/schedule" className="hover:text-white transition-colors">
-                Manage Hours & Slots
+              <Link
+                to="/doctor/schedule"
+                className={`px-3 py-1 rounded-full transition-all text-xs ${
+                  isActive('/doctor/schedule')
+                    ? 'bg-white/10 text-white font-medium shadow-sm'
+                    : 'hover:text-white'
+                }`}
+              >
+                Manage Schedule
               </Link>
             </>
           )}
 
           {user?.role === 'ADMIN' && (
-            <Link to="/admin" className="hover:text-white transition-colors flex items-center gap-1.5 text-amber-300">
+            <Link
+              to="/admin"
+              className={`px-3 py-1 rounded-full transition-all text-xs flex items-center gap-1.5 ${
+                isActive('/admin')
+                  ? 'bg-amber-400/20 text-amber-300 font-medium border border-amber-400/30 shadow-sm'
+                  : 'text-amber-300 hover:text-white'
+              }`}
+            >
               <ShieldCheck className="w-3.5 h-3.5" />
               Admin Portal
             </Link>
@@ -71,23 +145,23 @@ export const GlobalNav: React.FC = () => {
           {user ? (
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-full bg-[#272729] flex items-center justify-center text-xs text-[#2997ff] border border-white/15 overflow-hidden">
+                <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-[#0066cc] to-[#2997ff] flex items-center justify-center text-[11px] font-bold text-white border border-white/20 overflow-hidden shadow-sm">
                   {user.avatarUrl ? (
                     <img src={user.avatarUrl} alt={user.fullName} className="w-full h-full object-cover" />
                   ) : (
-                    <UserIcon className="w-3.5 h-3.5" />
+                    <span>{getInitials(user.fullName)}</span>
                   )}
                 </div>
-                <span className="text-xs text-white/90 max-w-[120px] truncate">
+                <span className="text-xs text-white/95 max-w-[130px] truncate font-medium">
                   {user.fullName}
                 </span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70">
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/10 text-[#2997ff] font-semibold border border-white/10">
                   {user.role}
                 </span>
               </div>
               <button
                 onClick={handleLogout}
-                className="text-[#cccccc] hover:text-white transition-colors p-1"
+                className="text-[#a1a1a6] hover:text-rose-400 transition-colors p-1 rounded-full hover:bg-white/10"
                 title="Sign out"
               >
                 <LogOut className="w-3.5 h-3.5" />
@@ -114,13 +188,13 @@ export const GlobalNav: React.FC = () => {
         {/* Mobile Hamburger Toggle */}
         <div className="flex items-center md:hidden gap-2">
           {user && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-[#2997ff]">
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-[#2997ff] font-semibold">
               {user.role}
             </span>
           )}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-1 text-[#cccccc] hover:text-white focus:outline-none"
+            className="p-1.5 text-[#cccccc] hover:text-white focus:outline-none rounded-lg hover:bg-white/10 transition-colors"
             aria-label="Toggle Navigation Menu"
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -130,35 +204,39 @@ export const GlobalNav: React.FC = () => {
 
       {/* Mobile Slide-down Navigation Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden bg-[#161617]/95 backdrop-blur-2xl border-b border-white/15 px-4 py-4 animate-fadeIn space-y-3 text-sm">
+        <div className="md:hidden bg-[#161617]/95 backdrop-blur-2xl border-b border-white/15 px-4 py-4 animate-fadeIn space-y-3 text-sm shadow-2xl">
           {user && (
             <div className="flex items-center gap-3 pb-3 border-b border-white/10">
-              <div className="w-8 h-8 rounded-full bg-[#272729] flex items-center justify-center text-xs text-[#2997ff] border border-white/15 overflow-hidden">
+              <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#0066cc] to-[#2997ff] flex items-center justify-center text-xs font-bold text-white border border-white/20 overflow-hidden shadow-sm">
                 {user.avatarUrl ? (
                   <img src={user.avatarUrl} alt={user.fullName} className="w-full h-full object-cover" />
                 ) : (
-                  <UserIcon className="w-4 h-4" />
+                  <span>{getInitials(user.fullName)}</span>
                 )}
               </div>
               <div className="min-w-0">
-                <p className="font-medium text-white truncate">{user.fullName}</p>
-                <p className="text-[11px] text-[#86868b]">{user.email}</p>
+                <p className="font-semibold text-white truncate text-sm">{user.fullName}</p>
+                <p className="text-[11px] text-[#86868b] truncate">{user.email}</p>
               </div>
             </div>
           )}
 
-          <div className="flex flex-col space-y-2 text-[#cccccc]">
+          <div className="flex flex-col space-y-1 text-[#cccccc]">
             <Link
               to="/"
               onClick={closeMenu}
-              className="py-1.5 hover:text-white transition-colors"
+              className={`py-2 px-3 rounded-xl transition-colors ${
+                isActive('/') ? 'bg-white/15 text-white font-medium' : 'hover:bg-white/5 hover:text-white'
+              }`}
             >
               Home
             </Link>
             <Link
               to="/doctors"
               onClick={closeMenu}
-              className="py-1.5 hover:text-white transition-colors"
+              className={`py-2 px-3 rounded-xl transition-colors ${
+                isActive('/doctors') ? 'bg-white/15 text-white font-medium' : 'hover:bg-white/5 hover:text-white'
+              }`}
             >
               Find Doctors
             </Link>
@@ -168,16 +246,25 @@ export const GlobalNav: React.FC = () => {
                 <Link
                   to="/patient/appointments"
                   onClick={closeMenu}
-                  className="py-1.5 text-[#2997ff] font-medium hover:text-white transition-colors flex items-center gap-2"
+                  className={`py-2 px-3 rounded-xl transition-colors flex items-center gap-2 ${
+                    isActive('/patient/appointments')
+                      ? 'bg-[#2997ff]/20 text-[#2997ff] font-medium'
+                      : 'text-[#2997ff] hover:bg-white/5 hover:text-white'
+                  }`}
                 >
-                  <span className="w-2 h-2 rounded-full bg-[#2997ff]"></span>
-                  Live Queue & Passes
+                  <Calendar className="w-4 h-4" />
+                  Live Queue Passes
                 </Link>
                 <Link
                   to="/patient/records"
                   onClick={closeMenu}
-                  className="py-1.5 hover:text-white transition-colors"
+                  className={`py-2 px-3 rounded-xl transition-colors flex items-center gap-2 ${
+                    isActive('/patient/records')
+                      ? 'bg-white/15 text-white font-medium'
+                      : 'hover:bg-white/5 hover:text-white'
+                  }`}
                 >
+                  <FileText className="w-4 h-4" />
                   Medical Records Vault
                 </Link>
               </>
@@ -188,7 +275,11 @@ export const GlobalNav: React.FC = () => {
                 <Link
                   to="/doctor/dashboard"
                   onClick={closeMenu}
-                  className="py-1.5 text-[#2997ff] font-medium hover:text-white transition-colors flex items-center gap-2"
+                  className={`py-2 px-3 rounded-xl transition-colors flex items-center gap-2 ${
+                    isActive('/doctor/dashboard') || location.pathname.startsWith('/doctor/consultation')
+                      ? 'bg-[#2997ff]/20 text-[#2997ff] font-medium'
+                      : 'text-[#2997ff] hover:bg-white/5 hover:text-white'
+                  }`}
                 >
                   <Stethoscope className="w-4 h-4" />
                   Doctor Console
@@ -196,7 +287,11 @@ export const GlobalNav: React.FC = () => {
                 <Link
                   to="/doctor/schedule"
                   onClick={closeMenu}
-                  className="py-1.5 hover:text-white transition-colors"
+                  className={`py-2 px-3 rounded-xl transition-colors ${
+                    isActive('/doctor/schedule')
+                      ? 'bg-white/15 text-white font-medium'
+                      : 'hover:bg-white/5 hover:text-white'
+                  }`}
                 >
                   Manage Hours & Slots
                 </Link>
@@ -207,7 +302,11 @@ export const GlobalNav: React.FC = () => {
               <Link
                 to="/admin"
                 onClick={closeMenu}
-                className="py-1.5 text-amber-300 font-medium hover:text-white transition-colors flex items-center gap-2"
+                className={`py-2 px-3 rounded-xl transition-colors flex items-center gap-2 ${
+                  isActive('/admin')
+                    ? 'bg-amber-400/20 text-amber-300 font-medium'
+                    : 'text-amber-300 hover:bg-white/5 hover:text-white'
+                }`}
               >
                 <ShieldCheck className="w-4 h-4" />
                 Admin Portal
@@ -219,10 +318,10 @@ export const GlobalNav: React.FC = () => {
             {user ? (
               <button
                 onClick={handleLogout}
-                className="w-full py-2 rounded-xl bg-white/10 hover:bg-white/15 text-rose-400 font-medium text-xs flex items-center justify-center gap-1.5 transition-colors"
+                className="w-full py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-rose-400 font-medium text-xs flex items-center justify-center gap-1.5 transition-colors"
               >
                 <LogOut className="w-3.5 h-3.5" />
-                Sign Out
+                Sign Out ({user.fullName.split(' ')[0]})
               </button>
             ) : (
               <div className="flex items-center gap-2 w-full">

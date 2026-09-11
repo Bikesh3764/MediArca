@@ -168,12 +168,46 @@ export const BookAppointment: React.FC = () => {
             </div>
           </div>
 
-          {/* Date Picker */}
+          {/* Date Picker with Quick Shortcuts */}
           <div className="pt-6 pb-2">
-            <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 flex items-center gap-1">
-              <Calendar className="w-3.5 h-3.5 text-[#0066cc]" />
-              Select Appointment Date
-            </label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-xs font-medium text-[#1d1d1f] flex items-center gap-1">
+                <Calendar className="w-3.5 h-3.5 text-[#0066cc]" />
+                Select Appointment Date
+              </label>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setAppointmentDate(new Date().toISOString().split('T')[0])}
+                  className={`px-2.5 py-0.5 rounded-full text-xs font-medium transition-all ${
+                    appointmentDate === new Date().toISOString().split('T')[0]
+                      ? 'bg-[#0066cc] text-white shadow-sm'
+                      : 'bg-[#f5f5f7] text-[#7a7a7a] hover:text-[#1d1d1f]'
+                  }`}
+                >
+                  Today
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const d = new Date();
+                    d.setDate(d.getDate() + 1);
+                    setAppointmentDate(d.toISOString().split('T')[0]);
+                  }}
+                  className={`px-2.5 py-0.5 rounded-full text-xs font-medium transition-all ${
+                    (() => {
+                      const d = new Date();
+                      d.setDate(d.getDate() + 1);
+                      return appointmentDate === d.toISOString().split('T')[0];
+                    })()
+                      ? 'bg-[#0066cc] text-white shadow-sm'
+                      : 'bg-[#f5f5f7] text-[#7a7a7a] hover:text-[#1d1d1f]'
+                  }`}
+                >
+                  Tomorrow
+                </button>
+              </div>
+            </div>
             <input
               type="date"
               required
@@ -307,9 +341,34 @@ export const BookAppointment: React.FC = () => {
           {/* Booking Form */}
           <form onSubmit={handleBooking} className="space-y-4">
             <div>
-              <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
-                Reason for Visit
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-medium text-[#1d1d1f]">
+                  Reason for Visit
+                </label>
+                <span className="text-[11px] text-[#7a7a7a]">Quick Select:</span>
+              </div>
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {[
+                  'General Consultation',
+                  'Routine Checkup',
+                  'Prescription Refill',
+                  'Follow-up Review',
+                  'Flu / Fever Symptoms',
+                ].map((tag) => (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => setReasonForVisit(tag)}
+                    className={`px-2.5 py-1 rounded-full text-[11px] transition-colors ${
+                      reasonForVisit === tag
+                        ? 'bg-[#0066cc] text-white font-medium'
+                        : 'bg-[#f5f5f7] text-[#1d1d1f] hover:bg-[#e8e8ed]'
+                    }`}
+                  >
+                    {tag}
+                  </button>
+                ))}
+              </div>
               <input
                 type="text"
                 value={reasonForVisit}

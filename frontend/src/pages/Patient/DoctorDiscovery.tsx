@@ -28,13 +28,13 @@ export const DoctorDiscovery: React.FC = () => {
 
   const navigate = useNavigate();
 
-  const fetchDoctors = async () => {
+  const loadDoctors = async (queryText: string, specialtyFilter: string, sortOrder: string) => {
     setLoading(true);
     try {
       const data = await api.getDoctors({
-        search: search.trim() || undefined,
-        specialty: selectedSpecialty !== 'All' ? selectedSpecialty : undefined,
-        sortBy,
+        search: queryText.trim() || undefined,
+        specialty: specialtyFilter !== 'All' ? specialtyFilter : undefined,
+        sortBy: sortOrder,
       });
       setDoctors(data);
     } catch (err) {
@@ -44,20 +44,24 @@ export const DoctorDiscovery: React.FC = () => {
     }
   };
 
+  // Instant debounced search & filter sync
   useEffect(() => {
-    fetchDoctors();
-  }, [selectedSpecialty, sortBy]);
+    const timer = setTimeout(() => {
+      loadDoctors(search, selectedSpecialty, sortBy);
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [search, selectedSpecialty, sortBy]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    fetchDoctors();
+    loadDoctors(search, selectedSpecialty, sortBy);
   };
 
   return (
     <div className="min-h-screen bg-[#f5f5f7] pb-16">
       <SubNav title="Doctor Directory" subtitle="Verified healthcare practitioners">
         <span className="text-xs text-[#7a7a7a]">
-          {doctors.length} Verified Specialist{doctors.length === 1 ? '' : 's'}
+          {doctors.length} Verified Specialist{doctors.length === 1 ? '' : 's'} Available
         </span>
       </SubNav>
 
@@ -68,7 +72,7 @@ export const DoctorDiscovery: React.FC = () => {
             <SearchInput
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by doctor name, specialty, or condition..."
+              placeholder="Search by doctor name, specialty, condition, or clinic..."
               className="flex-1"
             />
             <div className="flex items-center gap-2">
@@ -91,8 +95,8 @@ export const DoctorDiscovery: React.FC = () => {
           {/* Specialty Filter Chips */}
           <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
             <span className="text-xs font-semibold text-[#7a7a7a] mr-2 flex items-center gap-1 flex-shrink-0">
-              <SlidersHorizontal className="w-3.5 h-3.5" />
-              Filter:
+              <SlidersHorizontal className="w-3.5 h-3.5 text-[#0066cc]" />
+              Specialty:
             </span>
             {SPECIALTIES.map((spec) => (
               <button
@@ -102,12 +106,15 @@ export const DoctorDiscovery: React.FC = () => {
                   setSelectedSpecialty(spec);
                   setSearchParams(spec === 'All' ? {} : { specialty: spec });
                 }}
-                className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all flex-shrink-0 ${
+                className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all flex-shrink-0 flex items-center gap-1.5 ${
                   selectedSpecialty === spec
-                    ? 'bg-[#1d1d1f] text-white shadow-sm'
-                    : 'bg-[#f5f5f7] text-[#1d1d1f] hover:bg-[#e0e0e0]'
+                    ? 'bg-[#1d1d1f] text-white shadow-sm ring-1 ring-black/10'
+                    : 'bg-[#f5f5f7] text-[#1d1d1f] hover:bg-[#e8e8ed]'
                 }`}
               >
+                {selectedSpecialty === spec && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#2997ff]"></span>
+                )}
                 {spec}
               </button>
             ))}
@@ -118,119 +125,127 @@ export const DoctorDiscovery: React.FC = () => {
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="h-72 rounded-[18px] bg-white border border-[#e0e0e0] animate-pulse"></div>
+              <div key={i} className="h-72 rounded-[20px] bg-white border border-[#e0e0e0] animate-pulse"></div>
             ))}
           </div>
         ) : doctors.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-[20px] border border-[#e0e0e0]">
-            <p className="text-base font-medium text-[#1d1d1f]">No doctors found matching your criteria.</p>
-            <p className="text-xs text-[#7a7a7a] mt-1">Try broadening your search term or selecting 'All' specialties.</p>
+          <div className="text-center py-16 bg-white rounded-[20px] border border-[#e0e0e0] shadow-sm">
+            <p className="text-base font-semibold text-[#1d1d1f]">No doctors found matching your criteria.</p>
+            <p className="text-xs text-[#7a7a7a] mt-1">Try clearing your search term or selecting 'All' specialties.</p>
             <AppleButton
               variant="ghost"
               size="sm"
               onClick={() => {
                 setSearch('');
                 setSelectedSpecialty('All');
+                setSearchParams({});
               }}
               className="mt-4"
             >
-              Reset Filters
+              Reset All Filters
             </AppleButton>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {doctors.map((doctor) => (
-              <UtilityCard
-                key={doctor.id}
-                hoverEffect
-                className="flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-start gap-4 mb-4">
-                    <div className="w-16 h-16 rounded-full bg-[#f5f5f7] border border-[#e0e0e0] overflow-hidden flex-shrink-0">
-                      {doctor.user.avatarUrl ? (
-                        <img
-                          src={doctor.user.avatarUrl}
-                          alt={doctor.user.fullName}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center font-bold text-lg text-[#0066cc]">
-                          {doctor.user.fullName[0]}
+            {doctors.map((doctor) => {
+              const slots = parseDoctorSlots(doctor);
+              return (
+                <UtilityCard
+                  key={doctor.id}
+                  hoverEffect
+                  className="flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-start gap-4 mb-4">
+                      <div className="w-16 h-16 rounded-full bg-[#f5f5f7] border border-[#e0e0e0] overflow-hidden flex-shrink-0">
+                        {doctor.user.avatarUrl ? (
+                          <img
+                            src={doctor.user.avatarUrl}
+                            alt={doctor.user.fullName}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center font-bold text-lg text-[#0066cc]">
+                            {doctor.user.fullName[0]}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <h3 className="text-[17px] font-semibold text-[#1d1d1f] truncate">
+                            {doctor.user.fullName}
+                          </h3>
+                          <span title="Verified Practitioner by MediArca">
+                            <ShieldCheck className="w-4 h-4 text-[#0066cc] flex-shrink-0" />
+                          </span>
                         </div>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <h3 className="text-[17px] font-semibold text-[#1d1d1f] truncate">
-                          {doctor.user.fullName}
-                        </h3>
-                        <ShieldCheck className="w-4 h-4 text-[#0066cc] flex-shrink-0" />
-                      </div>
-                      <span className="text-[13px] text-[#0066cc] font-medium block">
-                        {doctor.specialty}
-                      </span>
-                      <div className="flex items-center gap-1 text-xs text-[#7a7a7a] mt-0.5">
-                        <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                        <span className="font-semibold text-[#1d1d1f]">{doctor.rating.toFixed(1)}</span>
-                        <span>({doctor.totalReviews} patient reviews)</span>
+                        <span className="text-[13px] text-[#0066cc] font-medium block">
+                          {doctor.specialty}
+                        </span>
+                        <div className="flex items-center gap-1 text-xs text-[#7a7a7a] mt-0.5">
+                          <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                          <span className="font-semibold text-[#1d1d1f]">{doctor.rating.toFixed(1)}</span>
+                          <span>({doctor.totalReviews} reviews)</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <p className="text-xs text-[#7a7a7a] line-clamp-2 leading-relaxed mb-4">
-                    {doctor.bio}
-                  </p>
+                    <p className="text-xs text-[#7a7a7a] line-clamp-2 leading-relaxed mb-4">
+                      {doctor.bio}
+                    </p>
 
-                  {/* Doctor Checking Schedule Badge */}
-                  <div className="p-3.5 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0]/70 space-y-1.5 text-xs text-[#1d1d1f] mb-5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[#7a7a7a] flex items-center gap-1">
-                        <Clock className="w-3 h-3 text-[#0066cc]" />
-                        Practice Shifts:
-                      </span>
-                      <strong className="text-[#0066cc] font-semibold">
-                        {parseDoctorSlots(doctor).length > 1
-                          ? `${parseDoctorSlots(doctor).length} Shifts (${format12Hour(parseDoctorSlots(doctor)[0].startTime)})`
-                          : `${format12Hour(doctor.checkingStartTime)} – ${format12Hour(doctor.checkingEndTime)}`}
-                      </strong>
+                    {/* Doctor Checking Schedule Badge */}
+                    <div className="p-3.5 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0]/70 space-y-1.5 text-xs text-[#1d1d1f] mb-5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[#7a7a7a] flex items-center gap-1">
+                          <Clock className="w-3 h-3 text-[#0066cc]" />
+                          Practice Shifts:
+                        </span>
+                        <strong className="text-[#0066cc] font-semibold">
+                          {slots.length > 1
+                            ? `${slots.length} Shifts (${format12Hour(slots[0].startTime)}–${format12Hour(slots[0].endTime)})`
+                            : `${format12Hour(doctor.checkingStartTime)} – ${format12Hour(doctor.checkingEndTime)}`}
+                        </strong>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-[#7a7a7a]">Experience:</span>
+                        <span>{doctor.experienceYears} Years</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-[#7a7a7a]">Consultation:</span>
+                        <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 font-semibold border border-emerald-200">
+                          ${doctor.consultationFee} • Zero Upfront
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-[#7a7a7a]">Experience:</span>
-                      <span>{doctor.experienceYears} Years</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-[#7a7a7a]">Consultation:</span>
-                      <strong className="text-[#1d1d1f]">${doctor.consultationFee}</strong>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between pt-3 border-t border-[#f0f0f0] gap-2">
-                  <div className="flex items-center gap-1 text-xs text-[#7a7a7a] truncate max-w-[130px]">
-                    <MapPin className="w-3 h-3 flex-shrink-0" />
-                    <span className="truncate">{doctor.clinicAddress || 'Clinic'}</span>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <AppleButton
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => navigate(`/doctor/${doctor.id}`)}
-                    >
-                      Details
-                    </AppleButton>
-                    <AppleButton
-                      variant="primary"
-                      size="sm"
-                      onClick={() => navigate(`/book/${doctor.id}`)}
-                    >
-                      Book Queue
-                    </AppleButton>
+                  <div className="flex items-center justify-between pt-3 border-t border-[#f0f0f0] gap-2">
+                    <div className="flex items-center gap-1 text-xs text-[#7a7a7a] truncate max-w-[130px]">
+                      <MapPin className="w-3 h-3 flex-shrink-0 text-[#0066cc]" />
+                      <span className="truncate">{doctor.clinicAddress || 'MediArca Clinic'}</span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <AppleButton
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => navigate(`/doctor/${doctor.id}`)}
+                      >
+                        Details
+                      </AppleButton>
+                      <AppleButton
+                        variant="primary"
+                        size="sm"
+                        onClick={() => navigate(`/book/${doctor.id}`)}
+                      >
+                        Book Queue
+                      </AppleButton>
+                    </div>
                   </div>
-                </div>
-              </UtilityCard>
-            ))}
+                </UtilityCard>
+              );
+            })}
           </div>
         )}
       </div>

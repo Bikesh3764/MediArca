@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api, Doctor, parseDoctorSlots, format12Hour } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import { AppleButton } from '../components/ui/AppleButton';
 import { UtilityCard } from '../components/ui/UtilityCard';
-import { Clock, ShieldCheck, ArrowRight, Star, MapPin } from 'lucide-react';
+import { Clock, ShieldCheck, ArrowRight, Star, MapPin, Calendar, FileText, Stethoscope } from 'lucide-react';
 
 export const Home: React.FC = () => {
+  const { user } = useAuth();
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
@@ -29,10 +31,17 @@ export const Home: React.FC = () => {
       {/* 1. Hero Section - Apple Product Announcement Aesthetic */}
       <section className="bg-white pt-20 pb-24 border-b border-[#e0e0e0] text-center px-4 sm:px-6">
         <div className="max-w-4xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#f5f5f7] border border-[#e0e0e0] text-xs font-medium text-[#1d1d1f] mb-6">
-            <span className="w-2 h-2 rounded-full bg-[#0066cc]"></span>
-            Introducing MediArca Live Queue
-          </div>
+          {user ? (
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#0066cc]/10 border border-[#0066cc]/20 text-xs font-semibold text-[#0066cc] mb-6 shadow-sm">
+              <span className="w-2 h-2 rounded-full bg-[#0066cc] animate-pulse"></span>
+              Welcome back, {user.fullName} • {user.role === 'PATIENT' ? 'Patient Portal' : user.role === 'DOCTOR' ? 'Doctor Console' : 'Administrator'}
+            </div>
+          ) : (
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#f5f5f7] border border-[#e0e0e0] text-xs font-medium text-[#1d1d1f] mb-6">
+              <span className="w-2 h-2 rounded-full bg-[#0066cc]"></span>
+              Introducing MediArca Live Queue
+            </div>
+          )}
 
           <h1 className="text-4xl sm:text-6xl md:text-7xl font-semibold text-[#1d1d1f] tracking-tight leading-[1.08] mb-6">
             Healthcare. Organized with clinical clarity.
@@ -43,22 +52,96 @@ export const Home: React.FC = () => {
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-4">
-            <AppleButton
-              variant="primary"
-              size="lg"
-              onClick={() => navigate('/doctors')}
-              className="text-base"
-            >
-              Find a Doctor
-            </AppleButton>
-            <AppleButton
-              variant="ghost"
-              size="lg"
-              onClick={() => navigate('/login')}
-              className="text-base"
-            >
-              Sign In to Patient Portal
-            </AppleButton>
+            {user?.role === 'PATIENT' ? (
+              <>
+                <AppleButton
+                  variant="primary"
+                  size="lg"
+                  onClick={() => navigate('/doctors')}
+                  className="text-base flex items-center gap-2"
+                >
+                  Find a Doctor
+                </AppleButton>
+                <AppleButton
+                  variant="secondary"
+                  size="lg"
+                  onClick={() => navigate('/patient/appointments')}
+                  className="text-base flex items-center gap-2"
+                >
+                  <Calendar className="w-4 h-4 text-[#0066cc]" />
+                  View My Queue Pass
+                </AppleButton>
+                <AppleButton
+                  variant="ghost"
+                  size="lg"
+                  onClick={() => navigate('/patient/records')}
+                  className="text-base flex items-center gap-2"
+                >
+                  <FileText className="w-4 h-4 text-[#7a7a7a]" />
+                  Medical Vault
+                </AppleButton>
+              </>
+            ) : user?.role === 'DOCTOR' ? (
+              <>
+                <AppleButton
+                  variant="primary"
+                  size="lg"
+                  onClick={() => navigate('/doctor/dashboard')}
+                  className="text-base flex items-center gap-2"
+                >
+                  <Stethoscope className="w-4 h-4" />
+                  Open Doctor Console
+                </AppleButton>
+                <AppleButton
+                  variant="ghost"
+                  size="lg"
+                  onClick={() => navigate('/doctor/schedule')}
+                  className="text-base flex items-center gap-2"
+                >
+                  <Clock className="w-4 h-4" />
+                  Manage Schedule
+                </AppleButton>
+              </>
+            ) : user?.role === 'ADMIN' ? (
+              <>
+                <AppleButton
+                  variant="primary"
+                  size="lg"
+                  onClick={() => navigate('/admin')}
+                  className="text-base flex items-center gap-2"
+                >
+                  <ShieldCheck className="w-4 h-4" />
+                  Admin Control Center
+                </AppleButton>
+                <AppleButton
+                  variant="ghost"
+                  size="lg"
+                  onClick={() => navigate('/doctors')}
+                  className="text-base"
+                >
+                  Browse Doctors
+                </AppleButton>
+              </>
+            ) : (
+              <>
+                <AppleButton
+                  variant="primary"
+                  size="lg"
+                  onClick={() => navigate('/doctors')}
+                  className="text-base"
+                >
+                  Find a Doctor
+                </AppleButton>
+                <AppleButton
+                  variant="ghost"
+                  size="lg"
+                  onClick={() => navigate('/login')}
+                  className="text-base"
+                >
+                  Sign In to Patient Portal
+                </AppleButton>
+              </>
+            )}
           </div>
         </div>
       </section>
@@ -238,28 +321,123 @@ export const Home: React.FC = () => {
       {/* 4. Startup Call to Action */}
       <section className="bg-[#1d1d1f] text-white py-20 px-4 sm:px-6 text-center">
         <div className="max-w-3xl mx-auto">
-          <h2 className="text-3xl sm:text-5xl font-semibold tracking-tight mb-4">
-            Experience clinical booking without friction.
-          </h2>
-          <p className="text-base sm:text-lg text-[#cccccc] font-light mb-8 max-w-xl mx-auto">
-            Zero subscription walls, zero forced medical histories. Just direct access to certified medical care.
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-4">
-            <AppleButton
-              variant="primary"
-              size="lg"
-              onClick={() => navigate('/doctors')}
-            >
-              Browse Doctor Catalog
-            </AppleButton>
-            <AppleButton
-              variant="secondary-dark"
-              size="lg"
-              onClick={() => navigate('/signup')}
-            >
-              Create Account
-            </AppleButton>
-          </div>
+          {user?.role === 'PATIENT' ? (
+            <>
+              <h2 className="text-3xl sm:text-5xl font-semibold tracking-tight mb-4">
+                Healthcare clarity right in your pocket.
+              </h2>
+              <p className="text-base sm:text-lg text-[#cccccc] font-light mb-8 max-w-xl mx-auto">
+                Track your active queue positions in real-time, view verified prescriptions, or explore new medical specialists.
+              </p>
+              <div className="flex flex-wrap items-center justify-center gap-4">
+                <AppleButton
+                  variant="primary"
+                  size="lg"
+                  onClick={() => navigate('/doctors')}
+                >
+                  Browse Doctor Catalog
+                </AppleButton>
+                <AppleButton
+                  variant="secondary-dark"
+                  size="lg"
+                  onClick={() => navigate('/patient/appointments')}
+                  className="flex items-center gap-2"
+                >
+                  <Calendar className="w-4 h-4 text-[#2997ff]" />
+                  My Appointments & Passes
+                </AppleButton>
+                <AppleButton
+                  variant="ghost"
+                  size="lg"
+                  onClick={() => navigate('/patient/records')}
+                  className="text-white hover:bg-white/10"
+                >
+                  Medical Vault
+                </AppleButton>
+              </div>
+            </>
+          ) : user?.role === 'DOCTOR' ? (
+            <>
+              <h2 className="text-3xl sm:text-5xl font-semibold tracking-tight mb-4">
+                Clinical practice, organized with precision.
+              </h2>
+              <p className="text-base sm:text-lg text-[#cccccc] font-light mb-8 max-w-xl mx-auto">
+                Manage your daily checking shifts, call queued patients, and write verified digital prescriptions.
+              </p>
+              <div className="flex flex-wrap items-center justify-center gap-4">
+                <AppleButton
+                  variant="primary"
+                  size="lg"
+                  onClick={() => navigate('/doctor/dashboard')}
+                  className="flex items-center gap-2"
+                >
+                  <Stethoscope className="w-4 h-4" />
+                  Open Doctor Console
+                </AppleButton>
+                <AppleButton
+                  variant="secondary-dark"
+                  size="lg"
+                  onClick={() => navigate('/doctor/schedule')}
+                  className="flex items-center gap-2"
+                >
+                  <Clock className="w-4 h-4 text-[#2997ff]" />
+                  Manage Schedule & Slots
+                </AppleButton>
+              </div>
+            </>
+          ) : user?.role === 'ADMIN' ? (
+            <>
+              <h2 className="text-3xl sm:text-5xl font-semibold tracking-tight mb-4">
+                Platform governance & clinical compliance.
+              </h2>
+              <p className="text-base sm:text-lg text-[#cccccc] font-light mb-8 max-w-xl mx-auto">
+                Inspect practitioner license credentials, monitor atomic queue reservations, and review clinic telemetry.
+              </p>
+              <div className="flex flex-wrap items-center justify-center gap-4">
+                <AppleButton
+                  variant="primary"
+                  size="lg"
+                  onClick={() => navigate('/admin')}
+                  className="flex items-center gap-2"
+                >
+                  <ShieldCheck className="w-4 h-4" />
+                  Admin Control Center
+                </AppleButton>
+                <AppleButton
+                  variant="secondary-dark"
+                  size="lg"
+                  onClick={() => navigate('/doctors')}
+                >
+                  Browse Doctor Catalog
+                </AppleButton>
+              </div>
+            </>
+          ) : (
+            <>
+              <h2 className="text-3xl sm:text-5xl font-semibold tracking-tight mb-4">
+                Experience clinical booking without friction.
+              </h2>
+              <p className="text-base sm:text-lg text-[#cccccc] font-light mb-8 max-w-xl mx-auto">
+                Zero subscription walls, zero forced medical histories. Just direct access to certified medical care.
+              </p>
+              <div className="flex flex-wrap items-center justify-center gap-4">
+                <AppleButton
+                  variant="primary"
+                  size="lg"
+                  onClick={() => navigate('/doctors')}
+                >
+                  Browse Doctor Catalog
+                </AppleButton>
+                <AppleButton
+                  variant="secondary-dark"
+                  size="lg"
+                  onClick={() => navigate('/signup')}
+                >
+                  Create Account
+                </AppleButton>
+              </div>
+            </>
+          )}
         </div>
       </section>
     </div>

@@ -195,12 +195,46 @@ export const DoctorDetail: React.FC = () => {
               </span>
               <h3 className="text-xl font-semibold text-[#1d1d1f] mb-4">Book Your Token</h3>
 
-              {/* Date Selector */}
+              {/* Date Selector with Quick Shortcuts */}
               <div className="mb-4">
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 flex items-center gap-1">
-                  <Calendar className="w-3.5 h-3.5 text-[#0066cc]" />
-                  Select Appointment Date
-                </label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-medium text-[#1d1d1f] flex items-center gap-1">
+                    <Calendar className="w-3.5 h-3.5 text-[#0066cc]" />
+                    Appointment Date
+                  </label>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedDate(new Date().toISOString().split('T')[0])}
+                      className={`px-2 py-0.5 rounded-full text-[11px] font-medium transition-all ${
+                        selectedDate === new Date().toISOString().split('T')[0]
+                          ? 'bg-[#0066cc] text-white'
+                          : 'bg-[#f5f5f7] text-[#7a7a7a] hover:text-[#1d1d1f]'
+                      }`}
+                    >
+                      Today
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const d = new Date();
+                        d.setDate(d.getDate() + 1);
+                        setSelectedDate(d.toISOString().split('T')[0]);
+                      }}
+                      className={`px-2 py-0.5 rounded-full text-[11px] font-medium transition-all ${
+                        (() => {
+                          const d = new Date();
+                          d.setDate(d.getDate() + 1);
+                          return selectedDate === d.toISOString().split('T')[0];
+                        })()
+                          ? 'bg-[#0066cc] text-white'
+                          : 'bg-[#f5f5f7] text-[#7a7a7a] hover:text-[#1d1d1f]'
+                      }`}
+                    >
+                      Tomorrow
+                    </button>
+                  </div>
+                </div>
                 <input
                   type="date"
                   value={selectedDate}
@@ -210,27 +244,57 @@ export const DoctorDetail: React.FC = () => {
                 />
               </div>
 
-              {/* Slot Selector */}
+              {/* Shift Selector */}
               {parseDoctorSlots(doctor).length > 1 && (
                 <div className="mb-4">
-                  <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5">
-                    Select Checking Shift
+                  <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 flex items-center justify-between">
+                    <span>Select Checking Shift</span>
+                    <span className="text-[11px] text-[#7a7a7a]">
+                      {parseDoctorSlots(doctor).length} shifts
+                    </span>
                   </label>
-                  <select
-                    value={selectedSlotId || ''}
-                    onChange={(e) => setSelectedSlotId(e.target.value)}
-                    className="w-full h-10 px-3 rounded-xl border border-[#e0e0e0] text-xs bg-white focus:outline-none focus:border-[#0066cc]"
-                  >
+                  <div className="space-y-2">
                     {parseDoctorSlots(doctor).map((slot) => {
                       const slotStatus = queuePreview?.availableSlots?.find((s) => s.slot.id === slot.id);
                       const isPassed = Boolean(slotStatus?.isPassed);
+                      const isSelected = selectedSlotId === slot.id;
                       return (
-                        <option key={slot.id} value={slot.id}>
-                          {slot.name} ({format12Hour(slot.startTime)} - {format12Hour(slot.endTime)}){isPassed ? ' — Shift Ended' : ''}
-                        </option>
+                        <button
+                          key={slot.id}
+                          type="button"
+                          disabled={isPassed}
+                          onClick={() => setSelectedSlotId(slot.id)}
+                          className={`w-full p-3 rounded-xl border text-left text-xs transition-all flex items-center justify-between ${
+                            isPassed
+                              ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed'
+                              : isSelected
+                              ? 'bg-[#0066cc]/10 border-[#0066cc] ring-1 ring-[#0066cc]/30 text-[#1d1d1f]'
+                              : 'bg-white border-[#e0e0e0] text-[#1d1d1f] hover:border-[#0066cc]/50'
+                          }`}
+                        >
+                          <div>
+                            <span className="font-semibold block">{slot.name}</span>
+                            <span className="text-[11px] text-[#0066cc] font-medium">
+                              {format12Hour(slot.startTime)} – {format12Hour(slot.endTime)}
+                            </span>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-[10px] block text-[#7a7a7a]">Cap: {slot.maxPatients} pts</span>
+                            {isPassed ? (
+                              <span className="text-[10px] text-gray-500 font-medium">Shift Ended</span>
+                            ) : slotStatus?.isInProgress ? (
+                              <span className="text-[10px] text-emerald-600 font-semibold flex items-center gap-1 justify-end">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                In Progress
+                              </span>
+                            ) : (
+                              <span className="text-[10px] text-[#0066cc] font-medium">Available</span>
+                            )}
+                          </div>
+                        </button>
                       );
                     })}
-                  </select>
+                  </div>
                 </div>
               )}
 
