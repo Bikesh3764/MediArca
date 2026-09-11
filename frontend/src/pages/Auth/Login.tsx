@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { AppleButton } from '../../components/ui/AppleButton';
-import { Activity, AlertCircle, Sparkles } from 'lucide-react';
+import { Activity, AlertCircle, Sparkles, ShieldCheck } from 'lucide-react';
 import { GoogleLogin } from '@react-oauth/google';
 import { isGoogleConfigured } from '../../config/auth';
 
@@ -11,9 +11,35 @@ export const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [showAdminDemo, setShowAdminDemo] = useState(false);
 
   const { login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.search.includes('admin') || location.hash.includes('admin')) {
+      setShowAdminDemo(true);
+      setEmail('admin@mediarca.com');
+      setPassword('admin123');
+    }
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
+        e.preventDefault();
+        setShowAdminDemo((prev) => {
+          if (!prev) {
+            setEmail('admin@mediarca.com');
+            setPassword('admin123');
+          }
+          return !prev;
+        });
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [location]);
 
   const getDestination = (role: string) => {
     if (role === 'DOCTOR') return '/doctor/dashboard';
@@ -109,11 +135,18 @@ export const Login: React.FC = () => {
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         {/* Instant Demo Accounts Banner */}
         <div className="bg-white/90 border border-[#e0e0e0] rounded-2xl p-4 mb-5 shadow-sm">
-          <div className="flex items-center gap-2 mb-2 text-xs font-semibold text-[#1d1d1f]">
-            <Sparkles className="w-4 h-4 text-amber-500" />
-            <span>Instant 1-Click Startup Demo Logins:</span>
+          <div className="flex items-center justify-between mb-2 text-xs font-semibold text-[#1d1d1f]">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-amber-500" />
+              <span>Instant 1-Click Startup Demo Logins:</span>
+            </div>
+            {showAdminDemo && (
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-medium">
+                Admin Stealth Unlocked
+              </span>
+            )}
           </div>
-          <div className="grid grid-cols-3 gap-2">
+          <div className={`grid ${showAdminDemo ? 'grid-cols-3' : 'grid-cols-2'} gap-2`}>
             <button
               type="button"
               onClick={() => handleQuickLogin('john.doe@gmail.com', 'patient123', '/patient/appointments')}
@@ -128,13 +161,15 @@ export const Login: React.FC = () => {
             >
               Doctor<br />(Dr. Sarah)
             </button>
-            <button
-              type="button"
-              onClick={() => handleQuickLogin('admin@mediarca.com', 'admin123', '/admin')}
-              className="px-2.5 py-2 rounded-xl bg-[#f5f5f7] hover:bg-[#0066cc]/10 text-amber-600 border border-[#e0e0e0] text-xs font-medium transition-all text-center"
-            >
-              Admin<br />(Verification)
-            </button>
+            {showAdminDemo && (
+              <button
+                type="button"
+                onClick={() => handleQuickLogin('admin@mediarca.com', 'admin123', '/admin')}
+                className="px-2.5 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 text-xs font-medium transition-all text-center animate-in fade-in"
+              >
+                Admin<br />(Verification)
+              </button>
+            )}
           </div>
         </div>
 

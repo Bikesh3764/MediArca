@@ -1,5 +1,5 @@
 import React from 'react';
-import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { GlobalNav } from './components/layout/GlobalNav';
 import { Footer } from './components/layout/Footer';
@@ -18,6 +18,29 @@ import { DoctorDashboard } from './pages/Doctor/DoctorDashboard';
 import { ConsultationView } from './pages/Doctor/ConsultationView';
 import { ManageSchedule } from './pages/Doctor/ManageSchedule';
 import { AdminDashboard } from './pages/Admin/AdminDashboard';
+
+// Global Stealth Shortcut Listener (Ctrl + Shift + A)
+const AdminShortcutHandler: React.FC = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
+        e.preventDefault();
+        if (user?.role === 'ADMIN') {
+          navigate('/admin');
+        } else {
+          navigate('/login?admin=stealth');
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [navigate, user]);
+
+  return null;
+};
 
 // Protected Route Helpers
 const ProtectedRoute: React.FC<{
@@ -50,6 +73,7 @@ export function App() {
     <ErrorBoundary>
       <AuthProvider>
         <Router>
+          <AdminShortcutHandler />
           <div className="flex flex-col min-h-screen">
           <GlobalNav />
           <main className="flex-grow">
