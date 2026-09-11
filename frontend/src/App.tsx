@@ -3,6 +3,7 @@ import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { GlobalNav } from './components/layout/GlobalNav';
 import { Footer } from './components/layout/Footer';
+import { ErrorBoundary } from './components/ui/ErrorBoundary';
 
 // Pages
 import { Home } from './pages/Home';
@@ -46,9 +47,10 @@ const ProtectedRoute: React.FC<{
 
 export function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <div className="flex flex-col min-h-screen">
+    <ErrorBoundary>
+      <AuthProvider>
+        <Router>
+          <div className="flex flex-col min-h-screen">
           <GlobalNav />
           <main className="flex-grow">
             <Routes>
@@ -129,6 +131,7 @@ export function App() {
         </div>
       </Router>
     </AuthProvider>
+    </ErrorBoundary>
   );
 }
 

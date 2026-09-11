@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { SubNav } from '../../components/layout/SubNav';
 import { AppleButton } from '../../components/ui/AppleButton';
 import { UtilityCard } from '../../components/ui/UtilityCard';
-import { Clock, DollarSign, MapPin, CheckCircle2, ChevronLeft, AlertCircle } from 'lucide-react';
+import { Clock, DollarSign, CheckCircle2, ChevronLeft, AlertCircle } from 'lucide-react';
 
 export const ManageSchedule: React.FC = () => {
   const { user, refreshUser } = useAuth();

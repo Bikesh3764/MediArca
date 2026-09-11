@@ -6,15 +6,33 @@ Instead of rigid, ambiguous appointment slots, MediArca introduces transparent *
 
 ---
 
+## 🌐 Live Production Deployments
+
+- **Frontend (GitHub Pages)**: [https://bikesh3764.github.io/MediArca/](https://bikesh3764.github.io/MediArca/)
+- **Backend API (Render Web Service)**: [https://mediarca-mdwk.onrender.com](https://mediarca-mdwk.onrender.com)
+- **Backend Health Check**: [https://mediarca-mdwk.onrender.com/healthz](https://mediarca-mdwk.onrender.com/healthz)
+
+---
+
+## 🔑 Google OAuth 2.0 Integration
+
+MediArca is integrated with Google Identity Services (`@react-oauth/google` on the frontend and `google-auth-library` on the backend).
+
+- For a complete step-by-step tutorial on creating your Google Cloud OAuth Client ID, authorized origins, and environment variables, see **[GOOGLE_AUTH_SETUP.md](./GOOGLE_AUTH_SETUP.md)**.
+- If a Google Client ID is not yet configured, the system provides a seamless **1-Click Test Simulation Mode** so the full Google Sign-In authentication flow, profile provisioning, and dashboard navigation can be evaluated instantly.
+
+---
+
 ## Architecture & Tech Stack
 
-- **Frontend**: React 19, Vite, TypeScript, Tailwind CSS, Lucide Icons, React Router v7.
-- **Backend**: Node.js, Express, TypeScript, Multer (Document Vault), JWT + Bcrypt.
-- **Database**: Prisma ORM (SQLite for zero-config offline dev; 100% Supabase PostgreSQL ready for production).
+- **Frontend**: React 19, Vite, TypeScript, Tailwind CSS, Lucide Icons, React Router v7, `@react-oauth/google`.
+- **Backend**: Node.js, Express, TypeScript, Multer (Document Vault), JWT, Bcrypt, `google-auth-library`.
+- **Database**: Prisma ORM (PostgreSQL via Supabase).
 - **Design System**: Apple Human Interface Guidelines (`DESIGN.md`):
   - Action Blue (`#0066cc`) full pill buttons (`rounded-full`, `active:scale-95`).
-  - 44px true-black global nav, 52px frosted-glass sub-nav with backdrop blur.
+  - 44px true-black global nav with responsive mobile drawer, 52px frosted-glass sub-nav with backdrop blur.
   - Parchment (`#f5f5f7`) and pure white (`#ffffff`) alternating gallery rhythm.
+  - Crash-resistant Error Boundary architecture with graceful recovery.
   - SF Pro / Inter typography with negative tracking on headlines.
 
 ---

@@ -12,7 +12,6 @@ import {
   Award,
   Calendar,
   UserCheck,
-  CheckCircle2,
   ChevronLeft,
 } from 'lucide-react';
 

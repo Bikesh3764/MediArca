@@ -330,11 +330,39 @@ export const googleAuth = async (req: Request, res: Response): Promise<void> => 
           include: { patientProfile: true, doctorProfile: true },
         });
       }
-    } else if (avatarUrl && !user.avatarUrl) {
-      await prisma.user.update({
+    } else {
+      user = await prisma.user.update({
         where: { id: user.id },
-        data: { avatarUrl },
+        data: {
+          ...(avatarUrl && !user.avatarUrl ? { avatarUrl } : {}),
+        },
+        include: { patientProfile: true, doctorProfile: true },
       });
+
+      if (user.role === 'PATIENT' && !user.patientProfile) {
+        await prisma.patientProfile.create({ data: { userId: user.id } });
+      } else if (user.role === 'DOCTOR' && !user.doctorProfile) {
+        await prisma.doctorProfile.create({
+          data: {
+            userId: user.id,
+            specialty: 'General Medicine',
+            qualifications: 'Medical Practitioner',
+            isVerified: false,
+            checkingStartTime: '09:00',
+            checkingEndTime: '13:00',
+          },
+        });
+      }
+
+      user = (await prisma.user.findUnique({
+        where: { id: user.id },
+        include: { patientProfile: true, doctorProfile: true },
+      })) as any;
+    }
+
+    if (!user) {
+      res.status(500).json({ success: false, message: 'Failed to establish user account session' });
+      return;
     }
 
     const token = jwt.sign(

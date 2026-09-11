@@ -20,3 +20,5 @@ services:
         sync: false # Enter your Supabase direct connection URL
       - key: FRONTEND_URL
         value: https://bikesh3764.github.io
+      - key: GOOGLE_CLIENT_ID
+        sync: false # Enter your Google Cloud OAuth 2.0 Client ID

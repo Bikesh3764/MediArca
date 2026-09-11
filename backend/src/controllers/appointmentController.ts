@@ -44,8 +44,8 @@ export const getQueuePreview = async (req: AuthRequest, res: Response): Promise<
 
     const dateStr = String(appointmentDate);
 
-    // Count existing active appointments for that date
-    const existingCount = await prisma.appointment.count({
+    // Count active appointments for capacity & patients ahead
+    const activeCount = await prisma.appointment.count({
       where: {
         doctorId: doctor.id,
         appointmentDate: dateStr,
@@ -53,9 +53,18 @@ export const getQueuePreview = async (req: AuthRequest, res: Response): Promise<
       },
     });
 
-    const isFull = existingCount >= doctor.maxDailyPatients;
-    const nextQueueNumber = existingCount + 1;
-    const patientsAhead = existingCount;
+    // Find highest assigned queue number to prevent duplicate key collisions
+    const maxQueueAppt = await prisma.appointment.findFirst({
+      where: {
+        doctorId: doctor.id,
+        appointmentDate: dateStr,
+      },
+      orderBy: { queueNumber: 'desc' },
+    });
+
+    const isFull = activeCount >= doctor.maxDailyPatients;
+    const nextQueueNumber = (maxQueueAppt?.queueNumber || 0) + 1;
+    const patientsAhead = activeCount;
 
     const checkingWindow = `${format12Hour(doctor.checkingStartTime)} – ${format12Hour(doctor.checkingEndTime)}`;
     const offsetMinutes = patientsAhead * doctor.avgConsultationMinutes;
@@ -72,7 +81,7 @@ export const getQueuePreview = async (req: AuthRequest, res: Response): Promise<
         checkingEndTime: doctor.checkingEndTime,
         avgConsultationMinutes: doctor.avgConsultationMinutes,
         maxDailyPatients: doctor.maxDailyPatients,
-        totalBooked: existingCount,
+        totalBooked: activeCount,
         nextQueueNumber,
         patientsAhead,
         estimatedTime,
@@ -99,13 +108,14 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
       return;
     }
 
-    const patient = await prisma.patientProfile.findUnique({
+    let patient = await prisma.patientProfile.findUnique({
       where: { userId: req.user.id },
     });
 
     if (!patient) {
-      res.status(400).json({ success: false, message: 'Patient profile not found' });
-      return;
+      patient = await prisma.patientProfile.create({
+        data: { userId: req.user.id },
+      });
     }
 
     const doctor = await prisma.doctorProfile.findUnique({
@@ -150,7 +160,16 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
         throw new Error('Doctor schedule is fully booked for this date');
       }
 
-      const queueNumber = activeCount + 1;
+      // Find highest queue number to avoid unique constraint collisions with cancelled appointments
+      const maxQueueAppt = await tx.appointment.findFirst({
+        where: {
+          doctorId: doctor.id,
+          appointmentDate,
+        },
+        orderBy: { queueNumber: 'desc' },
+      });
+
+      const queueNumber = (maxQueueAppt?.queueNumber || 0) + 1;
       const checkingWindow = `${format12Hour(doctor.checkingStartTime)} – ${format12Hour(doctor.checkingEndTime)}`;
       const offsetMinutes = activeCount * doctor.avgConsultationMinutes;
       const estimatedTime = calculateEstimatedTime(doctor.checkingStartTime, offsetMinutes);

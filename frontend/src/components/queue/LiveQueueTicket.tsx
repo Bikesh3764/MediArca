@@ -1,6 +1,6 @@
 import React from 'react';
 import { Appointment } from '../../services/api';
-import { Clock, Calendar, MapPin, CheckCircle2, AlertCircle, FileText } from 'lucide-react';
+import { Clock, Calendar, MapPin, CheckCircle2, FileText } from 'lucide-react';
 import { AppleButton } from '../ui/AppleButton';
 
 interface LiveQueueTicketProps {

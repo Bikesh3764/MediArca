@@ -11,7 +11,7 @@ export const getDoctors = async (req: Request, res: Response): Promise<void> => 
     };
 
     if (specialty && typeof specialty === 'string' && specialty !== 'All') {
-      whereClause.specialty = { equals: specialty };
+      whereClause.specialty = { equals: specialty, mode: 'insensitive' };
     }
 
     if (minExp) {
@@ -24,10 +24,10 @@ export const getDoctors = async (req: Request, res: Response): Promise<void> => 
 
     if (search && typeof search === 'string') {
       whereClause.OR = [
-        { user: { fullName: { contains: search } } },
-        { specialty: { contains: search } },
-        { clinicAddress: { contains: search } },
-        { bio: { contains: search } },
+        { user: { fullName: { contains: search, mode: 'insensitive' } } },
+        { specialty: { contains: search, mode: 'insensitive' } },
+        { clinicAddress: { contains: search, mode: 'insensitive' } },
+        { bio: { contains: search, mode: 'insensitive' } },
       ];
     }
 

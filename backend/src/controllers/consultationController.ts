@@ -98,6 +98,16 @@ export const callPatient = async (req: AuthRequest, res: Response): Promise<void
       return;
     }
 
+    // Reset any currently IN_CONSULTATION appointments on this date back to WAITING
+    await prisma.appointment.updateMany({
+      where: {
+        doctorId: doctor.id,
+        appointmentDate: targetAppointment.appointmentDate,
+        status: 'IN_CONSULTATION',
+      },
+      data: { status: 'WAITING' },
+    });
+
     // Update target to IN_CONSULTATION
     const updated = await prisma.appointment.update({
       where: { id: appointmentId },

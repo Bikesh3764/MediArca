@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { api, MedicalRecord } from '../../services/api';
+import { api, MedicalRecord, getFileUrl } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { SubNav } from '../../components/layout/SubNav';
 import { AppleButton } from '../../components/ui/AppleButton';
 import { UtilityCard } from '../../components/ui/UtilityCard';
-import { FileText, Upload, Trash2, Eye, Plus, X, AlertCircle } from 'lucide-react';
+import { FileText, Upload, Trash2, Eye, X, AlertCircle } from 'lucide-react';
 
 export const MedicalRecords: React.FC = () => {
   const [records, setRecords] = useState<MedicalRecord[]>([]);
@@ -138,7 +138,7 @@ export const MedicalRecords: React.FC = () => {
                     {rec.fileType || 'Doc'}
                   </span>
                   <a
-                    href={`http://localhost:5000${rec.fileUrl}`}
+                    href={getFileUrl(rec.fileUrl)}
                     target="_blank"
                     rel="noreferrer"
                     className="inline-flex items-center gap-1 text-xs font-semibold text-[#0066cc] hover:underline"

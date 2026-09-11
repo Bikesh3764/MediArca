@@ -11,7 +11,6 @@ import {
   Calendar,
   AlertCircle,
   CheckCircle2,
-  XCircle,
   RefreshCw,
   Clock,
 } from 'lucide-react';
@@ -81,8 +80,15 @@ export const AdminDashboard: React.FC = () => {
       </SubNav>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-8 space-y-8">
-        {/* KPI Metrics */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        {loading && !stats ? (
+          <div className="flex flex-col items-center justify-center py-24">
+            <div className="w-8 h-8 rounded-full border-2 border-[#0066cc] border-t-transparent animate-spin mb-3"></div>
+            <p className="text-xs text-[#7a7a7a]">Loading platform telemetry and practitioner records...</p>
+          </div>
+        ) : (
+          <>
+            {/* KPI Metrics */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           <UtilityCard>
             <div className="flex items-center justify-between">
               <div>
@@ -264,6 +270,8 @@ export const AdminDashboard: React.FC = () => {
             </table>
           </div>
         </UtilityCard>
+        </>
+        )}
       </div>
     </div>
   );

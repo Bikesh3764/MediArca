@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Activity, Shield, Clock, Heart } from 'lucide-react';
+import { getBackendBaseUrl } from '../../services/api';
 
 export const Footer: React.FC = () => {
   return (
@@ -91,7 +92,7 @@ export const Footer: React.FC = () => {
             <span className="font-semibold text-[#1d1d1f] block mb-2">Platform</span>
             <ul className="space-y-1.5">
               <li><Link to="/admin" className="hover:text-[#1d1d1f]">Admin Oversight</Link></li>
-              <li><a href="http://localhost:5000/api/health" target="_blank" rel="noreferrer" className="hover:text-[#1d1d1f]">API Health Status</a></li>
+              <li><a href={`${getBackendBaseUrl()}/healthz`} target="_blank" rel="noreferrer" className="hover:text-[#1d1d1f]">API Health Status</a></li>
               <li><span className="text-[#86868b]">Apple Design System v1.0</span></li>
             </ul>
           </div>

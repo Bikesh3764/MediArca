@@ -1,19 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { api, Appointment } from '../../services/api';
+import { api, Appointment, getFileUrl } from '../../services/api';
 import { SubNav } from '../../components/layout/SubNav';
 import { AppleButton } from '../../components/ui/AppleButton';
 import { UtilityCard } from '../../components/ui/UtilityCard';
 import {
-  User,
   Heart,
-  FileText,
   Plus,
   Trash2,
-  CheckCircle,
   ChevronLeft,
   AlertCircle,
-  Clock,
   Eye,
 } from 'lucide-react';
 
@@ -292,7 +288,7 @@ export const ConsultationView: React.FC = () => {
                   {appointment.patient.medicalRecords.map((doc) => (
                     <a
                       key={doc.id}
-                      href={`http://localhost:5000${doc.fileUrl}`}
+                      href={getFileUrl(doc.fileUrl)}
                       target="_blank"
                       rel="noreferrer"
                       className="p-2 rounded-lg bg-[#f5f5f7] hover:bg-[#0066cc]/5 border border-[#e0e0e0] flex justify-between items-center text-xs text-[#1d1d1f] transition-colors"

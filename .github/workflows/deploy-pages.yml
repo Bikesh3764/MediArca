@@ -1,4 +1,4 @@
-﻿name: Deploy Frontend to GitHub Pages
+name: Deploy Frontend to GitHub Pages
 
 on:
   push:
@@ -37,6 +37,9 @@ jobs:
           npm ci
 
       - name: Build Frontend
+        env:
+          VITE_API_URL: https://mediarca-mdwk.onrender.com/api
+          VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID || vars.VITE_GOOGLE_CLIENT_ID }}
         run: |
           cd frontend
           npm run build

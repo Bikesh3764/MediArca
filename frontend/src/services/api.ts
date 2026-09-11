@@ -1,8 +1,19 @@
-const API_BASE_URL =
+export const API_BASE_URL =
   import.meta.env.VITE_API_URL ||
   (typeof window !== 'undefined' && window.location.hostname === 'localhost'
     ? 'http://localhost:5000/api'
     : 'https://mediarca-mdwk.onrender.com/api');
+
+export const getBackendBaseUrl = (): string => {
+  return API_BASE_URL.replace(/\/api\/?$/, '');
+};
+
+export const getFileUrl = (filePath?: string): string => {
+  if (!filePath) return '';
+  if (filePath.startsWith('http://') || filePath.startsWith('https://')) return filePath;
+  const backendBase = getBackendBaseUrl();
+  return `${backendBase}${filePath.startsWith('/') ? '' : '/'}${filePath}`;
+};
 
 export const DEMO_DOCTORS: Doctor[] = [
   {
@@ -328,10 +339,31 @@ export const api = {
 
   // Appointments & Queue Preview
   async getQueuePreview(doctorId: string, appointmentDate: string): Promise<QueuePreview> {
-    const res = await fetch(
-      `${API_BASE_URL}/appointments/queue-preview?doctorId=${doctorId}&appointmentDate=${appointmentDate}`
-    );
-    return handleResponse(res);
+    try {
+      const res = await fetch(
+        `${API_BASE_URL}/appointments/queue-preview?doctorId=${doctorId}&appointmentDate=${appointmentDate}`
+      );
+      return await handleResponse(res);
+    } catch (err) {
+      console.warn('Queue preview API unavailable, using offline preview calculation fallback', err);
+      const doctor = DEMO_DOCTORS.find((d) => d.id === doctorId) || DEMO_DOCTORS[0];
+      const checkingWindow = `${doctor.checkingStartTime} – ${doctor.checkingEndTime}`;
+      return {
+        doctorId: doctor.id,
+        doctorName: doctor.user.fullName,
+        appointmentDate,
+        checkingWindow,
+        checkingStartTime: doctor.checkingStartTime,
+        checkingEndTime: doctor.checkingEndTime,
+        avgConsultationMinutes: doctor.avgConsultationMinutes,
+        maxDailyPatients: doctor.maxDailyPatients,
+        totalBooked: 1,
+        nextQueueNumber: 2,
+        patientsAhead: 1,
+        estimatedTime: '09:20 AM',
+        isFull: false,
+      };
+    }
   },
 
   async bookAppointment(body: {

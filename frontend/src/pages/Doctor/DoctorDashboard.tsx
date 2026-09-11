@@ -5,13 +5,11 @@ import { useAuth } from '../../context/AuthContext';
 import { SubNav } from '../../components/layout/SubNav';
 import { AppleButton } from '../../components/ui/AppleButton';
 import { UtilityCard } from '../../components/ui/UtilityCard';
-import { QueueBadge } from '../../components/ui/QueueBadge';
 import {
   Stethoscope,
   Users,
   Clock,
   CheckCircle2,
-  Calendar,
   AlertTriangle,
   Play,
   FileEdit,
