@@ -1,6 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
-import { api, Doctor, QueuePreview, parseDoctorSlots, format12Hour } from '../../services/api';
+import {
+  api,
+  Doctor,
+  QueuePreview,
+  parseDoctorSlots,
+  format12Hour,
+  getLocalDateString,
+  getTomorrowDateString,
+} from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { SubNav } from '../../components/layout/SubNav';
 import { AppleButton } from '../../components/ui/AppleButton';
@@ -17,7 +25,7 @@ import {
 export const BookAppointment: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
-  const initialDate = searchParams.get('date') || new Date().toISOString().split('T')[0];
+  const initialDate = searchParams.get('date') || getLocalDateString();
   const initialSlot = searchParams.get('slot') || null;
 
   const [doctor, setDoctor] = useState<Doctor | null>(null);
@@ -31,11 +39,12 @@ export const BookAppointment: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { user } = useAuth();
+  const { user, loading: loadingAuth } = useAuth();
   const navigate = useNavigate();
 
   // Load doctor profile
   useEffect(() => {
+    if (loadingAuth) return;
     if (!user) {
       navigate('/login');
       return;
@@ -47,12 +56,12 @@ export const BookAppointment: React.FC = () => {
         const docData = await api.getDoctorById(id);
         setDoctor(docData);
         const slots = parseDoctorSlots(docData);
-        if (slots.length > 0 && !selectedSlotId) {
-          // If a slot was provided in query param and exists, use it; otherwise let queue preview select first available
-          const matchingSlot = initialSlot ? slots.find((s) => s.id === initialSlot) : null;
-          if (matchingSlot) {
-            setSelectedSlotId(matchingSlot.id);
-          }
+        if (slots.length > 0) {
+          setSelectedSlotId((prev) => {
+            if (prev) return prev;
+            const matchingSlot = initialSlot ? slots.find((s) => s.id === initialSlot) : null;
+            return matchingSlot ? matchingSlot.id : slots[0].id;
+          });
         }
       } catch (err: any) {
         console.error('Failed to load doctor:', err);
@@ -63,7 +72,7 @@ export const BookAppointment: React.FC = () => {
     };
 
     fetchDoctor();
-  }, [id, user, navigate]);
+  }, [id, user, loadingAuth, navigate, initialSlot]);
 
   // Fetch queue preview when date or slotId changes
   useEffect(() => {
@@ -73,7 +82,7 @@ export const BookAppointment: React.FC = () => {
       try {
         const previewData = await api.getQueuePreview(id, appointmentDate, selectedSlotId || undefined);
         setQueuePreview(previewData);
-        if (previewData.selectedSlotId && (!selectedSlotId || previewData.isPassed)) {
+        if (previewData.selectedSlotId && (!selectedSlotId || (previewData.isPassed && previewData.selectedSlotId !== selectedSlotId))) {
           setSelectedSlotId(previewData.selectedSlotId);
         }
       } catch (err: any) {
@@ -178,9 +187,9 @@ export const BookAppointment: React.FC = () => {
               <div className="flex items-center gap-1">
                 <button
                   type="button"
-                  onClick={() => setAppointmentDate(new Date().toISOString().split('T')[0])}
+                  onClick={() => setAppointmentDate(getLocalDateString())}
                   className={`px-2.5 py-0.5 rounded-full text-xs font-medium transition-all ${
-                    appointmentDate === new Date().toISOString().split('T')[0]
+                    appointmentDate === getLocalDateString()
                       ? 'bg-[#0066cc] text-white shadow-sm'
                       : 'bg-[#f5f5f7] text-[#7a7a7a] hover:text-[#1d1d1f]'
                   }`}
@@ -189,17 +198,9 @@ export const BookAppointment: React.FC = () => {
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    const d = new Date();
-                    d.setDate(d.getDate() + 1);
-                    setAppointmentDate(d.toISOString().split('T')[0]);
-                  }}
+                  onClick={() => setAppointmentDate(getTomorrowDateString())}
                   className={`px-2.5 py-0.5 rounded-full text-xs font-medium transition-all ${
-                    (() => {
-                      const d = new Date();
-                      d.setDate(d.getDate() + 1);
-                      return appointmentDate === d.toISOString().split('T')[0];
-                    })()
+                    appointmentDate === getTomorrowDateString()
                       ? 'bg-[#0066cc] text-white shadow-sm'
                       : 'bg-[#f5f5f7] text-[#7a7a7a] hover:text-[#1d1d1f]'
                   }`}
@@ -212,7 +213,7 @@ export const BookAppointment: React.FC = () => {
               type="date"
               required
               value={appointmentDate}
-              min={new Date().toISOString().split('T')[0]}
+              min={getLocalDateString()}
               onChange={(e) => setAppointmentDate(e.target.value)}
               className="w-full h-11 px-4 rounded-xl border border-[#e0e0e0] text-[14px] bg-white focus:outline-none focus:border-[#0066cc]"
             />
@@ -429,9 +430,9 @@ export const BookAppointment: React.FC = () => {
                   ? 'Confirming Token...'
                   : isSelectedSlotPassed
                   ? 'Shift Concluded — Select Next Shift'
-                  : isSelectedSlotFull
-                  ? 'Slot Full — Select Another'
-                  : `Confirm Queue #${queuePreview?.nextQueueNumber || ''}`}
+                  : queuePreview?.nextQueueNumber
+                  ? `Confirm Queue #${queuePreview.nextQueueNumber}`
+                  : 'Confirm Queue Token'}
               </AppleButton>
             </div>
           </form>

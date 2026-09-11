@@ -68,3 +68,35 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #a1a1a6;
 }
+
+/* Crisp Clean Prescription Printing */
+@media print {
+  header,
+  footer,
+  nav,
+  button,
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .fixed {
+    position: static !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+  }
+
+  .shadow-2xl,
+  .shadow-apple-card,
+  .shadow-md,
+  .shadow-sm {
+    box-shadow: none !important;
+  }
+}
+

@@ -14,7 +14,7 @@ export const MyAppointments: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
   const [selectedPrescriptionAppt, setSelectedPrescriptionAppt] = useState<Appointment | null>(null);
 
-  const { user } = useAuth();
+  const { user, loading: loadingAuth } = useAuth();
   const navigate = useNavigate();
 
   const fetchAppointments = async () => {
@@ -30,6 +30,7 @@ export const MyAppointments: React.FC = () => {
   };
 
   useEffect(() => {
+    if (loadingAuth) return;
     if (!user) {
       navigate('/login');
       return;
@@ -39,7 +40,7 @@ export const MyAppointments: React.FC = () => {
     // Auto-refresh queue every 15 seconds so patient sees live queue position updates!
     const interval = setInterval(fetchAppointments, 15000);
     return () => clearInterval(interval);
-  }, [user]);
+  }, [user, loadingAuth, navigate]);
 
   const handleCancel = async (id: string) => {
     if (!window.confirm('Are you sure you want to cancel this appointment queue token?')) return;

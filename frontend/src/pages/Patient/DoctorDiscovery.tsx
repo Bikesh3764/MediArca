@@ -52,6 +52,14 @@ export const DoctorDiscovery: React.FC = () => {
     return () => clearTimeout(timer);
   }, [search, selectedSpecialty, sortBy]);
 
+  // Synchronize specialty filter when query param changes
+  useEffect(() => {
+    const paramSpec = searchParams.get('specialty') || 'All';
+    if (paramSpec !== selectedSpecialty) {
+      setSelectedSpecialty(paramSpec);
+    }
+  }, [searchParams, selectedSpecialty]);
+
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     loadDoctors(search, selectedSpecialty, sortBy);

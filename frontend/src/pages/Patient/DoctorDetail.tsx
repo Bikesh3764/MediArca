@@ -1,6 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { api, Doctor, QueuePreview, parseDoctorSlots, format12Hour } from '../../services/api';
+import {
+  api,
+  Doctor,
+  QueuePreview,
+  parseDoctorSlots,
+  format12Hour,
+  getLocalDateString,
+  getTomorrowDateString,
+} from '../../services/api';
 import { SubNav } from '../../components/layout/SubNav';
 import { AppleButton } from '../../components/ui/AppleButton';
 import { UtilityCard } from '../../components/ui/UtilityCard';
@@ -18,9 +26,7 @@ import {
 export const DoctorDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [doctor, setDoctor] = useState<Doctor | null>(null);
-  const [selectedDate, setSelectedDate] = useState<string>(() => {
-    return new Date().toISOString().split('T')[0];
-  });
+  const [selectedDate, setSelectedDate] = useState<string>(() => getLocalDateString());
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
   const [queuePreview, setQueuePreview] = useState<QueuePreview | null>(null);
   const [loading, setLoading] = useState(true);
@@ -35,8 +41,8 @@ export const DoctorDetail: React.FC = () => {
         const data = await api.getDoctorById(id);
         setDoctor(data);
         const slots = parseDoctorSlots(data);
-        if (slots.length > 0 && !selectedSlotId) {
-          setSelectedSlotId(slots[0].id);
+        if (slots.length > 0) {
+          setSelectedSlotId((prev) => prev || slots[0].id);
         }
       } catch (err) {
         console.error('Failed to load doctor:', err);
@@ -54,7 +60,7 @@ export const DoctorDetail: React.FC = () => {
       try {
         const preview = await api.getQueuePreview(id, selectedDate, selectedSlotId || undefined);
         setQueuePreview(preview);
-        if (preview.selectedSlotId && (!selectedSlotId || preview.isPassed)) {
+        if (preview.selectedSlotId && (!selectedSlotId || (preview.isPassed && preview.selectedSlotId !== selectedSlotId))) {
           setSelectedSlotId(preview.selectedSlotId);
         }
       } catch (err) {
@@ -189,7 +195,7 @@ export const DoctorDetail: React.FC = () => {
 
           {/* Live Queue Booking Preview Widget (1 Column) */}
           <div className="space-y-6">
-            <UtilityCard className="sticky top-28">
+            <UtilityCard className="lg:sticky lg:top-28">
               <span className="text-xs font-semibold text-[#0066cc] uppercase tracking-wider block mb-1">
                 Queue Reservation
               </span>
@@ -205,10 +211,10 @@ export const DoctorDetail: React.FC = () => {
                   <div className="flex items-center gap-1">
                     <button
                       type="button"
-                      onClick={() => setSelectedDate(new Date().toISOString().split('T')[0])}
-                      className={`px-2 py-0.5 rounded-full text-[11px] font-medium transition-all ${
-                        selectedDate === new Date().toISOString().split('T')[0]
-                          ? 'bg-[#0066cc] text-white'
+                      onClick={() => setSelectedDate(getLocalDateString())}
+                      className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium transition-all ${
+                        selectedDate === getLocalDateString()
+                          ? 'bg-[#0066cc] text-white shadow-sm'
                           : 'bg-[#f5f5f7] text-[#7a7a7a] hover:text-[#1d1d1f]'
                       }`}
                     >
@@ -216,18 +222,10 @@ export const DoctorDetail: React.FC = () => {
                     </button>
                     <button
                       type="button"
-                      onClick={() => {
-                        const d = new Date();
-                        d.setDate(d.getDate() + 1);
-                        setSelectedDate(d.toISOString().split('T')[0]);
-                      }}
-                      className={`px-2 py-0.5 rounded-full text-[11px] font-medium transition-all ${
-                        (() => {
-                          const d = new Date();
-                          d.setDate(d.getDate() + 1);
-                          return selectedDate === d.toISOString().split('T')[0];
-                        })()
-                          ? 'bg-[#0066cc] text-white'
+                      onClick={() => setSelectedDate(getTomorrowDateString())}
+                      className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium transition-all ${
+                        selectedDate === getTomorrowDateString()
+                          ? 'bg-[#0066cc] text-white shadow-sm'
                           : 'bg-[#f5f5f7] text-[#7a7a7a] hover:text-[#1d1d1f]'
                       }`}
                     >
@@ -238,7 +236,7 @@ export const DoctorDetail: React.FC = () => {
                 <input
                   type="date"
                   value={selectedDate}
-                  min={new Date().toISOString().split('T')[0]}
+                  min={getLocalDateString()}
                   onChange={(e) => setSelectedDate(e.target.value)}
                   className="w-full h-11 px-3.5 rounded-xl border border-[#e0e0e0] text-[14px] bg-white focus:outline-none focus:border-[#0066cc]"
                 />

@@ -21,7 +21,7 @@ export const MedicalRecords: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [previewRecord, setPreviewRecord] = useState<MedicalRecord | null>(null);
 
-  const { user } = useAuth();
+  const { user, loading: loadingAuth } = useAuth();
 
   const fetchRecords = async () => {
     setLoading(true);
@@ -36,8 +36,8 @@ export const MedicalRecords: React.FC = () => {
   };
 
   useEffect(() => {
-    if (user) fetchRecords();
-  }, [user]);
+    if (!loadingAuth && user) fetchRecords();
+  }, [user, loadingAuth]);
 
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -281,21 +281,22 @@ export const MedicalRecords: React.FC = () => {
                   className="max-h-[65vh] max-w-full object-contain rounded-xl shadow-sm border border-[#e0e0e0]"
                 />
               ) : (
-                <div className="w-full h-[65vh] flex flex-col items-center justify-center bg-white rounded-xl border border-[#e0e0e0] p-6 text-center">
-                  <FileText className="w-16 h-16 text-[#0066cc] mb-3" />
-                  <h4 className="text-base font-semibold text-[#1d1d1f] mb-1">{previewRecord.title}</h4>
-                  <p className="text-xs text-[#7a7a7a] max-w-xs mb-4">
-                    PDF document ready for inspection. Click below to view with your browser's PDF viewer.
-                  </p>
-                  <div className="flex items-center gap-3">
+                <div className="w-full h-[65vh] flex flex-col bg-white rounded-xl border border-[#e0e0e0] overflow-hidden shadow-inner">
+                  <iframe
+                    src={getFileUrl(previewRecord.fileUrl)}
+                    title={previewRecord.title}
+                    className="w-full flex-1 border-0"
+                  />
+                  <div className="px-4 py-2 bg-gray-50 border-t border-gray-200 flex items-center justify-between text-xs text-[#7a7a7a]">
+                    <span>Viewing PDF preview</span>
                     <a
                       href={getFileUrl(previewRecord.fileUrl)}
                       target="_blank"
                       rel="noreferrer"
-                      className="px-4 py-2 rounded-full bg-[#0066cc] text-white text-xs font-semibold hover:bg-[#0071e3] transition-colors flex items-center gap-1.5"
+                      className="text-[#0066cc] font-medium hover:underline flex items-center gap-1"
                     >
                       <ExternalLink className="w-3.5 h-3.5" />
-                      Open Full Document
+                      Open in New Tab
                     </a>
                   </div>
                 </div>

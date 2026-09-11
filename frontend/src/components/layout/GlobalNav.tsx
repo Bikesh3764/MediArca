@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Activity, LogOut, ShieldCheck, Stethoscope, Menu, X, Calendar, FileText } from 'lucide-react';
@@ -8,6 +8,10 @@ export const GlobalNav: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location.pathname]);
 
   const handleLogout = () => {
     logout();
@@ -23,8 +27,12 @@ export const GlobalNav: React.FC = () => {
     }
     if (path === '/doctors') {
       return (
-        location.pathname.startsWith('/doctors') ||
-        location.pathname.startsWith('/doctor/') ||
+        location.pathname === '/doctors' ||
+        location.pathname.startsWith('/doctors/') ||
+        (location.pathname.startsWith('/doctor/') &&
+          !location.pathname.startsWith('/doctor/dashboard') &&
+          !location.pathname.startsWith('/doctor/schedule') &&
+          !location.pathname.startsWith('/doctor/consultation')) ||
         location.pathname.startsWith('/book/')
       );
     }

@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { api, Appointment, parseDoctorSlots, format12Hour } from '../../services/api';
+import { api, Appointment, parseDoctorSlots, format12Hour, getLocalDateString } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { SubNav } from '../../components/layout/SubNav';
 import { AppleButton } from '../../components/ui/AppleButton';
@@ -17,10 +17,10 @@ import {
 } from 'lucide-react';
 
 export const DoctorDashboard: React.FC = () => {
-  const { user } = useAuth();
+  const { user, loading: loadingAuth } = useAuth();
   const navigate = useNavigate();
 
-  const [date, setDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState<string>(() => getLocalDateString());
   const [queueData, setQueueData] = useState<{
     date: string;
     totalQueue: number;
@@ -34,7 +34,7 @@ export const DoctorDashboard: React.FC = () => {
   const [callingId, setCallingId] = useState<string | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
-  const fetchQueue = async () => {
+  const fetchQueue = useCallback(async () => {
     setLoading(true);
     try {
       const data = await api.getDoctorQueue(date);
@@ -46,10 +46,11 @@ export const DoctorDashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [date]);
 
   useEffect(() => {
-    if (!user || user.role !== 'DOCTOR') {
+    if (loadingAuth) return;
+    if (!user || user.role?.toUpperCase() !== 'DOCTOR') {
       navigate('/login');
       return;
     }
@@ -58,7 +59,7 @@ export const DoctorDashboard: React.FC = () => {
     // Auto refresh every 10 seconds for real-time clinic updates
     const interval = setInterval(fetchQueue, 10000);
     return () => clearInterval(interval);
-  }, [date, user]);
+  }, [fetchQueue, user, loadingAuth, navigate]);
 
   const handleCallPatient = async (appointmentId: string) => {
     setCallingId(appointmentId);

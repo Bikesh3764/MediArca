@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 
 export const AdminDashboard: React.FC = () => {
-  const { user } = useAuth();
+  const { user, loading: loadingAuth } = useAuth();
   const navigate = useNavigate();
 
   const [stats, setStats] = useState<{
@@ -53,12 +53,13 @@ export const AdminDashboard: React.FC = () => {
   };
 
   useEffect(() => {
-    if (!user || user.role !== 'ADMIN') {
+    if (loadingAuth) return;
+    if (!user || user.role?.toUpperCase() !== 'ADMIN') {
       navigate('/login');
       return;
     }
     fetchData();
-  }, [user]);
+  }, [user, loadingAuth, navigate]);
 
   const handleVerify = async (doctorId: string, isVerified: boolean) => {
     setActionId(doctorId);

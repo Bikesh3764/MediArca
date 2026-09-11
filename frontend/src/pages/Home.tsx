@@ -26,6 +26,11 @@ export const Home: React.FC = () => {
     fetchDoctors();
   }, []);
 
+  const role = user?.role?.toUpperCase();
+  const isDoctor = role === 'DOCTOR';
+  const isAdmin = role === 'ADMIN';
+  const isPatient = Boolean(user && !isDoctor && !isAdmin);
+
   return (
     <div className="flex flex-col min-h-screen">
       {/* 1. Hero Section - Apple Product Announcement Aesthetic */}
@@ -34,7 +39,7 @@ export const Home: React.FC = () => {
           {user ? (
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#0066cc]/10 border border-[#0066cc]/20 text-xs font-semibold text-[#0066cc] mb-6 shadow-sm">
               <span className="w-2 h-2 rounded-full bg-[#0066cc] animate-pulse"></span>
-              Welcome back, {user.fullName} • {user.role === 'PATIENT' ? 'Patient Portal' : user.role === 'DOCTOR' ? 'Doctor Console' : 'Administrator'}
+              Welcome back, {user.fullName?.split(' ')[0] || user.fullName || 'User'} • {isDoctor ? 'Doctor Console' : isAdmin ? 'Admin Control Center' : 'Patient Dashboard'}
             </div>
           ) : (
             <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#f5f5f7] border border-[#e0e0e0] text-xs font-medium text-[#1d1d1f] mb-6">
@@ -52,7 +57,7 @@ export const Home: React.FC = () => {
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-4">
-            {user?.role === 'PATIENT' ? (
+            {isPatient ? (
               <>
                 <AppleButton
                   variant="primary"
@@ -78,10 +83,10 @@ export const Home: React.FC = () => {
                   className="text-base flex items-center gap-2"
                 >
                   <FileText className="w-4 h-4 text-[#7a7a7a]" />
-                  Medical Vault
+                  Access Medical Vault
                 </AppleButton>
               </>
-            ) : user?.role === 'DOCTOR' ? (
+            ) : isDoctor ? (
               <>
                 <AppleButton
                   variant="primary"
@@ -102,7 +107,7 @@ export const Home: React.FC = () => {
                   Manage Schedule
                 </AppleButton>
               </>
-            ) : user?.role === 'ADMIN' ? (
+            ) : isAdmin ? (
               <>
                 <AppleButton
                   variant="primary"
@@ -321,7 +326,7 @@ export const Home: React.FC = () => {
       {/* 4. Startup Call to Action */}
       <section className="bg-[#1d1d1f] text-white py-20 px-4 sm:px-6 text-center">
         <div className="max-w-3xl mx-auto">
-          {user?.role === 'PATIENT' ? (
+          {isPatient ? (
             <>
               <h2 className="text-3xl sm:text-5xl font-semibold tracking-tight mb-4">
                 Healthcare clarity right in your pocket.
@@ -344,19 +349,20 @@ export const Home: React.FC = () => {
                   className="flex items-center gap-2"
                 >
                   <Calendar className="w-4 h-4 text-[#2997ff]" />
-                  My Appointments & Passes
+                  My Appointments
                 </AppleButton>
                 <AppleButton
                   variant="ghost"
                   size="lg"
                   onClick={() => navigate('/patient/records')}
-                  className="text-white hover:bg-white/10"
+                  className="text-white hover:bg-white/10 flex items-center gap-2"
                 >
+                  <FileText className="w-4 h-4 text-[#2997ff]" />
                   Medical Vault
                 </AppleButton>
               </div>
             </>
-          ) : user?.role === 'DOCTOR' ? (
+          ) : isDoctor ? (
             <>
               <h2 className="text-3xl sm:text-5xl font-semibold tracking-tight mb-4">
                 Clinical practice, organized with precision.
@@ -381,11 +387,11 @@ export const Home: React.FC = () => {
                   className="flex items-center gap-2"
                 >
                   <Clock className="w-4 h-4 text-[#2997ff]" />
-                  Manage Schedule & Slots
+                  Manage Schedule
                 </AppleButton>
               </div>
             </>
-          ) : user?.role === 'ADMIN' ? (
+          ) : isAdmin ? (
             <>
               <h2 className="text-3xl sm:text-5xl font-semibold tracking-tight mb-4">
                 Platform governance & clinical compliance.

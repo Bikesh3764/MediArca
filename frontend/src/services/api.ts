@@ -124,6 +124,19 @@ export const parseDoctorSlots = (doctor: any): DoctorSlot[] => {
   ];
 };
 
+export const getLocalDateString = (d: Date = new Date()): string => {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+export const getTomorrowDateString = (d: Date = new Date()): string => {
+  const tomorrow = new Date(d);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  return getLocalDateString(tomorrow);
+};
+
 export const evaluateSlotStatus = (
   slot: DoctorSlot,
   appointmentDate: string,
@@ -131,10 +144,7 @@ export const evaluateSlotStatus = (
   now = new Date(),
   overrideCurrentMinutes?: number
 ): SlotStatusResult => {
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  const todayStr = `${year}-${month}-${day}`;
+  const todayStr = getLocalDateString(now);
 
   const isToday = appointmentDate === todayStr;
   const isPastDate = appointmentDate < todayStr;

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api, Appointment, getFileUrl } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 import { SubNav } from '../../components/layout/SubNav';
 import { AppleButton } from '../../components/ui/AppleButton';
 import { UtilityCard } from '../../components/ui/UtilityCard';
@@ -26,14 +27,14 @@ interface MedicineRow {
 
 const calculateTotalDose = (frequency: string, duration: string) => {
   let perDay = 1;
-  const f = (frequency || '').toLowerCase();
-  if (f.includes('four') || f.includes('4') || f.includes('1-1-1-1')) perDay = 4;
-  else if (f.includes('thrice') || f.includes('three') || f.includes('3') || f.includes('1-1-1')) perDay = 3;
-  else if (f.includes('twice') || f.includes('two') || f.includes('2') || f.includes('1-0-1')) perDay = 2;
-  else if (f.includes('once') || f.includes('one') || f.includes('1') || f.includes('1-0-0')) perDay = 1;
+  const f = (frequency || '').toLowerCase().trim();
+  if (f.includes('four') || f.includes('4') || f.includes('qid') || f.includes('1-1-1-1')) perDay = 4;
+  else if (f.includes('thrice') || f.includes('three') || f.includes('3') || f.includes('tid') || f.includes('1-1-1')) perDay = 3;
+  else if (f.includes('twice') || f.includes('two') || f.includes('2') || f.includes('bid') || f.includes('1-0-1') || f.includes('1-0-0-1') || f.includes('0-1-1')) perDay = 2;
+  else if (f.includes('once') || f.includes('one') || f.includes('1') || f.includes('od') || f.includes('qd') || f.includes('1-0-0') || f.includes('0-0-1') || f.includes('0-1-0') || f.includes('prn')) perDay = 1;
 
   let days = 5;
-  const d = (duration || '').toLowerCase();
+  const d = (duration || '').toLowerCase().trim();
   if (d.includes('month')) {
     const match = d.match(/\d+/);
     days = (match ? parseInt(match[0], 10) : 1) * 30;
@@ -52,6 +53,7 @@ const calculateTotalDose = (frequency: string, duration: string) => {
 export const ConsultationView: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user, loading: loadingAuth } = useAuth();
 
   const [appointment, setAppointment] = useState<Appointment | null>(null);
   const [loading, setLoading] = useState(true);
@@ -84,6 +86,12 @@ export const ConsultationView: React.FC = () => {
   ]);
 
   useEffect(() => {
+    if (loadingAuth) return;
+    if (!user || user.role?.toUpperCase() !== 'DOCTOR') {
+      navigate('/login');
+      return;
+    }
+
     const fetchAppointmentData = async () => {
       if (!id) return;
       try {
@@ -118,7 +126,7 @@ export const ConsultationView: React.FC = () => {
     };
 
     fetchAppointmentData();
-  }, [id]);
+  }, [id, user, loadingAuth, navigate]);
 
   const handleAddMedicine = () => {
     setMedicines([

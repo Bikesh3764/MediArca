@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 
 export const ManageSchedule: React.FC = () => {
-  const { user, refreshUser } = useAuth();
+  const { user, loading: loadingAuth, refreshUser } = useAuth();
   const navigate = useNavigate();
 
   const [slots, setSlots] = useState<DoctorSlot[]>([
@@ -41,7 +41,8 @@ export const ManageSchedule: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user || user.role !== 'DOCTOR') {
+    if (loadingAuth) return;
+    if (!user || user.role?.toUpperCase() !== 'DOCTOR') {
       navigate('/login');
       return;
     }
@@ -53,7 +54,7 @@ export const ManageSchedule: React.FC = () => {
       setClinicAddress(p.clinicAddress || '');
       setBio(p.bio || '');
     }
-  }, [user, navigate]);
+  }, [user, loadingAuth, navigate]);
 
   const handleSlotChange = (index: number, field: keyof DoctorSlot, value: any) => {
     setSlots((prev) => {

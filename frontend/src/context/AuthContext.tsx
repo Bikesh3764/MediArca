@@ -15,7 +15,14 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(() => {
+    try {
+      const saved = localStorage.getItem('mediarca_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('mediarca_token'));
   const [loading, setLoading] = useState<boolean>(true);
 
@@ -24,6 +31,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (localStorage.getItem('mediarca_token')) {
         const currentUser = await api.getMe();
         setUser(currentUser);
+        localStorage.setItem('mediarca_user', JSON.stringify(currentUser));
       } else {
         setUser(null);
       }

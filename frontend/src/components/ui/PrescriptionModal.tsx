@@ -15,7 +15,7 @@ export const PrescriptionModal: React.FC<PrescriptionModalProps> = ({ appointmen
   let medicines: any[] = [];
   try {
     medicines = JSON.parse(prescription.medicines);
-  } catch (e) {
+  } catch {
     medicines = [];
   }
 
