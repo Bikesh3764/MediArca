@@ -2,7 +2,7 @@ const API_BASE_URL =
   import.meta.env.VITE_API_URL ||
   (typeof window !== 'undefined' && window.location.hostname === 'localhost'
     ? 'http://localhost:5000/api'
-    : 'https://mediarca-api.onrender.com/api');
+    : 'https://mediarca-mdwk.onrender.com/api');
 
 export const DEMO_DOCTORS: Doctor[] = [
   {
