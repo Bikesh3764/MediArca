@@ -32,6 +32,8 @@ export const Footer: React.FC = () => {
             <ul className="space-y-1.5">
               <li><Link to="/signup" className="hover:text-[#1d1d1f]">Join as Doctor</Link></li>
               <li><Link to="/doctor/dashboard" className="hover:text-[#1d1d1f]">Doctor Console</Link></li>
+              <li><Link to="/clinic/login" className="hover:text-[#1d1d1f] font-medium text-[#0066cc]">Clinic Partner Portal</Link></li>
+              <li><Link to="/receptionist/login" className="hover:text-[#1d1d1f] font-medium text-[#0066cc]">Receptionist Portal</Link></li>
               <li><Link to="/doctor/schedule" className="hover:text-[#1d1d1f]">Manage Hours</Link></li>
             </ul>
           </div>

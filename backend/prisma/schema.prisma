@@ -19,10 +19,12 @@ model User {
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
-  doctorProfile  DoctorProfile?
-  patientProfile PatientProfile?
-  reviews        Review[]
-  notifications  Notification[]
+  doctorProfile       DoctorProfile?
+  patientProfile      PatientProfile?
+  clinicProfile       ClinicProfile?
+  receptionistProfile ReceptionistProfile?
+  reviews             Review[]
+  notifications       Notification[]
 }
 
 model DoctorProfile {
@@ -46,6 +48,8 @@ model DoctorProfile {
 
   appointments          Appointment[]
   reviews               Review[]
+  clinics               ClinicDoctor[]
+  receptionists         DoctorReceptionist[]
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt
 }
@@ -74,6 +78,8 @@ model Appointment {
   patient         PatientProfile @relation(fields: [patientId], references: [id], onDelete: Cascade)
   doctorId        String
   doctor          DoctorProfile  @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  clinicId        String?
+  clinic          ClinicProfile? @relation(fields: [clinicId], references: [id], onDelete: SetNull)
   appointmentDate String         // Format: YYYY-MM-DD
   queueNumber     Int            // 1, 2, 3...
   checkingWindow  String         // e.g. "09:00 AM - 01:00 PM"
@@ -137,4 +143,52 @@ model Notification {
   type      String   @default("SYSTEM")
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
+}
+
+model ClinicProfile {
+  id           String         @id @default(uuid())
+  userId       String         @unique
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clinicName   String
+  address      String
+  city         String?
+  phone        String?
+  doctors      ClinicDoctor[]
+  appointments Appointment[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+}
+
+model ReceptionistProfile {
+  id        String               @id @default(uuid())
+  userId    String               @unique
+  user      User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  phone     String?
+  doctors   DoctorReceptionist[]
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+}
+
+model ClinicDoctor {
+  id        String        @id @default(uuid())
+  clinicId  String
+  clinic    ClinicProfile @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  doctorId  String
+  doctor    DoctorProfile @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  status    String        @default("ACTIVE")
+  createdAt DateTime      @default(now())
+
+  @@unique([clinicId, doctorId])
+}
+
+model DoctorReceptionist {
+  id             String              @id @default(uuid())
+  doctorId       String
+  doctor         DoctorProfile       @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  receptionistId String
+  receptionist   ReceptionistProfile @relation(fields: [receptionistId], references: [id], onDelete: Cascade)
+  status         String              @default("ACTIVE")
+  createdAt      DateTime            @default(now())
+
+  @@unique([doctorId, receptionistId])
 }

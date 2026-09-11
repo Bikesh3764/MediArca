@@ -137,7 +137,7 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
       return;
     }
 
-    const { doctorId, appointmentDate, slotId, reasonForVisit, symptoms, clientMinutes } = req.body;
+    const { doctorId, appointmentDate, slotId, reasonForVisit, symptoms, clientMinutes, clinicId } = req.body;
 
     if (!doctorId || !appointmentDate) {
       res.status(400).json({ success: false, message: 'Doctor ID and appointment date are required' });
@@ -249,6 +249,7 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
             data: {
               patientId: patient!.id,
               doctorId: doctor.id,
+              clinicId: clinicId || null,
               appointmentDate,
               queueNumber,
               slotId: chosenSlot!.id,

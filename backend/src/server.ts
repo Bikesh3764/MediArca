@@ -11,9 +11,11 @@ import appointmentRoutes from './routes/appointmentRoutes';
 import consultationRoutes from './routes/consultationRoutes';
 import recordRoutes from './routes/recordRoutes';
 import adminRoutes from './routes/adminRoutes';
+import clinicRoutes from './routes/clinicRoutes';
+import receptionistRoutes from './routes/receptionistRoutes';
 import prisma from './config/database';
 
-// Non-blocking automatic schema sync for multi-slot support on live Postgres/SQLite
+// Non-blocking automatic schema sync for multi-slot, clinic, and receptionist support
 async function ensureSchema() {
   try {
     await prisma.$executeRawUnsafe(`ALTER TABLE "DoctorProfile" ADD COLUMN IF NOT EXISTS "slots" TEXT;`);
@@ -27,6 +29,123 @@ async function ensureSchema() {
   } catch {
     try {
       await prisma.$executeRawUnsafe(`ALTER TABLE "Appointment" ADD COLUMN "slotId" TEXT;`);
+    } catch {}
+  }
+  try {
+    await prisma.$executeRawUnsafe(`ALTER TABLE "Appointment" ADD COLUMN IF NOT EXISTS "clinicId" TEXT;`);
+  } catch {
+    try {
+      await prisma.$executeRawUnsafe(`ALTER TABLE "Appointment" ADD COLUMN "clinicId" TEXT;`);
+    } catch {}
+  }
+
+  // Ensure ClinicProfile
+  try {
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "ClinicProfile" (
+        "id" TEXT PRIMARY KEY,
+        "userId" TEXT UNIQUE NOT NULL,
+        "clinicName" TEXT NOT NULL,
+        "address" TEXT NOT NULL,
+        "city" TEXT,
+        "phone" TEXT,
+        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+  } catch {
+    try {
+      await prisma.$executeRawUnsafe(`
+        CREATE TABLE IF NOT EXISTS "ClinicProfile" (
+          "id" TEXT PRIMARY KEY,
+          "userId" TEXT UNIQUE NOT NULL,
+          "clinicName" TEXT NOT NULL,
+          "address" TEXT NOT NULL,
+          "city" TEXT,
+          "phone" TEXT,
+          "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+    } catch {}
+  }
+
+  // Ensure ReceptionistProfile
+  try {
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "ReceptionistProfile" (
+        "id" TEXT PRIMARY KEY,
+        "userId" TEXT UNIQUE NOT NULL,
+        "phone" TEXT,
+        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+  } catch {
+    try {
+      await prisma.$executeRawUnsafe(`
+        CREATE TABLE IF NOT EXISTS "ReceptionistProfile" (
+          "id" TEXT PRIMARY KEY,
+          "userId" TEXT UNIQUE NOT NULL,
+          "phone" TEXT,
+          "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+    } catch {}
+  }
+
+  // Ensure ClinicDoctor
+  try {
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "ClinicDoctor" (
+        "id" TEXT PRIMARY KEY,
+        "clinicId" TEXT NOT NULL,
+        "doctorId" TEXT NOT NULL,
+        "status" TEXT NOT NULL DEFAULT 'ACTIVE',
+        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT "ClinicDoctor_clinicId_doctorId_key" UNIQUE ("clinicId", "doctorId")
+      );
+    `);
+  } catch {
+    try {
+      await prisma.$executeRawUnsafe(`
+        CREATE TABLE IF NOT EXISTS "ClinicDoctor" (
+          "id" TEXT PRIMARY KEY,
+          "clinicId" TEXT NOT NULL,
+          "doctorId" TEXT NOT NULL,
+          "status" TEXT NOT NULL DEFAULT 'ACTIVE',
+          "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE ("clinicId", "doctorId")
+        );
+      `);
+    } catch {}
+  }
+
+  // Ensure DoctorReceptionist
+  try {
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "DoctorReceptionist" (
+        "id" TEXT PRIMARY KEY,
+        "doctorId" TEXT NOT NULL,
+        "receptionistId" TEXT NOT NULL,
+        "status" TEXT NOT NULL DEFAULT 'ACTIVE',
+        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT "DoctorReceptionist_doctorId_receptionistId_key" UNIQUE ("doctorId", "receptionistId")
+      );
+    `);
+  } catch {
+    try {
+      await prisma.$executeRawUnsafe(`
+        CREATE TABLE IF NOT EXISTS "DoctorReceptionist" (
+          "id" TEXT PRIMARY KEY,
+          "doctorId" TEXT NOT NULL,
+          "receptionistId" TEXT NOT NULL,
+          "status" TEXT NOT NULL DEFAULT 'ACTIVE',
+          "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE ("doctorId", "receptionistId")
+        );
+      `);
     } catch {}
   }
 }
@@ -66,9 +185,20 @@ app.use('/api/appointments', appointmentRoutes);
 app.use('/api/consultations', consultationRoutes);
 app.use('/api/records', recordRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/clinics', clinicRoutes);
+app.use('/api/clinic', clinicRoutes);
+app.use('/api/receptionists', receptionistRoutes);
+app.use('/api/receptionist', receptionistRoutes);
 
 // Global Error Handler
 app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+  if (err.code === 'LIMIT_FILE_SIZE') {
+    res.status(400).json({
+      success: false,
+      message: 'File size exceeds 1 MB limit. Please upload a document under 1 MB.',
+    });
+    return;
+  }
   console.error('Unhandled Error:', err);
   res.status(err.status || 500).json({
     success: false,

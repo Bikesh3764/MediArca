@@ -46,6 +46,11 @@ export const MedicalRecords: React.FC = () => {
       return;
     }
 
+    if (selectedFile.size > 1 * 1024 * 1024) {
+      setError('File size exceeds 1 MB limit. Please upload a document under 1 MB.');
+      return;
+    }
+
     setUploading(true);
     setUploadProgress(20);
     setError(null);
@@ -107,10 +112,6 @@ export const MedicalRecords: React.FC = () => {
     <div className="min-h-screen bg-[#f5f5f7] pb-16">
       <SubNav title="Medical Vault" subtitle="Secure prescriptions & diagnostic reports">
         <div className="flex items-center gap-3">
-          <span className="text-xs text-[#86868b] font-medium hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-[#e5e5ea]">
-            <ShieldCheck className="w-3.5 h-3.5 text-[#0066cc]" />
-            Free Cloud Vault (1 GB)
-          </span>
           <AppleButton
             variant="primary"
             size="sm"
@@ -392,8 +393,8 @@ export const MedicalRecords: React.FC = () => {
                   accept=".pdf,.png,.jpg,.jpeg"
                   onChange={(e) => {
                     const f = e.target.files?.[0] || null;
-                    if (f && f.size > 10 * 1024 * 1024) {
-                      setError('Selected file exceeds the 10 MB limit. Please choose a file under 10 MB.');
+                    if (f && f.size > 1 * 1024 * 1024) {
+                      setError('File size exceeds 1 MB limit. Please upload a document under 1 MB.');
                       setSelectedFile(null);
                       e.target.value = '';
                       return;
@@ -405,7 +406,7 @@ export const MedicalRecords: React.FC = () => {
                 />
                 <p className="text-[11px] text-[#86868b] mt-1.5 flex items-center gap-1">
                   <ShieldCheck className="w-3.5 h-3.5 text-[#0066cc]" />
-                  <span>Max file size: 10 MB. Recommended &lt; 2 MB. Free tier capacity: ~1,000 documents.</span>
+                  <span>Max file size: 1 MB. Accepted formats: PDF, PNG, JPG.</span>
                 </p>
               </div>
 

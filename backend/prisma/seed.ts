@@ -7,10 +7,14 @@ async function main() {
   console.log('Seeding MediArca database with production demo data...');
 
   // Clear existing
+  await prisma.clinicDoctor.deleteMany();
+  await prisma.doctorReceptionist.deleteMany();
   await prisma.review.deleteMany();
   await prisma.prescription.deleteMany();
   await prisma.appointment.deleteMany();
   await prisma.medicalRecord.deleteMany();
+  await prisma.clinicProfile.deleteMany();
+  await prisma.receptionistProfile.deleteMany();
   await prisma.doctorProfile.deleteMany();
   await prisma.patientProfile.deleteMany();
   await prisma.notification.deleteMany();
@@ -372,13 +376,80 @@ async function main() {
     ],
   });
 
+  // 5. Create Demo Clinic
+  const clinicPassword = await bcrypt.hash('clinic123', salt);
+  const clinicUser = await prisma.user.create({
+    data: {
+      email: 'clinic@mediarca.com',
+      passwordHash: clinicPassword,
+      fullName: 'Metropolis Polyclinic & Diagnostic',
+      phone: '+1 555-0199',
+      role: 'CLINIC',
+      clinicProfile: {
+        create: {
+          clinicName: 'Metropolis Polyclinic & Diagnostic',
+          address: 'Floor 3, 100 Broadway, New York, NY',
+          city: 'New York',
+          phone: '+1 555-0199',
+        },
+      },
+    },
+    include: { clinicProfile: true },
+  });
+
+  // 6. Create Demo Receptionist
+  const receptionistPassword = await bcrypt.hash('receptionist123', salt);
+  const receptionistUser = await prisma.user.create({
+    data: {
+      email: 'receptionist@mediarca.com',
+      passwordHash: receptionistPassword,
+      fullName: 'Clara Oswald',
+      phone: '+1 555-0188',
+      role: 'RECEPTIONIST',
+      receptionistProfile: {
+        create: {
+          phone: '+1 555-0188',
+        },
+      },
+    },
+    include: { receptionistProfile: true },
+  });
+
+  // Link Dr. Sarah Jenkins and Dr. Arjun Patel to the Clinic
+  await prisma.clinicDoctor.create({
+    data: {
+      clinicId: clinicUser.clinicProfile!.id,
+      doctorId: drSarahUser.doctorProfile!.id,
+      status: 'ACTIVE',
+    },
+  });
+
+  await prisma.clinicDoctor.create({
+    data: {
+      clinicId: clinicUser.clinicProfile!.id,
+      doctorId: drArjunUser.doctorProfile!.id,
+      status: 'ACTIVE',
+    },
+  });
+
+  // Link Dr. Sarah Jenkins to Receptionist Clara
+  await prisma.doctorReceptionist.create({
+    data: {
+      doctorId: drSarahUser.doctorProfile!.id,
+      receptionistId: receptionistUser.receptionistProfile!.id,
+      status: 'ACTIVE',
+    },
+  });
+
   console.log('Database seeded successfully!');
   console.log('--- DEMO ACCOUNTS ---');
-  console.log('Admin:   admin@mediarca.com   / admin123');
-  console.log('Doctor:  dr.sarah@mediarca.com / doctor123');
-  console.log('Doctor:  dr.arjun@mediarca.com / doctor123');
-  console.log('Doctor:  dr.marcus@mediarca.com / doctor123 (Unverified)');
-  console.log('Patient: john.doe@gmail.com   / patient123');
+  console.log('Admin:        admin@mediarca.com        / admin123');
+  console.log('Doctor:       dr.sarah@mediarca.com     / doctor123');
+  console.log('Doctor:       dr.arjun@mediarca.com     / doctor123');
+  console.log('Doctor:       dr.marcus@mediarca.com    / doctor123 (Unverified)');
+  console.log('Patient:      john.doe@gmail.com        / patient123');
+  console.log('Clinic:       clinic@mediarca.com       / clinic123');
+  console.log('Receptionist: receptionist@mediarca.com / receptionist123');
 }
 
 main()

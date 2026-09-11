@@ -18,8 +18,8 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     }
 
     const normalizedRole = role.toUpperCase();
-    if (!['PATIENT', 'DOCTOR'].includes(normalizedRole)) {
-      res.status(400).json({ success: false, message: 'Invalid role. Must be PATIENT or DOCTOR' });
+    if (!['PATIENT', 'DOCTOR', 'CLINIC', 'RECEPTIONIST'].includes(normalizedRole)) {
+      res.status(400).json({ success: false, message: 'Invalid role. Must be PATIENT, DOCTOR, CLINIC, or RECEPTIONIST' });
       return;
     }
 
@@ -56,7 +56,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         },
         include: { patientProfile: true },
       });
-    } else {
+    } else if (normalizedRole === 'DOCTOR') {
       newUser = await prisma.user.create({
         data: {
           email: email.toLowerCase().trim(),
@@ -80,6 +80,42 @@ export const register = async (req: Request, res: Response): Promise<void> => {
           },
         },
         include: { doctorProfile: true },
+      });
+    } else if (normalizedRole === 'CLINIC') {
+      newUser = await prisma.user.create({
+        data: {
+          email: email.toLowerCase().trim(),
+          passwordHash,
+          fullName: profileData.clinicName || fullName,
+          phone: phone || profileData.phone || null,
+          role: 'CLINIC',
+          clinicProfile: {
+            create: {
+              clinicName: profileData.clinicName || fullName,
+              address: profileData.address || profileData.clinicAddress || 'Central Healthcare Clinic',
+              city: profileData.city || null,
+              phone: phone || profileData.phone || null,
+            },
+          },
+        },
+        include: { clinicProfile: true },
+      });
+    } else {
+      // RECEPTIONIST
+      newUser = await prisma.user.create({
+        data: {
+          email: email.toLowerCase().trim(),
+          passwordHash,
+          fullName,
+          phone: phone || null,
+          role: 'RECEPTIONIST',
+          receptionistProfile: {
+            create: {
+              phone: phone || null,
+            },
+          },
+        },
+        include: { receptionistProfile: true },
       });
     }
 
@@ -122,7 +158,46 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       where: { email: email.toLowerCase().trim() },
       include: {
         patientProfile: true,
-        doctorProfile: true,
+        doctorProfile: {
+          include: {
+            clinics: { include: { clinic: true } },
+            receptionists: {
+              include: {
+                receptionist: {
+                  include: {
+                    user: { select: { id: true, fullName: true, email: true, phone: true } },
+                  },
+                },
+              },
+            },
+          },
+        },
+        clinicProfile: {
+          include: {
+            doctors: {
+              include: {
+                doctor: {
+                  include: {
+                    user: { select: { id: true, fullName: true, email: true, phone: true } },
+                  },
+                },
+              },
+            },
+          },
+        },
+        receptionistProfile: {
+          include: {
+            doctors: {
+              include: {
+                doctor: {
+                  include: {
+                    user: { select: { id: true, fullName: true, email: true, phone: true } },
+                  },
+                },
+              },
+            },
+          },
+        },
       },
     });
 
@@ -174,7 +249,46 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
       where: { id: req.user.id },
       include: {
         patientProfile: true,
-        doctorProfile: true,
+        doctorProfile: {
+          include: {
+            clinics: { include: { clinic: true } },
+            receptionists: {
+              include: {
+                receptionist: {
+                  include: {
+                    user: { select: { id: true, fullName: true, email: true, phone: true } },
+                  },
+                },
+              },
+            },
+          },
+        },
+        clinicProfile: {
+          include: {
+            doctors: {
+              include: {
+                doctor: {
+                  include: {
+                    user: { select: { id: true, fullName: true, email: true, phone: true } },
+                  },
+                },
+              },
+            },
+          },
+        },
+        receptionistProfile: {
+          include: {
+            doctors: {
+              include: {
+                doctor: {
+                  include: {
+                    user: { select: { id: true, fullName: true, email: true, phone: true } },
+                  },
+                },
+              },
+            },
+          },
+        },
       },
     });
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Activity, LogOut, ShieldCheck, Stethoscope, Menu, X, Calendar, FileText } from 'lucide-react';
+import { Activity, LogOut, ShieldCheck, Stethoscope, Menu, X, Calendar, FileText, Building2, Users } from 'lucide-react';
 
 export const GlobalNav: React.FC = () => {
   const { user, logout } = useAuth();
@@ -144,6 +144,34 @@ export const GlobalNav: React.FC = () => {
             >
               <ShieldCheck className="w-3.5 h-3.5" />
               Admin Portal
+            </Link>
+          )}
+
+          {user?.role === 'CLINIC' && (
+            <Link
+              to="/clinic/dashboard"
+              className={`px-3 py-1 rounded-full transition-all text-xs flex items-center gap-1.5 ${
+                isActive('/clinic/dashboard')
+                  ? 'bg-[#2997ff]/20 text-[#2997ff] font-medium border border-[#2997ff]/30 shadow-sm'
+                  : 'text-[#2997ff] hover:text-white'
+              }`}
+            >
+              <Building2 className="w-3.5 h-3.5" />
+              Clinic Dashboard
+            </Link>
+          )}
+
+          {user?.role === 'RECEPTIONIST' && (
+            <Link
+              to="/receptionist/dashboard"
+              className={`px-3 py-1 rounded-full transition-all text-xs flex items-center gap-1.5 ${
+                isActive('/receptionist/dashboard')
+                  ? 'bg-purple-400/20 text-purple-300 font-medium border border-purple-400/30 shadow-sm'
+                  : 'text-purple-300 hover:text-white'
+              }`}
+            >
+              <Users className="w-3.5 h-3.5" />
+              Reception Desk
             </Link>
           )}
         </nav>
@@ -318,6 +346,36 @@ export const GlobalNav: React.FC = () => {
               >
                 <ShieldCheck className="w-4 h-4" />
                 Admin Portal
+              </Link>
+            )}
+
+            {user?.role === 'CLINIC' && (
+              <Link
+                to="/clinic/dashboard"
+                onClick={closeMenu}
+                className={`py-2 px-3 rounded-xl transition-colors flex items-center gap-2 ${
+                  isActive('/clinic/dashboard')
+                    ? 'bg-[#2997ff]/20 text-[#2997ff] font-medium'
+                    : 'text-[#2997ff] hover:bg-white/5 hover:text-white'
+                }`}
+              >
+                <Building2 className="w-4 h-4" />
+                Clinic Dashboard
+              </Link>
+            )}
+
+            {user?.role === 'RECEPTIONIST' && (
+              <Link
+                to="/receptionist/dashboard"
+                onClick={closeMenu}
+                className={`py-2 px-3 rounded-xl transition-colors flex items-center gap-2 ${
+                  isActive('/receptionist/dashboard')
+                    ? 'bg-purple-400/20 text-purple-300 font-medium'
+                    : 'text-purple-300 hover:bg-white/5 hover:text-white'
+                }`}
+              >
+                <Users className="w-4 h-4" />
+                Reception Desk
               </Link>
             )}
           </div>

@@ -19,11 +19,15 @@ import { ConsultationView } from './pages/Doctor/ConsultationView';
 import { ManageSchedule } from './pages/Doctor/ManageSchedule';
 import { AdminDashboard } from './pages/Admin/AdminDashboard';
 import { AdminLogin } from './pages/Auth/AdminLogin';
+import { ClinicAuth } from './pages/Clinic/ClinicAuth';
+import { ClinicDashboard } from './pages/Clinic/ClinicDashboard';
+import { ReceptionistAuth } from './pages/Receptionist/ReceptionistAuth';
+import { ReceptionistDashboard } from './pages/Receptionist/ReceptionistDashboard';
 
 // Protected Route Helpers
 const ProtectedRoute: React.FC<{
   children: React.ReactNode;
-  allowedRoles?: Array<'PATIENT' | 'DOCTOR' | 'ADMIN'>;
+  allowedRoles?: Array<'PATIENT' | 'DOCTOR' | 'ADMIN' | 'CLINIC' | 'RECEPTIONIST'>;
 }> = ({ children, allowedRoles }) => {
   const { user, loading } = useAuth();
 
@@ -38,6 +42,12 @@ const ProtectedRoute: React.FC<{
   if (!user) {
     if (allowedRoles && allowedRoles.length === 1 && allowedRoles[0] === 'ADMIN') {
       return <Navigate to="/admin-login" replace />;
+    }
+    if (allowedRoles && allowedRoles.includes('CLINIC')) {
+      return <Navigate to="/clinic/login" replace />;
+    }
+    if (allowedRoles && allowedRoles.includes('RECEPTIONIST')) {
+      return <Navigate to="/receptionist/login" replace />;
     }
     return <Navigate to="/login" replace />;
   }
@@ -117,14 +127,26 @@ export function App() {
                 }
               />
 
-              {/* Secret Admin Routes */}
-              <Route path="/admin-login" element={<AdminLogin />} />
-              <Route path="/admin/login" element={<Navigate to="/admin-login" replace />} />
+              {/* Clinic Partner Routes */}
+              <Route path="/clinic/login" element={<ClinicAuth />} />
+              <Route path="/clinic/signup" element={<ClinicAuth />} />
               <Route
-                path="/admin"
+                path="/clinic/dashboard"
                 element={
-                  <ProtectedRoute allowedRoles={['ADMIN']}>
-                    <AdminDashboard />
+                  <ProtectedRoute allowedRoles={['CLINIC']}>
+                    <ClinicDashboard />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Receptionist Portal Routes */}
+              <Route path="/receptionist/login" element={<ReceptionistAuth />} />
+              <Route path="/receptionist/signup" element={<ReceptionistAuth />} />
+              <Route
+                path="/receptionist/dashboard"
+                element={
+                  <ProtectedRoute allowedRoles={['RECEPTIONIST']}>
+                    <ReceptionistDashboard />
                   </ProtectedRoute>
                 }
               />

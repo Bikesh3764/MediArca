@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 export interface AuthenticatedUser {
   id: string;
   email: string;
-  role: 'PATIENT' | 'DOCTOR' | 'ADMIN';
+  role: 'PATIENT' | 'DOCTOR' | 'ADMIN' | 'CLINIC' | 'RECEPTIONIST';
   fullName: string;
 }
 

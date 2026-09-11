@@ -1,10 +1,25 @@
 import { Router } from 'express';
-import { getDoctors, getDoctorById, updateSchedule } from '../controllers/doctorController';
+import {
+  getDoctors,
+  getDoctorById,
+  updateSchedule,
+  getDoctorAffiliations,
+  addDoctorClinic,
+  removeDoctorClinic,
+  addDoctorReceptionist,
+  removeDoctorReceptionist,
+} from '../controllers/doctorController';
 import { authenticate, authorize } from '../middleware/authMiddleware';
 
 const router = Router();
 
 router.get('/', getDoctors);
+router.get('/me/affiliations', authenticate, authorize('DOCTOR'), getDoctorAffiliations);
+router.post('/me/clinics', authenticate, authorize('DOCTOR'), addDoctorClinic);
+router.delete('/me/clinics/:clinicId', authenticate, authorize('DOCTOR'), removeDoctorClinic);
+router.post('/me/receptionists', authenticate, authorize('DOCTOR'), addDoctorReceptionist);
+router.delete('/me/receptionists/:receptionistId', authenticate, authorize('DOCTOR'), removeDoctorReceptionist);
+
 router.get('/:id', getDoctorById);
 router.put('/schedule', authenticate, authorize('DOCTOR'), updateSchedule);
 

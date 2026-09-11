@@ -369,7 +369,7 @@ export interface User {
   email: string;
   fullName: string;
   phone?: string;
-  role: 'PATIENT' | 'DOCTOR' | 'ADMIN';
+  role: 'PATIENT' | 'DOCTOR' | 'ADMIN' | 'CLINIC' | 'RECEPTIONIST';
   avatarUrl?: string;
   patientProfile?: {
     id: string;
@@ -395,6 +395,131 @@ export interface User {
     totalReviews: number;
     slots?: DoctorSlot[];
   };
+  clinicProfile?: ClinicProfile;
+  receptionistProfile?: ReceptionistProfile;
+}
+
+export interface ClinicProfile {
+  id: string;
+  clinicName: string;
+  address: string;
+  city?: string;
+  phone?: string;
+  createdAt?: string;
+}
+
+export interface ReceptionistProfile {
+  id: string;
+  phone?: string;
+}
+
+export interface ClinicDoctorStat {
+  affiliationId: string;
+  doctorId: string;
+  fullName: string;
+  email: string;
+  phone?: string;
+  avatarUrl?: string;
+  specialty: string;
+  qualifications: string;
+  experienceYears: number;
+  consultationFee: number;
+  bookingCount: number;
+  completedCount: number;
+  revenue: number;
+  status: string;
+  joinedAt: string;
+}
+
+export interface ClinicAppointment {
+  id: string;
+  patientName: string;
+  patientPhone: string;
+  doctorName: string;
+  doctorId: string;
+  date: string;
+  queueNumber: number;
+  checkingWindow: string;
+  estimatedTime: string;
+  status: string;
+  fee: number;
+}
+
+export interface ClinicDashboardData {
+  clinic: ClinicProfile;
+  doctors: ClinicDoctorStat[];
+  totalDoctors: number;
+  totalBookings: number;
+  totalRevenue: number;
+  recentAppointments: ClinicAppointment[];
+}
+
+export interface ReceptionistLinkedDoctor {
+  affiliationId: string;
+  doctorId: string;
+  fullName: string;
+  email: string;
+  phone?: string;
+  avatarUrl?: string;
+  specialty: string;
+  clinicAddress?: string;
+  consultationFee: number;
+  slots: DoctorSlot[];
+  todayTotalBookings: number;
+  todayWaitingPatients: number;
+  joinedAt: string;
+}
+
+export interface ReceptionistDashboardData {
+  receptionist: {
+    id: string;
+    fullName: string;
+    email: string;
+    phone?: string;
+  };
+  doctors: ReceptionistLinkedDoctor[];
+}
+
+export interface ReceptionistQueueItem {
+  id: string;
+  queueNumber: number;
+  patientName: string;
+  patientPhone: string;
+  gender?: string;
+  bloodGroup?: string;
+  checkingWindow: string;
+  estimatedTime: string;
+  slotId?: string;
+  status: string;
+  reasonForVisit?: string;
+  symptoms?: string;
+  hasPrescription: boolean;
+  createdAt: string;
+}
+
+export interface DoctorAffiliationsData {
+  clinics: Array<{
+    affiliationId: string;
+    clinicId: string;
+    clinicName: string;
+    address: string;
+    city?: string;
+    phone?: string;
+    email?: string;
+    bookingCount: number;
+    revenue: number;
+    status: string;
+    joinedAt: string;
+  }>;
+  receptionists: Array<{
+    affiliationId: string;
+    receptionistId: string;
+    fullName: string;
+    email: string;
+    phone?: string;
+    status: string;
+    joinedAt: string;
+  }>;
 }
 
 export interface Doctor {
@@ -817,6 +942,145 @@ export const api = {
 
   async getAdminAppointments(): Promise<any[]> {
     const res = await fetch(`${API_BASE_URL}/admin/appointments`, { headers: getHeaders() });
+    return handleResponse(res);
+  },
+
+  // Clinic Portal
+  async getMyClinic(): Promise<ClinicDashboardData> {
+    const res = await fetch(`${API_BASE_URL}/clinics/my-clinic`, { headers: getHeaders() });
+    return handleResponse(res);
+  },
+
+  async addDoctorToClinic(data: { doctorEmail?: string; doctorId?: string }): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/clinics/doctors`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
+  async removeDoctorFromClinic(doctorId: string): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/clinics/doctors/${doctorId}`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  async getPublicClinics(): Promise<ClinicProfile[]> {
+    const res = await fetch(`${API_BASE_URL}/clinics/public`, { headers: getHeaders() });
+    return handleResponse(res);
+  },
+
+  // Receptionist Portal
+  async getMyReceptionist(): Promise<ReceptionistDashboardData> {
+    const res = await fetch(`${API_BASE_URL}/receptionists/my-receptionist`, { headers: getHeaders() });
+    return handleResponse(res);
+  },
+
+  async addDoctorToReceptionist(data: { doctorEmail?: string; doctorId?: string }): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/receptionists/doctors`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
+  async removeDoctorFromReceptionist(doctorId: string): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/receptionists/doctors/${doctorId}`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  async getReceptionistDoctorQueue(
+    doctorId: string,
+    date?: string
+  ): Promise<{
+    doctor: { id: string; fullName: string; specialty: string; slots: DoctorSlot[] };
+    appointmentDate: string;
+    totalPatients: number;
+    waitingCount: number;
+    inConsultationCount: number;
+    completedCount: number;
+    cancelledCount: number;
+    appointments: ReceptionistQueueItem[];
+  }> {
+    const url = date
+      ? `${API_BASE_URL}/receptionists/doctors/${doctorId}/queue?date=${date}`
+      : `${API_BASE_URL}/receptionists/doctors/${doctorId}/queue`;
+    const res = await fetch(url, { headers: getHeaders() });
+    return handleResponse(res);
+  },
+
+  async bookWalkinAppointment(data: {
+    doctorId: string;
+    patientName: string;
+    patientPhone: string;
+    gender?: string;
+    appointmentDate?: string;
+    slotId?: string;
+    reasonForVisit?: string;
+    symptoms?: string;
+    clinicId?: string;
+  }): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/receptionists/book-walkin`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
+  async updateAppointmentStatus(appointmentId: string, status: string): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/receptionists/appointments/${appointmentId}/status`, {
+      method: 'PATCH',
+      headers: getHeaders(),
+      body: JSON.stringify({ status }),
+    });
+    return handleResponse(res);
+  },
+
+  // Doctor Affiliations
+  async getDoctorAffiliations(): Promise<DoctorAffiliationsData> {
+    const res = await fetch(`${API_BASE_URL}/doctors/me/affiliations`, { headers: getHeaders() });
+    return handleResponse(res);
+  },
+
+  async addDoctorClinic(data: { clinicId?: string; clinicEmail?: string }): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/doctors/me/clinics`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
+  async removeDoctorClinic(clinicId: string): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/doctors/me/clinics/${clinicId}`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  async addDoctorReceptionist(data: { receptionistEmail: string }): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/doctors/me/receptionists`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
+  async removeDoctorReceptionist(receptionistId: string): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/doctors/me/receptionists/${receptionistId}`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+    });
     return handleResponse(res);
   },
 };

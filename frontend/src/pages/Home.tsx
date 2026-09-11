@@ -1,21 +1,62 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { api, Doctor, parseDoctorSlots, format12Hour } from '../services/api';
+import {
+  api,
+  Doctor,
+  parseDoctorSlots,
+  format12Hour,
+  evaluateSlotStatus,
+  getLocalDateString,
+} from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { AppleButton } from '../components/ui/AppleButton';
-import { Clock, ShieldCheck, ArrowRight, Star, MapPin, Calendar, Stethoscope } from 'lucide-react';
+import {
+  Search,
+  MapPin,
+  Clock,
+  ShieldCheck,
+  Calendar,
+  Layers,
+  ArrowRight,
+  Star,
+  Building2,
+  UserCheck,
+  Stethoscope,
+  Filter,
+  RotateCcw,
+  ChevronRight,
+  SlidersHorizontal,
+} from 'lucide-react';
+
+const SPECIALTIES = [
+  'All',
+  'Cardiology',
+  'Dermatology',
+  'Pediatrics',
+  'Orthopedics',
+  'General Medicine',
+];
 
 export const Home: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
+
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
+
+  // Search & Filter State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [locationQuery, setLocationQuery] = useState('');
+  const [selectedSpecialty, setSelectedSpecialty] = useState('All');
+  const [sortBy, setSortBy] = useState<'rating' | 'experience' | 'fee_low' | 'fee_high'>('rating');
+  const [minExperience, setMinExperience] = useState<number>(0);
+  const [availabilityFilter, setAvailabilityFilter] = useState<'ALL' | 'ACTIVE_NOW'>('ALL');
 
   useEffect(() => {
     const fetchDoctors = async () => {
       try {
         const data = await api.getDoctors();
-        setDoctors(data.slice(0, 3));
+        setDoctors(data);
       } catch (err) {
         console.error('Failed to load doctors:', err);
       } finally {
@@ -27,445 +68,612 @@ export const Home: React.FC = () => {
 
   const role = user?.role?.toUpperCase();
   const isDoctor = role === 'DOCTOR';
+  const isClinic = role === 'CLINIC';
+  const isReceptionist = role === 'RECEPTIONIST';
   const isAdmin = role === 'ADMIN';
-  const isPatient = Boolean(user && !isDoctor && !isAdmin);
+
+  // Compute specialty counts
+  const specialtyCounts = useMemo(() => {
+    const counts: Record<string, number> = { All: doctors.length };
+    SPECIALTIES.forEach((s) => {
+      if (s !== 'All') {
+        counts[s] = doctors.filter((d) => d.specialty.toLowerCase() === s.toLowerCase()).length;
+      }
+    });
+    return counts;
+  }, [doctors]);
+
+  // Dynamic filter and sort
+  const filteredDoctors = useMemo(() => {
+    const todayStr = getLocalDateString();
+    const now = new Date();
+
+    return doctors
+      .filter((doc) => {
+        // Specialty Filter
+        if (
+          selectedSpecialty !== 'All' &&
+          doc.specialty.toLowerCase() !== selectedSpecialty.toLowerCase()
+        ) {
+          return false;
+        }
+
+        // Search Query (Doctor name, qualifications, clinic address, bio)
+        if (searchQuery.trim()) {
+          const q = searchQuery.toLowerCase();
+          const matchesName = doc.user.fullName.toLowerCase().includes(q);
+          const matchesSpec = doc.specialty.toLowerCase().includes(q);
+          const matchesQual = doc.qualifications?.toLowerCase().includes(q);
+          const matchesClinic = doc.clinicAddress?.toLowerCase().includes(q);
+          if (!matchesName && !matchesSpec && !matchesQual && !matchesClinic) {
+            return false;
+          }
+        }
+
+        // Location Query
+        if (locationQuery.trim()) {
+          const lq = locationQuery.toLowerCase();
+          if (!doc.clinicAddress?.toLowerCase().includes(lq)) {
+            return false;
+          }
+        }
+
+        // Experience Filter
+        if (minExperience > 0 && doc.experienceYears < minExperience) {
+          return false;
+        }
+
+        // Active Now Filter
+        if (availabilityFilter === 'ACTIVE_NOW') {
+          const slots = parseDoctorSlots(doc);
+          const hasActiveSlot = slots.some((s) => {
+            const status = evaluateSlotStatus(s, todayStr, 0, now);
+            return status.isInProgress;
+          });
+          if (!hasActiveSlot) return false;
+        }
+
+        return true;
+      })
+      .sort((a, b) => {
+        if (sortBy === 'fee_low') return a.consultationFee - b.consultationFee;
+        if (sortBy === 'fee_high') return b.consultationFee - a.consultationFee;
+        if (sortBy === 'experience') return b.experienceYears - a.experienceYears;
+        return (b.rating || 5) - (a.rating || 5);
+      });
+  }, [doctors, selectedSpecialty, searchQuery, locationQuery, minExperience, availabilityFilter, sortBy]);
+
+  const resetFilters = () => {
+    setSearchQuery('');
+    setLocationQuery('');
+    setSelectedSpecialty('All');
+    setMinExperience(0);
+    setAvailabilityFilter('ALL');
+    setSortBy('rating');
+  };
+
+  const handleHeroSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const catalogElement = document.getElementById('doctors-catalog');
+    if (catalogElement) {
+      catalogElement.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
 
   return (
-    <div className="flex flex-col min-h-screen">
-      {/* 1. Hero Section - Apple Product Announcement Aesthetic */}
-      <section className="bg-white pt-20 pb-24 border-b border-[#e5e5ea] text-center px-4 sm:px-6">
-        <div className="max-w-4xl mx-auto">
+    <div className="flex flex-col min-h-screen bg-[#f5f5f7]">
+      {/* 1. Hero Section - Search-Driven Apple Aesthetic */}
+      <section className="bg-white border-b border-[#e5e5ea] pt-12 pb-14 px-4 sm:px-6">
+        <div className="max-w-4xl mx-auto text-center">
+          {/* Role Aware Status Bar */}
           {user ? (
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#0066cc]/10 border border-[#0066cc]/20 text-xs font-semibold text-[#0066cc] mb-6 shadow-sm">
               <span className="w-2 h-2 rounded-full bg-[#0066cc] animate-pulse"></span>
-              Welcome back, {user.fullName?.split(' ')[0] || user.fullName || 'User'} • {isDoctor ? 'Doctor Console' : isAdmin ? 'Admin Control Center' : 'Patient Dashboard'}
+              Welcome back, {user.fullName?.split(' ')[0] || user.fullName} •{' '}
+              {isDoctor
+                ? 'Doctor Console'
+                : isClinic
+                ? 'Clinic Partner Portal'
+                : isReceptionist
+                ? 'Receptionist Desk'
+                : isAdmin
+                ? 'Admin Control Center'
+                : 'Patient Dashboard'}
             </div>
           ) : (
             <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-xs font-medium text-[#1d1d1f] mb-6">
               <span className="w-2 h-2 rounded-full bg-[#0066cc]"></span>
-              Introducing MediArca Live Queue
+              Live Queue • Zero Wait Guesswork
             </div>
           )}
 
-          <h1 className="text-4xl sm:text-6xl md:text-7xl font-semibold text-[#1d1d1f] tracking-tight leading-[1.08] mb-6">
+          <h1 className="text-3xl sm:text-5xl md:text-6xl font-semibold text-[#1d1d1f] tracking-tight leading-[1.1] mb-4">
             Healthcare. Organized with clinical clarity.
           </h1>
 
-          <p className="text-lg sm:text-2xl font-light text-[#86868b] max-w-2xl mx-auto leading-relaxed mb-10">
-            Discover verified doctors, inspect real-time checking hours, and reserve your guaranteed queue token in seconds.
+          <p className="text-base sm:text-lg font-normal text-[#86868b] max-w-2xl mx-auto leading-relaxed mb-8">
+            Find verified specialists, inspect real-time checking shifts, and secure guaranteed appointment tokens.
           </p>
 
-          {/* Strictly At Most TWO Clean Apple Action Pills */}
-          <div className="flex flex-wrap items-center justify-center gap-4">
-            {isPatient ? (
-              <>
-                <AppleButton
-                  variant="primary"
-                  size="lg"
-                  onClick={() => navigate('/doctors')}
-                  className="flex items-center gap-2"
-                >
-                  Find a Doctor
-                </AppleButton>
-                <AppleButton
-                  variant="secondary"
-                  size="lg"
-                  onClick={() => navigate('/patient/appointments')}
-                  className="flex items-center gap-2"
-                >
-                  <Calendar className="w-4 h-4 text-[#0066cc]" />
-                  My Appointments
-                </AppleButton>
-              </>
-            ) : isDoctor ? (
-              <>
-                <AppleButton
-                  variant="primary"
-                  size="lg"
-                  onClick={() => navigate('/doctor/dashboard')}
-                  className="flex items-center gap-2"
-                >
-                  <Stethoscope className="w-4 h-4" />
-                  Open Doctor Console
-                </AppleButton>
-                <AppleButton
-                  variant="secondary"
-                  size="lg"
-                  onClick={() => navigate('/doctor/schedule')}
-                  className="flex items-center gap-2"
-                >
-                  <Clock className="w-4 h-4 text-[#0066cc]" />
-                  Manage Schedule
-                </AppleButton>
-              </>
-            ) : isAdmin ? (
-              <>
-                <AppleButton
-                  variant="primary"
-                  size="lg"
-                  onClick={() => navigate('/admin')}
-                  className="flex items-center gap-2"
-                >
-                  <ShieldCheck className="w-4 h-4" />
-                  Admin Control Center
-                </AppleButton>
-                <AppleButton
-                  variant="secondary"
-                  size="lg"
-                  onClick={() => navigate('/doctors')}
-                >
-                  Browse Doctors
-                </AppleButton>
-              </>
-            ) : (
-              <>
-                <AppleButton
-                  variant="primary"
-                  size="lg"
-                  onClick={() => navigate('/doctors')}
-                >
-                  Find a Doctor
-                </AppleButton>
-                <AppleButton
-                  variant="secondary"
-                  size="lg"
-                  onClick={() => navigate('/login')}
-                >
-                  Sign In to Patient Portal
-                </AppleButton>
-              </>
-            )}
-          </div>
-        </div>
-      </section>
-
-      {/* 2. Platform Value Pillars - Pure Apple Editorial Architecture (Removed Fake Simulation Widget) */}
-      <section className="bg-[#f5f5f7] py-20 px-4 sm:px-6 border-b border-[#e5e5ea]">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center max-w-2xl mx-auto mb-14">
-            <span className="text-xs font-semibold text-[#0066cc] uppercase tracking-wider block mb-2">
-              Clinical Architecture
-            </span>
-            <h2 className="text-3xl sm:text-5xl font-semibold text-[#1d1d1f] tracking-tight">
-              Clinical excellence. Engineered for real life.
-            </h2>
-            <p className="text-[#86868b] mt-3 text-base sm:text-lg leading-relaxed">
-              MediArca eliminates waiting room guesswork with atomic queue reservations, verified practitioners, and transparent doctor checking windows.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-8 shadow-sm hover:shadow-apple-card transition-all duration-200 flex flex-col justify-between">
-              <div>
-                <div className="w-12 h-12 rounded-2xl bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center mb-5 font-semibold text-base">
-                  01
-                </div>
-                <h3 className="text-[19px] font-semibold text-[#1d1d1f] mb-2 tracking-tight">
-                  Atomic Queue Tokens
-                </h3>
-                <p className="text-[14px] text-[#86868b] leading-relaxed">
-                  Reserve your exact consultation token in real time. Know your position and checking shift before leaving home.
-                </p>
-              </div>
+          {/* Central Integrated Search Bar */}
+          <form
+            onSubmit={handleHeroSearch}
+            className="bg-[#f5f5f7] p-2 sm:p-2.5 rounded-[24px] sm:rounded-full border border-[#e5e5ea] shadow-sm max-w-3xl mx-auto flex flex-col sm:flex-row items-center gap-2 transition-all focus-within:border-[#0066cc] focus-within:shadow-md"
+          >
+            {/* Doctor or Keyword Input */}
+            <div className="flex items-center gap-2 flex-1 w-full px-4 py-2 sm:py-0">
+              <Search className="w-4 h-4 text-[#86868b] flex-shrink-0" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search doctor, condition, or clinic..."
+                className="w-full bg-transparent text-sm text-[#1d1d1f] placeholder-[#86868b] focus:outline-none"
+              />
             </div>
 
-            <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-8 shadow-sm hover:shadow-apple-card transition-all duration-200 flex flex-col justify-between">
-              <div>
-                <div className="w-12 h-12 rounded-2xl bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center mb-5 font-semibold text-base">
-                  02
-                </div>
-                <h3 className="text-[19px] font-semibold text-[#1d1d1f] mb-2 tracking-tight">
-                  Verified Practitioners
-                </h3>
-                <p className="text-[14px] text-[#86868b] leading-relaxed">
-                  Every doctor is reviewed and verified by platform administrators to ensure certified licensing and clinical safety.
-                </p>
-              </div>
+            <div className="hidden sm:block w-px h-6 bg-[#e5e5ea]"></div>
+
+            {/* City / Location Input */}
+            <div className="flex items-center gap-2 w-full sm:w-48 px-4 py-2 sm:py-0">
+              <MapPin className="w-4 h-4 text-[#86868b] flex-shrink-0" />
+              <input
+                type="text"
+                value={locationQuery}
+                onChange={(e) => setLocationQuery(e.target.value)}
+                placeholder="City or location..."
+                className="w-full bg-transparent text-sm text-[#1d1d1f] placeholder-[#86868b] focus:outline-none"
+              />
             </div>
 
-            <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-8 shadow-sm hover:shadow-apple-card transition-all duration-200 flex flex-col justify-between">
-              <div>
-                <div className="w-12 h-12 rounded-2xl bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center mb-5 font-semibold text-base">
-                  03
-                </div>
-                <h3 className="text-[19px] font-semibold text-[#1d1d1f] mb-2 tracking-tight">
-                  Direct Care Access
-                </h3>
-                <p className="text-[14px] text-[#86868b] leading-relaxed">
-                  Zero subscription walls and zero upfront paywalls. Instant appointment booking with direct consultation fee settlement at the clinic.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+            <div className="hidden sm:block w-px h-6 bg-[#e5e5ea]"></div>
 
-      {/* 3. Featured Verified Specialists - Clean Apple Product / Clinical Cards */}
-      <section className="bg-white py-20 px-4 sm:px-6 border-b border-[#e5e5ea]">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-12">
-            <div>
-              <span className="text-xs font-semibold text-[#0066cc] uppercase tracking-wider block mb-2">
-                Verified Medical Practitioners
-              </span>
-              <h2 className="text-3xl sm:text-4xl font-semibold text-[#1d1d1f] tracking-tight">
-                Specialists ready for consultation today.
-              </h2>
+            {/* Specialty Selector Dropdown */}
+            <div className="w-full sm:w-44 px-3 py-1 sm:py-0">
+              <select
+                value={selectedSpecialty}
+                onChange={(e) => setSelectedSpecialty(e.target.value)}
+                className="w-full bg-transparent text-xs sm:text-sm font-medium text-[#1d1d1f] focus:outline-none cursor-pointer py-1.5"
+              >
+                {SPECIALTIES.map((spec) => (
+                  <option key={spec} value={spec}>
+                    {spec === 'All' ? 'All Specialties' : spec}
+                  </option>
+                ))}
+              </select>
             </div>
-            <Link
-              to="/doctors"
-              className="mt-4 sm:mt-0 inline-flex items-center gap-1.5 text-[15px] font-medium text-[#0066cc] hover:underline"
+
+            {/* Search Button */}
+            <AppleButton
+              variant="primary"
+              size="md"
+              type="submit"
+              className="w-full sm:w-auto px-6 py-2.5 rounded-full flex-shrink-0 font-medium"
             >
-              View all specialists <ArrowRight className="w-4 h-4" />
-            </Link>
+              Search Doctors
+            </AppleButton>
+          </form>
+
+          {/* 4 Clean Clinical Metrics Chips */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-3xl mx-auto mt-8">
+            <div className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-[#fafafc] border border-[#e5e5ea] text-xs font-medium text-[#1d1d1f]">
+              <ShieldCheck className="w-4 h-4 text-[#0066cc] flex-shrink-0" />
+              <span>Verified Specialists</span>
+            </div>
+            <div className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-[#fafafc] border border-[#e5e5ea] text-xs font-medium text-[#1d1d1f]">
+              <Clock className="w-4 h-4 text-[#0066cc] flex-shrink-0" />
+              <span>Atomic Queue Tokens</span>
+            </div>
+            <div className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-[#fafafc] border border-[#e5e5ea] text-xs font-medium text-[#1d1d1f]">
+              <Calendar className="w-4 h-4 text-[#0066cc] flex-shrink-0" />
+              <span>Zero Wait Guesswork</span>
+            </div>
+            <div className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-[#fafafc] border border-[#e5e5ea] text-xs font-medium text-[#1d1d1f]">
+              <Layers className="w-4 h-4 text-[#0066cc] flex-shrink-0" />
+              <span>Direct Clinic Settlement</span>
+            </div>
           </div>
-
-          {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="h-72 rounded-[20px] bg-[#f5f5f7] border border-[#e5e5ea] animate-pulse"></div>
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {doctors.map((doctor) => {
-                const slots = parseDoctorSlots(doctor);
-                return (
-                  <div
-                    key={doctor.id}
-                    className="bg-white rounded-[20px] border border-[#e5e5ea] p-6 shadow-sm hover:shadow-apple-card hover:border-[#0066cc]/40 transition-all duration-300 flex flex-col justify-between group"
-                  >
-                    <div>
-                      {/* Doctor Profile Header */}
-                      <div className="flex items-start gap-4 mb-5">
-                        <div
-                          onClick={() => navigate(`/doctor/${doctor.id}`)}
-                          className="w-16 h-16 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] overflow-hidden flex-shrink-0 cursor-pointer transition-transform group-hover:scale-105"
-                        >
-                          {doctor.user.avatarUrl ? (
-                            <img
-                              src={doctor.user.avatarUrl}
-                              alt={doctor.user.fullName}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center font-semibold text-xl text-[#0066cc]">
-                              {doctor.user.fullName[0]}
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <h3
-                              onClick={() => navigate(`/doctor/${doctor.id}`)}
-                              className="text-[18px] font-semibold text-[#1d1d1f] truncate hover:text-[#0066cc] transition-colors cursor-pointer tracking-tight"
-                            >
-                              {doctor.user.fullName}
-                            </h3>
-                            <span title="Verified Practitioner by MediArca">
-                              <ShieldCheck className="w-4 h-4 text-[#0066cc] flex-shrink-0" />
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="inline-flex items-center text-[11px] font-medium text-[#0066cc] bg-[#0066cc]/10 px-2.5 py-0.5 rounded-full">
-                              {doctor.specialty}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1.5 text-xs text-[#86868b] mt-2">
-                            <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400 flex-shrink-0" />
-                            <span className="font-semibold text-[#1d1d1f]">{doctor.rating.toFixed(1)}</span>
-                            <span>({doctor.totalReviews} reviews)</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Apple Spec Tile Info Grid: Experience & Fee */}
-                      <div className="grid grid-cols-2 gap-2.5 mb-4">
-                        <div className="p-3 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea]/70">
-                          <span className="text-[10px] uppercase font-semibold text-[#86868b] tracking-wider block">
-                            Experience
-                          </span>
-                          <span className="text-[14px] font-semibold text-[#1d1d1f] mt-0.5 block">
-                            {doctor.experienceYears} Years
-                          </span>
-                        </div>
-                        <div className="p-3 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea]/70">
-                          <span className="text-[10px] uppercase font-semibold text-[#86868b] tracking-wider block">
-                            Consultation Fee
-                          </span>
-                          <span className="text-[14px] font-semibold text-[#1d1d1f] mt-0.5 block">
-                            ${doctor.consultationFee} <span className="text-[10px] text-[#86868b] font-normal">at clinic</span>
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Checking Schedule Badge */}
-                      <div className="flex items-center justify-between px-3.5 py-2.5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea]/70 text-xs mb-4">
-                        <span className="text-[#86868b] flex items-center gap-1.5 font-normal">
-                          <Clock className="w-3.5 h-3.5 text-[#0066cc]" />
-                          Checking Shift
-                        </span>
-                        <strong className="font-semibold text-[#0066cc]">
-                          {slots.length > 1
-                            ? `${slots.length} Shifts (${format12Hour(slots[0].startTime)}–${format12Hour(slots[0].endTime)})`
-                            : `${format12Hour(doctor.checkingStartTime)} – ${format12Hour(doctor.checkingEndTime)}`}
-                        </strong>
-                      </div>
-
-                      {/* Dedicated Polished Clinic Address */}
-                      <div className="flex items-start gap-2.5 px-3.5 py-2.5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea]/70 text-xs mb-5">
-                        <MapPin className="w-3.5 h-3.5 text-[#0066cc] flex-shrink-0 mt-0.5" />
-                        <div className="min-w-0 flex-1">
-                          <span className="font-medium text-[#1d1d1f] block truncate">
-                            {doctor.clinicAddress || 'MediArca Healthcare Clinic'}
-                          </span>
-                          <span className="text-[11px] text-[#86868b] block mt-0.5">
-                            In-Person Outpatient Consultation
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex items-center gap-2 pt-3.5 border-t border-[#f0f0f0]">
-                      <AppleButton
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => navigate(`/doctor/${doctor.id}`)}
-                        className="px-4 text-xs font-medium"
-                      >
-                        Details
-                      </AppleButton>
-                      <AppleButton
-                        variant="primary"
-                        size="sm"
-                        onClick={() => navigate(`/book/${doctor.id}`)}
-                        className="flex-1 justify-center flex items-center gap-1.5 font-medium"
-                      >
-                        <span>Book Appointment</span>
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </AppleButton>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
         </div>
       </section>
 
-      {/* 4. Call to Action - Strict TWO Apple Pills on Dark Canvas */}
-      <section className="bg-[#1d1d1f] text-white py-20 px-4 sm:px-6 text-center">
-        <div className="max-w-3xl mx-auto">
-          {isPatient ? (
-            <>
-              <h2 className="text-3xl sm:text-5xl font-semibold tracking-tight mb-4">
-                Healthcare clarity right in your pocket.
-              </h2>
-              <p className="text-base sm:text-lg text-[#cccccc] font-light mb-8 max-w-xl mx-auto leading-relaxed">
-                Track your active queue positions in real-time, view verified prescriptions, or explore new medical specialists.
-              </p>
-              <div className="flex flex-wrap items-center justify-center gap-4">
-                <AppleButton
-                  variant="primary"
-                  size="lg"
-                  onClick={() => navigate('/doctors')}
+      {/* 2. Quick Specialty Filter Pills Bar */}
+      <section className="bg-white border-b border-[#e5e5ea] py-3.5 sticky top-12 z-30 shadow-xs">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="flex items-center gap-2 overflow-x-auto scrollbar-none py-1">
+            <span className="text-xs font-semibold text-[#86868b] mr-2 flex items-center gap-1 flex-shrink-0">
+              <SlidersHorizontal className="w-3.5 h-3.5 text-[#0066cc]" />
+              Specialty:
+            </span>
+            {SPECIALTIES.map((spec) => {
+              const isSelected = selectedSpecialty === spec;
+              const count = specialtyCounts[spec] || 0;
+              return (
+                <button
+                  key={spec}
+                  onClick={() => setSelectedSpecialty(spec)}
+                  className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1.5 flex-shrink-0 ${
+                    isSelected
+                      ? 'bg-[#0066cc] text-white shadow-sm'
+                      : 'bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea] hover:bg-[#ebebee]'
+                  }`}
                 >
-                  Browse Doctor Catalog
-                </AppleButton>
-                <AppleButton
-                  variant="secondary-dark"
-                  size="lg"
-                  onClick={() => navigate('/patient/appointments')}
-                  className="flex items-center gap-2"
+                  <span>{spec === 'All' ? 'All Specialties' : spec}</span>
+                  <span
+                    className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono ${
+                      isSelected ? 'bg-white/20 text-white' : 'bg-[#e5e5ea] text-[#86868b]'
+                    }`}
+                  >
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* 3. Explore Doctors Catalog - Two Column Layout */}
+      <section id="doctors-catalog" className="max-w-7xl mx-auto px-4 sm:px-6 py-8 flex-1 w-full">
+        <div className="flex flex-col lg:flex-row gap-8">
+          {/* Left Filter Sidebar / Drawer */}
+          <aside className="w-full lg:w-64 flex-shrink-0 space-y-6">
+            <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-5 shadow-xs">
+              <div className="flex items-center justify-between pb-3 mb-4 border-b border-[#f0f0f0]">
+                <h3 className="text-sm font-semibold text-[#1d1d1f] flex items-center gap-1.5">
+                  <Filter className="w-3.5 h-3.5 text-[#0066cc]" />
+                  Refine Catalog
+                </h3>
+                <button
+                  onClick={resetFilters}
+                  className="text-[11px] text-[#0066cc] hover:underline flex items-center gap-1"
                 >
-                  <Calendar className="w-4 h-4 text-[#2997ff]" />
-                  My Appointments
+                  <RotateCcw className="w-3 h-3" /> Reset
+                </button>
+              </div>
+
+              {/* Keyword Search */}
+              <div className="space-y-1.5 mb-5">
+                <label className="text-xs font-medium text-[#86868b]">Doctor or Clinic</label>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Doctor name or clinic..."
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-[#e5e5ea] bg-[#f5f5f7] focus:outline-none focus:border-[#0066cc]"
+                />
+              </div>
+
+              {/* City / Location */}
+              <div className="space-y-1.5 mb-5">
+                <label className="text-xs font-medium text-[#86868b]">City or Address</label>
+                <input
+                  type="text"
+                  value={locationQuery}
+                  onChange={(e) => setLocationQuery(e.target.value)}
+                  placeholder="e.g. New York, Chicago"
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-[#e5e5ea] bg-[#f5f5f7] focus:outline-none focus:border-[#0066cc]"
+                />
+              </div>
+
+              {/* Availability Filter */}
+              <div className="space-y-1.5 mb-5">
+                <label className="text-xs font-medium text-[#86868b]">Checking Shifts</label>
+                <div className="space-y-1">
+                  <label className="flex items-center gap-2 text-xs text-[#1d1d1f] cursor-pointer">
+                    <input
+                      type="radio"
+                      name="avail"
+                      checked={availabilityFilter === 'ALL'}
+                      onChange={() => setAvailabilityFilter('ALL')}
+                      className="text-[#0066cc] focus:ring-0"
+                    />
+                    <span>All Available Doctors</span>
+                  </label>
+                  <label className="flex items-center gap-2 text-xs text-[#1d1d1f] cursor-pointer">
+                    <input
+                      type="radio"
+                      name="avail"
+                      checked={availabilityFilter === 'ACTIVE_NOW'}
+                      onChange={() => setAvailabilityFilter('ACTIVE_NOW')}
+                      className="text-[#0066cc] focus:ring-0"
+                    />
+                    <span className="flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                      Active Shift Right Now
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Minimum Experience */}
+              <div className="space-y-1.5 mb-5">
+                <label className="text-xs font-medium text-[#86868b]">Experience Level</label>
+                <select
+                  value={minExperience}
+                  onChange={(e) => setMinExperience(Number(e.target.value))}
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-[#e5e5ea] bg-[#f5f5f7] text-[#1d1d1f] focus:outline-none focus:border-[#0066cc]"
+                >
+                  <option value={0}>Any Clinical Experience</option>
+                  <option value={5}>5+ Years Experience</option>
+                  <option value={10}>10+ Years Experience</option>
+                  <option value={15}>15+ Years Experience</option>
+                </select>
+              </div>
+
+              {/* Sort Order */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-[#86868b]">Sort Catalog By</label>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as any)}
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-[#e5e5ea] bg-[#f5f5f7] text-[#1d1d1f] focus:outline-none focus:border-[#0066cc]"
+                >
+                  <option value="rating">Highest Rated</option>
+                  <option value="experience">Most Experienced</option>
+                  <option value="fee_low">Consultation Fee: Low to High</option>
+                  <option value="fee_high">Consultation Fee: High to Low</option>
+                </select>
+              </div>
+            </div>
+          </aside>
+
+          {/* Right Doctor Cards Grid */}
+          <main className="flex-1 min-w-0">
+            {/* Catalog Header */}
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-xl font-semibold text-[#1d1d1f] tracking-tight">
+                  {selectedSpecialty === 'All' ? 'Verified Specialists' : `${selectedSpecialty} Specialists`}
+                </h2>
+                <p className="text-xs text-[#86868b] mt-0.5">
+                  Showing {filteredDoctors.length} available medical practitioner
+                  {filteredDoctors.length === 1 ? '' : 's'}
+                </p>
+              </div>
+            </div>
+
+            {loading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {[1, 2, 3, 4].map((i) => (
+                  <div
+                    key={i}
+                    className="h-64 rounded-[20px] bg-white border border-[#e5e5ea] animate-pulse p-6"
+                  ></div>
+                ))}
+              </div>
+            ) : filteredDoctors.length === 0 ? (
+              <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-12 text-center shadow-xs">
+                <div className="w-12 h-12 rounded-full bg-[#f5f5f7] text-[#86868b] flex items-center justify-center mx-auto mb-4">
+                  <Search className="w-6 h-6 text-[#86868b]" />
+                </div>
+                <h3 className="text-base font-semibold text-[#1d1d1f] mb-1">
+                  No specialists matched your criteria
+                </h3>
+                <p className="text-xs text-[#86868b] max-w-sm mx-auto mb-5">
+                  Try clearing your filters or searching with different keywords to explore available doctors.
+                </p>
+                <AppleButton variant="secondary" size="sm" onClick={resetFilters}>
+                  Clear All Filters
                 </AppleButton>
               </div>
-            </>
-          ) : isDoctor ? (
-            <>
-              <h2 className="text-3xl sm:text-5xl font-semibold tracking-tight mb-4">
-                Clinical practice, organized with precision.
-              </h2>
-              <p className="text-base sm:text-lg text-[#cccccc] font-light mb-8 max-w-xl mx-auto leading-relaxed">
-                Manage your daily checking shifts, call queued patients, and write verified digital prescriptions.
-              </p>
-              <div className="flex flex-wrap items-center justify-center gap-4">
-                <AppleButton
-                  variant="primary"
-                  size="lg"
-                  onClick={() => navigate('/doctor/dashboard')}
-                  className="flex items-center gap-2"
-                >
-                  <Stethoscope className="w-4 h-4" />
-                  Open Doctor Console
-                </AppleButton>
-                <AppleButton
-                  variant="secondary-dark"
-                  size="lg"
-                  onClick={() => navigate('/doctor/schedule')}
-                  className="flex items-center gap-2"
-                >
-                  <Clock className="w-4 h-4 text-[#2997ff]" />
-                  Manage Schedule
-                </AppleButton>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {filteredDoctors.map((doctor) => {
+                  const slots = parseDoctorSlots(doctor);
+                  const todayStr = getLocalDateString();
+                  const firstSlotStatus = slots[0]
+                    ? evaluateSlotStatus(slots[0], todayStr, 0, new Date())
+                    : null;
+
+                  return (
+                    <div
+                      key={doctor.id}
+                      className="bg-white rounded-[20px] border border-[#e5e5ea] p-5 shadow-xs hover:shadow-apple-card hover:border-[#0066cc]/40 transition-all duration-200 flex flex-col justify-between"
+                    >
+                      <div>
+                        {/* Top: Avatar, Name, Rating */}
+                        <div className="flex items-start gap-3.5 mb-4">
+                          <div
+                            onClick={() => navigate(`/doctor/${doctor.id}`)}
+                            className="w-14 h-14 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] overflow-hidden flex-shrink-0 cursor-pointer"
+                          >
+                            {doctor.user.avatarUrl ? (
+                              <img
+                                src={doctor.user.avatarUrl}
+                                alt={doctor.user.fullName}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center font-semibold text-lg text-[#0066cc]">
+                                {doctor.user.fullName[0]}
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <h3
+                                onClick={() => navigate(`/doctor/${doctor.id}`)}
+                                className="text-[15px] font-semibold text-[#1d1d1f] hover:text-[#0066cc] cursor-pointer truncate"
+                              >
+                                {doctor.user.fullName}
+                              </h3>
+                              <ShieldCheck className="w-4 h-4 text-[#0066cc] flex-shrink-0" />
+                            </div>
+
+                            <p className="text-xs font-medium text-[#0066cc] mt-0.5">
+                              {doctor.specialty}
+                            </p>
+
+                            <p className="text-[11px] text-[#86868b] truncate mt-0.5">
+                              {doctor.qualifications} • {doctor.experienceYears} yrs exp.
+                            </p>
+                          </div>
+
+                          <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-xs font-semibold text-[#1d1d1f] flex-shrink-0">
+                            <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                            <span>{doctor.rating ? doctor.rating.toFixed(1) : '5.0'}</span>
+                          </div>
+                        </div>
+
+                        {/* Clinic Address */}
+                        <div className="flex items-center gap-1.5 text-xs text-[#86868b] mb-3.5 line-clamp-1">
+                          <MapPin className="w-3.5 h-3.5 text-[#86868b] flex-shrink-0" />
+                          <span className="truncate">{doctor.clinicAddress || 'MediArca Healthcare Centre'}</span>
+                        </div>
+
+                        {/* Checking Shifts Badges */}
+                        <div className="p-3 rounded-xl bg-[#fafafc] border border-[#f0f0f0] mb-4 space-y-1.5">
+                          <div className="flex items-center justify-between text-[11px]">
+                            <span className="text-[#86868b] font-medium flex items-center gap-1">
+                              <Clock className="w-3 h-3 text-[#0066cc]" /> Checking Shifts:
+                            </span>
+                            {firstSlotStatus?.isInProgress && (
+                              <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                                Active Shift Now
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {slots.slice(0, 2).map((slot) => (
+                              <span
+                                key={slot.id}
+                                className="text-[11px] font-medium text-[#1d1d1f] bg-white px-2.5 py-1 rounded-lg border border-[#e5e5ea]"
+                              >
+                                {slot.name || `${format12Hour(slot.startTime)} – ${format12Hour(slot.endTime)}`}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Footer: Fee & Booking CTA */}
+                      <div className="pt-3 border-t border-[#f0f0f0] flex items-center justify-between gap-3">
+                        <div>
+                          <div className="text-base font-semibold text-[#1d1d1f]">
+                            ${doctor.consultationFee.toFixed(0)}
+                          </div>
+                          <span className="text-[10px] text-[#86868b] block">Direct clinic settlement</span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <AppleButton
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => navigate(`/doctor/${doctor.id}`)}
+                            className="text-xs"
+                          >
+                            Details
+                          </AppleButton>
+                          <AppleButton
+                            variant="primary"
+                            size="sm"
+                            onClick={() => navigate(`/book/${doctor.id}`)}
+                            className="flex items-center gap-1 text-xs"
+                          >
+                            Book Token
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          </AppleButton>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            </>
-          ) : isAdmin ? (
-            <>
-              <h2 className="text-3xl sm:text-5xl font-semibold tracking-tight mb-4">
-                Platform governance & clinical compliance.
-              </h2>
-              <p className="text-base sm:text-lg text-[#cccccc] font-light mb-8 max-w-xl mx-auto leading-relaxed">
-                Inspect practitioner license credentials, monitor atomic queue reservations, and review clinic telemetry.
-              </p>
-              <div className="flex flex-wrap items-center justify-center gap-4">
-                <AppleButton
-                  variant="primary"
-                  size="lg"
-                  onClick={() => navigate('/admin')}
-                  className="flex items-center gap-2"
-                >
-                  <ShieldCheck className="w-4 h-4" />
-                  Admin Control Center
-                </AppleButton>
-                <AppleButton
-                  variant="secondary-dark"
-                  size="lg"
-                  onClick={() => navigate('/doctors')}
-                >
-                  Browse Doctor Catalog
-                </AppleButton>
+            )}
+          </main>
+        </div>
+      </section>
+
+      {/* 4. Clinical Portals Operations Quick Strip */}
+      <section className="bg-white border-t border-[#e5e5ea] py-12 px-4 sm:px-6 mt-12">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center max-w-xl mx-auto mb-8">
+            <span className="text-xs font-semibold text-[#0066cc] uppercase tracking-wider block mb-1">
+              Operational Portals
+            </span>
+            <h3 className="text-2xl font-semibold text-[#1d1d1f] tracking-tight">
+              Designed for patients, clinics, and care teams.
+            </h3>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Patient Portal */}
+            <div
+              onClick={() => navigate('/patient/appointments')}
+              className="p-5 rounded-[20px] bg-[#fafafc] border border-[#e5e5ea] hover:border-[#0066cc]/40 cursor-pointer transition-all hover:shadow-sm flex flex-col justify-between"
+            >
+              <div>
+                <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#0066cc] flex items-center justify-center mb-3">
+                  <UserCheck className="w-5 h-5" />
+                </div>
+                <h4 className="text-sm font-semibold text-[#1d1d1f] mb-1">Patient Portal</h4>
+                <p className="text-xs text-[#86868b] leading-relaxed">
+                  Track your active live token, check remaining queue numbers, and manage medical files.
+                </p>
               </div>
-            </>
-          ) : (
-            <>
-              <h2 className="text-3xl sm:text-5xl font-semibold tracking-tight mb-4">
-                Experience clinical booking without friction.
-              </h2>
-              <p className="text-base sm:text-lg text-[#cccccc] font-light mb-8 max-w-xl mx-auto leading-relaxed">
-                Zero subscription walls, zero forced medical histories. Just direct access to certified medical care.
-              </p>
-              <div className="flex flex-wrap items-center justify-center gap-4">
-                <AppleButton
-                  variant="primary"
-                  size="lg"
-                  onClick={() => navigate('/doctors')}
-                >
-                  Browse Doctor Catalog
-                </AppleButton>
-                <AppleButton
-                  variant="secondary-dark"
-                  size="lg"
-                  onClick={() => navigate('/signup')}
-                >
-                  Create Free Account
-                </AppleButton>
+              <span className="text-xs text-[#0066cc] font-medium flex items-center gap-1 mt-4">
+                Open Portal <ArrowRight className="w-3.5 h-3.5" />
+              </span>
+            </div>
+
+            {/* Doctor Console */}
+            <div
+              onClick={() => navigate('/doctor/dashboard')}
+              className="p-5 rounded-[20px] bg-[#fafafc] border border-[#e5e5ea] hover:border-[#0066cc]/40 cursor-pointer transition-all hover:shadow-sm flex flex-col justify-between"
+            >
+              <div>
+                <div className="w-10 h-10 rounded-xl bg-indigo-50 text-[#0066cc] flex items-center justify-center mb-3">
+                  <Stethoscope className="w-5 h-5" />
+                </div>
+                <h4 className="text-sm font-semibold text-[#1d1d1f] mb-1">Doctor Console</h4>
+                <p className="text-xs text-[#86868b] leading-relaxed">
+                  Call next patient, review clinical history, write digital Rx, and manage clinic affiliations.
+                </p>
               </div>
-            </>
-          )}
+              <span className="text-xs text-[#0066cc] font-medium flex items-center gap-1 mt-4">
+                Open Console <ArrowRight className="w-3.5 h-3.5" />
+              </span>
+            </div>
+
+            {/* Clinic Partner Portal */}
+            <div
+              onClick={() => navigate('/clinic/login')}
+              className="p-5 rounded-[20px] bg-[#fafafc] border border-[#e5e5ea] hover:border-[#0066cc]/40 cursor-pointer transition-all hover:shadow-sm flex flex-col justify-between"
+            >
+              <div>
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-3">
+                  <Building2 className="w-5 h-5" />
+                </div>
+                <h4 className="text-sm font-semibold text-[#1d1d1f] mb-1">Clinic Partner Portal</h4>
+                <p className="text-xs text-[#86868b] leading-relaxed">
+                  Onboard doctors, view appointments booked at your clinic, and track clinic-specific revenue.
+                </p>
+              </div>
+              <span className="text-xs text-[#0066cc] font-medium flex items-center gap-1 mt-4">
+                Clinic Sign In <ArrowRight className="w-3.5 h-3.5" />
+              </span>
+            </div>
+
+            {/* Receptionist Desk */}
+            <div
+              onClick={() => navigate('/receptionist/login')}
+              className="p-5 rounded-[20px] bg-[#fafafc] border border-[#e5e5ea] hover:border-[#0066cc]/40 cursor-pointer transition-all hover:shadow-sm flex flex-col justify-between"
+            >
+              <div>
+                <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center mb-3">
+                  <Clock className="w-5 h-5" />
+                </div>
+                <h4 className="text-sm font-semibold text-[#1d1d1f] mb-1">Receptionist Desk</h4>
+                <p className="text-xs text-[#86868b] leading-relaxed">
+                  Book walk-in patients into doctor's live queue, print tokens, and advance consultation queue.
+                </p>
+              </div>
+              <span className="text-xs text-[#0066cc] font-medium flex items-center gap-1 mt-4">
+                Desk Sign In <ArrowRight className="w-3.5 h-3.5" />
+              </span>
+            </div>
+          </div>
         </div>
       </section>
     </div>

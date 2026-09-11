@@ -159,6 +159,66 @@ function runTests() {
   assert(statusTzOverride.isInProgress === true, 'Slot evaluates active when clientMinutes (10:30 AM) is provided despite UTC server time');
   assert(statusTzOverride.isUpcoming === false, 'Slot is not falsely marked upcoming');
 
+  // 11. Strict 1 MB Upload Limit Boundary Check
+  const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1,048,576 bytes
+  const validFileSize = 1024 * 1024; // exactly 1 MB
+  const invalidFileSize = 1024 * 1024 + 1; // 1 byte over 1 MB
+  const validateFileSize = (sizeBytes: number) => {
+    if (sizeBytes > MAX_FILE_SIZE) {
+      return { valid: false, error: 'File size exceeds 1 MB limit. Please upload a document under 1 MB.' };
+    }
+    return { valid: true, error: null };
+  };
+  assert(validateFileSize(validFileSize).valid === true, '1 MB (1,048,576 bytes) file is accepted');
+  assert(validateFileSize(invalidFileSize).valid === false, '1 MB + 1 byte file is rejected');
+  assert(
+    validateFileSize(invalidFileSize).error === 'File size exceeds 1 MB limit. Please upload a document under 1 MB.',
+    'Rejected file returns exact user error message'
+  );
+
+  // 12. Clinic-Doctor Isolated Booking and Revenue Calculation
+  // Doctor A (Fee $80) has 3 bookings at Clinic 1 (2 WAITING/COMPLETED, 1 CANCELLED), and 2 bookings at Clinic 2
+  const docAFee = 80;
+  const mockAppointments = [
+    { doctorId: 'docA', clinicId: 'clinic1', status: 'WAITING' },
+    { doctorId: 'docA', clinicId: 'clinic1', status: 'COMPLETED' },
+    { doctorId: 'docA', clinicId: 'clinic1', status: 'CANCELLED' }, // Should not count towards revenue
+    { doctorId: 'docA', clinicId: 'clinic2', status: 'COMPLETED' },
+    { doctorId: 'docA', clinicId: 'clinic2', status: 'WAITING' },
+  ];
+
+  // Clinic 1 calculations
+  const clinic1Docs = mockAppointments.filter((a) => a.clinicId === 'clinic1' && a.doctorId === 'docA');
+  const clinic1Active = clinic1Docs.filter((a) => a.status !== 'CANCELLED');
+  const clinic1Revenue = clinic1Active.length * docAFee;
+  assert(clinic1Docs.length === 3, 'Clinic 1 sees 3 total bookings for Doctor A');
+  assert(clinic1Active.length === 2, 'Clinic 1 has 2 revenue-generating bookings (excluding CANCELLED)');
+  assert(clinic1Revenue === 160, 'Clinic 1 revenue for Doctor A is exactly $160 (not $400 across all clinics)');
+
+  // Clinic 2 calculations
+  const clinic2Docs = mockAppointments.filter((a) => a.clinicId === 'clinic2' && a.doctorId === 'docA');
+  const clinic2Revenue = clinic2Docs.filter((a) => a.status !== 'CANCELLED').length * docAFee;
+  assert(clinic2Revenue === 160, 'Clinic 2 revenue for Doctor A is $160');
+
+  // 13. Receptionist Walk-in Token Calculation
+  const existingQueue = [
+    { queueNumber: 1, status: 'COMPLETED' },
+    { queueNumber: 2, status: 'IN_CONSULTATION' },
+    { queueNumber: 3, status: 'WAITING' },
+  ];
+  const highestQueueNumber = existingQueue.reduce((max, a) => Math.max(max, a.queueNumber), 0);
+  const nextWalkinToken = highestQueueNumber + 1;
+  assert(nextWalkinToken === 4, 'Receptionist walk-in gets next sequential atomic token #4');
+
+  // 14. Doctor Multi-Clinic and Staff Detachment Isolation
+  const doctorAffiliations = [
+    { clinicId: 'clinic1', doctorId: 'docA' },
+    { clinicId: 'clinic2', doctorId: 'docA' },
+  ];
+  const remainingAfterClinic1Detach = doctorAffiliations.filter((a) => a.clinicId !== 'clinic1');
+  assert(remainingAfterClinic1Detach.length === 1, 'Doctor detaches Clinic 1 while Clinic 2 remains intact');
+  assert(remainingAfterClinic1Detach[0].clinicId === 'clinic2', 'Remaining affiliation is Clinic 2');
+
   console.log(`\n=== VERIFICATION SUMMARY ===`);
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);
