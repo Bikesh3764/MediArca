@@ -117,7 +117,8 @@ export const evaluateSlotStatus = (
   slot: DoctorSlot,
   appointmentDate: string,
   bookedCountForSlot: number,
-  now = new Date()
+  now = new Date(),
+  overrideCurrentMinutes?: number
 ): SlotStatusResult => {
   const year = now.getFullYear();
   const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -126,15 +127,22 @@ export const evaluateSlotStatus = (
 
   const isToday = appointmentDate === todayStr;
   const isPastDate = appointmentDate < todayStr;
-  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const currentMinutes =
+    typeof overrideCurrentMinutes === 'number' && !isNaN(overrideCurrentMinutes)
+      ? overrideCurrentMinutes
+      : now.getHours() * 60 + now.getMinutes();
 
   const slotStartMins = timeToMinutes(slot.startTime);
-  const slotEndMins = timeToMinutes(slot.endTime);
+  let slotEndMins = timeToMinutes(slot.endTime);
+  if (slotEndMins <= slotStartMins) {
+    slotEndMins += 24 * 60;
+  }
 
   const patientsAhead = bookedCountForSlot;
   let isPassed = false;
   let isInProgress = false;
   let isUpcoming = false;
+  let isFull = false;
   let statusLabel = 'Available';
   let estimatedTime = '';
 
@@ -156,16 +164,25 @@ export const evaluateSlotStatus = (
       // When active, next consultation cannot happen before current time
       const estTotal = Math.max(slotStartMins + offsetMins, currentMinutes + offsetMins);
       if (estTotal >= slotEndMins) {
-        statusLabel = 'Full for Today';
+        isFull = true;
+        statusLabel = 'Shift Over Capacity for Today';
+        estimatedTime = 'Shift Full';
+      } else {
+        estimatedTime = minutesTo12Hour(estTotal);
       }
-      estimatedTime = minutesTo12Hour(estTotal);
     } else {
       // Before slot start time today
       isUpcoming = true;
       statusLabel = 'Upcoming Today';
       const offsetMins = patientsAhead * slot.avgConsultationMinutes;
       const estTotal = slotStartMins + offsetMins;
-      estimatedTime = minutesTo12Hour(estTotal);
+      if (estTotal >= slotEndMins) {
+        isFull = true;
+        statusLabel = 'Fully Booked for Today';
+        estimatedTime = 'Shift Full';
+      } else {
+        estimatedTime = minutesTo12Hour(estTotal);
+      }
     }
   } else {
     // Future date
@@ -177,10 +194,18 @@ export const evaluateSlotStatus = (
   }
 
   const isCapacityFull = bookedCountForSlot >= slot.maxPatients;
-  const isFull = isCapacityFull || (isToday && isInProgress && timeToMinutes(estimatedTime) >= slotEndMins);
+  if (isCapacityFull) {
+    isFull = true;
+    statusLabel = 'Fully Booked';
+  }
 
   if (isFull && !isPassed) {
-    statusLabel = 'Fully Booked';
+    if (!statusLabel || statusLabel === 'Available' || statusLabel === 'Active Now • In Progress' || statusLabel === 'Upcoming Today' || statusLabel === 'Upcoming') {
+      statusLabel = 'Fully Booked';
+    }
+    if (!estimatedTime || estimatedTime === 'Shift Ended') {
+      estimatedTime = 'Shift Full';
+    }
   }
 
   return {

@@ -151,6 +151,12 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
                 <strong className="text-[13px] text-gray-600">Completed</strong>
               ) : liveQueue?.isYourTurn ? (
                 <strong className="text-[13px] text-emerald-600 animate-pulse">Your Turn Now</strong>
+              ) : liveQueue?.isShiftPassed ? (
+                <strong className="text-[13px] text-amber-600">Shift Concluded</strong>
+              ) : isToday && liveQueue?.isShiftActive && liveQueue?.liveEstimatedTime ? (
+                <strong className="text-[13px] text-[#0066cc]" title="Real-time estimated consultation time">
+                  ~{liveQueue.liveEstimatedTime} (Live)
+                </strong>
               ) : (
                 <strong className="text-[13px] text-[#0066cc]">{estimatedTime}</strong>
               )}

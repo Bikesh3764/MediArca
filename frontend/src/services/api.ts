@@ -124,6 +124,110 @@ export const parseDoctorSlots = (doctor: any): DoctorSlot[] => {
   ];
 };
 
+export const evaluateSlotStatus = (
+  slot: DoctorSlot,
+  appointmentDate: string,
+  bookedCountForSlot: number,
+  now = new Date(),
+  overrideCurrentMinutes?: number
+): SlotStatusResult => {
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const todayStr = `${year}-${month}-${day}`;
+
+  const isToday = appointmentDate === todayStr;
+  const isPastDate = appointmentDate < todayStr;
+  const currentMinutes =
+    typeof overrideCurrentMinutes === 'number' && !isNaN(overrideCurrentMinutes)
+      ? overrideCurrentMinutes
+      : now.getHours() * 60 + now.getMinutes();
+
+  const slotStartMins = timeToMinutes(slot.startTime);
+  let slotEndMins = timeToMinutes(slot.endTime);
+  if (slotEndMins <= slotStartMins) {
+    slotEndMins += 24 * 60;
+  }
+
+  const patientsAhead = bookedCountForSlot;
+  let isPassed = false;
+  let isInProgress = false;
+  let isUpcoming = false;
+  let isFull = false;
+  let statusLabel = 'Available';
+  let estimatedTime = '';
+
+  if (isPastDate) {
+    isPassed = true;
+    statusLabel = 'Date Expired';
+    estimatedTime = 'Date Expired';
+  } else if (isToday) {
+    if (currentMinutes >= slotEndMins) {
+      isPassed = true;
+      statusLabel = 'Shift Ended for Today';
+      estimatedTime = 'Shift Ended';
+    } else if (currentMinutes >= slotStartMins && currentMinutes < slotEndMins) {
+      isInProgress = true;
+      statusLabel = 'Active Now • In Progress';
+      const offsetMins = patientsAhead * slot.avgConsultationMinutes;
+      const estTotal = Math.max(slotStartMins + offsetMins, currentMinutes + offsetMins);
+      if (estTotal >= slotEndMins) {
+        isFull = true;
+        statusLabel = 'Shift Over Capacity for Today';
+        estimatedTime = 'Shift Full';
+      } else {
+        estimatedTime = minutesTo12Hour(estTotal);
+      }
+    } else {
+      isUpcoming = true;
+      statusLabel = 'Upcoming Today';
+      const offsetMins = patientsAhead * slot.avgConsultationMinutes;
+      const estTotal = slotStartMins + offsetMins;
+      if (estTotal >= slotEndMins) {
+        isFull = true;
+        statusLabel = 'Fully Booked for Today';
+        estimatedTime = 'Shift Full';
+      } else {
+        estimatedTime = minutesTo12Hour(estTotal);
+      }
+    }
+  } else {
+    isUpcoming = true;
+    statusLabel = 'Upcoming';
+    const offsetMins = patientsAhead * slot.avgConsultationMinutes;
+    const estTotal = slotStartMins + offsetMins;
+    estimatedTime = minutesTo12Hour(estTotal);
+  }
+
+  const isCapacityFull = bookedCountForSlot >= slot.maxPatients;
+  if (isCapacityFull) {
+    isFull = true;
+    statusLabel = 'Fully Booked';
+  }
+
+  if (isFull && !isPassed) {
+    if (!statusLabel || statusLabel === 'Available' || statusLabel === 'Active Now • In Progress' || statusLabel === 'Upcoming Today' || statusLabel === 'Upcoming') {
+      statusLabel = 'Fully Booked';
+    }
+    if (!estimatedTime || estimatedTime === 'Shift Ended') {
+      estimatedTime = 'Shift Full';
+    }
+  }
+
+  return {
+    slot,
+    isToday,
+    isPassed,
+    isInProgress,
+    isUpcoming,
+    isFull,
+    totalBooked: bookedCountForSlot,
+    patientsAhead,
+    estimatedTime,
+    statusLabel,
+  };
+};
+
 export const DEMO_DOCTORS: Doctor[] = [
   {
     id: 'doc_sarah_01',
@@ -379,6 +483,9 @@ export interface Appointment {
     patientsAway: number;
     estimatedWaitMinutes: number;
     isYourTurn: boolean;
+    isShiftActive?: boolean;
+    isShiftPassed?: boolean;
+    liveEstimatedTime?: string;
   };
 }
 
@@ -511,75 +618,28 @@ export const api = {
 
   // Appointments & Queue Preview
   async getQueuePreview(doctorId: string, appointmentDate: string, slotId?: string): Promise<QueuePreview> {
+    const clientMinutes = new Date().getHours() * 60 + new Date().getMinutes();
     try {
       const slotQuery = slotId ? `&slotId=${encodeURIComponent(slotId)}` : '';
       const res = await fetch(
-        `${API_BASE_URL}/appointments/queue-preview?doctorId=${doctorId}&appointmentDate=${appointmentDate}${slotQuery}`
+        `${API_BASE_URL}/appointments/queue-preview?doctorId=${doctorId}&appointmentDate=${appointmentDate}&clientMinutes=${clientMinutes}${slotQuery}`
       );
       return await handleResponse(res);
     } catch (err) {
       console.warn('Queue preview API unavailable, using offline preview calculation fallback', err);
       const doctor = DEMO_DOCTORS.find((d) => d.id === doctorId) || DEMO_DOCTORS[0];
       const slots = parseDoctorSlots(doctor);
-
       const now = new Date();
-      const year = now.getFullYear();
-      const month = String(now.getMonth() + 1).padStart(2, '0');
-      const day = String(now.getDate()).padStart(2, '0');
-      const todayStr = `${year}-${month}-${day}`;
-      const isToday = appointmentDate === todayStr;
-      const isPastDate = appointmentDate < todayStr;
-      const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
       const availableSlots: SlotStatusResult[] = slots.map((slot) => {
-        const startMins = timeToMinutes(slot.startTime);
-        const endMins = timeToMinutes(slot.endTime);
-        let isPassed = false;
-        let isInProgress = false;
-        let isUpcoming = false;
-        let statusLabel = 'Available';
-        let estTime = '';
-
-        if (isPastDate) {
-          isPassed = true;
-          statusLabel = 'Date Expired';
-          estTime = 'Expired';
-        } else if (isToday) {
-          if (currentMinutes >= endMins) {
-            isPassed = true;
-            statusLabel = 'Shift Ended for Today';
-            estTime = 'Shift Ended';
-          } else if (currentMinutes >= startMins && currentMinutes < endMins) {
-            isInProgress = true;
-            statusLabel = 'Active Now • In Progress';
-            const estTotal = Math.max(startMins + slot.avgConsultationMinutes, currentMinutes + slot.avgConsultationMinutes);
-            estTime = minutesTo12Hour(estTotal);
-          } else {
-            isUpcoming = true;
-            statusLabel = 'Upcoming Today';
-            estTime = minutesTo12Hour(startMins + slot.avgConsultationMinutes);
-          }
-        } else {
-          isUpcoming = true;
-          statusLabel = 'Upcoming';
-          estTime = minutesTo12Hour(startMins + slot.avgConsultationMinutes);
-        }
-
-        return {
-          slot,
-          isToday,
-          isPassed,
-          isInProgress,
-          isUpcoming,
-          isFull: false,
-          totalBooked: 1,
-          patientsAhead: 1,
-          estimatedTime: estTime,
-          statusLabel,
-        };
+        return evaluateSlotStatus(slot, appointmentDate, 0, now, clientMinutes);
       });
 
       let chosen = availableSlots.find((s) => s.slot.id === slotId);
+      if (chosen && chosen.isPassed) {
+        const alt = availableSlots.find((s) => !s.isPassed && !s.isFull);
+        if (alt) chosen = alt;
+      }
       if (!chosen) {
         chosen = availableSlots.find((s) => !s.isPassed && !s.isFull) || availableSlots[0];
       }
@@ -597,7 +657,7 @@ export const api = {
         avgConsultationMinutes: chosen.slot.avgConsultationMinutes,
         maxDailyPatients: chosen.slot.maxPatients,
         totalBooked: chosen.totalBooked,
-        nextQueueNumber: 2,
+        nextQueueNumber: 1,
         patientsAhead: chosen.patientsAhead,
         estimatedTime: chosen.estimatedTime,
         isFull: chosen.isFull,
@@ -615,10 +675,11 @@ export const api = {
     reasonForVisit?: string;
     symptoms?: string;
   }): Promise<Appointment> {
+    const clientMinutes = new Date().getHours() * 60 + new Date().getMinutes();
     const res = await fetch(`${API_BASE_URL}/appointments/book`, {
       method: 'POST',
       headers: getHeaders(),
-      body: JSON.stringify(body),
+      body: JSON.stringify({ ...body, clientMinutes }),
     });
     return handleResponse(res);
   },

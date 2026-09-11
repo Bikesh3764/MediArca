@@ -18,10 +18,11 @@ export const BookAppointment: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
   const initialDate = searchParams.get('date') || new Date().toISOString().split('T')[0];
+  const initialSlot = searchParams.get('slot') || null;
 
   const [doctor, setDoctor] = useState<Doctor | null>(null);
   const [appointmentDate, setAppointmentDate] = useState<string>(initialDate);
-  const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
+  const [selectedSlotId, setSelectedSlotId] = useState<string | null>(initialSlot);
   const [reasonForVisit, setReasonForVisit] = useState('');
   const [symptoms, setSymptoms] = useState('');
   const [queuePreview, setQueuePreview] = useState<QueuePreview | null>(null);
@@ -47,7 +48,11 @@ export const BookAppointment: React.FC = () => {
         setDoctor(docData);
         const slots = parseDoctorSlots(docData);
         if (slots.length > 0 && !selectedSlotId) {
-          setSelectedSlotId(slots[0].id);
+          // If a slot was provided in query param and exists, use it; otherwise let queue preview select first available
+          const matchingSlot = initialSlot ? slots.find((s) => s.id === initialSlot) : null;
+          if (matchingSlot) {
+            setSelectedSlotId(matchingSlot.id);
+          }
         }
       } catch (err: any) {
         console.error('Failed to load doctor:', err);
@@ -68,7 +73,7 @@ export const BookAppointment: React.FC = () => {
       try {
         const previewData = await api.getQueuePreview(id, appointmentDate, selectedSlotId || undefined);
         setQueuePreview(previewData);
-        if (previewData.selectedSlotId && previewData.selectedSlotId !== selectedSlotId) {
+        if (previewData.selectedSlotId && (!selectedSlotId || previewData.isPassed)) {
           setSelectedSlotId(previewData.selectedSlotId);
         }
       } catch (err: any) {

@@ -286,9 +286,16 @@ export const DoctorDashboard: React.FC = () => {
                         <span className="text-lg leading-none">#{appt.queueNumber}</span>
                       </div>
                       <div>
-                        <h4 className="text-[16px] font-semibold text-[#1d1d1f]">
-                          {appt.patient?.user.fullName}
-                        </h4>
+                        <div className="flex items-center gap-2">
+                          <h4 className="text-[16px] font-semibold text-[#1d1d1f]">
+                            {appt.patient?.user.fullName}
+                          </h4>
+                          {appt.checkingWindow && (
+                            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-[#f5f5f7] border border-[#e0e0e0] text-[#0066cc]">
+                              {appt.checkingWindow}
+                            </span>
+                          )}
+                        </div>
                         <p className="text-xs text-[#7a7a7a] flex items-center gap-1.5 mt-0.5">
                           <span>Est. {appt.estimatedTime}</span>
                           <span>•</span>

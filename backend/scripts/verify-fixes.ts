@@ -125,6 +125,40 @@ function runTests() {
   assert(statusFull.isFull === true, 'Slot with 60 booked patients is marked isFull');
   assert(statusFull.statusLabel === 'Fully Booked', 'Status label is Fully Booked');
 
+  // 8. Overnight / Midnight-crossing shift
+  const slotOvernight: DoctorSlot = {
+    id: 's_night',
+    name: 'Night Emergency',
+    startTime: '22:00',
+    endTime: '02:00',
+    maxPatients: 20,
+    avgConsultationMinutes: 12,
+  };
+  const metricsNight = calculateSlotMetrics('22:00', '02:00', 20);
+  assert(metricsNight.durationMinutes === 240, '22:00 to 02:00 overnight duration is 240 minutes');
+  assert(metricsNight.avgConsultationMinutes === 12.0, '240m / 20 = 12.0m pace');
+  // Evaluate at 23:00 (1380 mins) on same day: should NOT be marked passed
+  const nowNight = new Date(2026, 8, 11, 23, 0);
+  const statusNight = evaluateSlotStatus(slotOvernight, '2026-09-11', 1, nowNight);
+  assert(statusNight.isPassed === false, 'Overnight shift is NOT marked passed at 23:00');
+  assert(statusNight.isInProgress === true, 'Overnight shift is active at 23:00');
+
+  // 9. Active In-Progress Slot Overflow (Clock too close to shift end)
+  // Shift ends at 11:00 AM (660 mins). Clock is 10:55 AM (655 mins). 5 patients ahead * 2.4 min = 12 mins -> 667 mins (11:07 AM).
+  const nowCloseToEnd = new Date(2026, 8, 11, 10, 55);
+  const statusOverflow = evaluateSlotStatus(slotMorning, '2026-09-11', 5, nowCloseToEnd);
+  assert(statusOverflow.isFull === true, 'Shift with wait exceeding end time is marked isFull');
+  assert(statusOverflow.estimatedTime === 'Shift Full', 'Estimated time reflects Shift Full rather than past/exceeded time');
+  assert(statusOverflow.statusLabel === 'Shift Over Capacity for Today', 'Label reflects Shift Over Capacity');
+
+  // 10. Client Minutes Timezone Override (Render server in UTC vs client in local time)
+  // Server is 04:30 AM UTC (270 mins), but client passes local minute 630 (10:30 AM)
+  const serverUtcDate = new Date(Date.UTC(2026, 8, 11, 4, 30));
+  const clientLocalMinutes = 10 * 60 + 30; // 630 mins = 10:30 AM
+  const statusTzOverride = evaluateSlotStatus(slotMorning, '2026-09-11', 1, serverUtcDate, clientLocalMinutes);
+  assert(statusTzOverride.isInProgress === true, 'Slot evaluates active when clientMinutes (10:30 AM) is provided despite UTC server time');
+  assert(statusTzOverride.isUpcoming === false, 'Slot is not falsely marked upcoming');
+
   console.log(`\n=== VERIFICATION SUMMARY ===`);
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);

@@ -54,7 +54,7 @@ export const DoctorDetail: React.FC = () => {
       try {
         const preview = await api.getQueuePreview(id, selectedDate, selectedSlotId || undefined);
         setQueuePreview(preview);
-        if (preview.selectedSlotId && !selectedSlotId) {
+        if (preview.selectedSlotId && (!selectedSlotId || preview.isPassed)) {
           setSelectedSlotId(preview.selectedSlotId);
         }
       } catch (err) {
@@ -221,11 +221,15 @@ export const DoctorDetail: React.FC = () => {
                     onChange={(e) => setSelectedSlotId(e.target.value)}
                     className="w-full h-10 px-3 rounded-xl border border-[#e0e0e0] text-xs bg-white focus:outline-none focus:border-[#0066cc]"
                   >
-                    {parseDoctorSlots(doctor).map((slot) => (
-                      <option key={slot.id} value={slot.id}>
-                        {slot.name} ({format12Hour(slot.startTime)} - {format12Hour(slot.endTime)})
-                      </option>
-                    ))}
+                    {parseDoctorSlots(doctor).map((slot) => {
+                      const slotStatus = queuePreview?.availableSlots?.find((s) => s.slot.id === slot.id);
+                      const isPassed = Boolean(slotStatus?.isPassed);
+                      return (
+                        <option key={slot.id} value={slot.id}>
+                          {slot.name} ({format12Hour(slot.startTime)} - {format12Hour(slot.endTime)}){isPassed ? ' — Shift Ended' : ''}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
               )}
