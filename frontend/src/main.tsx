@@ -5,7 +5,7 @@ import './index.css';
 import App from './App.tsx';
 
 const GOOGLE_CLIENT_ID =
-  import.meta.env.VITE_GOOGLE_CLIENT_ID || '1234567890-mediarca-google-auth.apps.googleusercontent.com';
+  import.meta.env.VITE_GOOGLE_CLIENT_ID || '868507235434-76q4g3c560hklhploh8p3dihp9q0ugs0.apps.googleusercontent.com';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
