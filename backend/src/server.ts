@@ -49,6 +49,7 @@ async function ensureSchema() {
         "address" TEXT NOT NULL,
         "city" TEXT,
         "phone" TEXT,
+        "isVerified" BOOLEAN NOT NULL DEFAULT FALSE,
         "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
         "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
       );
@@ -63,10 +64,19 @@ async function ensureSchema() {
           "address" TEXT NOT NULL,
           "city" TEXT,
           "phone" TEXT,
+          "isVerified" BOOLEAN NOT NULL DEFAULT 0,
           "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
           "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
       `);
+    } catch {}
+  }
+
+  try {
+    await prisma.$executeRawUnsafe(`ALTER TABLE "ClinicProfile" ADD COLUMN IF NOT EXISTS "isVerified" BOOLEAN NOT NULL DEFAULT FALSE;`);
+  } catch {
+    try {
+      await prisma.$executeRawUnsafe(`ALTER TABLE "ClinicProfile" ADD COLUMN "isVerified" BOOLEAN NOT NULL DEFAULT 0;`);
     } catch {}
   }
 
@@ -76,6 +86,7 @@ async function ensureSchema() {
       CREATE TABLE IF NOT EXISTS "ReceptionistProfile" (
         "id" TEXT PRIMARY KEY,
         "userId" TEXT UNIQUE NOT NULL,
+        "clinicId" TEXT,
         "phone" TEXT,
         "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
         "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -87,11 +98,20 @@ async function ensureSchema() {
         CREATE TABLE IF NOT EXISTS "ReceptionistProfile" (
           "id" TEXT PRIMARY KEY,
           "userId" TEXT UNIQUE NOT NULL,
+          "clinicId" TEXT,
           "phone" TEXT,
           "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
           "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
       `);
+    } catch {}
+  }
+
+  try {
+    await prisma.$executeRawUnsafe(`ALTER TABLE "ReceptionistProfile" ADD COLUMN IF NOT EXISTS "clinicId" TEXT;`);
+  } catch {
+    try {
+      await prisma.$executeRawUnsafe(`ALTER TABLE "ReceptionistProfile" ADD COLUMN "clinicId" TEXT;`);
     } catch {}
   }
 

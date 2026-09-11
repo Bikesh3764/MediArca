@@ -19,7 +19,15 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
     const normalizedRole = role.toUpperCase();
     if (!['PATIENT', 'DOCTOR', 'CLINIC', 'RECEPTIONIST'].includes(normalizedRole)) {
-      res.status(400).json({ success: false, message: 'Invalid role. Must be PATIENT, DOCTOR, CLINIC, or RECEPTIONIST' });
+      res.status(400).json({ success: false, message: 'Invalid role. Must be PATIENT, DOCTOR, or CLINIC' });
+      return;
+    }
+
+    if (normalizedRole === 'RECEPTIONIST') {
+      res.status(403).json({
+        success: false,
+        message: 'Receptionist accounts cannot be created directly. They must be provisioned by a Clinic Administrator.',
+      });
       return;
     }
 
@@ -187,6 +195,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         },
         receptionistProfile: {
           include: {
+            clinic: true,
             doctors: {
               include: {
                 doctor: {
@@ -278,6 +287,7 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
         },
         receptionistProfile: {
           include: {
+            clinic: true,
             doctors: {
               include: {
                 doctor: {

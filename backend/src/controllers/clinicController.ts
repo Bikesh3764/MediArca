@@ -1,4 +1,5 @@
 import { Response } from 'express';
+import bcrypt from 'bcryptjs';
 import prisma from '../config/database';
 import { AuthRequest } from '../middleware/authMiddleware';
 
@@ -15,6 +16,23 @@ export const getMyClinic = async (req: AuthRequest, res: Response): Promise<void
     const clinic = await prisma.clinicProfile.findUnique({
       where: { userId: req.user.id },
       include: {
+        receptionists: {
+          include: {
+            user: {
+              select: { id: true, fullName: true, email: true, phone: true, createdAt: true },
+            },
+            doctors: {
+              include: {
+                doctor: {
+                  include: {
+                    user: { select: { id: true, fullName: true } },
+                  },
+                },
+              },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+        },
         doctors: {
           include: {
             doctor: {
@@ -92,9 +110,24 @@ export const getMyClinic = async (req: AuthRequest, res: Response): Promise<void
           address: clinic.address,
           city: clinic.city,
           phone: clinic.phone,
+          isVerified: clinic.isVerified,
           createdAt: clinic.createdAt,
         },
         doctors: doctorStats,
+        receptionists: (clinic.receptionists || []).map((r) => ({
+          id: r.id,
+          userId: r.userId,
+          fullName: r.user.fullName,
+          email: r.user.email,
+          phone: r.phone || r.user.phone || '',
+          doctorIds: r.doctors.map((d) => d.doctorId),
+          doctors: r.doctors.map((d) => ({
+            id: d.doctor.id,
+            fullName: d.doctor.user.fullName,
+            specialty: d.doctor.specialty,
+          })),
+          createdAt: r.createdAt,
+        })),
         totalDoctors,
         totalBookings,
         totalRevenue,
@@ -163,6 +196,11 @@ export const addDoctorToClinic = async (req: AuthRequest, res: Response): Promis
 
     if (!doctor) {
       res.status(404).json({ success: false, message: 'Doctor not found with provided identifier' });
+      return;
+    }
+
+    if (!doctor.isVerified) {
+      res.status(400).json({ success: false, message: 'Doctor is not yet verified by MediArca administration' });
       return;
     }
 
@@ -246,17 +284,19 @@ export const removeDoctorFromClinic = async (req: AuthRequest, res: Response): P
 };
 
 /**
- * Public listing of clinics
+ * Public listing of verified clinics
  */
 export const getPublicClinics = async (_req: any, res: Response): Promise<void> => {
   try {
     const clinics = await prisma.clinicProfile.findMany({
+      where: { isVerified: true },
       select: {
         id: true,
         clinicName: true,
         address: true,
         city: true,
         phone: true,
+        isVerified: true,
         _count: {
           select: { doctors: true },
         },
@@ -271,5 +311,286 @@ export const getPublicClinics = async (_req: any, res: Response): Promise<void> 
   } catch (error: any) {
     console.error('getPublicClinics error:', error);
     res.status(500).json({ success: false, message: 'Failed to retrieve clinics', error: error.message });
+  }
+};
+
+/**
+ * Provision / Create a Receptionist account for this Clinic
+ */
+export const addClinicReceptionist = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user || req.user.role !== 'CLINIC') {
+      res.status(403).json({ success: false, message: 'Access denied: clinic role required' });
+      return;
+    }
+
+    const { fullName, email, password, phone, doctorIds = [] } = req.body;
+
+    if (!fullName || !email || !password) {
+      res.status(400).json({ success: false, message: 'Receptionist name, email, and password are required' });
+      return;
+    }
+
+    if (password.length < 6) {
+      res.status(400).json({ success: false, message: 'Password must be at least 6 characters long' });
+      return;
+    }
+
+    const clinic = await prisma.clinicProfile.findUnique({
+      where: { userId: req.user.id },
+      include: { doctors: true },
+    });
+
+    if (!clinic) {
+      res.status(404).json({ success: false, message: 'Clinic profile not found' });
+      return;
+    }
+
+    const cleanEmail = email.toLowerCase().trim();
+    const existingUser = await prisma.user.findUnique({
+      where: { email: cleanEmail },
+    });
+
+    if (existingUser) {
+      res.status(400).json({ success: false, message: 'An account with this email already exists' });
+      return;
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(password, salt);
+
+    // Validate that provided doctorIds belong to this clinic
+    const clinicDoctorIds = new Set(clinic.doctors.map((cd) => cd.doctorId));
+    const validDoctorIds = (Array.isArray(doctorIds) ? doctorIds : []).filter((id: string) =>
+      clinicDoctorIds.has(id)
+    );
+
+    const newReceptionist = await prisma.user.create({
+      data: {
+        fullName: fullName.trim(),
+        email: cleanEmail,
+        passwordHash,
+        phone: phone ? String(phone).trim() : null,
+        role: 'RECEPTIONIST',
+        receptionistProfile: {
+          create: {
+            clinicId: clinic.id,
+            phone: phone ? String(phone).trim() : null,
+            doctors: {
+              create: validDoctorIds.map((docId: string) => ({
+                doctorId: docId,
+                status: 'ACTIVE',
+              })),
+            },
+          },
+        },
+      },
+      include: {
+        receptionistProfile: {
+          include: {
+            doctors: {
+              include: {
+                doctor: {
+                  include: {
+                    user: { select: { fullName: true } },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const { passwordHash: _, ...safeUser } = newReceptionist;
+    res.status(201).json({
+      success: true,
+      message: `Receptionist credentials for ${fullName} created successfully`,
+      data: {
+        user: safeUser,
+        receptionist: {
+          id: newReceptionist.receptionistProfile?.id,
+          fullName: newReceptionist.fullName,
+          email: newReceptionist.email,
+          phone: newReceptionist.phone,
+          clinicId: clinic.id,
+          doctors: newReceptionist.receptionistProfile?.doctors || [],
+        },
+      },
+    });
+  } catch (error: any) {
+    console.error('addClinicReceptionist error:', error);
+    res.status(500).json({ success: false, message: 'Failed to provision receptionist', error: error.message });
+  }
+};
+
+/**
+ * Get all receptionists provisioned by this clinic
+ */
+export const getClinicReceptionists = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user || req.user.role !== 'CLINIC') {
+      res.status(403).json({ success: false, message: 'Access denied: clinic role required' });
+      return;
+    }
+
+    const clinic = await prisma.clinicProfile.findUnique({
+      where: { userId: req.user.id },
+    });
+
+    if (!clinic) {
+      res.status(404).json({ success: false, message: 'Clinic profile not found' });
+      return;
+    }
+
+    const receptionists = await prisma.receptionistProfile.findMany({
+      where: { clinicId: clinic.id },
+      include: {
+        user: { select: { id: true, fullName: true, email: true, phone: true, createdAt: true } },
+        doctors: {
+          include: {
+            doctor: {
+              include: {
+                user: { select: { fullName: true } },
+              },
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    res.json({
+      success: true,
+      data: receptionists.map((r) => ({
+        id: r.id,
+        userId: r.userId,
+        fullName: r.user.fullName,
+        email: r.user.email,
+        phone: r.phone || r.user.phone || '',
+        doctorIds: r.doctors.map((d) => d.doctorId),
+        doctors: r.doctors.map((d) => ({
+          id: d.doctor.id,
+          fullName: d.doctor.user.fullName,
+          specialty: d.doctor.specialty,
+        })),
+        createdAt: r.createdAt,
+      })),
+    });
+  } catch (error: any) {
+    console.error('getClinicReceptionists error:', error);
+    res.status(500).json({ success: false, message: 'Failed to retrieve receptionists', error: error.message });
+  }
+};
+
+/**
+ * Update doctor assignments for a receptionist
+ */
+export const updateClinicReceptionistDoctors = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user || req.user.role !== 'CLINIC') {
+      res.status(403).json({ success: false, message: 'Access denied: clinic role required' });
+      return;
+    }
+
+    const receptionistId = String(req.params.receptionistId);
+    const { doctorIds } = req.body;
+
+    if (!Array.isArray(doctorIds)) {
+      res.status(400).json({ success: false, message: 'doctorIds must be an array of doctor IDs' });
+      return;
+    }
+
+    const clinic = await prisma.clinicProfile.findUnique({
+      where: { userId: req.user.id },
+      include: { doctors: true },
+    });
+
+    if (!clinic) {
+      res.status(404).json({ success: false, message: 'Clinic profile not found' });
+      return;
+    }
+
+    const receptionist = await prisma.receptionistProfile.findFirst({
+      where: { id: receptionistId, clinicId: clinic.id },
+    });
+
+    if (!receptionist) {
+      res.status(404).json({ success: false, message: 'Receptionist not found at this clinic' });
+      return;
+    }
+
+    // Filter doctorIds to only those affiliated with this clinic
+    const clinicDoctorIds = new Set(clinic.doctors.map((cd) => cd.doctorId));
+    const validDoctorIds = doctorIds.filter((id) => clinicDoctorIds.has(id));
+
+    // Transactionally update doctor assignments
+    await prisma.$transaction([
+      prisma.doctorReceptionist.deleteMany({
+        where: { receptionistId: receptionist.id },
+      }),
+      ...validDoctorIds.map((doctorId) =>
+        prisma.doctorReceptionist.create({
+          data: {
+            doctorId,
+            receptionistId: receptionist.id,
+            status: 'ACTIVE',
+          },
+        })
+      ),
+    ]);
+
+    res.json({
+      success: true,
+      message: 'Receptionist doctor assignments updated successfully',
+    });
+  } catch (error: any) {
+    console.error('updateClinicReceptionistDoctors error:', error);
+    res.status(500).json({ success: false, message: 'Failed to update assignments', error: error.message });
+  }
+};
+
+/**
+ * Remove a receptionist from this clinic
+ */
+export const removeClinicReceptionist = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user || req.user.role !== 'CLINIC') {
+      res.status(403).json({ success: false, message: 'Access denied: clinic role required' });
+      return;
+    }
+
+    const receptionistId = String(req.params.receptionistId);
+
+    const clinic = await prisma.clinicProfile.findUnique({
+      where: { userId: req.user.id },
+    });
+
+    if (!clinic) {
+      res.status(404).json({ success: false, message: 'Clinic profile not found' });
+      return;
+    }
+
+    const receptionist = await prisma.receptionistProfile.findFirst({
+      where: { id: receptionistId, clinicId: clinic.id },
+    });
+
+    if (!receptionist) {
+      res.status(404).json({ success: false, message: 'Receptionist not found at this clinic' });
+      return;
+    }
+
+    // Deleting the user cascades to ReceptionistProfile and DoctorReceptionist
+    await prisma.user.delete({
+      where: { id: receptionist.userId },
+    });
+
+    res.json({
+      success: true,
+      message: 'Receptionist removed successfully',
+    });
+  } catch (error: any) {
+    console.error('removeClinicReceptionist error:', error);
+    res.status(500).json({ success: false, message: 'Failed to remove receptionist', error: error.message });
   }
 };

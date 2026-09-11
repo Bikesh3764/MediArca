@@ -356,6 +356,11 @@ export const addDoctorClinic = async (req: AuthRequest, res: Response): Promise<
       return;
     }
 
+    if (!clinic.isVerified) {
+      res.status(400).json({ success: false, message: 'Clinic is pending verification by MediArca administration' });
+      return;
+    }
+
     const existing = await prisma.clinicDoctor.findUnique({
       where: { clinicId_doctorId: { clinicId: clinic.id, doctorId: doctor.id } },
     });
@@ -408,65 +413,10 @@ export const removeDoctorClinic = async (req: AuthRequest, res: Response): Promi
  * Doctor links a receptionist
  */
 export const addDoctorReceptionist = async (req: AuthRequest, res: Response): Promise<void> => {
-  try {
-    if (!req.user || req.user.role !== 'DOCTOR') {
-      res.status(403).json({ success: false, message: 'Access denied: doctor role required' });
-      return;
-    }
-
-    const { receptionistEmail } = req.body;
-    if (!receptionistEmail) {
-      res.status(400).json({ success: false, message: 'Receptionist email is required' });
-      return;
-    }
-
-    const doctor = await prisma.doctorProfile.findUnique({ where: { userId: req.user.id } });
-    if (!doctor) {
-      res.status(404).json({ success: false, message: 'Doctor profile not found' });
-      return;
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { email: receptionistEmail.toLowerCase().trim() },
-      include: { receptionistProfile: true },
-    });
-
-    if (!user || !user.receptionistProfile) {
-      res.status(404).json({ success: false, message: 'Receptionist account not found with this email' });
-      return;
-    }
-
-    const existing = await prisma.doctorReceptionist.findUnique({
-      where: {
-        doctorId_receptionistId: {
-          doctorId: doctor.id,
-          receptionistId: user.receptionistProfile.id,
-        },
-      },
-    });
-
-    if (existing) {
-      res.status(400).json({ success: false, message: 'Receptionist is already linked to your desk' });
-      return;
-    }
-
-    const link = await prisma.doctorReceptionist.create({
-      data: {
-        doctorId: doctor.id,
-        receptionistId: user.receptionistProfile.id,
-        status: 'ACTIVE',
-      },
-    });
-
-    res.status(201).json({
-      success: true,
-      message: `${user.fullName} linked to your desk as receptionist`,
-      data: link,
-    });
-  } catch (error: any) {
-    console.error('addDoctorReceptionist error:', error);
-    res.status(500).json({ success: false, message: 'Failed to link receptionist', error: error.message });
-  }
+  res.status(400).json({
+    success: false,
+    message: 'Direct receptionist linking by doctors is disabled. Receptionists are provisioned and assigned by your affiliated Clinic Administrator.',
+  });
 };
 
 /**

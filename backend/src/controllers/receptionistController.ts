@@ -23,6 +23,7 @@ export const getMyReceptionist = async (req: AuthRequest, res: Response): Promis
     const receptionist = await prisma.receptionistProfile.findUnique({
       where: { userId: req.user.id },
       include: {
+        clinic: true,
         doctors: {
           include: {
             doctor: {
@@ -97,7 +98,18 @@ export const getMyReceptionist = async (req: AuthRequest, res: Response): Promis
           fullName: req.user.fullName,
           email: req.user.email,
           phone: receptionist.phone,
+          clinicId: receptionist.clinicId,
         },
+        clinic: receptionist.clinic
+          ? {
+              id: receptionist.clinic.id,
+              clinicName: receptionist.clinic.clinicName,
+              address: receptionist.clinic.address,
+              city: receptionist.clinic.city,
+              phone: receptionist.clinic.phone,
+              isVerified: receptionist.clinic.isVerified,
+            }
+          : null,
         doctors: doctorsWithQueue,
       },
     });
@@ -108,128 +120,23 @@ export const getMyReceptionist = async (req: AuthRequest, res: Response): Promis
 };
 
 /**
- * Link doctor to this receptionist
+ * Link doctor to this receptionist (Disabled: Managed by Clinic Administrator)
  */
 export const addDoctorToReceptionist = async (req: AuthRequest, res: Response): Promise<void> => {
-  try {
-    if (!req.user || req.user.role !== 'RECEPTIONIST') {
-      res.status(403).json({ success: false, message: 'Access denied: receptionist role required' });
-      return;
-    }
-
-    const { doctorEmail, doctorId } = req.body;
-
-    if (!doctorEmail && !doctorId) {
-      res.status(400).json({ success: false, message: 'Doctor email or ID is required' });
-      return;
-    }
-
-    const receptionist = await prisma.receptionistProfile.findUnique({
-      where: { userId: req.user.id },
-    });
-
-    if (!receptionist) {
-      res.status(404).json({ success: false, message: 'Receptionist profile not found' });
-      return;
-    }
-
-    let doctor: any;
-    if (doctorId) {
-      doctor = await prisma.doctorProfile.findUnique({
-        where: { id: doctorId },
-        include: { user: true },
-      });
-    } else if (doctorEmail) {
-      const user = await prisma.user.findUnique({
-        where: { email: doctorEmail.toLowerCase().trim() },
-        include: { doctorProfile: true },
-      });
-      if (user && user.doctorProfile) {
-        doctor = { ...user.doctorProfile, user };
-      }
-    }
-
-    if (!doctor) {
-      res.status(404).json({ success: false, message: 'Doctor not found with provided identifier' });
-      return;
-    }
-
-    const existing = await prisma.doctorReceptionist.findUnique({
-      where: {
-        doctorId_receptionistId: {
-          doctorId: doctor.id,
-          receptionistId: receptionist.id,
-        },
-      },
-    });
-
-    if (existing) {
-      res.status(400).json({ success: false, message: 'Doctor is already linked to your receptionist account' });
-      return;
-    }
-
-    const link = await prisma.doctorReceptionist.create({
-      data: {
-        doctorId: doctor.id,
-        receptionistId: receptionist.id,
-        status: 'ACTIVE',
-      },
-      include: {
-        doctor: {
-          include: {
-            user: { select: { fullName: true, email: true } },
-          },
-        },
-      },
-    });
-
-    res.status(201).json({
-      success: true,
-      message: `Successfully linked ${doctor.user.fullName} to your desk`,
-      data: link,
-    });
-  } catch (error: any) {
-    console.error('addDoctorToReceptionist error:', error);
-    res.status(500).json({ success: false, message: 'Failed to link doctor', error: error.message });
-  }
+  res.status(400).json({
+    success: false,
+    message: 'Direct doctor assignment by receptionists is disabled. Your assigned doctor roster is managed by your Clinic Administrator.',
+  });
 };
 
 /**
- * Remove doctor link from receptionist
+ * Remove doctor link from receptionist (Disabled: Managed by Clinic Administrator)
  */
 export const removeDoctorFromReceptionist = async (req: AuthRequest, res: Response): Promise<void> => {
-  try {
-    if (!req.user || req.user.role !== 'RECEPTIONIST') {
-      res.status(403).json({ success: false, message: 'Access denied: receptionist role required' });
-      return;
-    }
-
-    const doctorId = String(req.params.doctorId);
-
-    const receptionist = await prisma.receptionistProfile.findUnique({
-      where: { userId: req.user.id },
-    });
-
-    if (!receptionist) {
-      res.status(404).json({ success: false, message: 'Receptionist profile not found' });
-      return;
-    }
-
-    await prisma.doctorReceptionist.deleteMany({
-      where: {
-        receptionistId: receptionist.id,
-        doctorId,
-      },
-    });
-
-    res.json({
-      success: true,
-      message: 'Doctor removed from your desk successfully',
-    });
-  } catch (error: any) {
-    console.error('removeDoctorFromReceptionist error:', error);
-    res.status(500).json({ success: false, message: 'Failed to remove doctor link', error: error.message });
-  }
+  res.status(400).json({
+    success: false,
+    message: 'Doctor removal by receptionists is disabled. Your assigned doctor roster is managed by your Clinic Administrator.',
+  });
 };
 
 /**
@@ -239,6 +146,29 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
   try {
     const doctorId = String(req.params.doctorId);
     const appointmentDate = String(req.query.date || getLocalDateString());
+
+    if (req.user && req.user.role === 'RECEPTIONIST') {
+      const receptionist = await prisma.receptionistProfile.findUnique({
+        where: { userId: req.user.id },
+      });
+      if (receptionist) {
+        const assignment = await prisma.doctorReceptionist.findUnique({
+          where: {
+            doctorId_receptionistId: {
+              doctorId,
+              receptionistId: receptionist.id,
+            },
+          },
+        });
+        if (!assignment) {
+          res.status(403).json({
+            success: false,
+            message: 'Access denied: You do not have queue management access for this doctor.',
+          });
+          return;
+        }
+      }
+    }
 
     const doctor = await prisma.doctorProfile.findUnique({
       where: { id: doctorId },
@@ -336,6 +266,15 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
 
     const appointmentDate = requestedDate || getLocalDateString();
 
+    const receptionist = await prisma.receptionistProfile.findUnique({
+      where: { userId: req.user.id },
+    });
+
+    if (!receptionist) {
+      res.status(404).json({ success: false, message: 'Receptionist profile not found' });
+      return;
+    }
+
     const doctor = await prisma.doctorProfile.findUnique({
       where: { id: doctorId },
       include: { user: { select: { fullName: true } } },
@@ -343,6 +282,24 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
 
     if (!doctor) {
       res.status(404).json({ success: false, message: 'Doctor not found' });
+      return;
+    }
+
+    // Verify receptionist is assigned to this doctor
+    const assignment = await prisma.doctorReceptionist.findUnique({
+      where: {
+        doctorId_receptionistId: {
+          doctorId,
+          receptionistId: receptionist.id,
+        },
+      },
+    });
+
+    if (!assignment) {
+      res.status(403).json({
+        success: false,
+        message: 'Access denied: You are only authorized to book appointments for doctors assigned to your desk by your clinic.',
+      });
       return;
     }
 
@@ -421,7 +378,7 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
           const highestQueue = dayAppointments.reduce((max, a) => Math.max(max, a.queueNumber), 0);
           const queueNumber = highestQueue + 1;
 
-          let targetClinicId = clinicId;
+          let targetClinicId = receptionist.clinicId || clinicId;
           if (!targetClinicId) {
             const activeAffiliation = await tx.clinicDoctor.findFirst({
               where: { doctorId: doctor.id, status: 'ACTIVE' },

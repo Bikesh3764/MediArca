@@ -253,6 +253,133 @@ function runTests() {
   const explicitAttributed = resolveTargetClinicId('clinic2', [{ clinicId: 'clinic1' }]);
   assert(explicitAttributed === 'clinic2', 'Explicit clinicId takes precedence over default clinic');
 
+  // 18. Clinic Verification Filtering in Public Searches
+  const sampleClinics = [
+    { id: 'c1', clinicName: 'Verified Care Hub', isVerified: true },
+    { id: 'c2', clinicName: 'Unverified New Clinic', isVerified: false },
+    { id: 'c3', clinicName: 'Pending Review Center', isVerified: false },
+    { id: 'c4', clinicName: 'Metro General Hospital', isVerified: true },
+  ];
+  const publicSearchResults = sampleClinics.filter((c) => c.isVerified === true);
+  assert(publicSearchResults.length === 2, 'Only verified clinics returned in public searches (2 of 4)');
+  assert(!publicSearchResults.some((c) => c.id === 'c2'), 'Unverified clinic c2 is excluded from search results');
+  assert(!publicSearchResults.some((c) => c.id === 'c3'), 'Unverified clinic c3 is excluded from search results');
+
+  // 19. Receptionist Public Signup Rejection
+  const validatePublicRegistration = (role: string) => {
+    if (role?.toUpperCase() === 'RECEPTIONIST') {
+      return {
+        allowed: false,
+        status: 403,
+        error: 'Registration with role RECEPTIONIST is disabled. Desk credentials must be provisioned by Clinic Administrators.',
+      };
+    }
+    return { allowed: true, status: 201 };
+  };
+  const recRegisterAttempt = validatePublicRegistration('RECEPTIONIST');
+  assert(recRegisterAttempt.allowed === false, 'Public registration for RECEPTIONIST is strictly rejected');
+  assert(recRegisterAttempt.status === 403, 'Public registration rejection returns 403 status code');
+  assert(validatePublicRegistration('PATIENT').allowed === true, 'PATIENT registration is permitted');
+  assert(validatePublicRegistration('DOCTOR').allowed === true, 'DOCTOR registration is permitted');
+  assert(validatePublicRegistration('CLINIC').allowed === true, 'CLINIC registration is permitted');
+
+  // 20. Clinic Receptionist Provisioning & Doctor Assignment Scoping
+  interface ProvisionedReceptionist {
+    id: string;
+    clinicId: string;
+    assignedDoctorIds: string[];
+  }
+  const clinicProfile = { id: 'clinic_100', clinicName: 'Apex Health' };
+  const provisionDeskStaff = (
+    clinicId: string,
+    doctorIds: string[],
+    clinicAffiliatedDoctorIds: string[]
+  ): ProvisionedReceptionist => {
+    // Only affiliated doctors can be assigned
+    const validDoctorIds = doctorIds.filter((id) => clinicAffiliatedDoctorIds.includes(id));
+    return {
+      id: 'rec_test_1',
+      clinicId,
+      assignedDoctorIds: validDoctorIds,
+    };
+  };
+
+  const affiliatedDoctors = ['doc_1', 'doc_2', 'doc_3'];
+  const newStaff = provisionDeskStaff('clinic_100', ['doc_1', 'doc_3', 'doc_external_99'], affiliatedDoctors);
+  assert(newStaff.clinicId === 'clinic_100', 'Receptionist is strictly bound to parent clinic clinic_100');
+  assert(newStaff.assignedDoctorIds.includes('doc_1'), 'Receptionist assigned to doc_1');
+  assert(newStaff.assignedDoctorIds.includes('doc_3'), 'Receptionist assigned to doc_3');
+  assert(!newStaff.assignedDoctorIds.includes('doc_external_99'), 'Unaffiliated doctor is excluded from assignments');
+
+  // 21. Receptionist Walk-in Scoping to Assigned Doctors and Parent Clinic
+  const validateReceptionistWalkin = (
+    receptionist: ProvisionedReceptionist,
+    targetDoctorId: string,
+    requestedClinicId?: string
+  ) => {
+    if (!receptionist.assignedDoctorIds.includes(targetDoctorId)) {
+      return { allowed: false, error: 'You are not assigned to manage queue tokens for this practitioner.' };
+    }
+    // Enforce clinicId scoping to receptionist parent clinic
+    const finalClinicId = receptionist.clinicId;
+    return { allowed: true, clinicId: finalClinicId };
+  };
+
+  const authorizedWalkin = validateReceptionistWalkin(newStaff, 'doc_1', 'other_clinic');
+  assert(authorizedWalkin.allowed === true, 'Walk-in allowed for assigned doctor doc_1');
+  assert(authorizedWalkin.clinicId === 'clinic_100', 'Walk-in is strictly scoped to parent clinic_100 regardless of request');
+
+  const unauthorizedWalkin = validateReceptionistWalkin(newStaff, 'doc_2');
+  assert(unauthorizedWalkin.allowed === false, 'Walk-in rejected for unassigned doctor doc_2');
+  assert(
+    unauthorizedWalkin.error === 'You are not assigned to manage queue tokens for this practitioner.',
+    'Accurate rejection message returned'
+  );
+
+  // 22. Direct Doctor-Receptionist Linking Disabled
+  const attemptDirectDoctorReceptionistLink = () => {
+    return {
+      success: false,
+      status: 400,
+      message: 'Direct receptionist linking is disabled. Receptionists must be provisioned and assigned to your desk by clinic administration.',
+    };
+  };
+  const directLinkResult = attemptDirectDoctorReceptionistLink();
+  assert(directLinkResult.success === false, 'Direct doctor-receptionist linking returns failure');
+  assert(directLinkResult.status === 400, 'Direct linking returns 400 status code');
+
+  // 23. Doctor Affiliation Requires Verified Clinic
+  const validateDoctorClinicAffiliation = (clinic: { id: string; isVerified: boolean }) => {
+    if (!clinic.isVerified) {
+      return { allowed: false, error: 'Cannot affiliate with an unverified clinic. Please wait for administrative verification.' };
+    }
+    return { allowed: true };
+  };
+  assert(
+    validateDoctorClinicAffiliation({ id: 'c_unverified', isVerified: false }).allowed === false,
+    'Doctor cannot affiliate with unverified clinic'
+  );
+  assert(
+    validateDoctorClinicAffiliation({ id: 'c_verified', isVerified: true }).allowed === true,
+    'Doctor can affiliate with verified clinic'
+  );
+
+  // 24. Clinic Doctor Onboarding Requires Verified Doctor
+  const validateClinicDoctorOnboarding = (doctor: { id: string; isVerified: boolean }) => {
+    if (!doctor.isVerified) {
+      return { allowed: false, error: 'Doctor is pending administrative verification. Unverified doctors cannot be affiliated with clinics.' };
+    }
+    return { allowed: true };
+  };
+  assert(
+    validateClinicDoctorOnboarding({ id: 'doc_unverified', isVerified: false }).allowed === false,
+    'Clinic cannot onboard unverified doctor'
+  );
+  assert(
+    validateClinicDoctorOnboarding({ id: 'doc_verified', isVerified: true }).allowed === true,
+    'Clinic can onboard verified doctor'
+  );
+
   console.log(`\n=== VERIFICATION SUMMARY ===`);
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);

@@ -27,7 +27,6 @@ export const ReceptionistDashboard: React.FC = () => {
   const { user } = useAuth();
 
   const [data, setData] = useState<ReceptionistDashboardData | null>(null);
-  const [allDoctors, setAllDoctors] = useState<Doctor[]>([]);
   const [, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'walkin' | 'queue' | 'doctors'>('walkin');
 
@@ -54,16 +53,15 @@ export const ReceptionistDashboard: React.FC = () => {
   const [queueAppointments, setQueueAppointments] = useState<ReceptionistQueueItem[]>([]);
   const [queueLoading, setQueueLoading] = useState(false);
 
-  // Link doctor state
-  const [doctorEmailToLink, setDoctorEmailToLink] = useState('');
-  const [linkingLoading, setLinkingLoading] = useState(false);
-
   const fetchDeskData = async () => {
     try {
       setLoading(true);
       setError(null);
       const res = await api.getMyReceptionist();
       setData(res);
+      if (res.clinic?.id) {
+        setWalkinClinicId(res.clinic.id);
+      }
       if (res.doctors.length > 0) {
         if (!selectedDoctorId) setSelectedDoctorId(res.doctors[0].doctorId);
         if (!queueDoctorId) setQueueDoctorId(res.doctors[0].doctorId);
@@ -76,18 +74,8 @@ export const ReceptionistDashboard: React.FC = () => {
     }
   };
 
-  const fetchCatalog = async () => {
-    try {
-      const docs = await api.getDoctors();
-      setAllDoctors(docs);
-    } catch (err) {
-      console.error('Failed to load doctors catalogue:', err);
-    }
-  };
-
   useEffect(() => {
     fetchDeskData();
-    fetchCatalog();
   }, []);
 
   // Fetch queue when queueDoctorId or queueDate changes
@@ -177,69 +165,21 @@ export const ReceptionistDashboard: React.FC = () => {
     }
   };
 
-  // Handle link doctor
-  const handleLinkDoctor = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!doctorEmailToLink.trim()) return;
-
-    setLinkingLoading(true);
-    setError(null);
-    setSuccessMsg(null);
-    try {
-      const res = await api.addDoctorToReceptionist({ doctorEmail: doctorEmailToLink.trim() });
-      setSuccessMsg(res.message || 'Doctor linked successfully');
-      setDoctorEmailToLink('');
-      fetchDeskData();
-    } catch (err: any) {
-      setError(err.message || 'Failed to link doctor');
-    } finally {
-      setLinkingLoading(false);
-    }
-  };
-
-  const handleQuickLink = async (email: string) => {
-    setLinkingLoading(true);
-    setError(null);
-    setSuccessMsg(null);
-    try {
-      const res = await api.addDoctorToReceptionist({ doctorEmail: email });
-      setSuccessMsg(res.message || 'Doctor linked successfully');
-      fetchDeskData();
-    } catch (err: any) {
-      setError(err.message || 'Failed to link doctor');
-    } finally {
-      setLinkingLoading(false);
-    }
-  };
-
-  // Handle unlink doctor
-  const handleUnlinkDoctor = async (doctorId: string, docName: string) => {
-    if (
-      !window.confirm(
-        `Are you sure you want to remove Dr. ${docName} from your desk roster? You won't be able to book walk-ins for them until re-linked.`
-      )
-    ) {
-      return;
-    }
-
-    try {
-      await api.removeDoctorFromReceptionist(doctorId);
-      setSuccessMsg(`Dr. ${docName} removed from desk.`);
-      fetchDeskData();
-    } catch (err: any) {
-      alert(err.message || 'Failed to remove doctor link');
-    }
-  };
-
   return (
     <div className="min-h-screen bg-[#f5f5f7] pb-16">
       <SubNav
-        title={data?.receptionist.fullName || user?.fullName || 'Receptionist Desk'}
-        subtitle={`Live Walk-in & Queue Dispatch • Phone: ${data?.receptionist.phone || 'Desk'}`}
+        title={data?.clinic?.clinicName ? `${data.clinic.clinicName} Desk` : (data?.receptionist.fullName || user?.fullName || 'Receptionist Desk')}
+        subtitle={`${data?.clinic?.address || 'Front Desk Operations'}${data?.clinic?.city ? ` • ${data.clinic.city}` : ''} | Staff: ${data?.receptionist.fullName || user?.fullName || 'Desk Operator'}`}
       >
         <div className="flex items-center gap-2">
+          {data?.clinic && (
+            <span className="text-xs px-2.5 py-1 rounded-full bg-[#0066cc]/10 text-[#0066cc] font-medium border border-[#0066cc]/20 flex items-center gap-1.5">
+              <Building2 className="w-3.5 h-3.5" />
+              {data.clinic.clinicName}
+            </span>
+          )}
           <span className="text-xs text-[#86868b] font-medium hidden sm:inline-block">
-            {linkedDoctors.length} Linked Practitioner{linkedDoctors.length === 1 ? '' : 's'}
+            {linkedDoctors.length} Assigned Doctor{linkedDoctors.length === 1 ? '' : 's'}
           </span>
         </div>
       </SubNav>
@@ -709,82 +649,30 @@ export const ReceptionistDashboard: React.FC = () => {
             </div>
           )}
 
-          {/* TAB 3: Linked Doctors Desk Management */}
+          {/* TAB 3: Assigned Doctors Desk Roster */}
           {activeTab === 'doctors' && (
-            <div className="space-y-8">
-              {/* Top: Link new doctor by email */}
-              <div className="p-5 rounded-2xl bg-[#fafafc] border border-[#e5e5ea]">
-                <h3 className="text-sm font-semibold text-[#1d1d1f] mb-1">Link Doctor to Your Desk</h3>
-                <p className="text-xs text-[#86868b] mb-4">
-                  Add a practitioner to your desk roster by entering their registered email or choosing from below.
-                </p>
-
-                <form onSubmit={handleLinkDoctor} className="flex flex-col sm:flex-row gap-3 max-w-lg mb-4">
-                  <input
-                    type="email"
-                    required
-                    value={doctorEmailToLink}
-                    onChange={(e) => setDoctorEmailToLink(e.target.value)}
-                    placeholder="dr.sarah@mediarca.com"
-                    className="flex-1 h-10 px-4 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0066cc]"
-                  />
-                  <AppleButton
-                    variant="primary"
-                    size="sm"
-                    type="submit"
-                    disabled={linkingLoading}
-                    className="flex-shrink-0"
-                  >
-                    {linkingLoading ? 'Linking...' : 'Link to Desk'}
-                  </AppleButton>
-                </form>
-
-                {/* Quick Add from Platform Catalogue */}
-                {allDoctors.length > 0 && (
-                  <div>
-                    <span className="text-[11px] font-medium text-[#86868b] block mb-2">
-                      Available Platform Specialists:
-                    </span>
-                    <div className="flex flex-wrap gap-2">
-                      {allDoctors.map((doc) => {
-                        const isLinked = linkedDoctors.some((d) => d.doctorId === doc.id);
-                        return (
-                          <div
-                            key={doc.id}
-                            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white border border-[#e5e5ea] text-xs"
-                          >
-                            <span className="font-medium text-[#1d1d1f]">{doc.user.fullName}</span>
-                            <span className="text-[10px] text-[#0066cc] font-medium">({doc.specialty})</span>
-                            {isLinked ? (
-                              <span className="text-[10px] text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full">
-                                Linked
-                              </span>
-                            ) : (
-                              <button
-                                type="button"
-                                onClick={() => handleQuickLink(doc.user.email)}
-                                className="text-[11px] text-[#0066cc] hover:underline font-semibold ml-1"
-                              >
-                                + Link
-                              </button>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
+            <div className="space-y-6">
+              <div className="p-5 rounded-2xl bg-[#fafafc] border border-[#e5e5ea] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-sm font-semibold text-[#1d1d1f] flex items-center gap-2">
+                    <Building2 className="w-4 h-4 text-[#0066cc]" />
+                    {data?.clinic?.clinicName || 'Clinic'} Assigned Practitioners
+                  </h3>
+                  <p className="text-xs text-[#86868b] mt-0.5">
+                    Front-desk staff have queue management and walk-in dispatch permissions for these practitioners as assigned by your Clinic Administrator.
+                  </p>
+                </div>
+                <span className="text-xs font-semibold px-3 py-1 rounded-full bg-blue-50 text-[#0066cc] border border-blue-100 self-start sm:self-auto">
+                  {linkedDoctors.length} Assigned
+                </span>
               </div>
 
-              {/* Roster of Linked Doctors */}
               <div>
-                <h3 className="text-base font-semibold text-[#1d1d1f] mb-3">
-                  Currently Linked Practitioners ({linkedDoctors.length})
-                </h3>
-
                 {linkedDoctors.length === 0 ? (
-                  <div className="py-8 text-center text-xs text-[#86868b]">
-                    No doctors currently linked to this desk.
+                  <div className="py-12 text-center text-xs text-[#86868b] bg-[#fafafc] rounded-2xl border border-dashed border-[#e5e5ea]">
+                    <Stethoscope className="w-8 h-8 text-[#86868b] mx-auto mb-2 opacity-50" />
+                    <p className="font-semibold text-[#1d1d1f]">No Doctors Assigned Yet</p>
+                    <p className="mt-1">Please ask your Clinic Administrator to assign practitioners to your desk.</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -806,17 +694,18 @@ export const ReceptionistDashboard: React.FC = () => {
                           <div>
                             <div className="font-semibold text-xs text-[#1d1d1f]">{doc.fullName}</div>
                             <div className="text-[11px] text-[#0066cc]">{doc.specialty}</div>
-                            <div className="text-[10px] text-[#86868b]">{doc.clinicAddress}</div>
+                            <div className="text-[10px] text-[#86868b]">{doc.clinicAddress || 'Clinic Practice'}</div>
                           </div>
                         </div>
 
-                        <button
-                          onClick={() => handleUnlinkDoctor(doc.doctorId, doc.fullName)}
-                          className="px-2.5 py-1.5 rounded-lg text-[11px] font-medium text-rose-600 hover:bg-rose-50 border border-rose-200 transition-colors flex items-center gap-1 flex-shrink-0"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                          Unlink
-                        </button>
+                        <div className="text-right">
+                          <span className="text-xs font-semibold text-emerald-600 block">
+                            ${doc.consultationFee}
+                          </span>
+                          <span className="text-[10px] text-[#86868b]">
+                            {doc.todayTotalBookings} booked today
+                          </span>
+                        </div>
                       </div>
                     ))}
                   </div>

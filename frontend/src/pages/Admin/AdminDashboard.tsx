@@ -14,6 +14,7 @@ import {
   RefreshCw,
   Clock,
   X,
+  Building2,
 } from 'lucide-react';
 
 export const AdminDashboard: React.FC = () => {
@@ -24,26 +25,32 @@ export const AdminDashboard: React.FC = () => {
     totalPatients: number;
     totalDoctors: number;
     pendingDoctors: number;
+    totalClinics?: number;
+    pendingClinics?: number;
     totalAppointments: number;
     todayAppointments: number;
   } | null>(null);
 
   const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [clinics, setClinics] = useState<any[]>([]);
   const [appointments, setAppointments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionId, setActionId] = useState<string | null>(null);
+  const [clinicActionId, setClinicActionId] = useState<string | null>(null);
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [statsData, doctorsData, apptsData] = await Promise.all([
+      const [statsData, doctorsData, clinicsData, apptsData] = await Promise.all([
         api.getAdminStats(),
         api.getAdminDoctors(),
+        api.getAdminClinics(),
         api.getAdminAppointments(),
       ]);
       setStats(statsData);
       setDoctors(doctorsData);
+      setClinics(clinicsData);
       setAppointments(apptsData);
     } catch (err) {
       console.error('Failed to load admin data:', err);
@@ -60,6 +67,18 @@ export const AdminDashboard: React.FC = () => {
     }
     fetchData();
   }, [user, loadingAuth, navigate]);
+
+  const handleVerifyClinic = async (clinicId: string, isVerified: boolean) => {
+    setClinicActionId(clinicId);
+    try {
+      await api.verifyClinic(clinicId, isVerified);
+      await fetchData();
+    } catch (err: any) {
+      alert(err.message || 'Clinic verification update failed');
+    } finally {
+      setClinicActionId(null);
+    }
+  };
 
   const handleVerify = async (doctorId: string, isVerified: boolean) => {
     setActionId(doctorId);
@@ -91,55 +110,73 @@ export const AdminDashboard: React.FC = () => {
         ) : (
           <>
             {/* KPI Metrics */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-          <UtilityCard>
-            <div className="flex items-center justify-between">
-              <div>
-                <span className="text-[11px] text-[#86868b] uppercase font-semibold">Patients</span>
-                <h3 className="text-3xl font-semibold text-[#1d1d1f] mt-1">{stats?.totalPatients || 0}</h3>
-              </div>
-              <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#0066cc] flex items-center justify-center">
-                <Users className="w-5 h-5" />
-              </div>
-            </div>
-          </UtilityCard>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+              <UtilityCard>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-[11px] text-[#86868b] uppercase font-semibold">Patients</span>
+                    <h3 className="text-3xl font-semibold text-[#1d1d1f] mt-1">{stats?.totalPatients || 0}</h3>
+                  </div>
+                  <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#0066cc] flex items-center justify-center">
+                    <Users className="w-5 h-5" />
+                  </div>
+                </div>
+              </UtilityCard>
 
-          <UtilityCard>
-            <div className="flex items-center justify-between">
-              <div>
-                <span className="text-[11px] text-[#86868b] uppercase font-semibold">Doctors</span>
-                <h3 className="text-3xl font-semibold text-[#1d1d1f] mt-1">{stats?.totalDoctors || 0}</h3>
-              </div>
-              <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                <ShieldCheck className="w-5 h-5" />
-              </div>
-            </div>
-          </UtilityCard>
+              <UtilityCard>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-[11px] text-[#86868b] uppercase font-semibold">Doctors</span>
+                    <h3 className="text-3xl font-semibold text-[#1d1d1f] mt-1">{stats?.totalDoctors || 0}</h3>
+                    <p className="text-[10px] text-amber-600 font-medium mt-0.5">{stats?.pendingDoctors || 0} pending review</p>
+                  </div>
+                  <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                    <ShieldCheck className="w-5 h-5" />
+                  </div>
+                </div>
+              </UtilityCard>
 
-          <UtilityCard>
-            <div className="flex items-center justify-between">
-              <div>
-                <span className="text-[11px] text-[#86868b] uppercase font-semibold">Pending Review</span>
-                <h3 className="text-3xl font-semibold text-amber-600 mt-1">{stats?.pendingDoctors || 0}</h3>
-              </div>
-              <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-                <AlertCircle className="w-5 h-5" />
-              </div>
-            </div>
-          </UtilityCard>
+              <UtilityCard>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-[11px] text-[#86868b] uppercase font-semibold">Clinics</span>
+                    <h3 className="text-3xl font-semibold text-[#1d1d1f] mt-1">{stats?.totalClinics || clinics.length}</h3>
+                    <p className="text-[10px] text-amber-600 font-medium mt-0.5">{stats?.pendingClinics || 0} pending review</p>
+                  </div>
+                  <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                    <Building2 className="w-5 h-5" />
+                  </div>
+                </div>
+              </UtilityCard>
 
-          <UtilityCard>
-            <div className="flex items-center justify-between">
-              <div>
-                <span className="text-[11px] text-[#86868b] uppercase font-semibold">Total Bookings</span>
-                <h3 className="text-3xl font-semibold text-[#1d1d1f] mt-1">{stats?.totalAppointments || 0}</h3>
-              </div>
-              <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
-                <Calendar className="w-5 h-5" />
-              </div>
+              <UtilityCard>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-[11px] text-[#86868b] uppercase font-semibold">Pending Review</span>
+                    <h3 className="text-3xl font-semibold text-amber-600 mt-1">
+                      {(stats?.pendingDoctors || 0) + (stats?.pendingClinics || 0)}
+                    </h3>
+                    <p className="text-[10px] text-[#86868b] mt-0.5">Docs & Clinics</p>
+                  </div>
+                  <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                    <AlertCircle className="w-5 h-5" />
+                  </div>
+                </div>
+              </UtilityCard>
+
+              <UtilityCard>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-[11px] text-[#86868b] uppercase font-semibold">Total Bookings</span>
+                    <h3 className="text-3xl font-semibold text-[#1d1d1f] mt-1">{stats?.totalAppointments || 0}</h3>
+                    <p className="text-[10px] text-purple-600 font-medium mt-0.5">{stats?.todayAppointments || 0} today</p>
+                  </div>
+                  <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
+                    <Calendar className="w-5 h-5" />
+                  </div>
+                </div>
+              </UtilityCard>
             </div>
-          </UtilityCard>
-        </div>
 
         {/* Doctor Verification Portal */}
         <UtilityCard>
@@ -243,6 +280,114 @@ export const AdminDashboard: React.FC = () => {
                     </td>
                   </tr>
                 ))}
+              </tbody>
+            </table>
+          </div>
+        </UtilityCard>
+
+        {/* Clinic Verification Portal */}
+        <UtilityCard>
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h3 className="text-lg font-semibold text-[#1d1d1f]">Clinic Facility Verification Queue</h3>
+              <p className="text-xs text-[#7a7a7a] mt-0.5">
+                Clinics must be verified by MediArca administration before appearing in patient searches or doctor affiliation lists.
+              </p>
+            </div>
+            <span className="text-xs text-[#7a7a7a]">{clinics.length} Registered Clinic(s)</span>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="border-b border-[#e0e0e0] text-[#7a7a7a] uppercase tracking-wider font-semibold">
+                <tr>
+                  <th className="py-3 px-3">Facility</th>
+                  <th className="py-3 px-3">Location</th>
+                  <th className="py-3 px-3">Capacity & Team</th>
+                  <th className="py-3 px-3">Verification Status</th>
+                  <th className="py-3 px-3 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#f0f0f0]">
+                {clinics.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="py-8 text-center text-xs text-[#86868b]">
+                      No clinical facilities registered on the platform yet.
+                    </td>
+                  </tr>
+                ) : (
+                  clinics.map((c) => (
+                    <tr key={c.id} className="hover:bg-[#f5f5f7]/60 transition-colors">
+                      <td className="py-3.5 px-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center flex-shrink-0 font-semibold">
+                            <Building2 className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <div className="text-[13px] text-[#1d1d1f] font-semibold">
+                              {c.clinicName}
+                            </div>
+                            <div className="text-[#7a7a7a]">
+                              {c.user?.fullName} • {c.user?.email}
+                            </div>
+                            {c.phone && <div className="text-[10px] text-[#86868b]">{c.phone}</div>}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-3.5 px-3 text-[#1d1d1f]">
+                        <div>{c.address}</div>
+                        <div className="text-[#86868b] text-[10px]">{c.city}</div>
+                      </td>
+                      <td className="py-3.5 px-3">
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-[#1d1d1f] font-medium">
+                            {c.doctorsCount || 0} Affiliated Doctor(s)
+                          </span>
+                          <span className="text-[10px] text-[#86868b]">
+                            {c.receptionistsCount || 0} Receptionist(s) • {c.appointmentsCount || 0} Bookings
+                          </span>
+                        </div>
+                      </td>
+                      <td className="py-3.5 px-3">
+                        {c.isVerified ? (
+                          <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full font-semibold border border-emerald-200">
+                            <CheckCircle2 className="w-3 h-3" />
+                            Verified
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 px-2.5 py-1 rounded-full font-semibold border border-amber-200 animate-pulse">
+                            <Clock className="w-3 h-3" />
+                            Pending Review
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-3.5 px-3 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          {c.isVerified ? (
+                            <AppleButton
+                              variant="ghost"
+                              size="sm"
+                              disabled={clinicActionId === c.id}
+                              onClick={() => handleVerifyClinic(c.id, false)}
+                              className="text-rose-600 hover:text-rose-700 hover:border-rose-300"
+                            >
+                              Suspend
+                            </AppleButton>
+                          ) : (
+                            <AppleButton
+                              variant="primary"
+                              size="sm"
+                              disabled={clinicActionId === c.id}
+                              onClick={() => handleVerifyClinic(c.id, true)}
+                            >
+                              {clinicActionId === c.id ? 'Verifying...' : 'Approve & Verify'}
+                            </AppleButton>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>

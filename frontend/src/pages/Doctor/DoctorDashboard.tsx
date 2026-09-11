@@ -41,10 +41,8 @@ export const DoctorDashboard: React.FC = () => {
   const [publicClinics, setPublicClinics] = useState<ClinicProfile[]>([]);
   const [affiliationsLoading, setAffiliationsLoading] = useState(false);
 
-  // Form states for adding clinic / receptionist
+  // Form states for clinic affiliation
   const [selectedClinicId, setSelectedClinicId] = useState('');
-  const [receptionistEmail, setReceptionistEmail] = useState('');
-  const [addingReceptionist, setAddingReceptionist] = useState(false);
   const [feedbackSuccess, setFeedbackSuccess] = useState<string | null>(null);
   const [feedbackError, setFeedbackError] = useState<string | null>(null);
 
@@ -133,24 +131,6 @@ export const DoctorDashboard: React.FC = () => {
       fetchAffiliations();
     } catch (err: any) {
       setFeedbackError(err.message || 'Failed to detach clinic');
-    }
-  };
-
-  const handleAddReceptionist = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!receptionistEmail.trim()) return;
-    setAddingReceptionist(true);
-    setFeedbackError(null);
-    setFeedbackSuccess(null);
-    try {
-      const res = await api.addDoctorReceptionist({ receptionistEmail: receptionistEmail.trim() });
-      setFeedbackSuccess(res.message || 'Receptionist linked successfully');
-      setReceptionistEmail('');
-      fetchAffiliations();
-    } catch (err: any) {
-      setFeedbackError(err.message || 'Failed to link receptionist');
-    } finally {
-      setAddingReceptionist(false);
     }
   };
 
@@ -351,7 +331,7 @@ export const DoctorDashboard: React.FC = () => {
                 {/* Quick Add Clinic Dropdown */}
                 {(() => {
                   const unaffiliatedClinics = publicClinics.filter(
-                    (pc: ClinicProfile) => !affiliations?.clinics.some((ac) => ac.clinicId === pc.id)
+                    (pc: ClinicProfile) => pc.isVerified && !affiliations?.clinics.some((ac) => ac.clinicId === pc.id)
                   );
                   return unaffiliatedClinics.length > 0 ? (
                     <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -360,7 +340,7 @@ export const DoctorDashboard: React.FC = () => {
                         onChange={(e) => setSelectedClinicId(e.target.value)}
                         className="h-10 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0066cc] w-full sm:w-64"
                       >
-                        <option value="">Select Clinic to Affiliate...</option>
+                        <option value="">Select Verified Clinic to Affiliate...</option>
                         {unaffiliatedClinics.map((c: ClinicProfile) => (
                           <option key={c.id} value={c.id}>
                             {c.clinicName} {c.city ? `(${c.city})` : ''}
@@ -386,8 +366,8 @@ export const DoctorDashboard: React.FC = () => {
                   ) : (
                     <span className="text-xs text-[#86868b] italic">
                       {publicClinics.length === 0
-                        ? 'No other clinics registered in platform'
-                        : 'Affiliated with all registered clinics'}
+                        ? 'No verified clinics currently available'
+                        : 'Affiliated with all verified clinics'}
                     </span>
                   );
                 })()}
@@ -471,48 +451,21 @@ export const DoctorDashboard: React.FC = () => {
               )}
             </div>
 
-            {/* Section 2: Linked Receptionists */}
+            {/* Section 2: Authorized Clinic Receptionists */}
             <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-6 shadow-sm">
               <div className="mb-6">
                 <div className="flex items-center gap-2">
                   <h3 className="text-lg font-semibold text-[#1d1d1f] tracking-tight">
-                    Linked Receptionists & Desk Staff
+                    Authorized Clinic Desk Staff
                   </h3>
                   <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f]">
                     {affiliations?.receptionists.length || 0}
                   </span>
                 </div>
                 <p className="text-xs text-[#86868b] mt-0.5">
-                  Receptionists who have live access to your patient queue. They can issue rapid walk-in passes and call patients on your behalf.
+                  Receptionists provisioned and assigned to your desk by affiliated clinic administrators. They issue walk-in passes and manage patient queues on your behalf.
                 </p>
               </div>
-
-              {/* Add Receptionist Form */}
-              <form
-                onSubmit={handleAddReceptionist}
-                className="bg-[#f5f5f7] rounded-2xl p-4 mb-6 flex flex-col sm:flex-row items-center gap-3"
-              >
-                <div className="relative flex-1 w-full">
-                  <input
-                    type="email"
-                    placeholder="Enter receptionist account email (e.g. receptionist@mediarca.com)..."
-                    value={receptionistEmail}
-                    onChange={(e) => setReceptionistEmail(e.target.value)}
-                    className="w-full h-10 px-4 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0066cc] transition-all"
-                    required
-                  />
-                </div>
-                <AppleButton
-                  type="submit"
-                  size="sm"
-                  variant="primary"
-                  disabled={addingReceptionist || !receptionistEmail.trim()}
-                  className="w-full sm:w-auto flex items-center gap-1.5 whitespace-nowrap shadow-sm"
-                >
-                  <UserPlus className="w-3.5 h-3.5" />
-                  {addingReceptionist ? 'Linking...' : 'Link Receptionist'}
-                </AppleButton>
-              </form>
 
               {affiliationsLoading ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -523,9 +476,9 @@ export const DoctorDashboard: React.FC = () => {
               ) : affiliations?.receptionists.length === 0 ? (
                 <div className="p-8 text-center bg-[#f5f5f7]/50 rounded-2xl border border-dashed border-[#e5e5ea]">
                   <Users className="w-10 h-10 text-[#86868b] mx-auto mb-2 opacity-60" />
-                  <h4 className="text-sm font-semibold text-[#1d1d1f]">No Receptionists Linked</h4>
+                  <h4 className="text-sm font-semibold text-[#1d1d1f]">No Desk Staff Assigned</h4>
                   <p className="text-xs text-[#86868b] mt-1 max-w-md mx-auto">
-                    Enter the email address of a registered receptionist above to grant them permission to book walk-in appointments and manage your queue.
+                    Your affiliated clinic administrators can assign desk receptionists to manage queues and book walk-in appointments for you.
                   </p>
                 </div>
               ) : (

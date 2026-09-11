@@ -141,7 +141,7 @@ export function App() {
 
               {/* Receptionist Portal Routes */}
               <Route path="/receptionist/login" element={<ReceptionistAuth />} />
-              <Route path="/receptionist/signup" element={<ReceptionistAuth />} />
+              <Route path="/receptionist/signup" element={<Navigate to="/receptionist/login" replace />} />
               <Route
                 path="/receptionist/dashboard"
                 element={

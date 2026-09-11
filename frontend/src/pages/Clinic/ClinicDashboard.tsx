@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { api, ClinicDashboardData, Doctor } from '../../services/api';
+import { api, ClinicDashboardData, ClinicReceptionistItem, Doctor } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { AppleButton } from '../../components/ui/AppleButton';
 import { SubNav } from '../../components/layout/SubNav';
@@ -13,6 +13,12 @@ import {
   AlertCircle,
   CheckCircle2,
   X,
+  Lock,
+  Mail,
+  Phone,
+  UserCheck,
+  Check,
+  ShieldAlert,
 } from 'lucide-react';
 
 export const ClinicDashboard: React.FC = () => {
@@ -23,10 +29,24 @@ export const ClinicDashboard: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  // Modal
+  // Doctor Modal
   const [showAddModal, setShowAddModal] = useState(false);
   const [doctorEmail, setDoctorEmail] = useState('');
   const [adding, setAdding] = useState(false);
+
+  // Receptionist Provisioning Modal
+  const [showRecModal, setShowRecModal] = useState(false);
+  const [recFullName, setRecFullName] = useState('');
+  const [recEmail, setRecEmail] = useState('');
+  const [recPassword, setRecPassword] = useState('');
+  const [recPhone, setRecPhone] = useState('');
+  const [recDoctorIds, setRecDoctorIds] = useState<string[]>([]);
+  const [provisioning, setProvisioning] = useState(false);
+
+  // Edit doctor assignments modal
+  const [editingRec, setEditingRec] = useState<ClinicReceptionistItem | null>(null);
+  const [editDoctorIds, setEditDoctorIds] = useState<string[]>([]);
+  const [savingAssignments, setSavingAssignments] = useState(false);
 
   const fetchClinicData = async () => {
     try {
@@ -45,7 +65,7 @@ export const ClinicDashboard: React.FC = () => {
   const fetchAvailableDoctors = async () => {
     try {
       const docs = await api.getDoctors();
-      setAllDoctors(docs);
+      setAllDoctors(docs.filter((d: any) => d.isVerified));
     } catch (err) {
       console.error('Failed to load doctor catalog:', err);
     }
@@ -109,6 +129,82 @@ export const ClinicDashboard: React.FC = () => {
     }
   };
 
+  const handleProvisionReceptionist = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!recFullName.trim() || !recEmail.trim() || !recPassword.trim()) {
+      setError('Please provide full name, email and password for the receptionist.');
+      return;
+    }
+
+    setProvisioning(true);
+    setError(null);
+    setSuccessMsg(null);
+    try {
+      const res = await api.addClinicReceptionist({
+        fullName: recFullName.trim(),
+        email: recEmail.trim(),
+        password: recPassword.trim(),
+        phone: recPhone.trim() || undefined,
+        doctorIds: recDoctorIds,
+      });
+      setSuccessMsg(res.message || 'Receptionist staff provisioned successfully.');
+      setShowRecModal(false);
+      setRecFullName('');
+      setRecEmail('');
+      setRecPassword('');
+      setRecPhone('');
+      setRecDoctorIds([]);
+      fetchClinicData();
+    } catch (err: any) {
+      setError(err.message || 'Failed to provision receptionist staff');
+    } finally {
+      setProvisioning(false);
+    }
+  };
+
+  const handleOpenEditAssignments = (rec: ClinicReceptionistItem) => {
+    setEditingRec(rec);
+    setEditDoctorIds(rec.doctorIds || (rec.doctors ? rec.doctors.map((d) => d.id) : []));
+  };
+
+  const handleUpdateAssignedDoctors = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingRec) return;
+
+    setSavingAssignments(true);
+    setError(null);
+    setSuccessMsg(null);
+    try {
+      const res = await api.updateClinicReceptionistDoctors(editingRec.id, editDoctorIds);
+      setSuccessMsg(res.message || 'Assigned doctor permissions updated successfully.');
+      setEditingRec(null);
+      setEditDoctorIds([]);
+      fetchClinicData();
+    } catch (err: any) {
+      setError(err.message || 'Failed to update receptionist assignments');
+    } finally {
+      setSavingAssignments(false);
+    }
+  };
+
+  const handleRemoveReceptionist = async (recId: string, recName: string) => {
+    if (
+      !window.confirm(
+        `Are you sure you want to remove receptionist "${recName}"? Their portal credentials will be revoked immediately.`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      await api.removeClinicReceptionist(recId);
+      setSuccessMsg(`Receptionist "${recName}" removed successfully.`);
+      fetchClinicData();
+    } catch (err: any) {
+      setError(err.message || 'Failed to remove receptionist');
+    }
+  };
+
   const clinic = data?.clinic;
   const doctors = data?.doctors || [];
 
@@ -122,6 +218,15 @@ export const ClinicDashboard: React.FC = () => {
       >
         <div className="flex items-center gap-3">
           <AppleButton
+            variant="secondary"
+            size="sm"
+            onClick={() => setShowRecModal(true)}
+            className="flex items-center gap-1.5"
+          >
+            <UserCheck className="w-3.5 h-3.5" />
+            Provision Receptionist
+          </AppleButton>
+          <AppleButton
             variant="primary"
             size="sm"
             onClick={() => setShowAddModal(true)}
@@ -134,6 +239,19 @@ export const ClinicDashboard: React.FC = () => {
       </SubNav>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-8 space-y-8">
+        {/* Verification Warning if clinic not yet verified */}
+        {clinic && clinic.isVerified === false && (
+          <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start gap-3 shadow-xs">
+            <ShieldAlert className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <div className="font-semibold text-amber-900">Clinic Pending Administrative Verification</div>
+              <p className="text-amber-800 text-[11px] mt-0.5">
+                Your clinic profile is currently pending review by MediArca administration. While unverified, your clinic will not appear in public clinic searches or doctor affiliation directories. You can still onboard doctors, manage front desk staff, and configure operations.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Banner feedback */}
         {successMsg && (
           <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center justify-between shadow-xs">
@@ -336,7 +454,115 @@ export const ClinicDashboard: React.FC = () => {
           )}
         </div>
 
-        {/* 3. Recent Clinic Appointments Table */}
+        {/* Desk Receptionists & Front Staff Section */}
+        <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-6 sm:p-8 shadow-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-[#f0f0f0] mb-6">
+            <div>
+              <h2 className="text-lg font-semibold text-[#1d1d1f] tracking-tight">
+                Desk Receptionists & Front Staff
+              </h2>
+              <p className="text-xs text-[#86868b] mt-0.5">
+                Manage credentials and assign specific affiliated practitioners to each front desk receptionist.
+              </p>
+            </div>
+            <AppleButton
+              variant="secondary"
+              size="sm"
+              onClick={() => setShowRecModal(true)}
+              className="flex items-center gap-1.5 self-start sm:self-auto"
+            >
+              <UserCheck className="w-3.5 h-3.5" />
+              Provision Receptionist
+            </AppleButton>
+          </div>
+
+          {(!data?.receptionists || data.receptionists.length === 0) ? (
+            <div className="py-12 text-center">
+              <div className="w-12 h-12 rounded-2xl bg-[#f5f5f7] flex items-center justify-center mx-auto mb-3 text-[#86868b]">
+                <UserCheck className="w-6 h-6" />
+              </div>
+              <h3 className="text-sm font-semibold text-[#1d1d1f]">No Receptionists Provisioned</h3>
+              <p className="text-xs text-[#86868b] max-w-sm mx-auto mt-1 mb-4">
+                Provision secure login credentials for your reception staff. You can configure which doctors each receptionist manages appointments for.
+              </p>
+              <AppleButton
+                variant="primary"
+                size="sm"
+                onClick={() => setShowRecModal(true)}
+                className="inline-flex items-center gap-1.5"
+              >
+                <UserCheck className="w-3.5 h-3.5" />
+                Provision First Receptionist
+              </AppleButton>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-[#e5e5ea] text-[#86868b] font-medium">
+                    <th className="pb-3 pl-2">Receptionist</th>
+                    <th className="pb-3">Contact</th>
+                    <th className="pb-3">Assigned Doctors</th>
+                    <th className="pb-3 text-right pr-2">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#f0f0f0]">
+                  {data.receptionists.map((rec) => (
+                    <tr key={rec.id} className="hover:bg-[#fafafc]">
+                      <td className="py-4 pl-2">
+                        <div className="font-semibold text-[#1d1d1f]">{rec.fullName}</div>
+                        <div className="text-[10px] text-[#86868b]">
+                          Added {new Date(rec.createdAt).toLocaleDateString()}
+                        </div>
+                      </td>
+                      <td className="py-4 text-[#86868b]">
+                        <div className="text-[11px] text-[#1d1d1f] font-mono">{rec.email}</div>
+                        {rec.phone && <div className="text-[10px]">{rec.phone}</div>}
+                      </td>
+                      <td className="py-4">
+                        {(!rec.doctors || rec.doctors.length === 0) ? (
+                          <span className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md font-medium">
+                            No doctors assigned
+                          </span>
+                        ) : (
+                          <div className="flex flex-wrap gap-1.5 max-w-md">
+                            {rec.doctors.map((doc) => (
+                              <span
+                                key={doc.id}
+                                className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-50 text-[#0066cc] border border-blue-100"
+                              >
+                                Dr. {doc.fullName}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </td>
+                      <td className="py-4 text-right pr-2">
+                        <div className="inline-flex items-center gap-2">
+                          <button
+                            onClick={() => handleOpenEditAssignments(rec)}
+                            className="px-2.5 py-1.5 rounded-lg text-[11px] font-medium text-[#0066cc] hover:bg-blue-50 border border-blue-200 transition-colors"
+                          >
+                            Manage Doctors
+                          </button>
+                          <button
+                            onClick={() => handleRemoveReceptionist(rec.id, rec.fullName)}
+                            className="p-1.5 rounded-lg text-rose-600 hover:bg-rose-50 border border-rose-200 transition-colors"
+                            title="Remove receptionist"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* 4. Recent Clinic Appointments Table */}
         {data?.recentAppointments && data.recentAppointments.length > 0 && (
           <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-6 sm:p-8 shadow-xs">
             <h3 className="text-base font-semibold text-[#1d1d1f] mb-4">
@@ -485,6 +711,251 @@ export const ClinicDashboard: React.FC = () => {
                 </AppleButton>
                 <AppleButton variant="primary" size="sm" type="submit" disabled={adding}>
                   {adding ? 'Onboarding...' : 'Onboard Doctor'}
+                </AppleButton>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Provision Receptionist Modal */}
+      {showRecModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-[24px] border border-[#e5e5ea] max-w-lg w-full p-6 sm:p-8 shadow-2xl">
+            <div className="flex justify-between items-center pb-4 border-b border-[#f0f0f0]">
+              <div>
+                <h3 className="text-base font-semibold text-[#1d1d1f]">Provision Desk Receptionist</h3>
+                <p className="text-xs text-[#86868b] mt-0.5">
+                  Create portal login credentials and assign practitioner management permissions.
+                </p>
+              </div>
+              <button
+                disabled={provisioning}
+                onClick={() => setShowRecModal(false)}
+                className="p-1.5 rounded-full hover:bg-gray-100 text-[#86868b]"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleProvisionReceptionist} className="space-y-4 pt-4">
+              <div>
+                <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
+                  Full Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  disabled={provisioning}
+                  value={recFullName}
+                  onChange={(e) => setRecFullName(e.target.value)}
+                  placeholder="e.g. John Doe"
+                  className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-xs focus:outline-none focus:border-[#0066cc]"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
+                    Login Email *
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    disabled={provisioning}
+                    value={recEmail}
+                    onChange={(e) => setRecEmail(e.target.value)}
+                    placeholder="desk@clinic.com"
+                    className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-xs focus:outline-none focus:border-[#0066cc]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
+                    Temporary Password *
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    disabled={provisioning}
+                    value={recPassword}
+                    onChange={(e) => setRecPassword(e.target.value)}
+                    placeholder="Min. 6 characters"
+                    className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-xs focus:outline-none focus:border-[#0066cc]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
+                  Phone Number (Optional)
+                </label>
+                <input
+                  type="tel"
+                  disabled={provisioning}
+                  value={recPhone}
+                  onChange={(e) => setRecPhone(e.target.value)}
+                  placeholder="+1 (555) 000-0000"
+                  className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-xs focus:outline-none focus:border-[#0066cc]"
+                />
+              </div>
+
+              {/* Doctor Assignments */}
+              <div>
+                <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
+                  Assign Doctors to this Receptionist Desk
+                </label>
+                <p className="text-[11px] text-[#86868b] mb-2">
+                  Select which affiliated doctors this receptionist is authorized to manage queues and appointments for.
+                </p>
+                {doctors.length === 0 ? (
+                  <div className="p-3 bg-[#f5f5f7] rounded-xl text-xs text-[#86868b] text-center">
+                    No affiliated doctors in this clinic yet. You can assign doctors later.
+                  </div>
+                ) : (
+                  <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                    {doctors.map((doc) => {
+                      const isSelected = recDoctorIds.includes(doc.doctorId);
+                      return (
+                        <div
+                          key={doc.doctorId}
+                          onClick={() => {
+                            if (isSelected) {
+                              setRecDoctorIds(recDoctorIds.filter((id) => id !== doc.doctorId));
+                            } else {
+                              setRecDoctorIds([...recDoctorIds, doc.doctorId]);
+                            }
+                          }}
+                          className={`p-2.5 rounded-xl border cursor-pointer transition-colors flex items-center justify-between text-xs ${
+                            isSelected
+                              ? 'bg-blue-50/60 border-[#0066cc]/40 text-[#0066cc]'
+                              : 'bg-white border-[#e5e5ea] text-[#1d1d1f] hover:bg-[#fafafc]'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <div
+                              className={`w-4 h-4 rounded flex items-center justify-center border transition-colors ${
+                                isSelected
+                                  ? 'bg-[#0066cc] border-[#0066cc] text-white'
+                                  : 'border-[#c7c7cc] bg-white'
+                              }`}
+                            >
+                              {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
+                            </div>
+                            <div>
+                              <div className="font-medium text-[#1d1d1f]">Dr. {doc.fullName}</div>
+                              <div className="text-[10px] text-[#86868b]">{doc.specialty}</div>
+                            </div>
+                          </div>
+                          <span className="text-[10px] text-[#86868b]">${doc.consultationFee}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <div className="pt-4 border-t border-[#f0f0f0] flex justify-end gap-2">
+                <AppleButton
+                  variant="ghost"
+                  size="sm"
+                  type="button"
+                  disabled={provisioning}
+                  onClick={() => setShowRecModal(false)}
+                >
+                  Cancel
+                </AppleButton>
+                <AppleButton variant="primary" size="sm" type="submit" disabled={provisioning}>
+                  {provisioning ? 'Provisioning...' : 'Provision Receptionist'}
+                </AppleButton>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Assigned Doctors Modal */}
+      {editingRec && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-6 sm:p-8 shadow-2xl">
+            <div className="flex justify-between items-center pb-4 border-b border-[#f0f0f0]">
+              <div>
+                <h3 className="text-base font-semibold text-[#1d1d1f]">Manage Doctor Desk Access</h3>
+                <p className="text-xs text-[#86868b] mt-0.5">
+                  Configure active doctor assignments for {editingRec.fullName}.
+                </p>
+              </div>
+              <button
+                disabled={savingAssignments}
+                onClick={() => setEditingRec(null)}
+                className="p-1.5 rounded-full hover:bg-gray-100 text-[#86868b]"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateAssignedDoctors} className="space-y-4 pt-4">
+              <p className="text-xs text-[#86868b]">
+                Select which affiliated doctors this receptionist is authorized to book walk-ins and manage queues for:
+              </p>
+
+              {doctors.length === 0 ? (
+                <div className="p-4 bg-[#f5f5f7] rounded-xl text-xs text-[#86868b] text-center">
+                  No affiliated doctors currently onboarded to this clinic.
+                </div>
+              ) : (
+                <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+                  {doctors.map((doc) => {
+                    const isSelected = editDoctorIds.includes(doc.doctorId);
+                    return (
+                      <div
+                        key={doc.doctorId}
+                        onClick={() => {
+                          if (isSelected) {
+                            setEditDoctorIds(editDoctorIds.filter((id) => id !== doc.doctorId));
+                          } else {
+                            setEditDoctorIds([...editDoctorIds, doc.doctorId]);
+                          }
+                        }}
+                        className={`p-2.5 rounded-xl border cursor-pointer transition-colors flex items-center justify-between text-xs ${
+                          isSelected
+                            ? 'bg-blue-50/60 border-[#0066cc]/40 text-[#0066cc]'
+                            : 'bg-white border-[#e5e5ea] text-[#1d1d1f] hover:bg-[#fafafc]'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <div
+                            className={`w-4 h-4 rounded flex items-center justify-center border transition-colors ${
+                              isSelected
+                                ? 'bg-[#0066cc] border-[#0066cc] text-white'
+                                : 'border-[#c7c7cc] bg-white'
+                            }`}
+                          >
+                            {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
+                          </div>
+                          <div>
+                            <div className="font-medium text-[#1d1d1f]">Dr. {doc.fullName}</div>
+                            <div className="text-[10px] text-[#86868b]">{doc.specialty}</div>
+                          </div>
+                        </div>
+                        <span className="text-[10px] text-[#86868b]">${doc.consultationFee}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              <div className="pt-4 border-t border-[#f0f0f0] flex justify-end gap-2">
+                <AppleButton
+                  variant="ghost"
+                  size="sm"
+                  type="button"
+                  disabled={savingAssignments}
+                  onClick={() => setEditingRec(null)}
+                >
+                  Cancel
+                </AppleButton>
+                <AppleButton variant="primary" size="sm" type="submit" disabled={savingAssignments}>
+                  {savingAssignments ? 'Saving...' : 'Save Permissions'}
                 </AppleButton>
               </div>
             </form>

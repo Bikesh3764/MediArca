@@ -405,12 +405,28 @@ export interface ClinicProfile {
   address: string;
   city?: string;
   phone?: string;
+  isVerified?: boolean;
   createdAt?: string;
 }
 
 export interface ReceptionistProfile {
   id: string;
   phone?: string;
+}
+
+export interface ClinicReceptionistItem {
+  id: string;
+  userId: string;
+  fullName: string;
+  email: string;
+  phone?: string;
+  doctorIds: string[];
+  doctors: Array<{
+    id: string;
+    fullName: string;
+    specialty: string;
+  }>;
+  createdAt: string;
 }
 
 export interface ClinicDoctorStat {
@@ -448,6 +464,7 @@ export interface ClinicAppointment {
 export interface ClinicDashboardData {
   clinic: ClinicProfile;
   doctors: ClinicDoctorStat[];
+  receptionists?: ClinicReceptionistItem[];
   totalDoctors: number;
   totalBookings: number;
   totalRevenue: number;
@@ -481,7 +498,9 @@ export interface ReceptionistDashboardData {
     fullName: string;
     email: string;
     phone?: string;
+    clinicId?: string;
   };
+  clinic?: ClinicProfile | null;
   doctors: ReceptionistLinkedDoctor[];
 }
 
@@ -932,6 +951,8 @@ export const api = {
     totalPatients: number;
     totalDoctors: number;
     pendingDoctors: number;
+    totalClinics: number;
+    pendingClinics: number;
     totalAppointments: number;
     todayAppointments: number;
   }> {
@@ -949,6 +970,20 @@ export const api = {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify({ doctorId, isVerified }),
+    });
+    return handleResponse(res);
+  },
+
+  async getAdminClinics(): Promise<any[]> {
+    const res = await fetch(`${API_BASE_URL}/admin/clinics`, { headers: getHeaders() });
+    return handleResponse(res);
+  },
+
+  async verifyClinic(clinicId: string, isVerified: boolean): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/verify-clinic`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ clinicId, isVerified }),
     });
     return handleResponse(res);
   },
@@ -975,6 +1010,44 @@ export const api = {
 
   async removeDoctorFromClinic(doctorId: string): Promise<any> {
     const res = await fetch(`${API_BASE_URL}/clinics/doctors/${doctorId}`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  async addClinicReceptionist(data: {
+    fullName: string;
+    email: string;
+    password: string;
+    phone?: string;
+    doctorIds?: string[];
+    assignedDoctorIds?: string[];
+  }): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/clinics/receptionists`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
+  async getClinicReceptionists(): Promise<ClinicReceptionistItem[]> {
+    const res = await fetch(`${API_BASE_URL}/clinics/receptionists`, { headers: getHeaders() });
+    return handleResponse(res);
+  },
+
+  async updateClinicReceptionistDoctors(receptionistId: string, doctorIds: string[]): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/clinics/receptionists/${receptionistId}/doctors`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify({ doctorIds }),
+    });
+    return handleResponse(res);
+  },
+
+  async removeClinicReceptionist(receptionistId: string): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/clinics/receptionists/${receptionistId}`, {
       method: 'DELETE',
       headers: getHeaders(),
     });
