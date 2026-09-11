@@ -32,14 +32,17 @@ export const DoctorDashboard: React.FC = () => {
 
   const [loading, setLoading] = useState(true);
   const [callingId, setCallingId] = useState<string | null>(null);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   const fetchQueue = async () => {
     setLoading(true);
     try {
       const data = await api.getDoctorQueue(date);
       setQueueData(data);
-    } catch (err) {
+      setFetchError(null);
+    } catch (err: any) {
       console.error('Failed to load doctor queue:', err);
+      setFetchError(err.message || 'Unable to connect to healthcare backend');
     } finally {
       setLoading(false);
     }
@@ -99,6 +102,19 @@ export const DoctorDashboard: React.FC = () => {
                 Your medical profile is currently under review by the MediArca administrator. Once approved, your profile and checking slots will become visible in the public doctor directory.
               </p>
             </div>
+          </div>
+        )}
+
+        {/* Server Connection Issue Banner */}
+        {fetchError && (
+          <div className="mb-6 p-4 rounded-2xl bg-blue-50 border border-blue-200 text-blue-900 text-xs flex items-center justify-between shadow-sm">
+            <div className="flex items-center gap-2">
+              <RefreshCw className="w-4 h-4 text-[#0066cc] animate-spin" />
+              <span>Connecting to cloud database... (Cloud backend may take 30s to resume from idle)</span>
+            </div>
+            <AppleButton variant="ghost" size="sm" onClick={fetchQueue} className="text-[#0066cc]">
+              Retry
+            </AppleButton>
           </div>
         )}
 
@@ -306,15 +322,25 @@ export const DoctorDashboard: React.FC = () => {
                   {queueData.completedQueue.map((appt) => (
                     <div
                       key={appt.id}
-                      className="p-3.5 rounded-xl bg-white border border-[#e0e0e0] flex justify-between items-center text-xs"
+                      className="p-3.5 rounded-xl bg-white border border-[#e0e0e0] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs hover:border-[#0066cc]/30 transition-all"
                     >
                       <div className="flex items-center gap-2">
                         <span className="font-semibold text-[#7a7a7a]">Queue #{appt.queueNumber}</span>
                         <span className="font-medium text-[#1d1d1f]">{appt.patient?.user.fullName}</span>
                       </div>
-                      <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded font-medium border border-emerald-200">
-                        Prescription Issued
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded font-medium border border-emerald-200">
+                          Prescription Issued
+                        </span>
+                        <AppleButton
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => navigate(`/doctor/consultation/${appt.id}`)}
+                          className="text-[#0066cc] text-[11px] py-1 px-2.5"
+                        >
+                          Review / Print
+                        </AppleButton>
+                      </div>
                     </div>
                   ))}
                 </div>

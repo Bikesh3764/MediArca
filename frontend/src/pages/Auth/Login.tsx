@@ -14,13 +14,19 @@ export const Login: React.FC = () => {
   const { login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
 
+  const getDestination = (role: string) => {
+    if (role === 'DOCTOR') return '/doctor/dashboard';
+    if (role === 'ADMIN') return '/admin';
+    return '/doctors';
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setSubmitting(true);
     try {
-      await login({ email, password });
-      navigate('/doctors');
+      const loggedUser = await login({ email, password });
+      navigate(getDestination(loggedUser.role));
     } catch (err: any) {
       setError(err.message || 'Invalid email or password');
     } finally {
@@ -32,8 +38,8 @@ export const Login: React.FC = () => {
     setError(null);
     setSubmitting(true);
     try {
-      await login({ email: demoEmail, password: demoPass });
-      navigate(redirectPath);
+      const loggedUser = await login({ email: demoEmail, password: demoPass });
+      navigate(redirectPath || getDestination(loggedUser.role));
     } catch (err: any) {
       setError(err.message || 'Demo login failed');
     } finally {
@@ -46,8 +52,8 @@ export const Login: React.FC = () => {
       setError(null);
       setSubmitting(true);
       try {
-        await loginWithGoogle(credentialResponse.credential, 'PATIENT');
-        navigate('/doctors');
+        const loggedUser = await loginWithGoogle(credentialResponse.credential, 'PATIENT');
+        navigate(getDestination(loggedUser.role));
       } catch (err: any) {
         setError(err.message || 'Google sign-in authentication failed');
       } finally {
@@ -71,8 +77,8 @@ export const Login: React.FC = () => {
         })
       );
       const simulatedToken = `${header}.${payload}.signature`;
-      await loginWithGoogle(simulatedToken, 'PATIENT');
-      navigate('/doctors');
+      const loggedUser = await loginWithGoogle(simulatedToken, 'PATIENT');
+      navigate(getDestination(loggedUser.role));
     } catch (err: any) {
       setError(err.message || 'Simulated Google login failed');
     } finally {

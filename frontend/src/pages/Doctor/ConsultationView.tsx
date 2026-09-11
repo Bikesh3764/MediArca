@@ -11,6 +11,9 @@ import {
   ChevronLeft,
   AlertCircle,
   Eye,
+  Printer,
+  CheckCircle2,
+  Save,
 } from 'lucide-react';
 
 interface MedicineRow {
@@ -28,6 +31,8 @@ export const ConsultationView: React.FC = () => {
   const [appointment, setAppointment] = useState<Appointment | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [savingDraft, setSavingDraft] = useState(false);
+  const [draftSavedMsg, setDraftSavedMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // Vitals State
@@ -57,8 +62,7 @@ export const ConsultationView: React.FC = () => {
     const fetchAppointmentData = async () => {
       if (!id) return;
       try {
-        const queueRes = await api.getDoctorQueue();
-        const found = queueRes.allAppointments.find((a) => a.id === id);
+        const found = await api.getAppointmentById(id);
         if (found) {
           setAppointment(found);
           if (found.clinicalNotes) setClinicalNotes(found.clinicalNotes);
@@ -69,7 +73,7 @@ export const ConsultationView: React.FC = () => {
               if (parsed.pulse) setPulse(parsed.pulse);
               if (parsed.temp) setTemp(parsed.temp);
               if (parsed.weight) setWeight(parsed.weight);
-            } catch (e) {}
+            } catch {}
           }
           if (found.prescription) {
             setDiagnosis(found.prescription.diagnosis);
@@ -77,12 +81,12 @@ export const ConsultationView: React.FC = () => {
             setFollowUpDate(found.prescription.followUpDate || '');
             try {
               setMedicines(JSON.parse(found.prescription.medicines));
-            } catch (e) {}
+            } catch {}
           }
         }
       } catch (err: any) {
         console.error('Failed to load consultation appointment:', err);
-        setError(err.message);
+        setError(err.message || 'Unable to retrieve appointment record');
       } finally {
         setLoading(false);
       }
@@ -112,6 +116,38 @@ export const ConsultationView: React.FC = () => {
     const updated = [...medicines];
     updated[idx][field] = value;
     setMedicines(updated);
+  };
+
+  const handleSaveDraft = async () => {
+    if (!appointment) return;
+    setSavingDraft(true);
+    setError(null);
+    setDraftSavedMsg(null);
+
+    const vitalsObj = {
+      bp: bp.trim() || undefined,
+      pulse: pulse.trim() || undefined,
+      temp: temp.trim() || undefined,
+      weight: weight.trim() || undefined,
+    };
+
+    try {
+      await api.updateNotes({
+        appointmentId: appointment.id,
+        vitals: vitalsObj,
+        clinicalNotes: clinicalNotes.trim() || undefined,
+      });
+      setDraftSavedMsg('Clinical notes and vitals saved successfully!');
+      setTimeout(() => setDraftSavedMsg(null), 4000);
+    } catch (err: any) {
+      setError(err.message || 'Failed to save notes draft');
+    } finally {
+      setSavingDraft(false);
+    }
+  };
+
+  const handlePrintPrescription = () => {
+    window.print();
   };
 
   const handleComplete = async (e: React.FormEvent) => {
@@ -149,7 +185,6 @@ export const ConsultationView: React.FC = () => {
         vitals: vitalsObj,
       });
 
-      alert('Consultation completed and digital prescription saved!');
       navigate('/doctor/dashboard');
     } catch (err: any) {
       setError(err.message || 'Failed to complete consultation');
@@ -158,10 +193,27 @@ export const ConsultationView: React.FC = () => {
     }
   };
 
-  if (loading || !appointment) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center">
         <div className="w-8 h-8 rounded-full border-2 border-[#0066cc] border-t-transparent animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (!appointment) {
+    return (
+      <div className="min-h-screen bg-[#f5f5f7] flex flex-col items-center justify-center p-6 text-center">
+        <div className="bg-white p-8 rounded-[24px] border border-[#e0e0e0] max-w-md w-full shadow-sm">
+          <AlertCircle className="w-12 h-12 text-rose-500 mx-auto mb-3" />
+          <h3 className="text-lg font-semibold text-[#1d1d1f]">Appointment Not Found</h3>
+          <p className="text-xs text-[#7a7a7a] mt-1 mb-6">
+            {error || 'This consultation appointment could not be located or has been cancelled.'}
+          </p>
+          <AppleButton variant="primary" size="md" onClick={() => navigate('/doctor/dashboard')} className="w-full">
+            Return to Doctor Console
+          </AppleButton>
+        </div>
       </div>
     );
   }
@@ -171,13 +223,30 @@ export const ConsultationView: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#f5f5f7] pb-16">
       <SubNav title="Consultation Cabin" subtitle={`Queue #${appointment.queueNumber} • ${patientUser?.fullName}`}>
-        <AppleButton variant="ghost" size="sm" onClick={() => navigate('/doctor/dashboard')} className="flex items-center gap-1">
-          <ChevronLeft className="w-4 h-4" />
-          Queue Console
-        </AppleButton>
+        <div className="flex items-center gap-2">
+          <AppleButton variant="ghost" size="sm" onClick={() => navigate('/doctor/dashboard')} className="flex items-center gap-1">
+            <ChevronLeft className="w-4 h-4" />
+            Queue
+          </AppleButton>
+          <AppleButton variant="ghost" size="sm" onClick={handleSaveDraft} disabled={savingDraft} className="flex items-center gap-1">
+            <Save className="w-3.5 h-3.5 text-[#0066cc]" />
+            <span>{savingDraft ? 'Saving...' : 'Save Draft'}</span>
+          </AppleButton>
+          <AppleButton variant="ghost" size="sm" onClick={handlePrintPrescription} className="flex items-center gap-1">
+            <Printer className="w-3.5 h-3.5" />
+            <span>Print</span>
+          </AppleButton>
+        </div>
       </SubNav>
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-8">
+        {draftSavedMsg && (
+          <div className="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2 shadow-sm animate-fadeIn">
+            <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-emerald-600" />
+            <span>{draftSavedMsg}</span>
+          </div>
+        )}
+
         {error && (
           <div className="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
@@ -466,7 +535,31 @@ export const ConsultationView: React.FC = () => {
                 </div>
               </div>
 
-              <div className="mt-8 pt-4 border-t border-[#f0f0f0] flex justify-end">
+              <div className="mt-8 pt-4 border-t border-[#f0f0f0] flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <AppleButton
+                    variant="ghost"
+                    size="md"
+                    type="button"
+                    disabled={savingDraft}
+                    onClick={handleSaveDraft}
+                    className="flex items-center gap-1.5 w-full sm:w-auto justify-center"
+                  >
+                    <Save className="w-4 h-4 text-[#0066cc]" />
+                    <span>{savingDraft ? 'Saving Draft...' : 'Save Draft Notes'}</span>
+                  </AppleButton>
+                  <AppleButton
+                    variant="ghost"
+                    size="md"
+                    type="button"
+                    onClick={handlePrintPrescription}
+                    className="flex items-center gap-1.5 w-full sm:w-auto justify-center"
+                  >
+                    <Printer className="w-4 h-4" />
+                    <span>Print</span>
+                  </AppleButton>
+                </div>
+
                 <AppleButton
                   variant="primary"
                   size="lg"

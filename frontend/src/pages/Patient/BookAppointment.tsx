@@ -205,15 +205,26 @@ export const BookAppointment: React.FC = () => {
               </div>
             </div>
 
+            {queuePreview?.isFull && (
+              <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <span>Doctor schedule is fully booked for this date. Please pick another date above.</span>
+              </div>
+            )}
+
             <div className="pt-4 border-t border-[#f0f0f0] flex justify-end">
               <AppleButton
                 variant="primary"
                 size="lg"
                 type="submit"
-                disabled={submitting}
+                disabled={submitting || Boolean(queuePreview?.isFull)}
                 className="w-full sm:w-auto"
               >
-                {submitting ? 'Confirming Token...' : `Confirm Queue #${queuePreview?.nextQueueNumber || ''}`}
+                {submitting
+                  ? 'Confirming Token...'
+                  : queuePreview?.isFull
+                  ? 'Fully Booked for Selected Date'
+                  : `Confirm Queue #${queuePreview?.nextQueueNumber || ''}`}
               </AppleButton>
             </div>
           </form>

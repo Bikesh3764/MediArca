@@ -229,13 +229,20 @@ export const DoctorDetail: React.FC = () => {
                 </div>
               </div>
 
+              {queuePreview?.isFull && (
+                <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
+                  <span>Doctor's maximum capacity reached for this date. Please select another date.</span>
+                </div>
+              )}
+
               <AppleButton
                 variant="primary"
                 size="lg"
+                disabled={Boolean(queuePreview?.isFull)}
                 onClick={() => navigate(`/book/${doctor.id}?date=${selectedDate}`)}
                 className="w-full"
               >
-                Proceed to Confirm Queue
+                {queuePreview?.isFull ? 'Fully Booked for Date' : 'Proceed to Confirm Queue'}
               </AppleButton>
             </UtilityCard>
           </div>

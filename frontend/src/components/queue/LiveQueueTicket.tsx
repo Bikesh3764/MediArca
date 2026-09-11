@@ -114,13 +114,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
                   <div
                     className="bg-[#0066cc] h-full transition-all duration-500"
                     style={{
-                      width: `${Math.min(
-                        100,
-                        Math.max(
-                          10,
-                          ((liveQueue.currentServingQueueNumber || 1) / queueNumber) * 100
-                        )
-                      )}%`,
+                      width: `${queueNumber > 0 ? Math.min(100, Math.max(10, ((liveQueue.currentServingQueueNumber || 1) / queueNumber) * 100)) : 10}%`,
                     }}
                   ></div>
                 </div>

@@ -49,9 +49,11 @@ export const Signup: React.FC = () => {
         payload.checkingEndTime = checkingEndTime;
       }
 
-      await register(payload);
-      if (role === 'DOCTOR') {
+      const registered = await register(payload);
+      if (registered.role === 'DOCTOR') {
         navigate('/doctor/dashboard');
+      } else if (registered.role === 'ADMIN') {
+        navigate('/admin');
       } else {
         navigate('/doctors');
       }
@@ -67,9 +69,11 @@ export const Signup: React.FC = () => {
       setError(null);
       setSubmitting(true);
       try {
-        await loginWithGoogle(credentialResponse.credential, role);
-        if (role === 'DOCTOR') {
+        const loggedUser = await loginWithGoogle(credentialResponse.credential, role);
+        if (loggedUser.role === 'DOCTOR') {
           navigate('/doctor/dashboard');
+        } else if (loggedUser.role === 'ADMIN') {
+          navigate('/admin');
         } else {
           navigate('/doctors');
         }
@@ -94,9 +98,11 @@ export const Signup: React.FC = () => {
         })
       );
       const simulatedToken = `${header}.${payload}.signature`;
-      await loginWithGoogle(simulatedToken, role);
-      if (role === 'DOCTOR') {
+      const loggedUser = await loginWithGoogle(simulatedToken, role);
+      if (loggedUser.role === 'DOCTOR') {
         navigate('/doctor/dashboard');
+      } else if (loggedUser.role === 'ADMIN') {
+        navigate('/admin');
       } else {
         navigate('/doctors');
       }

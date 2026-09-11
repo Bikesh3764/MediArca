@@ -71,9 +71,21 @@ export const DoctorDiscovery: React.FC = () => {
               placeholder="Search by doctor name, specialty, or condition..."
               className="flex-1"
             />
-            <AppleButton variant="primary" size="md" type="submit" className="sm:w-32">
-              Search
-            </AppleButton>
+            <div className="flex items-center gap-2">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="h-11 px-4 rounded-xl border border-[#e0e0e0] text-xs font-medium bg-[#f5f5f7] text-[#1d1d1f] focus:outline-none focus:border-[#0066cc]"
+              >
+                <option value="rating">Top Rated</option>
+                <option value="experience">Most Experienced</option>
+                <option value="fee_low">Fee: Low to High</option>
+                <option value="fee_high">Fee: High to Low</option>
+              </select>
+              <AppleButton variant="primary" size="md" type="submit" className="sm:w-28">
+                Search
+              </AppleButton>
+            </div>
           </form>
 
           {/* Specialty Filter Chips */}

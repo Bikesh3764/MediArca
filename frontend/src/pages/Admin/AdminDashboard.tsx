@@ -13,6 +13,7 @@ import {
   CheckCircle2,
   RefreshCw,
   Clock,
+  X,
 } from 'lucide-react';
 
 export const AdminDashboard: React.FC = () => {
@@ -31,6 +32,7 @@ export const AdminDashboard: React.FC = () => {
   const [appointments, setAppointments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionId, setActionId] = useState<string | null>(null);
+  const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -167,7 +169,7 @@ export const AdminDashboard: React.FC = () => {
                   <tr key={doc.id} className="hover:bg-[#f5f5f7]/60 transition-colors">
                     <td className="py-3.5 px-3">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-[#e0e0e0] overflow-hidden flex-shrink-0">
+                        <div className="w-8 h-8 rounded-full bg-[#e0e0e0] overflow-hidden flex-shrink-0 cursor-pointer" onClick={() => setSelectedDoctor(doc)}>
                           {doc.user.avatarUrl ? (
                             <img src={doc.user.avatarUrl} alt={doc.user.fullName} className="w-full h-full object-cover" />
                           ) : (
@@ -177,7 +179,13 @@ export const AdminDashboard: React.FC = () => {
                           )}
                         </div>
                         <div>
-                          <strong className="text-[13px] text-[#1d1d1f] block">{doc.user.fullName}</strong>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedDoctor(doc)}
+                            className="text-[13px] text-[#1d1d1f] font-semibold block text-left hover:text-[#0066cc] transition-colors"
+                          >
+                            {doc.user.fullName}
+                          </button>
                           <span className="text-[#7a7a7a]">{doc.user.email}</span>
                         </div>
                       </div>
@@ -201,26 +209,36 @@ export const AdminDashboard: React.FC = () => {
                       )}
                     </td>
                     <td className="py-3.5 px-3 text-right">
-                      {doc.isVerified ? (
+                      <div className="flex items-center justify-end gap-1.5">
                         <AppleButton
                           variant="ghost"
                           size="sm"
-                          disabled={actionId === doc.id}
-                          onClick={() => handleVerify(doc.id, false)}
-                          className="text-rose-600 hover:text-rose-700 hover:border-rose-300"
+                          onClick={() => setSelectedDoctor(doc)}
+                          className="text-xs"
                         >
-                          Suspend
+                          Details
                         </AppleButton>
-                      ) : (
-                        <AppleButton
-                          variant="primary"
-                          size="sm"
-                          disabled={actionId === doc.id}
-                          onClick={() => handleVerify(doc.id, true)}
-                        >
-                          {actionId === doc.id ? 'Verifying...' : 'Approve & Verify'}
-                        </AppleButton>
-                      )}
+                        {doc.isVerified ? (
+                          <AppleButton
+                            variant="ghost"
+                            size="sm"
+                            disabled={actionId === doc.id}
+                            onClick={() => handleVerify(doc.id, false)}
+                            className="text-rose-600 hover:text-rose-700 hover:border-rose-300"
+                          >
+                            Suspend
+                          </AppleButton>
+                        ) : (
+                          <AppleButton
+                            variant="primary"
+                            size="sm"
+                            disabled={actionId === doc.id}
+                            onClick={() => handleVerify(doc.id, true)}
+                          >
+                            {actionId === doc.id ? 'Verifying...' : 'Approve & Verify'}
+                          </AppleButton>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -273,6 +291,107 @@ export const AdminDashboard: React.FC = () => {
         </>
         )}
       </div>
+
+      {/* Doctor Verification Credentials Inspection Modal */}
+      {selectedDoctor && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-[24px] border border-[#e0e0e0] max-w-lg w-full p-6 sm:p-8 shadow-2xl space-y-5">
+            <div className="flex justify-between items-start pb-4 border-b border-[#f0f0f0]">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-[#f5f5f7] border border-[#e0e0e0] overflow-hidden flex items-center justify-center font-bold text-lg text-[#0066cc]">
+                  {selectedDoctor.user.avatarUrl ? (
+                    <img src={selectedDoctor.user.avatarUrl} alt={selectedDoctor.user.fullName} className="w-full h-full object-cover" />
+                  ) : (
+                    selectedDoctor.user.fullName[0]
+                  )}
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-[#1d1d1f]">{selectedDoctor.user.fullName}</h3>
+                  <p className="text-xs text-[#0066cc] font-medium">{selectedDoctor.specialty}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedDoctor(null)}
+                className="p-1.5 rounded-full hover:bg-gray-100 text-[#7a7a7a]"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div className="grid grid-cols-2 gap-3 p-3.5 rounded-xl bg-[#f5f5f7]">
+                <div>
+                  <span className="text-[#7a7a7a] block">Qualifications:</span>
+                  <strong className="text-[#1d1d1f]">{selectedDoctor.qualifications}</strong>
+                </div>
+                <div>
+                  <span className="text-[#7a7a7a] block">Experience:</span>
+                  <strong className="text-[#1d1d1f]">{selectedDoctor.experienceYears} Years</strong>
+                </div>
+                <div>
+                  <span className="text-[#7a7a7a] block">Consultation Fee:</span>
+                  <strong className="text-[#1d1d1f]">${selectedDoctor.consultationFee}</strong>
+                </div>
+                <div>
+                  <span className="text-[#7a7a7a] block">Checking Window:</span>
+                  <strong className="text-[#0066cc]">{selectedDoctor.checkingStartTime} – {selectedDoctor.checkingEndTime}</strong>
+                </div>
+              </div>
+
+              <div>
+                <span className="text-[#7a7a7a] font-semibold block mb-1">Clinic Address:</span>
+                <p className="text-[#1d1d1f] p-2.5 rounded-lg bg-gray-50 border border-gray-100">
+                  {selectedDoctor.clinicAddress || 'MediArca Clinic Facility'}
+                </p>
+              </div>
+
+              <div>
+                <span className="text-[#7a7a7a] font-semibold block mb-1">Professional Bio & Practice Philosophy:</span>
+                <p className="text-[#1d1d1f] p-2.5 rounded-lg bg-gray-50 border border-gray-100 leading-relaxed">
+                  {selectedDoctor.bio || 'Dedicated medical practitioner accepting outpatient consultations.'}
+                </p>
+              </div>
+
+              <div className="flex justify-between items-center pt-2">
+                <span className="text-[#7a7a7a]">Email: {selectedDoctor.user.email}</span>
+                <span className="text-[#7a7a7a]">Phone: {selectedDoctor.user.phone || 'N/A'}</span>
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-[#f0f0f0] flex justify-end gap-2">
+              <AppleButton variant="ghost" size="sm" onClick={() => setSelectedDoctor(null)}>
+                Close
+              </AppleButton>
+              {selectedDoctor.isVerified ? (
+                <AppleButton
+                  variant="ghost"
+                  size="sm"
+                  disabled={actionId === selectedDoctor.id}
+                  onClick={async () => {
+                    await handleVerify(selectedDoctor.id, false);
+                    setSelectedDoctor(null);
+                  }}
+                  className="text-rose-600 hover:text-rose-700"
+                >
+                  Suspend Credentials
+                </AppleButton>
+              ) : (
+                <AppleButton
+                  variant="primary"
+                  size="sm"
+                  disabled={actionId === selectedDoctor.id}
+                  onClick={async () => {
+                    await handleVerify(selectedDoctor.id, true);
+                    setSelectedDoctor(null);
+                  }}
+                >
+                  {actionId === selectedDoctor.id ? 'Approving...' : 'Approve & Verify License'}
+                </AppleButton>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

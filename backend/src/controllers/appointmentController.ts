@@ -4,9 +4,12 @@ import { AuthRequest } from '../middleware/authMiddleware';
 
 // Helper to convert "09:00" to 12-hour AM/PM string
 export const format12Hour = (time24: string): string => {
-  const [hStr, mStr] = time24.split(':');
-  let h = parseInt(hStr, 10);
-  const m = mStr || '00';
+  if (!time24) return '09:00 AM';
+  if (time24.includes('AM') || time24.includes('PM')) return time24;
+  const parts = time24.split(':');
+  let h = parseInt(parts[0], 10);
+  if (isNaN(h)) return time24;
+  const m = (parts[1] || '00').replace(/[^0-9]/g, '').slice(0, 2).padStart(2, '0');
   const ampm = h >= 12 ? 'PM' : 'AM';
   h = h % 12;
   h = h ? h : 12; // 0 becomes 12
@@ -15,8 +18,13 @@ export const format12Hour = (time24: string): string => {
 
 // Helper to calculate estimated time given start time "09:00" and offset minutes
 export const calculateEstimatedTime = (startTime24: string, offsetMinutes: number): string => {
-  const [hStr, mStr] = startTime24.split(':');
-  const startTotalMinutes = parseInt(hStr, 10) * 60 + parseInt(mStr || '0', 10);
+  if (!startTime24) startTime24 = '09:00';
+  const cleanTime = startTime24.replace(/\s*(AM|PM)/i, '');
+  const [hStr, mStr] = cleanTime.split(':');
+  let startHour = parseInt(hStr, 10);
+  if (startTime24.toUpperCase().includes('PM') && startHour < 12) startHour += 12;
+  if (startTime24.toUpperCase().includes('AM') && startHour === 12) startHour = 0;
+  const startTotalMinutes = (isNaN(startHour) ? 9 : startHour) * 60 + parseInt(mStr || '0', 10);
   const totalMinutes = startTotalMinutes + offsetMinutes;
   const hours24 = Math.floor(totalMinutes / 60) % 24;
   const minutes = totalMinutes % 60;
@@ -146,62 +154,79 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
       return;
     }
 
-    // Perform atomic transaction to prevent race conditions and duplicate queue numbers
-    const newAppointment = await prisma.$transaction(async (tx) => {
-      const activeCount = await tx.appointment.count({
-        where: {
-          doctorId: doctor.id,
-          appointmentDate,
-          status: { in: ['WAITING', 'IN_CONSULTATION', 'COMPLETED'] },
-        },
-      });
+    // Perform atomic transaction with retry on concurrency collision
+    let newAppointment: any;
+    let attempts = 0;
+    const maxAttempts = 3;
 
-      if (activeCount >= doctor.maxDailyPatients) {
-        throw new Error('Doctor schedule is fully booked for this date');
+    while (attempts < maxAttempts) {
+      try {
+        newAppointment = await prisma.$transaction(async (tx) => {
+          const activeCount = await tx.appointment.count({
+            where: {
+              doctorId: doctor.id,
+              appointmentDate,
+              status: { in: ['WAITING', 'IN_CONSULTATION', 'COMPLETED'] },
+            },
+          });
+
+          if (activeCount >= doctor.maxDailyPatients) {
+            throw new Error('Doctor schedule is fully booked for this date');
+          }
+
+          // Find highest queue number to avoid unique constraint collisions with cancelled appointments
+          const maxQueueAppt = await tx.appointment.findFirst({
+            where: {
+              doctorId: doctor.id,
+              appointmentDate,
+            },
+            orderBy: { queueNumber: 'desc' },
+          });
+
+          const queueNumber = (maxQueueAppt?.queueNumber || 0) + 1;
+          const checkingWindow = `${format12Hour(doctor.checkingStartTime)} – ${format12Hour(doctor.checkingEndTime)}`;
+          const offsetMinutes = activeCount * doctor.avgConsultationMinutes;
+          const estimatedTime = calculateEstimatedTime(doctor.checkingStartTime, offsetMinutes);
+
+          const created = await tx.appointment.create({
+            data: {
+              patientId: patient.id,
+              doctorId: doctor.id,
+              appointmentDate,
+              queueNumber,
+              checkingWindow,
+              estimatedTime,
+              status: 'WAITING',
+              reasonForVisit: reasonForVisit || 'General Medical Consultation',
+              symptoms: symptoms || null,
+            },
+            include: {
+              doctor: {
+                include: {
+                  user: { select: { fullName: true, avatarUrl: true } },
+                },
+              },
+              patient: {
+                include: {
+                  user: { select: { fullName: true, email: true, phone: true } },
+                },
+              },
+            },
+          });
+
+          return created;
+        });
+
+        break; // Successfully booked
+      } catch (err: any) {
+        attempts++;
+        if (err.code === 'P2002' && attempts < maxAttempts) {
+          // Retry on unique constraint collision
+          continue;
+        }
+        throw err;
       }
-
-      // Find highest queue number to avoid unique constraint collisions with cancelled appointments
-      const maxQueueAppt = await tx.appointment.findFirst({
-        where: {
-          doctorId: doctor.id,
-          appointmentDate,
-        },
-        orderBy: { queueNumber: 'desc' },
-      });
-
-      const queueNumber = (maxQueueAppt?.queueNumber || 0) + 1;
-      const checkingWindow = `${format12Hour(doctor.checkingStartTime)} – ${format12Hour(doctor.checkingEndTime)}`;
-      const offsetMinutes = activeCount * doctor.avgConsultationMinutes;
-      const estimatedTime = calculateEstimatedTime(doctor.checkingStartTime, offsetMinutes);
-
-      const created = await tx.appointment.create({
-        data: {
-          patientId: patient.id,
-          doctorId: doctor.id,
-          appointmentDate,
-          queueNumber,
-          checkingWindow,
-          estimatedTime,
-          status: 'WAITING',
-          reasonForVisit: reasonForVisit || 'General Medical Consultation',
-          symptoms: symptoms || null,
-        },
-        include: {
-          doctor: {
-            include: {
-              user: { select: { fullName: true, avatarUrl: true } },
-            },
-          },
-          patient: {
-            include: {
-              user: { select: { fullName: true, email: true, phone: true } },
-            },
-          },
-        },
-      });
-
-      return created;
-    });
+    }
 
     res.status(201).json({
       success: true,
@@ -214,6 +239,53 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
   }
 };
 
+export const getAppointmentById = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const id = String(req.params.id);
+
+    const appointment = await prisma.appointment.findUnique({
+      where: { id },
+      include: {
+        doctor: {
+          include: {
+            user: { select: { id: true, fullName: true, avatarUrl: true, email: true, phone: true } },
+          },
+        },
+        patient: {
+          include: {
+            user: { select: { id: true, fullName: true, email: true, phone: true, avatarUrl: true } },
+            medicalRecords: { orderBy: { uploadedAt: 'desc' } },
+          },
+        },
+        prescription: true,
+        review: true,
+      },
+    });
+
+    if (!appointment) {
+      res.status(404).json({ success: false, message: 'Appointment not found' });
+      return;
+    }
+
+    // Access control: Doctor of appointment, patient of appointment, or Admin
+    if (req.user) {
+      const isDoctor = req.user.role === 'DOCTOR' && appointment.doctor.userId === req.user.id;
+      const isPatient = req.user.role === 'PATIENT' && appointment.patient.userId === req.user.id;
+      const isAdmin = req.user.role === 'ADMIN';
+
+      if (!isDoctor && !isPatient && !isAdmin) {
+        res.status(403).json({ success: false, message: 'Access denied: You are not authorized to view this appointment' });
+        return;
+      }
+    }
+
+    res.json({ success: true, data: appointment });
+  } catch (error: any) {
+    console.error('getAppointmentById error:', error);
+    res.status(500).json({ success: false, message: 'Failed to retrieve appointment', error: error.message });
+  }
+};
+
 export const getPatientAppointments = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     if (!req.user || req.user.role !== 'PATIENT') {
@@ -221,13 +293,14 @@ export const getPatientAppointments = async (req: AuthRequest, res: Response): P
       return;
     }
 
-    const patient = await prisma.patientProfile.findUnique({
+    let patient = await prisma.patientProfile.findUnique({
       where: { userId: req.user.id },
     });
 
     if (!patient) {
-      res.status(404).json({ success: false, message: 'Patient profile not found' });
-      return;
+      patient = await prisma.patientProfile.create({
+        data: { userId: req.user.id },
+      });
     }
 
     const appointments = await prisma.appointment.findMany({
@@ -314,6 +387,21 @@ export const cancelAppointment = async (req: AuthRequest, res: Response): Promis
     // Verify ownership
     if (req.user?.role === 'PATIENT' && appointment.patient.userId !== req.user.id) {
       res.status(403).json({ success: false, message: 'You do not have permission to cancel this appointment' });
+      return;
+    }
+
+    if (req.user?.role === 'DOCTOR' && appointment.doctor.userId !== req.user.id) {
+      res.status(403).json({ success: false, message: 'You do not have permission to cancel another doctor\'s appointment' });
+      return;
+    }
+
+    if (appointment.status === 'CANCELLED') {
+      res.status(400).json({ success: false, message: 'Appointment is already cancelled' });
+      return;
+    }
+
+    if (appointment.status === 'IN_CONSULTATION') {
+      res.status(400).json({ success: false, message: 'Cannot cancel an appointment actively in consultation' });
       return;
     }
 

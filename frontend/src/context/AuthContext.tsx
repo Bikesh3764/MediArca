@@ -5,9 +5,9 @@ interface AuthContextType {
   user: User | null;
   token: string | null;
   loading: boolean;
-  login: (credentials: { email: string; password: string }) => Promise<void>;
-  loginWithGoogle: (credential: string, role?: string) => Promise<void>;
-  register: (data: any) => Promise<void>;
+  login: (credentials: { email: string; password: string }) => Promise<User>;
+  loginWithGoogle: (credential: string, role?: string) => Promise<User>;
+  register: (data: any) => Promise<User>;
   logout: () => void;
   refreshUser: () => Promise<void>;
 }
@@ -42,28 +42,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     refreshUser();
   }, []);
 
-  const login = async (credentials: { email: string; password: string }) => {
+  const login = async (credentials: { email: string; password: string }): Promise<User> => {
     const data = await api.login(credentials);
     localStorage.setItem('mediarca_token', data.token);
     localStorage.setItem('mediarca_user', JSON.stringify(data.user));
     setToken(data.token);
     setUser(data.user);
+    return data.user;
   };
 
-  const loginWithGoogle = async (credential: string, role = 'PATIENT') => {
+  const loginWithGoogle = async (credential: string, role = 'PATIENT'): Promise<User> => {
     const data = await api.googleAuth(credential, role);
     localStorage.setItem('mediarca_token', data.token);
     localStorage.setItem('mediarca_user', JSON.stringify(data.user));
     setToken(data.token);
     setUser(data.user);
+    return data.user;
   };
 
-  const register = async (formData: any) => {
+  const register = async (formData: any): Promise<User> => {
     const data = await api.register(formData);
     localStorage.setItem('mediarca_token', data.token);
     localStorage.setItem('mediarca_user', JSON.stringify(data.user));
     setToken(data.token);
     setUser(data.user);
+    return data.user;
   };
 
   const logout = () => {

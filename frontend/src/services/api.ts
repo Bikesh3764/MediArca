@@ -395,6 +395,13 @@ export const api = {
     return handleResponse(res);
   },
 
+  async getAppointmentById(id: string): Promise<Appointment> {
+    const res = await fetch(`${API_BASE_URL}/appointments/${id}`, {
+      headers: getHeaders(),
+    });
+    return handleResponse(res);
+  },
+
   // Doctor Consultation & Queue Console
   async getDoctorQueue(date?: string): Promise<{
     date: string;

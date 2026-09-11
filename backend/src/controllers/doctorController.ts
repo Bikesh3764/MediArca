@@ -133,13 +133,13 @@ export const updateSchedule = async (req: AuthRequest, res: Response): Promise<v
     const updated = await prisma.doctorProfile.update({
       where: { id: doctor.id },
       data: {
-        ...(checkingStartTime && { checkingStartTime }),
-        ...(checkingEndTime && { checkingEndTime }),
-        ...(avgConsultationMinutes && { avgConsultationMinutes: Number(avgConsultationMinutes) }),
-        ...(maxDailyPatients && { maxDailyPatients: Number(maxDailyPatients) }),
-        ...(consultationFee && { consultationFee: Number(consultationFee) }),
-        ...(clinicAddress && { clinicAddress }),
-        ...(bio && { bio }),
+        ...(checkingStartTime !== undefined && { checkingStartTime }),
+        ...(checkingEndTime !== undefined && { checkingEndTime }),
+        ...(avgConsultationMinutes !== undefined && !isNaN(Number(avgConsultationMinutes)) && { avgConsultationMinutes: Number(avgConsultationMinutes) }),
+        ...(maxDailyPatients !== undefined && !isNaN(Number(maxDailyPatients)) && { maxDailyPatients: Number(maxDailyPatients) }),
+        ...(consultationFee !== undefined && !isNaN(Number(consultationFee)) && { consultationFee: Number(consultationFee) }),
+        ...(clinicAddress !== undefined && { clinicAddress }),
+        ...(bio !== undefined && { bio }),
       },
       include: { user: true },
     });

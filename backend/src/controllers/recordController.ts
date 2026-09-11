@@ -17,13 +17,14 @@ export const uploadRecord = async (req: AuthRequest, res: Response): Promise<voi
       return;
     }
 
-    const patient = await prisma.patientProfile.findUnique({
+    let patient = await prisma.patientProfile.findUnique({
       where: { userId: req.user.id },
     });
 
     if (!patient) {
-      res.status(404).json({ success: false, message: 'Patient profile not found' });
-      return;
+      patient = await prisma.patientProfile.create({
+        data: { userId: req.user.id },
+      });
     }
 
     const fileUrl = `/uploads/${file.filename}`;
@@ -60,12 +61,13 @@ export const getPatientRecords = async (req: AuthRequest, res: Response): Promis
     let patientId = req.query.patientId as string;
 
     if (req.user.role === 'PATIENT') {
-      const patient = await prisma.patientProfile.findUnique({
+      let patient = await prisma.patientProfile.findUnique({
         where: { userId: req.user.id },
       });
       if (!patient) {
-        res.status(404).json({ success: false, message: 'Patient profile not found' });
-        return;
+        patient = await prisma.patientProfile.create({
+          data: { userId: req.user.id },
+        });
       }
       patientId = patient.id;
     } else if (req.user.role === 'DOCTOR' && !patientId) {

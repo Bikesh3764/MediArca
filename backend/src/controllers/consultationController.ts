@@ -98,6 +98,11 @@ export const callPatient = async (req: AuthRequest, res: Response): Promise<void
       return;
     }
 
+    if (targetAppointment.status === 'CANCELLED') {
+      res.status(400).json({ success: false, message: 'Cannot call an appointment that has been cancelled' });
+      return;
+    }
+
     // Reset any currently IN_CONSULTATION appointments on this date back to WAITING
     await prisma.appointment.updateMany({
       where: {
@@ -143,12 +148,27 @@ export const updateNotesAndVitals = async (req: AuthRequest, res: Response): Pro
 
     const { appointmentId, vitals, clinicalNotes } = req.body;
 
+    if (!appointmentId) {
+      res.status(400).json({ success: false, message: 'appointmentId is required' });
+      return;
+    }
+
     const doctor = await prisma.doctorProfile.findUnique({
       where: { userId: req.user.id },
     });
 
     if (!doctor) {
-      res.status(404).json({ success: false, message: 'Doctor not found' });
+      res.status(404).json({ success: false, message: 'Doctor profile not found' });
+      return;
+    }
+
+    // Verify appointment belongs to this doctor
+    const targetAppointment = await prisma.appointment.findUnique({
+      where: { id: appointmentId },
+    });
+
+    if (!targetAppointment || targetAppointment.doctorId !== doctor.id) {
+      res.status(403).json({ success: false, message: 'Appointment does not belong to this doctor' });
       return;
     }
 
@@ -186,7 +206,17 @@ export const completeWithPrescription = async (req: AuthRequest, res: Response):
     });
 
     if (!doctor) {
-      res.status(404).json({ success: false, message: 'Doctor not found' });
+      res.status(404).json({ success: false, message: 'Doctor profile not found' });
+      return;
+    }
+
+    // Verify appointment belongs to this doctor
+    const targetAppointment = await prisma.appointment.findUnique({
+      where: { id: appointmentId },
+    });
+
+    if (!targetAppointment || targetAppointment.doctorId !== doctor.id) {
+      res.status(403).json({ success: false, message: 'Appointment does not belong to this doctor' });
       return;
     }
 

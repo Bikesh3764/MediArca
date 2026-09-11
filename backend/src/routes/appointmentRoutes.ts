@@ -4,6 +4,7 @@ import {
   bookAppointment,
   getPatientAppointments,
   cancelAppointment,
+  getAppointmentById,
 } from '../controllers/appointmentController';
 import { authenticate } from '../middleware/authMiddleware';
 
@@ -15,6 +16,7 @@ router.get('/queue-preview', getQueuePreview);
 // Protected patient booking & appointment retrieval
 router.post('/book', authenticate, bookAppointment);
 router.get('/patient', authenticate, getPatientAppointments);
+router.get('/:id', authenticate, getAppointmentById);
 router.patch('/:id/cancel', authenticate, cancelAppointment);
 
 export default router;
