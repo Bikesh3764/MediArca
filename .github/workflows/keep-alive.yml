@@ -1,0 +1,13 @@
+﻿name: Keep Backend Alive
+
+on:
+  schedule:
+    - cron: '*/12 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping MediArca Live API
+        run: curl -sI https://mediarca-mdwk.onrender.com/healthz
