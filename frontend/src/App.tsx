@@ -18,29 +18,7 @@ import { DoctorDashboard } from './pages/Doctor/DoctorDashboard';
 import { ConsultationView } from './pages/Doctor/ConsultationView';
 import { ManageSchedule } from './pages/Doctor/ManageSchedule';
 import { AdminDashboard } from './pages/Admin/AdminDashboard';
-
-// Global Stealth Shortcut Listener (Ctrl + Shift + A)
-const AdminShortcutHandler: React.FC = () => {
-  const navigate = useNavigate();
-  const { user } = useAuth();
-
-  React.useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
-        e.preventDefault();
-        if (user?.role === 'ADMIN') {
-          navigate('/admin');
-        } else {
-          navigate('/login?admin=stealth');
-        }
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [navigate, user]);
-
-  return null;
-};
+import { AdminLogin } from './pages/Auth/AdminLogin';
 
 // Protected Route Helpers
 const ProtectedRoute: React.FC<{
@@ -58,6 +36,9 @@ const ProtectedRoute: React.FC<{
   }
 
   if (!user) {
+    if (allowedRoles && allowedRoles.length === 1 && allowedRoles[0] === 'ADMIN') {
+      return <Navigate to="/admin-login" replace />;
+    }
     return <Navigate to="/login" replace />;
   }
 
@@ -73,7 +54,6 @@ export function App() {
     <ErrorBoundary>
       <AuthProvider>
         <Router>
-          <AdminShortcutHandler />
           <div className="flex flex-col min-h-screen">
           <GlobalNav />
           <main className="flex-grow">
@@ -137,7 +117,9 @@ export function App() {
                 }
               />
 
-              {/* Admin Routes */}
+              {/* Secret Admin Routes */}
+              <Route path="/admin-login" element={<AdminLogin />} />
+              <Route path="/admin/login" element={<Navigate to="/admin-login" replace />} />
               <Route
                 path="/admin"
                 element={

@@ -1,27 +1,9 @@
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Activity, Shield, Clock, Heart } from 'lucide-react';
 import { getBackendBaseUrl } from '../../services/api';
 
 export const Footer: React.FC = () => {
-  const navigate = useNavigate();
-  const clickCount = React.useRef(0);
-  const clickTimer = React.useRef<any>(null);
-
-  const handleSecretTrigger = () => {
-    clickCount.current += 1;
-    if (clickTimer.current) clearTimeout(clickTimer.current);
-
-    if (clickCount.current >= 3) {
-      clickCount.current = 0;
-      navigate('/login?admin=stealth');
-    } else {
-      clickTimer.current = setTimeout(() => {
-        clickCount.current = 0;
-      }, 1200);
-    }
-  };
-
   return (
     <footer className="bg-[#f5f5f7] border-t border-[#e0e0e0] text-[#7a7a7a] mt-auto">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-12 pb-10">
@@ -119,15 +101,7 @@ export const Footer: React.FC = () => {
         {/* Legal Fine-Print */}
         <div className="pt-6 text-[11px] text-[#86868b] leading-relaxed flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           <p>
-            Copyright © {new Date().getFullYear()}{' '}
-            <span
-              onClick={handleSecretTrigger}
-              className="cursor-default select-none hover:text-[#555] transition-colors"
-              title=""
-            >
-              MediArca Technologies Inc.
-            </span>{' '}
-            All rights reserved. Built for modern clinical operations.
+            Copyright © {new Date().getFullYear()} MediArca Technologies Inc. All rights reserved. Built for modern clinical operations.
           </p>
           <div className="flex items-center gap-4">
             <span>Privacy Policy</span>
