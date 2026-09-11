@@ -10,13 +10,9 @@ import {
   DollarSign,
   UserPlus,
   Trash2,
-  MapPin,
-  Phone,
   AlertCircle,
   CheckCircle2,
   X,
-  Clock,
-  Search,
 } from 'lucide-react';
 
 export const ClinicDashboard: React.FC = () => {

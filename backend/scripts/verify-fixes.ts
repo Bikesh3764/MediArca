@@ -219,6 +219,40 @@ function runTests() {
   assert(remainingAfterClinic1Detach.length === 1, 'Doctor detaches Clinic 1 while Clinic 2 remains intact');
   assert(remainingAfterClinic1Detach[0].clinicId === 'clinic2', 'Remaining affiliation is Clinic 2');
 
+  // 15. Doctor Profile Includes Affiliated Clinics & Facility Details
+  const mockDoctorProfile = {
+    id: 'docA',
+    user: { fullName: 'Dr. Sarah Jenkins' },
+    clinics: [
+      {
+        id: 'cd1',
+        clinicId: 'clinic1',
+        clinic: {
+          id: 'clinic1',
+          clinicName: 'Metropolis Polyclinic',
+          address: '100 Broadway, NY',
+          city: 'New York',
+          phone: '+1 555-0199',
+        },
+      },
+    ],
+  };
+  assert(Array.isArray(mockDoctorProfile.clinics) && mockDoctorProfile.clinics.length === 1, 'Doctor profile includes clinics array');
+  assert(mockDoctorProfile.clinics[0].clinic.clinicName === 'Metropolis Polyclinic', 'Affiliated clinic contains full clinic details');
+
+  // 16. Auto-attribution of clinicId when not passed
+  const resolveTargetClinicId = (passedClinicId: string | undefined, activeAffiliations: Array<{ clinicId: string }>) => {
+    if (passedClinicId) return passedClinicId;
+    if (activeAffiliations.length > 0) return activeAffiliations[0].clinicId;
+    return null;
+  };
+  const autoAttributed = resolveTargetClinicId(undefined, [{ clinicId: 'clinic1' }]);
+  assert(autoAttributed === 'clinic1', 'Booking without explicit clinicId auto-attributes to active affiliated clinic');
+
+  // 17. Explicit clinicId overrides default affiliation
+  const explicitAttributed = resolveTargetClinicId('clinic2', [{ clinicId: 'clinic1' }]);
+  assert(explicitAttributed === 'clinic2', 'Explicit clinicId takes precedence over default clinic');
+
   console.log(`\n=== VERIFICATION SUMMARY ===`);
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);

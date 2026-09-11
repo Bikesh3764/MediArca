@@ -1,6 +1,6 @@
 import React from 'react';
 import { Appointment } from '../../services/api';
-import { Clock, Calendar, MapPin, CheckCircle2, FileText } from 'lucide-react';
+import { Clock, Calendar, MapPin, CheckCircle2, FileText, Building2 } from 'lucide-react';
 import { AppleButton } from '../ui/AppleButton';
 
 interface LiveQueueTicketProps {
@@ -88,8 +88,19 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
               </h3>
               <p className="text-[14px] text-[#0066cc] font-medium">{doctor.specialty}</p>
               <div className="flex items-center gap-1.5 text-xs text-[#86868b] mt-0.5">
-                <MapPin className="w-3.5 h-3.5 flex-shrink-0 text-[#0066cc]" />
-                <span className="truncate max-w-[280px]">{doctor.clinicAddress || 'MediArca Healthcare Clinic'}</span>
+                {appointment.clinic ? (
+                  <>
+                    <Building2 className="w-3.5 h-3.5 flex-shrink-0 text-[#0066cc]" />
+                    <span className="truncate max-w-[320px]">
+                      {appointment.clinic.clinicName} — {appointment.clinic.address}{appointment.clinic.city ? `, ${appointment.clinic.city}` : ''}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <MapPin className="w-3.5 h-3.5 flex-shrink-0 text-[#0066cc]" />
+                    <span className="truncate max-w-[280px]">{doctor.clinicAddress || 'MediArca Healthcare Clinic'}</span>
+                  </>
+                )}
               </div>
             </div>
           </div>

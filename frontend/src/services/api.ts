@@ -465,6 +465,11 @@ export interface ReceptionistLinkedDoctor {
   clinicAddress?: string;
   consultationFee: number;
   slots: DoctorSlot[];
+  clinics?: Array<{
+    id: string;
+    clinicId: string;
+    clinic: ClinicProfile;
+  }>;
   todayTotalBookings: number;
   todayWaitingPatients: number;
   joinedAt: string;
@@ -539,6 +544,11 @@ export interface Doctor {
   rating: number;
   totalReviews: number;
   slots?: DoctorSlot[];
+  clinics?: Array<{
+    id: string;
+    clinicId: string;
+    clinic: ClinicProfile;
+  }>;
   user: {
     id: string;
     fullName: string;
@@ -581,6 +591,8 @@ export interface Appointment {
   id: string;
   patientId: string;
   doctorId: string;
+  clinicId?: string;
+  clinic?: ClinicProfile;
   appointmentDate: string;
   queueNumber: number;
   slotId?: string;
@@ -809,6 +821,7 @@ export const api = {
     slotId?: string;
     reasonForVisit?: string;
     symptoms?: string;
+    clinicId?: string;
   }): Promise<Appointment> {
     const clientMinutes = new Date().getHours() * 60 + new Date().getMinutes();
     const res = await fetch(`${API_BASE_URL}/appointments/book`, {

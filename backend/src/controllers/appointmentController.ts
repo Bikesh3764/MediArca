@@ -245,11 +245,21 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
           const highestQueue = dayAppointments.reduce((max, a) => Math.max(max, a.queueNumber), 0);
           const queueNumber = highestQueue + 1;
 
+          let targetClinicId = clinicId;
+          if (!targetClinicId) {
+            const activeAffiliation = await tx.clinicDoctor.findFirst({
+              where: { doctorId: doctor.id, status: 'ACTIVE' },
+            });
+            if (activeAffiliation) {
+              targetClinicId = activeAffiliation.clinicId;
+            }
+          }
+
           const created = await tx.appointment.create({
             data: {
               patientId: patient!.id,
               doctorId: doctor.id,
-              clinicId: clinicId || null,
+              clinicId: targetClinicId || null,
               appointmentDate,
               queueNumber,
               slotId: chosenSlot!.id,
@@ -264,6 +274,9 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
                 include: {
                   user: { select: { fullName: true, avatarUrl: true } },
                 },
+              },
+              clinic: {
+                select: { id: true, clinicName: true, address: true, city: true, phone: true },
               },
               patient: {
                 include: {
@@ -309,6 +322,9 @@ export const getAppointmentById = async (req: AuthRequest, res: Response): Promi
           include: {
             user: { select: { id: true, fullName: true, avatarUrl: true, email: true, phone: true } },
           },
+        },
+        clinic: {
+          select: { id: true, clinicName: true, address: true, city: true, phone: true },
         },
         patient: {
           include: {
@@ -369,6 +385,9 @@ export const getPatientAppointments = async (req: AuthRequest, res: Response): P
           include: {
             user: { select: { fullName: true, avatarUrl: true, email: true } },
           },
+        },
+        clinic: {
+          select: { id: true, clinicName: true, address: true, city: true, phone: true },
         },
         prescription: true,
         review: true,

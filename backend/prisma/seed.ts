@@ -24,6 +24,8 @@ async function main() {
   const adminPassword = await bcrypt.hash('admin123', salt);
   const doctorPassword = await bcrypt.hash('doctor123', salt);
   const patientPassword = await bcrypt.hash('patient123', salt);
+  const clinicPassword = await bcrypt.hash('clinic123', salt);
+  const receptionistPassword = await bcrypt.hash('receptionist123', salt);
 
   // 1. Create Admin
   const adminUser = await prisma.user.create({
@@ -246,14 +248,77 @@ async function main() {
     include: { patientProfile: true },
   });
 
-  // 4. Create Appointments & Queue Numbers
+  // 4. Create Demo Clinic & Receptionist
+  const clinicUser = await prisma.user.create({
+    data: {
+      email: 'clinic@mediarca.com',
+      passwordHash: clinicPassword,
+      fullName: 'Metropolis Polyclinic & Diagnostic',
+      phone: '+1 555-0199',
+      role: 'CLINIC',
+      clinicProfile: {
+        create: {
+          clinicName: 'Metropolis Polyclinic & Diagnostic',
+          address: 'Floor 3, 100 Broadway, New York, NY',
+          city: 'New York',
+          phone: '+1 555-0199',
+        },
+      },
+    },
+    include: { clinicProfile: true },
+  });
+
+  const receptionistUser = await prisma.user.create({
+    data: {
+      email: 'receptionist@mediarca.com',
+      passwordHash: receptionistPassword,
+      fullName: 'Clara Oswald',
+      phone: '+1 555-0188',
+      role: 'RECEPTIONIST',
+      receptionistProfile: {
+        create: {
+          phone: '+1 555-0188',
+        },
+      },
+    },
+    include: { receptionistProfile: true },
+  });
+
+  // Link Dr. Sarah Jenkins and Dr. Arjun Patel to the Clinic
+  await prisma.clinicDoctor.create({
+    data: {
+      clinicId: clinicUser.clinicProfile!.id,
+      doctorId: drSarahUser.doctorProfile!.id,
+      status: 'ACTIVE',
+    },
+  });
+
+  await prisma.clinicDoctor.create({
+    data: {
+      clinicId: clinicUser.clinicProfile!.id,
+      doctorId: drArjunUser.doctorProfile!.id,
+      status: 'ACTIVE',
+    },
+  });
+
+  // Link Dr. Sarah Jenkins to Receptionist Clara
+  await prisma.doctorReceptionist.create({
+    data: {
+      doctorId: drSarahUser.doctorProfile!.id,
+      receptionistId: receptionistUser.receptionistProfile!.id,
+      status: 'ACTIVE',
+    },
+  });
+
+  // 5. Create Appointments & Queue Numbers
   const todayStr = new Date().toISOString().split('T')[0];
 
-  // Appointment 1: Active Waiting Queue #1 with Dr. Sarah Jenkins
+  // Appointment 1: Active Waiting Queue #1 with Dr. Sarah Jenkins (attributed to Metropolis Polyclinic)
   const appt1 = await prisma.appointment.create({
     data: {
       patientId: patientUser.patientProfile!.id,
       doctorId: drSarahUser.doctorProfile!.id,
+      clinicId: clinicUser.clinicProfile!.id,
       appointmentDate: todayStr,
       queueNumber: 1,
       slotId: 'slot_sarah_1',
@@ -291,6 +356,7 @@ async function main() {
     data: {
       patientId: patient2User.patientProfile!.id,
       doctorId: drSarahUser.doctorProfile!.id,
+      clinicId: clinicUser.clinicProfile!.id,
       appointmentDate: todayStr,
       queueNumber: 2,
       slotId: 'slot_sarah_1',
@@ -374,71 +440,6 @@ async function main() {
         fileType: 'pdf',
       },
     ],
-  });
-
-  // 5. Create Demo Clinic
-  const clinicPassword = await bcrypt.hash('clinic123', salt);
-  const clinicUser = await prisma.user.create({
-    data: {
-      email: 'clinic@mediarca.com',
-      passwordHash: clinicPassword,
-      fullName: 'Metropolis Polyclinic & Diagnostic',
-      phone: '+1 555-0199',
-      role: 'CLINIC',
-      clinicProfile: {
-        create: {
-          clinicName: 'Metropolis Polyclinic & Diagnostic',
-          address: 'Floor 3, 100 Broadway, New York, NY',
-          city: 'New York',
-          phone: '+1 555-0199',
-        },
-      },
-    },
-    include: { clinicProfile: true },
-  });
-
-  // 6. Create Demo Receptionist
-  const receptionistPassword = await bcrypt.hash('receptionist123', salt);
-  const receptionistUser = await prisma.user.create({
-    data: {
-      email: 'receptionist@mediarca.com',
-      passwordHash: receptionistPassword,
-      fullName: 'Clara Oswald',
-      phone: '+1 555-0188',
-      role: 'RECEPTIONIST',
-      receptionistProfile: {
-        create: {
-          phone: '+1 555-0188',
-        },
-      },
-    },
-    include: { receptionistProfile: true },
-  });
-
-  // Link Dr. Sarah Jenkins and Dr. Arjun Patel to the Clinic
-  await prisma.clinicDoctor.create({
-    data: {
-      clinicId: clinicUser.clinicProfile!.id,
-      doctorId: drSarahUser.doctorProfile!.id,
-      status: 'ACTIVE',
-    },
-  });
-
-  await prisma.clinicDoctor.create({
-    data: {
-      clinicId: clinicUser.clinicProfile!.id,
-      doctorId: drArjunUser.doctorProfile!.id,
-      status: 'ACTIVE',
-    },
-  });
-
-  // Link Dr. Sarah Jenkins to Receptionist Clara
-  await prisma.doctorReceptionist.create({
-    data: {
-      doctorId: drSarahUser.doctorProfile!.id,
-      receptionistId: receptionistUser.receptionistProfile!.id,
-      status: 'ACTIVE',
-    },
   });
 
   console.log('Database seeded successfully!');

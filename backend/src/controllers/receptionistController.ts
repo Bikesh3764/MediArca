@@ -30,6 +30,11 @@ export const getMyReceptionist = async (req: AuthRequest, res: Response): Promis
                 user: {
                   select: { id: true, fullName: true, email: true, phone: true, avatarUrl: true },
                 },
+                clinics: {
+                  include: {
+                    clinic: true,
+                  },
+                },
               },
             },
           },
@@ -76,6 +81,7 @@ export const getMyReceptionist = async (req: AuthRequest, res: Response): Promis
           clinicAddress: dr.doctor.clinicAddress,
           consultationFee: dr.doctor.consultationFee,
           slots: activeSlot,
+          clinics: dr.doctor.clinics,
           todayTotalBookings: todayCount,
           todayWaitingPatients: waitingCount,
           joinedAt: dr.createdAt,
@@ -415,6 +421,16 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
           const highestQueue = dayAppointments.reduce((max, a) => Math.max(max, a.queueNumber), 0);
           const queueNumber = highestQueue + 1;
 
+          let targetClinicId = clinicId;
+          if (!targetClinicId) {
+            const activeAffiliation = await tx.clinicDoctor.findFirst({
+              where: { doctorId: doctor.id, status: 'ACTIVE' },
+            });
+            if (activeAffiliation) {
+              targetClinicId = activeAffiliation.clinicId;
+            }
+          }
+
           const slotStartMins = timeToMinutes(chosenSlot.startTime);
           const offsetMins = bookedInSlot * chosenSlot.avgConsultationMinutes;
           const estimatedTime = minutesTo12Hour(slotStartMins + offsetMins);
@@ -424,7 +440,7 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
             data: {
               patientId: patientProfile!.id,
               doctorId: doctor.id,
-              clinicId: clinicId || null,
+              clinicId: targetClinicId || null,
               appointmentDate,
               queueNumber,
               checkingWindow,
@@ -437,6 +453,9 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
             include: {
               doctor: {
                 include: { user: { select: { fullName: true } } },
+              },
+              clinic: {
+                select: { id: true, clinicName: true, address: true, city: true, phone: true },
               },
               patient: {
                 include: { user: { select: { fullName: true, phone: true } } },

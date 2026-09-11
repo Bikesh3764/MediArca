@@ -2,10 +2,8 @@ import React, { useEffect, useState } from 'react';
 import {
   api,
   ReceptionistDashboardData,
-  ReceptionistLinkedDoctor,
   ReceptionistQueueItem,
   getLocalDateString,
-  format12Hour,
   Doctor,
 } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -19,13 +17,10 @@ import {
   AlertCircle,
   X,
   Printer,
-  Calendar,
-  Phone,
   Trash2,
   Stethoscope,
-  ChevronRight,
   Activity,
-  UserCheck,
+  Building2,
 } from 'lucide-react';
 
 export const ReceptionistDashboard: React.FC = () => {
@@ -33,7 +28,7 @@ export const ReceptionistDashboard: React.FC = () => {
 
   const [data, setData] = useState<ReceptionistDashboardData | null>(null);
   const [allDoctors, setAllDoctors] = useState<Doctor[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'walkin' | 'queue' | 'doctors'>('walkin');
 
   const [error, setError] = useState<string | null>(null);
@@ -41,6 +36,7 @@ export const ReceptionistDashboard: React.FC = () => {
 
   // Walk-in form state
   const [selectedDoctorId, setSelectedDoctorId] = useState<string>('');
+  const [walkinClinicId, setWalkinClinicId] = useState<string>('');
   const [appointmentDate, setAppointmentDate] = useState<string>(getLocalDateString());
   const [slotId, setSlotId] = useState<string>('');
   const [patientName, setPatientName] = useState('');
@@ -120,6 +116,17 @@ export const ReceptionistDashboard: React.FC = () => {
   const linkedDoctors = data?.doctors || [];
   const activeSelectedDoctor = linkedDoctors.find((d) => d.doctorId === selectedDoctorId);
 
+  useEffect(() => {
+    if (activeSelectedDoctor?.clinics && activeSelectedDoctor.clinics.length > 0) {
+      setWalkinClinicId((prev) => {
+        const stillValid = activeSelectedDoctor.clinics?.some((c) => c.clinicId === prev);
+        return stillValid ? prev : activeSelectedDoctor.clinics![0].clinicId;
+      });
+    } else {
+      setWalkinClinicId('');
+    }
+  }, [activeSelectedDoctor]);
+
   // Handle rapid walk-in booking
   const handleWalkinSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -138,6 +145,7 @@ export const ReceptionistDashboard: React.FC = () => {
         gender,
         appointmentDate,
         slotId: slotId || undefined,
+        clinicId: walkinClinicId || undefined,
         reasonForVisit: reasonForVisit.trim() || 'Rapid Walk-in Consultation',
       });
 
@@ -456,6 +464,27 @@ export const ReceptionistDashboard: React.FC = () => {
                       </select>
                     </div>
                   </div>
+
+                  {/* Clinic / Facility Attribution */}
+                  {activeSelectedDoctor?.clinics && activeSelectedDoctor.clinics.length > 0 && (
+                    <div>
+                      <label className="block text-xs font-medium text-[#1d1d1f] mb-1 flex items-center gap-1.5">
+                        <Building2 className="w-3.5 h-3.5 text-[#0066cc]" />
+                        Clinic / Facility Attribution
+                      </label>
+                      <select
+                        value={walkinClinicId}
+                        onChange={(e) => setWalkinClinicId(e.target.value)}
+                        className="w-full h-11 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white focus:outline-none focus:border-[#0066cc]"
+                      >
+                        {activeSelectedDoctor.clinics.map((c) => (
+                          <option key={c.clinicId} value={c.clinicId}>
+                            {c.clinic.clinicName} — {c.clinic.address}{c.clinic.city ? `, ${c.clinic.city}` : ''}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
 
                   {/* Patient Name & Phone */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

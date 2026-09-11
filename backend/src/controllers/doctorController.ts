@@ -50,6 +50,11 @@ export const getDoctors = async (req: Request, res: Response): Promise<void> => 
             phone: true,
           },
         },
+        clinics: {
+          include: {
+            clinic: true,
+          },
+        },
         reviews: {
           take: 3,
           orderBy: { createdAt: 'desc' },
@@ -87,6 +92,11 @@ export const getDoctorById = async (req: Request, res: Response): Promise<void> 
             email: true,
             avatarUrl: true,
             phone: true,
+          },
+        },
+        clinics: {
+          include: {
+            clinic: true,
           },
         },
         reviews: {

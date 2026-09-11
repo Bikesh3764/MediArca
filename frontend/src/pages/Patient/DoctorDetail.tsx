@@ -21,6 +21,7 @@ import {
   Calendar,
   UserCheck,
   ChevronLeft,
+  Building2,
 } from 'lucide-react';
 
 export const DoctorDetail: React.FC = () => {
@@ -154,13 +155,40 @@ export const DoctorDetail: React.FC = () => {
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-[#86868b] mb-2">About the Doctor</h3>
                 <p className="text-[15px] leading-relaxed text-[#1d1d1f]">{doctor.bio}</p>
 
-                <div className="mt-5 p-4 rounded-2xl bg-[#f5f5f7] flex items-start gap-3 border border-[#e5e5ea]">
-                  <MapPin className="w-5 h-5 text-[#0066cc] flex-shrink-0 mt-0.5" />
-                  <div>
-                    <h4 className="text-xs font-semibold text-[#1d1d1f]">Clinic / Hospital Location</h4>
-                    <p className="text-xs text-[#86868b] mt-0.5">{doctor.clinicAddress || 'MediArca Healthcare Facility'}</p>
+                {/* Affiliated Clinics */}
+                {doctor.clinics && doctor.clinics.length > 0 ? (
+                  <div className="mt-5 space-y-2">
+                    <h4 className="text-xs font-semibold text-[#1d1d1f] flex items-center gap-1.5">
+                      <Building2 className="w-4 h-4 text-[#0066cc]" />
+                      Affiliated Practice Locations & Clinics ({doctor.clinics.length})
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {doctor.clinics.map((cd) => (
+                        <div key={cd.clinicId} className="p-3 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea]">
+                          <span className="text-xs font-semibold text-[#1d1d1f] block">
+                            {cd.clinic.clinicName}
+                          </span>
+                          <p className="text-[11px] text-[#86868b] mt-0.5">
+                            {cd.clinic.address}{cd.clinic.city ? `, ${cd.clinic.city}` : ''}
+                          </p>
+                          {cd.clinic.phone && (
+                            <span className="text-[10px] text-[#0066cc] block mt-1">
+                              Contact: {cd.clinic.phone}
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="mt-5 p-4 rounded-2xl bg-[#f5f5f7] flex items-start gap-3 border border-[#e5e5ea]">
+                    <MapPin className="w-5 h-5 text-[#0066cc] flex-shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="text-xs font-semibold text-[#1d1d1f]">Clinic / Hospital Location</h4>
+                      <p className="text-xs text-[#86868b] mt-0.5">{doctor.clinicAddress || 'MediArca Healthcare Facility'}</p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Patient Reviews */}

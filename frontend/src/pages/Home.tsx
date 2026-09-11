@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   api,
   Doctor,
@@ -98,14 +98,19 @@ export const Home: React.FC = () => {
           return false;
         }
 
-        // Search Query (Doctor name, qualifications, clinic address, bio)
+        // Search Query (Doctor name, qualifications, clinic address, bio, clinic names)
         if (searchQuery.trim()) {
           const q = searchQuery.toLowerCase();
           const matchesName = doc.user.fullName.toLowerCase().includes(q);
           const matchesSpec = doc.specialty.toLowerCase().includes(q);
           const matchesQual = doc.qualifications?.toLowerCase().includes(q);
           const matchesClinic = doc.clinicAddress?.toLowerCase().includes(q);
-          if (!matchesName && !matchesSpec && !matchesQual && !matchesClinic) {
+          const matchesAffiliated = doc.clinics?.some((c) =>
+            c.clinic.clinicName.toLowerCase().includes(q) ||
+            c.clinic.address.toLowerCase().includes(q) ||
+            c.clinic.city?.toLowerCase().includes(q)
+          );
+          if (!matchesName && !matchesSpec && !matchesQual && !matchesClinic && !matchesAffiliated) {
             return false;
           }
         }
@@ -113,7 +118,13 @@ export const Home: React.FC = () => {
         // Location Query
         if (locationQuery.trim()) {
           const lq = locationQuery.toLowerCase();
-          if (!doc.clinicAddress?.toLowerCase().includes(lq)) {
+          const matchesClinic = doc.clinicAddress?.toLowerCase().includes(lq);
+          const matchesAffiliated = doc.clinics?.some((c) =>
+            c.clinic.address.toLowerCase().includes(lq) ||
+            c.clinic.city?.toLowerCase().includes(lq) ||
+            c.clinic.clinicName.toLowerCase().includes(lq)
+          );
+          if (!matchesClinic && !matchesAffiliated) {
             return false;
           }
         }
@@ -516,10 +527,23 @@ export const Home: React.FC = () => {
                           </div>
                         </div>
 
-                        {/* Clinic Address */}
+                        {/* Clinic / Practice Venue */}
                         <div className="flex items-center gap-1.5 text-xs text-[#86868b] mb-3.5 line-clamp-1">
-                          <MapPin className="w-3.5 h-3.5 text-[#86868b] flex-shrink-0" />
-                          <span className="truncate">{doctor.clinicAddress || 'MediArca Healthcare Centre'}</span>
+                          {doctor.clinics && doctor.clinics.length > 0 ? (
+                            <>
+                              <Building2 className="w-3.5 h-3.5 text-[#0066cc] flex-shrink-0" />
+                              <span className="truncate">
+                                {doctor.clinics[0].clinic.clinicName}
+                                {doctor.clinics.length > 1 ? ` (+${doctor.clinics.length - 1} more)` : ''}
+                                {doctor.clinics[0].clinic.city ? ` • ${doctor.clinics[0].clinic.city}` : ''}
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <MapPin className="w-3.5 h-3.5 text-[#86868b] flex-shrink-0" />
+                              <span className="truncate">{doctor.clinicAddress || 'MediArca Healthcare Centre'}</span>
+                            </>
+                          )}
                         </div>
 
                         {/* Checking Shifts Badges */}

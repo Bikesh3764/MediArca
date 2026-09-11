@@ -20,6 +20,8 @@ import {
   CheckCircle2,
   ChevronLeft,
   Check,
+  Building2,
+  MapPin,
 } from 'lucide-react';
 
 export const BookAppointment: React.FC = () => {
@@ -31,6 +33,7 @@ export const BookAppointment: React.FC = () => {
   const [doctor, setDoctor] = useState<Doctor | null>(null);
   const [appointmentDate, setAppointmentDate] = useState<string>(initialDate);
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(initialSlot);
+  const [selectedClinicId, setSelectedClinicId] = useState<string>('');
   const [reasonForVisit, setReasonForVisit] = useState('');
   const [symptoms, setSymptoms] = useState('');
   const [queuePreview, setQueuePreview] = useState<QueuePreview | null>(null);
@@ -55,6 +58,9 @@ export const BookAppointment: React.FC = () => {
       try {
         const docData = await api.getDoctorById(id);
         setDoctor(docData);
+        if (docData.clinics && docData.clinics.length > 0) {
+          setSelectedClinicId(docData.clinics[0].clinicId);
+        }
         const slots = parseDoctorSlots(docData);
         if (slots.length > 0) {
           setSelectedSlotId((prev) => {
@@ -107,6 +113,7 @@ export const BookAppointment: React.FC = () => {
     try {
       await api.bookAppointment({
         doctorId: doctor.id,
+        clinicId: selectedClinicId || undefined,
         appointmentDate,
         slotId: selectedSlotId || undefined,
         reasonForVisit: reasonForVisit.trim() || 'General Medical Consultation',
@@ -177,8 +184,63 @@ export const BookAppointment: React.FC = () => {
             </div>
           </div>
 
+          {/* Clinic / Practice Venue Selection */}
+          {doctor.clinics && doctor.clinics.length > 0 && (
+            <div className="py-4 border-b border-[#f0f0f0]">
+              <label className="block text-xs font-medium text-[#1d1d1f] mb-2 flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <Building2 className="w-3.5 h-3.5 text-[#0066cc]" />
+                  Consultation Venue / Clinic
+                </span>
+                <span className="text-[11px] text-[#86868b]">
+                  {doctor.clinics.length} facility location{doctor.clinics.length > 1 ? 's' : ''}
+                </span>
+              </label>
+
+              {doctor.clinics.length === 1 ? (
+                <div className="p-3.5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] flex items-start gap-2.5">
+                  <MapPin className="w-4 h-4 text-[#0066cc] mt-0.5 flex-shrink-0" />
+                  <div>
+                    <span className="text-xs font-semibold text-[#1d1d1f] block">
+                      {doctor.clinics[0].clinic.clinicName}
+                    </span>
+                    <span className="text-[11px] text-[#86868b]">
+                      {doctor.clinics[0].clinic.address}{doctor.clinics[0].clinic.city ? `, ${doctor.clinics[0].clinic.city}` : ''}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {doctor.clinics.map((c) => {
+                    const isSelected = selectedClinicId === c.clinicId;
+                    return (
+                      <button
+                        key={c.clinicId}
+                        type="button"
+                        onClick={() => setSelectedClinicId(c.clinicId)}
+                        className={`p-3 rounded-2xl border text-left transition-all ${
+                          isSelected
+                            ? 'bg-[#0066cc]/10 border-[#0066cc] ring-1 ring-[#0066cc]/30 shadow-xs'
+                            : 'bg-[#f5f5f7] border-[#e5e5ea] hover:bg-white'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs font-semibold text-[#1d1d1f]">{c.clinic.clinicName}</span>
+                          {isSelected && <span className="w-2 h-2 rounded-full bg-[#0066cc]"></span>}
+                        </div>
+                        <span className="text-[11px] text-[#86868b] block line-clamp-1">
+                          {c.clinic.address}{c.clinic.city ? `, ${c.clinic.city}` : ''}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Date Picker with Quick Shortcuts */}
-          <div className="pt-6 pb-2">
+          <div className="pt-4 pb-2">
             <div className="flex items-center justify-between mb-1.5">
               <label className="text-xs font-medium text-[#1d1d1f] flex items-center gap-1">
                 <Calendar className="w-3.5 h-3.5 text-[#0066cc]" />

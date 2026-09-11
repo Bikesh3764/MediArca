@@ -317,12 +317,12 @@ export const DoctorDashboard: React.FC = () => {
                 <div>
                   <span className="text-xs text-[#86868b] uppercase font-semibold">Clinic Attributed Revenue</span>
                   <h3 className="text-3xl font-bold text-emerald-600 mt-1 tracking-tight">
-                    ₹{(
+                    ${(
                       affiliations?.clinics.reduce(
                         (sum: number, c) => sum + (c.revenue || 0),
                         0
                       ) || 0
-                    ).toLocaleString('en-IN')}
+                    ).toLocaleString('en-US')}
                   </h3>
                 </div>
                 <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
@@ -455,7 +455,7 @@ export const DoctorDashboard: React.FC = () => {
                               Attributed Revenue
                             </span>
                             <p className="text-base font-bold text-emerald-700 mt-0.5">
-                              ₹{clinic.revenue.toLocaleString('en-IN')}
+                              ${clinic.revenue.toLocaleString('en-US')}
                             </p>
                           </div>
                         </div>
