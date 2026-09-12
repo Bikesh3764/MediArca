@@ -124,6 +124,32 @@ export const parseDoctorSlots = (doctor: any): DoctorSlot[] => {
   ];
 };
 
+export const formatDoctorDegrees = (qualifications?: string | null): string => {
+  if (!qualifications || !qualifications.trim()) return 'Certified Specialist';
+
+  // Extract degrees only, excluding medical schools, universities, colleges, hospitals, institutes
+  const parts = qualifications.split(',');
+  const cleanedParts = parts.map((part) => {
+    const subParts = part.split(/\s*[-–—]\s*/);
+    if (subParts.length > 1) {
+      const degreesOnly = subParts.filter(
+        (sp) => !/(university|college|school|hospital|institute|academy|faculty|campus|stanford|harvard|hopkins|oxford|cambridge|aiims|pgi)/i.test(sp)
+      );
+      return degreesOnly.join(', ').trim();
+    }
+    if (/(university|college|school|hospital|institute|academy|faculty|campus|stanford|harvard|hopkins|oxford|cambridge|aiims|pgi)/i.test(part)) {
+      return '';
+    }
+    return part.trim();
+  }).filter(Boolean);
+
+  const result = cleanedParts.join(', ').trim();
+  if (result) return result;
+
+  const firstSegment = qualifications.split(/\s*[-–—]\s*/)[0].trim();
+  return firstSegment || 'Certified Specialist';
+};
+
 export const getLocalDateString = (d: Date = new Date()): string => {
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, '0');
@@ -243,7 +269,7 @@ export const DEMO_DOCTORS: Doctor[] = [
     id: 'doc_sarah_01',
     userId: 'usr_sarah_02',
     specialty: 'Cardiology',
-    qualifications: 'MD - Harvard Medical School, FACC',
+    qualifications: 'MD, FACC',
     experienceYears: 14,
     consultationFee: 80.0,
     bio: 'Specialist in preventive cardiology, hypertension, coronary artery disease, and heart failure management with over 14 years of clinical experience.',
@@ -273,6 +299,32 @@ export const DEMO_DOCTORS: Doctor[] = [
         avgConsultationMinutes: 3.0, // 180 mins / 60 = 3.0 mins
       },
     ],
+    clinics: [
+      {
+        id: 'cd_sarah_1',
+        clinicId: 'clinic_demo_1',
+        clinic: {
+          id: 'clinic_demo_1',
+          clinicName: 'City Heart & Vascular Institute',
+          address: 'Suite 402, 5th Avenue',
+          city: 'New York',
+          phone: '+1 (212) 555-0199',
+          isVerified: true,
+        },
+      },
+      {
+        id: 'cd_sarah_2',
+        clinicId: 'clinic_demo_2',
+        clinic: {
+          id: 'clinic_demo_2',
+          clinicName: 'Manhattan Specialty Outpatient Clinic',
+          address: 'Floor 3, Lexington Ave',
+          city: 'New York',
+          phone: '+1 (212) 555-0244',
+          isVerified: true,
+        },
+      },
+    ],
     user: {
       id: 'usr_sarah_02',
       fullName: 'Dr. Sarah Jenkins',
@@ -284,7 +336,7 @@ export const DEMO_DOCTORS: Doctor[] = [
     id: 'doc_arjun_02',
     userId: 'usr_arjun_03',
     specialty: 'Dermatology',
-    qualifications: 'MD - Stanford Medicine, Board Certified',
+    qualifications: 'MD, Board Certified',
     experienceYears: 10,
     consultationFee: 65.0,
     bio: 'Consultant dermatologist focusing on acne, eczema, psoriasis, skin cancer screening, and cosmetic laser treatments.',
@@ -314,6 +366,20 @@ export const DEMO_DOCTORS: Doctor[] = [
         avgConsultationMinutes: 5.0, // 150 mins / 30 = 5.0 mins
       },
     ],
+    clinics: [
+      {
+        id: 'cd_arjun_1',
+        clinicId: 'clinic_demo_3',
+        clinic: {
+          id: 'clinic_demo_3',
+          clinicName: 'Apex Skin & Aesthetics Clinic',
+          address: 'Floor 2, Market Street',
+          city: 'San Francisco',
+          phone: '+1 (415) 555-0177',
+          isVerified: true,
+        },
+      },
+    ],
     user: {
       id: 'usr_arjun_03',
       fullName: 'Dr. Arjun Patel',
@@ -325,7 +391,7 @@ export const DEMO_DOCTORS: Doctor[] = [
     id: 'doc_elena_03',
     userId: 'usr_elena_04',
     specialty: 'Pediatrics',
-    qualifications: 'MD, FAAP - Johns Hopkins University',
+    qualifications: 'MD, FAAP',
     experienceYears: 12,
     consultationFee: 70.0,
     bio: 'Dedicated pediatrician providing comprehensive child wellness care, developmental tracking, vaccinations, and adolescent healthcare.',
@@ -353,6 +419,32 @@ export const DEMO_DOCTORS: Doctor[] = [
         endTime: '18:00',
         maxPatients: 40,
         avgConsultationMinutes: 4.5, // 180 mins / 40 = 4.5 mins
+      },
+    ],
+    clinics: [
+      {
+        id: 'cd_elena_1',
+        clinicId: 'clinic_demo_4',
+        clinic: {
+          id: 'clinic_demo_4',
+          clinicName: 'Little Steps Children Care',
+          address: 'Building B, Michigan Ave',
+          city: 'Chicago',
+          phone: '+1 (312) 555-0188',
+          isVerified: true,
+        },
+      },
+      {
+        id: 'cd_elena_2',
+        clinicId: 'clinic_demo_5',
+        clinic: {
+          id: 'clinic_demo_5',
+          clinicName: 'Metro Pediatric Center',
+          address: 'Suite 104, West Adams St',
+          city: 'Chicago',
+          phone: '+1 (312) 555-0192',
+          isVerified: true,
+        },
       },
     ],
     user: {

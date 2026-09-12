@@ -52,7 +52,7 @@ async function main() {
       doctorProfile: {
         create: {
           specialty: 'Cardiology',
-          qualifications: 'MD - Harvard Medical School, FACC',
+          qualifications: 'MD, FACC',
           experienceYears: 14,
           consultationFee: 80.0,
           bio: 'Specialist in preventive cardiology, hypertension, coronary artery disease, and heart failure management with over 14 years of clinical experience.',
@@ -100,7 +100,7 @@ async function main() {
       doctorProfile: {
         create: {
           specialty: 'Dermatology',
-          qualifications: 'MD - Stanford Medicine, Board Certified',
+          qualifications: 'MD, Board Certified',
           experienceYears: 10,
           consultationFee: 65.0,
           bio: 'Consultant dermatologist focusing on acne, eczema, psoriasis, skin cancer screening, and cosmetic laser treatments.',
@@ -148,7 +148,7 @@ async function main() {
       doctorProfile: {
         create: {
           specialty: 'Pediatrics',
-          qualifications: 'MD, FAAP - Johns Hopkins University',
+          qualifications: 'MD, FAAP',
           experienceYears: 12,
           consultationFee: 70.0,
           bio: 'Dedicated pediatrician providing comprehensive child wellness care, developmental tracking, vaccinations, and adolescent healthcare.',
@@ -196,7 +196,7 @@ async function main() {
       doctorProfile: {
         create: {
           specialty: 'Orthopedics',
-          qualifications: 'DO - Chicago College of Osteopathic Medicine',
+          qualifications: 'DO',
           experienceYears: 7,
           consultationFee: 90.0,
           bio: 'Specialist in joint preservation, sports injuries, fracture management, and minimally invasive orthopedic surgery.',
@@ -262,6 +262,29 @@ async function main() {
           address: 'Floor 3, 100 Broadway, New York, NY',
           city: 'New York',
           phone: '+1 555-0199',
+          isVerified: true,
+          verificationStatus: 'VERIFIED',
+        },
+      },
+    },
+    include: { clinicProfile: true },
+  });
+
+  const clinic2User = await prisma.user.create({
+    data: {
+      email: 'clinic2@mediarca.com',
+      passwordHash: clinicPassword,
+      fullName: 'Manhattan Specialty Care',
+      phone: '+1 555-0244',
+      role: 'CLINIC',
+      clinicProfile: {
+        create: {
+          clinicName: 'Manhattan Specialty Care',
+          address: 'Floor 4, 350 5th Avenue, New York, NY',
+          city: 'New York',
+          phone: '+1 555-0244',
+          isVerified: true,
+          verificationStatus: 'VERIFIED',
         },
       },
     },
@@ -284,10 +307,19 @@ async function main() {
     include: { receptionistProfile: true },
   });
 
-  // Link Dr. Sarah Jenkins and Dr. Arjun Patel to the Clinic
+  // Link Dr. Sarah Jenkins and Dr. Arjun Patel to Clinic 1
   await prisma.clinicDoctor.create({
     data: {
       clinicId: clinicUser.clinicProfile!.id,
+      doctorId: drSarahUser.doctorProfile!.id,
+      status: 'ACTIVE',
+    },
+  });
+
+  // Also link Dr. Sarah Jenkins to Clinic 2 (Multiple Clinics!)
+  await prisma.clinicDoctor.create({
+    data: {
+      clinicId: clinic2User.clinicProfile!.id,
       doctorId: drSarahUser.doctorProfile!.id,
       status: 'ACTIVE',
     },

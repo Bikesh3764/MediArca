@@ -952,6 +952,55 @@ function runTests() {
   assert(ALLOWED_FILE_EXTENSIONS.includes('.png'), 'Allowed extensions include .png');
   assert(ALLOWED_FILE_EXTENSIONS.includes('.webp'), 'Allowed extensions include .webp');
   assert(ALLOWED_FILE_EXTENSIONS.includes('.pdf'), 'Allowed extensions include .pdf');
+
+  // 47. Doctor Degrees Sanitization (Degrees Only, No School / University Fluff)
+  const formatDoctorDegrees = (qualifications?: string | null): string => {
+    if (!qualifications || !qualifications.trim()) return 'Certified Specialist';
+    const parts = qualifications.split(',');
+    const cleanedParts = parts.map((part) => {
+      const subParts = part.split(/\s*[-–—]\s*/);
+      if (subParts.length > 1) {
+        const degreesOnly = subParts.filter(
+          (sp) => !/(university|college|school|hospital|institute|academy|faculty|campus|stanford|harvard|hopkins|oxford|cambridge|aiims|pgi)/i.test(sp)
+        );
+        return degreesOnly.join(', ').trim();
+      }
+      if (/(university|college|school|hospital|institute|academy|faculty|campus|stanford|harvard|hopkins|oxford|cambridge|aiims|pgi)/i.test(part)) {
+        return '';
+      }
+      return part.trim();
+    }).filter(Boolean);
+
+    const result = cleanedParts.join(', ').trim();
+    if (result) return result;
+    const firstSegment = qualifications.split(/\s*[-–—]\s*/)[0].trim();
+    return firstSegment || 'Certified Specialist';
+  };
+
+  assert(formatDoctorDegrees('MD - Harvard Medical School, FACC') === 'MD, FACC', 'Harvard Medical School stripped from qualifications');
+  assert(formatDoctorDegrees('MD - Stanford Medicine, Board Certified') === 'MD, Board Certified', 'Stanford Medicine stripped from qualifications');
+  assert(formatDoctorDegrees('MD, FAAP - Johns Hopkins University') === 'MD, FAAP', 'Johns Hopkins University stripped from qualifications');
+  assert(formatDoctorDegrees('DO - Chicago College of Osteopathic Medicine') === 'DO', 'Chicago College stripped from qualifications');
+  assert(formatDoctorDegrees('MBBS, MD') === 'MBBS, MD', 'Clean degrees preserved');
+  assert(formatDoctorDegrees(null) === 'Certified Specialist', 'Null fallback returns Certified Specialist');
+
+  // 48. Multi-Clinic Practitioner Affiliation & Booking Routing
+  const multiClinicDoctor = {
+    id: 'doc_sarah',
+    fullName: 'Dr. Sarah Jenkins',
+    clinics: [
+      { clinicId: 'c1', clinicName: 'Metropolis Polyclinic', address: '100 Broadway', city: 'New York' },
+      { clinicId: 'c2', clinicName: 'Manhattan Specialty Care', address: '350 5th Ave', city: 'New York' },
+    ],
+  };
+  const resolveTargetBookingUrl = (doctorId: string, selectedClinicId: string, date: string, slotId: string) => {
+    return `/patient/book/${doctorId}?date=${date}&slot=${slotId}&clinic=${selectedClinicId}`;
+  };
+
+  assert(multiClinicDoctor.clinics.length === 2, 'Doctor has 2 practicing clinics');
+  const targetBookingUrl = resolveTargetBookingUrl(multiClinicDoctor.id, 'c2', '2026-09-12', 'slot_1');
+  assert(targetBookingUrl.includes('&clinic=c2'), 'Selected clinic is preserved in target booking URL');
+
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);
 

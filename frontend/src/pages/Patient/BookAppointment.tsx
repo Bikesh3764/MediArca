@@ -8,6 +8,7 @@ import {
   format12Hour,
   getLocalDateString,
   getTomorrowDateString,
+  formatDoctorDegrees,
 } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { DashboardLayout, DashboardNavItem } from '../../components/layout/DashboardLayout';
@@ -61,6 +62,7 @@ export const BookAppointment: React.FC = () => {
   const [searchParams] = useSearchParams();
   const initialDate = searchParams.get('date') || getLocalDateString();
   const initialSlot = searchParams.get('slot') || null;
+  const initialClinic = searchParams.get('clinic') || null;
 
   const [doctor, setDoctor] = useState<Doctor | null>(null);
   const [appointmentDate, setAppointmentDate] = useState<string>(initialDate);
@@ -94,7 +96,9 @@ export const BookAppointment: React.FC = () => {
       try {
         const docData = await api.getDoctorById(id);
         setDoctor(docData);
-        if (docData.clinics && docData.clinics.length > 0) {
+        if (initialClinic && docData.clinics?.some((c: any) => c.clinicId === initialClinic)) {
+          setSelectedClinicId(initialClinic);
+        } else if (docData.clinics && docData.clinics.length > 0) {
           setSelectedClinicId(docData.clinics[0].clinicId);
         }
         const slots = parseDoctorSlots(docData);
@@ -114,7 +118,7 @@ export const BookAppointment: React.FC = () => {
     };
 
     fetchDoctor();
-  }, [id, user, loadingAuth, navigate, initialSlot]);
+  }, [id, user, loadingAuth, navigate, initialSlot, initialClinic]);
 
   // Fetch queue preview when date or slotId changes
   useEffect(() => {
@@ -299,7 +303,7 @@ export const BookAppointment: React.FC = () => {
             <div>
               <h3 className="text-xl font-semibold text-[#1d1d1f] tracking-tight">{doctor.user.fullName}</h3>
               <p className="text-xs text-[#0088e8] font-medium">
-                {doctor.specialty} • {doctor.qualifications}
+                {doctor.specialty} • {formatDoctorDegrees(doctor.qualifications)}
               </p>
               <p className="text-xs text-[#86868b] mt-0.5">{doctor.clinicAddress || 'MediArca Clinic'}</p>
             </div>

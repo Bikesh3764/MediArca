@@ -8,6 +8,7 @@ import {
   format12Hour,
   getLocalDateString,
   getTomorrowDateString,
+  formatDoctorDegrees,
 } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { DashboardLayout, DashboardNavItem } from '../../components/layout/DashboardLayout';
@@ -28,6 +29,7 @@ import {
   Stethoscope,
   User as UserIcon,
   AlertCircle,
+  Check,
 } from 'lucide-react';
 
 export const DoctorDetail: React.FC = () => {
@@ -36,6 +38,7 @@ export const DoctorDetail: React.FC = () => {
   const [doctor, setDoctor] = useState<Doctor | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>(() => getLocalDateString());
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
+  const [selectedClinicId, setSelectedClinicId] = useState<string>('');
   const [queuePreview, setQueuePreview] = useState<QueuePreview | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingQueue, setLoadingQueue] = useState(false);
@@ -77,6 +80,12 @@ export const DoctorDetail: React.FC = () => {
       try {
         const data = await api.getDoctorById(id);
         setDoctor(data);
+        if (data.clinics && data.clinics.length > 0) {
+          const firstClinicId = data.clinics[0]?.clinicId;
+          if (firstClinicId) {
+            setSelectedClinicId((prev) => prev || firstClinicId);
+          }
+        }
         const slots = parseDoctorSlots(data);
         if (slots.length > 0) {
           setSelectedSlotId((prev) => prev || slots[0].id);
@@ -211,7 +220,7 @@ export const DoctorDetail: React.FC = () => {
                     <span title="Verified Practitioner"><ShieldCheck className="w-5 h-5 text-[#10b981]" /></span>
                   </div>
                   <p className="text-[15px] text-[#0088e8] font-medium mt-0.5">{doctor.specialty}</p>
-                  <p className="text-xs text-[#86868b] mt-1">{doctor.qualifications}</p>
+                  <p className="text-xs text-[#6e6e73] font-medium mt-1">{formatDoctorDegrees(doctor.qualifications)}</p>
                   <div className="flex items-center gap-3 mt-3 text-xs text-[#1d1d1f]">
                     <span className="flex items-center gap-1">
                       <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
@@ -257,27 +266,57 @@ export const DoctorDetail: React.FC = () => {
 
                 {/* Affiliated Clinics */}
                 {doctor.clinics && doctor.clinics.length > 0 ? (
-                  <div className="mt-5 space-y-2">
-                    <h4 className="text-xs font-semibold text-[#1d1d1f] flex items-center gap-1.5">
-                      <Building2 className="w-4 h-4 text-[#0088e8]" />
-                      Affiliated Practice Locations & Clinics ({doctor.clinics.length})
-                    </h4>
+                  <div className="mt-5 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xs font-semibold text-[#1d1d1f] flex items-center gap-1.5">
+                        <Building2 className="w-4 h-4 text-[#0088e8]" />
+                        Practicing Clinics & Consultation Venues ({doctor.clinics.length})
+                      </h4>
+                      <span className="text-[11px] text-[#86868b]">Select clinic for token appointment</span>
+                    </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {doctor.clinics.map((cd) => (
-                        <div key={cd.clinicId} className="p-3 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea]">
-                          <span className="text-xs font-semibold text-[#1d1d1f] block">
-                            {cd.clinic.clinicName}
-                          </span>
-                          <p className="text-[11px] text-[#86868b] mt-0.5">
-                            {cd.clinic.address}{cd.clinic.city ? `, ${cd.clinic.city}` : ''}
-                          </p>
-                          {cd.clinic.phone && (
-                            <span className="text-[10px] text-[#0088e8] block mt-1">
-                              Contact: {cd.clinic.phone}
-                            </span>
-                          )}
-                        </div>
-                      ))}
+                      {doctor.clinics.map((cd) => {
+                        const isSelected = selectedClinicId === cd.clinicId;
+                        return (
+                          <div
+                            key={cd.clinicId}
+                            onClick={() => setSelectedClinicId(cd.clinicId)}
+                            className={`p-4 rounded-2xl border cursor-pointer transition-all duration-200 flex flex-col justify-between ${
+                              isSelected
+                                ? 'bg-[#0088e8]/5 border-[#0088e8] ring-1 ring-[#0088e8]/30 shadow-xs'
+                                : 'bg-[#f5f5f7] border-[#e5e5ea] hover:border-[#0088e8]/40 hover:bg-white'
+                            }`}
+                          >
+                            <div>
+                              <div className="flex items-start justify-between gap-2 mb-1">
+                                <span className="text-sm font-semibold text-[#1d1d1f] block">
+                                  {cd.clinic.clinicName}
+                                </span>
+                                {isSelected && (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#0088e8] text-white flex-shrink-0">
+                                    <Check className="w-3 h-3" />
+                                    Active Venue
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs text-[#86868b] mt-0.5">
+                                {cd.clinic.address}{cd.clinic.city ? `, ${cd.clinic.city}` : ''}
+                              </p>
+                              {cd.clinic.phone && (
+                                <span className="text-[11px] text-[#0088e8] block mt-1.5 font-medium">
+                                  Contact: {cd.clinic.phone}
+                                </span>
+                              )}
+                            </div>
+                            <div className="mt-3 pt-2.5 border-t border-[#e5e5ea]/70 flex items-center justify-between text-[11px]">
+                              <span className="text-[#86868b]">In-Person Clinic</span>
+                              <span className={`font-semibold ${isSelected ? 'text-[#0088e8]' : 'text-[#86868b]'}`}>
+                                {isSelected ? 'Selected for Booking' : 'Click to Select'}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 ) : (
@@ -328,6 +367,48 @@ export const DoctorDetail: React.FC = () => {
                 Queue Reservation
               </span>
               <h3 className="text-xl font-semibold text-[#1d1d1f] mb-4">Book Your Token</h3>
+
+              {/* Clinic Selection (Step 1) */}
+              {doctor.clinics && doctor.clinics.length > 0 && (
+                <div className="mb-4">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-medium text-[#1d1d1f] flex items-center gap-1">
+                      <Building2 className="w-3.5 h-3.5 text-[#0088e8]" />
+                      Consultation Clinic
+                    </label>
+                    <span className="text-[11px] text-[#86868b]">
+                      {doctor.clinics.length} Available
+                    </span>
+                  </div>
+                  <div className="space-y-1.5">
+                    {doctor.clinics.map((cd) => {
+                      const isSelected = selectedClinicId === cd.clinicId;
+                      return (
+                        <button
+                          key={cd.clinicId}
+                          type="button"
+                          onClick={() => setSelectedClinicId(cd.clinicId)}
+                          className={`w-full p-2.5 rounded-xl border text-left text-xs transition-all flex items-center justify-between ${
+                            isSelected
+                              ? 'bg-[#0088e8]/10 border-[#0088e8] ring-1 ring-[#0088e8]/30 text-[#1d1d1f]'
+                              : 'bg-white border-[#e5e5ea] text-[#1d1d1f] hover:border-[#0088e8]/50'
+                          }`}
+                        >
+                          <div className="min-w-0 flex-1">
+                            <span className="font-semibold block truncate">{cd.clinic.clinicName}</span>
+                            <span className="text-[11px] text-[#86868b] block truncate">
+                              {cd.clinic.address}{cd.clinic.city ? `, ${cd.clinic.city}` : ''}
+                            </span>
+                          </div>
+                          {isSelected ? (
+                            <span className="w-2 h-2 rounded-full bg-[#0088e8] flex-shrink-0 ml-2" />
+                          ) : null}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               {/* Date Selector with Quick Shortcuts */}
               <div className="mb-4">
@@ -496,8 +577,8 @@ export const DoctorDetail: React.FC = () => {
                 onClick={() =>
                   navigate(
                     isPatient
-                      ? `/patient/book/${doctor.id}?date=${selectedDate}${selectedSlotId ? `&slot=${selectedSlotId}` : ''}`
-                      : `/book/${doctor.id}?date=${selectedDate}${selectedSlotId ? `&slot=${selectedSlotId}` : ''}`
+                      ? `/patient/book/${doctor.id}?date=${selectedDate}${selectedSlotId ? `&slot=${selectedSlotId}` : ''}${selectedClinicId ? `&clinic=${selectedClinicId}` : ''}`
+                      : `/book/${doctor.id}?date=${selectedDate}${selectedSlotId ? `&slot=${selectedSlotId}` : ''}${selectedClinicId ? `&clinic=${selectedClinicId}` : ''}`
                   )
                 }
                 className="w-full"

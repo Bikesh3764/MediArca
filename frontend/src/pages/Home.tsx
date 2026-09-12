@@ -7,6 +7,7 @@ import {
   format12Hour,
   evaluateSlotStatus,
   getLocalDateString,
+  formatDoctorDegrees,
 } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { AppleButton } from '../components/ui/AppleButton';
@@ -23,7 +24,6 @@ import {
   Building2,
   UserCheck,
   Stethoscope,
-  Filter,
   RotateCcw,
   ChevronRight,
   SlidersHorizontal,
@@ -438,11 +438,11 @@ export const Home: React.FC = () => {
 
         {/* Doctor Cards Grid */}
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="flex flex-col gap-4 w-full">
             {[1, 2, 3].map((i) => (
               <div
                 key={i}
-                className="h-72 rounded-[22px] bg-white border border-[#e5e5ea] animate-pulse p-6"
+                className="h-36 rounded-[24px] bg-white border border-[#e5e5ea] animate-pulse p-6"
               ></div>
             ))}
           </div>
@@ -462,7 +462,7 @@ export const Home: React.FC = () => {
             </AppleButton>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="flex flex-col gap-4.5 w-full">
             {filteredDoctors.map((doctor) => {
               const slots = parseDoctorSlots(doctor);
               const todayStr = getLocalDateString();
@@ -473,138 +473,137 @@ export const Home: React.FC = () => {
                 user?.role === 'PATIENT' ? `/patient/doctor/${docId}` : `/doctor/${docId}`;
               const getHomeDoctorBookPath = (docId: string) =>
                 user?.role === 'PATIENT' ? `/patient/book/${docId}` : `/book/${docId}`;
+              const cleanDegrees = formatDoctorDegrees(doctor.qualifications);
 
               return (
                 <div
                   key={doctor.id}
-                  className="bg-white rounded-[24px] border border-[#e5e5ea] p-5 sm:p-6 shadow-xs hover:shadow-apple-card hover:border-[#0088e8]/30 transition-all duration-300 flex flex-col justify-between group"
+                  className="w-full bg-white rounded-[24px] border border-[#e5e5ea] p-5 sm:p-6 shadow-xs hover:shadow-apple-card hover:border-[#0088e8]/30 transition-all duration-300 flex flex-col lg:flex-row lg:items-center justify-between gap-6 group"
                 >
-                  <div>
-                    {/* Top: Avatar, Name & Specialties, Rating */}
-                    <div className="flex items-start justify-between gap-3 mb-3">
-                      <div className="flex items-start gap-3.5 min-w-0">
-                        <div
-                          onClick={() => navigate(getHomeDoctorDetailPath(doctor.id))}
-                          className="w-14 h-14 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] overflow-hidden flex-shrink-0 cursor-pointer group-hover:scale-105 transition-transform"
-                        >
-                          {doctor.user.avatarUrl ? (
-                            <img
-                              src={doctor.user.avatarUrl}
-                              alt={doctor.user.fullName}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center font-bold text-lg text-[#0088e8]">
-                              {doctor.user.fullName[0]}
-                            </div>
-                          )}
+                  {/* Left & Middle: Practitioner Identity + Credentials + Clinical Compartment */}
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 flex-1 min-w-0">
+                    {/* Large Squircle Avatar with Verified Badge */}
+                    <div
+                      onClick={() => navigate(getHomeDoctorDetailPath(doctor.id))}
+                      className="w-20 h-20 sm:w-22 sm:h-22 rounded-[22px] bg-[#f5f5f7] border border-[#e5e5ea] overflow-hidden flex-shrink-0 cursor-pointer group-hover:scale-[1.02] transition-transform relative"
+                    >
+                      {doctor.user.avatarUrl ? (
+                        <img
+                          src={doctor.user.avatarUrl}
+                          alt={doctor.user.fullName}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center font-bold text-2xl text-[#0088e8]">
+                          {doctor.user.fullName[0]}
                         </div>
-
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <h3
-                              onClick={() => navigate(getHomeDoctorDetailPath(doctor.id))}
-                              className="text-base font-semibold text-[#1d1d1f] hover:text-[#0088e8] cursor-pointer truncate tracking-tight"
-                            >
-                              {doctor.user.fullName}
-                            </h3>
-                            <ShieldCheck className="w-4 h-4 text-[#10b981] flex-shrink-0" />
-                          </div>
-
-                          <div className="flex items-center gap-1.5 mt-1">
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#0088e8]/10 text-[#0088e8]">
-                              {doctor.specialty}
-                            </span>
-                            <span className="text-[11px] text-[#86868b]">•</span>
-                            <span className="text-[11px] font-medium text-[#86868b]">
-                              {doctor.experienceYears} yrs exp
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Rating Chip */}
-                      <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200/80 text-xs font-semibold text-amber-800 flex-shrink-0">
-                        <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-                        <span>{doctor.rating ? doctor.rating.toFixed(1) : '5.0'}</span>
+                      )}
+                      <div className="absolute bottom-1 right-1 bg-white rounded-full p-0.5 shadow-xs" title="Verified Practitioner">
+                        <ShieldCheck className="w-4 h-4 text-[#10b981]" />
                       </div>
                     </div>
 
-                    {/* Qualifications / Hospital Background */}
-                    <p className="text-xs text-[#6e6e73] font-normal mb-4 line-clamp-1">
-                      {doctor.qualifications || 'Certified Clinical Specialist'}
-                    </p>
+                    {/* Practitioner Details */}
+                    <div className="min-w-0 flex-1 space-y-2">
+                      {/* Name, Specialty & Rating */}
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3
+                          onClick={() => navigate(getHomeDoctorDetailPath(doctor.id))}
+                          className="text-lg sm:text-xl font-bold text-[#1d1d1f] hover:text-[#0088e8] cursor-pointer tracking-tight"
+                        >
+                          {doctor.user.fullName}
+                        </h3>
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#0088e8]/10 text-[#0088e8]">
+                          {doctor.specialty}
+                        </span>
+                        <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-50 border border-amber-200/80 text-xs font-semibold text-amber-800">
+                          <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                          <span>{doctor.rating ? doctor.rating.toFixed(1) : '5.0'}</span>
+                        </div>
+                      </div>
 
-                    {/* Clinical Practice Details Compartment */}
-                    <div className="my-4 p-3.5 rounded-2xl bg-[#f5f5f7]/80 border border-[#e5e5ea]/80 space-y-2.5">
-                      {/* Facility / Location */}
-                      <div className="flex items-center gap-2 text-xs">
-                        <Building2 className="w-3.5 h-3.5 text-[#0088e8] flex-shrink-0" />
-                        <span className="text-[#1d1d1f] font-medium truncate">
-                          {doctor.clinics && doctor.clinics.length > 0 ? (
-                            <>
-                              {doctor.clinics[0].clinic.clinicName}
-                              {doctor.clinics[0].clinic.city ? ` • ${doctor.clinics[0].clinic.city}` : ''}
-                              {doctor.clinics.length > 1 ? ` (+${doctor.clinics.length - 1} more)` : ''}
-                            </>
-                          ) : (
-                            doctor.clinicAddress || 'MediArca Healthcare Facility'
-                          )}
+                      {/* Clean Degrees Only (No University/School fluff) */}
+                      <div className="flex flex-wrap items-center gap-2 text-xs">
+                        <span className="font-semibold text-[#1d1d1f] bg-[#f5f5f7] px-2.5 py-0.5 rounded-lg border border-[#e5e5ea]">
+                          {cleanDegrees}
+                        </span>
+                        <span className="text-[#86868b] font-medium">•</span>
+                        <span className="text-[#6e6e73] font-medium">
+                          {doctor.experienceYears} Years Clinical Experience
                         </span>
                       </div>
 
-                      {/* Shift & Queue Availability */}
-                      <div className="flex items-center justify-between gap-2 text-xs pt-2 border-t border-[#e5e5ea]/70">
-                        <div className="flex items-center gap-2 text-[#48484a] min-w-0">
+                      {/* Practice Clinics & Shifts Status Pills */}
+                      <div className="flex flex-wrap items-center gap-2 pt-0.5">
+                        {/* Clinic Venues */}
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#f5f5f7]/90 border border-[#e5e5ea] text-xs text-[#1d1d1f]">
+                          <Building2 className="w-3.5 h-3.5 text-[#0088e8] flex-shrink-0" />
+                          <span className="font-medium truncate max-w-[280px] sm:max-w-md">
+                            {doctor.clinics && doctor.clinics.length > 0 ? (
+                              <>
+                                {doctor.clinics[0].clinic.clinicName}
+                                {doctor.clinics[0].clinic.city ? ` • ${doctor.clinics[0].clinic.city}` : ''}
+                                {doctor.clinics.length > 1 ? ` (+${doctor.clinics.length - 1} more clinic${doctor.clinics.length > 2 ? 's' : ''})` : ''}
+                              </>
+                            ) : (
+                              doctor.clinicAddress || 'MediArca Healthcare Facility'
+                            )}
+                          </span>
+                        </div>
+
+                        {/* Shift Timing */}
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#f5f5f7]/90 border border-[#e5e5ea] text-xs text-[#1d1d1f]">
                           <Clock className="w-3.5 h-3.5 text-[#0088e8] flex-shrink-0" />
-                          <span className="font-medium text-[#1d1d1f] truncate">
+                          <span className="font-medium">
                             {slots.length > 0
                               ? `${format12Hour(slots[0].startTime)} – ${format12Hour(slots[0].endTime)}`
                               : doctor.checkingStartTime
                               ? `${format12Hour(doctor.checkingStartTime)} – ${format12Hour(doctor.checkingEndTime)}`
-                              : 'Flexible Outpatient Hours'}
+                              : 'Outpatient Shift'}
                           </span>
                         </div>
 
+                        {/* Active Shift Now or Shifts Count Badge */}
                         {firstSlotStatus?.isInProgress ? (
-                          <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700 bg-emerald-100/70 px-2.5 py-0.5 rounded-full border border-emerald-300/60 flex-shrink-0">
+                          <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 bg-emerald-100/80 px-2.5 py-1 rounded-xl border border-emerald-300/70">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                             Active Now
                           </span>
-                        ) : (
-                          <span className="text-[11px] text-[#86868b] font-medium flex-shrink-0">
-                            {slots.length > 1 ? `${slots.length} Shifts Today` : 'Scheduled Today'}
+                        ) : slots.length > 1 ? (
+                          <span className="text-xs text-[#86868b] font-medium bg-[#f5f5f7] px-2.5 py-1 rounded-xl border border-[#e5e5ea]">
+                            {slots.length} Shifts Today
                           </span>
-                        )}
+                        ) : null}
                       </div>
                     </div>
                   </div>
 
-                  {/* Footer: Fee & Booking CTA */}
-                  <div className="pt-3.5 border-t border-[#f0f0f0] flex items-center justify-between gap-3">
-                    <div>
+                  {/* Right Section: Fee & Actions */}
+                  <div className="flex sm:flex-row lg:flex-col items-center sm:items-end justify-between lg:justify-center gap-4 pt-4 lg:pt-0 border-t lg:border-t-0 lg:border-l border-[#f0f0f0] lg:pl-6 flex-shrink-0">
+                    <div className="text-left sm:text-right lg:text-right">
                       <span className="text-[10px] uppercase font-semibold text-[#86868b] tracking-wider block">
                         Consultation
                       </span>
-                      <div className="text-xl font-bold text-[#1d1d1f] tracking-tight leading-none mt-0.5">
+                      <div className="text-2xl font-bold text-[#1d1d1f] tracking-tight leading-none mt-0.5">
                         ${doctor.consultationFee.toFixed(0)}
                       </div>
+                      <span className="text-[10px] text-emerald-600 font-medium block mt-0.5">Direct Clinic Settlement</span>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2.5">
                       <AppleButton
                         variant="ghost"
                         size="sm"
                         onClick={() => navigate(getHomeDoctorDetailPath(doctor.id))}
-                        className="text-xs px-3.5 py-1.5 rounded-full border border-[#e5e5ea] text-[#1d1d1f] hover:bg-[#f5f5f7]"
+                        className="text-xs px-4 py-2 rounded-full border border-[#e5e5ea] text-[#1d1d1f] hover:bg-[#f5f5f7] font-medium"
                       >
-                        Details
+                        Doctor Profile
                       </AppleButton>
                       <AppleButton
                         variant="primary"
                         size="sm"
                         onClick={() => navigate(getHomeDoctorBookPath(doctor.id))}
-                        className="text-xs px-4 py-1.5 rounded-full flex items-center gap-1.5 font-medium shadow-xs"
+                        className="text-xs px-5 py-2 rounded-full flex items-center gap-1.5 font-semibold shadow-apple-button"
                       >
                         <span>Book Token</span>
                         <ChevronRight className="w-3.5 h-3.5" />
