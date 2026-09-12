@@ -63,6 +63,7 @@ const ProtectedRoute: React.FC<{
 
 function AppShell() {
   const location = useLocation();
+  const { user } = useAuth();
 
   const isPortalRoute =
     location.pathname.startsWith('/doctor/dashboard') ||
@@ -71,9 +72,10 @@ function AppShell() {
     location.pathname.startsWith('/doctor/profile') ||
     location.pathname.startsWith('/clinic/dashboard') ||
     location.pathname.startsWith('/receptionist/dashboard') ||
-    location.pathname.startsWith('/patient/appointments') ||
-    location.pathname.startsWith('/patient/records') ||
-    location.pathname.startsWith('/patient/profile') ||
+    location.pathname.startsWith('/patient/') ||
+    (location.pathname === '/doctors' && user?.role === 'PATIENT') ||
+    (location.pathname.startsWith('/doctor/') && user?.role === 'PATIENT') ||
+    (location.pathname.startsWith('/book/') && user?.role === 'PATIENT') ||
     location.pathname === '/admin';
 
   return (
@@ -85,10 +87,27 @@ function AppShell() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
-          <Route path="/doctors" element={<DoctorDiscovery />} />
+          <Route
+            path="/doctors"
+            element={
+              user?.role === 'PATIENT' ? (
+                <Navigate to="/patient/doctors" replace />
+              ) : (
+                <DoctorDiscovery />
+              )
+            }
+          />
           <Route path="/doctor/:id" element={<DoctorDetail />} />
 
           {/* Patient Routes */}
+          <Route
+            path="/patient/doctors"
+            element={
+              <ProtectedRoute allowedRoles={['PATIENT']}>
+                <DoctorDiscovery isPortalView={true} />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/book/:id"
             element={

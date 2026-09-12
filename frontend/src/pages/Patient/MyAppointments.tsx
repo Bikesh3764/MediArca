@@ -78,7 +78,7 @@ export const MyAppointments: React.FC = () => {
       id: 'find-doctors',
       label: 'Find Specialists',
       icon: Stethoscope,
-      path: '/doctors',
+      path: '/patient/doctors',
     },
     {
       id: 'profile',
@@ -109,7 +109,7 @@ export const MyAppointments: React.FC = () => {
           <AppleButton
             variant="primary"
             size="sm"
-            onClick={() => navigate('/doctors')}
+            onClick={() => navigate('/patient/doctors')}
             className="flex items-center gap-1.5 shadow-sm"
           >
             <Plus className="w-3.5 h-3.5" />
@@ -163,7 +163,7 @@ export const MyAppointments: React.FC = () => {
               <AppleButton
                 variant="primary"
                 size="md"
-                onClick={() => navigate('/doctors')}
+                onClick={() => navigate('/patient/doctors')}
                 className="mt-6"
               >
                 Find and Book a Doctor

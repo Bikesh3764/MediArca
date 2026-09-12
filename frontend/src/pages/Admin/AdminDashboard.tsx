@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { api, Doctor, format12Hour } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
-import { SubNav } from '../../components/layout/SubNav';
+import { useNavigate, Link } from 'react-router-dom';
+import { BrandLogo } from '../../components/ui/BrandLogo';
 import { AppleButton } from '../../components/ui/AppleButton';
 import { UtilityCard } from '../../components/ui/UtilityCard';
 import {
   Users,
   ShieldCheck,
+  Shield,
   Calendar,
   AlertCircle,
   CheckCircle2,
@@ -17,11 +18,18 @@ import {
   Building2,
   Ban,
   XCircle,
+  Globe,
+  LogOut,
 } from 'lucide-react';
 
 export const AdminDashboard: React.FC = () => {
-  const { user, loading: loadingAuth } = useAuth();
+  const { user, loading: loadingAuth, logout } = useAuth();
   const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/admin-login');
+  };
 
   const [stats, setStats] = useState<{
     totalPatients: number;
@@ -149,12 +157,77 @@ export const AdminDashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#f5f5f7] pb-16">
-      <SubNav title="Administrative Oversight" subtitle="Platform verification & audit console">
-        <AppleButton variant="ghost" size="sm" onClick={fetchData} className="flex items-center gap-1">
-          <RefreshCw className="w-3.5 h-3.5" />
-          Refresh Stats
-        </AppleButton>
-      </SubNav>
+      {/* Sticky Apple-styled Admin Navigation Bar */}
+      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-xl border-b border-[#e5e5ea] select-none shadow-xs">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Link to="/" className="flex items-center gap-2 hover:opacity-90 transition-opacity" title="Return to Main Website">
+              <BrandLogo variant="full" size="md" imgClassName="h-7 w-auto" />
+            </Link>
+            <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-700 border border-amber-500/20 text-[11px] font-mono font-semibold">
+              <Shield className="w-3 h-3 text-amber-600" />
+              Root Admin Console
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Link
+              to="/"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-[#48484a] hover:bg-[#f5f5f7] hover:text-[#1d1d1f] transition-all border border-[#e5e5ea]"
+            >
+              <Globe className="w-3.5 h-3.5 text-[#86868b]" />
+              <span>Main Website</span>
+            </Link>
+
+            <AppleButton
+              variant="ghost"
+              size="sm"
+              onClick={fetchData}
+              className="flex items-center gap-1.5 text-xs text-[#48484a]"
+              title="Refresh platform statistics"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-[#0088e8]' : ''}`} />
+              <span className="hidden md:inline">Refresh Telemetry</span>
+            </AppleButton>
+
+            <div className="h-4 w-px bg-[#e5e5ea] hidden sm:block" />
+
+            <div className="hidden lg:flex items-center gap-2 px-2.5 py-1 rounded-full bg-[#f5f5f7] text-[11px] text-[#48484a]">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="font-medium truncate max-w-[140px]">{user?.email || 'admin@mediarca.com'}</span>
+            </div>
+
+            <button
+              onClick={handleLogout}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-rose-600 bg-rose-50 hover:bg-rose-100 transition-all border border-rose-200 cursor-pointer"
+              title="Sign Out of Admin Console"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Sign Out</span>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Page Title & Subtitle banner */}
+      <div className="bg-white border-b border-[#e5e5ea] px-4 sm:px-6 py-5">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f]">
+              Administrative Oversight
+            </h1>
+            <p className="text-xs text-[#86868b] mt-0.5 font-normal">
+              Platform verification queue, credential auditing & multi-tenant clinical telemetry
+            </p>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-[#86868b]">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] font-medium text-[#1d1d1f]">
+              <Users className="w-3.5 h-3.5 text-[#0088e8]" />
+              {(stats?.totalDoctors || 0) + (stats?.totalClinics || clinics.length)} Registered Providers
+            </span>
+          </div>
+        </div>
+      </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-8 space-y-8">
         {loading && !stats ? (

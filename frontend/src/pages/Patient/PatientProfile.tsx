@@ -51,7 +51,7 @@ export const PatientProfile: React.FC = () => {
       id: 'find-doctors',
       label: 'Find Specialists',
       icon: Stethoscope,
-      path: '/doctors',
+      path: '/patient/doctors',
     },
     {
       id: 'profile',

@@ -9,6 +9,8 @@ import {
   getLocalDateString,
   getTomorrowDateString,
 } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
+import { DashboardLayout, DashboardNavItem } from '../../components/layout/DashboardLayout';
 import { SubNav } from '../../components/layout/SubNav';
 import { AppleButton } from '../../components/ui/AppleButton';
 import { UtilityCard } from '../../components/ui/UtilityCard';
@@ -22,9 +24,13 @@ import {
   UserCheck,
   ChevronLeft,
   Building2,
+  FileText,
+  Stethoscope,
+  User as UserIcon,
 } from 'lucide-react';
 
 export const DoctorDetail: React.FC = () => {
+  const { user } = useAuth();
   const { id } = useParams<{ id: string }>();
   const [doctor, setDoctor] = useState<Doctor | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>(() => getLocalDateString());
@@ -34,6 +40,35 @@ export const DoctorDetail: React.FC = () => {
   const [loadingQueue, setLoadingQueue] = useState(false);
 
   const navigate = useNavigate();
+  const isPatient = user?.role === 'PATIENT';
+
+  const patientNavItems: DashboardNavItem[] = [
+    {
+      id: 'appointments',
+      label: 'Live Queue & Passes',
+      icon: Calendar,
+      path: '/patient/appointments',
+    },
+    {
+      id: 'records',
+      label: 'Medical Records Vault',
+      icon: FileText,
+      path: '/patient/records',
+    },
+    {
+      id: 'find-doctors',
+      label: 'Find Specialists',
+      icon: Stethoscope,
+      path: '/patient/doctors',
+      active: true,
+    },
+    {
+      id: 'profile',
+      label: 'Patient Profile',
+      icon: UserIcon,
+      path: '/patient/profile',
+    },
+  ];
 
   useEffect(() => {
     const fetchDoctor = async () => {
@@ -81,17 +116,8 @@ export const DoctorDetail: React.FC = () => {
     );
   }
 
-  return (
-    <div className="min-h-screen bg-[#f5f5f7] pb-16">
-      <SubNav title={doctor.user.fullName} subtitle={doctor.specialty}>
-        <AppleButton variant="ghost" size="sm" onClick={() => navigate('/doctors')} className="flex items-center gap-1">
-          <ChevronLeft className="w-4 h-4" />
-          Back to Directory
-        </AppleButton>
-      </SubNav>
-
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+  const detailContent = (
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Doctor Bio & Credentials (2 Columns) */}
           <div className="lg:col-span-2 space-y-6">
             <UtilityCard>
@@ -408,7 +434,47 @@ export const DoctorDetail: React.FC = () => {
               </AppleButton>
             </UtilityCard>
           </div>
+    </div>
+  );
+
+  if (isPatient) {
+    return (
+      <DashboardLayout
+        portalType="PATIENT"
+        portalSubtitle="PATIENT PORTAL"
+        navItems={patientNavItems}
+        title={doctor.user.fullName}
+        subtitle={`${doctor.specialty} • ${doctor.experienceYears} Years Experience`}
+        headerAction={
+          <AppleButton
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/patient/doctors')}
+            className="flex items-center gap-1.5 text-xs font-medium"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            Back to Specialists
+          </AppleButton>
+        }
+      >
+        <div className="space-y-6">
+          {detailContent}
         </div>
+      </DashboardLayout>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-[#f5f5f7] pb-16">
+      <SubNav title={doctor.user.fullName} subtitle={doctor.specialty}>
+        <AppleButton variant="ghost" size="sm" onClick={() => navigate('/doctors')} className="flex items-center gap-1">
+          <ChevronLeft className="w-4 h-4" />
+          Back to Directory
+        </AppleButton>
+      </SubNav>
+
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-8">
+        {detailContent}
       </div>
     </div>
   );

@@ -30,6 +30,7 @@ export const GlobalNav: React.FC = () => {
       return (
         location.pathname === '/doctors' ||
         location.pathname.startsWith('/doctors/') ||
+        location.pathname === '/patient/doctors' ||
         (location.pathname.startsWith('/doctor/') &&
           !location.pathname.startsWith('/doctor/dashboard') &&
           !location.pathname.startsWith('/doctor/schedule') &&
@@ -70,7 +71,7 @@ export const GlobalNav: React.FC = () => {
             Home
           </Link>
           <Link
-            to="/doctors"
+            to={user?.role === 'PATIENT' ? '/patient/doctors' : '/doctors'}
             className={`px-3.5 py-1.5 rounded-full transition-all text-xs ${
               isActive('/doctors')
                 ? 'bg-[#0088e8]/10 text-[#0088e8] font-semibold'
@@ -302,7 +303,7 @@ export const GlobalNav: React.FC = () => {
               Home
             </Link>
             <Link
-              to="/doctors"
+              to={user?.role === 'PATIENT' ? '/patient/doctors' : '/doctors'}
               onClick={closeMenu}
               className={`py-2 px-3 rounded-xl transition-colors ${
                 isActive('/doctors') ? 'bg-[#0088e8]/10 text-[#0088e8] font-semibold' : 'hover:bg-slate-100 hover:text-slate-900 font-medium'

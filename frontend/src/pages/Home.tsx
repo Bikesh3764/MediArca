@@ -665,7 +665,7 @@ export const Home: React.FC = () => {
 
             {/* Clinic Partner Portal */}
             <div
-              onClick={() => navigate('/clinic/login')}
+              onClick={() => navigate(user?.role === 'CLINIC' ? '/clinic/dashboard' : '/clinic/login')}
               className="p-5 rounded-[20px] bg-[#fafafc] border border-[#e5e5ea] hover:border-[#0088e8]/40 cursor-pointer transition-all hover:shadow-sm flex flex-col justify-between"
             >
               <div>
@@ -678,13 +678,13 @@ export const Home: React.FC = () => {
                 </p>
               </div>
               <span className="text-xs text-[#0088e8] font-medium flex items-center gap-1 mt-4">
-                Clinic Sign In <ArrowRight className="w-3.5 h-3.5" />
+                {user?.role === 'CLINIC' ? 'Open Dashboard' : 'Clinic Sign In'} <ArrowRight className="w-3.5 h-3.5" />
               </span>
             </div>
 
             {/* Receptionist Desk */}
             <div
-              onClick={() => navigate('/receptionist/login')}
+              onClick={() => navigate(user?.role === 'RECEPTIONIST' ? '/receptionist/dashboard' : '/receptionist/login')}
               className="p-5 rounded-[20px] bg-[#fafafc] border border-[#e5e5ea] hover:border-[#0088e8]/40 cursor-pointer transition-all hover:shadow-sm flex flex-col justify-between"
             >
               <div>
@@ -697,7 +697,7 @@ export const Home: React.FC = () => {
                 </p>
               </div>
               <span className="text-xs text-[#0088e8] font-medium flex items-center gap-1 mt-4">
-                Desk Sign In <ArrowRight className="w-3.5 h-3.5" />
+                {user?.role === 'RECEPTIONIST' ? 'Open Desk' : 'Desk Sign In'} <ArrowRight className="w-3.5 h-3.5" />
               </span>
             </div>
           </div>

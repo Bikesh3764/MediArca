@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api, DoctorSlot, parseDoctorSlots, calculateSlotMetrics, format12Hour } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
-import { SubNav } from '../../components/layout/SubNav';
+import { DashboardLayout, DashboardNavItem } from '../../components/layout/DashboardLayout';
 import { AppleButton } from '../../components/ui/AppleButton';
 import { UtilityCard } from '../../components/ui/UtilityCard';
 import {
@@ -15,11 +15,35 @@ import {
   Trash2,
   Calendar,
   Sparkles,
+  LayoutDashboard,
+  Settings,
 } from 'lucide-react';
 
 export const ManageSchedule: React.FC = () => {
   const { user, loading: loadingAuth, refreshUser } = useAuth();
   const navigate = useNavigate();
+
+  const navItems: DashboardNavItem[] = [
+    {
+      id: 'dashboard',
+      label: 'Dashboard',
+      icon: LayoutDashboard,
+      path: '/doctor/dashboard',
+    },
+    {
+      id: 'schedule',
+      label: 'Manage Schedule',
+      icon: Clock,
+      path: '/doctor/schedule',
+      active: true,
+    },
+    {
+      id: 'settings',
+      label: 'Settings',
+      icon: Settings,
+      path: '/doctor/profile',
+    },
+  ];
 
   const [slots, setSlots] = useState<DoctorSlot[]>([
     {
@@ -141,20 +165,25 @@ export const ManageSchedule: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f5f5f7] pb-16">
-      <SubNav title="Manage Practice Schedule" subtitle="Configure daily checking slots & dynamic capacities">
+    <DashboardLayout
+      portalType="DOCTOR"
+      portalSubtitle="DOCTOR PORTAL"
+      navItems={navItems}
+      title="Manage Practice Schedule"
+      subtitle="Configure daily checking slots & dynamic capacities"
+      headerAction={
         <AppleButton
           variant="ghost"
           size="sm"
           onClick={() => navigate('/doctor/dashboard')}
-          className="flex items-center gap-1"
+          className="flex items-center gap-1.5 text-xs font-medium"
         >
           <ChevronLeft className="w-4 h-4" />
-          Back to Dashboard
+          Dashboard
         </AppleButton>
-      </SubNav>
-
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-8">
+      }
+    >
+      <div className="max-w-3xl space-y-6">
         <UtilityCard>
           {successMsg && (
             <div className="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2">
@@ -382,6 +411,6 @@ export const ManageSchedule: React.FC = () => {
           </form>
         </UtilityCard>
       </div>
-    </div>
+    </DashboardLayout>
   );
 };

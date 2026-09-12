@@ -10,6 +10,7 @@ import {
   getTomorrowDateString,
 } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import { DashboardLayout, DashboardNavItem } from '../../components/layout/DashboardLayout';
 import { SubNav } from '../../components/layout/SubNav';
 import { AppleButton } from '../../components/ui/AppleButton';
 import { UtilityCard } from '../../components/ui/UtilityCard';
@@ -22,7 +23,38 @@ import {
   Check,
   Building2,
   MapPin,
+  FileText,
+  Stethoscope,
+  User as UserIcon,
 } from 'lucide-react';
+
+const patientNavItems: DashboardNavItem[] = [
+  {
+    id: 'appointments',
+    label: 'Live Queue & Passes',
+    icon: Calendar,
+    path: '/patient/appointments',
+  },
+  {
+    id: 'records',
+    label: 'Medical Records Vault',
+    icon: FileText,
+    path: '/patient/records',
+  },
+  {
+    id: 'find-doctors',
+    label: 'Find Specialists',
+    icon: Stethoscope,
+    path: '/patient/doctors',
+    active: true,
+  },
+  {
+    id: 'profile',
+    label: 'Patient Profile',
+    icon: UserIcon,
+    path: '/patient/profile',
+  },
+];
 
 export const BookAppointment: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -161,22 +193,8 @@ export const BookAppointment: React.FC = () => {
   const isSelectedSlotPassed = Boolean(queuePreview?.isPassed);
   const isSelectedSlotFull = Boolean(queuePreview?.isFull);
 
-  return (
-    <div className="min-h-screen bg-[#f5f5f7] pb-16">
-      <SubNav title="Confirm Appointment" subtitle="Guaranteed queue spot with zero payment barrier">
-        <AppleButton
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-1"
-        >
-          <ChevronLeft className="w-4 h-4" />
-          Back
-        </AppleButton>
-      </SubNav>
-
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 pt-8">
-        <UtilityCard>
+  const bookingContent = (
+    <UtilityCard>
           {error && (
             <div className="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
@@ -600,6 +618,51 @@ export const BookAppointment: React.FC = () => {
             </div>
           </form>
         </UtilityCard>
+  );
+
+  if (user?.role === 'PATIENT') {
+    return (
+      <DashboardLayout
+        portalType="PATIENT"
+        portalSubtitle="PATIENT PORTAL"
+        navItems={patientNavItems}
+        title="Confirm Appointment"
+        subtitle="Guaranteed queue spot with zero payment barrier"
+        headerAction={
+          <AppleButton
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-1.5 text-xs font-medium"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            Back
+          </AppleButton>
+        }
+      >
+        <div className="max-w-2xl mx-auto space-y-6">
+          {bookingContent}
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-[#f5f5f7] pb-16">
+      <SubNav title="Confirm Appointment" subtitle="Guaranteed queue spot with zero payment barrier">
+        <AppleButton
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-1"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          Back
+        </AppleButton>
+      </SubNav>
+
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 pt-8">
+        {bookingContent}
       </div>
     </div>
   );

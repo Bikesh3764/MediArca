@@ -53,6 +53,7 @@ export const Footer: React.FC = () => {
             <ul className="space-y-1.5">
               <li><span className="text-[#86868b]">HIPAA & SOC2 Ready</span></li>
               <li><a href={`${getBackendBaseUrl()}/healthz`} target="_blank" rel="noreferrer" className="hover:text-[#1d1d1f]">API Health Status</a></li>
+              <li><Link to="/admin-login" className="hover:text-[#1d1d1f]">Admin Console</Link></li>
               <li><span className="text-[#86868b]">Apple Design System v1.0</span></li>
             </ul>
           </div>
