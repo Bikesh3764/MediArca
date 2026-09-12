@@ -478,6 +478,10 @@ export const Home: React.FC = () => {
                   const firstSlotStatus = slots[0]
                     ? evaluateSlotStatus(slots[0], todayStr, 0, new Date())
                     : null;
+                  const getHomeDoctorDetailPath = (docId: string) =>
+                    user?.role === 'PATIENT' ? `/patient/doctor/${docId}` : `/doctor/${docId}`;
+                  const getHomeDoctorBookPath = (docId: string) =>
+                    user?.role === 'PATIENT' ? `/patient/book/${docId}` : `/book/${docId}`;
 
                   return (
                     <div
@@ -488,7 +492,7 @@ export const Home: React.FC = () => {
                         {/* Top: Avatar, Name, Rating */}
                         <div className="flex items-start gap-3.5 mb-4">
                           <div
-                            onClick={() => navigate(`/doctor/${doctor.id}`)}
+                            onClick={() => navigate(getHomeDoctorDetailPath(doctor.id))}
                             className="w-14 h-14 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] overflow-hidden flex-shrink-0 cursor-pointer"
                           >
                             {doctor.user.avatarUrl ? (
@@ -507,7 +511,7 @@ export const Home: React.FC = () => {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-1.5">
                               <h3
-                                onClick={() => navigate(`/doctor/${doctor.id}`)}
+                                onClick={() => navigate(getHomeDoctorDetailPath(doctor.id))}
                                 className="text-[15px] font-semibold text-[#1d1d1f] hover:text-[#0088e8] cursor-pointer truncate"
                               >
                                 {doctor.user.fullName}
@@ -587,7 +591,7 @@ export const Home: React.FC = () => {
                           <AppleButton
                             variant="secondary"
                             size="sm"
-                            onClick={() => navigate(`/doctor/${doctor.id}`)}
+                            onClick={() => navigate(getHomeDoctorDetailPath(doctor.id))}
                             className="text-xs"
                           >
                             Details
@@ -595,7 +599,7 @@ export const Home: React.FC = () => {
                           <AppleButton
                             variant="primary"
                             size="sm"
-                            onClick={() => navigate(`/book/${doctor.id}`)}
+                            onClick={() => navigate(getHomeDoctorBookPath(doctor.id))}
                             className="flex items-center gap-1 text-xs"
                           >
                             Book Token

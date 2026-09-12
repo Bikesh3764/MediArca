@@ -27,6 +27,7 @@ import {
   FileText,
   Stethoscope,
   User as UserIcon,
+  AlertCircle,
 } from 'lucide-react';
 
 export const DoctorDetail: React.FC = () => {
@@ -108,10 +109,83 @@ export const DoctorDetail: React.FC = () => {
     fetchQueue();
   }, [id, selectedDate, selectedSlotId]);
 
-  if (loading || !doctor) {
+  if (loading) {
+    if (isPatient) {
+      return (
+        <DashboardLayout
+          portalType="PATIENT"
+          portalSubtitle="PATIENT PORTAL"
+          navItems={patientNavItems}
+          title="Loading Specialist Profile..."
+          subtitle="Retrieving doctor credentials, verification status and shift schedule"
+          headerAction={
+            <AppleButton
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/patient/doctors')}
+              className="flex items-center gap-1.5 text-xs font-medium"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              Back to Specialists
+            </AppleButton>
+          }
+        >
+          <div className="flex flex-col items-center justify-center py-24">
+            <div className="w-8 h-8 rounded-full border-2 border-[#0088e8] border-t-transparent animate-spin mb-3"></div>
+            <p className="text-xs text-[#86868b]">Loading doctor profile and clinic schedule...</p>
+          </div>
+        </DashboardLayout>
+      );
+    }
     return (
       <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center">
         <div className="w-8 h-8 rounded-full border-2 border-[#0088e8] border-t-transparent animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (!doctor) {
+    if (isPatient) {
+      return (
+        <DashboardLayout
+          portalType="PATIENT"
+          portalSubtitle="PATIENT PORTAL"
+          navItems={patientNavItems}
+          title="Practitioner Not Available"
+          subtitle="The requested doctor profile could not be located"
+          headerAction={
+            <AppleButton
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/patient/doctors')}
+              className="flex items-center gap-1.5 text-xs font-medium"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              Back to Specialists
+            </AppleButton>
+          }
+        >
+          <div className="text-center p-8 bg-white rounded-2xl shadow-sm border border-[#e5e5ea] max-w-md mx-auto my-12">
+            <AlertCircle className="w-12 h-12 text-rose-500 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold text-[#1d1d1f] mb-2">Practitioner Not Found</h2>
+            <p className="text-xs text-[#86868b] mb-6">The requested doctor profile is unavailable or inactive.</p>
+            <AppleButton variant="primary" onClick={() => navigate('/patient/doctors')}>
+              Return to Specialists
+            </AppleButton>
+          </div>
+        </DashboardLayout>
+      );
+    }
+    return (
+      <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center">
+        <div className="text-center p-8 bg-white rounded-2xl shadow-sm border border-[#e5e5ea] max-w-md">
+          <AlertCircle className="w-12 h-12 text-rose-500 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-[#1d1d1f] mb-2">Practitioner Not Found</h2>
+          <p className="text-xs text-[#86868b] mb-6">The requested doctor profile is unavailable or inactive.</p>
+          <AppleButton variant="primary" onClick={() => navigate('/doctors')}>
+            Return to Directory
+          </AppleButton>
+        </div>
       </div>
     );
   }
@@ -421,7 +495,9 @@ export const DoctorDetail: React.FC = () => {
                 disabled={Boolean(queuePreview?.isFull || queuePreview?.isPassed)}
                 onClick={() =>
                   navigate(
-                    `/book/${doctor.id}?date=${selectedDate}${selectedSlotId ? `&slot=${selectedSlotId}` : ''}`
+                    isPatient
+                      ? `/patient/book/${doctor.id}?date=${selectedDate}${selectedSlotId ? `&slot=${selectedSlotId}` : ''}`
+                      : `/book/${doctor.id}?date=${selectedDate}${selectedSlotId ? `&slot=${selectedSlotId}` : ''}`
                   )
                 }
                 className="w-full"

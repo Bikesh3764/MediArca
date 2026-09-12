@@ -57,7 +57,7 @@ export const Signup: React.FC = () => {
       } else if (registered.role === 'ADMIN') {
         navigate('/admin');
       } else {
-        navigate('/doctors');
+        navigate('/patient/doctors');
       }
     } catch (err: any) {
       setError(err.message || 'Registration failed');
@@ -77,7 +77,7 @@ export const Signup: React.FC = () => {
         } else if (loggedUser.role === 'ADMIN') {
           navigate('/admin');
         } else {
-          navigate('/doctors');
+          navigate('/patient/doctors');
         }
       } catch (err: any) {
         setError(err.message || 'Google sign-up authentication failed');
@@ -106,7 +106,7 @@ export const Signup: React.FC = () => {
       } else if (loggedUser.role === 'ADMIN') {
         navigate('/admin');
       } else {
-        navigate('/doctors');
+        navigate('/patient/doctors');
       }
     } catch (err: any) {
       setError(err.message || 'Simulated Google sign-up failed');

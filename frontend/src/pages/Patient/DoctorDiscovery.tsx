@@ -117,6 +117,12 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
     loadDoctors(search, selectedSpecialty, sortBy);
   };
 
+  const getDoctorDetailPath = (doctorId: string) =>
+    isPatientPortal ? `/patient/doctor/${doctorId}` : `/doctor/${doctorId}`;
+
+  const getBookPath = (doctorId: string) =>
+    isPatientPortal ? `/patient/book/${doctorId}` : `/book/${doctorId}`;
+
   const discoveryContent = (
     <>
       {/* Search & Specialty Filter Controls */}
@@ -208,7 +214,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
                   {/* Doctor Header */}
                   <div className="flex items-start gap-4 mb-5">
                     <div
-                      onClick={() => navigate(`/doctor/${doctor.id}`)}
+                      onClick={() => navigate(getDoctorDetailPath(doctor.id))}
                       className="w-16 h-16 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] overflow-hidden flex-shrink-0 cursor-pointer transition-transform group-hover:scale-105"
                     >
                       {doctor.user.avatarUrl ? (
@@ -226,7 +232,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
                         <h3
-                          onClick={() => navigate(`/doctor/${doctor.id}`)}
+                          onClick={() => navigate(getDoctorDetailPath(doctor.id))}
                           className="text-[18px] font-semibold text-[#1d1d1f] truncate hover:text-[#0088e8] transition-colors cursor-pointer tracking-tight"
                         >
                           {doctor.user.fullName}
@@ -300,7 +306,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
                   <AppleButton
                     variant="ghost"
                     size="sm"
-                    onClick={() => navigate(`/doctor/${doctor.id}`)}
+                    onClick={() => navigate(getDoctorDetailPath(doctor.id))}
                     className="px-4 text-xs font-medium"
                   >
                     Details
@@ -308,7 +314,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
                   <AppleButton
                     variant="primary"
                     size="sm"
-                    onClick={() => navigate(`/book/${doctor.id}`)}
+                    onClick={() => navigate(getBookPath(doctor.id))}
                     className="flex-1 justify-center flex items-center gap-1.5 font-medium"
                   >
                     <span>Book Appointment</span>

@@ -181,10 +181,93 @@ export const BookAppointment: React.FC = () => {
     }
   };
 
-  if (loading || !doctor) {
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else if (id) {
+      navigate(user?.role === 'PATIENT' ? `/patient/doctor/${id}` : `/doctor/${id}`);
+    } else {
+      navigate(user?.role === 'PATIENT' ? '/patient/doctors' : '/doctors');
+    }
+  };
+
+  if (loading) {
+    if (user?.role === 'PATIENT') {
+      return (
+        <DashboardLayout
+          portalType="PATIENT"
+          portalSubtitle="PATIENT PORTAL"
+          navItems={patientNavItems}
+          title="Confirm Appointment"
+          subtitle="Loading shift and queue preview..."
+          headerAction={
+            <AppleButton
+              variant="ghost"
+              size="sm"
+              onClick={handleBack}
+              className="flex items-center gap-1.5 text-xs font-medium"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              Back
+            </AppleButton>
+          }
+        >
+          <div className="flex flex-col items-center justify-center py-24">
+            <div className="w-8 h-8 rounded-full border-2 border-[#0088e8] border-t-transparent animate-spin mb-3"></div>
+            <p className="text-xs text-[#86868b]">Loading appointment booking workspace...</p>
+          </div>
+        </DashboardLayout>
+      );
+    }
     return (
       <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center">
         <div className="w-8 h-8 rounded-full border-2 border-[#0088e8] border-t-transparent animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (!doctor) {
+    if (user?.role === 'PATIENT') {
+      return (
+        <DashboardLayout
+          portalType="PATIENT"
+          portalSubtitle="PATIENT PORTAL"
+          navItems={patientNavItems}
+          title="Booking Unavailable"
+          subtitle="The requested doctor could not be found"
+          headerAction={
+            <AppleButton
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/patient/doctors')}
+              className="flex items-center gap-1.5 text-xs font-medium"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              Back to Specialists
+            </AppleButton>
+          }
+        >
+          <div className="text-center p-8 bg-white rounded-2xl shadow-sm border border-[#e5e5ea] max-w-md mx-auto my-12">
+            <AlertCircle className="w-12 h-12 text-rose-500 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold text-[#1d1d1f] mb-2">Doctor Profile Unavailable</h2>
+            <p className="text-xs text-[#86868b] mb-6">{error || 'This doctor is unavailable or inactive.'}</p>
+            <AppleButton variant="primary" onClick={() => navigate('/patient/doctors')}>
+              Return to Specialists
+            </AppleButton>
+          </div>
+        </DashboardLayout>
+      );
+    }
+    return (
+      <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center">
+        <div className="text-center p-8 bg-white rounded-2xl shadow-sm border border-[#e5e5ea] max-w-md">
+          <AlertCircle className="w-12 h-12 text-rose-500 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-[#1d1d1f] mb-2">Doctor Profile Unavailable</h2>
+          <p className="text-xs text-[#86868b] mb-6">{error || 'This doctor is unavailable or inactive.'}</p>
+          <AppleButton variant="primary" onClick={() => navigate('/doctors')}>
+            Return to Directory
+          </AppleButton>
+        </div>
       </div>
     );
   }
@@ -632,7 +715,7 @@ export const BookAppointment: React.FC = () => {
           <AppleButton
             variant="ghost"
             size="sm"
-            onClick={() => navigate(-1)}
+            onClick={handleBack}
             className="flex items-center gap-1.5 text-xs font-medium"
           >
             <ChevronLeft className="w-4 h-4" />
@@ -653,7 +736,7 @@ export const BookAppointment: React.FC = () => {
         <AppleButton
           variant="ghost"
           size="sm"
-          onClick={() => navigate(-1)}
+          onClick={handleBack}
           className="flex items-center gap-1"
         >
           <ChevronLeft className="w-4 h-4" />

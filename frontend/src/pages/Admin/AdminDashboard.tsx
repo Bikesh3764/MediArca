@@ -173,10 +173,12 @@ export const AdminDashboard: React.FC = () => {
           <div className="flex items-center gap-2 sm:gap-3">
             <Link
               to="/"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-[#48484a] hover:bg-[#f5f5f7] hover:text-[#1d1d1f] transition-all border border-[#e5e5ea]"
+              className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-medium text-[#48484a] hover:bg-[#f5f5f7] hover:text-[#1d1d1f] transition-all border border-[#e5e5ea]"
+              title="Return to Main Website"
             >
               <Globe className="w-3.5 h-3.5 text-[#86868b]" />
-              <span>Main Website</span>
+              <span className="hidden sm:inline">Main Website</span>
+              <span className="sm:hidden">Home</span>
             </Link>
 
             <AppleButton
@@ -199,7 +201,7 @@ export const AdminDashboard: React.FC = () => {
 
             <button
               onClick={handleLogout}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-rose-600 bg-rose-50 hover:bg-rose-100 transition-all border border-rose-200 cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-medium text-rose-600 bg-rose-50 hover:bg-rose-100 transition-all border border-rose-200 cursor-pointer"
               title="Sign Out of Admin Console"
             >
               <LogOut className="w-3.5 h-3.5" />

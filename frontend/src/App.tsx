@@ -1,5 +1,5 @@
 import React from 'react';
-import { HashRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { GlobalNav } from './components/layout/GlobalNav';
 import { Footer } from './components/layout/Footer';
@@ -26,12 +26,25 @@ import { ClinicDashboard } from './pages/Clinic/ClinicDashboard';
 import { ReceptionistAuth } from './pages/Receptionist/ReceptionistAuth';
 import { ReceptionistDashboard } from './pages/Receptionist/ReceptionistDashboard';
 
+// Redirect helpers for seamless patient portal continuity
+const DoctorRedirectToPatientDetail: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  return <Navigate to={`/patient/doctor/${id}`} replace />;
+};
+
+const BookRedirectToPatientBook: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  const location = useLocation();
+  return <Navigate to={`/patient/book/${id}${location.search}`} replace />;
+};
+
 // Protected Route Helpers
 const ProtectedRoute: React.FC<{
   children: React.ReactNode;
   allowedRoles?: Array<'PATIENT' | 'DOCTOR' | 'ADMIN' | 'CLINIC' | 'RECEPTIONIST'>;
 }> = ({ children, allowedRoles }) => {
   const { user, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return (
@@ -51,7 +64,7 @@ const ProtectedRoute: React.FC<{
     if (allowedRoles && allowedRoles.includes('RECEPTIONIST')) {
       return <Navigate to="/receptionist/login" replace />;
     }
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   if (allowedRoles && !allowedRoles.includes(user.role)) {
@@ -97,7 +110,16 @@ function AppShell() {
               )
             }
           />
-          <Route path="/doctor/:id" element={<DoctorDetail />} />
+          <Route
+            path="/doctor/:id"
+            element={
+              user?.role === 'PATIENT' ? (
+                <DoctorRedirectToPatientDetail />
+              ) : (
+                <DoctorDetail />
+              )
+            }
+          />
 
           {/* Patient Routes */}
           <Route
@@ -109,11 +131,31 @@ function AppShell() {
             }
           />
           <Route
-            path="/book/:id"
+            path="/patient/doctor/:id"
+            element={
+              <ProtectedRoute allowedRoles={['PATIENT']}>
+                <DoctorDetail />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/patient/book/:id"
             element={
               <ProtectedRoute allowedRoles={['PATIENT']}>
                 <BookAppointment />
               </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/book/:id"
+            element={
+              user?.role === 'PATIENT' ? (
+                <BookRedirectToPatientBook />
+              ) : (
+                <ProtectedRoute allowedRoles={['PATIENT']}>
+                  <BookAppointment />
+                </ProtectedRoute>
+              )
             }
           />
           <Route

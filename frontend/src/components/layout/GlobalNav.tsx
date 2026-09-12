@@ -31,6 +31,8 @@ export const GlobalNav: React.FC = () => {
         location.pathname === '/doctors' ||
         location.pathname.startsWith('/doctors/') ||
         location.pathname === '/patient/doctors' ||
+        location.pathname.startsWith('/patient/doctor/') ||
+        location.pathname.startsWith('/patient/book/') ||
         (location.pathname.startsWith('/doctor/') &&
           !location.pathname.startsWith('/doctor/dashboard') &&
           !location.pathname.startsWith('/doctor/schedule') &&

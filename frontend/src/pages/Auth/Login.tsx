@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { AppleButton } from '../../components/ui/AppleButton';
 import { BrandLogo } from '../../components/ui/BrandLogo';
@@ -15,13 +15,23 @@ export const Login: React.FC = () => {
 
   const { login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const getDestination = (role: string) => {
     if (role === 'DOCTOR') return '/doctor/dashboard';
     if (role === 'ADMIN') return '/admin';
     if (role === 'CLINIC') return '/clinic/dashboard';
     if (role === 'RECEPTIONIST') return '/receptionist/dashboard';
-    return '/doctors';
+    return '/patient/doctors';
+  };
+
+  const getTargetDestination = (role: string) => {
+    const fromPath = (location.state as any)?.from?.pathname;
+    const search = (location.state as any)?.from?.search || '';
+    if (fromPath && fromPath !== '/login' && fromPath !== '/signup') {
+      return `${fromPath}${search}`;
+    }
+    return getDestination(role);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -30,7 +40,7 @@ export const Login: React.FC = () => {
     setSubmitting(true);
     try {
       const loggedUser = await login({ email, password });
-      navigate(getDestination(loggedUser.role));
+      navigate(getTargetDestination(loggedUser.role), { replace: true });
     } catch (err: any) {
       setError(err.message || 'Invalid email or password');
     } finally {
@@ -38,12 +48,12 @@ export const Login: React.FC = () => {
     }
   };
 
-  const handleQuickLogin = async (demoEmail: string, demoPass: string, redirectPath = '/doctors') => {
+  const handleQuickLogin = async (demoEmail: string, demoPass: string, redirectPath?: string) => {
     setError(null);
     setSubmitting(true);
     try {
       const loggedUser = await login({ email: demoEmail, password: demoPass });
-      navigate(redirectPath || getDestination(loggedUser.role));
+      navigate(redirectPath || getTargetDestination(loggedUser.role), { replace: true });
     } catch (err: any) {
       setError(err.message || 'Demo login failed');
     } finally {
@@ -57,7 +67,7 @@ export const Login: React.FC = () => {
       setSubmitting(true);
       try {
         const loggedUser = await loginWithGoogle(credentialResponse.credential, 'PATIENT');
-        navigate(getDestination(loggedUser.role));
+        navigate(getTargetDestination(loggedUser.role), { replace: true });
       } catch (err: any) {
         setError(err.message || 'Google sign-in authentication failed');
       } finally {
@@ -82,7 +92,7 @@ export const Login: React.FC = () => {
       );
       const simulatedToken = `${header}.${payload}.signature`;
       const loggedUser = await loginWithGoogle(simulatedToken, 'PATIENT');
-      navigate(getDestination(loggedUser.role));
+      navigate(getTargetDestination(loggedUser.role), { replace: true });
     } catch (err: any) {
       setError(err.message || 'Simulated Google login failed');
     } finally {
