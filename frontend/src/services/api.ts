@@ -410,6 +410,7 @@ export interface ClinicProfile {
   city?: string;
   phone?: string;
   isVerified?: boolean;
+  verificationStatus?: 'PENDING' | 'VERIFIED' | 'SUSPENDED' | 'REJECTED' | string;
   createdAt?: string;
 }
 
@@ -572,6 +573,7 @@ export interface Doctor {
   bio?: string;
   clinicAddress?: string;
   isVerified: boolean;
+  verificationStatus?: 'PENDING' | 'VERIFIED' | 'SUSPENDED' | 'REJECTED' | string;
   checkingStartTime: string;
   checkingEndTime: string;
   avgConsultationMinutes: number;
@@ -1007,11 +1009,18 @@ export const api = {
     return handleResponse(res);
   },
 
-  async verifyDoctor(doctorId: string, isVerified: boolean): Promise<Doctor> {
+  async verifyDoctor(
+    doctorId: string,
+    action: boolean | 'VERIFIED' | 'SUSPENDED' | 'REJECTED' | 'PENDING'
+  ): Promise<Doctor> {
+    const payload =
+      typeof action === 'boolean'
+        ? { doctorId, isVerified: action, status: action ? 'VERIFIED' : 'SUSPENDED' }
+        : { doctorId, isVerified: action === 'VERIFIED', status: action };
     const res = await fetch(`${API_BASE_URL}/admin/verify-doctor`, {
       method: 'POST',
       headers: getHeaders(),
-      body: JSON.stringify({ doctorId, isVerified }),
+      body: JSON.stringify(payload),
     });
     return handleResponse(res);
   },
@@ -1021,11 +1030,18 @@ export const api = {
     return handleResponse(res);
   },
 
-  async verifyClinic(clinicId: string, isVerified: boolean): Promise<any> {
+  async verifyClinic(
+    clinicId: string,
+    action: boolean | 'VERIFIED' | 'SUSPENDED' | 'REJECTED' | 'PENDING'
+  ): Promise<any> {
+    const payload =
+      typeof action === 'boolean'
+        ? { clinicId, isVerified: action, status: action ? 'VERIFIED' : 'SUSPENDED' }
+        : { clinicId, isVerified: action === 'VERIFIED', status: action };
     const res = await fetch(`${API_BASE_URL}/admin/verify-clinic`, {
       method: 'POST',
       headers: getHeaders(),
-      body: JSON.stringify({ clinicId, isVerified }),
+      body: JSON.stringify(payload),
     });
     return handleResponse(res);
   },

@@ -82,6 +82,30 @@ async function ensureSchema() {
     } catch {}
   }
 
+  // Ensure verificationStatus on DoctorProfile
+  try {
+    await prisma.$executeRawUnsafe(`ALTER TABLE "DoctorProfile" ADD COLUMN IF NOT EXISTS "verificationStatus" TEXT NOT NULL DEFAULT 'PENDING';`);
+  } catch {
+    try {
+      await prisma.$executeRawUnsafe(`ALTER TABLE "DoctorProfile" ADD COLUMN "verificationStatus" TEXT NOT NULL DEFAULT 'PENDING';`);
+    } catch {}
+  }
+
+  // Ensure verificationStatus on ClinicProfile
+  try {
+    await prisma.$executeRawUnsafe(`ALTER TABLE "ClinicProfile" ADD COLUMN IF NOT EXISTS "verificationStatus" TEXT NOT NULL DEFAULT 'PENDING';`);
+  } catch {
+    try {
+      await prisma.$executeRawUnsafe(`ALTER TABLE "ClinicProfile" ADD COLUMN "verificationStatus" TEXT NOT NULL DEFAULT 'PENDING';`);
+    } catch {}
+  }
+
+  // Sync existing verified records so isVerified: true matches verificationStatus: 'VERIFIED'
+  try {
+    await prisma.$executeRawUnsafe(`UPDATE "DoctorProfile" SET "verificationStatus" = 'VERIFIED' WHERE "isVerified" = TRUE AND ("verificationStatus" IS NULL OR "verificationStatus" = 'PENDING');`);
+    await prisma.$executeRawUnsafe(`UPDATE "ClinicProfile" SET "verificationStatus" = 'VERIFIED' WHERE "isVerified" = TRUE AND ("verificationStatus" IS NULL OR "verificationStatus" = 'PENDING');`);
+  } catch {}
+
   // Ensure ReceptionistProfile
   try {
     await prisma.$executeRawUnsafe(`

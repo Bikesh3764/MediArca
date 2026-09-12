@@ -3,9 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -39,6 +38,7 @@ model DoctorProfile {
   bio                   String?
   clinicAddress         String?
   isVerified            Boolean       @default(false)
+  verificationStatus    String        @default("PENDING") // "PENDING", "VERIFIED", "SUSPENDED", "REJECTED"
   checkingStartTime     String        @default("09:00")
   checkingEndTime       String        @default("13:00")
   avgConsultationMinutes Int          @default(15)
@@ -159,6 +159,7 @@ model ClinicProfile {
   city         String?
   phone        String?
   isVerified   Boolean               @default(false)
+  verificationStatus String            @default("PENDING") // "PENDING", "VERIFIED", "SUSPENDED", "REJECTED"
   doctors      ClinicDoctor[]
   receptionists ReceptionistProfile[]
   appointments Appointment[]

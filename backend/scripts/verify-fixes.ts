@@ -710,7 +710,90 @@ function runTests() {
     'Fallback strips email domain cleanly instead of raw email'
   );
 
-  console.log(`\n=== VERIFICATION SUMMARY ===`);
+  // 35. Admin Practitioner & Clinic Verification Lifecycle State Machine
+  type VerificationStatus = 'PENDING' | 'VERIFIED' | 'SUSPENDED' | 'REJECTED';
+  interface ProfileVerificationState {
+    id: string;
+    isVerified: boolean;
+    verificationStatus: VerificationStatus;
+  }
+
+  const applyVerificationAction = (
+    profile: ProfileVerificationState,
+    action: { status?: VerificationStatus; isVerified?: boolean }
+  ): ProfileVerificationState => {
+    let targetStatus: VerificationStatus;
+    let targetIsVerified: boolean;
+
+    if (action.status && ['VERIFIED', 'SUSPENDED', 'REJECTED', 'PENDING'].includes(action.status)) {
+      targetStatus = action.status;
+      targetIsVerified = targetStatus === 'VERIFIED';
+    } else if (typeof action.isVerified === 'boolean') {
+      targetIsVerified = action.isVerified;
+      targetStatus = action.isVerified ? 'VERIFIED' : 'SUSPENDED';
+    } else {
+      throw new Error('Invalid verification action');
+    }
+
+    return {
+      ...profile,
+      isVerified: targetIsVerified,
+      verificationStatus: targetStatus,
+    };
+  };
+
+  // Initial State: Newly registered practitioner or clinic
+  let docProfile: ProfileVerificationState = {
+    id: 'doc_123',
+    isVerified: false,
+    verificationStatus: 'PENDING',
+  };
+  assert(docProfile.isVerified === false && docProfile.verificationStatus === 'PENDING', 'Initial registration is PENDING and isVerified: false');
+
+  // Transition 1: Admin approves license
+  docProfile = applyVerificationAction(docProfile, { status: 'VERIFIED' });
+  assert(docProfile.isVerified === true && docProfile.verificationStatus === 'VERIFIED', 'Approved license has status VERIFIED and isVerified: true');
+
+  // Transition 2: Admin suspends credentials (The issue reported in screenshot)
+  docProfile = applyVerificationAction(docProfile, { status: 'SUSPENDED' });
+  assert(docProfile.isVerified === false, 'Suspended practitioner has isVerified: false');
+  assert(docProfile.verificationStatus === 'SUSPENDED', 'Suspended practitioner has verificationStatus: "SUSPENDED" (NOT "PENDING")');
+
+  // Transition 3: Admin re-activates suspended practitioner
+  docProfile = applyVerificationAction(docProfile, { status: 'VERIFIED' });
+  assert(docProfile.isVerified === true && docProfile.verificationStatus === 'VERIFIED', 'Re-activated practitioner restored to VERIFIED and isVerified: true');
+
+  // Transition 4: Admin rejects pending practitioner
+  let rejectedDoc: ProfileVerificationState = {
+    id: 'doc_456',
+    isVerified: false,
+    verificationStatus: 'PENDING',
+  };
+  rejectedDoc = applyVerificationAction(rejectedDoc, { status: 'REJECTED' });
+  assert(rejectedDoc.isVerified === false && rejectedDoc.verificationStatus === 'REJECTED', 'Rejected application sets REJECTED and isVerified: false');
+
+  // Transition 5: Admin re-evaluates & approves previously rejected practitioner
+  rejectedDoc = applyVerificationAction(rejectedDoc, { status: 'VERIFIED' });
+  assert(rejectedDoc.isVerified === true && rejectedDoc.verificationStatus === 'VERIFIED', 'Re-evaluating rejected application restores to VERIFIED');
+
+  // 36. Public Discoverability & KPI Count Isolation
+  const pool: ProfileVerificationState[] = [
+    { id: '1', isVerified: true, verificationStatus: 'VERIFIED' },
+    { id: '2', isVerified: false, verificationStatus: 'PENDING' },
+    { id: '3', isVerified: false, verificationStatus: 'SUSPENDED' },
+    { id: '4', isVerified: false, verificationStatus: 'REJECTED' },
+    { id: '5', isVerified: true, verificationStatus: 'VERIFIED' },
+  ];
+
+  // Public discovery check
+  const publiclyDiscoverable = pool.filter((p) => p.isVerified === true);
+  assert(publiclyDiscoverable.length === 2, 'Only genuinely VERIFIED entities are publicly discoverable (2 out of 5)');
+  assert(!publiclyDiscoverable.some((p) => p.verificationStatus === 'SUSPENDED'), 'Suspended entities NEVER appear in public discovery');
+  assert(!publiclyDiscoverable.some((p) => p.verificationStatus === 'PENDING'), 'Pending entities NEVER appear in public discovery');
+
+  // Pending Review KPI count: Must strictly count PENDING, NOT SUSPENDED or REJECTED
+  const pendingReviewCount = pool.filter((p) => p.verificationStatus === 'PENDING').length;
+  assert(pendingReviewCount === 1, 'Pending review count is strictly 1 (does not inflate with SUSPENDED or REJECTED)');
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);
 

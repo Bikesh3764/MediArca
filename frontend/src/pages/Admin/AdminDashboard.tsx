@@ -15,6 +15,8 @@ import {
   Clock,
   X,
   Building2,
+  Ban,
+  XCircle,
 } from 'lucide-react';
 
 export const AdminDashboard: React.FC = () => {
@@ -70,10 +72,58 @@ export const AdminDashboard: React.FC = () => {
     fetchData();
   }, [user, loadingAuth, navigate]);
 
-  const handleVerifyClinic = async (clinicId: string, isVerified: boolean) => {
+  const getPractitionerStatus = (
+    doc: { verificationStatus?: string; isVerified?: boolean } | null | undefined
+  ): 'VERIFIED' | 'SUSPENDED' | 'REJECTED' | 'PENDING' => {
+    if (!doc) return 'PENDING';
+    if (doc.verificationStatus) {
+      const s = doc.verificationStatus.toUpperCase();
+      if (s === 'VERIFIED' || s === 'SUSPENDED' || s === 'REJECTED' || s === 'PENDING') return s as any;
+    }
+    return doc.isVerified ? 'VERIFIED' : 'PENDING';
+  };
+
+  const renderStatusBadge = (status: 'VERIFIED' | 'SUSPENDED' | 'REJECTED' | 'PENDING') => {
+    switch (status) {
+      case 'VERIFIED':
+        return (
+          <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full text-xs font-semibold border border-emerald-200">
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            Verified
+          </span>
+        );
+      case 'SUSPENDED':
+        return (
+          <span className="inline-flex items-center gap-1 bg-rose-50 text-rose-700 px-2.5 py-1 rounded-full text-xs font-semibold border border-rose-200">
+            <Ban className="w-3.5 h-3.5" />
+            Suspended
+          </span>
+        );
+      case 'REJECTED':
+        return (
+          <span className="inline-flex items-center gap-1 bg-gray-100 text-gray-700 px-2.5 py-1 rounded-full text-xs font-semibold border border-gray-300">
+            <XCircle className="w-3.5 h-3.5" />
+            Rejected
+          </span>
+        );
+      case 'PENDING':
+      default:
+        return (
+          <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 px-2.5 py-1 rounded-full text-xs font-semibold border border-amber-200 animate-pulse">
+            <Clock className="w-3.5 h-3.5" />
+            Pending Review
+          </span>
+        );
+    }
+  };
+
+  const handleVerifyClinic = async (
+    clinicId: string,
+    action: 'VERIFIED' | 'SUSPENDED' | 'REJECTED' | boolean
+  ) => {
     setClinicActionId(clinicId);
     try {
-      await api.verifyClinic(clinicId, isVerified);
+      await api.verifyClinic(clinicId, action);
       await fetchData();
     } catch (err: any) {
       alert(err.message || 'Clinic verification update failed');
@@ -82,10 +132,13 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
-  const handleVerify = async (doctorId: string, isVerified: boolean) => {
+  const handleVerify = async (
+    doctorId: string,
+    action: 'VERIFIED' | 'SUSPENDED' | 'REJECTED' | boolean
+  ) => {
     setActionId(doctorId);
     try {
-      await api.verifyDoctor(doctorId, isVerified);
+      await api.verifyDoctor(doctorId, action);
       await fetchData();
     } catch (err: any) {
       alert(err.message || 'Verification update failed');
@@ -143,7 +196,9 @@ export const AdminDashboard: React.FC = () => {
                   <div>
                     <span className="text-[11px] text-[#86868b] uppercase font-semibold">Clinics</span>
                     <h3 className="text-3xl font-semibold text-[#1d1d1f] mt-1">{stats?.totalClinics || clinics.length}</h3>
-                    <p className="text-[10px] text-amber-600 font-medium mt-0.5">{stats?.pendingClinics || 0} pending review</p>
+                    <p className="text-[10px] text-amber-600 font-medium mt-0.5">
+                      {clinics.filter((c) => getPractitionerStatus(c) === 'PENDING').length} pending review
+                    </p>
                   </div>
                   <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
                     <Building2 className="w-5 h-5" />
@@ -156,7 +211,8 @@ export const AdminDashboard: React.FC = () => {
                   <div>
                     <span className="text-[11px] text-[#86868b] uppercase font-semibold">Pending Review</span>
                     <h3 className="text-3xl font-semibold text-amber-600 mt-1">
-                      {(stats?.pendingDoctors || 0) + (stats?.pendingClinics || 0)}
+                      {doctors.filter((d) => getPractitionerStatus(d) === 'PENDING').length +
+                        clinics.filter((c) => getPractitionerStatus(c) === 'PENDING').length}
                     </h3>
                     <p className="text-[10px] text-[#86868b] mt-0.5">Docs & Clinics</p>
                   </div>
@@ -192,9 +248,9 @@ export const AdminDashboard: React.FC = () => {
               >
                 <ShieldCheck className="w-4 h-4 text-[#0088e8]" />
                 <span>Doctor Verification</span>
-                {(stats?.pendingDoctors || 0) > 0 ? (
+                {doctors.filter((d) => getPractitionerStatus(d) === 'PENDING').length > 0 ? (
                   <span className="px-2 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-bold">
-                    {stats?.pendingDoctors} pending
+                    {doctors.filter((d) => getPractitionerStatus(d) === 'PENDING').length} pending
                   </span>
                 ) : (
                   <span className="text-[10px] opacity-70">({doctors.length})</span>
@@ -211,9 +267,9 @@ export const AdminDashboard: React.FC = () => {
               >
                 <Building2 className="w-4 h-4 text-indigo-600" />
                 <span>Clinic Verification</span>
-                {(stats?.pendingClinics || 0) > 0 ? (
+                {clinics.filter((c) => getPractitionerStatus(c) === 'PENDING').length > 0 ? (
                   <span className="px-2 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-bold animate-pulse">
-                    {stats?.pendingClinics} pending
+                    {clinics.filter((c) => getPractitionerStatus(c) === 'PENDING').length} pending
                   </span>
                 ) : (
                   <span className="text-[10px] opacity-70">({clinics.length})</span>
@@ -299,17 +355,7 @@ export const AdminDashboard: React.FC = () => {
                           </td>
                           <td className="py-3.5 px-3 font-semibold text-[#1d1d1f]">${doc.consultationFee}</td>
                           <td className="py-3.5 px-3">
-                            {doc.isVerified ? (
-                              <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full font-semibold border border-emerald-200">
-                                <CheckCircle2 className="w-3 h-3" />
-                                Verified
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 px-2.5 py-1 rounded-full font-semibold border border-amber-200 animate-pulse">
-                                <Clock className="w-3 h-3" />
-                                Pending Review
-                              </span>
-                            )}
+                            {renderStatusBadge(getPractitionerStatus(doc))}
                           </td>
                           <td className="py-3.5 px-3 text-right">
                             <div className="flex items-center justify-end gap-1.5">
@@ -321,24 +367,63 @@ export const AdminDashboard: React.FC = () => {
                               >
                                 Details
                               </AppleButton>
-                              {doc.isVerified ? (
+
+                              {getPractitionerStatus(doc) === 'PENDING' && (
+                                <>
+                                  <AppleButton
+                                    variant="ghost"
+                                    size="sm"
+                                    disabled={actionId === doc.id}
+                                    onClick={() => handleVerify(doc.id, 'REJECTED')}
+                                    className="text-rose-600 hover:text-rose-700 hover:border-rose-300 text-xs"
+                                  >
+                                    {actionId === doc.id ? 'Updating...' : 'Reject'}
+                                  </AppleButton>
+                                  <AppleButton
+                                    variant="primary"
+                                    size="sm"
+                                    disabled={actionId === doc.id}
+                                    onClick={() => handleVerify(doc.id, 'VERIFIED')}
+                                    className="text-xs"
+                                  >
+                                    {actionId === doc.id ? 'Verifying...' : 'Approve & Verify'}
+                                  </AppleButton>
+                                </>
+                              )}
+
+                              {getPractitionerStatus(doc) === 'VERIFIED' && (
                                 <AppleButton
                                   variant="ghost"
                                   size="sm"
                                   disabled={actionId === doc.id}
-                                  onClick={() => handleVerify(doc.id, false)}
-                                  className="text-rose-600 hover:text-rose-700 hover:border-rose-300"
+                                  onClick={() => handleVerify(doc.id, 'SUSPENDED')}
+                                  className="text-rose-600 hover:text-rose-700 hover:border-rose-300 text-xs"
                                 >
-                                  Suspend
+                                  {actionId === doc.id ? 'Suspending...' : 'Suspend'}
                                 </AppleButton>
-                              ) : (
+                              )}
+
+                              {getPractitionerStatus(doc) === 'SUSPENDED' && (
                                 <AppleButton
                                   variant="primary"
                                   size="sm"
                                   disabled={actionId === doc.id}
-                                  onClick={() => handleVerify(doc.id, true)}
+                                  onClick={() => handleVerify(doc.id, 'VERIFIED')}
+                                  className="text-xs bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white"
                                 >
-                                  {actionId === doc.id ? 'Verifying...' : 'Approve & Verify'}
+                                  {actionId === doc.id ? 'Activating...' : 'Re-activate'}
+                                </AppleButton>
+                              )}
+
+                              {getPractitionerStatus(doc) === 'REJECTED' && (
+                                <AppleButton
+                                  variant="ghost"
+                                  size="sm"
+                                  disabled={actionId === doc.id}
+                                  onClick={() => handleVerify(doc.id, 'VERIFIED')}
+                                  className="text-[#0088e8] hover:text-[#0284c7] text-xs"
+                                >
+                                  {actionId === doc.id ? 'Updating...' : 'Approve & Verify'}
                                 </AppleButton>
                               )}
                             </div>
@@ -420,17 +505,7 @@ export const AdminDashboard: React.FC = () => {
                               </div>
                             </td>
                             <td className="py-3.5 px-3">
-                              {c.isVerified ? (
-                                <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full font-semibold border border-emerald-200">
-                                  <CheckCircle2 className="w-3 h-3" />
-                                  Verified
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 px-2.5 py-1 rounded-full font-semibold border border-amber-200 animate-pulse">
-                                  <Clock className="w-3 h-3" />
-                                  Pending Review
-                                </span>
-                              )}
+                              {renderStatusBadge(getPractitionerStatus(c))}
                             </td>
                             <td className="py-3.5 px-3 text-right">
                               <div className="flex items-center justify-end gap-1.5">
@@ -442,24 +517,63 @@ export const AdminDashboard: React.FC = () => {
                                 >
                                   Details
                                 </AppleButton>
-                                {c.isVerified ? (
+
+                                {getPractitionerStatus(c) === 'PENDING' && (
+                                  <>
+                                    <AppleButton
+                                      variant="ghost"
+                                      size="sm"
+                                      disabled={clinicActionId === c.id}
+                                      onClick={() => handleVerifyClinic(c.id, 'REJECTED')}
+                                      className="text-rose-600 hover:text-rose-700 hover:border-rose-300 text-xs"
+                                    >
+                                      {clinicActionId === c.id ? 'Updating...' : 'Reject'}
+                                    </AppleButton>
+                                    <AppleButton
+                                      variant="primary"
+                                      size="sm"
+                                      disabled={clinicActionId === c.id}
+                                      onClick={() => handleVerifyClinic(c.id, 'VERIFIED')}
+                                      className="text-xs"
+                                    >
+                                      {clinicActionId === c.id ? 'Verifying...' : 'Approve & Verify'}
+                                    </AppleButton>
+                                  </>
+                                )}
+
+                                {getPractitionerStatus(c) === 'VERIFIED' && (
                                   <AppleButton
                                     variant="ghost"
                                     size="sm"
                                     disabled={clinicActionId === c.id}
-                                    onClick={() => handleVerifyClinic(c.id, false)}
-                                    className="text-rose-600 hover:text-rose-700 hover:border-rose-300"
+                                    onClick={() => handleVerifyClinic(c.id, 'SUSPENDED')}
+                                    className="text-rose-600 hover:text-rose-700 hover:border-rose-300 text-xs"
                                   >
-                                    Suspend
+                                    {clinicActionId === c.id ? 'Suspending...' : 'Suspend'}
                                   </AppleButton>
-                                ) : (
+                                )}
+
+                                {getPractitionerStatus(c) === 'SUSPENDED' && (
                                   <AppleButton
                                     variant="primary"
                                     size="sm"
                                     disabled={clinicActionId === c.id}
-                                    onClick={() => handleVerifyClinic(c.id, true)}
+                                    onClick={() => handleVerifyClinic(c.id, 'VERIFIED')}
+                                    className="text-xs bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white"
                                   >
-                                    {clinicActionId === c.id ? 'Verifying...' : 'Approve & Verify'}
+                                    {clinicActionId === c.id ? 'Activating...' : 'Re-activate'}
+                                  </AppleButton>
+                                )}
+
+                                {getPractitionerStatus(c) === 'REJECTED' && (
+                                  <AppleButton
+                                    variant="ghost"
+                                    size="sm"
+                                    disabled={clinicActionId === c.id}
+                                    onClick={() => handleVerifyClinic(c.id, 'VERIFIED')}
+                                    className="text-[#0088e8] hover:text-[#0284c7] text-xs"
+                                  >
+                                    {clinicActionId === c.id ? 'Updating...' : 'Approve & Verify'}
                                   </AppleButton>
                                 )}
                               </div>
@@ -535,7 +649,10 @@ export const AdminDashboard: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-[#1d1d1f]">{selectedDoctor.user.fullName}</h3>
-                  <p className="text-xs text-[#0088e8] font-medium">{selectedDoctor.specialty}</p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <p className="text-xs text-[#0088e8] font-medium">{selectedDoctor.specialty}</p>
+                    {renderStatusBadge(getPractitionerStatus(selectedDoctor))}
+                  </div>
                 </div>
               </div>
               <button
@@ -588,36 +705,86 @@ export const AdminDashboard: React.FC = () => {
               </div>
             </div>
 
-            <div className="pt-4 border-t border-[#f0f0f0] flex justify-end gap-2">
+            <div className="pt-4 border-t border-[#f0f0f0] flex items-center justify-between">
               <AppleButton variant="ghost" size="sm" onClick={() => setSelectedDoctor(null)}>
                 Close
               </AppleButton>
-              {selectedDoctor.isVerified ? (
-                <AppleButton
-                  variant="ghost"
-                  size="sm"
-                  disabled={actionId === selectedDoctor.id}
-                  onClick={async () => {
-                    await handleVerify(selectedDoctor.id, false);
-                    setSelectedDoctor(null);
-                  }}
-                  className="text-rose-600 hover:text-rose-700"
-                >
-                  Suspend Credentials
-                </AppleButton>
-              ) : (
-                <AppleButton
-                  variant="primary"
-                  size="sm"
-                  disabled={actionId === selectedDoctor.id}
-                  onClick={async () => {
-                    await handleVerify(selectedDoctor.id, true);
-                    setSelectedDoctor(null);
-                  }}
-                >
-                  {actionId === selectedDoctor.id ? 'Approving...' : 'Approve & Verify License'}
-                </AppleButton>
-              )}
+              <div className="flex items-center gap-2">
+                {getPractitionerStatus(selectedDoctor) === 'VERIFIED' && (
+                  <AppleButton
+                    variant="ghost"
+                    size="sm"
+                    disabled={actionId === selectedDoctor.id}
+                    onClick={async () => {
+                      await handleVerify(selectedDoctor.id, 'SUSPENDED');
+                      setSelectedDoctor(null);
+                    }}
+                    className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 border border-rose-200"
+                  >
+                    <Ban className="w-3.5 h-3.5 mr-1" />
+                    Suspend Credentials
+                  </AppleButton>
+                )}
+                {getPractitionerStatus(selectedDoctor) === 'SUSPENDED' && (
+                  <AppleButton
+                    variant="primary"
+                    size="sm"
+                    disabled={actionId === selectedDoctor.id}
+                    onClick={async () => {
+                      await handleVerify(selectedDoctor.id, 'VERIFIED');
+                      setSelectedDoctor(null);
+                    }}
+                    className="bg-emerald-600 hover:bg-emerald-700"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                    Re-activate Practitioner
+                  </AppleButton>
+                )}
+                {getPractitionerStatus(selectedDoctor) === 'REJECTED' && (
+                  <AppleButton
+                    variant="primary"
+                    size="sm"
+                    disabled={actionId === selectedDoctor.id}
+                    onClick={async () => {
+                      await handleVerify(selectedDoctor.id, 'VERIFIED');
+                      setSelectedDoctor(null);
+                    }}
+                    className="bg-emerald-600 hover:bg-emerald-700"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                    Re-evaluate & Approve
+                  </AppleButton>
+                )}
+                {getPractitionerStatus(selectedDoctor) === 'PENDING' && (
+                  <>
+                    <AppleButton
+                      variant="ghost"
+                      size="sm"
+                      disabled={actionId === selectedDoctor.id}
+                      onClick={async () => {
+                        await handleVerify(selectedDoctor.id, 'REJECTED');
+                        setSelectedDoctor(null);
+                      }}
+                      className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 border border-rose-200"
+                    >
+                      <XCircle className="w-3.5 h-3.5 mr-1" />
+                      Reject Application
+                    </AppleButton>
+                    <AppleButton
+                      variant="primary"
+                      size="sm"
+                      disabled={actionId === selectedDoctor.id}
+                      onClick={async () => {
+                        await handleVerify(selectedDoctor.id, 'VERIFIED');
+                        setSelectedDoctor(null);
+                      }}
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                      {actionId === selectedDoctor.id ? 'Approving...' : 'Approve & Verify License'}
+                    </AppleButton>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -634,7 +801,10 @@ export const AdminDashboard: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-[#1d1d1f] tracking-tight">{selectedClinic.clinicName}</h3>
-                  <p className="text-xs text-[#7a7a7a]">Clinical Healthcare Facility Verification</p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <p className="text-xs text-[#7a7a7a]">Clinical Healthcare Facility Verification</p>
+                    {renderStatusBadge(getPractitionerStatus(selectedClinic))}
+                  </div>
                 </div>
               </div>
               <button
@@ -702,50 +872,90 @@ export const AdminDashboard: React.FC = () => {
 
               <div className="flex items-center justify-between p-3 rounded-xl border border-[#e5e5ea] bg-[#fafafc]">
                 <span className="text-[#86868b] font-medium">Platform Verification State:</span>
-                {selectedClinic.isVerified ? (
-                  <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full font-semibold border border-emerald-200">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    Verified & Publicly Discoverable
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 px-2.5 py-1 rounded-full font-semibold border border-amber-200 animate-pulse">
-                    <Clock className="w-3.5 h-3.5" />
-                    Pending Administrative Review
-                  </span>
-                )}
+                {renderStatusBadge(getPractitionerStatus(selectedClinic))}
               </div>
             </div>
 
-            <div className="pt-4 border-t border-[#f0f0f0] flex justify-end gap-2">
+            <div className="pt-4 border-t border-[#f0f0f0] flex items-center justify-between">
               <AppleButton variant="ghost" size="sm" onClick={() => setSelectedClinic(null)}>
                 Close
               </AppleButton>
-              {selectedClinic.isVerified ? (
-                <AppleButton
-                  variant="ghost"
-                  size="sm"
-                  disabled={clinicActionId === selectedClinic.id}
-                  onClick={async () => {
-                    await handleVerifyClinic(selectedClinic.id, false);
-                    setSelectedClinic(null);
-                  }}
-                  className="text-rose-600 hover:text-rose-700"
-                >
-                  Suspend Verification
-                </AppleButton>
-              ) : (
-                <AppleButton
-                  variant="primary"
-                  size="sm"
-                  disabled={clinicActionId === selectedClinic.id}
-                  onClick={async () => {
-                    await handleVerifyClinic(selectedClinic.id, true);
-                    setSelectedClinic(null);
-                  }}
-                >
-                  {clinicActionId === selectedClinic.id ? 'Approving...' : 'Approve & Verify Facility'}
-                </AppleButton>
-              )}
+              <div className="flex items-center gap-2">
+                {getPractitionerStatus(selectedClinic) === 'VERIFIED' && (
+                  <AppleButton
+                    variant="ghost"
+                    size="sm"
+                    disabled={clinicActionId === selectedClinic.id}
+                    onClick={async () => {
+                      await handleVerifyClinic(selectedClinic.id, 'SUSPENDED');
+                      setSelectedClinic(null);
+                    }}
+                    className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 border border-rose-200"
+                  >
+                    <Ban className="w-3.5 h-3.5 mr-1" />
+                    Suspend Verification
+                  </AppleButton>
+                )}
+                {getPractitionerStatus(selectedClinic) === 'SUSPENDED' && (
+                  <AppleButton
+                    variant="primary"
+                    size="sm"
+                    disabled={clinicActionId === selectedClinic.id}
+                    onClick={async () => {
+                      await handleVerifyClinic(selectedClinic.id, 'VERIFIED');
+                      setSelectedClinic(null);
+                    }}
+                    className="bg-emerald-600 hover:bg-emerald-700"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                    Re-activate Facility
+                  </AppleButton>
+                )}
+                {getPractitionerStatus(selectedClinic) === 'REJECTED' && (
+                  <AppleButton
+                    variant="primary"
+                    size="sm"
+                    disabled={clinicActionId === selectedClinic.id}
+                    onClick={async () => {
+                      await handleVerifyClinic(selectedClinic.id, 'VERIFIED');
+                      setSelectedClinic(null);
+                    }}
+                    className="bg-emerald-600 hover:bg-emerald-700"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                    Re-evaluate & Approve
+                  </AppleButton>
+                )}
+                {getPractitionerStatus(selectedClinic) === 'PENDING' && (
+                  <>
+                    <AppleButton
+                      variant="ghost"
+                      size="sm"
+                      disabled={clinicActionId === selectedClinic.id}
+                      onClick={async () => {
+                        await handleVerifyClinic(selectedClinic.id, 'REJECTED');
+                        setSelectedClinic(null);
+                      }}
+                      className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 border border-rose-200"
+                    >
+                      <XCircle className="w-3.5 h-3.5 mr-1" />
+                      Reject Application
+                    </AppleButton>
+                    <AppleButton
+                      variant="primary"
+                      size="sm"
+                      disabled={clinicActionId === selectedClinic.id}
+                      onClick={async () => {
+                        await handleVerifyClinic(selectedClinic.id, 'VERIFIED');
+                        setSelectedClinic(null);
+                      }}
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                      {clinicActionId === selectedClinic.id ? 'Approving...' : 'Approve Facility'}
+                    </AppleButton>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>

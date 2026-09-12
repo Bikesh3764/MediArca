@@ -17,9 +17,23 @@ export const getStats = async (req: AuthRequest, res: Response): Promise<void> =
     ] = await Promise.all([
       prisma.patientProfile.count(),
       prisma.doctorProfile.count(),
-      prisma.doctorProfile.count({ where: { isVerified: false } }),
+      prisma.doctorProfile.count({
+        where: {
+          OR: [
+            { verificationStatus: 'PENDING' },
+            { isVerified: false, verificationStatus: { notIn: ['VERIFIED', 'SUSPENDED', 'REJECTED'] } },
+          ],
+        },
+      }),
       prisma.clinicProfile.count(),
-      prisma.clinicProfile.count({ where: { isVerified: false } }),
+      prisma.clinicProfile.count({
+        where: {
+          OR: [
+            { verificationStatus: 'PENDING' },
+            { isVerified: false, verificationStatus: { notIn: ['VERIFIED', 'SUSPENDED', 'REJECTED'] } },
+          ],
+        },
+      }),
       prisma.appointment.count(),
       prisma.appointment.count({ where: { appointmentDate: todayStr } }),
     ]);
@@ -52,7 +66,18 @@ export const getDoctorsList = async (req: AuthRequest, res: Response): Promise<v
       orderBy: [{ isVerified: 'asc' }, { createdAt: 'desc' }],
     });
 
-    res.json({ success: true, count: doctors.length, data: doctors });
+    const formattedDoctors = doctors.map((doc: any) => {
+      let status = doc.verificationStatus;
+      if (!status || status === 'PENDING') {
+        status = doc.isVerified ? 'VERIFIED' : (doc.verificationStatus || 'PENDING');
+      }
+      return {
+        ...doc,
+        verificationStatus: status,
+      };
+    });
+
+    res.json({ success: true, count: formattedDoctors.length, data: formattedDoctors });
   } catch (error: any) {
     console.error('getDoctorsList error:', error);
     res.status(500).json({ success: false, message: 'Failed to retrieve doctors', error: error.message });
@@ -61,23 +86,46 @@ export const getDoctorsList = async (req: AuthRequest, res: Response): Promise<v
 
 export const verifyDoctor = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { doctorId, isVerified } = req.body;
+    const { doctorId, isVerified, status } = req.body;
 
-    if (!doctorId || typeof isVerified !== 'boolean') {
-      res.status(400).json({ success: false, message: 'doctorId and boolean isVerified are required' });
+    if (!doctorId) {
+      res.status(400).json({ success: false, message: 'doctorId is required' });
+      return;
+    }
+
+    let targetStatus: 'VERIFIED' | 'SUSPENDED' | 'REJECTED' | 'PENDING';
+    let targetIsVerified: boolean;
+
+    if (status && ['VERIFIED', 'SUSPENDED', 'REJECTED', 'PENDING'].includes(status.toUpperCase())) {
+      targetStatus = status.toUpperCase() as any;
+      targetIsVerified = targetStatus === 'VERIFIED';
+    } else if (typeof isVerified === 'boolean') {
+      targetIsVerified = isVerified;
+      targetStatus = isVerified ? 'VERIFIED' : 'SUSPENDED';
+    } else {
+      res.status(400).json({
+        success: false,
+        message: 'Valid status ("VERIFIED" | "SUSPENDED" | "REJECTED" | "PENDING") or boolean isVerified is required',
+      });
       return;
     }
 
     const doctor = await prisma.doctorProfile.update({
       where: { id: doctorId },
-      data: { isVerified },
+      data: {
+        isVerified: targetIsVerified,
+        verificationStatus: targetStatus,
+      },
       include: { user: true },
     });
 
     res.json({
       success: true,
-      message: `Doctor ${doctor.user.fullName} is now ${isVerified ? 'VERIFIED' : 'UNVERIFIED'}`,
-      data: doctor,
+      message: `Doctor ${doctor.user.fullName} is now ${targetStatus}`,
+      data: {
+        ...doctor,
+        verificationStatus: targetStatus,
+      },
     });
   } catch (error: any) {
     console.error('verifyDoctor error:', error);
@@ -113,12 +161,19 @@ export const getClinicsList = async (_req: AuthRequest, res: Response): Promise<
       orderBy: [{ isVerified: 'asc' }, { createdAt: 'desc' }],
     });
 
-    const formattedClinics = clinics.map((c) => ({
-      ...c,
-      doctorsCount: c._count?.doctors || 0,
-      appointmentsCount: c._count?.appointments || 0,
-      receptionistsCount: c._count?.receptionists || 0,
-    }));
+    const formattedClinics = clinics.map((c: any) => {
+      let status = c.verificationStatus;
+      if (!status || status === 'PENDING') {
+        status = c.isVerified ? 'VERIFIED' : (c.verificationStatus || 'PENDING');
+      }
+      return {
+        ...c,
+        verificationStatus: status,
+        doctorsCount: c._count?.doctors || 0,
+        appointmentsCount: c._count?.appointments || 0,
+        receptionistsCount: c._count?.receptionists || 0,
+      };
+    });
 
     res.json({ success: true, count: formattedClinics.length, data: formattedClinics });
   } catch (error: any) {
@@ -129,23 +184,46 @@ export const getClinicsList = async (_req: AuthRequest, res: Response): Promise<
 
 export const verifyClinic = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { clinicId, isVerified } = req.body;
+    const { clinicId, isVerified, status } = req.body;
 
-    if (!clinicId || typeof isVerified !== 'boolean') {
-      res.status(400).json({ success: false, message: 'clinicId and boolean isVerified are required' });
+    if (!clinicId) {
+      res.status(400).json({ success: false, message: 'clinicId is required' });
+      return;
+    }
+
+    let targetStatus: 'VERIFIED' | 'SUSPENDED' | 'REJECTED' | 'PENDING';
+    let targetIsVerified: boolean;
+
+    if (status && ['VERIFIED', 'SUSPENDED', 'REJECTED', 'PENDING'].includes(status.toUpperCase())) {
+      targetStatus = status.toUpperCase() as any;
+      targetIsVerified = targetStatus === 'VERIFIED';
+    } else if (typeof isVerified === 'boolean') {
+      targetIsVerified = isVerified;
+      targetStatus = isVerified ? 'VERIFIED' : 'SUSPENDED';
+    } else {
+      res.status(400).json({
+        success: false,
+        message: 'Valid status ("VERIFIED" | "SUSPENDED" | "REJECTED" | "PENDING") or boolean isVerified is required',
+      });
       return;
     }
 
     const clinic = await prisma.clinicProfile.update({
       where: { id: clinicId },
-      data: { isVerified },
+      data: {
+        isVerified: targetIsVerified,
+        verificationStatus: targetStatus,
+      },
       include: { user: true },
     });
 
     res.json({
       success: true,
-      message: `Clinic ${clinic.clinicName} is now ${isVerified ? 'VERIFIED' : 'UNVERIFIED'}`,
-      data: clinic,
+      message: `Clinic ${clinic.clinicName} is now ${targetStatus}`,
+      data: {
+        ...clinic,
+        verificationStatus: targetStatus,
+      },
     });
   } catch (error: any) {
     console.error('verifyClinic error:', error);
