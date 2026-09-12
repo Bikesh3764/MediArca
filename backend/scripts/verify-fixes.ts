@@ -7,6 +7,16 @@ import {
   evaluateSlotStatus,
   DoctorSlot,
 } from '../src/utils/scheduleUtils';
+import {
+  formatFileSize,
+  isImageFile,
+  isPdfFile,
+  calculateScaledDimensions,
+  estimateCompressedImageSize,
+  validateVaultDocument,
+  MAX_VAULT_FILE_SIZE,
+  DEFAULT_MAX_IMAGE_DIMENSION,
+} from '../src/utils/documentOptimizer';
 
 function runTests() {
   console.log('=== RUNNING MEDIARCA VERIFICATION SUITE ===\n');
@@ -794,6 +804,95 @@ function runTests() {
   // Pending Review KPI count: Must strictly count PENDING, NOT SUSPENDED or REJECTED
   const pendingReviewCount = pool.filter((p) => p.verificationStatus === 'PENDING').length;
   assert(pendingReviewCount === 1, 'Pending review count is strictly 1 (does not inflate with SUSPENDED or REJECTED)');
+
+  // 37. Automatic Resolution Downscaling & Aspect Ratio Preservation
+  // Landscape 12MP photo (4032 x 3024) downscales to max dimension 1920px (1920 x 1440)
+  const landscapeScaled = calculateScaledDimensions(4032, 3024, 1920);
+  assert(landscapeScaled.scaled === true, '12MP landscape photo is marked scaled');
+  assert(landscapeScaled.width === 1920, 'Landscape width scaled to exactly 1920px');
+  assert(landscapeScaled.height === 1440, 'Landscape height preserved 4:3 aspect ratio at 1440px');
+
+  // Portrait 12MP photo (3024 x 4032) downscales to max dimension 1920px (1440 x 1920)
+  const portraitScaled = calculateScaledDimensions(3024, 4032, 1920);
+  assert(portraitScaled.scaled === true, '12MP portrait photo is marked scaled');
+  assert(portraitScaled.height === 1920, 'Portrait height scaled to exactly 1920px');
+  assert(portraitScaled.width === 1440, 'Portrait width preserved 3:4 aspect ratio at 1440px');
+
+  // Ultra-high-res 48MP camera photo (8000 x 6000)
+  const ultraScaled = calculateScaledDimensions(8000, 6000, 1920);
+  assert(ultraScaled.scaled === true, '48MP photo is downscaled');
+  assert(ultraScaled.width === 1920 && ultraScaled.height === 1440, '48MP photo downscaled to 1920x1440');
+
+  // Square image (2400 x 2400)
+  const squareScaled = calculateScaledDimensions(2400, 2400, 1920);
+  assert(squareScaled.width === 1920 && squareScaled.height === 1920, 'Square image downscaled to 1920x1920');
+
+  // Image already below max dimension (1280 x 720) remains unscaled
+  const standardImg = calculateScaledDimensions(1280, 720, 1920);
+  assert(standardImg.scaled === false, '1280x720 image is not unnecessarily scaled');
+  assert(standardImg.width === 1280 && standardImg.height === 720, '1280x720 dimensions unchanged');
+
+  // 38. Client-Side Image Compression Metrics & 1 MB Vault Limit Satisfaction
+  // 4.5 MB camera shot of a lab report (4032 x 3024) compressed with quality 0.80
+  const orig4_5MB = Math.round(4.5 * 1024 * 1024);
+  const compressionMetrics = estimateCompressedImageSize(orig4_5MB, 4032, 3024, 1920, 0.80);
+  assert(compressionMetrics.fitsWithin1MB === true, 'Compressed image comfortably fits within 1 MB vault limit');
+  assert(compressionMetrics.estimatedBytes <= MAX_VAULT_FILE_SIZE, `Estimated size (${compressionMetrics.formattedEstimatedSize}) <= 1 MB`);
+  assert(compressionMetrics.reductionPercentage >= 85, `Size reduction is >= 85% (got ${compressionMetrics.reductionPercentage}%)`);
+
+  // 8 MB smartphone photo (8000 x 6000)
+  const orig8MB = Math.round(8.0 * 1024 * 1024);
+  const compressionMetrics8MB = estimateCompressedImageSize(orig8MB, 8000, 6000, 1920, 0.80);
+  assert(compressionMetrics8MB.fitsWithin1MB === true, '8 MB camera photo fits within 1 MB limit after compression');
+  assert(compressionMetrics8MB.reductionPercentage >= 90, `8 MB photo has >= 90% size reduction (got ${compressionMetrics8MB.reductionPercentage}%)`);
+
+  // 39. Pre-Compression vs Post-Compression Vault Acceptance (Fixes False Rejection)
+  // Scenario: User selects 4.2 MB photo 'prescription_scan.jpg'
+  // Pre-compression check: Recognizes it needs client compression, does NOT block the user!
+  const preCheckImg = validateVaultDocument({ name: 'prescription_scan.jpg', size: Math.round(4.2 * 1024 * 1024) }, false);
+  assert(preCheckImg.valid === true, '4.2 MB photo is accepted pre-compression because client optimizer will compress it');
+  assert(preCheckImg.requiresClientCompression === true, 'Photo is flagged as requiring client-side compression');
+  assert(preCheckImg.fileType === 'image', 'Identified as image');
+
+  // Post-compression check: Size is now 240 KB -> comfortably accepted
+  const postCheckImg = validateVaultDocument({ name: 'prescription_scan.jpg', size: 240 * 1024 }, true);
+  assert(postCheckImg.valid === true, 'Post-compression 240 KB photo is accepted without error');
+  assert(postCheckImg.requiresClientCompression === false, 'No further compression needed post-compression');
+  assert(postCheckImg.error === null, 'No error returned for optimized 240 KB photo');
+
+  // 40. Multi-Page & Scanned PDF Document Handling
+  // PDF within limit (850 KB)
+  const validPdf = validateVaultDocument({ name: 'lab_results.pdf', size: 850 * 1024 });
+  assert(validPdf.valid === true, '850 KB PDF is accepted into vault');
+  assert(validPdf.fileType === 'pdf', 'Identified as PDF file');
+  assert(validPdf.error === null, 'No error for valid PDF');
+
+  // PDF exceeding limit (2.4 MB) -> Returns clear, actionable clinical guidance
+  const oversizedPdf = validateVaultDocument({ name: 'full_scan_records.pdf', size: Math.round(2.4 * 1024 * 1024) });
+  assert(oversizedPdf.valid === false, '2.4 MB PDF is rejected with proactive guidance');
+  assert(oversizedPdf.error !== null && oversizedPdf.error.includes('PDF file size'), 'Error mentions PDF file size');
+  assert(oversizedPdf.error !== null && oversizedPdf.error.includes('exceeds the 1 MB limit'), 'Error informs user of 1 MB vault threshold');
+  assert(oversizedPdf.error !== null && oversizedPdf.error.includes('upload photo scans'), 'Error suggests uploading photo scans for automatic optimization');
+
+  // 41. Multi-Format Detection & Unsupported File Guard
+  assert(isImageFile('report.jpg') === true, 'report.jpg recognized as image');
+  assert(isImageFile('xray.png') === true, 'xray.png recognized as image');
+  assert(isImageFile('scan.webp') === true, 'scan.webp recognized as image');
+  assert(isImageFile('image/jpeg') === true, 'image/jpeg MIME recognized as image');
+  assert(isPdfFile('discharge.pdf') === true, 'discharge.pdf recognized as PDF');
+  assert(isPdfFile('application/pdf') === true, 'application/pdf MIME recognized as PDF');
+
+  const unsupportedFile = validateVaultDocument({ name: 'document.zip', size: 500 * 1024 });
+  assert(unsupportedFile.valid === false, 'document.zip is rejected');
+  assert(unsupportedFile.fileType === 'unsupported', 'Identified as unsupported file type');
+  assert(unsupportedFile.error !== null && unsupportedFile.error.includes('Invalid file type'), 'Rejection provides allowed types message');
+
+  // 42. Human-Readable File Size Formatting
+  assert(formatFileSize(0) === '0 B', 'formatFileSize(0) returns "0 B"');
+  assert(formatFileSize(512) === '512.0 B', 'formatFileSize(512) returns "512.0 B"');
+  assert(formatFileSize(250 * 1024) === '250.0 KB', 'formatFileSize(250 KB) returns "250.0 KB"');
+  assert(formatFileSize(1024 * 1024) === '1.00 MB', 'formatFileSize(1 MB) returns "1.00 MB"');
+  assert(formatFileSize(4.5 * 1024 * 1024) === '4.50 MB', 'formatFileSize(4.5 MB) returns "4.50 MB"');
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);
 

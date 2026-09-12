@@ -18,7 +18,15 @@ import {
   Calendar,
   Stethoscope,
   User as UserIcon,
+  Sparkles,
+  CheckCircle2,
 } from 'lucide-react';
+import {
+  processVaultDocument,
+  isImageFile as isImageUtility,
+  OptimizationResult,
+  formatFileSize,
+} from '../../utils/documentOptimizer';
 
 const CATEGORIES = ['All', 'Prescription', 'Lab Report', 'Scan', 'Discharge Summary', 'Other'];
 
@@ -30,12 +38,30 @@ export const MedicalRecords: React.FC = () => {
   const [uploadTitle, setUploadTitle] = useState('');
   const [uploadCategory, setUploadCategory] = useState('Lab Report');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isOptimizing, setIsOptimizing] = useState(false);
+  const [optimizationResult, setOptimizationResult] = useState<OptimizationResult | null>(null);
+  const [previewThumbnail, setPreviewThumbnail] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [previewRecord, setPreviewRecord] = useState<MedicalRecord | null>(null);
 
   const { user, loading: loadingAuth } = useAuth();
+
+  const resetUploadModal = () => {
+    if (previewThumbnail) {
+      URL.revokeObjectURL(previewThumbnail);
+    }
+    setUploadTitle('');
+    setSelectedFile(null);
+    setOptimizationResult(null);
+    setPreviewThumbnail(null);
+    setIsOptimizing(false);
+    setError(null);
+    setUploadProgress(0);
+    setUploading(false);
+    setShowUploadModal(false);
+  };
 
   const fetchRecords = async () => {
     setLoading(true);
@@ -53,8 +79,52 @@ export const MedicalRecords: React.FC = () => {
     if (!loadingAuth && user) fetchRecords();
   }, [user, loadingAuth]);
 
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawFile = e.target.files?.[0] || null;
+    if (!rawFile) {
+      setSelectedFile(null);
+      setOptimizationResult(null);
+      if (previewThumbnail) URL.revokeObjectURL(previewThumbnail);
+      setPreviewThumbnail(null);
+      return;
+    }
+
+    setError(null);
+    setIsOptimizing(true);
+
+    try {
+      if (isImageUtility(rawFile)) {
+        const thumbUrl = URL.createObjectURL(rawFile);
+        if (previewThumbnail) URL.revokeObjectURL(previewThumbnail);
+        setPreviewThumbnail(thumbUrl);
+      } else {
+        if (previewThumbnail) URL.revokeObjectURL(previewThumbnail);
+        setPreviewThumbnail(null);
+      }
+
+      if (!uploadTitle.trim()) {
+        const cleanName = rawFile.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
+        setUploadTitle(cleanName);
+      }
+
+      const result = await processVaultDocument(rawFile);
+      setSelectedFile(result.file);
+      setOptimizationResult(result);
+    } catch (err: any) {
+      setError(err.message || 'Failed to process document');
+      setSelectedFile(null);
+      setOptimizationResult(null);
+      if (previewThumbnail) URL.revokeObjectURL(previewThumbnail);
+      setPreviewThumbnail(null);
+      e.target.value = '';
+    } finally {
+      setIsOptimizing(false);
+    }
+  };
+
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isOptimizing) return;
     if (!selectedFile) {
       setError('Please select a PDF or image file');
       return;
@@ -71,7 +141,7 @@ export const MedicalRecords: React.FC = () => {
 
     const interval = setInterval(() => {
       setUploadProgress((prev) => (prev < 90 ? prev + 15 : prev));
-    }, 200);
+    }, 150);
 
     const formData = new FormData();
     formData.append('file', selectedFile);
@@ -83,13 +153,9 @@ export const MedicalRecords: React.FC = () => {
       setUploadProgress(100);
       clearInterval(interval);
       setTimeout(() => {
-        setShowUploadModal(false);
-        setUploadTitle('');
-        setSelectedFile(null);
-        setUploading(false);
-        setUploadProgress(0);
+        resetUploadModal();
         fetchRecords();
-      }, 400);
+      }, 350);
     } catch (err: any) {
       clearInterval(interval);
       setError(err.message || 'Failed to upload document');
@@ -119,7 +185,7 @@ export const MedicalRecords: React.FC = () => {
 
   const isImageFile = (record: MedicalRecord) => {
     const ext = record.fileUrl.split('.').pop()?.toLowerCase();
-    return ext === 'png' || ext === 'jpg' || ext === 'jpeg' || record.fileType?.includes('image');
+    return ext === 'png' || ext === 'jpg' || ext === 'jpeg' || ext === 'webp' || record.fileType?.includes('image');
   };
 
   const navItems: DashboardNavItem[] = [
@@ -370,11 +436,14 @@ export const MedicalRecords: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
           <div className="bg-white rounded-[20px] border border-[#e5e5ea] max-w-md w-full p-6 sm:p-8 shadow-2xl">
             <div className="flex justify-between items-center pb-4 border-b border-[#f0f0f0]">
-              <h3 className="text-lg font-semibold text-[#1d1d1f]">Upload Medical Document</h3>
+              <div>
+                <h3 className="text-lg font-semibold text-[#1d1d1f]">Upload Medical Document</h3>
+                <p className="text-xs text-[#86868b] mt-0.5">Auto-compresses high-res scans & camera photos</p>
+              </div>
               <button
-                disabled={uploading}
-                onClick={() => setShowUploadModal(false)}
-                className="p-1.5 rounded-full hover:bg-gray-100 text-[#86868b]"
+                disabled={uploading || isOptimizing}
+                onClick={resetUploadModal}
+                className="p-1.5 rounded-full hover:bg-gray-100 text-[#86868b] disabled:opacity-50"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -395,11 +464,11 @@ export const MedicalRecords: React.FC = () => {
                 <input
                   type="text"
                   required
-                  disabled={uploading}
+                  disabled={uploading || isOptimizing}
                   value={uploadTitle}
                   onChange={(e) => setUploadTitle(e.target.value)}
                   placeholder="e.g. Lipid Profile, Chest X-Ray, Blood Test"
-                  className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[14px] focus:outline-none focus:border-[#0088e8]"
+                  className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[14px] focus:outline-none focus:border-[#0088e8] disabled:opacity-50"
                 />
               </div>
 
@@ -408,10 +477,10 @@ export const MedicalRecords: React.FC = () => {
                   Category
                 </label>
                 <select
-                  disabled={uploading}
+                  disabled={uploading || isOptimizing}
                   value={uploadCategory}
                   onChange={(e) => setUploadCategory(e.target.value)}
-                  className="w-full h-11 px-3 rounded-xl border border-[#e5e5ea] text-[14px] bg-white focus:outline-none focus:border-[#0088e8]"
+                  className="w-full h-11 px-3 rounded-xl border border-[#e5e5ea] text-[14px] bg-white focus:outline-none focus:border-[#0088e8] disabled:opacity-50"
                 >
                   <option value="Lab Report">Lab Report</option>
                   <option value="Scan">Scan / Imaging (X-Ray, MRI)</option>
@@ -424,37 +493,95 @@ export const MedicalRecords: React.FC = () => {
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="block text-xs font-medium text-[#1d1d1f]">
-                    File (PDF, PNG, JPG)
+                    File (PDF, PNG, JPG, WebP)
                   </label>
                   {selectedFile && (
                     <span className="text-[11px] font-mono text-[#0088e8]">
-                      {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
+                      {formatFileSize(selectedFile.size)}
                     </span>
                   )}
                 </div>
                 <input
                   type="file"
                   required
-                  disabled={uploading}
-                  accept=".pdf,.png,.jpg,.jpeg"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0] || null;
-                    if (f && f.size > 1 * 1024 * 1024) {
-                      setError('File size exceeds 1 MB limit. Please upload a document under 1 MB.');
-                      setSelectedFile(null);
-                      e.target.value = '';
-                      return;
-                    }
-                    setError(null);
-                    setSelectedFile(f);
-                  }}
-                  className="w-full text-xs text-[#86868b] file:mr-3 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#0088e8] file:text-white hover:file:bg-[#0284c7] file:cursor-pointer"
+                  disabled={uploading || isOptimizing}
+                  accept=".pdf,.png,.jpg,.jpeg,.webp,image/jpeg,image/png,image/webp,application/pdf"
+                  onChange={handleFileChange}
+                  className="w-full text-xs text-[#86868b] file:mr-3 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#0088e8] file:text-white hover:file:bg-[#0284c7] file:cursor-pointer disabled:opacity-50"
                 />
                 <p className="text-[11px] text-[#86868b] mt-1.5 flex items-center gap-1">
                   <ShieldCheck className="w-3.5 h-3.5 text-[#0088e8]" />
-                  <span>Max file size: 1 MB. Accepted formats: PDF, PNG, JPG.</span>
+                  <span>Max file size: 1 MB. Auto-compression enabled for camera photos.</span>
                 </p>
               </div>
+
+              {/* Optimizing Loading State */}
+              {isOptimizing && (
+                <div className="p-3 rounded-xl bg-blue-50/80 border border-blue-200/60 flex items-center gap-3 text-xs text-[#0088e8] animate-pulse">
+                  <Sparkles className="w-4 h-4 animate-spin text-[#0088e8] flex-shrink-0" />
+                  <div>
+                    <span className="font-semibold block">Optimizing Document for Vault...</span>
+                    <span className="text-[11px] text-[#0088e8]/80">Downscaling resolution & compressing while preserving medical text legibility</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Compression & Optimization Feedback Card */}
+              {optimizationResult && !isOptimizing && (
+                <div className={`p-3 rounded-xl border text-xs space-y-1.5 transition-all ${
+                  optimizationResult.isOptimized
+                    ? 'bg-[#f0fdf4] border-[#bbf7d0] text-emerald-800'
+                    : 'bg-[#f8fafc] border-[#e2e8f0] text-slate-700'
+                }`}>
+                  <div className="flex items-center justify-between font-semibold">
+                    <span className="flex items-center gap-1.5">
+                      <CheckCircle2 className={`w-4 h-4 flex-shrink-0 ${
+                        optimizationResult.isOptimized ? 'text-emerald-600' : 'text-slate-500'
+                      }`} />
+                      {optimizationResult.isOptimized ? 'Document Auto-Optimized' : 'Document Verified'}
+                    </span>
+                    {optimizationResult.isOptimized && (
+                      <span className="bg-emerald-200/80 text-emerald-900 px-2 py-0.5 rounded-full text-[10px] font-bold">
+                        -{optimizationResult.reductionPercentage}% Size Saved
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center justify-between text-[11px] font-mono">
+                    {optimizationResult.isOptimized ? (
+                      <div className="flex items-center gap-1.5">
+                        <span className="line-through text-gray-400">{optimizationResult.formattedOriginalSize}</span>
+                        <span className="text-gray-400">→</span>
+                        <span className="font-bold text-emerald-700">{optimizationResult.formattedOptimizedSize}</span>
+                      </div>
+                    ) : (
+                      <span>Vault Size: {optimizationResult.formattedOptimizedSize}</span>
+                    )}
+                    <span className="text-emerald-600 font-sans flex items-center gap-1 text-[10px]">
+                      <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                      Contrast preserved
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Thumbnail & File Preview Card */}
+              {previewThumbnail && !isOptimizing && (
+                <div className="flex items-center gap-3 p-2.5 bg-[#f5f5f7] rounded-xl border border-[#e5e5ea]">
+                  <img
+                    src={previewThumbnail}
+                    alt="Document Scan Preview"
+                    className="w-12 h-12 rounded-lg object-cover border border-white shadow-sm flex-shrink-0"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-semibold text-[#1d1d1f] truncate">
+                      {uploadTitle || selectedFile?.name}
+                    </p>
+                    <p className="text-[11px] text-[#86868b] truncate">
+                      {selectedFile?.name} • Ready for upload
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {/* Upload Progress Bar */}
               {uploading && (
@@ -477,8 +604,8 @@ export const MedicalRecords: React.FC = () => {
                   variant="ghost"
                   size="sm"
                   type="button"
-                  disabled={uploading}
-                  onClick={() => setShowUploadModal(false)}
+                  disabled={uploading || isOptimizing}
+                  onClick={resetUploadModal}
                 >
                   Cancel
                 </AppleButton>
@@ -486,9 +613,9 @@ export const MedicalRecords: React.FC = () => {
                   variant="primary"
                   size="sm"
                   type="submit"
-                  disabled={uploading}
+                  disabled={uploading || isOptimizing || !selectedFile}
                 >
-                  {uploading ? 'Encrypting & Saving...' : 'Save to Vault'}
+                  {uploading ? 'Encrypting & Saving...' : isOptimizing ? 'Optimizing...' : 'Save to Vault'}
                 </AppleButton>
               </div>
             </form>
