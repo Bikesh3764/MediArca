@@ -79,6 +79,14 @@ export const MedicalRecords: React.FC = () => {
     if (!loadingAuth && user) fetchRecords();
   }, [user, loadingAuth]);
 
+  useEffect(() => {
+    return () => {
+      if (previewThumbnail) {
+        URL.revokeObjectURL(previewThumbnail);
+      }
+    };
+  }, [previewThumbnail]);
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawFile = e.target.files?.[0] || null;
     if (!rawFile) {
@@ -110,6 +118,13 @@ export const MedicalRecords: React.FC = () => {
       const result = await processVaultDocument(rawFile);
       setSelectedFile(result.file);
       setOptimizationResult(result);
+
+      // Upgrade preview thumbnail to optimized lightweight blob
+      if (result.fileType === 'image') {
+        const optThumb = URL.createObjectURL(result.file);
+        if (previewThumbnail) URL.revokeObjectURL(previewThumbnail);
+        setPreviewThumbnail(optThumb);
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to process document');
       setSelectedFile(null);
@@ -184,7 +199,9 @@ export const MedicalRecords: React.FC = () => {
   };
 
   const isImageFile = (record: MedicalRecord) => {
-    const ext = record.fileUrl.split('.').pop()?.toLowerCase();
+    if (!record || !record.fileUrl) return false;
+    const cleanUrl = record.fileUrl.split('?')[0].split('#')[0];
+    const ext = cleanUrl.split('.').pop()?.toLowerCase();
     return ext === 'png' || ext === 'jpg' || ext === 'jpeg' || ext === 'webp' || record.fileType?.includes('image');
   };
 
@@ -506,6 +523,9 @@ export const MedicalRecords: React.FC = () => {
                   required
                   disabled={uploading || isOptimizing}
                   accept=".pdf,.png,.jpg,.jpeg,.webp,image/jpeg,image/png,image/webp,application/pdf"
+                  onClick={(e) => {
+                    (e.target as HTMLInputElement).value = '';
+                  }}
                   onChange={handleFileChange}
                   className="w-full text-xs text-[#86868b] file:mr-3 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#0088e8] file:text-white hover:file:bg-[#0284c7] file:cursor-pointer disabled:opacity-50"
                 />

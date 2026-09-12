@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { api } from '../../services/api';
+import { api, getFileUrl } from '../../services/api';
 import { DashboardLayout, DashboardNavItem } from '../../components/layout/DashboardLayout';
 import { AppleButton } from '../../components/ui/AppleButton';
 import { UtilityCard } from '../../components/ui/UtilityCard';
+import { optimizeAvatarImage } from '../../utils/documentOptimizer';
 import {
   Calendar,
   FileText,
@@ -15,6 +16,8 @@ import {
   AlertCircle,
   CheckCircle2,
   Save,
+  Camera,
+  Sparkles,
 } from 'lucide-react';
 
 export const PatientProfile: React.FC = () => {
@@ -31,6 +34,9 @@ export const PatientProfile: React.FC = () => {
   const [currentMedications, setCurrentMedications] = useState(user?.patientProfile?.currentMedications || '');
 
   const [saving, setSaving] = useState(false);
+  const [avatarLoading, setAvatarLoading] = useState(false);
+  const [avatarOptimization, setAvatarOptimization] = useState<string | null>(null);
+  const avatarInputRef = useRef<HTMLInputElement | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -90,6 +96,36 @@ export const PatientProfile: React.FC = () => {
     }
   };
 
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawFile = e.target.files?.[0];
+    if (!rawFile) return;
+
+    setAvatarLoading(true);
+    setAvatarOptimization('Auto-compressing image...');
+    setErrorMsg(null);
+    setSuccessMsg(null);
+
+    try {
+      const result = await optimizeAvatarImage(rawFile);
+      setAvatarOptimization(
+        `Optimized: ${result.formattedOriginalSize} → ${result.formattedOptimizedSize} (-${result.reductionPercentage}%)`
+      );
+
+      const res = await api.uploadAvatar(result.file);
+      updateUser(res.user);
+      setSuccessMsg('Profile photo updated successfully.');
+      setTimeout(() => setAvatarOptimization(null), 5000);
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Failed to update profile photo');
+      setAvatarOptimization(null);
+    } finally {
+      setAvatarLoading(false);
+      if (avatarInputRef.current) {
+        avatarInputRef.current.value = '';
+      }
+    }
+  };
+
   return (
     <DashboardLayout
       portalType="PATIENT"
@@ -112,6 +148,70 @@ export const PatientProfile: React.FC = () => {
             <span className="font-medium">{errorMsg}</span>
           </div>
         )}
+
+        {/* Profile Avatar Card with Auto-Compression */}
+        <UtilityCard
+          title="Profile Photo & Avatar"
+          subtitle="Photos up to 10 MB are automatically downscaled and compressed client-side"
+        >
+          <div className="flex flex-col sm:flex-row items-center gap-5 pt-2">
+            <div className="relative group">
+              <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-[#0088e8] shadow-sm bg-[#f5f5f7] flex items-center justify-center">
+                {user?.avatarUrl ? (
+                  <img
+                    src={getFileUrl(user.avatarUrl)}
+                    alt={user.fullName}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <UserIcon className="w-10 h-10 text-[#86868b]" />
+                )}
+              </div>
+              <button
+                type="button"
+                disabled={avatarLoading}
+                onClick={() => avatarInputRef.current?.click()}
+                className="absolute -bottom-1 -right-1 bg-[#0088e8] text-white p-2 rounded-full shadow-md hover:bg-[#0284c7] transition-all disabled:opacity-50"
+                title="Change profile photo"
+              >
+                <Camera className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <div className="flex-1 text-center sm:text-left space-y-1.5">
+              <input
+                ref={avatarInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
+                className="hidden"
+                onChange={handleAvatarChange}
+              />
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                <AppleButton
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  disabled={avatarLoading}
+                  onClick={() => avatarInputRef.current?.click()}
+                  className="flex items-center gap-1.5 text-xs"
+                >
+                  <Camera className="w-3.5 h-3.5" />
+                  {avatarLoading ? 'Optimizing & Uploading...' : 'Change Photo'}
+                </AppleButton>
+                <span className="text-[11px] text-[#86868b]">
+                  Accepts JPG, PNG, WebP. Auto-compressed to &lt; 60 KB.
+                </span>
+              </div>
+
+              {avatarOptimization && (
+                <div className="inline-flex items-center gap-1.5 text-[11px] font-mono font-medium text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200 animate-fadeIn">
+                  <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>{avatarOptimization}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </UtilityCard>
 
         <form onSubmit={handleSave} className="space-y-6">
           {/* Identity & Contact Card */}

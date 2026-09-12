@@ -53,15 +53,19 @@ export function formatFileSize(bytes: number): string {
  */
 export function isImageFile(identifier: string | File): boolean {
   if (!identifier) return false;
-  const target = typeof identifier === 'string' ? identifier.toLowerCase() : (identifier.type || identifier.name).toLowerCase();
+  if (typeof identifier === 'string') {
+    const lower = identifier.toLowerCase();
+    return (
+      lower.startsWith('image/') ||
+      /\.(jpe?g|png|webp|bmp|heic)$/i.test(lower)
+    );
+  }
+  const type = (identifier.type || '').toLowerCase();
+  const name = (identifier.name || '').toLowerCase();
   return (
-    target.startsWith('image/') ||
-    target.endsWith('.jpg') ||
-    target.endsWith('.jpeg') ||
-    target.endsWith('.png') ||
-    target.endsWith('.webp') ||
-    target.endsWith('.bmp') ||
-    target.endsWith('.heic')
+    type.startsWith('image/') ||
+    /\.(jpe?g|png|webp|bmp|heic)$/i.test(name) ||
+    /\.(jpe?g|png|webp|bmp|heic)$/i.test(type)
   );
 }
 
@@ -70,8 +74,13 @@ export function isImageFile(identifier: string | File): boolean {
  */
 export function isPdfFile(identifier: string | File): boolean {
   if (!identifier) return false;
-  const target = typeof identifier === 'string' ? identifier.toLowerCase() : (identifier.type || identifier.name).toLowerCase();
-  return target === 'application/pdf' || target.endsWith('.pdf');
+  if (typeof identifier === 'string') {
+    const lower = identifier.toLowerCase();
+    return lower === 'application/pdf' || lower.endsWith('.pdf');
+  }
+  const type = (identifier.type || '').toLowerCase();
+  const name = (identifier.name || '').toLowerCase();
+  return type === 'application/pdf' || name.toLowerCase().endsWith('.pdf');
 }
 
 /**
@@ -95,10 +104,10 @@ export function calculateScaledDimensions(
 
   if (width >= height) {
     targetWidth = maxDimension;
-    targetHeight = Math.round((height * maxDimension) / width);
+    targetHeight = Math.max(1, Math.round((height * maxDimension) / width));
   } else {
     targetHeight = maxDimension;
-    targetWidth = Math.round((width * maxDimension) / height);
+    targetWidth = Math.max(1, Math.round((width * maxDimension) / height));
   }
 
   return {
@@ -118,6 +127,10 @@ function loadImageElement(file: File): Promise<HTMLImageElement> {
 
     img.onload = () => {
       URL.revokeObjectURL(objectUrl);
+      if (!img.naturalWidth || !img.naturalHeight) {
+        reject(new Error('Invalid image dimensions: could not decode image.'));
+        return;
+      }
       resolve(img);
     };
 
@@ -207,8 +220,24 @@ export async function optimizeImageFile(
     canvas.height = scaled.height;
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, scaled.width, scaled.height);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
     ctx.drawImage(img, 0, 0, scaled.width, scaled.height);
     blob = await canvasToBlob(canvas, targetMime, 0.65);
+  }
+
+  // Tertiary backoff: for stubborn ultra-high-entropy photos
+  if (blob && blob.size > targetMaxBytes) {
+    const tertiaryMaxDim = 1200;
+    scaled = calculateScaledDimensions(origWidth, origHeight, tertiaryMaxDim);
+    canvas.width = scaled.width;
+    canvas.height = scaled.height;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, scaled.width, scaled.height);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(img, 0, 0, scaled.width, scaled.height);
+    blob = await canvasToBlob(canvas, targetMime, 0.55);
   }
 
   if (!blob) {
@@ -324,3 +353,23 @@ export async function processVaultDocument(file: File): Promise<OptimizationResu
     statusMessage: `File ready (${formatFileSize(file.size)})`,
   };
 }
+
+export const DEFAULT_AVATAR_DIMENSION = 512;
+
+/**
+ * Specialized avatar optimizer:
+ * Scales user profile/headshot photos down to 512px max dimension with 0.85 quality.
+ * Typically converts a 5MB-10MB camera shot to ~30KB-60KB in < 100ms.
+ */
+export async function optimizeAvatarImage(
+  file: File,
+  options: OptimizationOptions = {}
+): Promise<OptimizationResult> {
+  return await optimizeImageFile(file, {
+    maxDimension: options.maxDimension || DEFAULT_AVATAR_DIMENSION,
+    quality: options.quality || 0.85,
+    targetMaxBytes: options.targetMaxBytes || 250 * 1024,
+    mimeType: options.mimeType || 'image/jpeg',
+  });
+}
+

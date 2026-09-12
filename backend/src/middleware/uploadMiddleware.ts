@@ -18,9 +18,21 @@ const storage = multer.diskStorage({
   },
 });
 
+export const ALLOWED_MIME_TYPES = [
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/webp',
+  'application/pdf',
+];
+
+export const ALLOWED_FILE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.pdf'];
+
 const fileFilter = (_req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
-  const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
-  if (allowedMimeTypes.includes(file.mimetype)) {
+  const mime = (file.mimetype || '').toLowerCase();
+  const ext = path.extname(file.originalname || '').toLowerCase();
+
+  if (ALLOWED_MIME_TYPES.includes(mime) || ALLOWED_FILE_EXTENSIONS.includes(ext)) {
     cb(null, true);
   } else {
     cb(new Error('Invalid file type. Only PDF, JPG, PNG, and WebP are allowed.'));

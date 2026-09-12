@@ -16,7 +16,9 @@ import {
   validateVaultDocument,
   MAX_VAULT_FILE_SIZE,
   DEFAULT_MAX_IMAGE_DIMENSION,
+  DEFAULT_AVATAR_IMAGE_DIMENSION,
 } from '../src/utils/documentOptimizer';
+import { ALLOWED_MIME_TYPES, ALLOWED_FILE_EXTENSIONS } from '../src/middleware/uploadMiddleware';
 
 function runTests() {
   console.log('=== RUNNING MEDIARCA VERIFICATION SUITE ===\n');
@@ -893,6 +895,63 @@ function runTests() {
   assert(formatFileSize(250 * 1024) === '250.0 KB', 'formatFileSize(250 KB) returns "250.0 KB"');
   assert(formatFileSize(1024 * 1024) === '1.00 MB', 'formatFileSize(1 MB) returns "1.00 MB"');
   assert(formatFileSize(4.5 * 1024 * 1024) === '4.50 MB', 'formatFileSize(4.5 MB) returns "4.50 MB"');
+
+  // 43. Octet-Stream Generic MIME Resiliency
+  // When mobile/Android browsers or generic clients provide application/octet-stream,
+  // file name extension must be evaluated so valid documents are not falsely rejected.
+  const octetImg = validateVaultDocument({ name: 'scan_report.jpg', size: 350 * 1024, mimetype: 'application/octet-stream' });
+  assert(octetImg.valid === true, 'Image with application/octet-stream MIME is accepted');
+  assert(octetImg.fileType === 'image', 'Correctly identified as image');
+  assert(octetImg.error === null, 'No error returned for octet-stream image');
+
+  const octetPdf = validateVaultDocument({ name: 'clinical_summary.pdf', size: 500 * 1024, mimetype: 'application/octet-stream' });
+  assert(octetPdf.valid === true, 'PDF with application/octet-stream MIME is accepted');
+  assert(octetPdf.fileType === 'pdf', 'Correctly identified as PDF');
+  assert(octetPdf.error === null, 'No error returned for octet-stream PDF');
+
+  // Secondary filename parameter support in isImageFile and isPdfFile
+  assert(isImageFile('application/octet-stream', 'photo.png') === true, 'isImageFile resolves secondary filename');
+  assert(isPdfFile('application/octet-stream', 'records.pdf') === true, 'isPdfFile resolves secondary filename');
+
+  // 44. Avatar Auto-Compression & Downscaling Metrics
+  // When a user uploads a 12MP (4032x3024) or 48MP phone selfie/headshot:
+  // Downscales to max dimension 512px, compressing size by > 95% (typically ~35KB-60KB).
+  const avatarScaled = calculateScaledDimensions(4032, 3024, DEFAULT_AVATAR_IMAGE_DIMENSION);
+  assert(avatarScaled.scaled === true, '12MP avatar image is downscaled');
+  assert(avatarScaled.width === 512, 'Avatar width is scaled to exactly 512px');
+  assert(avatarScaled.height === 384, 'Avatar height preserves 4:3 aspect ratio at 384px');
+
+  const origAvatarBytes = Math.round(5.5 * 1024 * 1024); // 5.5 MB camera selfie
+  const avatarCompression = estimateCompressedImageSize(origAvatarBytes, 4032, 3024, DEFAULT_AVATAR_IMAGE_DIMENSION, 0.85);
+  assert(avatarCompression.fitsWithin1MB === true, 'Avatar fits well within 1 MB limit');
+  assert(avatarCompression.estimatedBytes <= 100 * 1024, `Avatar size (${avatarCompression.formattedEstimatedSize}) is <= 100 KB`);
+  assert(avatarCompression.reductionPercentage >= 95, `Avatar compression achieves >= 95% reduction (got ${avatarCompression.reductionPercentage}%)`);
+
+  // 45. Extreme & Degenerate Image Aspect Ratio Boundary Protection
+  // Ensure canvases never crash with 0 width or 0 height on extreme ratios
+  const ultraWide = calculateScaledDimensions(10000, 2, 1920);
+  assert(ultraWide.width === 1920, 'Ultra wide width is 1920px');
+  assert(ultraWide.height >= 1, 'Ultra wide height is clamped to >= 1px (never 0)');
+
+  const ultraTall = calculateScaledDimensions(2, 10000, 1920);
+  assert(ultraTall.height === 1920, 'Ultra tall height is 1920px');
+  assert(ultraTall.width >= 1, 'Ultra tall width is clamped to >= 1px (never 0)');
+
+  const zeroDimension = calculateScaledDimensions(0, 0, 1920);
+  assert(zeroDimension.width >= 1 && zeroDimension.height >= 1, 'Zero dimensions safely clamped to >= 1px');
+
+  // 46. Backend Upload Middleware Whitelist & Extension Fallback Compatibility
+  assert(ALLOWED_MIME_TYPES.includes('image/jpeg'), 'Allowed MIME includes image/jpeg');
+  assert(ALLOWED_MIME_TYPES.includes('image/jpg'), 'Allowed MIME includes image/jpg');
+  assert(ALLOWED_MIME_TYPES.includes('image/png'), 'Allowed MIME includes image/png');
+  assert(ALLOWED_MIME_TYPES.includes('image/webp'), 'Allowed MIME includes image/webp');
+  assert(ALLOWED_MIME_TYPES.includes('application/pdf'), 'Allowed MIME includes application/pdf');
+
+  assert(ALLOWED_FILE_EXTENSIONS.includes('.jpg'), 'Allowed extensions include .jpg');
+  assert(ALLOWED_FILE_EXTENSIONS.includes('.jpeg'), 'Allowed extensions include .jpeg');
+  assert(ALLOWED_FILE_EXTENSIONS.includes('.png'), 'Allowed extensions include .png');
+  assert(ALLOWED_FILE_EXTENSIONS.includes('.webp'), 'Allowed extensions include .webp');
+  assert(ALLOWED_FILE_EXTENSIONS.includes('.pdf'), 'Allowed extensions include .pdf');
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);
 

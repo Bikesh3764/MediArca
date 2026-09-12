@@ -515,3 +515,45 @@ export const googleAuth = async (req: Request, res: Response): Promise<void> => 
   }
 };
 
+export const uploadAvatar = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Not authenticated' });
+      return;
+    }
+
+    const file = req.file;
+    if (!file) {
+      res.status(400).json({ success: false, message: 'No avatar image file uploaded' });
+      return;
+    }
+
+    const avatarUrl = `/uploads/${file.filename}`;
+
+    const updatedUser = await prisma.user.update({
+      where: { id: req.user.id },
+      data: { avatarUrl },
+      include: {
+        patientProfile: true,
+        doctorProfile: true,
+        clinicProfile: true,
+        receptionistProfile: true,
+      },
+    });
+
+    const { passwordHash: _, ...userWithoutPassword } = updatedUser;
+    res.json({
+      success: true,
+      message: 'Avatar photo uploaded and profile updated successfully',
+      data: {
+        avatarUrl,
+        user: userWithoutPassword,
+      },
+    });
+  } catch (error: any) {
+    console.error('uploadAvatar error:', error);
+    res.status(500).json({ success: false, message: 'Failed to upload avatar', error: error.message });
+  }
+};
+
+

@@ -43,30 +43,38 @@ export function formatFileSize(bytes: number): string {
   return `${val < 10 && i > 0 ? val.toFixed(2) : val.toFixed(1)} ${sizes[i]}`;
 }
 
+export const DEFAULT_AVATAR_IMAGE_DIMENSION = 512; // 512px max for crisp profile avatars
+
 /**
  * Check if filename or mime type corresponds to a supported image
  */
-export function isImageFile(identifier: string): boolean {
-  if (!identifier) return false;
-  const lower = identifier.toLowerCase();
-  return (
-    lower.startsWith('image/') ||
-    lower.endsWith('.jpg') ||
-    lower.endsWith('.jpeg') ||
-    lower.endsWith('.png') ||
-    lower.endsWith('.webp') ||
-    lower.endsWith('.bmp') ||
-    lower.endsWith('.heic')
-  );
+export function isImageFile(identifier: string, secondaryIdentifier?: string): boolean {
+  const check = (str?: string) => {
+    if (!str) return false;
+    const lower = str.toLowerCase();
+    return (
+      lower.startsWith('image/') ||
+      lower.endsWith('.jpg') ||
+      lower.endsWith('.jpeg') ||
+      lower.endsWith('.png') ||
+      lower.endsWith('.webp') ||
+      lower.endsWith('.bmp') ||
+      lower.endsWith('.heic')
+    );
+  };
+  return check(identifier) || check(secondaryIdentifier);
 }
 
 /**
  * Check if filename or mime type corresponds to a PDF
  */
-export function isPdfFile(identifier: string): boolean {
-  if (!identifier) return false;
-  const lower = identifier.toLowerCase();
-  return lower === 'application/pdf' || lower.endsWith('.pdf');
+export function isPdfFile(identifier: string, secondaryIdentifier?: string): boolean {
+  const check = (str?: string) => {
+    if (!str) return false;
+    const lower = str.toLowerCase();
+    return lower === 'application/pdf' || lower.endsWith('.pdf');
+  };
+  return check(identifier) || check(secondaryIdentifier);
 }
 
 /**
@@ -91,10 +99,10 @@ export function calculateScaledDimensions(
 
   if (width >= height) {
     targetWidth = maxDimension;
-    targetHeight = Math.round((height * maxDimension) / width);
+    targetHeight = Math.max(1, Math.round((height * maxDimension) / width));
   } else {
     targetHeight = maxDimension;
-    targetWidth = Math.round((width * maxDimension) / height);
+    targetWidth = Math.max(1, Math.round((width * maxDimension) / height));
   }
 
   const scaleRatio = targetWidth / width;
@@ -158,8 +166,8 @@ export function validateVaultDocument(
   file: { name: string; size: number; mimetype?: string },
   isPostCompression: boolean = false
 ): DocumentValidationResult {
-  const isImg = isImageFile(file.mimetype || file.name);
-  const isPdf = isPdfFile(file.mimetype || file.name);
+  const isImg = isImageFile(file.mimetype || '', file.name);
+  const isPdf = isPdfFile(file.mimetype || '', file.name);
   const fileType = isImg ? 'image' : isPdf ? 'pdf' : 'unsupported';
   const formattedSize = formatFileSize(file.size);
 
