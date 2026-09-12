@@ -21,6 +21,19 @@ import {
   Building2,
 } from 'lucide-react';
 
+export interface TokenPassData {
+  queueNumber: number;
+  estimatedTime?: string;
+  checkingWindow?: string;
+  appointmentDate: string;
+  patientName: string;
+  patientPhone?: string;
+  doctorName: string;
+  doctorSpecialty?: string;
+  clinicName?: string;
+  clinicAddress?: string;
+}
+
 export const ReceptionistDashboard: React.FC = () => {
   const { user } = useAuth();
 
@@ -45,7 +58,7 @@ export const ReceptionistDashboard: React.FC = () => {
   const [bookingLoading, setBookingLoading] = useState(false);
 
   // Success Token Pass Modal
-  const [bookedPass, setBookedPass] = useState<any | null>(null);
+  const [bookedPass, setBookedPass] = useState<TokenPassData | null>(null);
 
   // Queue tab state
   const [queueDoctorId, setQueueDoctorId] = useState<string>('');
@@ -141,8 +154,23 @@ export const ReceptionistDashboard: React.FC = () => {
         reasonForVisit: reasonForVisit.trim() || 'Rapid Walk-in Consultation',
       });
 
-      setBookedPass(res.data);
-      setSuccessMsg(`Token #${res.data.queueNumber} assigned to ${patientName}`);
+      const queuedDoctor = linkedDoctors.find((d) => d.doctorId === selectedDoctorId);
+      const savedPatientName = patientName.trim();
+      const savedPatientPhone = patientPhone.trim();
+
+      setBookedPass({
+        queueNumber: res.data.queueNumber,
+        estimatedTime: res.data.estimatedTime || 'Active',
+        checkingWindow: res.data.checkingWindow || 'General Hours',
+        appointmentDate,
+        patientName: savedPatientName,
+        patientPhone: savedPatientPhone,
+        doctorName: queuedDoctor?.fullName || 'Practitioner',
+        doctorSpecialty: queuedDoctor?.specialty,
+        clinicName: data?.clinic?.clinicName,
+        clinicAddress: data?.clinic?.address,
+      });
+      setSuccessMsg(`Token #${res.data.queueNumber} assigned to ${savedPatientName}`);
 
       // Reset form
       setPatientName('');
@@ -204,7 +232,7 @@ export const ReceptionistDashboard: React.FC = () => {
       title={data?.clinic?.clinicName ? `${data.clinic.clinicName} Desk` : (data?.receptionist.fullName || user?.fullName || 'Receptionist Desk')}
       subtitle={`${data?.clinic?.address || 'Front Desk Operations'}${data?.clinic?.city ? ` • ${data.clinic.city}` : ''} | Staff: ${data?.receptionist.fullName || user?.fullName || 'Desk Operator'}`}
     >
-      <div className="space-y-8">
+      <div className="space-y-8 print:hidden">
         {/* Banner Feedback */}
         {successMsg && (
           <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center justify-between shadow-xs">
@@ -775,14 +803,18 @@ export const ReceptionistDashboard: React.FC = () => {
                                 <button
                                   type="button"
                                   onClick={() => {
+                                    const queueDoctor = linkedDoctors.find((d) => d.doctorId === queueDoctorId);
                                     setBookedPass({
                                       queueNumber: appt.queueNumber,
                                       estimatedTime: appt.estimatedTime,
                                       checkingWindow: appt.checkingWindow,
                                       appointmentDate: queueDate,
-                                      patient: {
-                                        user: { fullName: appt.patientName },
-                                      },
+                                      patientName: appt.patientName,
+                                      patientPhone: appt.patientPhone,
+                                      doctorName: queueDoctor?.fullName || 'Practitioner',
+                                      doctorSpecialty: queueDoctor?.specialty,
+                                      clinicName: data?.clinic?.clinicName,
+                                      clinicAddress: data?.clinic?.address,
                                     });
                                   }}
                                   className="p-1 rounded-lg text-[#0088e8] hover:bg-blue-50 border border-blue-200 transition-colors"
@@ -871,7 +903,7 @@ export const ReceptionistDashboard: React.FC = () => {
 
       {/* 3. Guaranteed Queue Token Pass Modal */}
       {bookedPass && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fadeIn print:hidden">
           <div className="bg-white rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-6 sm:p-8 shadow-2xl">
             <div className="text-center pb-4 border-b border-[#f0f0f0]">
               <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-3">
@@ -896,7 +928,7 @@ export const ReceptionistDashboard: React.FC = () => {
                 </div>
                 <div>
                   <span className="text-[11px] text-[#86868b] block">Checking Shift</span>
-                  <span className="font-semibold text-[#1d1d1f]">{bookedPass.checkingWindow}</span>
+                  <span className="font-semibold text-[#1d1d1f]">{bookedPass.checkingWindow || 'General'}</span>
                 </div>
               </div>
             </div>
@@ -904,12 +936,24 @@ export const ReceptionistDashboard: React.FC = () => {
             <div className="space-y-2 text-xs mb-6 p-3 rounded-xl bg-blue-50/50 border border-blue-100">
               <div className="flex justify-between">
                 <span className="text-[#86868b]">Patient Name:</span>
-                <span className="font-semibold text-[#1d1d1f]">{patientName || bookedPass.patient?.user?.fullName || 'Walk-in'}</span>
+                <span className="font-semibold text-[#1d1d1f]">{bookedPass.patientName}</span>
               </div>
+              {bookedPass.patientPhone && (
+                <div className="flex justify-between">
+                  <span className="text-[#86868b]">Patient Phone:</span>
+                  <span className="font-semibold text-[#1d1d1f]">{bookedPass.patientPhone}</span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="text-[#86868b]">Doctor:</span>
-                <span className="font-semibold text-[#1d1d1f]">{activeSelectedDoctor?.fullName || 'Doctor'}</span>
+                <span className="font-semibold text-[#1d1d1f]">Dr. {bookedPass.doctorName}</span>
               </div>
+              {bookedPass.doctorSpecialty && (
+                <div className="flex justify-between">
+                  <span className="text-[#86868b]">Specialty:</span>
+                  <span className="font-semibold text-[#1d1d1f]">{bookedPass.doctorSpecialty}</span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="text-[#86868b]">Date:</span>
                 <span className="font-semibold text-[#1d1d1f]">{bookedPass.appointmentDate}</span>
@@ -935,6 +979,72 @@ export const ReceptionistDashboard: React.FC = () => {
                 Done / Next Patient
               </AppleButton>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Dedicated Printable Thermal Token Pass */}
+      {bookedPass && (
+        <div className="hidden print:block font-mono text-black p-6 bg-white max-w-xs mx-auto border-2 border-black rounded-xl">
+          <div className="text-center pb-3 border-b-2 border-dashed border-gray-400">
+            <h2 className="text-base font-bold uppercase tracking-wide">
+              {bookedPass.clinicName || 'MediArca Clinic'}
+            </h2>
+            {bookedPass.clinicAddress && (
+              <p className="text-[11px] text-gray-700 mt-0.5">{bookedPass.clinicAddress}</p>
+            )}
+            <p className="text-[10px] text-gray-600 mt-1 uppercase tracking-wider">
+              Guaranteed Queue Token
+            </p>
+          </div>
+
+          <div className="py-4 text-center">
+            <div className="text-xs uppercase text-gray-500 tracking-wider">Token Number</div>
+            <div className="text-5xl font-black tracking-tight my-1">
+              #{bookedPass.queueNumber}
+            </div>
+            <div className="text-xs font-semibold text-gray-800">
+              Shift: {bookedPass.checkingWindow || 'General'}
+            </div>
+          </div>
+
+          <div className="space-y-1.5 py-3 border-t-2 border-b-2 border-dashed border-gray-400 text-xs">
+            <div className="flex justify-between">
+              <span className="text-gray-600">Patient:</span>
+              <span className="font-bold">{bookedPass.patientName}</span>
+            </div>
+            {bookedPass.patientPhone && (
+              <div className="flex justify-between">
+                <span className="text-gray-600">Phone:</span>
+                <span>{bookedPass.patientPhone}</span>
+              </div>
+            )}
+            <div className="flex justify-between">
+              <span className="text-gray-600">Doctor:</span>
+              <span className="font-bold">Dr. {bookedPass.doctorName}</span>
+            </div>
+            {bookedPass.doctorSpecialty && (
+              <div className="flex justify-between">
+                <span className="text-gray-600">Specialty:</span>
+                <span>{bookedPass.doctorSpecialty}</span>
+              </div>
+            )}
+            <div className="flex justify-between">
+              <span className="text-gray-600">Date:</span>
+              <span>{bookedPass.appointmentDate}</span>
+            </div>
+            {bookedPass.estimatedTime && (
+              <div className="flex justify-between">
+                <span className="text-gray-600">Est. Time:</span>
+                <span className="font-bold">{bookedPass.estimatedTime}</span>
+              </div>
+            )}
+          </div>
+
+          <div className="pt-3 text-center text-[10px] text-gray-600 leading-tight">
+            Please retain this slip and listen for token announcement.
+            <br />
+            MediArca Digital OPD
           </div>
         </div>
       )}

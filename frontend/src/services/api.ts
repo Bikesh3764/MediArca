@@ -1044,6 +1044,7 @@ export const api = {
     patientName?: string;
     patientAge?: string;
     patientGender?: string;
+    patientPhone?: string;
   }): Promise<Appointment> {
     const clientMinutes = new Date().getHours() * 60 + new Date().getMinutes();
     const res = await fetch(`${API_BASE_URL}/appointments/book`, {

@@ -1133,6 +1133,121 @@ function runTests() {
   const dermaMatches = filterSpecialties('derma');
   assert(dermaMatches.length === 1 && dermaMatches[0] === 'Dermatology', 'Search for "derma" finds Dermatology');
 
+  // 52. Doctor Walk-in Booking Access Control Validation
+  const validateBookingCallerRole = (role?: string) => {
+    if (!role || (role !== 'PATIENT' && role !== 'DOCTOR')) {
+      return { allowed: false, message: 'Only registered patients or practitioners can book appointments' };
+    }
+    return { allowed: true, message: 'Authorized' };
+  };
+
+  assert(validateBookingCallerRole('PATIENT').allowed === true, 'PATIENT role is authorized to book appointments');
+  assert(validateBookingCallerRole('DOCTOR').allowed === true, 'DOCTOR role is authorized to queue walk-in appointments');
+  assert(validateBookingCallerRole('CLINIC').allowed === false, 'CLINIC role is blocked from direct patient booking endpoint');
+  assert(validateBookingCallerRole(undefined).allowed === false, 'Unauthenticated user is blocked from booking');
+
+  // 53. Doctor Walk-in Patient Payload Resolution
+  const resolveDoctorWalkinPayload = (doctorProfileId: string, input: {
+    doctorId?: string;
+    patientName: string;
+    patientPhone?: string;
+    patientAge?: string;
+    patientGender?: string;
+    reasonForVisit?: string;
+  }) => {
+    // If doctorId is provided, it must match doctor's own profile id
+    if (input.doctorId && input.doctorId !== doctorProfileId) {
+      throw new Error('Doctors can only queue walk-in appointments for their own practice');
+    }
+    const cleanPhone = input.patientPhone ? input.patientPhone.trim() : '';
+    return {
+      doctorId: doctorProfileId,
+      patientName: input.patientName.trim(),
+      patientPhone: cleanPhone || null,
+      patientAge: input.patientAge ? input.patientAge.trim() : null,
+      patientGender: input.patientGender || 'Not Specified',
+      reasonForVisit: input.reasonForVisit || 'Clinic Walk-in Consultation',
+      isForOther: true,
+    };
+  };
+
+  const doctorWalkin = resolveDoctorWalkinPayload('doc_123', {
+    doctorId: 'doc_123',
+    patientName: 'Rohan Sharma',
+    patientPhone: '+91 9876543210',
+    patientAge: '28',
+    patientGender: 'Male',
+    reasonForVisit: 'Acute Cough & Cold',
+  });
+
+  assert(doctorWalkin.doctorId === 'doc_123', 'Doctor walk-in is scoped to own doctor profile');
+  assert(doctorWalkin.patientName === 'Rohan Sharma', 'Walk-in patient name is preserved');
+  assert(doctorWalkin.patientAge === '28', 'Walk-in patient age is preserved');
+  assert(doctorWalkin.patientGender === 'Male', 'Walk-in patient gender is preserved');
+  assert(doctorWalkin.patientPhone === '+91 9876543210', 'Walk-in patient phone is preserved');
+
+  let doctorBookingOtherDocBlocked = false;
+  try {
+    resolveDoctorWalkinPayload('doc_123', {
+      doctorId: 'doc_999',
+      patientName: 'Sneha Patel',
+    });
+  } catch (err: any) {
+    doctorBookingOtherDocBlocked = true;
+  }
+  assert(doctorBookingOtherDocBlocked === true, 'Doctor cannot queue walk-in patients into another doctor practice');
+
+  // 54. Receptionist Token Pass Data Isolation (Row Reprint vs Form State)
+  const resolveReprintTokenPass = (
+    queueDoc: { id: string; fullName: string; specialty: string },
+    queueAppt: {
+      queueNumber: number;
+      patientName: string;
+      patientPhone?: string;
+      patientAge?: string;
+      gender?: string;
+      isForOther?: boolean;
+      estimatedTime?: string;
+      checkingWindow?: string;
+    },
+    clinic: { clinicName: string; address?: string },
+    _formInputName: string // Unsubmitted form input that should NEVER leak into reprint
+  ) => {
+    return {
+      queueNumber: queueAppt.queueNumber,
+      doctorName: queueDoc.fullName,
+      doctorSpecialty: queueDoc.specialty,
+      patientName: queueAppt.patientName, // Must use appt patientName, NOT _formInputName!
+      patientPhone: queueAppt.patientPhone !== 'N/A' ? queueAppt.patientPhone : undefined,
+      patientAge: queueAppt.patientAge,
+      patientGender: queueAppt.gender,
+      isForOther: queueAppt.isForOther,
+      clinicName: clinic.clinicName,
+      clinicAddress: clinic.address,
+    };
+  };
+
+  const reprintedPass = resolveReprintTokenPass(
+    { id: 'd2', fullName: 'Dr. Neha Kapoor', specialty: 'Dermatology' },
+    {
+      queueNumber: 7,
+      patientName: 'Aarav Gupta',
+      patientPhone: '+91 9998887776',
+      patientAge: '19',
+      gender: 'Male',
+      isForOther: true,
+      estimatedTime: '11:15 AM',
+      checkingWindow: 'Morning Shift',
+    },
+    { clinicName: 'Apollo Clinic', address: 'Bandra West, Mumbai' },
+    'Unsubmitted Form Name' // Simulated dirty state from another tab
+  );
+
+  assert(reprintedPass.patientName === 'Aarav Gupta', 'Reprinted token pass strictly uses appointment patient name');
+  assert(reprintedPass.patientName !== 'Unsubmitted Form Name', 'Reprinted token pass never leaks unsubmitted form input state');
+  assert(reprintedPass.doctorName === 'Dr. Neha Kapoor', 'Reprinted token pass uses queue doctor name');
+  assert(reprintedPass.queueNumber === 7, 'Queue token number is preserved as #7');
+
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);
 

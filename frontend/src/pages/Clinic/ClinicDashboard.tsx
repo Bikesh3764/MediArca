@@ -18,6 +18,7 @@ import {
   LayoutDashboard,
   Clock3,
   Stethoscope,
+  Sparkles,
 } from 'lucide-react';
 
 export const ClinicDashboard: React.FC = () => {
@@ -131,6 +132,33 @@ export const ClinicDashboard: React.FC = () => {
     } catch (err: any) {
       alert(err.message || 'Failed to detach doctor');
     }
+  };
+
+  const handleCancelInvitation = async (doctorId: string, docName: string) => {
+    if (
+      !window.confirm(
+        `Are you sure you want to cancel the pending affiliation invitation to Dr. ${docName}?`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      await api.removeDoctorFromClinic(doctorId);
+      setSuccessMsg(`Invitation to Dr. ${docName} has been cancelled.`);
+      fetchClinicData();
+    } catch (err: any) {
+      setError(err.message || 'Failed to cancel invitation');
+    }
+  };
+
+  const handleGenerateRandomPassword = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%';
+    let pwd = '';
+    for (let i = 0; i < 10; i++) {
+      pwd += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setRecPassword(pwd);
   };
 
   const handleRespondDoctorAffiliation = async (affiliationId: string, action: 'ACCEPT' | 'REJECT') => {
@@ -421,7 +449,7 @@ export const ClinicDashboard: React.FC = () => {
         </div>
 
         {/* 2. Affiliated Doctors Section */}
-        <div id="practitioners-section" className="bg-white rounded-[24px] border border-[#e5e5ea] p-6 sm:p-8 shadow-xs">
+        <div id="practitioners-section" className="scroll-mt-6 bg-white rounded-[24px] border border-[#e5e5ea] p-6 sm:p-8 shadow-xs">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-[#f0f0f0] mb-6">
             <div>
               <h2 className="text-lg font-semibold text-[#1d1d1f] tracking-tight">
@@ -522,7 +550,7 @@ export const ClinicDashboard: React.FC = () => {
                       <AppleButton
                         size="sm"
                         variant="ghost"
-                        onClick={() => handleDetachDoctor(doc.doctorId, doc.fullName)}
+                        onClick={() => handleCancelInvitation(doc.doctorId, doc.fullName)}
                         className="text-rose-600 hover:bg-rose-50 text-[11px] h-7 px-2"
                       >
                         Cancel
@@ -642,7 +670,7 @@ export const ClinicDashboard: React.FC = () => {
         </div>
 
         {/* Desk Receptionists & Front Staff Section */}
-        <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-6 sm:p-8 shadow-xs">
+        <div id="receptionists-section" className="scroll-mt-6 bg-white rounded-[24px] border border-[#e5e5ea] p-6 sm:p-8 shadow-xs">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-[#f0f0f0] mb-6">
             <div>
               <h2 className="text-lg font-semibold text-[#1d1d1f] tracking-tight">
@@ -750,11 +778,17 @@ export const ClinicDashboard: React.FC = () => {
         </div>
 
         {/* 4. Recent Clinic Appointments Table */}
-        {data?.recentAppointments && data.recentAppointments.length > 0 && (
-          <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-6 sm:p-8 shadow-xs">
-            <h3 className="text-base font-semibold text-[#1d1d1f] mb-4">
-              Recent Consultations at this Facility
-            </h3>
+        <div id="appointments-section" className="scroll-mt-6 bg-white rounded-[24px] border border-[#e5e5ea] p-6 sm:p-8 shadow-xs">
+          <h3 className="text-base font-semibold text-[#1d1d1f] mb-4">
+            Recent Consultations at this Facility
+          </h3>
+          {(!data?.recentAppointments || data.recentAppointments.length === 0) ? (
+            <div className="py-12 text-center text-xs text-[#86868b]">
+              <CalendarCheck className="w-8 h-8 text-[#86868b] mx-auto mb-2 opacity-50" />
+              <p className="font-semibold text-[#1d1d1f]">No Facility Consultations Recorded Yet</p>
+              <p className="mt-1">When patients book appointments with affiliated practitioners at this clinic, they will appear here.</p>
+            </div>
+          ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
@@ -807,8 +841,8 @@ export const ClinicDashboard: React.FC = () => {
                 </tbody>
               </table>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Onboard Doctor Modal */}
@@ -979,17 +1013,27 @@ export const ClinicDashboard: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
-                    Temporary Password *
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-medium text-[#1d1d1f]">
+                      Temporary Password *
+                    </label>
+                    <button
+                      type="button"
+                      onClick={handleGenerateRandomPassword}
+                      className="text-[11px] text-[#0088e8] hover:underline font-medium inline-flex items-center gap-1 cursor-pointer"
+                    >
+                      <Sparkles className="w-3 h-3" />
+                      Auto-generate
+                    </button>
+                  </div>
                   <input
-                    type="password"
+                    type="text"
                     required
                     disabled={provisioning}
                     value={recPassword}
                     onChange={(e) => setRecPassword(e.target.value)}
                     placeholder="Min. 6 characters"
-                    className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-xs focus:outline-none focus:border-[#0088e8]"
+                    className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-xs focus:outline-none focus:border-[#0088e8] font-mono"
                   />
                 </div>
               </div>

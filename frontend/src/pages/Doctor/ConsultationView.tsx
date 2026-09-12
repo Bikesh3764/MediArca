@@ -254,7 +254,9 @@ export const ConsultationView: React.FC = () => {
   const patientUser = appointment.patient?.user;
   const isForOther = Boolean(appointment.isForOther);
   const actualPatientName = isForOther && appointment.patientName ? appointment.patientName : (patientUser?.fullName || 'Walk-in Patient');
-  const patientAgeDisplay = appointment.patientAge ? `${appointment.patientAge} yrs` : (appointment.patient?.dateOfBirth ? `${new Date().getFullYear() - new Date(appointment.patient.dateOfBirth).getFullYear()} yrs` : undefined);
+  const patientAgeDisplay = appointment.patientAge
+    ? (appointment.patientAge.toLowerCase().includes('yr') ? appointment.patientAge : `${appointment.patientAge} yrs`)
+    : (appointment.patient?.dateOfBirth ? `${new Date().getFullYear() - new Date(appointment.patient.dateOfBirth).getFullYear()} yrs` : undefined);
   const patientGenderDisplay = appointment.patientGender || appointment.patient?.gender || 'Not specified';
 
   return (
@@ -722,14 +724,20 @@ export const ConsultationView: React.FC = () => {
           <h1 className="text-2xl font-bold tracking-tight text-black">Dr. {user?.fullName}</h1>
           <p className="text-sm font-semibold text-gray-700">{user?.doctorProfile?.qualifications || 'MBBS'}</p>
           <p className="text-xs font-semibold text-blue-700 mt-0.5">{user?.doctorProfile?.specialty || 'General Specialist'}</p>
-          {user?.doctorProfile?.clinicAddress && (
+          {appointment.clinic ? (
+            <p className="text-xs text-gray-700 mt-1">
+              Facility: <strong>{appointment.clinic.clinicName}</strong> • {appointment.clinic.address}{appointment.clinic.city ? `, ${appointment.clinic.city}` : ''}
+            </p>
+          ) : user?.doctorProfile?.clinicAddress ? (
             <p className="text-xs text-gray-600 mt-1">{user.doctorProfile.clinicAddress}</p>
-          )}
+          ) : null}
           {user?.phone && <p className="text-xs text-gray-600">Contact: {user.phone}</p>}
         </div>
 
         <div className="text-right">
-          <h2 className="text-xl font-bold tracking-tight text-blue-600">MediArca Clinical Platform</h2>
+          <h2 className="text-xl font-bold tracking-tight text-blue-600">
+            {appointment.clinic?.clinicName || 'MediArca Clinical Platform'}
+          </h2>
           <p className="text-xs text-gray-500 mt-0.5">Verified Medical Consultation Slip</p>
           <p className="text-xs font-mono font-semibold mt-2">Queue Token: #{appointment.queueNumber}</p>
           <p className="text-xs text-gray-700">Date: {appointment.appointmentDate || new Date().toLocaleDateString()}</p>

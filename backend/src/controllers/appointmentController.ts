@@ -1,4 +1,5 @@
 import { Response } from 'express';
+import bcrypt from 'bcryptjs';
 import prisma from '../config/database';
 import { AuthRequest } from '../middleware/authMiddleware';
 import {
@@ -132,13 +133,13 @@ export const getQueuePreview = async (req: AuthRequest, res: Response): Promise<
 
 export const bookAppointment = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    if (!req.user || req.user.role !== 'PATIENT') {
-      res.status(403).json({ success: false, message: 'Only registered patients can book appointments' });
+    if (!req.user || (req.user.role !== 'PATIENT' && req.user.role !== 'DOCTOR')) {
+      res.status(403).json({ success: false, message: 'Only registered patients or practitioners can book appointments' });
       return;
     }
 
     const {
-      doctorId,
+      doctorId: requestedDoctorId,
       appointmentDate,
       slotId,
       reasonForVisit,
@@ -149,14 +150,32 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
       patientName,
       patientAge,
       patientGender,
+      patientPhone,
     } = req.body;
+
+    let doctorId = requestedDoctorId;
+
+    if (req.user.role === 'DOCTOR') {
+      const myDoctorProfile = await prisma.doctorProfile.findUnique({
+        where: { userId: req.user.id },
+      });
+      if (!myDoctorProfile) {
+        res.status(404).json({ success: false, message: 'Doctor profile not found' });
+        return;
+      }
+      if (doctorId && doctorId !== myDoctorProfile.id) {
+        res.status(403).json({ success: false, message: 'Doctors can only queue walk-in appointments for their own practice' });
+        return;
+      }
+      doctorId = myDoctorProfile.id;
+    }
 
     if (!doctorId || !appointmentDate) {
       res.status(400).json({ success: false, message: 'Doctor ID and appointment date are required' });
       return;
     }
 
-    if (isForOther) {
+    if (isForOther && req.user.role === 'PATIENT') {
       if (!patientName || !String(patientName).trim()) {
         res.status(400).json({ success: false, message: 'Patient full name is required when booking for someone else' });
         return;
@@ -167,14 +186,57 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
       }
     }
 
-    let patient = await prisma.patientProfile.findUnique({
-      where: { userId: req.user.id },
-    });
-
-    if (!patient) {
-      patient = await prisma.patientProfile.create({
-        data: { userId: req.user.id },
+    let patient: any;
+    if (req.user.role === 'DOCTOR') {
+      // Doctor booking a walk-in patient
+      const cleanPhone = patientPhone ? String(patientPhone).trim() : '';
+      let patientUser: any = null;
+      if (cleanPhone) {
+        patientUser = await prisma.user.findFirst({
+          where: { phone: cleanPhone },
+          include: { patientProfile: true },
+        });
+      }
+      if (!patientUser) {
+        const dummySalt = await bcrypt.genSalt(10);
+        const dummyHash = await bcrypt.hash('walkin123', dummySalt);
+        const uniqueId = cleanPhone.replace(/\D/g, '') || `${Date.now()}`;
+        const walkinEmail = `walkin.${uniqueId}@mediarca.local`;
+        patientUser = await prisma.user.create({
+          data: {
+            fullName: patientName ? String(patientName).trim() : 'Walk-in Patient',
+            phone: cleanPhone || null,
+            email: walkinEmail,
+            passwordHash: dummyHash,
+            role: 'PATIENT',
+            patientProfile: {
+              create: {
+                gender: patientGender || null,
+              },
+            },
+          },
+          include: { patientProfile: true },
+        });
+      }
+      patient = patientUser.patientProfile;
+      if (!patient) {
+        patient = await prisma.patientProfile.create({
+          data: {
+            userId: patientUser.id,
+            gender: patientGender || null,
+          },
+        });
+      }
+    } else {
+      patient = await prisma.patientProfile.findUnique({
+        where: { userId: req.user.id },
       });
+
+      if (!patient) {
+        patient = await prisma.patientProfile.create({
+          data: { userId: req.user.id },
+        });
+      }
     }
 
     const doctor = await prisma.doctorProfile.findUnique({
@@ -198,27 +260,29 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
       }) || slots[0];
     }
 
-    // Check if patient already has an active appointment with this doctor on this day
-    const existingPatientBooking = await prisma.appointment.findFirst({
-      where: {
-        patientId: patient.id,
-        doctorId: doctor.id,
-        appointmentDate,
-        isForOther: Boolean(isForOther),
-        ...(isForOther && patientName
-          ? { patientName: { equals: String(patientName).trim(), mode: 'insensitive' } }
-          : {}),
-        status: { in: ['WAITING', 'IN_CONSULTATION'] },
-      },
-    });
-
-    if (existingPatientBooking) {
-      const recipient = isForOther ? `for ${patientName}` : 'for yourself';
-      res.status(400).json({
-        success: false,
-        message: `You already have an active booking (Queue #${existingPatientBooking.queueNumber}) ${recipient} with this doctor on this date.`,
+    // Check if patient already has an active appointment with this doctor on this day (applies to PATIENT self-booking)
+    if (req.user.role === 'PATIENT') {
+      const existingPatientBooking = await prisma.appointment.findFirst({
+        where: {
+          patientId: patient.id,
+          doctorId: doctor.id,
+          appointmentDate,
+          isForOther: Boolean(isForOther),
+          ...(isForOther && patientName
+            ? { patientName: { equals: String(patientName).trim(), mode: 'insensitive' } }
+            : {}),
+          status: { in: ['WAITING', 'IN_CONSULTATION'] },
+        },
       });
-      return;
+
+      if (existingPatientBooking) {
+        const recipient = isForOther ? `for ${patientName}` : 'for yourself';
+        res.status(400).json({
+          success: false,
+          message: `You already have an active booking (Queue #${existingPatientBooking.queueNumber}) ${recipient} with this doctor on this date.`,
+        });
+        return;
+      }
     }
 
     // Perform atomic transaction with retry on concurrency collision
@@ -309,9 +373,9 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
               reasonForVisit: reasonForVisit || 'General Medical Consultation',
               symptoms: symptoms || null,
               isForOther: Boolean(isForOther),
-              patientName: isForOther && patientName ? String(patientName).trim() : null,
-              patientAge: isForOther && patientAge ? String(patientAge).trim() : null,
-              patientGender: isForOther && patientGender ? String(patientGender).trim() : null,
+              patientName: (isForOther && patientName) || (req.user?.role === 'DOCTOR' && patientName) ? String(patientName).trim() : null,
+              patientAge: patientAge ? String(patientAge).trim() : null,
+              patientGender: patientGender || null,
             },
             include: {
               doctor: {

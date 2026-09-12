@@ -112,12 +112,15 @@ export const DoctorProfile: React.FC = () => {
       return;
     }
 
+    const rawDigits = phone.replace(/^\+91\s?/, '').replace(/\D/g, '').trim();
+    if (rawDigits.length > 0 && rawDigits.length !== 10) {
+      setErrorMsg('Please enter a valid 10-digit mobile number.');
+      setSaving(false);
+      return;
+    }
+    const formattedPhone = rawDigits ? `+91 ${rawDigits}` : '';
+
     try {
-      const formattedPhone = phone.trim()
-        ? phone.trim().startsWith('+91')
-          ? phone.trim()
-          : `+91 ${phone.trim()}`
-        : '';
 
       const updatedUser = await api.updateDoctorProfile({
         fullName: fullName.trim(),

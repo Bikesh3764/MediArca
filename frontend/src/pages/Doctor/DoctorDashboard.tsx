@@ -186,6 +186,7 @@ export const DoctorDashboard: React.FC = () => {
         patientName: walkinName.trim(),
         patientAge: walkinAge.trim() || undefined,
         patientGender: walkinGender || 'Not Specified',
+        patientPhone: walkinPhone.trim() || undefined,
       });
       setWalkinSuccess(`Patient ${walkinName} successfully queued!`);
       setWalkinName('');
@@ -347,7 +348,7 @@ export const DoctorDashboard: React.FC = () => {
         </div>
       }
     >
-      <div className="space-y-6">
+      <div className="space-y-6 print:hidden">
         {/* Navigation Tabs (Quick pill switch) */}
         <div className="flex items-center gap-2 border-b border-[#e5e5ea] pb-3">
           <button
@@ -1358,7 +1359,7 @@ export const DoctorDashboard: React.FC = () => {
 
       {/* Walk-in QR Code Modal (media_1789192783321.jpg) */}
       {showQrModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-fadeIn">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-fadeIn print:hidden">
           <div className="bg-white rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-6 shadow-2xl relative text-center">
             <button
               type="button"
@@ -1428,7 +1429,7 @@ export const DoctorDashboard: React.FC = () => {
 
       {/* Rapid Add Walk-in Patient Modal (media_1789192783321.jpg) */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-fadeIn">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-fadeIn print:hidden">
           <div className="bg-white rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-6 shadow-2xl relative text-left">
             <button
               type="button"
@@ -1575,6 +1576,47 @@ export const DoctorDashboard: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Dedicated Printable Clinic Poster (Rendered ONLY when doctor prints poster) */}
+      <div className="hidden print:block font-sans text-black p-12 bg-white max-w-xl mx-auto text-center border-4 border-black rounded-3xl my-8">
+        <div className="mb-6">
+          <div className="inline-block px-4 py-1.5 rounded-full border-2 border-black text-xs font-bold uppercase tracking-widest mb-3">
+            MediArca Instant Walk-in Check-in
+          </div>
+          <h1 className="text-3xl font-extrabold tracking-tight text-black">
+            Dr. {user?.fullName}
+          </h1>
+          <p className="text-base font-semibold text-gray-800 mt-1">
+            {user?.doctorProfile?.specialty || 'General Specialist'}
+          </p>
+          {user?.doctorProfile?.qualifications && (
+            <p className="text-xs text-gray-600 font-medium mt-0.5">{user.doctorProfile.qualifications}</p>
+          )}
+          {user?.doctorProfile?.clinicAddress && (
+            <p className="text-xs text-gray-600 mt-1">{user.doctorProfile.clinicAddress}</p>
+          )}
+        </div>
+
+        <div className="my-8 p-6 inline-block border-2 border-dashed border-gray-400 rounded-2xl bg-white shadow-xs">
+          <img
+            src={qrImageUrl}
+            alt="Doctor Walk-in QR Code"
+            className="w-72 h-72 object-contain mx-auto"
+          />
+        </div>
+
+        <div className="space-y-2 max-w-sm mx-auto">
+          <h2 className="text-lg font-bold text-black tracking-tight">
+            Scan with Your Phone to Join Today's Live Queue
+          </h2>
+          <p className="text-xs text-gray-600 leading-relaxed">
+            No account creation required. Point your smartphone camera at this code to get a live guaranteed queue token.
+          </p>
+          <div className="pt-4 border-t border-gray-200 mt-4 text-[11px] text-gray-500 font-mono break-all">
+            {bookingUrl}
+          </div>
+        </div>
+      </div>
     </DashboardLayout>
   );
 };

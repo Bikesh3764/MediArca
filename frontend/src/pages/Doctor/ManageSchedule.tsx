@@ -76,6 +76,20 @@ export const ManageSchedule: React.FC = () => {
     },
   ];
 
+  const syncClinicData = useCallback(
+    (clinic: DoctorAffiliationClinic) => {
+      if (clinic.slots && clinic.slots.length > 0) {
+        setSlots(clinic.slots);
+      } else if (user?.doctorProfile) {
+        setSlots(parseDoctorSlots(user.doctorProfile));
+      }
+      setConsultationFee(clinic.consultationFee ?? user?.doctorProfile?.consultationFee ?? 80);
+      setError(null);
+      setSuccessMsg(null);
+    },
+    [user]
+  );
+
   // Fetch affiliations and active clinics
   const fetchAffiliations = useCallback(async () => {
     setLoadingClinics(true);
@@ -85,11 +99,18 @@ export const ManageSchedule: React.FC = () => {
       setClinics(activeClinics);
 
       const targetClinicId = searchParams.get('clinic');
+      let currentClinic: DoctorAffiliationClinic | undefined;
       if (targetClinicId && activeClinics.some((c) => c.clinicId === targetClinicId)) {
         setSelectedClinicId(targetClinicId);
+        currentClinic = activeClinics.find((c) => c.clinicId === targetClinicId);
       } else if (activeClinics.length > 0) {
         setSelectedClinicId(activeClinics[0].clinicId);
         setSearchParams({ clinic: activeClinics[0].clinicId });
+        currentClinic = activeClinics[0];
+      }
+
+      if (currentClinic) {
+        syncClinicData(currentClinic);
       }
     } catch (err: any) {
       console.error('Failed to load doctor clinics for schedule:', err);
@@ -97,7 +118,7 @@ export const ManageSchedule: React.FC = () => {
     } finally {
       setLoadingClinics(false);
     }
-  }, [searchParams, setSearchParams]);
+  }, [searchParams, setSearchParams, syncClinicData]);
 
   useEffect(() => {
     if (loadingAuth) return;
@@ -108,25 +129,15 @@ export const ManageSchedule: React.FC = () => {
     fetchAffiliations();
   }, [fetchAffiliations, user, loadingAuth, navigate]);
 
-  // Synchronize slots and fee when selected clinic changes
   const selectedClinic = clinics.find((c) => c.clinicId === selectedClinicId);
-
-  useEffect(() => {
-    if (selectedClinic) {
-      if (selectedClinic.slots && selectedClinic.slots.length > 0) {
-        setSlots(selectedClinic.slots);
-      } else if (user?.doctorProfile) {
-        setSlots(parseDoctorSlots(user.doctorProfile));
-      }
-      setConsultationFee(selectedClinic.consultationFee ?? user?.doctorProfile?.consultationFee ?? 80);
-      setError(null);
-      setSuccessMsg(null);
-    }
-  }, [selectedClinic, user]);
 
   const handleClinicChange = (clinicId: string) => {
     setSelectedClinicId(clinicId);
     setSearchParams({ clinic: clinicId });
+    const target = clinics.find((c) => c.clinicId === clinicId);
+    if (target) {
+      syncClinicData(target);
+    }
   };
 
   const handleSlotChange = (index: number, field: keyof DoctorSlot, value: any) => {
@@ -185,6 +196,12 @@ export const ManageSchedule: React.FC = () => {
     setSaving(true);
     setError(null);
     setSuccessMsg(null);
+
+    if (isNaN(Number(consultationFee)) || Number(consultationFee) < 0) {
+      setError('Please enter a valid consultation fee (must be 0 or greater).');
+      setSaving(false);
+      return;
+    }
 
     // Validate slots
     for (let i = 0; i < slots.length; i++) {
