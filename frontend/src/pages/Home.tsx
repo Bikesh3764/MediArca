@@ -8,10 +8,12 @@ import {
   evaluateSlotStatus,
   getLocalDateString,
   formatDoctorDegrees,
+  ALL_SPECIALTIES,
 } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { AppleButton } from '../components/ui/AppleButton';
 import { BrandLogo } from '../components/ui/BrandLogo';
+import { SearchableSpecialtySelect } from '../components/ui/SearchableSpecialtySelect';
 import {
   Search,
   MapPin,
@@ -29,15 +31,6 @@ import {
   SlidersHorizontal,
   X,
 } from 'lucide-react';
-
-const SPECIALTIES = [
-  'All',
-  'Cardiology',
-  'Dermatology',
-  'Pediatrics',
-  'Orthopedics',
-  'General Medicine',
-];
 
 export const Home: React.FC = () => {
   const { user } = useAuth();
@@ -77,10 +70,8 @@ export const Home: React.FC = () => {
   // Compute specialty counts
   const specialtyCounts = useMemo(() => {
     const counts: Record<string, number> = { All: doctors.length };
-    SPECIALTIES.forEach((s) => {
-      if (s !== 'All') {
-        counts[s] = doctors.filter((d) => d.specialty.toLowerCase() === s.toLowerCase()).length;
-      }
+    ALL_SPECIALTIES.forEach((s) => {
+      counts[s] = doctors.filter((d) => d.specialty.toLowerCase() === s.toLowerCase()).length;
     });
     return counts;
   }, [doctors]);
@@ -244,15 +235,16 @@ export const Home: React.FC = () => {
             <div className="hidden sm:block w-px h-6 bg-[#e5e5ea]"></div>
 
             {/* Specialty Selector Dropdown */}
-            <div className="w-full sm:w-44 px-3 py-1 sm:py-0">
+            <div className="w-full sm:w-48 px-3 py-1 sm:py-0">
               <select
                 value={selectedSpecialty}
                 onChange={(e) => setSelectedSpecialty(e.target.value)}
                 className="w-full bg-transparent text-xs sm:text-sm font-medium text-[#1d1d1f] focus:outline-none cursor-pointer py-1.5"
               >
-                {SPECIALTIES.map((spec) => (
+                <option value="All">All Specialties</option>
+                {ALL_SPECIALTIES.filter((s) => s !== 'Other').map((spec) => (
                   <option key={spec} value={spec}>
-                    {spec === 'All' ? 'All Specialties' : spec}
+                    {spec}
                   </option>
                 ))}
               </select>
@@ -291,43 +283,7 @@ export const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* 2. Quick Specialty Filter Pills Bar */}
-      <section className="bg-white border-b border-[#e5e5ea] py-3.5 sticky top-14 z-30 shadow-xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="flex items-center gap-2 overflow-x-auto scrollbar-none py-1">
-            <span className="text-xs font-semibold text-[#86868b] mr-2 flex items-center gap-1 flex-shrink-0">
-              <SlidersHorizontal className="w-3.5 h-3.5 text-[#0088e8]" />
-              Specialty:
-            </span>
-            {SPECIALTIES.map((spec) => {
-              const isSelected = selectedSpecialty === spec;
-              const count = specialtyCounts[spec] || 0;
-              return (
-                <button
-                  key={spec}
-                  onClick={() => setSelectedSpecialty(spec)}
-                  className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1.5 flex-shrink-0 ${
-                    isSelected
-                      ? 'bg-gradient-to-r from-[#0088e8] to-[#10b981] text-white shadow-xs'
-                      : 'bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea] hover:bg-[#ebebee]'
-                  }`}
-                >
-                  <span>{spec === 'All' ? 'All Specialties' : spec}</span>
-                  <span
-                    className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono ${
-                      isSelected ? 'bg-white/20 text-white' : 'bg-[#e5e5ea] text-[#86868b]'
-                    }`}
-                  >
-                    {count}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* 3. Explore Doctors Catalog - Full Width Modern Apple Grid */}
+      {/* Explore Doctors Catalog - Full Width Modern Apple Grid */}
       <section id="doctors-catalog" className="max-w-7xl mx-auto px-4 sm:px-6 py-10 flex-1 w-full">
         {/* Section Header & Inline Refine Toolbar */}
         <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-5 sm:p-6 mb-8 shadow-xs">
@@ -343,6 +299,14 @@ export const Home: React.FC = () => {
 
             {/* Quick Filter & Sort Pills */}
             <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+              {/* Integrated Searchable Specialty Filter Dropdown */}
+              <SearchableSpecialtySelect
+                value={selectedSpecialty}
+                onChange={setSelectedSpecialty}
+                variant="pill"
+                includeAll={true}
+                counts={specialtyCounts}
+              />
               <button
                 type="button"
                 onClick={() => setAvailabilityFilter(availabilityFilter === 'ACTIVE_NOW' ? 'ALL' : 'ACTIVE_NOW')}

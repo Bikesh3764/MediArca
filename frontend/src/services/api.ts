@@ -163,6 +163,45 @@ export const getTomorrowDateString = (d: Date = new Date()): string => {
   return getLocalDateString(tomorrow);
 };
 
+export const DEFAULT_PHONE_PREFIX = '+91 ';
+
+export const ALL_SPECIALTIES: string[] = [
+  'General Medicine',
+  'Cardiology',
+  'Dermatology',
+  'Pediatrics',
+  'Orthopedics',
+  'Neurology',
+  'Gynecology & Obstetrics',
+  'Gastroenterology',
+  'Oncology',
+  'Ophthalmology',
+  'ENT / Otorhinolaryngology',
+  'Pulmonology',
+  'Nephrology',
+  'Urology',
+  'Psychiatry',
+  'Endocrinology',
+  'Rheumatology',
+  'Dentistry',
+  'Physiotherapy',
+  'General Surgery',
+  'Plastic Surgery',
+  'Neurosurgery',
+  'Cardiothoracic Surgery',
+  'Anesthesiology',
+  'Radiology',
+  'Pathology',
+  'Emergency Medicine',
+  'Hematology',
+  'Allergy & Immunology',
+  'Infectious Disease',
+  'Ayurveda',
+  'Homeopathy',
+  'Dietetics & Nutrition',
+  'Other',
+];
+
 export const evaluateSlotStatus = (
   slot: DoctorSlot,
   appointmentDate: string,

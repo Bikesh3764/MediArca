@@ -3,24 +3,24 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { AppleButton } from '../../components/ui/AppleButton';
 import { BrandLogo } from '../../components/ui/BrandLogo';
-import { AlertCircle, UserCheck, Stethoscope } from 'lucide-react';
+import { AlertCircle, UserCheck, Stethoscope, Building2 } from 'lucide-react';
 import { GoogleLogin } from '@react-oauth/google';
 import { isGoogleConfigured } from '../../config/auth';
+import { SearchableSpecialtySelect } from '../../components/ui/SearchableSpecialtySelect';
+import { DEFAULT_PHONE_PREFIX } from '../../services/api';
 
 export const Signup: React.FC = () => {
   const [role, setRole] = useState<'PATIENT' | 'DOCTOR'>('PATIENT');
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [phone, setPhone] = useState('');
+  const [phone, setPhone] = useState(DEFAULT_PHONE_PREFIX);
 
   // Doctor specific fields
   const [specialty, setSpecialty] = useState('General Medicine');
+  const [customSpecialty, setCustomSpecialty] = useState('');
   const [qualifications, setQualifications] = useState('');
   const [experienceYears, setExperienceYears] = useState('5');
-  const [consultationFee, setConsultationFee] = useState('60');
-  const [checkingStartTime, setCheckingStartTime] = useState('09:00');
-  const [checkingEndTime, setCheckingEndTime] = useState('13:00');
 
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -43,12 +43,13 @@ export const Signup: React.FC = () => {
       };
 
       if (role === 'DOCTOR') {
-        payload.specialty = specialty;
-        payload.qualifications = qualifications || 'MBBS, MD';
+        const finalSpecialty = specialty === 'Other' ? (customSpecialty.trim() || 'General Medicine') : specialty;
+        payload.specialty = finalSpecialty;
+        payload.qualifications = qualifications.trim() || 'MBBS, MD';
         payload.experienceYears = Number(experienceYears) || 1;
-        payload.consultationFee = Number(consultationFee) || 50;
-        payload.checkingStartTime = checkingStartTime;
-        payload.checkingEndTime = checkingEndTime;
+        payload.consultationFee = 0; // Configured later upon joining a clinic
+        payload.checkingStartTime = '09:00';
+        payload.checkingEndTime = '17:00';
       }
 
       const registered = await register(payload);
@@ -252,7 +253,7 @@ export const Signup: React.FC = () => {
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  placeholder="+1 555-0199"
+                  placeholder="+91 98765 43210"
                   className="w-full h-11 px-4 rounded-xl border border-[#e0e0e0] text-[15px] focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20"
                 />
               </div>
@@ -274,91 +275,61 @@ export const Signup: React.FC = () => {
 
             {/* Doctor-Specific Details */}
             {role === 'DOCTOR' && (
-              <div className="pt-3 border-t border-[#f0f0f0] space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
-                      Specialty
-                    </label>
-                    <select
-                      value={specialty}
-                      onChange={(e) => setSpecialty(e.target.value)}
-                      className="w-full h-11 px-3 rounded-xl border border-[#e0e0e0] text-[14px] bg-white focus:outline-none focus:border-[#0088e8]"
-                    >
-                      <option value="Cardiology">Cardiology</option>
-                      <option value="Dermatology">Dermatology</option>
-                      <option value="Pediatrics">Pediatrics</option>
-                      <option value="Orthopedics">Orthopedics</option>
-                      <option value="General Medicine">General Medicine</option>
-                      <option value="Neurology">Neurology</option>
-                    </select>
-                  </div>
+              <div className="pt-3 border-t border-[#f0f0f0] space-y-3.5">
+                <div>
+                  <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
+                    Specialty *
+                  </label>
+                  <SearchableSpecialtySelect
+                    value={specialty}
+                    onChange={setSpecialty}
+                    customValue={customSpecialty}
+                    onCustomChange={setCustomSpecialty}
+                    allowOther={true}
+                    variant="form"
+                    placeholder="Search or select medical specialty..."
+                  />
+                  <p className="text-[11px] text-[#86868b] mt-1">
+                    Choose from 30+ medical specialties or select &ldquo;Other&rdquo; to type your clinical field.
+                  </p>
+                </div>
 
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
-                      Qualifications
+                      Qualifications & Degrees *
                     </label>
                     <input
                       type="text"
+                      required
                       value={qualifications}
                       onChange={(e) => setQualifications(e.target.value)}
-                      placeholder="MD, MBBS, etc."
-                      className="w-full h-11 px-4 rounded-xl border border-[#e0e0e0] text-[14px]"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
-                      Checking Start Time
-                    </label>
-                    <input
-                      type="time"
-                      value={checkingStartTime}
-                      onChange={(e) => setCheckingStartTime(e.target.value)}
-                      className="w-full h-11 px-3 rounded-xl border border-[#e0e0e0] text-[14px]"
+                      placeholder="e.g. MBBS, MD, MS"
+                      className="w-full h-11 px-4 rounded-xl border border-[#e0e0e0] text-[14px] focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20"
                     />
                   </div>
 
                   <div>
                     <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
-                      Checking End Time
-                    </label>
-                    <input
-                      type="time"
-                      value={checkingEndTime}
-                      onChange={(e) => setCheckingEndTime(e.target.value)}
-                      className="w-full h-11 px-3 rounded-xl border border-[#e0e0e0] text-[14px]"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
-                      Experience (Years)
+                      Experience (Years) *
                     </label>
                     <input
                       type="number"
+                      required
                       min={0}
                       value={experienceYears}
                       onChange={(e) => setExperienceYears(e.target.value)}
-                      className="w-full h-11 px-3 rounded-xl border border-[#e0e0e0] text-[14px]"
+                      placeholder="Years of clinical practice"
+                      className="w-full h-11 px-4 rounded-xl border border-[#e0e0e0] text-[14px] focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20"
                     />
                   </div>
+                </div>
 
-                  <div>
-                    <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
-                      Consultation Fee ($ USD)
-                    </label>
-                    <input
-                      type="number"
-                      min={0}
-                      value={consultationFee}
-                      onChange={(e) => setConsultationFee(e.target.value)}
-                      className="w-full h-11 px-3 rounded-xl border border-[#e0e0e0] text-[14px]"
-                    />
+                <div className="p-3.5 bg-[#fafafc] rounded-2xl border border-[#e5e5ea] flex items-start gap-2.5">
+                  <Building2 className="w-4 h-4 text-[#0088e8] flex-shrink-0 mt-0.5" />
+                  <div className="text-[11px] text-[#6e6e73] leading-relaxed">
+                    <span className="font-semibold text-[#1d1d1f]">Practice Notice: </span>
+                    Clinic venue, consultation fee, and checking shifts (e.g. Shift 1: 9 AM – 1 PM, Shift 2: 3 PM – 6 PM) are configured when affiliating with your practicing clinics.
                   </div>
                 </div>
 

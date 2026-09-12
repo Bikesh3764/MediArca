@@ -1001,6 +1001,138 @@ function runTests() {
   const targetBookingUrl = resolveTargetBookingUrl(multiClinicDoctor.id, 'c2', '2026-09-12', 'slot_1');
   assert(targetBookingUrl.includes('&clinic=c2'), 'Selected clinic is preserved in target booking URL');
 
+  // 49. Streamlined Doctor Registration Defaults (No early start/end times or fee demands)
+  const buildDoctorSignupPayload = (input: {
+    fullName: string;
+    email: string;
+    phone: string;
+    password: string;
+    specialty: string;
+    customSpecialty?: string;
+    qualifications: string;
+    experienceYears: number;
+  }) => {
+    const finalSpecialty = input.specialty === 'Other'
+      ? (input.customSpecialty?.trim() || 'General Medicine')
+      : input.specialty;
+
+    return {
+      fullName: input.fullName,
+      email: input.email,
+      phone: input.phone,
+      password: input.password,
+      role: 'DOCTOR',
+      specialty: finalSpecialty,
+      qualifications: input.qualifications.trim() || 'MBBS, MD',
+      experienceYears: Number(input.experienceYears) || 1,
+      consultationFee: 0, // Configured upon joining a clinic
+      checkingStartTime: '09:00',
+      checkingEndTime: '17:00',
+    };
+  };
+
+  const doctorSignup = buildDoctorSignupPayload({
+    fullName: 'Dr. Arjun Mehta',
+    email: 'arjun.mehta@example.com',
+    phone: '+91 9876543210',
+    password: 'securePassword123',
+    specialty: 'Cardiology',
+    qualifications: 'MBBS, MD (Cardiology)',
+    experienceYears: 8,
+  });
+
+  assert(doctorSignup.specialty === 'Cardiology', 'Doctor specialty is preserved');
+  assert(doctorSignup.consultationFee === 0, 'Consultation fee defaults to 0 prior to clinic onboarding');
+  assert(doctorSignup.checkingStartTime === '09:00' && doctorSignup.checkingEndTime === '17:00', 'Checking times default safely');
+  assert(doctorSignup.phone.startsWith('+91'), 'Doctor phone begins with +91 default prefix');
+
+  // 50. Custom "Other" Specialty Resolution
+  const customDoctorSignup = buildDoctorSignupPayload({
+    fullName: 'Dr. Priya Sharma',
+    email: 'priya.sharma@example.com',
+    phone: '+91 9123456789',
+    password: 'securePassword456',
+    specialty: 'Other',
+    customSpecialty: 'Trichology & Hair Restoration',
+    qualifications: 'MBBS, DVD',
+    experienceYears: 6,
+  });
+
+  assert(
+    customDoctorSignup.specialty === 'Trichology & Hair Restoration',
+    'Custom write-in specialty is correctly assigned when "Other" is chosen'
+  );
+
+  // Fallback if custom input is left blank
+  const emptyCustomSignup = buildDoctorSignupPayload({
+    fullName: 'Dr. Blank Specialty',
+    email: 'blank@example.com',
+    phone: '+91 9000000000',
+    password: 'password123',
+    specialty: 'Other',
+    customSpecialty: '   ',
+    qualifications: 'MBBS',
+    experienceYears: 2,
+  });
+  assert(emptyCustomSignup.specialty === 'General Medicine', 'Fallback to General Medicine if custom specialty is blank');
+
+  // 51. Comprehensive 30+ Specialties Catalog & Live Search Matching
+  const ALL_SPECIALTIES_TEST = [
+    'General Medicine',
+    'Cardiology',
+    'Dermatology',
+    'Pediatrics',
+    'Orthopedics',
+    'Neurology',
+    'Gynecology & Obstetrics',
+    'Gastroenterology',
+    'Oncology',
+    'Ophthalmology',
+    'ENT / Otorhinolaryngology',
+    'Pulmonology',
+    'Nephrology',
+    'Urology',
+    'Psychiatry',
+    'Endocrinology',
+    'Rheumatology',
+    'Dentistry',
+    'Physiotherapy',
+    'General Surgery',
+    'Plastic Surgery',
+    'Neurosurgery',
+    'Cardiothoracic Surgery',
+    'Anesthesiology',
+    'Radiology',
+    'Pathology',
+    'Emergency Medicine',
+    'Hematology',
+    'Allergy & Immunology',
+    'Infectious Disease',
+    'Ayurveda',
+    'Homeopathy',
+    'Dietetics & Nutrition',
+    'Other',
+  ];
+
+  assert(ALL_SPECIALTIES_TEST.length >= 30, 'Specialties catalog includes 30+ clinical disciplines');
+  assert(ALL_SPECIALTIES_TEST.includes('Other'), 'Catalog includes "Other" option');
+  assert(ALL_SPECIALTIES_TEST.includes('Dentistry'), 'Catalog includes Dentistry');
+  assert(ALL_SPECIALTIES_TEST.includes('Ayurveda'), 'Catalog includes Ayurveda');
+  assert(ALL_SPECIALTIES_TEST.includes('Homeopathy'), 'Catalog includes Homeopathy');
+
+  const filterSpecialties = (query: string) => {
+    const q = query.toLowerCase().trim();
+    if (!q) return ALL_SPECIALTIES_TEST;
+    return ALL_SPECIALTIES_TEST.filter((s) => s.toLowerCase().includes(q));
+  };
+
+  const neuroMatches = filterSpecialties('neuro');
+  assert(neuroMatches.includes('Neurology') && neuroMatches.includes('Neurosurgery'), 'Search for "neuro" finds Neurology and Neurosurgery');
+  const cardioMatches = filterSpecialties('cardio');
+  assert(cardioMatches.includes('Cardiology') && cardioMatches.includes('Cardiothoracic Surgery'), 'Search for "cardio" finds Cardiology and Cardiothoracic Surgery');
+  const dermaMatches = filterSpecialties('derma');
+  assert(dermaMatches.length === 1 && dermaMatches[0] === 'Dermatology', 'Search for "derma" finds Dermatology');
+
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);
 

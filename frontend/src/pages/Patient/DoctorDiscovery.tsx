@@ -22,14 +22,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 
-const SPECIALTIES = [
-  'All',
-  'Cardiology',
-  'Dermatology',
-  'Pediatrics',
-  'Orthopedics',
-  'General Medicine',
-];
+import { SearchableSpecialtySelect } from '../../components/ui/SearchableSpecialtySelect';
 
 interface DoctorDiscoveryProps {
   isPortalView?: boolean;
@@ -128,55 +121,57 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
   const discoveryContent = (
     <>
       {/* Search & Specialty Filter Controls */}
-      <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-6 mb-8 shadow-sm">
-        <form onSubmit={handleSearchSubmit} className="flex flex-col sm:flex-row gap-3 mb-5">
+      <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-5 sm:p-6 mb-8 shadow-xs">
+        <form onSubmit={handleSearchSubmit} className="flex flex-col md:flex-row gap-3 items-stretch md:items-center">
           <SearchInput
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by doctor name, specialty, condition, or clinic..."
             className="flex-1"
           />
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Searchable Specialty Filter Dropdown */}
+            <SearchableSpecialtySelect
+              value={selectedSpecialty}
+              onChange={(spec) => {
+                setSelectedSpecialty(spec);
+                setSearchParams(spec === 'All' ? {} : { specialty: spec });
+              }}
+              variant="pill"
+              includeAll={true}
+            />
+
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="h-11 px-4 rounded-full border border-[#e5e5ea] text-xs font-medium bg-[#f5f5f7] text-[#1d1d1f] focus:outline-none focus:border-[#0088e8]"
+              className="h-8 px-3 rounded-full border border-[#e5e5ea] text-xs font-medium bg-[#f5f5f7] text-[#48484a] focus:outline-none focus:border-[#0088e8] cursor-pointer hover:bg-[#ebebee]"
             >
-              <option value="rating">Top Rated</option>
+              <option value="rating">Top Rated ★</option>
               <option value="experience">Most Experienced</option>
               <option value="fee_low">Fee: Low to High</option>
               <option value="fee_high">Fee: High to Low</option>
             </select>
-            <AppleButton variant="primary" size="md" type="submit" className="sm:w-28">
+
+            {(selectedSpecialty !== 'All' || search) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedSpecialty('All');
+                  setSearch('');
+                  setSearchParams({});
+                }}
+                className="px-3 py-1 rounded-full text-xs font-medium text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-all flex items-center gap-1 cursor-pointer"
+                title="Reset filters"
+              >
+                Reset
+              </button>
+            )}
+
+            <AppleButton variant="primary" size="sm" type="submit" className="h-8 px-4 text-xs font-medium rounded-full">
               Search
             </AppleButton>
           </div>
         </form>
-
-        {/* Specialty Filter Chips */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-          <span className="text-xs font-semibold text-[#86868b] mr-2 flex items-center gap-1 flex-shrink-0">
-            <SlidersHorizontal className="w-3.5 h-3.5 text-[#0088e8]" />
-            Specialty:
-          </span>
-          {SPECIALTIES.map((spec) => (
-            <button
-              key={spec}
-              type="button"
-              onClick={() => {
-                setSelectedSpecialty(spec);
-                setSearchParams(spec === 'All' ? {} : { specialty: spec });
-              }}
-              className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all flex-shrink-0 flex items-center gap-1.5 ${
-                selectedSpecialty === spec
-                  ? 'bg-gradient-to-r from-[#0088e8] to-[#10b981] text-white shadow-xs'
-                  : 'bg-[#f5f5f7] text-[#1d1d1f] hover:bg-[#ebebee] border border-[#e5e5ea]'
-              }`}
-            >
-              {spec}
-            </button>
-          ))}
-        </div>
       </div>
 
       {/* Doctor Grid */}
