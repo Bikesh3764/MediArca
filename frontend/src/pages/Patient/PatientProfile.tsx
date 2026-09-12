@@ -127,7 +127,7 @@ export const PatientProfile: React.FC = () => {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="e.g. Rahul Sharma"
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0066cc] focus:ring-1 focus:ring-[#0066cc]"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0088e8] focus:ring-1 focus:ring-[#0088e8]"
                 />
               </div>
 
@@ -142,7 +142,7 @@ export const PatientProfile: React.FC = () => {
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="+91 98765 43210"
-                    className="w-full h-11 pl-9 pr-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0066cc] focus:ring-1 focus:ring-[#0066cc]"
+                    className="w-full h-11 pl-9 pr-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0088e8] focus:ring-1 focus:ring-[#0088e8]"
                   />
                 </div>
               </div>
@@ -168,7 +168,7 @@ export const PatientProfile: React.FC = () => {
                   value={emergencyContact}
                   onChange={(e) => setEmergencyContact(e.target.value)}
                   placeholder="e.g. Anjali (Spouse) - 9876543210"
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0066cc] focus:ring-1 focus:ring-[#0066cc]"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0088e8] focus:ring-1 focus:ring-[#0088e8]"
                 />
               </div>
             </div>
@@ -185,7 +185,7 @@ export const PatientProfile: React.FC = () => {
                   type="date"
                   value={dateOfBirth}
                   onChange={(e) => setDateOfBirth(e.target.value)}
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0066cc] focus:ring-1 focus:ring-[#0066cc]"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0088e8] focus:ring-1 focus:ring-[#0088e8]"
                 />
               </div>
 
@@ -196,7 +196,7 @@ export const PatientProfile: React.FC = () => {
                 <select
                   value={gender}
                   onChange={(e) => setGender(e.target.value)}
-                  className="w-full h-11 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0066cc] focus:ring-1 focus:ring-[#0066cc]"
+                  className="w-full h-11 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0088e8] focus:ring-1 focus:ring-[#0088e8]"
                 >
                   <option value="">Select Gender</option>
                   <option value="Male">Male</option>
@@ -213,7 +213,7 @@ export const PatientProfile: React.FC = () => {
                 <select
                   value={bloodGroup}
                   onChange={(e) => setBloodGroup(e.target.value)}
-                  className="w-full h-11 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0066cc] focus:ring-1 focus:ring-[#0066cc]"
+                  className="w-full h-11 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0088e8] focus:ring-1 focus:ring-[#0088e8]"
                 >
                   <option value="">Select Blood Group</option>
                   <option value="A+">A+</option>
@@ -238,7 +238,7 @@ export const PatientProfile: React.FC = () => {
                   value={allergies}
                   onChange={(e) => setAllergies(e.target.value)}
                   placeholder="e.g. Penicillin, Peanuts, Sulfa drugs, None"
-                  className="w-full p-3 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0066cc] focus:ring-1 focus:ring-[#0066cc]"
+                  className="w-full p-3 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0088e8] focus:ring-1 focus:ring-[#0088e8]"
                 />
               </div>
 
@@ -251,7 +251,7 @@ export const PatientProfile: React.FC = () => {
                   value={existingConditions}
                   onChange={(e) => setExistingConditions(e.target.value)}
                   placeholder="e.g. Type 2 Diabetes, Hypertension, Asthma"
-                  className="w-full p-3 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0066cc] focus:ring-1 focus:ring-[#0066cc]"
+                  className="w-full p-3 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0088e8] focus:ring-1 focus:ring-[#0088e8]"
                 />
               </div>
             </div>
@@ -265,7 +265,7 @@ export const PatientProfile: React.FC = () => {
                 value={currentMedications}
                 onChange={(e) => setCurrentMedications(e.target.value)}
                 placeholder="e.g. Metformin 500mg daily, Amlodipine 5mg morning"
-                className="w-full p-3 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0066cc] focus:ring-1 focus:ring-[#0066cc]"
+                className="w-full p-3 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0088e8] focus:ring-1 focus:ring-[#0088e8]"
               />
             </div>
           </UtilityCard>

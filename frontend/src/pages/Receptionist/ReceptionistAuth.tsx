@@ -130,7 +130,7 @@ export const ReceptionistAuth: React.FC = () => {
                   value={tempPassword}
                   onChange={(e) => setTempPassword(e.target.value)}
                   placeholder="Enter temporary password"
-                  className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[14px] bg-[#f5f5f7] focus:bg-white focus:outline-none focus:border-[#0066cc]"
+                  className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[14px] bg-[#f5f5f7] focus:bg-white focus:outline-none focus:border-[#0088e8]"
                 />
               </div>
 
@@ -145,7 +145,7 @@ export const ReceptionistAuth: React.FC = () => {
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[14px] bg-[#f5f5f7] focus:bg-white focus:outline-none focus:border-[#0066cc]"
+                  className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[14px] bg-[#f5f5f7] focus:bg-white focus:outline-none focus:border-[#0088e8]"
                 />
               </div>
 
@@ -160,7 +160,7 @@ export const ReceptionistAuth: React.FC = () => {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[14px] bg-[#f5f5f7] focus:bg-white focus:outline-none focus:border-[#0066cc]"
+                  className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[14px] bg-[#f5f5f7] focus:bg-white focus:outline-none focus:border-[#0088e8]"
                 />
               </div>
 
@@ -214,7 +214,7 @@ export const ReceptionistAuth: React.FC = () => {
         {/* Card */}
         <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-6 sm:p-8 shadow-sm">
           {/* Informational Callout */}
-          <div className="mb-6 p-3.5 rounded-2xl bg-[#0066cc]/5 border border-[#0066cc]/15 flex items-start gap-2.5 text-xs text-[#0066cc]">
+          <div className="mb-6 p-3.5 rounded-2xl bg-[#0088e8]/5 border border-[#0088e8]/15 flex items-start gap-2.5 text-xs text-[#0088e8]">
             <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
             <div className="leading-relaxed">
               <span className="font-semibold block text-[#1d1d1f]">Clinic Provisioned Access Only</span>
@@ -242,7 +242,7 @@ export const ReceptionistAuth: React.FC = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="receptionist@domain.com"
-                  className="w-full h-11 pl-10 pr-4 rounded-xl border border-[#e5e5ea] text-[14px] bg-[#f5f5f7] focus:bg-white focus:outline-none focus:border-[#0066cc]"
+                  className="w-full h-11 pl-10 pr-4 rounded-xl border border-[#e5e5ea] text-[14px] bg-[#f5f5f7] focus:bg-white focus:outline-none focus:border-[#0088e8]"
                 />
               </div>
             </div>
@@ -257,7 +257,7 @@ export const ReceptionistAuth: React.FC = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full h-11 pl-10 pr-4 rounded-xl border border-[#e5e5ea] text-[14px] bg-[#f5f5f7] focus:bg-white focus:outline-none focus:border-[#0066cc]"
+                  className="w-full h-11 pl-10 pr-4 rounded-xl border border-[#e5e5ea] text-[14px] bg-[#f5f5f7] focus:bg-white focus:outline-none focus:border-[#0088e8]"
                 />
               </div>
             </div>

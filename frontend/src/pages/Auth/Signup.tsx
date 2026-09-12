@@ -127,7 +127,7 @@ export const Signup: React.FC = () => {
         </h2>
         <p className="mt-2 text-sm text-[#7a7a7a]">
           Already have an account?{' '}
-          <Link to="/login" className="text-[#0066cc] font-medium hover:underline">
+          <Link to="/login" className="text-[#0088e8] font-medium hover:underline">
             Sign in
           </Link>
         </p>
@@ -141,7 +141,7 @@ export const Signup: React.FC = () => {
             onClick={() => setRole('PATIENT')}
             className={`flex-1 py-2 rounded-full text-xs font-medium transition-all flex items-center justify-center gap-2 ${
               role === 'PATIENT'
-                ? 'bg-[#0066cc] text-white shadow-sm'
+                ? 'bg-gradient-to-r from-[#0088e8] to-[#10b981] text-white shadow-sm font-semibold'
                 : 'text-[#7a7a7a] hover:text-[#1d1d1f]'
             }`}
           >
@@ -153,7 +153,7 @@ export const Signup: React.FC = () => {
             onClick={() => setRole('DOCTOR')}
             className={`flex-1 py-2 rounded-full text-xs font-medium transition-all flex items-center justify-center gap-2 ${
               role === 'DOCTOR'
-                ? 'bg-[#0066cc] text-white shadow-sm'
+                ? 'bg-gradient-to-r from-[#0088e8] to-[#10b981] text-white shadow-sm font-semibold'
                 : 'text-[#7a7a7a] hover:text-[#1d1d1f]'
             }`}
           >
@@ -225,7 +225,7 @@ export const Signup: React.FC = () => {
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder={role === 'DOCTOR' ? 'Dr. Jane Smith' : 'John Doe'}
-                className="w-full h-11 px-4 rounded-xl border border-[#e0e0e0] text-[15px] focus:outline-none focus:border-[#0066cc] focus:ring-2 focus:ring-[#0071e3]/20"
+                className="w-full h-11 px-4 rounded-xl border border-[#e0e0e0] text-[15px] focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20"
               />
             </div>
 
@@ -240,7 +240,7 @@ export const Signup: React.FC = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="email@example.com"
-                  className="w-full h-11 px-4 rounded-xl border border-[#e0e0e0] text-[15px] focus:outline-none focus:border-[#0066cc] focus:ring-2 focus:ring-[#0071e3]/20"
+                  className="w-full h-11 px-4 rounded-xl border border-[#e0e0e0] text-[15px] focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20"
                 />
               </div>
 
@@ -253,7 +253,7 @@ export const Signup: React.FC = () => {
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="+1 555-0199"
-                  className="w-full h-11 px-4 rounded-xl border border-[#e0e0e0] text-[15px] focus:outline-none focus:border-[#0066cc] focus:ring-2 focus:ring-[#0071e3]/20"
+                  className="w-full h-11 px-4 rounded-xl border border-[#e0e0e0] text-[15px] focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20"
                 />
               </div>
             </div>
@@ -268,7 +268,7 @@ export const Signup: React.FC = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Minimum 6 characters"
-                className="w-full h-11 px-4 rounded-xl border border-[#e0e0e0] text-[15px] focus:outline-none focus:border-[#0066cc] focus:ring-2 focus:ring-[#0071e3]/20"
+                className="w-full h-11 px-4 rounded-xl border border-[#e0e0e0] text-[15px] focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20"
               />
             </div>
 
@@ -283,7 +283,7 @@ export const Signup: React.FC = () => {
                     <select
                       value={specialty}
                       onChange={(e) => setSpecialty(e.target.value)}
-                      className="w-full h-11 px-3 rounded-xl border border-[#e0e0e0] text-[14px] bg-white focus:outline-none focus:border-[#0066cc]"
+                      className="w-full h-11 px-3 rounded-xl border border-[#e0e0e0] text-[14px] bg-white focus:outline-none focus:border-[#0088e8]"
                     >
                       <option value="Cardiology">Cardiology</option>
                       <option value="Dermatology">Dermatology</option>

@@ -126,7 +126,7 @@ export const MyAppointments: React.FC = () => {
               onClick={() => setActiveTab('upcoming')}
               className={`px-6 py-2 rounded-full text-xs font-medium transition-all ${
                 activeTab === 'upcoming'
-                  ? 'bg-[#0066cc] text-white shadow-sm'
+                  ? 'bg-gradient-to-r from-[#0088e8] to-[#10b981] text-white font-semibold shadow-sm'
                   : 'text-[#86868b] hover:text-[#1d1d1f]'
               }`}
             >
@@ -136,7 +136,7 @@ export const MyAppointments: React.FC = () => {
               onClick={() => setActiveTab('past')}
               className={`px-6 py-2 rounded-full text-xs font-medium transition-all ${
                 activeTab === 'past'
-                  ? 'bg-[#0066cc] text-white shadow-sm'
+                  ? 'bg-gradient-to-r from-[#0088e8] to-[#10b981] text-white font-semibold shadow-sm'
                   : 'text-[#86868b] hover:text-[#1d1d1f]'
               }`}
             >

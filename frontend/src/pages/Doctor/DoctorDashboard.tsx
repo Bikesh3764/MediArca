@@ -433,7 +433,7 @@ export const DoctorDashboard: React.FC = () => {
                     {affiliations?.clinics.length || 0}
                   </h3>
                 </div>
-                <div className="w-12 h-12 rounded-2xl bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center">
+                <div className="w-12 h-12 rounded-2xl bg-[#0088e8]/10 text-[#0088e8] flex items-center justify-center">
                   <Building2 className="w-6 h-6" />
                 </div>
               </UtilityCard>
@@ -470,10 +470,10 @@ export const DoctorDashboard: React.FC = () => {
 
             {/* Incoming Clinic Affiliation Invitations */}
             {affiliations?.incomingRequests && affiliations.incomingRequests.length > 0 && (
-              <div className="bg-white rounded-[20px] border-2 border-[#0066cc]/30 p-6 shadow-sm">
+              <div className="bg-white rounded-[20px] border-2 border-[#0088e8]/30 p-6 shadow-sm">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-xl bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center">
+                    <div className="w-9 h-9 rounded-xl bg-[#0088e8]/10 text-[#0088e8] flex items-center justify-center">
                       <Building2 className="w-5 h-5" />
                     </div>
                     <div>
@@ -584,7 +584,7 @@ export const DoctorDashboard: React.FC = () => {
                       <select
                         value={selectedClinicId}
                         onChange={(e) => setSelectedClinicId(e.target.value)}
-                        className="h-10 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0066cc] w-full sm:w-64"
+                        className="h-10 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0088e8] w-full sm:w-64"
                       >
                         <option value="">Select Verified Clinic to Affiliate...</option>
                         {unaffiliatedClinics.map((c: ClinicProfile) => (
@@ -638,12 +638,12 @@ export const DoctorDashboard: React.FC = () => {
                   {affiliations?.clinics.map((clinic) => (
                     <div
                       key={clinic.clinicId}
-                      className="rounded-2xl border border-[#e5e5ea] p-5 hover:border-[#0066cc]/40 transition-all flex flex-col justify-between bg-white shadow-sm"
+                      className="rounded-2xl border border-[#e5e5ea] p-5 hover:border-[#0088e8]/40 transition-all flex flex-col justify-between bg-white shadow-sm"
                     >
                       <div>
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-2xl bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center font-bold flex-shrink-0">
+                            <div className="w-10 h-10 rounded-2xl bg-[#0088e8]/10 text-[#0088e8] flex items-center justify-center font-bold flex-shrink-0">
                               <Building2 className="w-5 h-5" />
                             </div>
                             <div>
@@ -732,7 +732,7 @@ export const DoctorDashboard: React.FC = () => {
                   {affiliations?.receptionists.map((rec) => (
                     <div
                       key={rec.receptionistId}
-                      className="rounded-2xl border border-[#e5e5ea] p-5 hover:border-[#0066cc]/40 transition-all flex items-center justify-between gap-4 bg-white shadow-sm"
+                      className="rounded-2xl border border-[#e5e5ea] p-5 hover:border-[#0088e8]/40 transition-all flex items-center justify-between gap-4 bg-white shadow-sm"
                     >
                       <div className="flex items-center gap-3.5 min-w-0">
                         <div className="w-10 h-10 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold flex-shrink-0">
@@ -795,10 +795,10 @@ export const DoctorDashboard: React.FC = () => {
             {fetchError && (
               <div className="mb-6 p-4 rounded-2xl bg-blue-50 border border-blue-200 text-blue-900 text-xs flex items-center justify-between shadow-sm">
                 <div className="flex items-center gap-2">
-                  <RefreshCw className="w-4 h-4 text-[#0066cc] animate-spin" />
+                  <RefreshCw className="w-4 h-4 text-[#0088e8] animate-spin" />
                   <span>Connecting to cloud database... (Cloud backend may take 30s to resume from idle)</span>
                 </div>
-                <AppleButton variant="ghost" size="sm" onClick={fetchQueue} className="text-[#0066cc]">
+                <AppleButton variant="ghost" size="sm" onClick={fetchQueue} className="text-[#0088e8]">
                   Retry
                 </AppleButton>
               </div>
@@ -809,12 +809,12 @@ export const DoctorDashboard: React.FC = () => {
               <div>
                 <div className="flex items-center gap-2">
                   <h2 className="text-xl font-semibold text-[#1d1d1f] tracking-tight">{user?.fullName}</h2>
-                  <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#0066cc]/10 text-[#0066cc]">
+                  <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#0088e8]/10 text-[#0088e8]">
                     {user?.doctorProfile?.specialty || 'Doctor'}
                   </span>
                 </div>
                 <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-[#86868b]">
-                  <Clock className="w-3.5 h-3.5 text-[#0066cc]" />
+                  <Clock className="w-3.5 h-3.5 text-[#0088e8]" />
                   <span>Practice Shifts:</span>
                   {parseDoctorSlots(user?.doctorProfile).map((slot, i) => (
                     <span
@@ -833,7 +833,7 @@ export const DoctorDashboard: React.FC = () => {
                   type="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  className="h-10 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0066cc]"
+                  className="h-10 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0088e8]"
                 />
               </div>
             </div>
@@ -1057,7 +1057,7 @@ export const DoctorDashboard: React.FC = () => {
                           : queueData.activeInConsultation.patient?.user.fullName}
                       </h4>
                       {queueData.activeInConsultation.isForOther && (
-                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-[#0066cc] border border-blue-200">
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#0088e8]/10 text-[#0088e8] border border-[#0088e8]/20">
                           Booked for family ({queueData.activeInConsultation.patientAge ? `Age ${queueData.activeInConsultation.patientAge}` : 'Other'} • by {queueData.activeInConsultation.patient?.user.fullName})
                         </span>
                       )}
@@ -1143,11 +1143,11 @@ export const DoctorDashboard: React.FC = () => {
                     {queueData?.waitingQueue.map((appt) => (
                       <div
                         key={appt.id}
-                        className="bg-white rounded-[20px] border border-[#e5e5ea] p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:border-[#0066cc]/40 transition-all duration-200"
+                        className="bg-white rounded-[20px] border border-[#e5e5ea] p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:border-[#0088e8]/40 transition-all duration-200"
                       >
                         <div className="flex items-center gap-4">
                           <div className="w-12 h-12 rounded-2xl bg-[#1d1d1f] text-white flex flex-col items-center justify-center font-bold">
-                            <span className="text-[9px] uppercase tracking-wider text-[#2997ff]">Queue</span>
+                            <span className="text-[9px] uppercase tracking-wider text-[#0088e8]">Queue</span>
                             <span className="text-lg leading-none">#{appt.queueNumber}</span>
                           </div>
                           <div>
@@ -1156,12 +1156,12 @@ export const DoctorDashboard: React.FC = () => {
                                 {appt.isForOther && appt.patientName ? appt.patientName : appt.patient?.user.fullName}
                               </h4>
                               {appt.isForOther && (
-                                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-[#0066cc] border border-blue-200">
+                                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#0088e8]/10 text-[#0088e8] border border-[#0088e8]/20">
                                   Family ({appt.patientAge ? `Age ${appt.patientAge}` : 'Other'} • by {appt.patient?.user.fullName})
                                 </span>
                               )}
                               {appt.checkingWindow && (
-                                <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-[#0066cc]">
+                                <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-[#0088e8]">
                                   {appt.checkingWindow}
                                 </span>
                               )}
@@ -1169,7 +1169,7 @@ export const DoctorDashboard: React.FC = () => {
                             <p className="text-xs text-[#86868b] flex items-center gap-1.5 mt-0.5">
                               <span>Est. {appt.estimatedTime}</span>
                               <span>•</span>
-                              <span className="text-[#0066cc]">
+                              <span className="text-[#0088e8]">
                                 {appt.reasonForVisit || 'General Medical'}
                               </span>
                             </p>
@@ -1203,7 +1203,7 @@ export const DoctorDashboard: React.FC = () => {
                       {queueData.completedQueue.map((appt) => (
                         <div
                           key={appt.id}
-                          className="p-3.5 rounded-2xl bg-white border border-[#e5e5ea] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs hover:border-[#0066cc]/30 transition-all"
+                          className="p-3.5 rounded-2xl bg-white border border-[#e5e5ea] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs hover:border-[#0088e8]/30 transition-all"
                         >
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="font-semibold text-[#86868b]">Queue #{appt.queueNumber}</span>
@@ -1219,7 +1219,7 @@ export const DoctorDashboard: React.FC = () => {
                               variant="ghost"
                               size="sm"
                               onClick={() => navigate(`/doctor/consultation/${appt.id}`)}
-                              className="text-[#0066cc] text-[11px] py-1 px-2.5"
+                              className="text-[#0088e8] text-[11px] py-1 px-2.5"
                             >
                               Review / Print
                             </AppleButton>

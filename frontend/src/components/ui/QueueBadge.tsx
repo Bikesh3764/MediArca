@@ -13,8 +13,8 @@ export const QueueBadge: React.FC<QueueBadgeProps> = ({
   size = 'md',
   showStatusText = false,
 }) => {
-  let statusBg = 'bg-[#0066cc]/10 text-[#0066cc] border-[#0066cc]/30';
-  let pulseColor = 'bg-[#0066cc]';
+  let statusBg = 'bg-[#0088e8]/10 text-[#0088e8] border-[#0088e8]/30';
+  let pulseColor = 'bg-[#0088e8]';
   let statusText = 'Waiting in Queue';
 
   if (status === 'IN_CONSULTATION') {
@@ -50,7 +50,7 @@ export const QueueBadge: React.FC<QueueBadgeProps> = ({
         )}
         {status === 'WAITING' && (
           <span className="relative flex h-2 w-2">
-            <span className="animate-pulse absolute inline-flex h-full w-full rounded-full bg-[#0066cc] opacity-75"></span>
+            <span className="animate-pulse absolute inline-flex h-full w-full rounded-full bg-[#0088e8] opacity-75"></span>
             <span className={`relative inline-flex rounded-full h-2 w-2 ${pulseColor}`}></span>
           </span>
         )}

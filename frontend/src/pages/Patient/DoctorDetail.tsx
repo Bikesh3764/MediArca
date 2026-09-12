@@ -76,7 +76,7 @@ export const DoctorDetail: React.FC = () => {
   if (loading || !doctor) {
     return (
       <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center">
-        <div className="w-8 h-8 rounded-full border-2 border-[#0066cc] border-t-transparent animate-spin"></div>
+        <div className="w-8 h-8 rounded-full border-2 border-[#0088e8] border-t-transparent animate-spin"></div>
       </div>
     );
   }
@@ -100,7 +100,7 @@ export const DoctorDetail: React.FC = () => {
                   {doctor.user.avatarUrl ? (
                     <img src={doctor.user.avatarUrl} alt={doctor.user.fullName} className="w-full h-full object-cover" />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-3xl font-bold text-[#0066cc]">
+                    <div className="w-full h-full flex items-center justify-center text-3xl font-bold text-[#0088e8]">
                       {doctor.user.fullName[0]}
                     </div>
                   )}
@@ -108,9 +108,9 @@ export const DoctorDetail: React.FC = () => {
                 <div>
                   <div className="flex items-center gap-2">
                     <h2 className="text-2xl font-semibold text-[#1d1d1f] tracking-tight">{doctor.user.fullName}</h2>
-                    <span title="Verified Practitioner"><ShieldCheck className="w-5 h-5 text-[#0066cc]" /></span>
+                    <span title="Verified Practitioner"><ShieldCheck className="w-5 h-5 text-[#10b981]" /></span>
                   </div>
-                  <p className="text-[15px] text-[#0066cc] font-medium mt-0.5">{doctor.specialty}</p>
+                  <p className="text-[15px] text-[#0088e8] font-medium mt-0.5">{doctor.specialty}</p>
                   <p className="text-xs text-[#86868b] mt-1">{doctor.qualifications}</p>
                   <div className="flex items-center gap-3 mt-3 text-xs text-[#1d1d1f]">
                     <span className="flex items-center gap-1">
@@ -129,7 +129,7 @@ export const DoctorDetail: React.FC = () => {
               {/* Checking Shifts & Practice Hours */}
               <div className="py-6 border-b border-[#f0f0f0]">
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-[#86868b] mb-3 flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5 text-[#0066cc]" />
+                  <Clock className="w-3.5 h-3.5 text-[#0088e8]" />
                   Active Practice Shifts & Capacities
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -138,7 +138,7 @@ export const DoctorDetail: React.FC = () => {
                       <span className="text-xs font-semibold text-[#1d1d1f] block mb-1">
                         {slot.name}
                       </span>
-                      <div className="text-xs text-[#0066cc] font-medium mb-1">
+                      <div className="text-xs text-[#0088e8] font-medium mb-1">
                         {format12Hour(slot.startTime)} – {format12Hour(slot.endTime)}
                       </div>
                       <div className="flex justify-between text-[11px] text-[#86868b]">
@@ -159,7 +159,7 @@ export const DoctorDetail: React.FC = () => {
                 {doctor.clinics && doctor.clinics.length > 0 ? (
                   <div className="mt-5 space-y-2">
                     <h4 className="text-xs font-semibold text-[#1d1d1f] flex items-center gap-1.5">
-                      <Building2 className="w-4 h-4 text-[#0066cc]" />
+                      <Building2 className="w-4 h-4 text-[#0088e8]" />
                       Affiliated Practice Locations & Clinics ({doctor.clinics.length})
                     </h4>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -172,7 +172,7 @@ export const DoctorDetail: React.FC = () => {
                             {cd.clinic.address}{cd.clinic.city ? `, ${cd.clinic.city}` : ''}
                           </p>
                           {cd.clinic.phone && (
-                            <span className="text-[10px] text-[#0066cc] block mt-1">
+                            <span className="text-[10px] text-[#0088e8] block mt-1">
                               Contact: {cd.clinic.phone}
                             </span>
                           )}
@@ -182,7 +182,7 @@ export const DoctorDetail: React.FC = () => {
                   </div>
                 ) : (
                   <div className="mt-5 p-4 rounded-2xl bg-[#f5f5f7] flex items-start gap-3 border border-[#e5e5ea]">
-                    <MapPin className="w-5 h-5 text-[#0066cc] flex-shrink-0 mt-0.5" />
+                    <MapPin className="w-5 h-5 text-[#0088e8] flex-shrink-0 mt-0.5" />
                     <div>
                       <h4 className="text-xs font-semibold text-[#1d1d1f]">Clinic / Hospital Location</h4>
                       <p className="text-xs text-[#86868b] mt-0.5">{doctor.clinicAddress || 'MediArca Healthcare Facility'}</p>
@@ -224,7 +224,7 @@ export const DoctorDetail: React.FC = () => {
           {/* Live Queue Booking Preview Widget (1 Column) */}
           <div className="space-y-6">
             <UtilityCard className="lg:sticky lg:top-28">
-              <span className="text-xs font-semibold text-[#0066cc] uppercase tracking-wider block mb-1">
+              <span className="text-xs font-semibold text-[#0088e8] uppercase tracking-wider block mb-1">
                 Queue Reservation
               </span>
               <h3 className="text-xl font-semibold text-[#1d1d1f] mb-4">Book Your Token</h3>
@@ -233,7 +233,7 @@ export const DoctorDetail: React.FC = () => {
               <div className="mb-4">
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="text-xs font-medium text-[#1d1d1f] flex items-center gap-1">
-                    <Calendar className="w-3.5 h-3.5 text-[#0066cc]" />
+                    <Calendar className="w-3.5 h-3.5 text-[#0088e8]" />
                     Appointment Date
                   </label>
                   <div className="flex items-center gap-1">
@@ -242,7 +242,7 @@ export const DoctorDetail: React.FC = () => {
                       onClick={() => setSelectedDate(getLocalDateString())}
                       className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium transition-all ${
                         selectedDate === getLocalDateString()
-                          ? 'bg-[#0066cc] text-white shadow-sm'
+                          ? 'bg-gradient-to-r from-[#0088e8] to-[#10b981] text-white shadow-xs'
                           : 'bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f]'
                       }`}
                     >
@@ -253,7 +253,7 @@ export const DoctorDetail: React.FC = () => {
                       onClick={() => setSelectedDate(getTomorrowDateString())}
                       className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium transition-all ${
                         selectedDate === getTomorrowDateString()
-                          ? 'bg-[#0066cc] text-white shadow-sm'
+                          ? 'bg-gradient-to-r from-[#0088e8] to-[#10b981] text-white shadow-xs'
                           : 'bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f]'
                       }`}
                     >
@@ -266,7 +266,7 @@ export const DoctorDetail: React.FC = () => {
                   value={selectedDate}
                   min={getLocalDateString()}
                   onChange={(e) => setSelectedDate(e.target.value)}
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-[14px] bg-white focus:outline-none focus:border-[#0066cc]"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-[14px] bg-white focus:outline-none focus:border-[#0088e8]"
                 />
               </div>
 
@@ -294,13 +294,13 @@ export const DoctorDetail: React.FC = () => {
                             isPassed
                               ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed'
                               : isSelected
-                              ? 'bg-[#0066cc]/10 border-[#0066cc] ring-1 ring-[#0066cc]/30 text-[#1d1d1f]'
-                              : 'bg-white border-[#e5e5ea] text-[#1d1d1f] hover:border-[#0066cc]/50'
+                              ? 'bg-[#0088e8]/10 border-[#0088e8] ring-1 ring-[#0088e8]/30 text-[#1d1d1f]'
+                              : 'bg-white border-[#e5e5ea] text-[#1d1d1f] hover:border-[#0088e8]/50'
                           }`}
                         >
                           <div>
                             <span className="font-semibold block">{slot.name}</span>
-                            <span className="text-[11px] text-[#0066cc] font-medium">
+                            <span className="text-[11px] text-[#0088e8] font-medium">
                               {format12Hour(slot.startTime)} – {format12Hour(slot.endTime)}
                             </span>
                           </div>
@@ -314,7 +314,7 @@ export const DoctorDetail: React.FC = () => {
                                 In Progress
                               </span>
                             ) : (
-                              <span className="text-[10px] text-[#0066cc] font-medium">Available</span>
+                              <span className="text-[10px] text-[#0088e8] font-medium">Available</span>
                             )}
                           </div>
                         </button>
@@ -328,10 +328,10 @@ export const DoctorDetail: React.FC = () => {
               {loadingQueue ? (
                 <div className="p-6 rounded-2xl bg-[#f5f5f7] animate-pulse h-40"></div>
               ) : queuePreview ? (
-                <div className="p-5 rounded-2xl bg-[#0066cc]/5 border border-[#0066cc]/20 mb-5 space-y-3">
-                  <div className="flex justify-between items-center pb-2 border-b border-[#0066cc]/10">
+                <div className="p-5 rounded-2xl bg-sky-50/60 border border-[#0088e8]/20 mb-5 space-y-3">
+                  <div className="flex justify-between items-center pb-2 border-b border-[#0088e8]/10">
                     <span className="text-xs text-[#86868b]">Checking Shift:</span>
-                    <strong className="text-xs text-[#0066cc] flex items-center gap-1">
+                    <strong className="text-xs text-[#0088e8] flex items-center gap-1">
                       <Clock className="w-3.5 h-3.5" />
                       {queuePreview.checkingWindow}
                     </strong>
@@ -348,7 +348,7 @@ export const DoctorDetail: React.FC = () => {
                       <span className="text-[11px] text-[#86868b] uppercase block">Est. Start Time</span>
                       <strong
                         className={`text-base ${
-                          queuePreview.isPassed ? 'text-rose-600' : 'text-[#0066cc]'
+                          queuePreview.isPassed ? 'text-rose-600' : 'text-[#0088e8]'
                         }`}
                       >
                         {queuePreview.estimatedTime}
@@ -356,7 +356,7 @@ export const DoctorDetail: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="pt-2 border-t border-[#0066cc]/10 text-xs text-[#86868b] flex items-center gap-1.5">
+                  <div className="pt-2 border-t border-[#0088e8]/10 text-xs text-[#86868b] flex items-center gap-1.5">
                     <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
                     <span>
                       {queuePreview.patientsAhead === 0

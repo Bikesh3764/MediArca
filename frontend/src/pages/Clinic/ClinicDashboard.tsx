@@ -359,7 +359,7 @@ export const ClinicDashboard: React.FC = () => {
               <span className="text-xs font-semibold text-[#86868b] uppercase tracking-wider">
                 Affiliated Doctors
               </span>
-              <div className="w-8 h-8 rounded-xl bg-blue-50 text-[#0066cc] flex items-center justify-center">
+              <div className="w-8 h-8 rounded-xl bg-blue-50 text-[#0088e8] flex items-center justify-center">
                 <Users className="w-4 h-4" />
               </div>
             </div>
@@ -427,15 +427,15 @@ export const ClinicDashboard: React.FC = () => {
 
           {/* Incoming Doctor Affiliation Requests */}
           {data?.incomingRequests && data.incomingRequests.length > 0 && (
-            <div className="mb-6 p-4 rounded-2xl bg-[#0066cc]/5 border-2 border-[#0066cc]/20 animate-fadeIn">
+            <div className="mb-6 p-4 rounded-2xl bg-[#0088e8]/5 border-2 border-[#0088e8]/20 animate-fadeIn">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <Stethoscope className="w-4 h-4 text-[#0066cc]" />
+                  <Stethoscope className="w-4 h-4 text-[#0088e8]" />
                   <h3 className="text-sm font-semibold text-[#1d1d1f]">
                     Incoming Doctor Affiliation Requests ({data.incomingRequests.length})
                   </h3>
                 </div>
-                <span className="text-[11px] text-[#0066cc] font-medium">Requires Clinic Approval</span>
+                <span className="text-[11px] text-[#0088e8] font-medium">Requires Clinic Approval</span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {data.incomingRequests.map((doc) => (
@@ -446,7 +446,7 @@ export const ClinicDashboard: React.FC = () => {
                     <div>
                       <div className="flex items-center gap-2">
                         <h4 className="font-semibold text-xs text-[#1d1d1f]">Dr. {doc.fullName}</h4>
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 text-[#0066cc] font-medium">
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 text-[#0088e8] font-medium">
                           {doc.specialty}
                         </span>
                       </div>
@@ -459,16 +459,16 @@ export const ClinicDashboard: React.FC = () => {
                         onClick={() => handleRespondDoctorAffiliation(doc.affiliationId!, 'ACCEPT')}
                         className="flex-1 flex items-center justify-center gap-1 text-[11px] py-1.5"
                       >
-                        <Check className="w-3 h-3" />
-                        Accept Doctor
+                        <Check className="w-3.5 h-3.5" />
+                        Accept
                       </AppleButton>
                       <AppleButton
                         size="sm"
                         variant="ghost"
                         onClick={() => handleRespondDoctorAffiliation(doc.affiliationId!, 'REJECT')}
-                        className="flex-1 flex items-center justify-center gap-1 text-rose-600 hover:bg-rose-50 text-[11px] py-1.5"
+                        className="flex-1 flex items-center justify-center gap-1 text-[11px] py-1.5 text-rose-600 hover:bg-rose-50"
                       >
-                        <X className="w-3 h-3" />
+                        <X className="w-3.5 h-3.5" />
                         Decline
                       </AppleButton>
                     </div>
@@ -478,9 +478,9 @@ export const ClinicDashboard: React.FC = () => {
             </div>
           )}
 
-          {/* Pending Doctor Invitations (Outgoing) */}
+          {/* Pending Outgoing Doctor Requests */}
           {data?.outgoingRequests && data.outgoingRequests.length > 0 && (
-            <div className="mb-6 p-4 rounded-2xl bg-amber-50/60 border border-amber-200/80 animate-fadeIn">
+            <div className="mb-6 p-4 rounded-2xl bg-amber-50/50 border border-amber-200">
               <div className="flex items-center gap-2 mb-3">
                 <Clock3 className="w-4 h-4 text-amber-600" />
                 <h3 className="text-sm font-semibold text-[#1d1d1f]">
@@ -491,14 +491,14 @@ export const ClinicDashboard: React.FC = () => {
                 {data.outgoingRequests.map((doc) => (
                   <div
                     key={doc.affiliationId || doc.doctorId}
-                    className="p-3.5 rounded-xl bg-white border border-amber-200 flex items-center justify-between shadow-xs"
+                    className="p-3 rounded-xl bg-white border border-amber-200 flex items-center justify-between text-xs"
                   >
                     <div>
-                      <h4 className="font-semibold text-xs text-[#1d1d1f]">Dr. {doc.fullName}</h4>
-                      <p className="text-[11px] text-[#86868b]">{doc.specialty} • {doc.email}</p>
+                      <span className="font-semibold text-[#1d1d1f]">Dr. {doc.fullName}</span>
+                      <span className="text-[10px] text-[#86868b] block">{doc.specialty}</span>
                     </div>
-                    <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 border border-amber-300">
-                      Pending Doctor Approval
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300">
+                      Awaiting Doctor Acceptance
                     </span>
                   </div>
                 ))}
@@ -507,17 +507,23 @@ export const ClinicDashboard: React.FC = () => {
           )}
 
           {loading ? (
-            <div className="py-12 text-center text-xs text-[#86868b]">Loading roster data...</div>
+            <div className="py-12 text-center text-xs text-[#86868b]">Loading roster...</div>
           ) : doctors.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="w-12 h-12 rounded-full bg-[#f5f5f7] text-[#86868b] flex items-center justify-center mx-auto mb-3">
-                <Users className="w-6 h-6" />
+            <div className="py-12 text-center">
+              <div className="w-12 h-12 rounded-2xl bg-[#f5f5f7] flex items-center justify-center mx-auto mb-3 text-[#86868b]">
+                <Stethoscope className="w-6 h-6" />
               </div>
-              <h3 className="text-sm font-semibold text-[#1d1d1f] mb-1">No Doctors Onboarded Yet</h3>
-              <p className="text-xs text-[#86868b] max-w-xs mx-auto mb-4">
-                Onboard doctors by entering their registered email or selecting from the directory below.
+              <h3 className="text-sm font-semibold text-[#1d1d1f]">No Doctors Affiliated Yet</h3>
+              <p className="text-xs text-[#86868b] max-w-sm mx-auto mt-1 mb-4">
+                Onboard doctors to your clinic to begin receiving facility appointments and tracking isolated clinic revenue.
               </p>
-              <AppleButton variant="primary" size="sm" onClick={() => setShowAddModal(true)}>
+              <AppleButton
+                variant="primary"
+                size="sm"
+                onClick={() => setShowAddModal(true)}
+                className="inline-flex items-center gap-1.5"
+              >
+                <UserPlus className="w-3.5 h-3.5" />
                 Onboard First Doctor
               </AppleButton>
             </div>
@@ -529,14 +535,14 @@ export const ClinicDashboard: React.FC = () => {
                     <th className="pb-3 pl-2">Practitioner</th>
                     <th className="pb-3">Specialty</th>
                     <th className="pb-3">Fee</th>
-                    <th className="pb-3 text-center">Facility Bookings</th>
-                    <th className="pb-3 text-right">Facility Revenue</th>
-                    <th className="pb-3 text-right pr-2">Action</th>
+                    <th className="pb-3 text-center">Bookings Here</th>
+                    <th className="pb-3 text-right">Revenue Here</th>
+                    <th className="pb-3 text-right pr-2">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#f0f0f0]">
                   {doctors.map((doc) => (
-                    <tr key={doc.doctorId} className="hover:bg-[#fafafc] transition-colors">
+                    <tr key={doc.doctorId} className="hover:bg-[#fafafc]">
                       <td className="py-4 pl-2">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] overflow-hidden flex-shrink-0">
@@ -547,7 +553,7 @@ export const ClinicDashboard: React.FC = () => {
                                 className="w-full h-full object-cover"
                               />
                             ) : (
-                              <div className="w-full h-full flex items-center justify-center font-semibold text-xs text-[#0066cc]">
+                              <div className="w-full h-full flex items-center justify-center font-semibold text-xs text-[#0088e8]">
                                 {doc.fullName[0]}
                               </div>
                             )}
@@ -565,7 +571,7 @@ export const ClinicDashboard: React.FC = () => {
                       </td>
 
                       <td className="py-4">
-                        <span className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-blue-50 text-[#0066cc] border border-blue-100">
+                        <span className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-blue-50 text-[#0088e8] border border-blue-100">
                           {doc.specialty}
                         </span>
                       </td>
@@ -682,7 +688,7 @@ export const ClinicDashboard: React.FC = () => {
                             {rec.doctors.map((doc) => (
                               <span
                                 key={doc.id}
-                                className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-50 text-[#0066cc] border border-blue-100"
+                                className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-50 text-[#0088e8] border border-blue-100"
                               >
                                 Dr. {doc.fullName}
                               </span>
@@ -694,7 +700,7 @@ export const ClinicDashboard: React.FC = () => {
                         <div className="inline-flex items-center gap-2">
                           <button
                             onClick={() => handleOpenEditAssignments(rec)}
-                            className="px-2.5 py-1.5 rounded-lg text-[11px] font-medium text-[#0066cc] hover:bg-blue-50 border border-blue-200 transition-colors"
+                            className="px-2.5 py-1.5 rounded-lg text-[11px] font-medium text-[#0088e8] hover:bg-blue-50 border border-blue-200 transition-colors"
                           >
                             Manage Doctors
                           </button>
@@ -737,7 +743,7 @@ export const ClinicDashboard: React.FC = () => {
                   {data.recentAppointments.map((appt) => (
                     <tr key={appt.id} className="hover:bg-[#fafafc]">
                       <td className="py-3 pl-2">
-                        <span className="font-mono font-semibold text-[#0066cc]">
+                        <span className="font-mono font-semibold text-[#0088e8]">
                           #{appt.queueNumber}
                         </span>
                       </td>
@@ -756,7 +762,7 @@ export const ClinicDashboard: React.FC = () => {
                             appt.status === 'COMPLETED'
                               ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                               : appt.status === 'IN_CONSULTATION'
-                              ? 'bg-blue-50 text-[#0066cc] border border-blue-200'
+                              ? 'bg-blue-50 text-[#0088e8] border border-blue-200'
                               : appt.status === 'WAITING'
                               ? 'bg-amber-50 text-amber-700 border border-amber-200'
                               : 'bg-gray-100 text-gray-600'
@@ -809,7 +815,7 @@ export const ClinicDashboard: React.FC = () => {
                   value={doctorEmail}
                   onChange={(e) => setDoctorEmail(e.target.value)}
                   placeholder="e.g. dr.sarah@mediarca.com"
-                  className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-xs focus:outline-none focus:border-[#0066cc]"
+                  className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-xs focus:outline-none focus:border-[#0088e8]"
                 />
               </div>
 
@@ -827,7 +833,7 @@ export const ClinicDashboard: React.FC = () => {
                     value={doctorSearchQuery}
                     onChange={(e) => setDoctorSearchQuery(e.target.value)}
                     placeholder="Filter by name, specialty, or email..."
-                    className="w-full h-8 px-3 rounded-lg border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white focus:outline-none focus:border-[#0066cc] mb-2"
+                    className="w-full h-8 px-3 rounded-lg border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white focus:outline-none focus:border-[#0088e8] mb-2"
                   />
                   <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
                     {allDoctors
@@ -862,7 +868,7 @@ export const ClinicDashboard: React.FC = () => {
                                 type="button"
                                 disabled={adding}
                                 onClick={() => handleQuickAdd(d.user.email)}
-                                className="px-2.5 py-1 rounded-full bg-[#0066cc] text-white text-[11px] font-medium hover:bg-[#0071e3] cursor-pointer"
+                                className="px-2.5 py-1 rounded-full bg-gradient-to-r from-[#0088e8] to-[#10b981] text-white text-[11px] font-medium hover:opacity-95 shadow-xs cursor-pointer"
                               >
                                 Add
                               </button>
@@ -925,7 +931,7 @@ export const ClinicDashboard: React.FC = () => {
                   value={recFullName}
                   onChange={(e) => setRecFullName(e.target.value)}
                   placeholder="e.g. John Doe"
-                  className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-xs focus:outline-none focus:border-[#0066cc]"
+                  className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-xs focus:outline-none focus:border-[#0088e8]"
                 />
               </div>
 
@@ -941,7 +947,7 @@ export const ClinicDashboard: React.FC = () => {
                     value={recEmail}
                     onChange={(e) => setRecEmail(e.target.value)}
                     placeholder="desk@clinic.com"
-                    className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-xs focus:outline-none focus:border-[#0066cc]"
+                    className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-xs focus:outline-none focus:border-[#0088e8]"
                   />
                 </div>
                 <div>
@@ -955,7 +961,7 @@ export const ClinicDashboard: React.FC = () => {
                     value={recPassword}
                     onChange={(e) => setRecPassword(e.target.value)}
                     placeholder="Min. 6 characters"
-                    className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-xs focus:outline-none focus:border-[#0066cc]"
+                    className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-xs focus:outline-none focus:border-[#0088e8]"
                   />
                 </div>
               </div>
@@ -970,7 +976,7 @@ export const ClinicDashboard: React.FC = () => {
                   value={recPhone}
                   onChange={(e) => setRecPhone(e.target.value)}
                   placeholder="+1 (555) 000-0000"
-                  className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-xs focus:outline-none focus:border-[#0066cc]"
+                  className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-xs focus:outline-none focus:border-[#0088e8]"
                 />
               </div>
 
@@ -1002,7 +1008,7 @@ export const ClinicDashboard: React.FC = () => {
                           }}
                           className={`p-2.5 rounded-xl border cursor-pointer transition-colors flex items-center justify-between text-xs ${
                             isSelected
-                              ? 'bg-blue-50/60 border-[#0066cc]/40 text-[#0066cc]'
+                              ? 'bg-[#0088e8]/5 border-[#0088e8]/40 text-[#0088e8]'
                               : 'bg-white border-[#e5e5ea] text-[#1d1d1f] hover:bg-[#fafafc]'
                           }`}
                         >
@@ -1010,7 +1016,7 @@ export const ClinicDashboard: React.FC = () => {
                             <div
                               className={`w-4 h-4 rounded flex items-center justify-center border transition-colors ${
                                 isSelected
-                                  ? 'bg-[#0066cc] border-[#0066cc] text-white'
+                                  ? 'bg-gradient-to-r from-[#0088e8] to-[#10b981] border-transparent text-white'
                                   : 'border-[#c7c7cc] bg-white'
                               }`}
                             >
@@ -1093,7 +1099,7 @@ export const ClinicDashboard: React.FC = () => {
                         }}
                         className={`p-2.5 rounded-xl border cursor-pointer transition-colors flex items-center justify-between text-xs ${
                           isSelected
-                            ? 'bg-blue-50/60 border-[#0066cc]/40 text-[#0066cc]'
+                            ? 'bg-[#0088e8]/5 border-[#0088e8]/40 text-[#0088e8]'
                             : 'bg-white border-[#e5e5ea] text-[#1d1d1f] hover:bg-[#fafafc]'
                         }`}
                       >
@@ -1101,7 +1107,7 @@ export const ClinicDashboard: React.FC = () => {
                           <div
                             className={`w-4 h-4 rounded flex items-center justify-center border transition-colors ${
                               isSelected
-                                ? 'bg-[#0066cc] border-[#0066cc] text-white'
+                                ? 'bg-gradient-to-r from-[#0088e8] to-[#10b981] border-transparent text-white'
                                 : 'border-[#c7c7cc] bg-white'
                             }`}
                           >
@@ -1181,7 +1187,7 @@ export const ClinicDashboard: React.FC = () => {
                 <span className="text-[10px] text-[#86868b] uppercase tracking-wider font-sans font-semibold block">
                   Login Email (Desk ID)
                 </span>
-                <span className="text-[#1d1d1f] select-all bg-white px-2.5 py-1 rounded-lg border border-[#e5e5ea] block mt-0.5 font-bold text-[#0066cc]">
+                <span className="text-[#1d1d1f] select-all bg-white px-2.5 py-1 rounded-lg border border-[#e5e5ea] block mt-0.5 font-bold text-[#0088e8]">
                   {createdCredentials.email}
                 </span>
               </div>

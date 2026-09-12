@@ -102,7 +102,7 @@ export const Login: React.FC = () => {
         </h2>
         <p className="mt-2 text-sm text-[#7a7a7a]">
           Or{' '}
-          <Link to="/signup" className="text-[#0066cc] font-medium hover:underline">
+          <Link to="/signup" className="text-[#0088e8] font-medium hover:underline">
             create a new MediArca account
           </Link>
         </p>
@@ -119,14 +119,14 @@ export const Login: React.FC = () => {
             <button
               type="button"
               onClick={() => handleQuickLogin('john.doe@gmail.com', 'patient123', '/patient/appointments')}
-              className="px-2.5 py-2 rounded-xl bg-[#f5f5f7] hover:bg-[#0066cc]/10 text-[#0066cc] border border-[#e0e0e0] text-xs font-medium transition-all text-center"
+              className="px-2.5 py-2 rounded-xl bg-[#f5f5f7] hover:bg-[#0088e8]/10 text-[#0088e8] border border-[#e0e0e0] text-xs font-medium transition-all text-center"
             >
               Patient<br />(John Doe)
             </button>
             <button
               type="button"
               onClick={() => handleQuickLogin('dr.sarah@mediarca.com', 'doctor123', '/doctor/dashboard')}
-              className="px-2.5 py-2 rounded-xl bg-[#f5f5f7] hover:bg-[#0066cc]/10 text-[#0066cc] border border-[#e0e0e0] text-xs font-medium transition-all text-center"
+              className="px-2.5 py-2 rounded-xl bg-[#f5f5f7] hover:bg-[#0088e8]/10 text-[#0088e8] border border-[#e0e0e0] text-xs font-medium transition-all text-center"
             >
               Doctor<br />(Dr. Sarah)
             </button>
@@ -197,7 +197,7 @@ export const Login: React.FC = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@example.com"
-                className="w-full h-11 px-4 rounded-xl border border-[#e0e0e0] text-[15px] focus:outline-none focus:border-[#0066cc] focus:ring-2 focus:ring-[#0071e3]/20"
+                className="w-full h-11 px-4 rounded-xl border border-[#e0e0e0] text-[15px] focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20"
               />
             </div>
 
@@ -211,7 +211,7 @@ export const Login: React.FC = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full h-11 px-4 rounded-xl border border-[#e0e0e0] text-[15px] focus:outline-none focus:border-[#0066cc] focus:ring-2 focus:ring-[#0071e3]/20"
+                className="w-full h-11 px-4 rounded-xl border border-[#e0e0e0] text-[15px] focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20"
               />
             </div>
 

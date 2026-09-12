@@ -174,7 +174,7 @@ export const MedicalRecords: React.FC = () => {
         {/* Category Filters Bar */}
         <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-4 shadow-sm flex items-center gap-2 overflow-x-auto scrollbar-none">
           <span className="text-xs font-semibold text-[#86868b] mr-2 flex items-center gap-1 flex-shrink-0">
-            <Layers className="w-3.5 h-3.5 text-[#0066cc]" />
+            <Layers className="w-3.5 h-3.5 text-[#0088e8]" />
             Categories:
           </span>
           {CATEGORIES.map((cat) => {
@@ -233,7 +233,7 @@ export const MedicalRecords: React.FC = () => {
               <UtilityCard key={rec.id} hoverEffect className="flex flex-col justify-between">
                 <div>
                   <div className="flex items-start justify-between gap-2 mb-3">
-                    <span className="text-[11px] font-semibold text-[#0066cc] bg-[#0066cc]/10 px-2.5 py-0.5 rounded-full">
+                    <span className="text-[11px] font-semibold text-[#0088e8] bg-[#0088e8]/10 px-2.5 py-0.5 rounded-full">
                       {rec.category}
                     </span>
                     <button
@@ -246,7 +246,7 @@ export const MedicalRecords: React.FC = () => {
                   </div>
                   <h4
                     onClick={() => setPreviewRecord(rec)}
-                    className="text-[15px] font-semibold text-[#1d1d1f] line-clamp-2 mb-1 cursor-pointer hover:text-[#0066cc] transition-colors"
+                    className="text-[15px] font-semibold text-[#1d1d1f] line-clamp-2 mb-1 cursor-pointer hover:text-[#0088e8] transition-colors"
                   >
                     {rec.title}
                   </h4>
@@ -262,7 +262,7 @@ export const MedicalRecords: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => setPreviewRecord(rec)}
-                      className="inline-flex items-center gap-1 text-xs font-semibold text-[#0066cc] hover:underline"
+                      className="inline-flex items-center gap-1 text-xs font-semibold text-[#0088e8] hover:underline"
                     >
                       <Eye className="w-3.5 h-3.5" />
                       Preview
@@ -290,7 +290,7 @@ export const MedicalRecords: React.FC = () => {
           <div className="bg-white rounded-[20px] border border-[#e5e5ea] max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
             <div className="flex justify-between items-center px-6 py-4 border-b border-[#f0f0f0]">
               <div className="flex items-center gap-2.5">
-                <FileText className="w-5 h-5 text-[#0066cc]" />
+                <FileText className="w-5 h-5 text-[#0088e8]" />
                 <div>
                   <h3 className="text-base font-semibold text-[#1d1d1f] truncate max-w-[320px] sm:max-w-md">
                     {previewRecord.title}
@@ -346,7 +346,7 @@ export const MedicalRecords: React.FC = () => {
                       href={getFileUrl(previewRecord.fileUrl)}
                       target="_blank"
                       rel="noreferrer"
-                      className="text-[#0066cc] font-medium hover:underline flex items-center gap-1"
+                      className="text-[#0088e8] font-medium hover:underline flex items-center gap-1"
                     >
                       <ExternalLink className="w-3.5 h-3.5" />
                       Open in New Tab
@@ -399,7 +399,7 @@ export const MedicalRecords: React.FC = () => {
                   value={uploadTitle}
                   onChange={(e) => setUploadTitle(e.target.value)}
                   placeholder="e.g. Lipid Profile, Chest X-Ray, Blood Test"
-                  className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[14px] focus:outline-none focus:border-[#0066cc]"
+                  className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[14px] focus:outline-none focus:border-[#0088e8]"
                 />
               </div>
 
@@ -411,7 +411,7 @@ export const MedicalRecords: React.FC = () => {
                   disabled={uploading}
                   value={uploadCategory}
                   onChange={(e) => setUploadCategory(e.target.value)}
-                  className="w-full h-11 px-3 rounded-xl border border-[#e5e5ea] text-[14px] bg-white focus:outline-none focus:border-[#0066cc]"
+                  className="w-full h-11 px-3 rounded-xl border border-[#e5e5ea] text-[14px] bg-white focus:outline-none focus:border-[#0088e8]"
                 >
                   <option value="Lab Report">Lab Report</option>
                   <option value="Scan">Scan / Imaging (X-Ray, MRI)</option>
@@ -427,7 +427,7 @@ export const MedicalRecords: React.FC = () => {
                     File (PDF, PNG, JPG)
                   </label>
                   {selectedFile && (
-                    <span className="text-[11px] font-mono text-[#0066cc]">
+                    <span className="text-[11px] font-mono text-[#0088e8]">
                       {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
                     </span>
                   )}
@@ -448,10 +448,10 @@ export const MedicalRecords: React.FC = () => {
                     setError(null);
                     setSelectedFile(f);
                   }}
-                  className="w-full text-xs text-[#86868b] file:mr-3 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#0066cc] file:text-white hover:file:bg-[#0071e3] file:cursor-pointer"
+                  className="w-full text-xs text-[#86868b] file:mr-3 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#0088e8] file:text-white hover:file:bg-[#0284c7] file:cursor-pointer"
                 />
                 <p className="text-[11px] text-[#86868b] mt-1.5 flex items-center gap-1">
-                  <ShieldCheck className="w-3.5 h-3.5 text-[#0066cc]" />
+                  <ShieldCheck className="w-3.5 h-3.5 text-[#0088e8]" />
                   <span>Max file size: 1 MB. Accepted formats: PDF, PNG, JPG.</span>
                 </p>
               </div>
@@ -459,13 +459,13 @@ export const MedicalRecords: React.FC = () => {
               {/* Upload Progress Bar */}
               {uploading && (
                 <div className="p-3.5 rounded-xl bg-blue-50 border border-blue-100 space-y-2">
-                  <div className="flex justify-between text-xs text-[#0066cc] font-medium">
+                  <div className="flex justify-between text-xs text-[#0088e8] font-medium">
                     <span>Securing document into vault...</span>
                     <span>{uploadProgress}%</span>
                   </div>
                   <div className="w-full bg-blue-200 h-2 rounded-full overflow-hidden">
                     <div
-                      className="bg-[#0066cc] h-full transition-all duration-300 rounded-full"
+                      className="bg-[#0088e8] h-full transition-all duration-300 rounded-full"
                       style={{ width: `${uploadProgress}%` }}
                     ></div>
                   </div>

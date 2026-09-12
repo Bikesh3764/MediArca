@@ -7,10 +7,19 @@ export default {
   theme: {
     extend: {
       colors: {
+        brand: {
+          cyan: '#0088e8',
+          cyanDark: '#0284c7',
+          cyanLight: '#e0f2fe',
+          emerald: '#10b981',
+          emeraldDark: '#059669',
+          emeraldLight: '#d1fae5',
+          mintTint: '#f0fdf4',
+        },
         apple: {
-          primary: '#0066cc',
-          focus: '#0071e3',
-          sky: '#2997ff',
+          primary: '#0088e8',
+          focus: '#0284c7',
+          sky: '#38bdf8',
           ink: '#1d1d1f',
           parchment: '#f5f5f7',
           pearl: '#fafafc',
@@ -50,6 +59,8 @@ export default {
         'apple-card': '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
         'apple-float': '0 20px 40px -15px rgba(0, 0, 0, 0.07)',
         'apple-product': '3px 5px 30px 0 rgba(0, 0, 0, 0.18)',
+        'xs': '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+        '2xs': '0 1px 1px 0 rgba(0, 0, 0, 0.03)',
       },
     },
   },

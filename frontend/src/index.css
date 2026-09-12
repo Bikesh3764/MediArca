@@ -6,7 +6,7 @@
 
 @layer base {
   body {
-    @apply bg-[#f5f5f7] text-[#1d1d1f] antialiased selection:bg-[#0066cc]/20 selection:text-[#0066cc];
+    @apply bg-[#f5f5f7] text-[#1d1d1f] antialiased selection:bg-[#0088e8]/20 selection:text-[#0088e8];
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", sans-serif;
     font-size: 17px;
     line-height: 1.47;
@@ -26,11 +26,11 @@
 }
 
 .apple-pill-primary {
-  @apply apple-pill-btn bg-[#0066cc] text-white hover:bg-[#0071e3] shadow-sm;
+  @apply apple-pill-btn bg-gradient-to-r from-[#0088e8] to-[#10b981] hover:from-[#0284c7] hover:to-[#059669] text-white shadow-sm;
 }
 
 .apple-pill-secondary {
-  @apply apple-pill-btn bg-white text-[#0066cc] border border-[#0066cc]/30 hover:border-[#0066cc] hover:bg-[#0066cc]/5;
+  @apply apple-pill-btn bg-white text-[#0088e8] border border-[#0088e8]/30 hover:border-[#0088e8] hover:bg-[#0088e8]/5;
 }
 
 .apple-pill-ghost {
@@ -42,7 +42,7 @@
 }
 
 .apple-card-hover {
-  @apply apple-card hover:border-[#0066cc]/30 hover:shadow-apple-card;
+  @apply apple-card hover:border-[#0088e8]/30 hover:shadow-apple-card;
 }
 
 .apple-frosted {

@@ -86,7 +86,7 @@ export const DoctorDiscovery: React.FC = () => {
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="h-11 px-4 rounded-full border border-[#e5e5ea] text-xs font-medium bg-[#f5f5f7] text-[#1d1d1f] focus:outline-none focus:border-[#0066cc]"
+                className="h-11 px-4 rounded-full border border-[#e5e5ea] text-xs font-medium bg-[#f5f5f7] text-[#1d1d1f] focus:outline-none focus:border-[#0088e8]"
               >
                 <option value="rating">Top Rated</option>
                 <option value="experience">Most Experienced</option>
@@ -102,7 +102,7 @@ export const DoctorDiscovery: React.FC = () => {
           {/* Specialty Filter Chips */}
           <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
             <span className="text-xs font-semibold text-[#86868b] mr-2 flex items-center gap-1 flex-shrink-0">
-              <SlidersHorizontal className="w-3.5 h-3.5 text-[#0066cc]" />
+              <SlidersHorizontal className="w-3.5 h-3.5 text-[#0088e8]" />
               Specialty:
             </span>
             {SPECIALTIES.map((spec) => (
@@ -115,13 +115,10 @@ export const DoctorDiscovery: React.FC = () => {
                 }}
                 className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all flex-shrink-0 flex items-center gap-1.5 ${
                   selectedSpecialty === spec
-                    ? 'bg-[#1d1d1f] text-white shadow-sm'
-                    : 'bg-[#f5f5f7] text-[#1d1d1f] hover:bg-[#e8e8ed] border border-transparent'
+                    ? 'bg-gradient-to-r from-[#0088e8] to-[#10b981] text-white shadow-xs'
+                    : 'bg-[#f5f5f7] text-[#1d1d1f] hover:bg-[#ebebee] border border-[#e5e5ea]'
                 }`}
               >
-                {selectedSpecialty === spec && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#2997ff]"></span>
-                )}
                 {spec}
               </button>
             ))}
@@ -159,7 +156,7 @@ export const DoctorDiscovery: React.FC = () => {
               return (
                 <div
                   key={doctor.id}
-                  className="bg-white rounded-[20px] border border-[#e5e5ea] p-6 shadow-sm hover:shadow-apple-card hover:border-[#0066cc]/40 transition-all duration-300 flex flex-col justify-between group"
+                  className="bg-white rounded-[20px] border border-[#e5e5ea] p-6 shadow-sm hover:shadow-apple-card hover:border-[#0088e8]/40 transition-all duration-300 flex flex-col justify-between group"
                 >
                   <div>
                     {/* Doctor Header */}
@@ -175,7 +172,7 @@ export const DoctorDiscovery: React.FC = () => {
                             className="w-full h-full object-cover"
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center font-semibold text-xl text-[#0066cc]">
+                          <div className="w-full h-full flex items-center justify-center font-semibold text-xl text-[#0088e8]">
                             {doctor.user.fullName[0]}
                           </div>
                         )}
@@ -184,16 +181,16 @@ export const DoctorDiscovery: React.FC = () => {
                         <div className="flex items-center gap-1.5">
                           <h3
                             onClick={() => navigate(`/doctor/${doctor.id}`)}
-                            className="text-[18px] font-semibold text-[#1d1d1f] truncate hover:text-[#0066cc] transition-colors cursor-pointer tracking-tight"
+                            className="text-[18px] font-semibold text-[#1d1d1f] truncate hover:text-[#0088e8] transition-colors cursor-pointer tracking-tight"
                           >
                             {doctor.user.fullName}
                           </h3>
                           <span title="Verified Practitioner by MediArca">
-                            <ShieldCheck className="w-4 h-4 text-[#0066cc] flex-shrink-0" />
+                            <ShieldCheck className="w-4 h-4 text-[#10b981] flex-shrink-0" />
                           </span>
                         </div>
                         <div className="flex items-center gap-2 mt-1">
-                          <span className="inline-flex items-center text-[11px] font-medium text-[#0066cc] bg-[#0066cc]/10 px-2.5 py-0.5 rounded-full">
+                          <span className="inline-flex items-center text-[11px] font-medium text-[#0088e8] bg-[#0088e8]/10 px-2.5 py-0.5 rounded-full">
                             {doctor.specialty}
                           </span>
                         </div>
@@ -228,10 +225,10 @@ export const DoctorDiscovery: React.FC = () => {
                     {/* Checking Schedule Badge */}
                     <div className="flex items-center justify-between px-3.5 py-2.5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea]/70 text-xs mb-4">
                       <span className="text-[#86868b] flex items-center gap-1.5 font-normal">
-                        <Clock className="w-3.5 h-3.5 text-[#0066cc]" />
+                        <Clock className="w-3.5 h-3.5 text-[#0088e8]" />
                         Checking Shift
                       </span>
-                      <strong className="font-semibold text-[#0066cc]">
+                      <strong className="font-semibold text-[#0088e8]">
                         {slots.length > 1
                           ? `${slots.length} Shifts (${format12Hour(slots[0].startTime)}–${format12Hour(slots[0].endTime)})`
                           : `${format12Hour(doctor.checkingStartTime)} – ${format12Hour(doctor.checkingEndTime)}`}
@@ -240,7 +237,7 @@ export const DoctorDiscovery: React.FC = () => {
 
                     {/* Dedicated Polished Clinic Address */}
                     <div className="flex items-start gap-2.5 px-3.5 py-2.5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea]/70 text-xs mb-5">
-                      <MapPin className="w-3.5 h-3.5 text-[#0066cc] flex-shrink-0 mt-0.5" />
+                      <MapPin className="w-3.5 h-3.5 text-[#0088e8] flex-shrink-0 mt-0.5" />
                       <div className="min-w-0 flex-1">
                         <span className="font-medium text-[#1d1d1f] block truncate">
                           {doctor.clinicAddress || 'MediArca Healthcare Clinic'}

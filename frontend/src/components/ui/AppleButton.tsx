@@ -25,12 +25,12 @@ export const AppleButton: React.FC<AppleButtonProps> = ({
   let variantClass = '';
   switch (variant) {
     case 'primary':
-      // Action Blue (#0066cc) full-pill
-      variantClass = 'bg-[#0066cc] text-white hover:bg-[#0071e3] shadow-sm rounded-full font-medium';
+      // MediArca Brand Gradient (Cyan to Emerald) full-pill
+      variantClass = 'bg-gradient-to-r from-[#0088e8] to-[#10b981] hover:from-[#0284c7] hover:to-[#059669] text-white shadow-xs hover:shadow rounded-full font-medium';
       break;
     case 'secondary':
-      // Apple secondary pill with Action Blue outline
-      variantClass = 'bg-white text-[#0066cc] border border-[#0066cc]/35 hover:border-[#0066cc] hover:bg-[#0066cc]/5 rounded-full font-medium';
+      // MediArca secondary pill with Brand Cyan outline
+      variantClass = 'bg-white text-[#0088e8] border border-[#0088e8]/35 hover:border-[#0088e8] hover:bg-[#0088e8]/5 rounded-full font-medium';
       break;
     case 'secondary-dark':
     case 'glass':

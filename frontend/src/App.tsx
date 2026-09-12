@@ -1,5 +1,5 @@
 import React from 'react';
-import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { GlobalNav } from './components/layout/GlobalNav';
 import { Footer } from './components/layout/Footer';
@@ -36,7 +36,7 @@ const ProtectedRoute: React.FC<{
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#f5f5f7]">
-        <div className="w-8 h-8 rounded-full border-2 border-[#0066cc] border-t-transparent animate-spin"></div>
+        <div className="w-8 h-8 rounded-full border-2 border-[#0088e8] border-t-transparent animate-spin"></div>
       </div>
     );
   }
@@ -61,122 +61,153 @@ const ProtectedRoute: React.FC<{
   return <>{children}</>;
 };
 
+function AppShell() {
+  const location = useLocation();
+
+  const isPortalRoute =
+    location.pathname.startsWith('/doctor/dashboard') ||
+    location.pathname.startsWith('/doctor/consultation') ||
+    location.pathname.startsWith('/doctor/schedule') ||
+    location.pathname.startsWith('/doctor/profile') ||
+    location.pathname.startsWith('/clinic/dashboard') ||
+    location.pathname.startsWith('/receptionist/dashboard') ||
+    location.pathname.startsWith('/patient/appointments') ||
+    location.pathname.startsWith('/patient/records') ||
+    location.pathname.startsWith('/patient/profile') ||
+    location.pathname === '/admin';
+
+  return (
+    <div className="flex flex-col min-h-screen">
+      {!isPortalRoute && <GlobalNav />}
+      <main className="flex-grow">
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/doctors" element={<DoctorDiscovery />} />
+          <Route path="/doctor/:id" element={<DoctorDetail />} />
+
+          {/* Patient Routes */}
+          <Route
+            path="/book/:id"
+            element={
+              <ProtectedRoute allowedRoles={['PATIENT']}>
+                <BookAppointment />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/patient/appointments"
+            element={
+              <ProtectedRoute allowedRoles={['PATIENT']}>
+                <MyAppointments />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/patient/records"
+            element={
+              <ProtectedRoute allowedRoles={['PATIENT']}>
+                <MedicalRecords />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/patient/profile"
+            element={
+              <ProtectedRoute allowedRoles={['PATIENT']}>
+                <PatientProfile />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Doctor Routes */}
+          <Route
+            path="/doctor/dashboard"
+            element={
+              <ProtectedRoute allowedRoles={['DOCTOR']}>
+                <DoctorDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/doctor/consultation/:id"
+            element={
+              <ProtectedRoute allowedRoles={['DOCTOR']}>
+                <ConsultationView />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/doctor/schedule"
+            element={
+              <ProtectedRoute allowedRoles={['DOCTOR']}>
+                <ManageSchedule />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/doctor/profile"
+            element={
+              <ProtectedRoute allowedRoles={['DOCTOR']}>
+                <DoctorProfile />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Clinic Partner Routes */}
+          <Route path="/clinic/login" element={<ClinicAuth />} />
+          <Route path="/clinic/signup" element={<ClinicAuth />} />
+          <Route
+            path="/clinic/dashboard"
+            element={
+              <ProtectedRoute allowedRoles={['CLINIC']}>
+                <ClinicDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Receptionist Portal Routes */}
+          <Route path="/receptionist/login" element={<ReceptionistAuth />} />
+          <Route path="/receptionist/signup" element={<Navigate to="/receptionist/login" replace />} />
+          <Route
+            path="/receptionist/dashboard"
+            element={
+              <ProtectedRoute allowedRoles={['RECEPTIONIST']}>
+                <ReceptionistDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Admin Routes */}
+          <Route path="/admin-login" element={<AdminLogin />} />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute allowedRoles={['ADMIN']}>
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Fallback */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </main>
+      {!isPortalRoute && <Footer />}
+    </div>
+  );
+}
+
 export function App() {
   return (
     <ErrorBoundary>
       <AuthProvider>
         <Router>
-          <div className="flex flex-col min-h-screen">
-          <GlobalNav />
-          <main className="flex-grow">
-            <Routes>
-              {/* Public Routes */}
-              <Route path="/" element={<Home />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/signup" element={<Signup />} />
-              <Route path="/doctors" element={<DoctorDiscovery />} />
-              <Route path="/doctor/:id" element={<DoctorDetail />} />
-
-              {/* Patient Routes */}
-              <Route
-                path="/book/:id"
-                element={
-                  <ProtectedRoute allowedRoles={['PATIENT']}>
-                    <BookAppointment />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/patient/appointments"
-                element={
-                  <ProtectedRoute allowedRoles={['PATIENT']}>
-                    <MyAppointments />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/patient/records"
-                element={
-                  <ProtectedRoute allowedRoles={['PATIENT']}>
-                    <MedicalRecords />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/patient/profile"
-                element={
-                  <ProtectedRoute allowedRoles={['PATIENT']}>
-                    <PatientProfile />
-                  </ProtectedRoute>
-                }
-              />
-
-              {/* Doctor Routes */}
-              <Route
-                path="/doctor/dashboard"
-                element={
-                  <ProtectedRoute allowedRoles={['DOCTOR']}>
-                    <DoctorDashboard />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/doctor/consultation/:id"
-                element={
-                  <ProtectedRoute allowedRoles={['DOCTOR']}>
-                    <ConsultationView />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/doctor/schedule"
-                element={
-                  <ProtectedRoute allowedRoles={['DOCTOR']}>
-                    <ManageSchedule />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/doctor/profile"
-                element={
-                  <ProtectedRoute allowedRoles={['DOCTOR']}>
-                    <DoctorProfile />
-                  </ProtectedRoute>
-                }
-              />
-
-              {/* Clinic Partner Routes */}
-              <Route path="/clinic/login" element={<ClinicAuth />} />
-              <Route path="/clinic/signup" element={<ClinicAuth />} />
-              <Route
-                path="/clinic/dashboard"
-                element={
-                  <ProtectedRoute allowedRoles={['CLINIC']}>
-                    <ClinicDashboard />
-                  </ProtectedRoute>
-                }
-              />
-
-              {/* Receptionist Portal Routes */}
-              <Route path="/receptionist/login" element={<ReceptionistAuth />} />
-              <Route path="/receptionist/signup" element={<Navigate to="/receptionist/login" replace />} />
-              <Route
-                path="/receptionist/dashboard"
-                element={
-                  <ProtectedRoute allowedRoles={['RECEPTIONIST']}>
-                    <ReceptionistDashboard />
-                  </ProtectedRoute>
-                }
-              />
-
-              {/* Fallback */}
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </main>
-          <Footer />
-        </div>
-      </Router>
-    </AuthProvider>
+          <AppShell />
+        </Router>
+      </AuthProvider>
     </ErrorBoundary>
   );
 }

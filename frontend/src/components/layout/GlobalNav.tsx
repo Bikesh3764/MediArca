@@ -50,31 +50,31 @@ export const GlobalNav: React.FC = () => {
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-[#000000] text-white border-b border-white/10 select-none">
-      <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 h-11 flex items-center justify-between text-[12px] font-normal tracking-tight">
+    <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-xl border-b border-[#e2e8f0] text-[#1e293b] select-none shadow-xs">
+      <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 h-14 flex items-center justify-between text-[13px] font-normal tracking-tight">
         {/* Brand */}
         <Link to="/" onClick={closeMenu} className="flex items-center gap-2 hover:opacity-90 transition-opacity">
-          <BrandLogo variant="full" size="sm" theme="dark" imgClassName="h-5 w-auto" />
+          <BrandLogo variant="full" size="md" theme="light" imgClassName="h-7 w-auto" />
         </Link>
 
         {/* Center Desktop Nav Links */}
-        <nav className="hidden md:flex items-center gap-2 text-[#a1a1a6]">
+        <nav className="hidden md:flex items-center gap-1.5 text-[#64748b]">
           <Link
             to="/"
-            className={`px-3 py-1 rounded-full transition-all text-xs ${
+            className={`px-3.5 py-1.5 rounded-full transition-all text-xs ${
               isActive('/')
-                ? 'bg-white/10 text-white font-medium shadow-sm'
-                : 'hover:text-white'
+                ? 'bg-[#0088e8]/10 text-[#0088e8] font-semibold'
+                : 'hover:text-[#0f172a] hover:bg-slate-100/70 font-medium'
             }`}
           >
             Home
           </Link>
           <Link
             to="/doctors"
-            className={`px-3 py-1 rounded-full transition-all text-xs ${
+            className={`px-3.5 py-1.5 rounded-full transition-all text-xs ${
               isActive('/doctors')
-                ? 'bg-white/10 text-white font-medium shadow-sm'
-                : 'hover:text-white'
+                ? 'bg-[#0088e8]/10 text-[#0088e8] font-semibold'
+                : 'hover:text-[#0f172a] hover:bg-slate-100/70 font-medium'
             }`}
           >
             Find Doctors
@@ -84,10 +84,10 @@ export const GlobalNav: React.FC = () => {
             <>
               <Link
                 to="/patient/appointments"
-                className={`px-3 py-1 rounded-full transition-all text-xs flex items-center gap-1.5 ${
+                className={`px-3.5 py-1.5 rounded-full transition-all text-xs flex items-center gap-1.5 ${
                   isActive('/patient/appointments')
-                    ? 'bg-[#2997ff]/20 text-[#2997ff] font-medium border border-[#2997ff]/30 shadow-sm'
-                    : 'hover:text-white'
+                    ? 'bg-[#0088e8]/10 text-[#0088e8] font-semibold border border-[#0088e8]/20'
+                    : 'text-[#0088e8] hover:bg-[#0088e8]/10 font-medium'
                 }`}
               >
                 <Calendar className="w-3.5 h-3.5" />
@@ -95,10 +95,10 @@ export const GlobalNav: React.FC = () => {
               </Link>
               <Link
                 to="/patient/records"
-                className={`px-3 py-1 rounded-full transition-all text-xs flex items-center gap-1.5 ${
+                className={`px-3.5 py-1.5 rounded-full transition-all text-xs flex items-center gap-1.5 ${
                   isActive('/patient/records')
-                    ? 'bg-white/10 text-white font-medium shadow-sm'
-                    : 'hover:text-white'
+                    ? 'bg-[#0088e8]/10 text-[#0088e8] font-semibold'
+                    : 'hover:text-[#0f172a] hover:bg-slate-100/70 font-medium'
                 }`}
               >
                 <FileText className="w-3.5 h-3.5" />
@@ -106,10 +106,10 @@ export const GlobalNav: React.FC = () => {
               </Link>
               <Link
                 to="/patient/profile"
-                className={`px-3 py-1 rounded-full transition-all text-xs ${
+                className={`px-3.5 py-1.5 rounded-full transition-all text-xs ${
                   isActive('/patient/profile')
-                    ? 'bg-white/10 text-white font-medium shadow-sm'
-                    : 'hover:text-white'
+                    ? 'bg-[#0088e8]/10 text-[#0088e8] font-semibold'
+                    : 'hover:text-[#0f172a] hover:bg-slate-100/70 font-medium'
                 }`}
               >
                 Profile
@@ -121,10 +121,10 @@ export const GlobalNav: React.FC = () => {
             <>
               <Link
                 to="/doctor/dashboard"
-                className={`px-3 py-1 rounded-full transition-all text-xs flex items-center gap-1.5 ${
-                  isActive('/doctor/dashboard') || location.pathname.startsWith('/doctor/consultation')
-                    ? 'bg-[#2997ff]/20 text-[#2997ff] font-medium border border-[#2997ff]/30 shadow-sm'
-                    : 'text-[#2997ff] hover:text-white'
+                className={`px-3.5 py-1.5 rounded-full transition-all text-xs flex items-center gap-1.5 ${
+                  isActive('/doctor/dashboard')
+                    ? 'bg-[#0088e8]/10 text-[#0088e8] font-semibold border border-[#0088e8]/20'
+                    : 'text-[#0088e8] hover:bg-[#0088e8]/10 font-medium'
                 }`}
               >
                 <Stethoscope className="w-3.5 h-3.5" />
@@ -132,20 +132,20 @@ export const GlobalNav: React.FC = () => {
               </Link>
               <Link
                 to="/doctor/schedule"
-                className={`px-3 py-1 rounded-full transition-all text-xs ${
+                className={`px-3.5 py-1.5 rounded-full transition-all text-xs ${
                   isActive('/doctor/schedule')
-                    ? 'bg-white/10 text-white font-medium shadow-sm'
-                    : 'hover:text-white'
+                    ? 'bg-[#0088e8]/10 text-[#0088e8] font-semibold'
+                    : 'hover:text-[#0f172a] hover:bg-slate-100/70 font-medium'
                 }`}
               >
-                Manage Schedule
+                Manage Hours
               </Link>
               <Link
                 to="/doctor/profile"
-                className={`px-3 py-1 rounded-full transition-all text-xs ${
+                className={`px-3.5 py-1.5 rounded-full transition-all text-xs ${
                   isActive('/doctor/profile')
-                    ? 'bg-white/10 text-white font-medium shadow-sm'
-                    : 'hover:text-white'
+                    ? 'bg-[#0088e8]/10 text-[#0088e8] font-semibold'
+                    : 'hover:text-[#0f172a] hover:bg-slate-100/70 font-medium'
                 }`}
               >
                 Profile & Settings
@@ -156,10 +156,10 @@ export const GlobalNav: React.FC = () => {
           {user?.role === 'ADMIN' && (
             <Link
               to="/admin"
-              className={`px-3 py-1 rounded-full transition-all text-xs flex items-center gap-1.5 ${
+              className={`px-3.5 py-1.5 rounded-full transition-all text-xs flex items-center gap-1.5 ${
                 isActive('/admin')
-                  ? 'bg-amber-400/20 text-amber-300 font-medium border border-amber-400/30 shadow-sm'
-                  : 'text-amber-300 hover:text-white'
+                  ? 'bg-amber-100 text-amber-800 font-semibold border border-amber-300'
+                  : 'text-amber-700 hover:bg-amber-50 font-medium'
               }`}
             >
               <ShieldCheck className="w-3.5 h-3.5" />
@@ -170,10 +170,10 @@ export const GlobalNav: React.FC = () => {
           {user?.role === 'CLINIC' && (
             <Link
               to="/clinic/dashboard"
-              className={`px-3 py-1 rounded-full transition-all text-xs flex items-center gap-1.5 ${
+              className={`px-3.5 py-1.5 rounded-full transition-all text-xs flex items-center gap-1.5 ${
                 isActive('/clinic/dashboard')
-                  ? 'bg-[#2997ff]/20 text-[#2997ff] font-medium border border-[#2997ff]/30 shadow-sm'
-                  : 'text-[#2997ff] hover:text-white'
+                  ? 'bg-[#0088e8]/10 text-[#0088e8] font-semibold border border-[#0088e8]/20'
+                  : 'text-[#0088e8] hover:bg-[#0088e8]/10 font-medium'
               }`}
             >
               <Building2 className="w-3.5 h-3.5" />
@@ -184,10 +184,10 @@ export const GlobalNav: React.FC = () => {
           {user?.role === 'RECEPTIONIST' && (
             <Link
               to="/receptionist/dashboard"
-              className={`px-3 py-1 rounded-full transition-all text-xs flex items-center gap-1.5 ${
+              className={`px-3.5 py-1.5 rounded-full transition-all text-xs flex items-center gap-1.5 ${
                 isActive('/receptionist/dashboard')
-                  ? 'bg-purple-400/20 text-purple-300 font-medium border border-purple-400/30 shadow-sm'
-                  : 'text-purple-300 hover:text-white'
+                  ? 'bg-teal-100 text-teal-800 font-semibold border border-teal-300'
+                  : 'text-teal-700 hover:bg-teal-50 font-medium'
               }`}
             >
               <Users className="w-3.5 h-3.5" />
@@ -212,42 +212,42 @@ export const GlobalNav: React.FC = () => {
                     ? '/receptionist/dashboard'
                     : '/admin'
                 }
-                className="flex items-center gap-2 hover:opacity-85 transition-opacity"
+                className="flex items-center gap-2 px-2.5 py-1 rounded-full hover:bg-slate-100 transition-colors"
                 title="Manage Profile & Settings"
               >
-                <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-[#0066cc] to-[#2997ff] flex items-center justify-center text-[11px] font-bold text-white border border-white/20 overflow-hidden shadow-sm">
+                <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-[#0088e8] to-[#10b981] flex items-center justify-center text-[11px] font-bold text-white shadow-xs overflow-hidden">
                   {user.avatarUrl ? (
                     <img src={user.avatarUrl} alt={user.fullName} className="w-full h-full object-cover" />
                   ) : (
                     <span>{getInitials(user.fullName)}</span>
                   )}
                 </div>
-                <span className="text-xs text-white/95 max-w-[130px] truncate font-medium">
+                <span className="text-xs text-slate-800 max-w-[130px] truncate font-medium">
                   {user.fullName}
                 </span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/10 text-[#2997ff] font-semibold border border-white/10">
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#0088e8]/10 text-[#0088e8] font-semibold border border-[#0088e8]/20">
                   {user.role}
                 </span>
               </Link>
               <button
                 onClick={handleLogout}
-                className="text-[#a1a1a6] hover:text-rose-400 transition-colors p-1 rounded-full hover:bg-white/10"
+                className="text-slate-400 hover:text-rose-500 transition-colors p-1.5 rounded-full hover:bg-rose-50"
                 title="Sign out"
               >
-                <LogOut className="w-3.5 h-3.5" />
+                <LogOut className="w-4 h-4" />
               </button>
             </div>
           ) : (
             <div className="flex items-center gap-2">
               <Link
                 to="/login"
-                className="text-[#cccccc] hover:text-white px-2.5 py-1 text-xs transition-colors"
+                className="text-[#334155] hover:text-[#0088e8] px-3.5 py-1.5 text-xs font-medium transition-colors hover:bg-slate-100 rounded-full"
               >
                 Sign In
               </Link>
               <Link
                 to="/signup"
-                className="bg-[#0066cc] text-white px-3 py-1 rounded-full text-xs hover:bg-[#0071e3] transition-colors"
+                className="bg-gradient-to-r from-[#0088e8] to-[#10b981] hover:from-[#0284c7] hover:to-[#059669] text-white px-4 py-1.5 rounded-full text-xs font-medium shadow-xs hover:shadow transition-all"
               >
                 Register
               </Link>
@@ -258,13 +258,13 @@ export const GlobalNav: React.FC = () => {
         {/* Mobile Hamburger Toggle */}
         <div className="flex items-center md:hidden gap-2">
           {user && (
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-[#2997ff] font-semibold">
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#0088e8]/10 text-[#0088e8] font-semibold border border-[#0088e8]/20">
               {user.role}
             </span>
           )}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-1.5 text-[#cccccc] hover:text-white focus:outline-none rounded-lg hover:bg-white/10 transition-colors"
+            className="p-2 text-slate-700 hover:text-slate-900 focus:outline-none rounded-lg hover:bg-slate-100 transition-colors"
             aria-label="Toggle Navigation Menu"
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -274,10 +274,10 @@ export const GlobalNav: React.FC = () => {
 
       {/* Mobile Slide-down Navigation Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden bg-[#161617]/95 backdrop-blur-2xl border-b border-white/15 px-4 py-4 animate-fadeIn space-y-3 text-sm shadow-2xl">
+        <div className="md:hidden bg-white/98 backdrop-blur-2xl border-b border-[#e2e8f0] px-4 py-4 animate-fadeIn space-y-3 text-sm shadow-xl">
           {user && (
-            <div className="flex items-center gap-3 pb-3 border-b border-white/10">
-              <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#0066cc] to-[#2997ff] flex items-center justify-center text-xs font-bold text-white border border-white/20 overflow-hidden shadow-sm">
+            <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
+              <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#0088e8] to-[#10b981] flex items-center justify-center text-xs font-bold text-white shadow-xs overflow-hidden">
                 {user.avatarUrl ? (
                   <img src={user.avatarUrl} alt={user.fullName} className="w-full h-full object-cover" />
                 ) : (
@@ -285,18 +285,18 @@ export const GlobalNav: React.FC = () => {
                 )}
               </div>
               <div className="min-w-0">
-                <p className="font-semibold text-white truncate text-sm">{user.fullName}</p>
-                <p className="text-[11px] text-[#86868b] truncate">{user.email}</p>
+                <p className="font-semibold text-slate-900 truncate text-sm">{user.fullName}</p>
+                <p className="text-[11px] text-slate-500 truncate">{user.email}</p>
               </div>
             </div>
           )}
 
-          <div className="flex flex-col space-y-1 text-[#cccccc]">
+          <div className="flex flex-col space-y-1 text-slate-700">
             <Link
               to="/"
               onClick={closeMenu}
               className={`py-2 px-3 rounded-xl transition-colors ${
-                isActive('/') ? 'bg-white/15 text-white font-medium' : 'hover:bg-white/5 hover:text-white'
+                isActive('/') ? 'bg-[#0088e8]/10 text-[#0088e8] font-semibold' : 'hover:bg-slate-100 hover:text-slate-900 font-medium'
               }`}
             >
               Home
@@ -305,7 +305,7 @@ export const GlobalNav: React.FC = () => {
               to="/doctors"
               onClick={closeMenu}
               className={`py-2 px-3 rounded-xl transition-colors ${
-                isActive('/doctors') ? 'bg-white/15 text-white font-medium' : 'hover:bg-white/5 hover:text-white'
+                isActive('/doctors') ? 'bg-[#0088e8]/10 text-[#0088e8] font-semibold' : 'hover:bg-slate-100 hover:text-slate-900 font-medium'
               }`}
             >
               Find Doctors
@@ -318,8 +318,8 @@ export const GlobalNav: React.FC = () => {
                   onClick={closeMenu}
                   className={`py-2 px-3 rounded-xl transition-colors flex items-center gap-2 ${
                     isActive('/patient/appointments')
-                      ? 'bg-[#2997ff]/20 text-[#2997ff] font-medium'
-                      : 'text-[#2997ff] hover:bg-white/5 hover:text-white'
+                      ? 'bg-[#0088e8]/10 text-[#0088e8] font-semibold'
+                      : 'text-[#0088e8] hover:bg-[#0088e8]/5 font-medium'
                   }`}
                 >
                   <Calendar className="w-4 h-4" />
@@ -330,12 +330,23 @@ export const GlobalNav: React.FC = () => {
                   onClick={closeMenu}
                   className={`py-2 px-3 rounded-xl transition-colors flex items-center gap-2 ${
                     isActive('/patient/records')
-                      ? 'bg-white/15 text-white font-medium'
-                      : 'hover:bg-white/5 hover:text-white'
+                      ? 'bg-[#0088e8]/10 text-[#0088e8] font-semibold'
+                      : 'hover:bg-slate-100 hover:text-slate-900 font-medium'
                   }`}
                 >
                   <FileText className="w-4 h-4" />
                   Medical Records Vault
+                </Link>
+                <Link
+                  to="/patient/profile"
+                  onClick={closeMenu}
+                  className={`py-2 px-3 rounded-xl transition-colors flex items-center gap-2 ${
+                    isActive('/patient/profile')
+                      ? 'bg-[#0088e8]/10 text-[#0088e8] font-semibold'
+                      : 'hover:bg-slate-100 hover:text-slate-900 font-medium'
+                  }`}
+                >
+                  Profile & Settings
                 </Link>
               </>
             )}
@@ -346,9 +357,9 @@ export const GlobalNav: React.FC = () => {
                   to="/doctor/dashboard"
                   onClick={closeMenu}
                   className={`py-2 px-3 rounded-xl transition-colors flex items-center gap-2 ${
-                    isActive('/doctor/dashboard') || location.pathname.startsWith('/doctor/consultation')
-                      ? 'bg-[#2997ff]/20 text-[#2997ff] font-medium'
-                      : 'text-[#2997ff] hover:bg-white/5 hover:text-white'
+                    isActive('/doctor/dashboard')
+                      ? 'bg-[#0088e8]/10 text-[#0088e8] font-semibold'
+                      : 'text-[#0088e8] hover:bg-[#0088e8]/5 font-medium'
                   }`}
                 >
                   <Stethoscope className="w-4 h-4" />
@@ -359,11 +370,22 @@ export const GlobalNav: React.FC = () => {
                   onClick={closeMenu}
                   className={`py-2 px-3 rounded-xl transition-colors ${
                     isActive('/doctor/schedule')
-                      ? 'bg-white/15 text-white font-medium'
-                      : 'hover:bg-white/5 hover:text-white'
+                      ? 'bg-[#0088e8]/10 text-[#0088e8] font-semibold'
+                      : 'hover:bg-slate-100 hover:text-slate-900 font-medium'
                   }`}
                 >
                   Manage Hours & Slots
+                </Link>
+                <Link
+                  to="/doctor/profile"
+                  onClick={closeMenu}
+                  className={`py-2 px-3 rounded-xl transition-colors ${
+                    isActive('/doctor/profile')
+                      ? 'bg-[#0088e8]/10 text-[#0088e8] font-semibold'
+                      : 'hover:bg-slate-100 hover:text-slate-900 font-medium'
+                  }`}
+                >
+                  Doctor Profile
                 </Link>
               </>
             )}
@@ -374,8 +396,8 @@ export const GlobalNav: React.FC = () => {
                 onClick={closeMenu}
                 className={`py-2 px-3 rounded-xl transition-colors flex items-center gap-2 ${
                   isActive('/admin')
-                    ? 'bg-amber-400/20 text-amber-300 font-medium'
-                    : 'text-amber-300 hover:bg-white/5 hover:text-white'
+                    ? 'bg-amber-100 text-amber-800 font-semibold'
+                    : 'text-amber-700 hover:bg-amber-50 font-medium'
                 }`}
               >
                 <ShieldCheck className="w-4 h-4" />
@@ -389,8 +411,8 @@ export const GlobalNav: React.FC = () => {
                 onClick={closeMenu}
                 className={`py-2 px-3 rounded-xl transition-colors flex items-center gap-2 ${
                   isActive('/clinic/dashboard')
-                    ? 'bg-[#2997ff]/20 text-[#2997ff] font-medium'
-                    : 'text-[#2997ff] hover:bg-white/5 hover:text-white'
+                    ? 'bg-[#0088e8]/10 text-[#0088e8] font-semibold'
+                    : 'text-[#0088e8] hover:bg-[#0088e8]/5 font-medium'
                 }`}
               >
                 <Building2 className="w-4 h-4" />
@@ -404,8 +426,8 @@ export const GlobalNav: React.FC = () => {
                 onClick={closeMenu}
                 className={`py-2 px-3 rounded-xl transition-colors flex items-center gap-2 ${
                   isActive('/receptionist/dashboard')
-                    ? 'bg-purple-400/20 text-purple-300 font-medium'
-                    : 'text-purple-300 hover:bg-white/5 hover:text-white'
+                    ? 'bg-teal-100 text-teal-800 font-semibold'
+                    : 'text-teal-700 hover:bg-teal-50 font-medium'
                 }`}
               >
                 <Users className="w-4 h-4" />
@@ -414,11 +436,11 @@ export const GlobalNav: React.FC = () => {
             )}
           </div>
 
-          <div className="pt-3 border-t border-white/10 flex items-center justify-between">
+          <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
             {user ? (
               <button
                 onClick={handleLogout}
-                className="w-full py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-rose-400 font-medium text-xs flex items-center justify-center gap-1.5 transition-colors"
+                className="w-full py-2.5 rounded-xl bg-slate-100 hover:bg-rose-50 text-rose-600 font-medium text-xs flex items-center justify-center gap-1.5 transition-colors"
               >
                 <LogOut className="w-3.5 h-3.5" />
                 Sign Out ({user.fullName.split(' ')[0]})
@@ -428,14 +450,14 @@ export const GlobalNav: React.FC = () => {
                 <Link
                   to="/login"
                   onClick={closeMenu}
-                  className="flex-1 py-2 text-center rounded-xl bg-white/10 text-white font-medium text-xs hover:bg-white/15 transition-colors"
+                  className="flex-1 py-2 text-center rounded-xl bg-slate-100 text-slate-800 font-medium text-xs hover:bg-slate-200 transition-colors"
                 >
                   Sign In
                 </Link>
                 <Link
                   to="/signup"
                   onClick={closeMenu}
-                  className="flex-1 py-2 text-center rounded-xl bg-[#0066cc] text-white font-medium text-xs hover:bg-[#0071e3] transition-colors"
+                  className="flex-1 py-2 text-center rounded-xl bg-gradient-to-r from-[#0088e8] to-[#10b981] text-white font-medium text-xs hover:opacity-95 transition-opacity"
                 >
                   Register
                 </Link>

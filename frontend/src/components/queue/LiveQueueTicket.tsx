@@ -30,11 +30,11 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
             ? 'bg-amber-500/10 border-amber-500/20 text-amber-800'
             : status === 'COMPLETED'
             ? 'bg-gray-100 border-gray-200 text-gray-700'
-            : 'bg-[#0066cc]/5 border-[#0066cc]/15 text-[#0066cc]'
+            : 'bg-[#0088e8]/5 border-[#0088e8]/15 text-[#0088e8]'
         }`}
       >
         <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider">
-          <Clock className="w-3.5 h-3.5 text-[#0066cc]" />
+          <Clock className="w-3.5 h-3.5 text-[#0088e8]" />
           <span>Doctor Shift: {checkingWindow}</span>
         </div>
 
@@ -50,7 +50,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
             NEXT IN LINE
           </span>
         ) : status === 'WAITING' ? (
-          <span className="text-[11px] font-semibold px-3 py-1 rounded-full bg-[#0066cc] text-white shadow-sm">
+          <span className="text-[11px] font-semibold px-3 py-1 rounded-full bg-gradient-to-r from-[#0088e8] to-[#10b981] text-white shadow-xs">
             SCHEDULED IN QUEUE
           </span>
         ) : status === 'COMPLETED' ? (
@@ -77,7 +77,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center font-bold text-xl text-[#0066cc]">
+                <div className="w-full h-full flex items-center justify-center font-bold text-xl text-[#0088e8]">
                   {doctor.user.fullName[0]}
                 </div>
               )}
@@ -86,18 +86,18 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
               <h3 className="text-[19px] font-semibold text-[#1d1d1f] tracking-tight">
                 {doctor.user.fullName}
               </h3>
-              <p className="text-[14px] text-[#0066cc] font-medium">{doctor.specialty}</p>
+              <p className="text-[14px] text-[#0088e8] font-medium">{doctor.specialty}</p>
               <div className="flex items-center gap-1.5 text-xs text-[#86868b] mt-0.5">
                 {appointment.clinic ? (
                   <>
-                    <Building2 className="w-3.5 h-3.5 flex-shrink-0 text-[#0066cc]" />
+                    <Building2 className="w-3.5 h-3.5 flex-shrink-0 text-[#0088e8]" />
                     <span className="truncate max-w-[320px]">
                       {appointment.clinic.clinicName} — {appointment.clinic.address}{appointment.clinic.city ? `, ${appointment.clinic.city}` : ''}
                     </span>
                   </>
                 ) : (
                   <>
-                    <MapPin className="w-3.5 h-3.5 flex-shrink-0 text-[#0066cc]" />
+                    <MapPin className="w-3.5 h-3.5 flex-shrink-0 text-[#0088e8]" />
                     <span className="truncate max-w-[280px]">{doctor.clinicAddress || 'MediArca Healthcare Clinic'}</span>
                   </>
                 )}
@@ -110,18 +110,18 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
             <span className="text-[11px] font-medium text-[#86868b] uppercase tracking-wider mb-1">
               Guaranteed Queue Token
             </span>
-            <div className="bg-[#1d1d1f] text-white px-6 py-2.5 rounded-2xl flex items-baseline gap-1.5 shadow-md border border-white/10">
-              <span className="text-xs font-normal text-white/70 uppercase">Queue</span>
-              <span className="text-3xl font-extrabold tracking-tight text-[#2997ff]">#{queueNumber}</span>
+            <div className="bg-[#0f172a] text-white px-6 py-2.5 rounded-2xl flex items-baseline gap-1.5 shadow-md border border-slate-800">
+              <span className="text-xs font-normal text-slate-400 uppercase">Queue</span>
+              <span className="text-3xl font-extrabold tracking-tight text-[#38bdf8]">#{queueNumber}</span>
             </div>
           </div>
         </div>
 
         {/* Patient Details (When booked for dependent/family member) */}
         {appointment.isForOther && (
-          <div className="my-3 p-3 rounded-xl bg-[#0066cc]/5 border border-[#0066cc]/20 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+          <div className="my-3 p-3 rounded-xl bg-[#0088e8]/5 border border-[#0088e8]/20 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
             <div className="flex items-center gap-2">
-              <span className="px-2 py-0.5 rounded-full bg-[#0066cc] text-white font-semibold text-[10px]">
+              <span className="px-2 py-0.5 rounded-full bg-gradient-to-r from-[#0088e8] to-[#10b981] text-white font-semibold text-[10px]">
                 Dependent / Family
               </span>
               <span className="font-semibold text-[#1d1d1f]">
@@ -166,7 +166,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
               <div className="space-y-2">
                 <div className="w-full bg-[#e5e5ea] h-2.5 rounded-full overflow-hidden">
                   <div
-                    className="bg-[#0066cc] h-full transition-all duration-500 rounded-full"
+                    className="bg-gradient-to-r from-[#0088e8] to-[#10b981] h-full transition-all duration-500 rounded-full"
                     style={{
                       width: `${queueNumber > 0 ? Math.min(100, Math.max(10, ((liveQueue.currentServingQueueNumber || 1) / queueNumber) * 100)) : 10}%`,
                     }}
@@ -188,7 +188,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
         {/* Date, Est Time, Reason */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-4 text-xs text-[#1d1d1f]">
           <div className="flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-[#0066cc]" />
+            <Calendar className="w-4 h-4 text-[#0088e8]" />
             <div>
               <span className="text-[#86868b] block">Date</span>
               <strong className="text-[13px]">{appointmentDate} {isToday ? '(Today)' : ''}</strong>
@@ -196,7 +196,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
-            <Clock className="w-4 h-4 text-[#0066cc]" />
+            <Clock className="w-4 h-4 text-[#0088e8]" />
             <div>
               <span className="text-[#86868b] block">Est. Consultation</span>
               {status === 'IN_CONSULTATION' ? (
@@ -208,11 +208,11 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
               ) : liveQueue?.isShiftPassed ? (
                 <strong className="text-[13px] text-amber-600">Shift Concluded</strong>
               ) : isToday && liveQueue?.isShiftActive && liveQueue?.liveEstimatedTime ? (
-                <strong className="text-[13px] text-[#0066cc]" title="Real-time estimated consultation time">
+                <strong className="text-[13px] text-[#0088e8]" title="Real-time estimated consultation time">
                   ~{liveQueue.liveEstimatedTime} (Live)
                 </strong>
               ) : (
-                <strong className="text-[13px] text-[#0066cc]">{estimatedTime}</strong>
+                <strong className="text-[13px] text-[#0088e8]">{estimatedTime}</strong>
               )}
             </div>
           </div>

@@ -228,7 +228,7 @@ export const DoctorProfile: React.FC = () => {
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     placeholder="e.g. Dr. Rajesh Verma"
-                    className="w-full h-11 pl-9 pr-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0066cc] focus:ring-1 focus:ring-[#0066cc]"
+                    className="w-full h-11 pl-9 pr-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0088e8] focus:ring-1 focus:ring-[#0088e8]"
                   />
                 </div>
               </div>
@@ -242,7 +242,7 @@ export const DoctorProfile: React.FC = () => {
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="+91 98765 43210"
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0066cc] focus:ring-1 focus:ring-[#0066cc]"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0088e8] focus:ring-1 focus:ring-[#0088e8]"
                 />
               </div>
 
@@ -258,7 +258,7 @@ export const DoctorProfile: React.FC = () => {
                     value={specialty}
                     onChange={(e) => setSpecialty(e.target.value)}
                     placeholder="e.g. Cardiologist, Dermatologist, General Physician"
-                    className="w-full h-11 pl-9 pr-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0066cc] focus:ring-1 focus:ring-[#0066cc]"
+                    className="w-full h-11 pl-9 pr-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0088e8] focus:ring-1 focus:ring-[#0088e8]"
                   />
                 </div>
               </div>
@@ -275,7 +275,7 @@ export const DoctorProfile: React.FC = () => {
                     value={qualifications}
                     onChange={(e) => setQualifications(e.target.value)}
                     placeholder="e.g. MBBS, MD (Medicine), DM (Cardiology)"
-                    className="w-full h-11 pl-9 pr-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0066cc] focus:ring-1 focus:ring-[#0066cc]"
+                    className="w-full h-11 pl-9 pr-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0088e8] focus:ring-1 focus:ring-[#0088e8]"
                   />
                 </div>
               </div>
@@ -291,7 +291,7 @@ export const DoctorProfile: React.FC = () => {
                     min={0}
                     value={experienceYears}
                     onChange={(e) => setExperienceYears(Number(e.target.value))}
-                    className="w-full h-11 pl-9 pr-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0066cc] focus:ring-1 focus:ring-[#0066cc]"
+                    className="w-full h-11 pl-9 pr-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0088e8] focus:ring-1 focus:ring-[#0088e8]"
                   />
                 </div>
               </div>
@@ -308,7 +308,7 @@ export const DoctorProfile: React.FC = () => {
                     required
                     value={consultationFee}
                     onChange={(e) => setConsultationFee(Number(e.target.value))}
-                    className="w-full h-11 pl-9 pr-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0066cc] focus:ring-1 focus:ring-[#0066cc]"
+                    className="w-full h-11 pl-9 pr-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0088e8] focus:ring-1 focus:ring-[#0088e8]"
                   />
                 </div>
               </div>
@@ -325,7 +325,7 @@ export const DoctorProfile: React.FC = () => {
                   value={clinicAddress}
                   onChange={(e) => setClinicAddress(e.target.value)}
                   placeholder="e.g. MediArca Medical Center, 2nd Floor, Room 204, Indiranagar"
-                  className="w-full h-11 pl-9 pr-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0066cc] focus:ring-1 focus:ring-[#0066cc]"
+                  className="w-full h-11 pl-9 pr-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0088e8] focus:ring-1 focus:ring-[#0088e8]"
                 />
               </div>
             </div>
@@ -339,7 +339,7 @@ export const DoctorProfile: React.FC = () => {
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
                 placeholder="Share your background, clinical expertise, and approach to patient care..."
-                className="w-full p-3 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0066cc] focus:ring-1 focus:ring-[#0066cc]"
+                className="w-full p-3 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0088e8] focus:ring-1 focus:ring-[#0088e8]"
               />
             </div>
           </UtilityCard>
@@ -381,7 +381,7 @@ export const DoctorProfile: React.FC = () => {
                         value={slot.name}
                         onChange={(e) => handleSlotChange(index, 'name', e.target.value)}
                         placeholder="e.g. Morning Shift"
-                        className="w-full h-10 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0066cc]"
+                        className="w-full h-10 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0088e8]"
                       />
                     </div>
 
@@ -393,7 +393,7 @@ export const DoctorProfile: React.FC = () => {
                         type="time"
                         value={slot.startTime}
                         onChange={(e) => handleSlotChange(index, 'startTime', e.target.value)}
-                        className="w-full h-10 px-2.5 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0066cc]"
+                        className="w-full h-10 px-2.5 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0088e8]"
                       />
                     </div>
 
@@ -405,7 +405,7 @@ export const DoctorProfile: React.FC = () => {
                         type="time"
                         value={slot.endTime}
                         onChange={(e) => handleSlotChange(index, 'endTime', e.target.value)}
-                        className="w-full h-10 px-2.5 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0066cc]"
+                        className="w-full h-10 px-2.5 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0088e8]"
                       />
                     </div>
 
@@ -420,7 +420,7 @@ export const DoctorProfile: React.FC = () => {
                         onChange={(e) =>
                           handleSlotChange(index, 'maxPatients', Number(e.target.value))
                         }
-                        className="w-full h-10 px-2.5 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0066cc]"
+                        className="w-full h-10 px-2.5 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0088e8]"
                       />
                     </div>
                   </div>
@@ -429,7 +429,7 @@ export const DoctorProfile: React.FC = () => {
                     <span>
                       Window: <strong>{format12Hour(slot.startTime)}</strong> – <strong>{format12Hour(slot.endTime)}</strong>
                     </span>
-                    <span className="text-[#0066cc] font-medium">
+                    <span className="text-[#0088e8] font-medium">
                       Calculated Pace: ~{slot.avgConsultationMinutes} min/patient
                     </span>
                   </div>
@@ -441,7 +441,7 @@ export const DoctorProfile: React.FC = () => {
                 variant="ghost"
                 size="sm"
                 onClick={handleAddSlot}
-                className="w-full flex items-center justify-center gap-1.5 border border-dashed border-[#0066cc]/40 text-[#0066cc] hover:bg-[#0066cc]/5 py-2.5 rounded-xl text-xs font-semibold"
+                className="w-full flex items-center justify-center gap-1.5 border border-dashed border-[#0088e8]/40 text-[#0088e8] hover:bg-[#0088e8]/5 py-2.5 rounded-xl text-xs font-semibold"
               >
                 <Plus className="w-3.5 h-3.5" />
                 Add Another Checking Shift

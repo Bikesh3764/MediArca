@@ -52,7 +52,7 @@ export const PrescriptionModal: React.FC<PrescriptionModalProps> = ({ appointmen
           <div>
             <span className="text-[#7a7a7a] block">Healthcare Provider</span>
             <h3 className="text-[16px] font-semibold text-[#1d1d1f] mt-0.5">{doctor.user.fullName}</h3>
-            <p className="text-[#0066cc] font-medium">{doctor.specialty} • {doctor.qualifications}</p>
+            <p className="text-[#0088e8] font-medium">{doctor.specialty} • {doctor.qualifications}</p>
             <p className="text-[#7a7a7a] mt-1">{doctor.clinicAddress}</p>
           </div>
           <div className="text-right">
@@ -88,12 +88,12 @@ export const PrescriptionModal: React.FC<PrescriptionModalProps> = ({ appointmen
             {medicines.map((med: any, idx: number) => (
               <div
                 key={idx}
-                className="p-3.5 rounded-xl border border-[#e0e0e0] bg-white hover:border-[#0066cc]/30 transition-colors"
+                className="p-3.5 rounded-xl border border-[#e0e0e0] bg-white hover:border-[#0088e8]/30 transition-colors"
               >
                 <div className="flex justify-between items-start">
                   <div>
                     <h5 className="font-semibold text-[#1d1d1f] text-[14px]">{med.name}</h5>
-                    <p className="text-xs text-[#0066cc] font-medium mt-0.5">
+                    <p className="text-xs text-[#0088e8] font-medium mt-0.5">
                       Dosage: {med.dosage} • Frequency: {med.frequency}
                     </p>
                   </div>
@@ -113,16 +113,16 @@ export const PrescriptionModal: React.FC<PrescriptionModalProps> = ({ appointmen
 
         {/* Doctor Advice & Follow Up */}
         {(prescription.advice || prescription.followUpDate) && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-xl bg-[#0066cc]/5 border border-[#0066cc]/20 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-xl bg-[#0088e8]/5 border border-[#0088e8]/20 text-xs">
             {prescription.advice && (
               <div>
-                <strong className="text-[#0066cc] block mb-1">Dietary & Lifestyle Advice</strong>
+                <strong className="text-[#0088e8] block mb-1">Dietary & Lifestyle Advice</strong>
                 <p className="text-[#1d1d1f]">{prescription.advice}</p>
               </div>
             )}
             {prescription.followUpDate && (
               <div>
-                <strong className="text-[#0066cc] block mb-1">Recommended Follow-up</strong>
+                <strong className="text-[#0088e8] block mb-1">Recommended Follow-up</strong>
                 <p className="text-[#1d1d1f] font-semibold">{prescription.followUpDate}</p>
               </div>
             )}
