@@ -10,8 +10,6 @@ import {
   FileText,
   User as UserIcon,
   Stethoscope,
-  Heart,
-  Shield,
   Phone,
   AlertCircle,
   CheckCircle2,

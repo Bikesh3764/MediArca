@@ -45,18 +45,20 @@ import {
 export const DoctorDashboard: React.FC = () => {
   const { user, loading: loadingAuth } = useAuth();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const [activeTab, setActiveTab] = useState<'queue' | 'affiliations'>(() => {
-    return searchParams.get('tab') === 'affiliations' ? 'affiliations' : 'queue';
-  });
-
-  useEffect(() => {
-    const tabParam = searchParams.get('tab');
-    if (tabParam === 'affiliations' && activeTab !== 'affiliations') {
-      setActiveTab('affiliations');
-    }
-  }, [searchParams, activeTab]);
+  const activeTab = searchParams.get('tab') === 'affiliations' ? 'affiliations' : 'queue';
+  const setActiveTab = useCallback((tab: 'queue' | 'affiliations') => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (tab === 'affiliations') {
+        next.set('tab', 'affiliations');
+      } else {
+        next.delete('tab');
+      }
+      return next;
+    });
+  }, [setSearchParams]);
 
   const [affiliations, setAffiliations] = useState<DoctorAffiliationsData | null>(null);
   const [publicClinics, setPublicClinics] = useState<ClinicProfile[]>([]);
@@ -68,6 +70,7 @@ export const DoctorDashboard: React.FC = () => {
   const [feedbackError, setFeedbackError] = useState<string | null>(null);
 
   const [date, setDate] = useState<string>(() => getLocalDateString());
+  const [queueSearch, setQueueSearch] = useState('');
   const [queueData, setQueueData] = useState<{
     date: string;
     totalQueue: number;
@@ -81,8 +84,8 @@ export const DoctorDashboard: React.FC = () => {
   const [callingId, setCallingId] = useState<string | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
-  const fetchQueue = useCallback(async () => {
-    setLoading(true);
+  const fetchQueue = useCallback(async (showLoading = true) => {
+    if (showLoading) setLoading(true);
     try {
       const data = await api.getDoctorQueue(date);
       setQueueData(data);
@@ -101,15 +104,15 @@ export const DoctorDashboard: React.FC = () => {
       navigate('/login');
       return;
     }
-    fetchQueue();
+    fetchQueue(false);
 
     // Auto refresh every 10 seconds for real-time clinic updates
-    const interval = setInterval(fetchQueue, 10000);
+    const interval = setInterval(() => fetchQueue(false), 10000);
     return () => clearInterval(interval);
   }, [fetchQueue, user, loadingAuth, navigate]);
 
-  const fetchAffiliations = useCallback(async () => {
-    setAffiliationsLoading(true);
+  const fetchAffiliations = useCallback(async (showLoading = true) => {
+    if (showLoading) setAffiliationsLoading(true);
     try {
       const [affRes, pubClinics] = await Promise.all([
         api.getDoctorAffiliations(),
@@ -126,7 +129,7 @@ export const DoctorDashboard: React.FC = () => {
 
   useEffect(() => {
     if (activeTab === 'affiliations') {
-      fetchAffiliations();
+      fetchAffiliations(false);
     }
   }, [activeTab, fetchAffiliations]);
 
@@ -359,7 +362,7 @@ export const DoctorDashboard: React.FC = () => {
             <span>Live Patient Queue</span>
             {queueData && (
               <span
-                className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                className={`text-[10px] px-1.5 py-0.5 rounded-full ${
                   activeTab === 'queue' ? 'bg-white/20 text-white' : 'bg-[#f5f5f7] text-[#86868b]'
                 }`}
               >
@@ -382,7 +385,7 @@ export const DoctorDashboard: React.FC = () => {
             <span>Affiliated Clinics & Staff</span>
             {affiliations && (
               <span
-                className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                className={`text-[10px] px-1.5 py-0.5 rounded-full ${
                   activeTab === 'affiliations' ? 'bg-white/20 text-white' : 'bg-[#f5f5f7] text-[#86868b]'
                 }`}
               >
@@ -827,8 +830,30 @@ export const DoctorDashboard: React.FC = () => {
           </div>
         ) : (
           <div>
-            {/* Verification Warning if Doctor is unverified */}
-            {!isVerified && (
+            {/* Verification Warning if Doctor is unverified or suspended/rejected */}
+            {user?.doctorProfile?.verificationStatus === 'SUSPENDED' && (
+              <div className="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-300 text-rose-900 text-xs flex items-start gap-3 shadow-sm">
+                <AlertCircle className="w-5 h-5 text-rose-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="font-semibold text-sm text-rose-900">Medical Practitioner License Suspended</h4>
+                  <p className="mt-0.5 leading-relaxed text-rose-800">
+                    Your practitioner license has been suspended by administration. You cannot accept new patient bookings or clinic affiliations until reinstatement.
+                  </p>
+                </div>
+              </div>
+            )}
+            {user?.doctorProfile?.verificationStatus === 'REJECTED' && (
+              <div className="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-300 text-rose-900 text-xs flex items-start gap-3 shadow-sm">
+                <AlertCircle className="w-5 h-5 text-rose-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="font-semibold text-sm text-rose-900">Doctor Profile Application Rejected</h4>
+                  <p className="mt-0.5 leading-relaxed text-rose-800">
+                    Your medical credentials verification was not approved. Please review your registration details or contact platform administration.
+                  </p>
+                </div>
+              </div>
+            )}
+            {(!isVerified && user?.doctorProfile?.verificationStatus !== 'SUSPENDED' && user?.doctorProfile?.verificationStatus !== 'REJECTED') && (
               <div className="mb-6 p-4 rounded-2xl bg-amber-50 border border-amber-300 text-amber-900 text-xs flex items-start gap-3 shadow-sm">
                 <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
                 <div>
@@ -847,7 +872,7 @@ export const DoctorDashboard: React.FC = () => {
                   <RefreshCw className="w-4 h-4 text-[#0088e8] animate-spin" />
                   <span>Connecting to cloud database... (Cloud backend may take 30s to resume from idle)</span>
                 </div>
-                <AppleButton variant="ghost" size="sm" onClick={fetchQueue} className="text-[#0088e8]">
+                <AppleButton variant="ghost" size="sm" onClick={() => fetchQueue(true)} className="text-[#0088e8]">
                   Retry
                 </AppleButton>
               </div>
@@ -876,7 +901,7 @@ export const DoctorDashboard: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 <label className="text-xs font-medium text-[#86868b]">Queue Date:</label>
                 <input
                   type="date"
@@ -884,6 +909,15 @@ export const DoctorDashboard: React.FC = () => {
                   onChange={(e) => setDate(e.target.value)}
                   className="h-10 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0088e8]"
                 />
+                {date !== getLocalDateString() && (
+                  <button
+                    type="button"
+                    onClick={() => setDate(getLocalDateString())}
+                    className="h-10 px-3 rounded-xl border border-[#e5e5ea] bg-[#f5f5f7] hover:bg-slate-200 text-xs font-semibold text-[#1d1d1f] transition-colors"
+                  >
+                    Today
+                  </button>
+                )}
               </div>
             </div>
 
@@ -1153,24 +1187,33 @@ export const DoctorDashboard: React.FC = () => {
 
               {/* Waiting Queue List (2 Columns) */}
               <div className="lg:col-span-2">
-                <div className="flex items-center justify-between mb-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
                   <h3 className="text-sm font-semibold uppercase tracking-wider text-[#86868b]">
                     Waiting Queue ({queueData?.waitingQueue.length || 0})
                   </h3>
-                  {queueData && queueData.waitingQueue.length > 0 && (
-                    <AppleButton
-                      variant="primary"
-                      size="sm"
-                      disabled={callingId !== null}
-                      onClick={() => handleCallPatient(queueData.waitingQueue[0].id)}
-                      className="flex items-center gap-1.5 shadow-sm"
-                    >
-                      <Play className="w-3.5 h-3.5 fill-current" />
-                      {callingId === queueData.waitingQueue[0].id
-                        ? 'Calling Next Patient...'
-                        : `Next Patient: Call Queue #${queueData.waitingQueue[0].queueNumber}`}
-                    </AppleButton>
-                  )}
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={queueSearch}
+                      onChange={(e) => setQueueSearch(e.target.value)}
+                      placeholder="Search patient, phone, token..."
+                      className="h-9 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0088e8] w-48 sm:w-56"
+                    />
+                    {queueData && queueData.waitingQueue.length > 0 && (
+                      <AppleButton
+                        variant="primary"
+                        size="sm"
+                        disabled={callingId !== null}
+                        onClick={() => handleCallPatient(queueData.waitingQueue[0].id)}
+                        className="flex items-center gap-1.5 shadow-sm whitespace-nowrap"
+                      >
+                        <Play className="w-3.5 h-3.5 fill-current" />
+                        {callingId === queueData.waitingQueue[0].id
+                          ? 'Calling Next Patient...'
+                          : `Next Patient: Call Queue #${queueData.waitingQueue[0].queueNumber}`}
+                      </AppleButton>
+                    )}
+                  </div>
                 </div>
 
                 {loading ? (
@@ -1187,9 +1230,36 @@ export const DoctorDashboard: React.FC = () => {
                       All patients scheduled for this date have either completed consultation or not yet booked.
                     </p>
                   </div>
-                ) : (
-                  <div className="space-y-3">
-                    {queueData?.waitingQueue.map((appt) => (
+                ) : (() => {
+                  const filteredWaiting = queueData?.waitingQueue.filter((appt) => {
+                    if (!queueSearch.trim()) return true;
+                    const q = queueSearch.toLowerCase().trim();
+                    const name = (appt.isForOther && appt.patientName ? appt.patientName : appt.patient?.user?.fullName || '').toLowerCase();
+                    const phone = (appt.patient?.user?.phone || '').toLowerCase();
+                    const token = String(appt.queueNumber || '');
+                    return name.includes(q) || phone.includes(q) || token.includes(q);
+                  }) || [];
+
+                  if (filteredWaiting.length === 0) {
+                    return (
+                      <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-8 text-center">
+                        <p className="text-xs text-[#86868b]">
+                          No waiting patients matching "{queueSearch}".
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => setQueueSearch('')}
+                          className="mt-2 text-xs text-[#0088e8] font-semibold hover:underline"
+                        >
+                          Clear Search Filter
+                        </button>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="space-y-3">
+                      {filteredWaiting.map((appt) => (
                       <div
                         key={appt.id}
                         className="bg-white rounded-[20px] border border-[#e5e5ea] p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:border-[#0088e8]/40 transition-all duration-200"
@@ -1240,7 +1310,8 @@ export const DoctorDashboard: React.FC = () => {
                       </div>
                     ))}
                   </div>
-                )}
+                  );
+                })()}
 
                 {/* Completed List Accordion */}
                 {queueData && queueData.completedQueue.length > 0 && (

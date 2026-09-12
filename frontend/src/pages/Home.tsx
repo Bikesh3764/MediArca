@@ -28,7 +28,6 @@ import {
   Stethoscope,
   RotateCcw,
   ChevronRight,
-  SlidersHorizontal,
   X,
 } from 'lucide-react';
 

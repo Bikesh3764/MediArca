@@ -1,10 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   api,
   ReceptionistDashboardData,
   ReceptionistQueueItem,
   getLocalDateString,
-  Doctor,
 } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { AppleButton } from '../../components/ui/AppleButton';
@@ -17,7 +16,6 @@ import {
   AlertCircle,
   X,
   Printer,
-  Trash2,
   Stethoscope,
   Activity,
   Building2,
@@ -54,10 +52,11 @@ export const ReceptionistDashboard: React.FC = () => {
   const [queueDate, setQueueDate] = useState<string>(getLocalDateString());
   const [queueAppointments, setQueueAppointments] = useState<ReceptionistQueueItem[]>([]);
   const [queueLoading, setQueueLoading] = useState(false);
+  const [queueSearch, setQueueSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'WAITING' | 'IN_CONSULTATION' | 'COMPLETED' | 'CANCELLED'>('ALL');
 
-  const fetchDeskData = async () => {
+  const fetchDeskData = useCallback(async () => {
     try {
-      setLoading(true);
       setError(null);
       const res = await api.getMyReceptionist();
       setData(res);
@@ -65,8 +64,8 @@ export const ReceptionistDashboard: React.FC = () => {
         setWalkinClinicId(res.clinic.id);
       }
       if (res.doctors.length > 0) {
-        if (!selectedDoctorId) setSelectedDoctorId(res.doctors[0].doctorId);
-        if (!queueDoctorId) setQueueDoctorId(res.doctors[0].doctorId);
+        setSelectedDoctorId((prev) => prev || res.doctors[0].doctorId);
+        setQueueDoctorId((prev) => prev || res.doctors[0].doctorId);
       }
     } catch (err: any) {
       console.error('Failed to load desk data:', err);
@@ -74,14 +73,14 @@ export const ReceptionistDashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchDeskData();
-  }, []);
+  }, [fetchDeskData]);
 
   // Fetch queue when queueDoctorId or queueDate changes
-  const fetchQueue = async (docId?: string, dateStr?: string) => {
+  const fetchQueue = useCallback(async (docId?: string, dateStr?: string) => {
     const targetDoc = docId || queueDoctorId;
     if (!targetDoc) return;
     const targetDate = dateStr || queueDate;
@@ -95,29 +94,17 @@ export const ReceptionistDashboard: React.FC = () => {
     } finally {
       setQueueLoading(false);
     }
-  };
+  }, [queueDoctorId, queueDate]);
 
   useEffect(() => {
     if (activeTab === 'queue' && queueDoctorId) {
       fetchQueue();
     }
-  }, [activeTab, queueDoctorId, queueDate]);
+  }, [activeTab, queueDoctorId, queueDate, fetchQueue]);
 
   const linkedDoctors = data?.doctors || [];
   const activeSelectedDoctor = linkedDoctors.find((d) => d.doctorId === selectedDoctorId);
-
-  useEffect(() => {
-    if (data?.clinic?.id) {
-      setWalkinClinicId(data.clinic.id);
-    } else if (activeSelectedDoctor?.clinics && activeSelectedDoctor.clinics.length > 0) {
-      setWalkinClinicId((prev) => {
-        const stillValid = activeSelectedDoctor.clinics?.some((c) => c.clinicId === prev);
-        return stillValid ? prev : activeSelectedDoctor.clinics![0].clinicId;
-      });
-    } else {
-      setWalkinClinicId('');
-    }
-  }, [data?.clinic?.id, activeSelectedDoctor]);
+  const effectiveClinicId = data?.clinic?.id || walkinClinicId || activeSelectedDoctor?.clinics?.[0]?.clinicId;
 
   // Handle rapid walk-in booking
   const handleWalkinSubmit = async (e: React.FormEvent) => {
@@ -125,6 +112,17 @@ export const ReceptionistDashboard: React.FC = () => {
     if (!selectedDoctorId || !patientName.trim() || !patientPhone.trim()) {
       setError('Please provide doctor, patient name, and phone number');
       return;
+    }
+
+    if (bookingFor === 'other') {
+      if (!patientName.trim()) {
+        setError('Patient full name is required when booking for a dependent or family member.');
+        return;
+      }
+      if (!patientAge.trim()) {
+        setError('Patient age is required when booking for a dependent or family member.');
+        return;
+      }
     }
 
     setBookingLoading(true);
@@ -139,7 +137,7 @@ export const ReceptionistDashboard: React.FC = () => {
         isForOther: bookingFor === 'other',
         appointmentDate,
         slotId: slotId || undefined,
-        clinicId: walkinClinicId || undefined,
+        clinicId: effectiveClinicId || undefined,
         reasonForVisit: reasonForVisit.trim() || 'Rapid Walk-in Consultation',
       });
 
@@ -611,6 +609,45 @@ export const ReceptionistDashboard: React.FC = () => {
                 </div>
               </div>
 
+              {/* Status Filter & Live Queue Search */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-4 border-b border-[#f0f0f0]">
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+                  {(['ALL', 'WAITING', 'IN_CONSULTATION', 'COMPLETED', 'CANCELLED'] as const).map((st) => (
+                    <button
+                      key={st}
+                      type="button"
+                      onClick={() => setStatusFilter(st)}
+                      className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-colors whitespace-nowrap ${
+                        statusFilter === st
+                          ? 'bg-[#1d1d1f] text-white shadow-xs'
+                          : 'bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f]'
+                      }`}
+                    >
+                      {st.replace('_', ' ')}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={queueSearch}
+                    onChange={(e) => setQueueSearch(e.target.value)}
+                    placeholder="Search patient, phone, token #..."
+                    className="h-9 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white focus:outline-none focus:border-[#0088e8] w-full sm:w-64"
+                  />
+                  {queueSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setQueueSearch('')}
+                      className="text-xs text-[#86868b] hover:text-[#1d1d1f]"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+              </div>
+
               {queueLoading ? (
                 <div className="py-12 text-center text-xs text-[#86868b]">Loading live queue...</div>
               ) : queueAppointments.length === 0 ? (
@@ -626,92 +663,142 @@ export const ReceptionistDashboard: React.FC = () => {
                     Book First Walk-in
                   </AppleButton>
                 </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs">
-                    <thead>
-                      <tr className="border-b border-[#e5e5ea] text-[#86868b] font-medium">
-                        <th className="pb-3 pl-2">Token #</th>
-                        <th className="pb-3">Patient</th>
-                        <th className="pb-3">Contact</th>
-                        <th className="pb-3">Est. Time / Window</th>
-                        <th className="pb-3">Status</th>
-                        <th className="pb-3 text-right pr-2">Dispatch Action</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[#f0f0f0]">
-                      {queueAppointments.map((appt) => (
-                        <tr key={appt.id} className="hover:bg-[#fafafc]">
-                          <td className="py-3 pl-2">
-                            <span className="font-mono font-bold text-sm text-[#0088e8]">
-                              #{appt.queueNumber}
-                            </span>
-                          </td>
+              ) : (() => {
+                const filteredAppointments = queueAppointments.filter((appt) => {
+                  if (statusFilter !== 'ALL' && appt.status !== statusFilter) return false;
+                  if (!queueSearch.trim()) return true;
+                  const q = queueSearch.toLowerCase().trim();
+                  const name = (appt.patientName || '').toLowerCase();
+                  const phone = (appt.patientPhone || '').toLowerCase();
+                  const token = String(appt.queueNumber || '');
+                  return name.includes(q) || phone.includes(q) || token.includes(q);
+                });
 
-                          <td className="py-3">
-                            <div className="font-medium text-[#1d1d1f]">{appt.patientName}</div>
-                            {appt.reasonForVisit && (
-                              <div className="text-[10px] text-[#86868b]">{appt.reasonForVisit}</div>
-                            )}
-                          </td>
+                if (filteredAppointments.length === 0) {
+                  return (
+                    <div className="py-12 text-center">
+                      <p className="text-xs text-[#86868b]">
+                        No patients match status "{statusFilter}" and search "{queueSearch}".
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setStatusFilter('ALL');
+                          setQueueSearch('');
+                        }}
+                        className="mt-2 text-xs text-[#0088e8] font-semibold hover:underline"
+                      >
+                        Reset Filters
+                      </button>
+                    </div>
+                  );
+                }
 
-                          <td className="py-3 text-[#86868b] font-mono">{appt.patientPhone}</td>
-
-                          <td className="py-3 text-[#1d1d1f]">
-                            <div>{appt.estimatedTime || 'Pending'}</div>
-                            <div className="text-[10px] text-[#86868b]">{appt.checkingWindow}</div>
-                          </td>
-
-                          <td className="py-3">
-                            <span
-                              className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold ${
-                                appt.status === 'COMPLETED'
-                                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                  : appt.status === 'IN_CONSULTATION'
-                                  ? 'bg-[#0088e8]/10 text-[#0088e8] border border-[#0088e8]/20'
-                                  : appt.status === 'WAITING'
-                                  ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                                  : 'bg-gray-100 text-gray-600'
-                              }`}
-                            >
-                              {appt.status}
-                            </span>
-                          </td>
-
-                          <td className="py-3 text-right pr-2">
-                            <div className="inline-flex items-center gap-1.5">
-                              {appt.status === 'WAITING' && (
-                                <button
-                                  onClick={() => handleStatusChange(appt.id, 'IN_CONSULTATION')}
-                                  className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-[#0088e8] to-[#10b981] text-white text-[11px] font-medium hover:opacity-95 shadow-xs"
-                                >
-                                  Call In
-                                </button>
-                              )}
-                              {appt.status === 'IN_CONSULTATION' && (
-                                <button
-                                  onClick={() => handleStatusChange(appt.id, 'COMPLETED')}
-                                  className="px-2.5 py-1 rounded-lg bg-emerald-600 text-white text-[11px] font-medium hover:bg-emerald-700"
-                                >
-                                  Complete
-                                </button>
-                              )}
-                              {appt.status !== 'CANCELLED' && appt.status !== 'COMPLETED' && (
-                                <button
-                                  onClick={() => handleStatusChange(appt.id, 'CANCELLED')}
-                                  className="px-2 py-1 rounded-lg text-rose-600 hover:bg-rose-50 text-[11px] font-medium border border-rose-200"
-                                >
-                                  Cancel
-                                </button>
-                              )}
-                            </div>
-                          </td>
+                return (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead>
+                        <tr className="border-b border-[#e5e5ea] text-[#86868b] font-medium">
+                          <th className="pb-3 pl-2">Token #</th>
+                          <th className="pb-3">Patient</th>
+                          <th className="pb-3">Contact</th>
+                          <th className="pb-3">Est. Time / Window</th>
+                          <th className="pb-3">Status</th>
+                          <th className="pb-3 text-right pr-2">Dispatch Action</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+                      </thead>
+                      <tbody className="divide-y divide-[#f0f0f0]">
+                        {filteredAppointments.map((appt) => (
+                          <tr key={appt.id} className="hover:bg-[#fafafc]">
+                            <td className="py-3 pl-2">
+                              <span className="font-mono font-bold text-sm text-[#0088e8]">
+                                #{appt.queueNumber}
+                              </span>
+                            </td>
+
+                            <td className="py-3">
+                              <div className="font-medium text-[#1d1d1f]">{appt.patientName}</div>
+                              {appt.reasonForVisit && (
+                                <div className="text-[10px] text-[#86868b]">{appt.reasonForVisit}</div>
+                              )}
+                            </td>
+
+                            <td className="py-3 text-[#86868b] font-mono">{appt.patientPhone}</td>
+
+                            <td className="py-3 text-[#1d1d1f]">
+                              <div>{appt.estimatedTime || 'Pending'}</div>
+                              <div className="text-[10px] text-[#86868b]">{appt.checkingWindow}</div>
+                            </td>
+
+                            <td className="py-3">
+                              <span
+                                className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold ${
+                                  appt.status === 'COMPLETED'
+                                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                    : appt.status === 'IN_CONSULTATION'
+                                    ? 'bg-[#0088e8]/10 text-[#0088e8] border border-[#0088e8]/20'
+                                    : appt.status === 'WAITING'
+                                    ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                                    : 'bg-gray-100 text-gray-600'
+                                }`}
+                              >
+                                {appt.status}
+                              </span>
+                            </td>
+
+                            <td className="py-3 text-right pr-2">
+                              <div className="inline-flex items-center gap-1.5">
+                                {appt.status === 'WAITING' && (
+                                  <button
+                                    onClick={() => handleStatusChange(appt.id, 'IN_CONSULTATION')}
+                                    className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-[#0088e8] to-[#10b981] text-white text-[11px] font-medium hover:opacity-95 shadow-xs"
+                                  >
+                                    Call In
+                                  </button>
+                                )}
+                                {appt.status === 'IN_CONSULTATION' && (
+                                  <button
+                                    onClick={() => handleStatusChange(appt.id, 'COMPLETED')}
+                                    className="px-2.5 py-1 rounded-lg bg-emerald-600 text-white text-[11px] font-medium hover:bg-emerald-700"
+                                  >
+                                    Complete
+                                  </button>
+                                )}
+                                {appt.status !== 'CANCELLED' && appt.status !== 'COMPLETED' && (
+                                  <button
+                                    onClick={() => handleStatusChange(appt.id, 'CANCELLED')}
+                                    className="px-2 py-1 rounded-lg text-rose-600 hover:bg-rose-50 text-[11px] font-medium border border-rose-200"
+                                  >
+                                    Cancel
+                                  </button>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setBookedPass({
+                                      queueNumber: appt.queueNumber,
+                                      estimatedTime: appt.estimatedTime,
+                                      checkingWindow: appt.checkingWindow,
+                                      appointmentDate: queueDate,
+                                      patient: {
+                                        user: { fullName: appt.patientName },
+                                      },
+                                    });
+                                  }}
+                                  className="p-1 rounded-lg text-[#0088e8] hover:bg-blue-50 border border-blue-200 transition-colors"
+                                  title="Reprint Token Pass"
+                                >
+                                  <Printer className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })()}
             </div>
           )}
 

@@ -125,6 +125,7 @@ export const getMyReceptionist = async (req: AuthRequest, res: Response): Promis
               city: receptionist.clinic.city,
               phone: receptionist.clinic.phone,
               isVerified: receptionist.clinic.isVerified,
+              verificationStatus: receptionist.clinic.verificationStatus,
             }
           : null,
         doctors: doctorsWithQueue,
@@ -194,7 +195,7 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
               },
             },
           });
-          if (!isAffiliated || isAffiliated.status !== 'ACTIVE') {
+          if (!isAffiliated || (isAffiliated.status !== 'ACTIVE' && isAffiliated.status !== 'ACCEPTED')) {
             res.status(403).json({
               success: false,
               message: 'Access denied: Practitioner is not currently affiliated with your clinic.',
@@ -251,9 +252,10 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
         appointments: appointments.map((a) => ({
           id: a.id,
           queueNumber: a.queueNumber,
-          patientName: a.patient?.user?.fullName || 'Walk-in Patient',
+          patientName: a.isForOther && a.patientName ? a.patientName : (a.patient?.user?.fullName || 'Walk-in Patient'),
+          registeredUserName: a.patient?.user?.fullName,
           patientPhone: a.patient?.user?.phone || 'N/A',
-          gender: a.patient?.gender,
+          gender: a.patientGender || a.patient?.gender,
           bloodGroup: a.patient?.bloodGroup,
           checkingWindow: a.checkingWindow,
           estimatedTime: a.estimatedTime,
@@ -262,6 +264,8 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
           reasonForVisit: a.reasonForVisit,
           symptoms: a.symptoms,
           hasPrescription: Boolean(a.prescription),
+          isForOther: Boolean(a.isForOther),
+          patientAge: a.patientAge,
           createdAt: a.createdAt,
         })),
       },
@@ -299,6 +303,17 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
     if (!doctorId || !patientName || !patientPhone) {
       res.status(400).json({ success: false, message: 'Doctor ID, patient name, and patient phone are required' });
       return;
+    }
+
+    if (isForOther) {
+      if (!patientName || !String(patientName).trim()) {
+        res.status(400).json({ success: false, message: 'Patient full name is required when booking for someone else' });
+        return;
+      }
+      if (!patientAge || !String(patientAge).trim()) {
+        res.status(400).json({ success: false, message: 'Patient age is required when booking for someone else' });
+        return;
+      }
     }
 
     const appointmentDate = requestedDate || getLocalDateString();

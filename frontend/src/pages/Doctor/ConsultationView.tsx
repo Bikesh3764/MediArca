@@ -252,10 +252,18 @@ export const ConsultationView: React.FC = () => {
   }
 
   const patientUser = appointment.patient?.user;
+  const isForOther = Boolean(appointment.isForOther);
+  const actualPatientName = isForOther && appointment.patientName ? appointment.patientName : (patientUser?.fullName || 'Walk-in Patient');
+  const patientAgeDisplay = appointment.patientAge ? `${appointment.patientAge} yrs` : (appointment.patient?.dateOfBirth ? `${new Date().getFullYear() - new Date(appointment.patient.dateOfBirth).getFullYear()} yrs` : undefined);
+  const patientGenderDisplay = appointment.patientGender || appointment.patient?.gender || 'Not specified';
 
   return (
-    <div className="min-h-screen bg-[#f5f5f7] pb-16">
-      <SubNav title="Consultation Cabin" subtitle={`Queue #${appointment.queueNumber} • ${patientUser?.fullName}`}>
+    <>
+    <div className="min-h-screen bg-[#f5f5f7] pb-16 print:hidden">
+      <SubNav
+        title="Consultation Cabin"
+        subtitle={`Queue #${appointment.queueNumber} • ${actualPatientName}${isForOther ? ` (Family • ${patientUser?.fullName})` : ''}`}
+      >
         <div className="flex items-center gap-2">
           <AppleButton variant="ghost" size="sm" onClick={() => navigate('/doctor/dashboard')} className="flex items-center gap-1">
             <ChevronLeft className="w-4 h-4" />
@@ -292,12 +300,29 @@ export const ConsultationView: React.FC = () => {
           <div className="lg:col-span-1 space-y-6">
             <UtilityCard>
               <div className="flex items-center gap-3 pb-4 border-b border-[#f0f0f0]">
-                <div className="w-12 h-12 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] flex items-center justify-center font-bold text-lg text-[#0088e8]">
-                  {patientUser?.fullName[0] || 'P'}
+                <div className="w-12 h-12 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] flex items-center justify-center font-bold text-lg text-[#0088e8] flex-shrink-0">
+                  {actualPatientName[0] || 'P'}
                 </div>
-                <div>
-                  <h3 className="font-semibold text-[17px] text-[#1d1d1f]">{patientUser?.fullName}</h3>
-                  <p className="text-xs text-[#86868b]">{patientUser?.email}</p>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <h3 className="font-semibold text-[17px] text-[#1d1d1f] truncate">{actualPatientName}</h3>
+                    {isForOther && (
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-[#0088e8] border border-blue-200">
+                        Family / Dependent
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-[#86868b] truncate">
+                    {patientAgeDisplay ? `${patientAgeDisplay} • ` : ''}{patientGenderDisplay}
+                  </p>
+                  {isForOther && (
+                    <p className="text-[11px] text-[#86868b] mt-0.5">
+                      Booked by: <span className="font-medium text-[#1d1d1f]">{patientUser?.fullName}</span> ({patientUser?.phone || patientUser?.email})
+                    </p>
+                  )}
+                  {!isForOther && (
+                    <p className="text-xs text-[#86868b] truncate">{patientUser?.email}</p>
+                  )}
                 </div>
               </div>
 
@@ -676,7 +701,11 @@ export const ConsultationView: React.FC = () => {
                   disabled={submitting}
                   className="w-full sm:w-auto"
                 >
-                  {submitting ? 'Saving Prescription...' : 'Complete Consultation & Issue Prescription'}
+                  {submitting
+                    ? 'Saving Prescription...'
+                    : appointment.status === 'COMPLETED'
+                    ? 'Update Prescription & Notes'
+                    : 'Complete Consultation & Issue Prescription'}
                 </AppleButton>
               </div>
             </UtilityCard>
@@ -684,5 +713,134 @@ export const ConsultationView: React.FC = () => {
         </form>
       </div>
     </div>
+
+    {/* Printable Prescription Letterhead (Visible ONLY during print) */}
+    <div className="hidden print:block font-sans text-black p-8 bg-white max-w-4xl mx-auto">
+      {/* Letterhead Top Header */}
+      <div className="flex justify-between items-start pb-6 border-b-2 border-black">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-black">Dr. {user?.fullName}</h1>
+          <p className="text-sm font-semibold text-gray-700">{user?.doctorProfile?.qualifications || 'MBBS'}</p>
+          <p className="text-xs font-semibold text-blue-700 mt-0.5">{user?.doctorProfile?.specialty || 'General Specialist'}</p>
+          {user?.doctorProfile?.clinicAddress && (
+            <p className="text-xs text-gray-600 mt-1">{user.doctorProfile.clinicAddress}</p>
+          )}
+          {user?.phone && <p className="text-xs text-gray-600">Contact: {user.phone}</p>}
+        </div>
+
+        <div className="text-right">
+          <h2 className="text-xl font-bold tracking-tight text-blue-600">MediArca Clinical Platform</h2>
+          <p className="text-xs text-gray-500 mt-0.5">Verified Medical Consultation Slip</p>
+          <p className="text-xs font-mono font-semibold mt-2">Queue Token: #{appointment.queueNumber}</p>
+          <p className="text-xs text-gray-700">Date: {appointment.appointmentDate || new Date().toLocaleDateString()}</p>
+        </div>
+      </div>
+
+      {/* Patient Information Banner */}
+      <div className="my-6 p-4 rounded-xl border border-gray-300 bg-gray-50 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+        <div>
+          <span className="text-gray-500 block">Patient Name</span>
+          <strong className="text-sm text-black">{actualPatientName}</strong>
+          {isForOther && <span className="text-[10px] text-gray-600 block">(Family Member)</span>}
+        </div>
+        <div>
+          <span className="text-gray-500 block">Age / Gender</span>
+          <strong className="text-black">{patientAgeDisplay || 'N/A'} / {patientGenderDisplay}</strong>
+        </div>
+        <div>
+          <span className="text-gray-500 block">Blood Group / Allergies</span>
+          <strong className="text-black">{appointment.patient?.bloodGroup || 'N/A'} • {appointment.patient?.allergies || 'None'}</strong>
+        </div>
+        <div>
+          <span className="text-gray-500 block">Contact Phone</span>
+          <strong className="text-black">{patientUser?.phone || 'N/A'}</strong>
+        </div>
+      </div>
+
+      {/* Recorded Vitals */}
+      {(bp || pulse || temp || weight) && (
+        <div className="mb-6 p-3 rounded-lg border border-gray-200 bg-white flex items-center justify-between text-xs">
+          <span className="font-semibold text-gray-700">Vitals Recorded:</span>
+          {bp && <span>BP: <strong>{bp}</strong></span>}
+          {pulse && <span>Pulse: <strong>{pulse} bpm</strong></span>}
+          {temp && <span>Temp: <strong>{temp} °F</strong></span>}
+          {weight && <span>Weight: <strong>{weight} kg</strong></span>}
+        </div>
+      )}
+
+      {/* Diagnosis */}
+      <div className="mb-6">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">
+          Clinical Diagnosis
+        </h3>
+        <p className="text-sm font-semibold text-black bg-gray-50 p-3 rounded-lg border border-gray-200">
+          {diagnosis || appointment.prescription?.diagnosis || 'General Consultation'}
+        </p>
+      </div>
+
+      {/* Rx Medicines Table */}
+      <div className="mb-6">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-xl font-serif font-bold text-blue-700">℞</span>
+          <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500">
+            Prescribed Medications & Regimen
+          </h3>
+        </div>
+        <table className="w-full text-left text-xs border border-gray-300">
+          <thead>
+            <tr className="bg-gray-100 border-b border-gray-300 text-gray-700">
+              <th className="py-2 px-3">#</th>
+              <th className="py-2 px-3">Medicine Name</th>
+              <th className="py-2 px-3">Dosage</th>
+              <th className="py-2 px-3">Frequency</th>
+              <th className="py-2 px-3">Duration</th>
+              <th className="py-2 px-3">Instructions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200">
+            {medicines.filter((m) => m.name.trim() !== '').map((med, idx) => (
+              <tr key={idx}>
+                <td className="py-2 px-3 font-semibold">{idx + 1}</td>
+                <td className="py-2 px-3 font-bold text-black">{med.name}</td>
+                <td className="py-2 px-3">{med.dosage}</td>
+                <td className="py-2 px-3">{med.frequency}</td>
+                <td className="py-2 px-3">{med.duration}</td>
+                <td className="py-2 px-3 text-gray-600">{med.instructions || 'As directed'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Advice & Follow-Up */}
+      <div className="grid grid-cols-2 gap-4 mb-8 text-xs">
+        <div>
+          <h4 className="font-bold text-gray-500 uppercase tracking-wider mb-1">Dietary & Lifestyle Advice</h4>
+          <p className="text-gray-800 bg-gray-50 p-2.5 rounded-lg border border-gray-200 min-h-[50px]">
+            {advice || 'Maintain hydration and follow general clinical precautions.'}
+          </p>
+        </div>
+        <div>
+          <h4 className="font-bold text-gray-500 uppercase tracking-wider mb-1">Next Follow-Up Date</h4>
+          <p className="text-gray-800 bg-gray-50 p-2.5 rounded-lg border border-gray-200 min-h-[50px]">
+            {followUpDate ? new Date(followUpDate).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : 'As needed if symptoms persist'}
+          </p>
+        </div>
+      </div>
+
+      {/* Footer & Doctor Signature Block */}
+      <div className="pt-8 border-t-2 border-gray-200 flex justify-between items-end text-xs">
+        <div>
+          <p className="text-gray-500 text-[10px]">Generated via MediArca Clinical Platform</p>
+          <p className="text-gray-500 text-[10px]">Electronic Prescription Slip • Timestamp: {new Date().toLocaleString()}</p>
+        </div>
+        <div className="text-right">
+          <div className="w-48 border-b border-black mb-1"></div>
+          <strong className="text-sm block">Dr. {user?.fullName}</strong>
+          <span className="text-[11px] text-gray-600">Authorized Medical Signature</span>
+        </div>
+      </div>
+    </div>
+    </>
   );
 };

@@ -139,6 +139,7 @@ export const getMyClinic = async (req: AuthRequest, res: Response): Promise<void
           city: clinic.city,
           phone: clinic.phone,
           isVerified: clinic.isVerified,
+          verificationStatus: clinic.verificationStatus,
           createdAt: clinic.createdAt,
         },
         doctors: doctorStats,

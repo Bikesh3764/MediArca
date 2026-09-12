@@ -63,14 +63,18 @@ export const ReceptionistAuth: React.FC = () => {
 
     setChangingPassword(true);
     try {
-      await api.changeReceptionistPassword({
+      const res = await api.changeReceptionistPassword({
         currentPassword: tempPassword,
         newPassword,
       });
 
       // Update auth user in context
-      const currentUser = await api.getMe();
-      updateUser({ ...currentUser, mustChangePassword: false });
+      if (res?.user) {
+        updateUser({ ...res.user, mustChangePassword: false });
+      } else {
+        const currentUser = await api.getMe();
+        updateUser({ ...currentUser, mustChangePassword: false });
+      }
       navigate('/receptionist/dashboard');
     } catch (err: any) {
       setError(err.message || 'Failed to update permanent password');

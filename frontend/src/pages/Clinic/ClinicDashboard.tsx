@@ -1,10 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { api, ClinicDashboardData, ClinicReceptionistItem, Doctor } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { AppleButton } from '../../components/ui/AppleButton';
 import { DashboardLayout, DashboardNavItem } from '../../components/layout/DashboardLayout';
 import {
-  Building2,
   Users,
   CalendarCheck,
   DollarSign,
@@ -13,9 +12,6 @@ import {
   AlertCircle,
   CheckCircle2,
   X,
-  Lock,
-  Mail,
-  Phone,
   UserCheck,
   Check,
   ShieldAlert,
@@ -56,9 +52,9 @@ export const ClinicDashboard: React.FC = () => {
   const [doctorSearchQuery, setDoctorSearchQuery] = useState('');
   const [copiedCreds, setCopiedCreds] = useState(false);
 
-  const fetchClinicData = async () => {
+  const fetchClinicData = useCallback(async (showLoading = true) => {
     try {
-      setLoading(true);
+      if (showLoading) setLoading(true);
       setError(null);
       const res = await api.getMyClinic();
       setData(res);
@@ -68,21 +64,21 @@ export const ClinicDashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const fetchAvailableDoctors = async () => {
+  const fetchAvailableDoctors = useCallback(async () => {
     try {
       const docs = await api.getDoctors();
       setAllDoctors(docs.filter((d: any) => d.isVerified));
     } catch (err) {
       console.error('Failed to load doctor catalog:', err);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    fetchClinicData();
+    fetchClinicData(false);
     fetchAvailableDoctors();
-  }, []);
+  }, [fetchClinicData, fetchAvailableDoctors]);
 
   const handleAddDoctor = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -311,8 +307,30 @@ export const ClinicDashboard: React.FC = () => {
       }
     >
       <div className="space-y-8">
-        {/* Verification Warning if clinic not yet verified */}
-        {clinic && clinic.isVerified === false && (
+        {/* Verification Warning if clinic not yet verified or suspended */}
+        {clinic?.verificationStatus === 'SUSPENDED' && (
+          <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 text-xs flex items-start gap-3 shadow-xs">
+            <ShieldAlert className="w-5 h-5 text-rose-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <div className="font-semibold text-rose-900">Clinic Facility License Suspended</div>
+              <p className="text-rose-800 text-[11px] mt-0.5">
+                Your facility license has been suspended by administration. Doctors cannot accept new affiliations or clinic bookings until license reinstatement.
+              </p>
+            </div>
+          </div>
+        )}
+        {clinic?.verificationStatus === 'REJECTED' && (
+          <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 text-xs flex items-start gap-3 shadow-xs">
+            <ShieldAlert className="w-5 h-5 text-rose-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <div className="font-semibold text-rose-900">Clinic Registration Application Rejected</div>
+              <p className="text-rose-800 text-[11px] mt-0.5">
+                Your clinic registration credentials were not approved. Please contact platform administration to review your facility details.
+              </p>
+            </div>
+          </div>
+        )}
+        {((clinic?.verificationStatus === 'PENDING' || clinic?.isVerified === false) && clinic?.verificationStatus !== 'SUSPENDED' && clinic?.verificationStatus !== 'REJECTED') && (
           <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start gap-3 shadow-xs">
             <ShieldAlert className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
             <div>
@@ -497,9 +515,19 @@ export const ClinicDashboard: React.FC = () => {
                       <span className="font-semibold text-[#1d1d1f]">Dr. {doc.fullName}</span>
                       <span className="text-[10px] text-[#86868b] block">{doc.specialty}</span>
                     </div>
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300">
-                      Awaiting Doctor Acceptance
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300">
+                        Awaiting Doctor
+                      </span>
+                      <AppleButton
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleDetachDoctor(doc.doctorId, doc.fullName)}
+                        className="text-rose-600 hover:bg-rose-50 text-[11px] h-7 px-2"
+                      >
+                        Cancel
+                      </AppleButton>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -1205,8 +1233,8 @@ export const ClinicDashboard: React.FC = () => {
                 <span className="text-[10px] text-[#86868b] uppercase tracking-wider font-sans font-semibold block">
                   Portal Login URL
                 </span>
-                <span className="text-[#86868b] text-[11px] block mt-0.5">
-                  /receptionist/login (or Landing Page &rarr; Receptionist Desk)
+                <span className="text-[#0088e8] text-[11px] block mt-0.5 select-all font-mono break-all">
+                  {`${window.location.origin}${window.location.pathname}#/receptionist/login`}
                 </span>
               </div>
             </div>
@@ -1216,7 +1244,8 @@ export const ClinicDashboard: React.FC = () => {
                 variant="secondary"
                 size="sm"
                 onClick={() => {
-                  const text = `MediArca Receptionist Desk Credentials\nFacility: ${clinic?.clinicName || 'Clinic'}\nName: ${createdCredentials.fullName}\nEmail (Desk ID): ${createdCredentials.email}\nPassword: ${createdCredentials.password}\nLogin Portal: ${window.location.origin}/receptionist/login`;
+                  const portalUrl = `${window.location.origin}${window.location.pathname}#/receptionist/login`;
+                  const text = `MediArca Receptionist Desk Credentials\nFacility: ${clinic?.clinicName || 'Clinic'}\nName: ${createdCredentials.fullName}\nEmail (Desk ID): ${createdCredentials.email}\nPassword: ${createdCredentials.password}\nLogin Portal: ${portalUrl}`;
                   navigator.clipboard.writeText(text);
                   setCopiedCreds(true);
                   setTimeout(() => setCopiedCreds(false), 2500);

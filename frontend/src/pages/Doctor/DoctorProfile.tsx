@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { api, getFileUrl } from '../../services/api';
+import { api, getFileUrl, ALL_SPECIALTIES } from '../../services/api';
 import { DashboardLayout, DashboardNavItem } from '../../components/layout/DashboardLayout';
 import { AppleButton } from '../../components/ui/AppleButton';
 import { UtilityCard } from '../../components/ui/UtilityCard';
@@ -27,8 +27,12 @@ export const DoctorProfile: React.FC = () => {
 
   const [fullName, setFullName] = useState(user?.fullName || '');
   const [phone, setPhone] = useState(user?.phone || '');
-  const [specialty, setSpecialty] = useState(user?.doctorProfile?.specialty || 'General Physician');
-  const [customSpecialty, setCustomSpecialty] = useState('');
+
+  const initialSpec = user?.doctorProfile?.specialty || 'General Medicine';
+  const initialIsStandard = ALL_SPECIALTIES.includes(initialSpec) && initialSpec !== 'Other';
+  const [specialty, setSpecialty] = useState(initialIsStandard ? initialSpec : 'Other');
+  const [customSpecialty, setCustomSpecialty] = useState(initialIsStandard ? '' : initialSpec);
+
   const [qualifications, setQualifications] = useState(user?.doctorProfile?.qualifications || 'MBBS');
   const [experienceYears, setExperienceYears] = useState(user?.doctorProfile?.experienceYears || 5);
   const [bio, setBio] = useState(user?.doctorProfile?.bio || '');
@@ -75,7 +79,15 @@ export const DoctorProfile: React.FC = () => {
       setFullName(user.fullName || '');
       setPhone(user.phone || '');
       if (user.doctorProfile) {
-        setSpecialty(user.doctorProfile.specialty || 'General Physician');
+        const currentSpec = user.doctorProfile.specialty || 'General Medicine';
+        const isStandard = ALL_SPECIALTIES.includes(currentSpec) && currentSpec !== 'Other';
+        if (isStandard) {
+          setSpecialty(currentSpec);
+          setCustomSpecialty('');
+        } else {
+          setSpecialty('Other');
+          setCustomSpecialty(currentSpec);
+        }
         setQualifications(user.doctorProfile.qualifications || 'MBBS');
         setExperienceYears(user.doctorProfile.experienceYears || 5);
         setBio(user.doctorProfile.bio || '');

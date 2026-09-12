@@ -386,13 +386,32 @@ export const getAppointmentById = async (req: AuthRequest, res: Response): Promi
       return;
     }
 
-    // Access control: Doctor of appointment, patient of appointment, or Admin
+    // Access control: Doctor of appointment, patient of appointment, Admin, or authorized Clinic/Receptionist
     if (req.user) {
       const isDoctor = req.user.role === 'DOCTOR' && appointment.doctor.userId === req.user.id;
       const isPatient = req.user.role === 'PATIENT' && appointment.patient.userId === req.user.id;
       const isAdmin = req.user.role === 'ADMIN';
 
-      if (!isDoctor && !isPatient && !isAdmin) {
+      let isClinicOrRec = false;
+      if (req.user.role === 'CLINIC' && appointment.clinicId) {
+        const clinic = await prisma.clinicProfile.findUnique({
+          where: { userId: req.user.id },
+        });
+        isClinicOrRec = Boolean(clinic && clinic.id === appointment.clinicId);
+      } else if (req.user.role === 'RECEPTIONIST') {
+        const rec = await prisma.receptionistProfile.findUnique({
+          where: { userId: req.user.id },
+          include: { doctors: true },
+        });
+        if (rec) {
+          isClinicOrRec = Boolean(
+            (rec.clinicId && appointment.clinicId === rec.clinicId) ||
+            rec.doctors.some((d) => d.doctorId === appointment.doctorId)
+          );
+        }
+      }
+
+      if (!isDoctor && !isPatient && !isAdmin && !isClinicOrRec) {
         res.status(403).json({ success: false, message: 'Access denied: You are not authorized to view this appointment' });
         return;
       }

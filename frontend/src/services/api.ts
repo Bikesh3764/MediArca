@@ -522,6 +522,7 @@ export interface User {
     bio?: string;
     clinicAddress?: string;
     isVerified: boolean;
+    verificationStatus?: 'PENDING' | 'VERIFIED' | 'SUSPENDED' | 'REJECTED' | string;
     checkingStartTime: string;
     checkingEndTime: string;
     avgConsultationMinutes: number;
@@ -781,6 +782,8 @@ export interface Appointment {
   patient?: {
     id: string;
     userId: string;
+    gender?: string;
+    dateOfBirth?: string;
     bloodGroup?: string;
     allergies?: string;
     existingConditions?: string;
