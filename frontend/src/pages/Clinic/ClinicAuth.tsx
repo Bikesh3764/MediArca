@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { AppleButton } from '../../components/ui/AppleButton';
+import { BrandLogo } from '../../components/ui/BrandLogo';
 import { Building2, AlertCircle, Sparkles, MapPin, Phone, Mail, Lock } from 'lucide-react';
 
 export const ClinicAuth: React.FC = () => {
@@ -83,6 +84,9 @@ export const ClinicAuth: React.FC = () => {
       <div className="max-w-md w-full">
         {/* Header */}
         <div className="text-center mb-8">
+          <Link to="/" className="inline-block mb-3 hover:opacity-90 transition-opacity">
+            <BrandLogo variant="full" size="md" imgClassName="h-8 w-auto mx-auto" />
+          </Link>
           <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center mx-auto mb-4 border border-emerald-500/20 shadow-xs">
             <Building2 className="w-7 h-7" />
           </div>

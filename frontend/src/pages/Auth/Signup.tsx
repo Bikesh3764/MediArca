@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { AppleButton } from '../../components/ui/AppleButton';
-import { Activity, AlertCircle, UserCheck, Stethoscope } from 'lucide-react';
+import { BrandLogo } from '../../components/ui/BrandLogo';
+import { AlertCircle, UserCheck, Stethoscope } from 'lucide-react';
 import { GoogleLogin } from '@react-oauth/google';
 import { isGoogleConfigured } from '../../config/auth';
 
@@ -118,9 +119,8 @@ export const Signup: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#f5f5f7] flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
-        <Link to="/" className="inline-flex items-center gap-2 mb-4">
-          <Activity className="w-8 h-8 text-[#0066cc]" />
-          <span className="font-semibold text-2xl text-[#1d1d1f] tracking-tight">MediArca</span>
+        <Link to="/" className="inline-block mb-4 hover:opacity-90 transition-opacity">
+          <BrandLogo variant="full" size="lg" imgClassName="h-9 w-auto mx-auto" />
         </Link>
         <h2 className="text-3xl font-semibold text-[#1d1d1f] tracking-tight">
           Create your account

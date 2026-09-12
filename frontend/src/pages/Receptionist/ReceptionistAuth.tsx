@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { AppleButton } from '../../components/ui/AppleButton';
+import { BrandLogo } from '../../components/ui/BrandLogo';
 import { Clock, AlertCircle, Sparkles, Mail, Lock, Info } from 'lucide-react';
 import { api } from '../../services/api';
 
@@ -96,6 +97,9 @@ export const ReceptionistAuth: React.FC = () => {
       <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center py-16 px-4 sm:px-6 animate-fadeIn">
         <div className="max-w-md w-full">
           <div className="text-center mb-8">
+            <Link to="/" className="inline-block mb-3 hover:opacity-90 transition-opacity">
+              <BrandLogo variant="full" size="md" imgClassName="h-8 w-auto mx-auto" />
+            </Link>
             <div className="w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center mx-auto mb-4 border border-amber-500/20 shadow-xs">
               <Lock className="w-7 h-7" />
             </div>
@@ -193,6 +197,9 @@ export const ReceptionistAuth: React.FC = () => {
       <div className="max-w-md w-full">
         {/* Header */}
         <div className="text-center mb-8">
+          <Link to="/" className="inline-block mb-3 hover:opacity-90 transition-opacity">
+            <BrandLogo variant="full" size="md" imgClassName="h-8 w-auto mx-auto" />
+          </Link>
           <div className="w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center mx-auto mb-4 border border-amber-500/20 shadow-xs">
             <Clock className="w-7 h-7" />
           </div>

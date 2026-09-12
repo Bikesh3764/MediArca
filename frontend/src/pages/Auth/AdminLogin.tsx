@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { BrandLogo } from '../../components/ui/BrandLogo';
 import { Shield, Lock, Eye, EyeOff, AlertCircle, ArrowLeft, CheckCircle2 } from 'lucide-react';
 
 export const AdminLogin: React.FC = () => {
@@ -41,6 +42,9 @@ export const AdminLogin: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#0d1117] text-white flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 selection:bg-amber-500 selection:text-black">
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
+        <Link to="/" className="inline-block mb-3 hover:opacity-90 transition-opacity">
+          <BrandLogo variant="full" size="md" theme="dark" imgClassName="h-7 w-auto" />
+        </Link>
         {/* Security Shield Icon */}
         <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 mb-5 shadow-inner">
           <Shield className="w-7 h-7" />

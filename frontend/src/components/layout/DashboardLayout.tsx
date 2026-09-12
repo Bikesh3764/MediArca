@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { BrandLogo } from '../ui/BrandLogo';
 import {
-  Activity,
   LogOut,
   Menu,
   X,
@@ -109,31 +109,31 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const renderSidebarContent = () => (
     <div className="flex flex-col h-full justify-between bg-white select-none">
       <div className="p-5 space-y-6">
-        {/* Brand & Portal Type */}
+        {/* Brand & Portal Type (Matches media_1789192783321.jpg) */}
         <div>
-          <Link to="/" className="flex items-center gap-2 text-[#1d1d1f] hover:opacity-85 transition-opacity">
-            <div className="w-7 h-7 rounded-xl bg-[#0066cc] flex items-center justify-center text-white shadow-sm">
-              <Activity className="w-4 h-4" />
-            </div>
-            <span className="font-semibold text-lg tracking-tight text-[#1d1d1f]">MediArca</span>
+          <Link to="/" className="inline-block hover:opacity-90 transition-opacity">
+            <BrandLogo variant="full" size="md" imgClassName="h-7 w-auto" />
           </Link>
-          <div className="mt-1 text-[10px] font-bold tracking-widest text-[#86868b] uppercase pl-9">
+          <div className="mt-1.5 text-[10px] font-bold tracking-widest text-[#86868b] uppercase">
             {getPortalLabel()}
           </div>
         </div>
 
-        {/* User Capsule Card (Matches media_1789160523622.jpg without active dot) */}
-        <div className="bg-[#f0f9ff]/70 border border-[#e0f2fe] rounded-2xl p-3 flex items-center gap-3 transition-all hover:bg-[#f0f9ff]">
-          <div className="w-9 h-9 rounded-xl bg-[#0066cc] text-white flex items-center justify-center font-bold text-sm shadow-sm flex-shrink-0">
+        {/* User Capsule Card (Matches media_1789192783321.jpg with soft green tint and Online status) */}
+        <div className="bg-[#f0fdf4] border border-[#d1fae5] rounded-2xl p-3 flex items-center gap-3 transition-all hover:bg-[#ecfdf5]">
+          <div className="w-9 h-9 rounded-full bg-[#0d9488] text-white flex items-center justify-center font-bold text-sm shadow-xs flex-shrink-0">
             {initialLetter}
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-xs font-semibold text-[#1d1d1f] truncate leading-tight">
-              {getDisplayName()}
+              {portalType === 'DOCTOR' ? `Dr. ${getDisplayName()}` : getDisplayName()}
             </p>
-            <p className="text-[11px] text-[#0066cc] truncate font-medium mt-0.5">
-              {getRoleSubtitle()}
-            </p>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#10b981] flex-shrink-0 animate-pulse" />
+              <span className="text-[11px] text-[#059669] font-medium leading-none">
+                Online
+              </span>
+            </div>
           </div>
         </div>
 
@@ -156,14 +156,14 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 <div
                   className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all ${
                     isItemActive
-                      ? 'bg-[#0066cc]/10 text-[#0066cc] font-semibold'
+                      ? 'bg-[#0088e8]/10 text-[#0088e8] font-semibold'
                       : 'text-[#48484a] hover:bg-[#f5f5f7] hover:text-[#1d1d1f]'
                   }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <Icon
                       className={`w-4 h-4 flex-shrink-0 ${
-                        isItemActive ? 'text-[#0066cc]' : 'text-[#86868b]'
+                        isItemActive ? 'text-[#0088e8]' : 'text-[#86868b]'
                       }`}
                     />
                     <span className="truncate">{item.label}</span>
@@ -173,7 +173,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                       <span
                         className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${
                           isItemActive
-                            ? 'bg-[#0066cc] text-white'
+                            ? 'bg-[#0088e8] text-white'
                             : 'bg-[#e5e5ea] text-[#48484a]'
                         }`}
                       >
@@ -181,7 +181,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                       </span>
                     )}
                     {isItemActive && (
-                      <div className="w-1.5 h-1.5 rounded-full bg-[#0066cc]" />
+                      <div className="w-1.5 h-1.5 rounded-full bg-[#0088e8]" />
                     )}
                   </div>
                 </div>
@@ -287,10 +287,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             <Menu className="w-5 h-5" />
           </button>
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-[#0066cc] text-white flex items-center justify-center">
-              <Activity className="w-3.5 h-3.5" />
-            </div>
-            <span className="font-semibold text-sm tracking-tight">MediArca</span>
+            <BrandLogo variant="full" size="sm" imgClassName="h-6 w-auto" />
           </div>
         </div>
         <span className="text-[10px] font-bold text-[#86868b] tracking-wider uppercase px-2 py-0.5 rounded-md bg-[#f5f5f7]">

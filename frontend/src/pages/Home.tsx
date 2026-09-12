@@ -10,6 +10,7 @@ import {
 } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { AppleButton } from '../components/ui/AppleButton';
+import { BrandLogo } from '../components/ui/BrandLogo';
 import {
   Search,
   MapPin,
@@ -178,23 +179,25 @@ export const Home: React.FC = () => {
         <div className="max-w-4xl mx-auto text-center">
           {/* Role Aware Status Bar */}
           {user ? (
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#0066cc]/10 border border-[#0066cc]/20 text-xs font-semibold text-[#0066cc] mb-6 shadow-sm">
-              <span className="w-2 h-2 rounded-full bg-[#0066cc] animate-pulse"></span>
-              Welcome back, {user.fullName?.split(' ')[0] || user.fullName} •{' '}
-              {isDoctor
-                ? 'Doctor Console'
-                : isClinic
-                ? 'Clinic Partner Portal'
-                : isReceptionist
-                ? 'Receptionist Desk'
-                : isAdmin
-                ? 'Admin Control Center'
-                : 'Patient Dashboard'}
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#f0fdf4] border border-[#d1fae5] text-xs font-semibold text-[#059669] mb-6 shadow-xs">
+              <BrandLogo variant="icon" size="xs" />
+              <span>
+                Welcome back, {user.fullName?.split(' ')[0] || user.fullName} •{' '}
+                {isDoctor
+                  ? 'Doctor Console'
+                  : isClinic
+                  ? 'Clinic Partner Portal'
+                  : isReceptionist
+                  ? 'Receptionist Desk'
+                  : isAdmin
+                  ? 'Admin Control Center'
+                  : 'Patient Dashboard'}
+              </span>
             </div>
           ) : (
-            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-xs font-medium text-[#1d1d1f] mb-6">
-              <span className="w-2 h-2 rounded-full bg-[#0066cc]"></span>
-              Live Queue • Zero Wait Guesswork
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#f0f9ff] border border-[#e0f2fe] text-xs font-medium text-[#0088e8] mb-6 shadow-xs">
+              <BrandLogo variant="icon" size="xs" />
+              <span>Live Queue • Zero Wait Guesswork</span>
             </div>
           )}
 

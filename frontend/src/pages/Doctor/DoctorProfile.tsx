@@ -9,6 +9,7 @@ import {
   Building2,
   Clock,
   Settings,
+  LayoutDashboard,
   User as UserIcon,
   CheckCircle2,
   AlertCircle,
@@ -169,8 +170,8 @@ export const DoctorProfile: React.FC = () => {
   const navItems: DashboardNavItem[] = [
     {
       id: 'dashboard',
-      label: 'Queue Console',
-      icon: Users,
+      label: 'Dashboard',
+      icon: LayoutDashboard,
       path: '/doctor/dashboard',
     },
     {
@@ -180,8 +181,8 @@ export const DoctorProfile: React.FC = () => {
       path: '/doctor/schedule',
     },
     {
-      id: 'profile',
-      label: 'Doctor Profile & Settings',
+      id: 'settings',
+      label: 'Settings',
       icon: Settings,
       path: '/doctor/profile',
       active: true,

@@ -35,6 +35,15 @@ import {
   UserCheck,
   UserX,
   Clock3,
+  LayoutDashboard,
+  Calendar,
+  QrCode,
+  Zap,
+  ClipboardList,
+  Printer,
+  Copy,
+  ChevronRight,
+  Share2,
 } from 'lucide-react';
 
 export const DoctorDashboard: React.FC = () => {
@@ -114,6 +123,77 @@ export const DoctorDashboard: React.FC = () => {
     }
   }, [activeTab, fetchAffiliations]);
 
+  // Modals for Walk-in QR and Add Appointment (media_1789192783321.jpg)
+  const [showQrModal, setShowQrModal] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+
+  // Walk-in patient creation state
+  const [walkinName, setWalkinName] = useState('');
+  const [walkinAge, setWalkinAge] = useState('');
+  const [walkinGender, setWalkinGender] = useState('Not Specified');
+  const [walkinPhone, setWalkinPhone] = useState('');
+  const [walkinReason, setWalkinReason] = useState('');
+  const [walkinSlotId, setWalkinSlotId] = useState('');
+  const [walkinSubmitting, setWalkinSubmitting] = useState(false);
+  const [walkinError, setWalkinError] = useState<string | null>(null);
+  const [walkinSuccess, setWalkinSuccess] = useState<string | null>(null);
+
+  const bookingUrl = `${window.location.origin}${window.location.pathname}#/book/${user?.doctorProfile?.id || user?.id}`;
+  const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=10&data=${encodeURIComponent(bookingUrl)}`;
+
+  const scrollToQueue = () => {
+    setActiveTab('queue');
+    setTimeout(() => {
+      const el = document.getElementById('live-queue-section');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth' });
+      }
+    }, 60);
+  };
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(bookingUrl);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2200);
+  };
+
+  const handleCreateWalkin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!walkinName.trim()) {
+      setWalkinError('Please enter the patient full name');
+      return;
+    }
+    setWalkinSubmitting(true);
+    setWalkinError(null);
+    try {
+      await api.bookAppointment({
+        doctorId: user?.doctorProfile?.id || user?.id || '',
+        appointmentDate: date,
+        slotId: walkinSlotId || undefined,
+        reasonForVisit: walkinReason || 'Clinic Walk-in Consultation',
+        isForOther: true,
+        patientName: walkinName.trim(),
+        patientAge: walkinAge.trim() || undefined,
+        patientGender: walkinGender || 'Not Specified',
+      });
+      setWalkinSuccess(`Patient ${walkinName} successfully queued!`);
+      setWalkinName('');
+      setWalkinAge('');
+      setWalkinPhone('');
+      setWalkinReason('');
+      await fetchQueue();
+      setTimeout(() => {
+        setShowAddModal(false);
+        setWalkinSuccess(null);
+      }, 1200);
+    } catch (err: any) {
+      setWalkinError(err.message || 'Failed to queue walk-in patient');
+    } finally {
+      setWalkinSubmitting(false);
+    }
+  };
+
   const handleAddClinic = async (clinicId: string) => {
     setFeedbackError(null);
     setFeedbackSuccess(null);
@@ -182,16 +262,32 @@ export const DoctorDashboard: React.FC = () => {
 
   const navItems: DashboardNavItem[] = [
     {
-      id: 'queue',
-      label: 'Live Queue Console',
-      icon: Users,
+      id: 'dashboard',
+      label: 'Dashboard',
+      icon: LayoutDashboard,
       active: activeTab === 'queue',
-      onClick: () => setActiveTab('queue'),
+      onClick: () => {
+        setActiveTab('queue');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      },
+    },
+    {
+      id: 'appointments',
+      label: 'Appointments',
+      icon: Calendar,
+      active: false,
+      onClick: scrollToQueue,
       badge: queueData?.waitingQueue.length || undefined,
     },
     {
+      id: 'walkin-qr',
+      label: 'Walk-in QR',
+      icon: QrCode,
+      onClick: () => setShowQrModal(true),
+    },
+    {
       id: 'affiliations',
-      label: 'Clinics & Affiliations',
+      label: 'Clinics & Staff',
       icon: Building2,
       active: activeTab === 'affiliations',
       onClick: () => {
@@ -207,8 +303,8 @@ export const DoctorDashboard: React.FC = () => {
       path: '/doctor/schedule',
     },
     {
-      id: 'profile',
-      label: 'Doctor Profile & Settings',
+      id: 'settings',
+      label: 'Settings',
       icon: Settings,
       path: '/doctor/profile',
     },
@@ -238,9 +334,11 @@ export const DoctorDashboard: React.FC = () => {
           <AppleButton
             variant="primary"
             size="sm"
-            onClick={() => navigate('/doctor/schedule')}
+            onClick={scrollToQueue}
+            className="flex items-center gap-1.5 shadow-sm bg-[#0088e8] hover:bg-[#0077cc]"
           >
-            Manage Shifts
+            <Calendar className="w-3.5 h-3.5" />
+            Manage Appointments
           </AppleButton>
         </div>
       }
@@ -740,44 +838,198 @@ export const DoctorDashboard: React.FC = () => {
               </div>
             </div>
 
-            {/* Queue Metrics Row */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
-              <UtilityCard className="flex items-center justify-between">
-                <div>
-                  <span className="text-xs text-[#86868b] uppercase font-semibold">Total in Queue</span>
-                  <h3 className="text-3xl font-bold text-[#1d1d1f] mt-1 tracking-tight">
-                    {queueData?.totalQueue || 0}
-                  </h3>
+            {/* Top 2 Metric Cards (Matches media_1789192783321.jpg) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-6">
+              {/* Card 1: Total Bookings */}
+              <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-6 shadow-sm transition-all hover:shadow-md">
+                <div className="w-10 h-10 rounded-xl bg-[#0088e8]/10 text-[#0088e8] flex items-center justify-center">
+                  <Calendar className="w-5 h-5" />
                 </div>
-                <div className="w-12 h-12 rounded-2xl bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center">
-                  <Users className="w-6 h-6" />
-                </div>
-              </UtilityCard>
+                <h3 className="text-4xl font-bold text-[#1d1d1f] mt-4 tracking-tight">
+                  {queueData?.totalQueue || 0}
+                </h3>
+                <p className="text-xs text-[#86868b] font-medium mt-1">
+                  Total Bookings
+                </p>
+              </div>
 
-              <UtilityCard className="flex items-center justify-between">
-                <div>
-                  <span className="text-xs text-[#86868b] uppercase font-semibold">Waiting to be Seen</span>
-                  <h3 className="text-3xl font-bold text-[#0066cc] mt-1 tracking-tight">
-                    {queueData?.waitingQueue.length || 0}
-                  </h3>
+              {/* Card 2: Completed Consultations */}
+              <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-6 shadow-sm transition-all hover:shadow-md">
+                <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center">
+                  <CheckCircle2 className="w-5 h-5" />
                 </div>
-                <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center">
-                  <Clock className="w-6 h-6" />
-                </div>
-              </UtilityCard>
-
-              <UtilityCard className="flex items-center justify-between">
-                <div>
-                  <span className="text-xs text-[#86868b] uppercase font-semibold">Completed Consultations</span>
-                  <h3 className="text-3xl font-bold text-emerald-600 mt-1 tracking-tight">
-                    {queueData?.completedQueue.length || 0}
-                  </h3>
-                </div>
-                <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                  <CheckCircle2 className="w-6 h-6" />
-                </div>
-              </UtilityCard>
+                <h3 className="text-4xl font-bold text-[#1d1d1f] mt-4 tracking-tight">
+                  {queueData?.completedQueue.length || 0}
+                </h3>
+                <p className="text-xs text-[#86868b] font-medium mt-1">
+                  Completed Consultations
+                </p>
+              </div>
             </div>
+
+            {/* Middle 2-Column Section: Quick Actions & Recent Activity (Matches media_1789192783321.jpg) */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              {/* Left: Quick Actions */}
+              <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-6 shadow-sm flex flex-col justify-between">
+                <div className="flex items-center gap-2 mb-4">
+                  <Zap className="w-4 h-4 text-[#0088e8] fill-[#0088e8]" />
+                  <h3 className="text-sm font-semibold text-[#1d1d1f] tracking-tight">
+                    Quick Actions
+                  </h3>
+                </div>
+
+                <div className="space-y-3">
+                  {/* Action 1: View Appointments */}
+                  <button
+                    type="button"
+                    onClick={scrollToQueue}
+                    className="w-full rounded-2xl border border-[#e0f2fe] bg-[#f0f9ff]/60 hover:bg-[#f0f9ff] p-3.5 flex items-center justify-between text-left transition-all group"
+                  >
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-10 h-10 rounded-xl bg-[#0088e8] text-white flex items-center justify-center shadow-xs flex-shrink-0">
+                        <Calendar className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-semibold text-[#1d1d1f] group-hover:text-[#0088e8] transition-colors">
+                          View Appointments
+                        </h4>
+                        <p className="text-xs text-[#86868b] mt-0.5">
+                          {queueData?.totalQueue || 0} total bookings
+                        </p>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-[#86868b] group-hover:text-[#0088e8] transition-colors" />
+                  </button>
+
+                  {/* Action 2: Walk-in QR Code */}
+                  <button
+                    type="button"
+                    onClick={() => setShowQrModal(true)}
+                    className="w-full rounded-2xl border border-[#d1fae5] bg-[#f0fdf4]/70 hover:bg-[#f0fdf4] p-3.5 flex items-center justify-between text-left transition-all group"
+                  >
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-10 h-10 rounded-xl bg-[#10b981] text-white flex items-center justify-center shadow-xs flex-shrink-0">
+                        <QrCode className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-semibold text-[#1d1d1f] group-hover:text-[#10b981] transition-colors">
+                          Walk-in QR Code
+                        </h4>
+                        <p className="text-xs text-[#86868b] mt-0.5">
+                          Print poster & share link
+                        </p>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-[#86868b] group-hover:text-[#10b981] transition-colors" />
+                  </button>
+
+                  {/* Action 3: Add Appointment */}
+                  <button
+                    type="button"
+                    onClick={() => setShowAddModal(true)}
+                    className="w-full rounded-2xl border border-[#ede9fe] bg-[#f5f3ff]/70 hover:bg-[#f5f3ff] p-3.5 flex items-center justify-between text-left transition-all group"
+                  >
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-10 h-10 rounded-xl bg-[#8b5cf6] text-white flex items-center justify-center shadow-xs flex-shrink-0">
+                        <Plus className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-semibold text-[#1d1d1f] group-hover:text-[#8b5cf6] transition-colors">
+                          Add Appointment
+                        </h4>
+                        <p className="text-xs text-[#86868b] mt-0.5">
+                          Log new walk-in patient
+                        </p>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-[#86868b] group-hover:text-[#8b5cf6] transition-colors" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Right: Recent Activity */}
+              <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-6 shadow-sm flex flex-col justify-between">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <ClipboardList className="w-4 h-4 text-[#86868b]" />
+                    <h3 className="text-sm font-semibold text-[#1d1d1f] tracking-tight">
+                      Recent Activity
+                    </h3>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={scrollToQueue}
+                    className="text-xs font-semibold text-[#0088e8] hover:underline flex items-center gap-1"
+                  >
+                    View All &rarr;
+                  </button>
+                </div>
+
+                {(!queueData?.allAppointments || queueData.allAppointments.length === 0) ? (
+                  <div className="flex-1 flex flex-col items-center justify-center py-10 text-center">
+                    <div className="w-12 h-12 rounded-2xl bg-[#f5f5f7] flex items-center justify-center text-[#86868b] mb-3">
+                      <ClipboardList className="w-6 h-6 stroke-1" />
+                    </div>
+                    <h4 className="text-sm font-semibold text-[#1d1d1f]">
+                      No appointments yet
+                    </h4>
+                    <p className="text-xs text-[#86868b] mt-1">
+                      Patient bookings will appear here
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2.5 flex-1">
+                    {queueData.allAppointments.slice(0, 3).map((appt) => (
+                      <div
+                        key={appt.id}
+                        className="p-3 rounded-xl border border-[#e5e5ea] hover:border-[#0088e8]/30 transition-all flex items-center justify-between text-xs"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <span className="w-7 h-7 rounded-lg bg-[#1d1d1f] text-white font-bold text-[11px] flex items-center justify-center flex-shrink-0">
+                            #{appt.queueNumber}
+                          </span>
+                          <div className="min-w-0">
+                            <p className="font-semibold text-[#1d1d1f] truncate">
+                              {appt.isForOther && appt.patientName ? appt.patientName : appt.patient?.user.fullName}
+                            </p>
+                            <p className="text-[11px] text-[#86868b] truncate">
+                              {appt.estimatedTime} • {appt.checkingWindow || 'Shift'}
+                            </p>
+                          </div>
+                        </div>
+                        <span
+                          className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                            appt.status === 'IN_CONSULTATION'
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : appt.status === 'COMPLETED'
+                              ? 'bg-blue-100 text-blue-800'
+                              : 'bg-amber-100 text-amber-800'
+                          }`}
+                        >
+                          {appt.status.replace('_', ' ')}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Practice Summary Card (Matches media_1789192783321.jpg) */}
+            <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-6 shadow-sm mb-8">
+              <div className="flex items-center gap-2 mb-2">
+                <Clock className="w-4 h-4 text-[#0088e8]" />
+                <h3 className="text-sm font-semibold text-[#1d1d1f] tracking-tight">
+                  Practice Summary
+                </h3>
+              </div>
+              <p className="text-xs text-[#86868b]">
+                You have <strong className="text-[#1d1d1f]">{queueData?.completedQueue.length || 0}</strong> completed consultation sessions logged on MediArca.
+              </p>
+            </div>
+
+            {/* Live Queue Station Anchor & Shifts */}
+            <div id="live-queue-section" className="scroll-mt-6">
 
             {/* Main Console Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -980,8 +1232,229 @@ export const DoctorDashboard: React.FC = () => {
               </div>
             </div>
           </div>
+          </div>
         )}
       </div>
+
+      {/* Walk-in QR Code Modal (media_1789192783321.jpg) */}
+      {showQrModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-fadeIn">
+          <div className="bg-white rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-6 shadow-2xl relative text-center">
+            <button
+              type="button"
+              onClick={() => setShowQrModal(false)}
+              className="absolute top-4 right-4 p-2 text-[#86868b] hover:text-[#1d1d1f] rounded-full hover:bg-[#f5f5f7] transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="w-12 h-12 rounded-2xl bg-[#10b981]/10 text-[#10b981] flex items-center justify-center mx-auto mb-3">
+              <QrCode className="w-6 h-6" />
+            </div>
+
+            <h3 className="text-xl font-bold text-[#1d1d1f] tracking-tight">
+              Walk-in Check-in QR Code
+            </h3>
+            <p className="text-xs text-[#86868b] mt-1">
+              Patients scan this QR code at your reception or door to join today's queue directly without signing up.
+            </p>
+
+            <div className="my-5 p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] inline-block">
+              <img
+                src={qrImageUrl}
+                alt="Doctor Walk-in QR Code"
+                className="w-52 h-52 object-contain rounded-xl bg-white p-2 shadow-xs mx-auto"
+              />
+              <div className="mt-3 text-center">
+                <p className="font-semibold text-xs text-[#1d1d1f]">Dr. {user?.fullName}</p>
+                <p className="text-[11px] text-[#86868b]">{user?.doctorProfile?.specialty || 'Specialist'} • {user?.doctorProfile?.clinicAddress || 'Clinic'}</p>
+              </div>
+            </div>
+
+            <div className="space-y-2.5">
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  readOnly
+                  value={bookingUrl}
+                  className="flex-1 text-xs bg-[#f5f5f7] border border-[#e5e5ea] rounded-xl px-3 py-2 text-[#1d1d1f] select-all focus:outline-none"
+                />
+                <AppleButton
+                  size="sm"
+                  variant={copiedLink ? 'secondary' : 'primary'}
+                  onClick={handleCopyLink}
+                  className="flex items-center gap-1.5 whitespace-nowrap"
+                >
+                  {copiedLink ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copiedLink ? 'Copied' : 'Copy'}
+                </AppleButton>
+              </div>
+
+              <div className="flex items-center gap-2 pt-1">
+                <AppleButton
+                  size="md"
+                  variant="secondary"
+                  onClick={() => window.print()}
+                  className="w-full flex items-center justify-center gap-2"
+                >
+                  <Printer className="w-4 h-4" />
+                  Print Clinic Poster
+                </AppleButton>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Rapid Add Walk-in Patient Modal (media_1789192783321.jpg) */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-fadeIn">
+          <div className="bg-white rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-6 shadow-2xl relative text-left">
+            <button
+              type="button"
+              onClick={() => {
+                setShowAddModal(false);
+                setWalkinError(null);
+                setWalkinSuccess(null);
+              }}
+              className="absolute top-4 right-4 p-2 text-[#86868b] hover:text-[#1d1d1f] rounded-full hover:bg-[#f5f5f7] transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-[#8b5cf6]/10 text-[#8b5cf6] flex items-center justify-center flex-shrink-0">
+                <Plus className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-[#1d1d1f] tracking-tight">
+                  Add Walk-in Patient
+                </h3>
+                <p className="text-xs text-[#86868b]">
+                  Instantly issue a live queue ticket for a walk-in patient.
+                </p>
+              </div>
+            </div>
+
+            {walkinError && (
+              <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
+                <span>{walkinError}</span>
+              </div>
+            )}
+
+            {walkinSuccess && (
+              <div className="mb-4 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                <span>{walkinSuccess}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleCreateWalkin} className="space-y-3.5 text-xs">
+              <div>
+                <label className="block text-[11px] font-semibold text-[#86868b] uppercase mb-1">
+                  Patient Full Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. John Smith"
+                  value={walkinName}
+                  onChange={(e) => setWalkinName(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] focus:outline-none focus:border-[#0088e8]"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-semibold text-[#86868b] uppercase mb-1">
+                    Age
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="e.g. 34"
+                    value={walkinAge}
+                    onChange={(e) => setWalkinAge(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] focus:outline-none focus:border-[#0088e8]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-[#86868b] uppercase mb-1">
+                    Gender
+                  </label>
+                  <select
+                    value={walkinGender}
+                    onChange={(e) => setWalkinGender(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] focus:outline-none focus:border-[#0088e8]"
+                  >
+                    <option value="Not Specified">Not Specified</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-[#86868b] uppercase mb-1">
+                  Phone (Optional)
+                </label>
+                <input
+                  type="tel"
+                  placeholder="e.g. +1 (555) 019-2834"
+                  value={walkinPhone}
+                  onChange={(e) => setWalkinPhone(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] focus:outline-none focus:border-[#0088e8]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-[#86868b] uppercase mb-1">
+                  Checking Shift
+                </label>
+                <select
+                  value={walkinSlotId}
+                  onChange={(e) => setWalkinSlotId(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] focus:outline-none focus:border-[#0088e8]"
+                >
+                  <option value="">Current / Default Shift</option>
+                  {parseDoctorSlots(user?.doctorProfile).map((slot, i) => (
+                    <option key={slot.id || i} value={slot.id}>
+                      {slot.name} ({format12Hour(slot.startTime)}–{format12Hour(slot.endTime)})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-[#86868b] uppercase mb-1">
+                  Reason for Visit / Symptoms
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Fever, cough, general consultation"
+                  value={walkinReason}
+                  onChange={(e) => setWalkinReason(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] focus:outline-none focus:border-[#0088e8]"
+                />
+              </div>
+
+              <div className="pt-2">
+                <AppleButton
+                  type="submit"
+                  variant="primary"
+                  size="md"
+                  disabled={walkinSubmitting}
+                  className="w-full flex items-center justify-center gap-2 bg-[#8b5cf6] hover:bg-[#7c3aed]"
+                >
+                  <Plus className="w-4 h-4" />
+                  {walkinSubmitting ? 'Issuing Ticket...' : 'Queue Walk-in Patient'}
+                </AppleButton>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 };

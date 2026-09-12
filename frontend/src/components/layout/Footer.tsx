@@ -1,11 +1,21 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { getBackendBaseUrl } from '../../services/api';
+import { BrandLogo } from '../ui/BrandLogo';
 
 export const Footer: React.FC = () => {
   return (
     <footer className="bg-[#f5f5f7] border-t border-[#e0e0e0] text-[#7a7a7a] mt-auto">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-10 pb-10">
+        <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <Link to="/" className="inline-block hover:opacity-85 transition-opacity">
+            <BrandLogo variant="full" size="md" imgClassName="h-7 w-auto" />
+          </Link>
+          <span className="text-xs text-[#86868b] font-medium">
+            Next-Generation Clinical Operations & Queue Platform
+          </span>
+        </div>
+
         {/* Directory Links */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 py-8 text-[12px] leading-relaxed border-b border-[#e0e0e0]">
           <div>

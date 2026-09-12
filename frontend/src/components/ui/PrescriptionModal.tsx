@@ -1,7 +1,8 @@
 import React from 'react';
 import { Appointment } from '../../services/api';
 import { AppleButton } from './AppleButton';
-import { X, Printer, Activity, CheckCircle } from 'lucide-react';
+import { BrandLogo } from './BrandLogo';
+import { X, Printer, CheckCircle } from 'lucide-react';
 
 interface PrescriptionModalProps {
   appointment: Appointment | null;
@@ -29,7 +30,7 @@ export const PrescriptionModal: React.FC<PrescriptionModalProps> = ({ appointmen
         {/* Modal Controls */}
         <div className="flex items-center justify-between pb-6 border-b border-[#e0e0e0]">
           <div className="flex items-center gap-2">
-            <Activity className="w-5 h-5 text-[#0066cc]" />
+            <BrandLogo variant="icon" size="sm" />
             <h2 className="text-[20px] font-semibold text-[#1d1d1f]">Official Digital Prescription</h2>
           </div>
           <div className="flex items-center gap-2">

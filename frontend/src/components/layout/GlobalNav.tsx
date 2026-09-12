@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Activity, LogOut, ShieldCheck, Stethoscope, Menu, X, Calendar, FileText, Building2, Users } from 'lucide-react';
+import { BrandLogo } from '../ui/BrandLogo';
+import { LogOut, ShieldCheck, Stethoscope, Menu, X, Calendar, FileText, Building2, Users } from 'lucide-react';
 
 export const GlobalNav: React.FC = () => {
   const { user, logout } = useAuth();
@@ -52,9 +53,8 @@ export const GlobalNav: React.FC = () => {
     <header className="sticky top-0 z-50 bg-[#000000] text-white border-b border-white/10 select-none">
       <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 h-11 flex items-center justify-between text-[12px] font-normal tracking-tight">
         {/* Brand */}
-        <Link to="/" onClick={closeMenu} className="flex items-center gap-2 text-white hover:text-white/80 transition-colors">
-          <Activity className="w-4 h-4 text-[#2997ff]" />
-          <span className="font-semibold text-[13px] tracking-normal">MediArca</span>
+        <Link to="/" onClick={closeMenu} className="flex items-center gap-2 hover:opacity-90 transition-opacity">
+          <BrandLogo variant="full" size="sm" theme="dark" imgClassName="h-5 w-auto" />
         </Link>
 
         {/* Center Desktop Nav Links */}

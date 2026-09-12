@@ -1,6 +1,7 @@
 import { Component, ErrorInfo, ReactNode } from 'react';
-import { Activity, RefreshCw, Home } from 'lucide-react';
+import { RefreshCw, Home } from 'lucide-react';
 import { AppleButton } from './AppleButton';
+import { BrandLogo } from './BrandLogo';
 
 interface Props {
   children: ReactNode;
@@ -38,8 +39,8 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       return (
         <div className="min-h-screen bg-[#f5f5f7] flex flex-col justify-center items-center px-4 sm:px-6 text-center select-none">
-          <div className="w-16 h-16 rounded-3xl bg-white border border-[#e0e0e0] flex items-center justify-center text-[#0066cc] shadow-sm mb-6">
-            <Activity className="w-8 h-8 animate-pulse" />
+          <div className="w-16 h-16 rounded-3xl bg-white border border-[#e0e0e0] flex items-center justify-center text-[#0066cc] shadow-sm mb-6 p-2">
+            <BrandLogo variant="icon" size="lg" />
           </div>
 
           <span className="text-xs font-semibold text-[#0066cc] uppercase tracking-wider mb-2">
