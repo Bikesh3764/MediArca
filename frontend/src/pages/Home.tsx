@@ -477,96 +477,105 @@ export const Home: React.FC = () => {
               return (
                 <div
                   key={doctor.id}
-                  className="bg-white rounded-[22px] border border-[#e5e5ea] p-5 sm:p-6 shadow-xs hover:shadow-apple-card hover:border-[#0088e8]/30 transition-all duration-300 flex flex-col justify-between group"
+                  className="bg-white rounded-[24px] border border-[#e5e5ea] p-5 sm:p-6 shadow-xs hover:shadow-apple-card hover:border-[#0088e8]/30 transition-all duration-300 flex flex-col justify-between group"
                 >
                   <div>
-                    {/* Top: Avatar, Name, Rating */}
-                    <div className="flex items-start gap-3.5 mb-4">
-                      <div
-                        onClick={() => navigate(getHomeDoctorDetailPath(doctor.id))}
-                        className="w-14 h-14 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] overflow-hidden flex-shrink-0 cursor-pointer group-hover:scale-105 transition-transform"
-                      >
-                        {doctor.user.avatarUrl ? (
-                          <img
-                            src={doctor.user.avatarUrl}
-                            alt={doctor.user.fullName}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center font-semibold text-lg text-[#0088e8]">
-                            {doctor.user.fullName[0]}
+                    {/* Top: Avatar, Name & Specialties, Rating */}
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                      <div className="flex items-start gap-3.5 min-w-0">
+                        <div
+                          onClick={() => navigate(getHomeDoctorDetailPath(doctor.id))}
+                          className="w-14 h-14 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] overflow-hidden flex-shrink-0 cursor-pointer group-hover:scale-105 transition-transform"
+                        >
+                          {doctor.user.avatarUrl ? (
+                            <img
+                              src={doctor.user.avatarUrl}
+                              alt={doctor.user.fullName}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center font-bold text-lg text-[#0088e8]">
+                              {doctor.user.fullName[0]}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <h3
+                              onClick={() => navigate(getHomeDoctorDetailPath(doctor.id))}
+                              className="text-base font-semibold text-[#1d1d1f] hover:text-[#0088e8] cursor-pointer truncate tracking-tight"
+                            >
+                              {doctor.user.fullName}
+                            </h3>
+                            <ShieldCheck className="w-4 h-4 text-[#10b981] flex-shrink-0" />
                           </div>
-                        )}
+
+                          <div className="flex items-center gap-1.5 mt-1">
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#0088e8]/10 text-[#0088e8]">
+                              {doctor.specialty}
+                            </span>
+                            <span className="text-[11px] text-[#86868b]">•</span>
+                            <span className="text-[11px] font-medium text-[#86868b]">
+                              {doctor.experienceYears} yrs exp
+                            </span>
+                          </div>
+                        </div>
                       </div>
 
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <h3
-                            onClick={() => navigate(getHomeDoctorDetailPath(doctor.id))}
-                            className="text-[15px] font-semibold text-[#1d1d1f] hover:text-[#0088e8] cursor-pointer truncate"
-                          >
-                            {doctor.user.fullName}
-                          </h3>
-                          <ShieldCheck className="w-4 h-4 text-[#10b981] flex-shrink-0" />
-                        </div>
-
-                        <div className="mt-1 flex items-center gap-1.5">
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-[#f0f9ff] text-[#0088e8] border border-[#e0f2fe]">
-                            {doctor.specialty}
-                          </span>
-                        </div>
-
-                        <p className="text-[11px] text-[#86868b] truncate mt-1">
-                          {doctor.qualifications} • {doctor.experienceYears} yrs exp.
-                        </p>
-                      </div>
-
-                      <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-xs font-semibold text-[#1d1d1f] flex-shrink-0">
+                      {/* Rating Chip */}
+                      <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200/80 text-xs font-semibold text-amber-800 flex-shrink-0">
                         <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
                         <span>{doctor.rating ? doctor.rating.toFixed(1) : '5.0'}</span>
                       </div>
                     </div>
 
-                    {/* Clinic / Practice Venue */}
-                    <div className="flex items-center gap-1.5 text-xs text-[#86868b] mb-4 line-clamp-1">
-                      {doctor.clinics && doctor.clinics.length > 0 ? (
-                        <>
-                          <Building2 className="w-3.5 h-3.5 text-[#0088e8] flex-shrink-0" />
-                          <span className="truncate">
-                            {doctor.clinics[0].clinic.clinicName}
-                            {doctor.clinics.length > 1 ? ` (+${doctor.clinics.length - 1} more)` : ''}
-                            {doctor.clinics[0].clinic.city ? ` • ${doctor.clinics[0].clinic.city}` : ''}
-                          </span>
-                        </>
-                      ) : (
-                        <>
-                          <MapPin className="w-3.5 h-3.5 text-[#86868b] flex-shrink-0" />
-                          <span className="truncate">{doctor.clinicAddress || 'MediArca Healthcare Centre'}</span>
-                        </>
-                      )}
-                    </div>
+                    {/* Qualifications / Hospital Background */}
+                    <p className="text-xs text-[#6e6e73] font-normal mb-4 line-clamp-1">
+                      {doctor.qualifications || 'Certified Clinical Specialist'}
+                    </p>
 
-                    {/* Checking Shifts Badges */}
-                    <div className="p-3 rounded-xl bg-[#fafafc] border border-[#f0f0f0] mb-5 space-y-1.5">
-                      <div className="flex items-center justify-between text-[11px]">
-                        <span className="text-[#86868b] font-medium flex items-center gap-1">
-                          <Clock className="w-3 h-3 text-[#0088e8]" /> Checking Shifts:
+                    {/* Clinical Practice Details Compartment */}
+                    <div className="my-4 p-3.5 rounded-2xl bg-[#f5f5f7]/80 border border-[#e5e5ea]/80 space-y-2.5">
+                      {/* Facility / Location */}
+                      <div className="flex items-center gap-2 text-xs">
+                        <Building2 className="w-3.5 h-3.5 text-[#0088e8] flex-shrink-0" />
+                        <span className="text-[#1d1d1f] font-medium truncate">
+                          {doctor.clinics && doctor.clinics.length > 0 ? (
+                            <>
+                              {doctor.clinics[0].clinic.clinicName}
+                              {doctor.clinics[0].clinic.city ? ` • ${doctor.clinics[0].clinic.city}` : ''}
+                              {doctor.clinics.length > 1 ? ` (+${doctor.clinics.length - 1} more)` : ''}
+                            </>
+                          ) : (
+                            doctor.clinicAddress || 'MediArca Healthcare Facility'
+                          )}
                         </span>
-                        {firstSlotStatus?.isInProgress && (
-                          <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                            Active Shift Now
+                      </div>
+
+                      {/* Shift & Queue Availability */}
+                      <div className="flex items-center justify-between gap-2 text-xs pt-2 border-t border-[#e5e5ea]/70">
+                        <div className="flex items-center gap-2 text-[#48484a] min-w-0">
+                          <Clock className="w-3.5 h-3.5 text-[#0088e8] flex-shrink-0" />
+                          <span className="font-medium text-[#1d1d1f] truncate">
+                            {slots.length > 0
+                              ? `${format12Hour(slots[0].startTime)} – ${format12Hour(slots[0].endTime)}`
+                              : doctor.checkingStartTime
+                              ? `${format12Hour(doctor.checkingStartTime)} – ${format12Hour(doctor.checkingEndTime)}`
+                              : 'Flexible Outpatient Hours'}
+                          </span>
+                        </div>
+
+                        {firstSlotStatus?.isInProgress ? (
+                          <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700 bg-emerald-100/70 px-2.5 py-0.5 rounded-full border border-emerald-300/60 flex-shrink-0">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                            Active Now
+                          </span>
+                        ) : (
+                          <span className="text-[11px] text-[#86868b] font-medium flex-shrink-0">
+                            {slots.length > 1 ? `${slots.length} Shifts Today` : 'Scheduled Today'}
                           </span>
                         )}
-                      </div>
-                      <div className="flex flex-wrap gap-1.5">
-                        {slots.slice(0, 2).map((slot) => (
-                          <span
-                            key={slot.id}
-                            className="text-[11px] font-medium text-[#1d1d1f] bg-white px-2.5 py-1 rounded-lg border border-[#e5e5ea]"
-                          >
-                            {slot.name || `${format12Hour(slot.startTime)} – ${format12Hour(slot.endTime)}`}
-                          </span>
-                        ))}
                       </div>
                     </div>
                   </div>
@@ -574,18 +583,20 @@ export const Home: React.FC = () => {
                   {/* Footer: Fee & Booking CTA */}
                   <div className="pt-3.5 border-t border-[#f0f0f0] flex items-center justify-between gap-3">
                     <div>
-                      <div className="text-lg font-bold text-[#1d1d1f] tracking-tight">
+                      <span className="text-[10px] uppercase font-semibold text-[#86868b] tracking-wider block">
+                        Consultation
+                      </span>
+                      <div className="text-xl font-bold text-[#1d1d1f] tracking-tight leading-none mt-0.5">
                         ${doctor.consultationFee.toFixed(0)}
                       </div>
-                      <span className="text-[10px] text-[#86868b] block font-medium">Direct clinic settlement</span>
                     </div>
 
                     <div className="flex items-center gap-2">
                       <AppleButton
-                        variant="secondary"
+                        variant="ghost"
                         size="sm"
                         onClick={() => navigate(getHomeDoctorDetailPath(doctor.id))}
-                        className="text-xs"
+                        className="text-xs px-3.5 py-1.5 rounded-full border border-[#e5e5ea] text-[#1d1d1f] hover:bg-[#f5f5f7]"
                       >
                         Details
                       </AppleButton>
@@ -593,9 +604,9 @@ export const Home: React.FC = () => {
                         variant="primary"
                         size="sm"
                         onClick={() => navigate(getHomeDoctorBookPath(doctor.id))}
-                        className="flex items-center gap-1 text-xs"
+                        className="text-xs px-4 py-1.5 rounded-full flex items-center gap-1.5 font-medium shadow-xs"
                       >
-                        Book Token
+                        <span>Book Token</span>
                         <ChevronRight className="w-3.5 h-3.5" />
                       </AppleButton>
                     </div>
