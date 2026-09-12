@@ -10,6 +10,7 @@ import {
   addDoctorReceptionist,
   removeDoctorReceptionist,
 } from '../controllers/doctorController';
+import { updateProfile } from '../controllers/authController';
 import { authenticate, authorize } from '../middleware/authMiddleware';
 
 const router = Router();
@@ -23,6 +24,7 @@ router.delete('/me/clinics/:clinicId', authenticate, authorize('DOCTOR'), remove
 router.post('/me/receptionists', authenticate, authorize('DOCTOR'), addDoctorReceptionist);
 router.delete('/me/receptionists/:receptionistId', authenticate, authorize('DOCTOR'), removeDoctorReceptionist);
 
+router.put('/profile', authenticate, authorize('DOCTOR'), updateProfile);
 router.get('/:id', getDoctorById);
 router.put('/schedule', authenticate, authorize('DOCTOR'), updateSchedule);
 

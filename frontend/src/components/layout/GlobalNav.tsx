@@ -134,14 +134,14 @@ export const GlobalNav: React.FC = () => {
                 Doctor Console
               </Link>
               <Link
-                to="/doctor/schedule"
+                to="/doctor/dashboard?tab=affiliations"
                 className={`px-3.5 py-1.5 rounded-full transition-all text-xs ${
-                  isActive('/doctor/schedule')
+                  isActive('/doctor/dashboard') && location.search.includes('tab=affiliations')
                     ? 'bg-[#0088e8]/10 text-[#0088e8] font-semibold'
                     : 'hover:text-[#0f172a] hover:bg-slate-100/70 font-medium'
                 }`}
               >
-                Manage Hours
+                Clinics & Schedule
               </Link>
               <Link
                 to="/doctor/profile"
@@ -369,15 +369,15 @@ export const GlobalNav: React.FC = () => {
                   Doctor Console
                 </Link>
                 <Link
-                  to="/doctor/schedule"
+                  to="/doctor/dashboard?tab=affiliations"
                   onClick={closeMenu}
                   className={`py-2 px-3 rounded-xl transition-colors ${
-                    isActive('/doctor/schedule')
+                    isActive('/doctor/dashboard') && location.search.includes('tab=affiliations')
                       ? 'bg-[#0088e8]/10 text-[#0088e8] font-semibold'
                       : 'hover:bg-slate-100 hover:text-slate-900 font-medium'
                   }`}
                 >
-                  Manage Hours & Slots
+                  Clinics & Schedule
                 </Link>
                 <Link
                   to="/doctor/profile"

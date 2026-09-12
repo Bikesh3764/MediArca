@@ -168,6 +168,23 @@ async function ensureSchema() {
     } catch {}
   }
 
+  // Ensure consultationFee and slots on ClinicDoctor
+  try {
+    await prisma.$executeRawUnsafe(`ALTER TABLE "ClinicDoctor" ADD COLUMN IF NOT EXISTS "consultationFee" DOUBLE PRECISION;`);
+  } catch {
+    try {
+      await prisma.$executeRawUnsafe(`ALTER TABLE "ClinicDoctor" ADD COLUMN "consultationFee" REAL;`);
+    } catch {}
+  }
+
+  try {
+    await prisma.$executeRawUnsafe(`ALTER TABLE "ClinicDoctor" ADD COLUMN IF NOT EXISTS "slots" TEXT;`);
+  } catch {
+    try {
+      await prisma.$executeRawUnsafe(`ALTER TABLE "ClinicDoctor" ADD COLUMN "slots" TEXT;`);
+    } catch {}
+  }
+
   // Ensure DoctorReceptionist
   try {
     await prisma.$executeRawUnsafe(`

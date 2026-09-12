@@ -136,6 +136,7 @@ export const updateSchedule = async (req: AuthRequest, res: Response): Promise<v
     }
 
     const {
+      clinicId,
       slots,
       checkingStartTime,
       checkingEndTime,
@@ -184,6 +185,46 @@ export const updateSchedule = async (req: AuthRequest, res: Response): Promise<v
         derivedEndTime = formattedSlots[formattedSlots.length - 1].endTime;
         derivedMaxPatients = formattedSlots.reduce((acc, cur) => acc + cur.maxPatients, 0);
         derivedAvgMinutes = formattedSlots[0].avgConsultationMinutes;
+      }
+    }
+
+    // If clinicId is provided, update the clinic-specific schedule on ClinicDoctor
+    if (clinicId) {
+      const clinicAffiliation = await prisma.clinicDoctor.findUnique({
+        where: {
+          clinicId_doctorId: {
+            clinicId,
+            doctorId: doctor.id,
+          },
+        },
+        include: { clinic: true },
+      });
+
+      if (clinicAffiliation) {
+        const clinicUpdateData: any = {};
+        if (formattedSlots.length > 0) {
+          clinicUpdateData.slots = JSON.stringify(formattedSlots);
+        }
+        if (consultationFee !== undefined && !isNaN(Number(consultationFee))) {
+          clinicUpdateData.consultationFee = Number(consultationFee);
+        }
+
+        await prisma.clinicDoctor.update({
+          where: { id: clinicAffiliation.id },
+          data: clinicUpdateData,
+        });
+
+        res.json({
+          success: true,
+          message: `Schedule and consultation fee for ${clinicAffiliation.clinic.clinicName} updated successfully`,
+          data: {
+            clinicId,
+            clinicName: clinicAffiliation.clinic.clinicName,
+            consultationFee: clinicUpdateData.consultationFee ?? (clinicAffiliation as any).consultationFee ?? doctor.consultationFee,
+            slots: formattedSlots.length > 0 ? formattedSlots : parseDoctorSlots(doctor),
+          },
+        });
+        return;
       }
     }
 
@@ -289,7 +330,15 @@ export const getDoctorAffiliations = async (req: AuthRequest, res: Response): Pr
         });
 
         const activeOrCompleted = appointmentsAtClinic.filter((a) => a.status !== 'CANCELLED');
-        const revenue = activeOrCompleted.length * doctor.consultationFee;
+        const clinicFee = (cd as any).consultationFee ?? doctor.consultationFee;
+        const revenue = activeOrCompleted.length * clinicFee;
+
+        let clinicSlots = parseDoctorSlots(doctor);
+        if ((cd as any).slots) {
+          try {
+            clinicSlots = JSON.parse((cd as any).slots);
+          } catch {}
+        }
 
         return {
           affiliationId: cd.id,
@@ -301,6 +350,8 @@ export const getDoctorAffiliations = async (req: AuthRequest, res: Response): Pr
           email: cd.clinic.user.email,
           bookingCount: appointmentsAtClinic.length,
           revenue,
+          consultationFee: clinicFee,
+          slots: clinicSlots,
           status: cd.status,
           requestedBy: (cd as any).requestedBy || 'CLINIC',
           joinedAt: cd.createdAt,

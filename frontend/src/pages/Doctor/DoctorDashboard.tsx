@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   api,
   Appointment,
@@ -24,7 +24,6 @@ import {
   RefreshCw,
   Building2,
   Trash2,
-  UserPlus,
   Plus,
   AlertCircle,
   X,
@@ -32,8 +31,6 @@ import {
   DollarSign,
   Settings,
   Check,
-  UserCheck,
-  UserX,
   Clock3,
   LayoutDashboard,
   Calendar,
@@ -43,14 +40,24 @@ import {
   Printer,
   Copy,
   ChevronRight,
-  Share2,
 } from 'lucide-react';
 
 export const DoctorDashboard: React.FC = () => {
   const { user, loading: loadingAuth } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
-  const [activeTab, setActiveTab] = useState<'queue' | 'affiliations'>('queue');
+  const [activeTab, setActiveTab] = useState<'queue' | 'affiliations'>(() => {
+    return searchParams.get('tab') === 'affiliations' ? 'affiliations' : 'queue';
+  });
+
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam === 'affiliations' && activeTab !== 'affiliations') {
+      setActiveTab('affiliations');
+    }
+  }, [searchParams, activeTab]);
+
   const [affiliations, setAffiliations] = useState<DoctorAffiliationsData | null>(null);
   const [publicClinics, setPublicClinics] = useState<ClinicProfile[]>([]);
   const [affiliationsLoading, setAffiliationsLoading] = useState(false);
@@ -295,12 +302,6 @@ export const DoctorDashboard: React.FC = () => {
         fetchAffiliations();
       },
       badge: totalPendingRequests > 0 ? `${totalPendingRequests} new` : undefined,
-    },
-    {
-      id: 'schedule',
-      label: 'Manage Schedule',
-      icon: Clock,
-      path: '/doctor/schedule',
     },
     {
       id: 'settings',
@@ -647,9 +648,14 @@ export const DoctorDashboard: React.FC = () => {
                               <Building2 className="w-5 h-5" />
                             </div>
                             <div>
-                              <h4 className="font-semibold text-base text-[#1d1d1f] tracking-tight">
-                                {clinic.clinicName}
-                              </h4>
+                              <div className="flex items-center gap-2">
+                                <h4 className="font-semibold text-base text-[#1d1d1f] tracking-tight">
+                                  {clinic.clinicName}
+                                </h4>
+                                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                  Verified
+                                </span>
+                              </div>
                               <p className="text-xs text-[#86868b] flex items-center gap-1 mt-0.5">
                                 <MapPin className="w-3 h-3 text-[#86868b]" />
                                 {clinic.address}{clinic.city ? `, ${clinic.city}` : ''}
@@ -667,13 +673,44 @@ export const DoctorDashboard: React.FC = () => {
                           </AppleButton>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-[#f5f5f7]">
+                        {/* Clinic Shifts & Fee summary */}
+                        <div className="mt-4 p-3 rounded-xl bg-[#fafafc] border border-[#e5e5ea]/80 space-y-2">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-[#86868b] flex items-center gap-1.5 font-medium">
+                              <DollarSign className="w-3.5 h-3.5 text-emerald-600" />
+                              Facility Consultation Fee:
+                            </span>
+                            <span className="font-bold text-[#1d1d1f]">
+                              ${clinic.consultationFee ?? user?.doctorProfile?.consultationFee ?? 80}
+                            </span>
+                          </div>
+
+                          <div className="flex items-start justify-between text-xs pt-1.5 border-t border-[#e5e5ea]/60">
+                            <span className="text-[#86868b] flex items-center gap-1.5 font-medium">
+                              <Clock className="w-3.5 h-3.5 text-[#0088e8]" />
+                              Practice Shifts:
+                            </span>
+                            <div className="text-right">
+                              {clinic.slots && clinic.slots.length > 0 ? (
+                                <span className="font-semibold text-[#1d1d1f]">
+                                  {clinic.slots.length} {clinic.slots.length === 1 ? 'Shift' : 'Shifts'} configured
+                                </span>
+                              ) : (
+                                <span className="text-[#86868b] font-medium text-[11px]">
+                                  Default practice shift
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-[#f5f5f7]">
                           <div className="bg-[#f5f5f7] rounded-xl p-2.5 text-center">
                             <span className="text-[10px] uppercase font-semibold text-[#86868b]">
                               Clinic Bookings
                             </span>
                             <p className="text-base font-bold text-[#1d1d1f] mt-0.5">
-                              {clinic.bookingCount}
+                              {clinic.bookingCount || 0}
                             </p>
                           </div>
                           <div className="bg-emerald-50 rounded-xl p-2.5 text-center border border-emerald-100">
@@ -687,9 +724,21 @@ export const DoctorDashboard: React.FC = () => {
                         </div>
                       </div>
 
-                      <div className="mt-4 text-[11px] text-[#86868b] flex items-center justify-between pt-2 border-t border-[#f5f5f7]">
-                        <span>Phone: {clinic.phone || 'N/A'}</span>
-                        <span>Affiliated: {clinic.joinedAt ? new Date(clinic.joinedAt).toLocaleDateString() : 'Active'}</span>
+                      <div className="mt-4 space-y-3">
+                        <AppleButton
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => navigate(`/doctor/schedule?clinic=${clinic.clinicId}`)}
+                          className="w-full flex items-center justify-center gap-2 text-xs font-semibold text-[#0088e8] border-[#0088e8]/30 hover:bg-[#0088e8]/5 shadow-sm py-2"
+                        >
+                          <Clock className="w-3.5 h-3.5 text-[#0088e8]" />
+                          Manage Schedule & Shifts
+                        </AppleButton>
+
+                        <div className="text-[11px] text-[#86868b] flex items-center justify-between pt-2 border-t border-[#f5f5f7]">
+                          <span>Phone: {clinic.phone || 'N/A'}</span>
+                          <span>Affiliated: {clinic.joinedAt ? new Date(clinic.joinedAt).toLocaleDateString() : 'Active'}</span>
+                        </div>
                       </div>
                     </div>
                   ))}

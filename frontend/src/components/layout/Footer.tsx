@@ -44,7 +44,7 @@ export const Footer: React.FC = () => {
               <li><Link to="/doctor/dashboard" className="hover:text-[#1d1d1f]">Doctor Console</Link></li>
               <li><Link to="/clinic/login" className="hover:text-[#0088e8] font-medium text-[#0088e8]">Clinic Partner Portal</Link></li>
               <li><Link to="/receptionist/login" className="hover:text-[#0088e8] font-medium text-[#0088e8]">Receptionist Portal</Link></li>
-              <li><Link to="/doctor/schedule" className="hover:text-[#1d1d1f]">Manage Hours</Link></li>
+              <li><Link to="/doctor/dashboard?tab=affiliations" className="hover:text-[#1d1d1f]">Clinics & Schedules</Link></li>
             </ul>
           </div>
 

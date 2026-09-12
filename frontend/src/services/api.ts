@@ -671,6 +671,8 @@ export interface DoctorAffiliationClinic {
   email?: string;
   bookingCount?: number;
   revenue?: number;
+  consultationFee?: number;
+  slots?: DoctorSlot[];
   status: string;
   requestedBy?: string;
   joinedAt?: string;
