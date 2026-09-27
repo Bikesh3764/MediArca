@@ -247,15 +247,22 @@ export const ClinicAuth: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-[#1d1d1f] mb-1">Phone</label>
-                  <div className="relative">
-                    <Phone className="w-3.5 h-3.5 text-[#86868b] absolute left-3 top-3.5" />
+                  <div className="flex rounded-xl border border-[#e5e5ea] overflow-hidden focus-within:border-[#0088e8] bg-[#f5f5f7] focus-within:bg-white">
+                    <span className="inline-flex items-center gap-1 px-2.5 bg-[#e5e5ea]/50 border-r border-[#e5e5ea] text-[#1d1d1f] font-semibold text-xs select-none">
+                      <span>🇮🇳</span>
+                      <span>+91</span>
+                    </span>
                     <input
                       type="tel"
                       required
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="+1 555-0100"
-                      className="w-full h-10 pl-8 pr-3 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white focus:outline-none focus:border-[#0088e8]"
+                      value={phone.replace(/^\+91\s?/, '')}
+                      onChange={(e) => {
+                        const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
+                        setPhone(digits ? `+91 ${digits}` : '');
+                      }}
+                      placeholder="98765 43210"
+                      maxLength={10}
+                      className="w-full h-10 px-3 text-xs bg-transparent focus:outline-none tracking-wider font-mono text-[#1d1d1f]"
                     />
                   </div>
                 </div>

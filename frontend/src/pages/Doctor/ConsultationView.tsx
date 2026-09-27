@@ -244,10 +244,6 @@ export const ConsultationView: React.FC = () => {
                   <span className="text-[#86868b]">Blood Group:</span>
                   <span className="font-medium text-[#1d1d1f]">{appointment.patient?.bloodGroup || 'Not specified'}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-[#86868b]">Allergies:</span>
-                  <span className="text-rose-600 font-medium">{appointment.patient?.allergies || 'None reported'}</span>
-                </div>
               </div>
 
               <div className="pt-4 text-xs">

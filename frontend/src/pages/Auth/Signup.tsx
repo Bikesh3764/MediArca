@@ -247,15 +247,25 @@ export const Signup: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
-                  Phone Number
+                  Phone Number (India)
                 </label>
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="+91 98765 43210"
-                  className="w-full h-11 px-4 rounded-xl border border-[#e0e0e0] text-[15px] focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20"
-                />
+                <div className="flex rounded-xl border border-[#e0e0e0] overflow-hidden focus-within:border-[#0088e8] focus-within:ring-2 focus-within:ring-[#0088e8]/20 bg-white">
+                  <span className="inline-flex items-center gap-1 px-3 bg-[#f5f5f7] border-r border-[#e0e0e0] text-[#1d1d1f] font-semibold text-xs select-none">
+                    <span>🇮🇳</span>
+                    <span>+91</span>
+                  </span>
+                  <input
+                    type="tel"
+                    value={phone.replace(/^\+91\s?/, '')}
+                    onChange={(e) => {
+                      const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
+                      setPhone(digits ? `+91 ${digits}` : '');
+                    }}
+                    placeholder="98765 43210"
+                    maxLength={10}
+                    className="w-full h-11 px-3.5 text-[15px] bg-white focus:outline-none tracking-wider font-mono text-[#1d1d1f]"
+                  />
+                </div>
               </div>
             </div>
 

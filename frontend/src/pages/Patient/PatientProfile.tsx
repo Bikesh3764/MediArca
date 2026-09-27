@@ -1,22 +1,25 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { api, getFileUrl } from '../../services/api';
+import { api } from '../../services/api';
 import { DashboardLayout, DashboardNavItem } from '../../components/layout/DashboardLayout';
 import { AppleButton } from '../../components/ui/AppleButton';
 import { UtilityCard } from '../../components/ui/UtilityCard';
-import { optimizeAvatarImage } from '../../utils/documentOptimizer';
 import {
   Calendar,
-  FileText,
   User as UserIcon,
   Stethoscope,
-  Phone,
   AlertCircle,
   CheckCircle2,
   Save,
-  Camera,
-  Sparkles,
 } from 'lucide-react';
+
+const extractIndianDigits = (raw: string): string => {
+  let cleaned = (raw || '').replace(/\D/g, '');
+  if (cleaned.startsWith('91') && cleaned.length > 10) {
+    cleaned = cleaned.slice(2);
+  }
+  return cleaned.slice(0, 10);
+};
 
 export const PatientProfile: React.FC = () => {
   const { user, updateUser } = useAuth();
@@ -27,14 +30,8 @@ export const PatientProfile: React.FC = () => {
   const [dateOfBirth, setDateOfBirth] = useState(user?.patientProfile?.dateOfBirth || '');
   const [gender, setGender] = useState(user?.patientProfile?.gender || '');
   const [emergencyContact, setEmergencyContact] = useState(user?.patientProfile?.emergencyContact || '');
-  const [allergies, setAllergies] = useState(user?.patientProfile?.allergies || '');
-  const [existingConditions, setExistingConditions] = useState(user?.patientProfile?.existingConditions || '');
-  const [currentMedications, setCurrentMedications] = useState(user?.patientProfile?.currentMedications || '');
 
   const [saving, setSaving] = useState(false);
-  const [avatarLoading, setAvatarLoading] = useState(false);
-  const [avatarOptimization, setAvatarOptimization] = useState<string | null>(null);
-  const avatarInputRef = useRef<HTMLInputElement | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -60,6 +57,11 @@ export const PatientProfile: React.FC = () => {
     },
   ];
 
+  const handlePhoneInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
+    setPhone(digits ? `+91 ${digits}` : '');
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
@@ -67,16 +69,16 @@ export const PatientProfile: React.FC = () => {
     setErrorMsg(null);
 
     try {
+      const digits = extractIndianDigits(phone);
+      const formattedPhone = digits ? `+91 ${digits}` : '';
+
       const updated = await api.updateUserProfile({
         fullName: fullName.trim(),
-        phone: phone.trim(),
+        phone: formattedPhone,
         bloodGroup,
         dateOfBirth,
         gender,
         emergencyContact: emergencyContact.trim(),
-        allergies: allergies.trim(),
-        existingConditions: existingConditions.trim(),
-        currentMedications: currentMedications.trim(),
       });
 
       updateUser(updated);
@@ -88,43 +90,13 @@ export const PatientProfile: React.FC = () => {
     }
   };
 
-  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const rawFile = e.target.files?.[0];
-    if (!rawFile) return;
-
-    setAvatarLoading(true);
-    setAvatarOptimization('Auto-compressing image...');
-    setErrorMsg(null);
-    setSuccessMsg(null);
-
-    try {
-      const result = await optimizeAvatarImage(rawFile);
-      setAvatarOptimization(
-        `Optimized: ${result.formattedOriginalSize} → ${result.formattedOptimizedSize} (-${result.reductionPercentage}%)`
-      );
-
-      const res = await api.uploadAvatar(result.file);
-      updateUser(res.user);
-      setSuccessMsg('Profile photo updated successfully.');
-      setTimeout(() => setAvatarOptimization(null), 5000);
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Failed to update profile photo');
-      setAvatarOptimization(null);
-    } finally {
-      setAvatarLoading(false);
-      if (avatarInputRef.current) {
-        avatarInputRef.current.value = '';
-      }
-    }
-  };
-
   return (
     <DashboardLayout
       portalType="PATIENT"
       portalSubtitle="PATIENT HEALTH RECORD"
       navItems={navItems}
       title="Personal Profile & Health Info"
-      subtitle="Manage your personal contact details, vital information, and clinical background"
+      subtitle="Manage your contact identity and demographic details"
     >
       <div className="max-w-4xl space-y-6">
         {successMsg && (
@@ -140,70 +112,6 @@ export const PatientProfile: React.FC = () => {
             <span className="font-medium">{errorMsg}</span>
           </div>
         )}
-
-        {/* Profile Avatar Card with Auto-Compression */}
-        <UtilityCard
-          title="Profile Photo & Avatar"
-          subtitle="Photos up to 10 MB are automatically downscaled and compressed client-side"
-        >
-          <div className="flex flex-col sm:flex-row items-center gap-5 pt-2">
-            <div className="relative group">
-              <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-[#0088e8] shadow-sm bg-[#f5f5f7] flex items-center justify-center">
-                {user?.avatarUrl ? (
-                  <img
-                    src={getFileUrl(user.avatarUrl)}
-                    alt={user.fullName}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <UserIcon className="w-10 h-10 text-[#86868b]" />
-                )}
-              </div>
-              <button
-                type="button"
-                disabled={avatarLoading}
-                onClick={() => avatarInputRef.current?.click()}
-                className="absolute -bottom-1 -right-1 bg-[#0088e8] text-white p-2 rounded-full shadow-md hover:bg-[#0284c7] transition-all disabled:opacity-50"
-                title="Change profile photo"
-              >
-                <Camera className="w-3.5 h-3.5" />
-              </button>
-            </div>
-
-            <div className="flex-1 text-center sm:text-left space-y-1.5">
-              <input
-                ref={avatarInputRef}
-                type="file"
-                accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
-                className="hidden"
-                onChange={handleAvatarChange}
-              />
-              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                <AppleButton
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  disabled={avatarLoading}
-                  onClick={() => avatarInputRef.current?.click()}
-                  className="flex items-center gap-1.5 text-xs"
-                >
-                  <Camera className="w-3.5 h-3.5" />
-                  {avatarLoading ? 'Optimizing & Uploading...' : 'Change Photo'}
-                </AppleButton>
-                <span className="text-[11px] text-[#86868b]">
-                  Accepts JPG, PNG, WebP. Auto-compressed to &lt; 60 KB.
-                </span>
-              </div>
-
-              {avatarOptimization && (
-                <div className="inline-flex items-center gap-1.5 text-[11px] font-mono font-medium text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200 animate-fadeIn">
-                  <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>{avatarOptimization}</span>
-                </div>
-              )}
-            </div>
-          </div>
-        </UtilityCard>
 
         <form onSubmit={handleSave} className="space-y-6">
           {/* Identity & Contact Card */}
@@ -225,18 +133,25 @@ export const PatientProfile: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-semibold text-[#1d1d1f] mb-1.5">
-                  Primary Phone Number
+                  Primary Phone Number (India)
                 </label>
-                <div className="relative">
-                  <Phone className="w-3.5 h-3.5 text-[#86868b] absolute left-3.5 top-3.5" />
+                <div className="flex rounded-xl border border-[#e5e5ea] overflow-hidden focus-within:border-[#0088e8] focus-within:ring-1 focus-within:ring-[#0088e8] bg-white">
+                  <span className="inline-flex items-center gap-1 px-3 bg-[#f5f5f7] border-r border-[#e5e5ea] text-[#1d1d1f] font-semibold text-xs select-none">
+                    <span>🇮🇳</span>
+                    <span>+91</span>
+                  </span>
                   <input
                     type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+91 98765 43210"
-                    className="w-full h-11 pl-9 pr-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0088e8] focus:ring-1 focus:ring-[#0088e8]"
+                    value={extractIndianDigits(phone)}
+                    onChange={handlePhoneInputChange}
+                    placeholder="98765 43210"
+                    maxLength={10}
+                    className="w-full h-11 px-3.5 text-xs bg-white focus:outline-none tracking-wider font-mono text-[#1d1d1f]"
                   />
                 </div>
+                <p className="text-[11px] text-[#86868b] mt-1">
+                  Standard 10-digit Indian mobile number
+                </p>
               </div>
 
               <div>
@@ -267,7 +182,7 @@ export const PatientProfile: React.FC = () => {
           </UtilityCard>
 
           {/* Demographic & Vital Health Details Card */}
-          <UtilityCard title="Medical Vitals & Demographics" subtitle="Used to assist doctors in personalized diagnosis">
+          <UtilityCard title="Medical Vitals & Demographics" subtitle="Basic health demographics for consultations">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2">
               <div>
                 <label className="block text-xs font-semibold text-[#1d1d1f] mb-1.5">
@@ -319,47 +234,6 @@ export const PatientProfile: React.FC = () => {
                 </select>
               </div>
             </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-              <div>
-                <label className="block text-xs font-semibold text-[#1d1d1f] mb-1.5">
-                  Known Allergies
-                </label>
-                <textarea
-                  rows={2}
-                  value={allergies}
-                  onChange={(e) => setAllergies(e.target.value)}
-                  placeholder="e.g. Penicillin, Peanuts, Sulfa drugs, None"
-                  className="w-full p-3 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0088e8] focus:ring-1 focus:ring-[#0088e8]"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-[#1d1d1f] mb-1.5">
-                  Pre-Existing Conditions & Chronic Illness
-                </label>
-                <textarea
-                  rows={2}
-                  value={existingConditions}
-                  onChange={(e) => setExistingConditions(e.target.value)}
-                  placeholder="e.g. Type 2 Diabetes, Hypertension, Asthma"
-                  className="w-full p-3 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0088e8] focus:ring-1 focus:ring-[#0088e8]"
-                />
-              </div>
-            </div>
-
-            <div className="mt-4">
-              <label className="block text-xs font-semibold text-[#1d1d1f] mb-1.5">
-                Current Medications & Dosages
-              </label>
-              <textarea
-                rows={2}
-                value={currentMedications}
-                onChange={(e) => setCurrentMedications(e.target.value)}
-                placeholder="e.g. Metformin 500mg daily, Amlodipine 5mg morning"
-                className="w-full p-3 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0088e8] focus:ring-1 focus:ring-[#0088e8]"
-              />
-            </div>
           </UtilityCard>
 
           <div className="flex justify-end gap-3 pt-2">
@@ -371,7 +245,7 @@ export const PatientProfile: React.FC = () => {
               className="flex items-center gap-2 shadow-sm"
             >
               <Save className="w-4 h-4" />
-              {saving ? 'Saving Profile...' : 'Save Health Profile'}
+              {saving ? 'Saving Profile...' : 'Save Profile'}
             </AppleButton>
           </div>
         </form>
