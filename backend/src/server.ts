@@ -280,9 +280,17 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Health Check (Supports Render /healthz and /api/health)
-app.get(['/healthz', '/api/health', '/'], (_req: Request, res: Response) => {
+// Touches PostgreSQL database so Supabase resets 7-day inactivity countdown
+app.get(['/healthz', '/api/health', '/'], async (_req: Request, res: Response) => {
+  let dbStatus = 'connected';
+  try {
+    await prisma.$queryRawUnsafe('SELECT 1;');
+  } catch (err: any) {
+    dbStatus = 'disconnected';
+  }
   res.json({
     status: 'ok',
+    database: dbStatus,
     service: 'MediArca Production Healthcare Platform API',
     uptime: process.uptime(),
     timestamp: new Date().toISOString(),

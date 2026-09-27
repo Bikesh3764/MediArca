@@ -1,13 +1,18 @@
-﻿name: Keep Backend Alive
+name: Keep Backend & Database Alive
 
 on:
   schedule:
-    - cron: '*/12 * * * *'
+    - cron: '0 */6 * * *' # Every 6 hours to ensure continuous active status
   workflow_dispatch:
 
 jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping MediArca Live API
-        run: curl -sI https://mediarca-mdwk.onrender.com/healthz
+      - name: Ping MediArca Live Backend & Supabase Database
+        run: |
+          echo "Pinging MediArca Healthz..."
+          curl -fsSL https://mediarca-mdwk.onrender.com/healthz || true
+          echo "Pinging MediArca Doctors API..."
+          curl -fsSL https://mediarca-mdwk.onrender.com/api/doctors || true
+
