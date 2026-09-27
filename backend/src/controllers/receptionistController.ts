@@ -478,7 +478,7 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
               reasonForVisit: reasonForVisit || 'Walk-in Consultation',
               symptoms: symptoms || null,
               isForOther: Boolean(isForOther),
-              patientName: isForOther && patientName ? String(patientName).trim() : null,
+              patientName: patientName ? String(patientName).trim() : null,
               patientAge: patientAge ? String(patientAge).trim() : null,
               patientGender: gender || null,
             },

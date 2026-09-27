@@ -8,18 +8,12 @@ import {
   Calendar,
   User as UserIcon,
   Stethoscope,
+  FileText,
   AlertCircle,
   CheckCircle2,
   Save,
 } from 'lucide-react';
-
-const extractIndianDigits = (raw: string): string => {
-  let cleaned = (raw || '').replace(/\D/g, '');
-  if (cleaned.startsWith('91') && cleaned.length > 10) {
-    cleaned = cleaned.slice(2);
-  }
-  return cleaned.slice(0, 10);
-};
+import { sanitizeIndianPhone, formatIndianPhone } from '../../utils/phoneUtils';
 
 export const PatientProfile: React.FC = () => {
   const { user, updateUser } = useAuth();
@@ -43,6 +37,12 @@ export const PatientProfile: React.FC = () => {
       path: '/patient/appointments',
     },
     {
+      id: 'records',
+      label: 'Medical Records Vault',
+      icon: FileText,
+      path: '/patient/records',
+    },
+    {
       id: 'find-doctors',
       label: 'Find Specialists',
       icon: Stethoscope,
@@ -58,7 +58,7 @@ export const PatientProfile: React.FC = () => {
   ];
 
   const handlePhoneInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
+    const digits = sanitizeIndianPhone(e.target.value);
     setPhone(digits ? `+91 ${digits}` : '');
   };
 
@@ -69,8 +69,7 @@ export const PatientProfile: React.FC = () => {
     setErrorMsg(null);
 
     try {
-      const digits = extractIndianDigits(phone);
-      const formattedPhone = digits ? `+91 ${digits}` : '';
+      const formattedPhone = formatIndianPhone(phone);
 
       const updated = await api.updateUserProfile({
         fullName: fullName.trim(),
@@ -142,7 +141,7 @@ export const PatientProfile: React.FC = () => {
                   </span>
                   <input
                     type="tel"
-                    value={extractIndianDigits(phone)}
+                    value={sanitizeIndianPhone(phone)}
                     onChange={handlePhoneInputChange}
                     placeholder="98765 43210"
                     maxLength={10}

@@ -37,8 +37,10 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
         patient: {
           include: {
             user: { select: { fullName: true, email: true, phone: true, avatarUrl: true } },
+            medicalRecords: { take: 5, orderBy: { uploadedAt: 'desc' } },
           },
         },
+        prescription: true,
       },
       orderBy: scope === 'all-upcoming'
         ? [{ appointmentDate: 'asc' }, { queueNumber: 'asc' }]
@@ -156,8 +158,10 @@ export const callPatient = async (req: AuthRequest, res: Response): Promise<void
         patient: {
           include: {
             user: { select: { fullName: true, email: true, phone: true } },
+            medicalRecords: { orderBy: { uploadedAt: 'desc' } },
           },
         },
+        prescription: true,
       },
     });
 
@@ -227,7 +231,15 @@ export const completeConsultation = async (req: AuthRequest, res: Response): Pro
       return;
     }
 
-    const { appointmentId, clinicalNotes, vitals } = req.body;
+    const {
+      appointmentId,
+      diagnosis,
+      medicines,
+      advice,
+      followUpDate,
+      clinicalNotes,
+      vitals,
+    } = req.body;
 
     if (!appointmentId) {
       res.status(400).json({ success: false, message: 'appointmentId is required' });
@@ -253,20 +265,52 @@ export const completeConsultation = async (req: AuthRequest, res: Response): Pro
       return;
     }
 
-    // Mark appointment as COMPLETED with notes and vitals
-    const appt = await prisma.appointment.update({
-      where: { id: appointmentId },
-      data: {
-        status: 'COMPLETED',
-        ...(clinicalNotes !== undefined && { clinicalNotes }),
-        ...(vitals && { vitals: typeof vitals === 'object' ? JSON.stringify(vitals) : vitals }),
-      },
+    const medicinesJson = medicines
+      ? typeof medicines === 'string'
+        ? medicines
+        : JSON.stringify(medicines)
+      : null;
+
+    // Use transaction to update appointment and upsert prescription if provided
+    const result = await prisma.$transaction(async (tx) => {
+      const appt = await tx.appointment.update({
+        where: { id: appointmentId },
+        data: {
+          status: 'COMPLETED',
+          ...(clinicalNotes !== undefined && { clinicalNotes }),
+          ...(vitals && { vitals: typeof vitals === 'object' ? JSON.stringify(vitals) : vitals }),
+        },
+      });
+
+      let prescription: any = null;
+      if (diagnosis || medicinesJson) {
+        prescription = await tx.prescription.upsert({
+          where: { appointmentId },
+          update: {
+            diagnosis: diagnosis || 'General Medical Consultation',
+            medicines: medicinesJson || '[]',
+            advice: advice || null,
+            followUpDate: followUpDate || null,
+          },
+          create: {
+            appointmentId,
+            diagnosis: diagnosis || 'General Medical Consultation',
+            medicines: medicinesJson || '[]',
+            advice: advice || null,
+            followUpDate: followUpDate || null,
+          },
+        });
+      }
+
+      return { appointment: appt, prescription };
     });
 
     res.json({
       success: true,
-      message: 'Consultation completed successfully!',
-      data: { appointment: appt },
+      message: result.prescription
+        ? 'Consultation completed and digital prescription issued!'
+        : 'Consultation completed successfully!',
+      data: result,
     });
   } catch (error: any) {
     console.error('completeConsultation error:', error);

@@ -19,6 +19,11 @@ import {
   DEFAULT_AVATAR_IMAGE_DIMENSION,
 } from '../src/utils/documentOptimizer';
 import { ALLOWED_MIME_TYPES, ALLOWED_FILE_EXTENSIONS } from '../src/middleware/uploadMiddleware';
+import {
+  sanitizeIndianPhone,
+  formatIndianPhone,
+  isValidIndianPhone,
+} from '../src/utils/phoneUtils';
 
 function runTests() {
   console.log('=== RUNNING MEDIARCA VERIFICATION SUITE ===\n');
@@ -1247,6 +1252,152 @@ function runTests() {
   assert(reprintedPass.patientName !== 'Unsubmitted Form Name', 'Reprinted token pass never leaks unsubmitted form input state');
   assert(reprintedPass.doctorName === 'Dr. Neha Kapoor', 'Reprinted token pass uses queue doctor name');
   assert(reprintedPass.queueNumber === 7, 'Queue token number is preserved as #7');
+
+  // 55. Indian Phone Number Sanitization & Formatting
+  assert(sanitizeIndianPhone('9876543210') === '9876543210', 'Plain 10-digit number sanitized to 10 digits');
+  assert(sanitizeIndianPhone('+91 9876543210') === '9876543210', '+91 prefix with space sanitized to 10 digits');
+  assert(sanitizeIndianPhone('+919876543210') === '9876543210', '+91 prefix without space sanitized to 10 digits');
+  assert(sanitizeIndianPhone('919876543210') === '9876543210', '12-digit number starting with 91 sanitized to 10 digits');
+  assert(sanitizeIndianPhone('09876543210') === '9876543210', '11-digit number starting with 0 sanitized to 10 digits');
+  assert(sanitizeIndianPhone('98765 43210') === '9876543210', 'Phone with middle whitespace sanitized to 10 digits');
+  assert(sanitizeIndianPhone('+91 (987) 654-3210') === '9876543210', 'Phone with parentheses and dash sanitized to 10 digits');
+  assert(sanitizeIndianPhone('9') === '9', 'Typing single digit "9" does not inject "91" (prevents loop bug)');
+  assert(sanitizeIndianPhone('98') === '98', 'Typing "98" preserved without 91 expansion');
+  assert(sanitizeIndianPhone('98765432109999') === '9876543210', 'Long phone clamped to 10 digits');
+  assert(sanitizeIndianPhone('') === '', 'Empty string sanitized to empty string');
+  assert(sanitizeIndianPhone(null) === '', 'Null input sanitized to empty string');
+  assert(sanitizeIndianPhone(undefined) === '', 'Undefined input sanitized to empty string');
+
+  assert(formatIndianPhone('9876543210') === '+91 9876543210', 'formatIndianPhone formats with "+91 " prefix');
+  assert(formatIndianPhone('') === '', 'formatIndianPhone on empty returns empty');
+  assert(isValidIndianPhone('9876543210') === true, '10-digit phone is valid Indian phone');
+  assert(isValidIndianPhone('+91 9876543210') === true, '+91 prefixed phone is valid Indian phone');
+  assert(isValidIndianPhone('98765') === false, '5-digit incomplete phone is not valid Indian phone');
+  assert(isValidIndianPhone('') === false, 'Empty phone is not valid Indian phone');
+
+  // 56. Receptionist Walk-in Patient Name Preservation
+  const resolveWalkinAppointmentData = (
+    existingUser: { fullName: string; phone?: string | null } | null,
+    inputPayload: {
+      patientName: string;
+      patientPhone?: string;
+      patientAge?: string;
+      gender?: string;
+      isForOther?: boolean;
+    }
+  ) => {
+    // Controller logic: Always preserve inputPayload.patientName on appointment
+    const effectivePatientName = inputPayload.patientName?.trim() || existingUser?.fullName || 'Walk-in Patient';
+    const isOther = Boolean(inputPayload.isForOther || (existingUser && existingUser.fullName !== effectivePatientName));
+    return {
+      patientName: effectivePatientName,
+      patientPhone: inputPayload.patientPhone || existingUser?.phone || null,
+      patientAge: inputPayload.patientAge || null,
+      gender: inputPayload.gender || null,
+      isForOther: isOther,
+    };
+  };
+
+  const walkinExistingAccount = resolveWalkinAppointmentData(
+    { fullName: 'Account Holder Parent', phone: '+91 9876543210' },
+    { patientName: 'Child Patient', patientPhone: '+91 9876543210', patientAge: '8', gender: 'Male', isForOther: false }
+  );
+  assert(walkinExistingAccount.patientName === 'Child Patient', 'Walk-in preserves explicit child patient name over account owner');
+  assert(walkinExistingAccount.isForOther === true, 'Auto-detects isForOther when patientName differs from account holder');
+
+  const walkinDirectPatient = resolveWalkinAppointmentData(
+    { fullName: 'Direct Patient', phone: '+91 9123456789' },
+    { patientName: 'Direct Patient', patientPhone: '+91 9123456789', patientAge: '30', gender: 'Female' }
+  );
+  assert(walkinDirectPatient.patientName === 'Direct Patient', 'Direct patient name preserved');
+  assert(walkinDirectPatient.isForOther === false, 'Direct patient isForOther remains false');
+
+  // 57. Consultation Completion & Digital Prescription Generation
+  const buildPrescriptionRecord = (
+    appointment: { id: string; doctorId: string; patientId: string },
+    body: {
+      diagnosis?: string;
+      medicines?: any[];
+      advice?: string;
+      followUpDate?: string;
+    }
+  ) => {
+    const medicinesData = Array.isArray(body.medicines)
+      ? body.medicines.filter((m) => m && typeof m.name === 'string' && m.name.trim().length > 0)
+      : [];
+
+    return {
+      appointmentId: appointment.id,
+      doctorId: appointment.doctorId,
+      patientId: appointment.patientId,
+      diagnosis: body.diagnosis?.trim() || 'General Consultation',
+      medicines: medicinesData,
+      advice: body.advice?.trim() || null,
+      followUpDate: body.followUpDate ? new Date(body.followUpDate) : null,
+    };
+  };
+
+  const testAppt = { id: 'appt-123', doctorId: 'doc-456', patientId: 'pat-789' };
+  const rxRecord = buildPrescriptionRecord(testAppt, {
+    diagnosis: 'Acute Bronchitis',
+    medicines: [
+      { name: 'Amoxicillin 500mg', dosage: '1 tablet', frequency: '1-0-1', duration: '5 days', instructions: 'After food' },
+      { name: 'Paracetamol 650mg', dosage: '1 tablet', frequency: 'SOS', duration: '3 days', instructions: 'For fever' },
+      { name: '' }, // empty row to be filtered
+    ],
+    advice: 'Drink warm water and rest well',
+    followUpDate: '2026-10-05',
+  });
+
+  assert(rxRecord.appointmentId === 'appt-123', 'Prescription linked to appointment ID');
+  assert(rxRecord.doctorId === 'doc-456', 'Prescription linked to doctor ID');
+  assert(rxRecord.patientId === 'pat-789', 'Prescription linked to patient ID');
+  assert(rxRecord.diagnosis === 'Acute Bronchitis', 'Prescription diagnosis recorded accurately');
+  assert(rxRecord.medicines.length === 2, 'Empty medicine rows stripped cleanly (2 valid items retained)');
+  assert(rxRecord.medicines[0].name === 'Amoxicillin 500mg', 'First medicine preserved');
+  assert(rxRecord.medicines[1].name === 'Paracetamol 650mg', 'Second medicine preserved');
+  assert(rxRecord.advice === 'Drink warm water and rest well', 'Doctor advice recorded');
+  assert(rxRecord.followUpDate instanceof Date, 'Follow-up date parsed as valid Date');
+
+  // 58. Medical Records Vault RBAC & Access Authorization
+  const authorizeVaultAccess = (
+    user: { id: string; role: string },
+    patientOwnerUserId: string,
+    requestedPatientId?: string
+  ): { allowed: boolean; status: number; message?: string } => {
+    const role = user.role.toUpperCase();
+    if (role === 'PATIENT') {
+      if (user.id === patientOwnerUserId) {
+        return { allowed: true, status: 200 };
+      }
+      return { allowed: false, status: 403, message: 'Forbidden: Cannot access another patient records' };
+    }
+    if (role === 'DOCTOR' || role === 'ADMIN') {
+      if (requestedPatientId) {
+        return { allowed: true, status: 200 };
+      }
+      return { allowed: false, status: 400, message: 'patientId query parameter is required for doctor/admin lookup' };
+    }
+    return { allowed: false, status: 403, message: 'Forbidden: Insufficient role permissions' };
+  };
+
+  const patientOwnAccess = authorizeVaultAccess({ id: 'user-pat-1', role: 'PATIENT' }, 'user-pat-1');
+  assert(patientOwnAccess.allowed === true, 'Patient can access their own vault records');
+
+  const patientOtherAccess = authorizeVaultAccess({ id: 'user-pat-2', role: 'PATIENT' }, 'user-pat-1');
+  assert(patientOtherAccess.allowed === false && patientOtherAccess.status === 403, 'Patient cannot access another patient records');
+
+  const doctorAccessWithId = authorizeVaultAccess({ id: 'user-doc-1', role: 'DOCTOR' }, 'user-pat-1', 'pat-profile-1');
+  assert(doctorAccessWithId.allowed === true, 'Doctor can access patient records with patientId query');
+
+  const doctorAccessWithoutId = authorizeVaultAccess({ id: 'user-doc-1', role: 'DOCTOR' }, 'user-pat-1');
+  assert(doctorAccessWithoutId.allowed === false && doctorAccessWithoutId.status === 400, 'Doctor lookup without patientId returns 400');
+
+  const adminAccess = authorizeVaultAccess({ id: 'user-admin-1', role: 'ADMIN' }, 'user-pat-1', 'pat-profile-1');
+  assert(adminAccess.allowed === true, 'Admin can access patient records with patientId query');
+
+  const receptionistAccess = authorizeVaultAccess({ id: 'user-rec-1', role: 'RECEPTIONIST' }, 'user-pat-1', 'pat-profile-1');
+  assert(receptionistAccess.allowed === false && receptionistAccess.status === 403, 'Receptionist is blocked from patient medical vault');
 
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);

@@ -4,26 +4,28 @@ import { api, Appointment } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { DashboardLayout, DashboardNavItem } from '../../components/layout/DashboardLayout';
 import { LiveQueueTicket } from '../../components/queue/LiveQueueTicket';
+import { PrescriptionModal } from '../../components/ui/PrescriptionModal';
 import { AppleButton } from '../../components/ui/AppleButton';
-import { Calendar, Plus, RefreshCw, Stethoscope, User as UserIcon } from 'lucide-react';
+import { Calendar, Plus, RefreshCw, FileText, Stethoscope, User as UserIcon } from 'lucide-react';
 
 export const MyAppointments: React.FC = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
+  const [selectedPrescriptionAppt, setSelectedPrescriptionAppt] = useState<Appointment | null>(null);
 
   const { user, loading: loadingAuth } = useAuth();
   const navigate = useNavigate();
 
-  const fetchAppointments = async () => {
-    setLoading(true);
+  const fetchAppointments = async (isSilent = false) => {
+    if (!isSilent) setLoading(true);
     try {
       const data = await api.getPatientAppointments();
       setAppointments(data);
     } catch (err) {
       console.error('Failed to load appointments:', err);
     } finally {
-      setLoading(false);
+      if (!isSilent) setLoading(false);
     }
   };
 
@@ -35,8 +37,8 @@ export const MyAppointments: React.FC = () => {
     }
     fetchAppointments();
 
-    // Auto-refresh queue every 15 seconds so patient sees live queue position updates
-    const interval = setInterval(fetchAppointments, 15000);
+    // Auto-refresh queue silently every 15 seconds so patient sees live queue position updates without flickering
+    const interval = setInterval(() => fetchAppointments(true), 15000);
     return () => clearInterval(interval);
   }, [user, loadingAuth, navigate]);
 
@@ -67,6 +69,12 @@ export const MyAppointments: React.FC = () => {
       badge: upcomingList.length > 0 ? upcomingList.length : undefined,
     },
     {
+      id: 'records',
+      label: 'Medical Records Vault',
+      icon: FileText,
+      path: '/patient/records',
+    },
+    {
       id: 'find-doctors',
       label: 'Find Specialists',
       icon: Stethoscope,
@@ -92,7 +100,7 @@ export const MyAppointments: React.FC = () => {
           <AppleButton
             variant="ghost"
             size="sm"
-            onClick={fetchAppointments}
+            onClick={() => fetchAppointments()}
             className="flex items-center gap-1.5"
           >
             <RefreshCw className="w-3.5 h-3.5" />
@@ -168,6 +176,7 @@ export const MyAppointments: React.FC = () => {
                   key={appt.id}
                   appointment={appt}
                   onCancel={handleCancel}
+                  onViewPrescription={(a) => setSelectedPrescriptionAppt(a)}
                 />
               ))}
             </div>
@@ -177,7 +186,7 @@ export const MyAppointments: React.FC = () => {
             <Calendar className="w-10 h-10 text-[#86868b] mx-auto mb-3" />
             <h3 className="text-lg font-semibold text-[#1d1d1f]">No past consultations recorded</h3>
             <p className="text-xs text-[#86868b] mt-1">
-              Completed consultations and appointment history will appear here.
+              Completed consultations and digital prescriptions will appear here.
             </p>
           </div>
         ) : (
@@ -186,11 +195,18 @@ export const MyAppointments: React.FC = () => {
               <LiveQueueTicket
                 key={appt.id}
                 appointment={appt}
+                onViewPrescription={(a) => setSelectedPrescriptionAppt(a)}
               />
             ))}
           </div>
         )}
       </div>
+
+      {/* Official Digital Prescription Modal */}
+      <PrescriptionModal
+        appointment={selectedPrescriptionAppt}
+        onClose={() => setSelectedPrescriptionAppt(null)}
+      />
     </DashboardLayout>
   );
 };

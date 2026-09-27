@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { AppleButton } from '../../components/ui/AppleButton';
 import { BrandLogo } from '../../components/ui/BrandLogo';
 import { Building2, AlertCircle, Sparkles, MapPin, Phone, Mail, Lock } from 'lucide-react';
+import { sanitizeIndianPhone, formatIndianPhone } from '../../utils/phoneUtils';
 
 export const ClinicAuth: React.FC = () => {
   const location = useLocation();
@@ -255,9 +256,9 @@ export const ClinicAuth: React.FC = () => {
                     <input
                       type="tel"
                       required
-                      value={phone.replace(/^\+91\s?/, '')}
+                      value={sanitizeIndianPhone(phone)}
                       onChange={(e) => {
-                        const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
+                        const digits = sanitizeIndianPhone(e.target.value);
                         setPhone(digits ? `+91 ${digits}` : '');
                       }}
                       placeholder="98765 43210"

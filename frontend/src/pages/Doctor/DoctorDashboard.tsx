@@ -6,6 +6,7 @@ import {
   parseDoctorSlots,
   format12Hour,
   getLocalDateString,
+  getTomorrowDateString,
   DoctorAffiliationsData,
   ClinicProfile,
 } from '../../services/api';
@@ -931,11 +932,11 @@ export const DoctorDashboard: React.FC = () => {
                   type="button"
                   onClick={() => {
                     setQueueScope('date');
-                    const tomorrowStr = queueData?.upcomingSummary?.tomorrowDate || new Date(Date.now() + 86400000).toISOString().split('T')[0];
+                    const tomorrowStr = queueData?.upcomingSummary?.tomorrowDate || getTomorrowDateString();
                     setDate(tomorrowStr);
                   }}
                   className={`h-9 px-3.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 ${
-                    queueScope === 'date' && date === (queueData?.upcomingSummary?.tomorrowDate || new Date(Date.now() + 86400000).toISOString().split('T')[0])
+                    queueScope === 'date' && date === (queueData?.upcomingSummary?.tomorrowDate || getTomorrowDateString())
                       ? 'bg-[#1d1d1f] text-white shadow-sm'
                       : 'bg-[#f5f5f7] hover:bg-slate-200 text-[#1d1d1f] border border-[#e5e5ea]'
                   }`}

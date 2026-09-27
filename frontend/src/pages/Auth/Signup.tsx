@@ -8,6 +8,7 @@ import { GoogleLogin } from '@react-oauth/google';
 import { isGoogleConfigured } from '../../config/auth';
 import { SearchableSpecialtySelect } from '../../components/ui/SearchableSpecialtySelect';
 import { DEFAULT_PHONE_PREFIX } from '../../services/api';
+import { sanitizeIndianPhone } from '../../utils/phoneUtils';
 
 export const Signup: React.FC = () => {
   const [role, setRole] = useState<'PATIENT' | 'DOCTOR'>('PATIENT');
@@ -256,9 +257,9 @@ export const Signup: React.FC = () => {
                   </span>
                   <input
                     type="tel"
-                    value={phone.replace(/^\+91\s?/, '')}
+                    value={sanitizeIndianPhone(phone)}
                     onChange={(e) => {
-                      const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
+                      const digits = sanitizeIndianPhone(e.target.value);
                       setPhone(digits ? `+91 ${digits}` : '');
                     }}
                     placeholder="98765 43210"

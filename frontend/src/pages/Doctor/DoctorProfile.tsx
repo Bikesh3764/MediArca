@@ -7,6 +7,7 @@ import { AppleButton } from '../../components/ui/AppleButton';
 import { UtilityCard } from '../../components/ui/UtilityCard';
 import { SearchableSpecialtySelect } from '../../components/ui/SearchableSpecialtySelect';
 import { optimizeAvatarImage } from '../../utils/documentOptimizer';
+import { sanitizeIndianPhone, formatIndianPhone } from '../../utils/phoneUtils';
 import {
   Building2,
   Settings,
@@ -112,13 +113,13 @@ export const DoctorProfile: React.FC = () => {
       return;
     }
 
-    const rawDigits = phone.replace(/^\+91\s?/, '').replace(/\D/g, '').trim();
+    const rawDigits = sanitizeIndianPhone(phone);
     if (rawDigits.length > 0 && rawDigits.length !== 10) {
       setErrorMsg('Please enter a valid 10-digit mobile number.');
       setSaving(false);
       return;
     }
-    const formattedPhone = rawDigits ? `+91 ${rawDigits}` : '';
+    const formattedPhone = formatIndianPhone(phone);
 
     try {
 
@@ -281,12 +282,13 @@ export const DoctorProfile: React.FC = () => {
                   </span>
                   <input
                     type="tel"
-                    value={phone.replace(/^\+91\s?/, '')}
+                    value={sanitizeIndianPhone(phone)}
                     onChange={(e) => {
-                      const val = e.target.value.replace(/[^0-9]/g, '');
-                      setPhone(`+91 ${val}`);
+                      const val = sanitizeIndianPhone(e.target.value);
+                      setPhone(val ? `+91 ${val}` : '');
                     }}
                     placeholder="98765 43210"
+                    maxLength={10}
                     className="w-full h-11 px-3.5 rounded-r-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0088e8] focus:ring-1 focus:ring-[#0088e8]"
                   />
                 </div>
