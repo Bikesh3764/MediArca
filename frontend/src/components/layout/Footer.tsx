@@ -23,7 +23,7 @@ export const Footer: React.FC = () => {
             <ul className="space-y-1.5">
               <li><Link to="/doctors" className="hover:text-[#1d1d1f]">Find Doctors</Link></li>
               <li><Link to="/patient/appointments" className="hover:text-[#1d1d1f]">Live Queue Pass</Link></li>
-              <li><Link to="/patient/records" className="hover:text-[#1d1d1f]">Medical Vault</Link></li>
+              <li><Link to="/patient/profile" className="hover:text-[#1d1d1f]">Patient Profile</Link></li>
             </ul>
           </div>
 

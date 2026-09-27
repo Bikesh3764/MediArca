@@ -1334,7 +1334,7 @@ export const DoctorDashboard: React.FC = () => {
                           </div>
                           <div className="flex items-center gap-2">
                             <span className="text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full font-medium border border-emerald-200">
-                              Prescription Issued
+                              Consultation Completed
                             </span>
                             <AppleButton
                               variant="ghost"
@@ -1342,7 +1342,7 @@ export const DoctorDashboard: React.FC = () => {
                               onClick={() => navigate(`/doctor/consultation/${appt.id}`)}
                               className="text-[#0088e8] text-[11px] py-1 px-2.5"
                             >
-                              Review / Print
+                              Review Notes
                             </AppleButton>
                           </div>
                         </div>

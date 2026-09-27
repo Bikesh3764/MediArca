@@ -54,12 +54,6 @@ export const DoctorDetail: React.FC = () => {
       path: '/patient/appointments',
     },
     {
-      id: 'records',
-      label: 'Medical Records Vault',
-      icon: FileText,
-      path: '/patient/records',
-    },
-    {
       id: 'find-doctors',
       label: 'Find Specialists',
       icon: Stethoscope,

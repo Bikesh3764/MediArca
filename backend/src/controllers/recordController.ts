@@ -4,100 +4,15 @@ import prisma from '../config/database';
 import { AuthRequest } from '../middleware/authMiddleware';
 import { uploadToR2, deleteFromR2, isR2Configured } from '../config/r2';
 
-export const uploadRecord = async (req: AuthRequest, res: Response): Promise<void> => {
-  try {
-    if (!req.user || req.user.role !== 'PATIENT') {
-      res.status(403).json({ success: false, message: 'Only patients can upload personal medical records' });
-      return;
-    }
-
-    const { title, category = 'Lab Report' } = req.body;
-    const file = req.file;
-
-    if (!file) {
-      res.status(400).json({ success: false, message: 'No file uploaded' });
-      return;
-    }
-
-    let patient = await prisma.patientProfile.findUnique({
-      where: { userId: req.user.id },
-    });
-
-    if (!patient) {
-      patient = await prisma.patientProfile.create({
-        data: { userId: req.user.id },
-      });
-    }
-
-    const ext = path.extname(file.originalname) || (file.mimetype.includes('pdf') ? '.pdf' : '.jpg');
-    const key = `records/${patient.id}/${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
-
-    let fileUrl: string;
-    if (isR2Configured() && file.buffer) {
-      fileUrl = await uploadToR2(file.buffer, key, file.mimetype);
-    } else if (file.buffer) {
-      fileUrl = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
-    } else {
-      fileUrl = `/uploads/${(file as any).filename || 'document' + ext}`;
-    }
-
-    const fileType = file.mimetype.includes('pdf') ? 'pdf' : 'image';
-
-    const record = await prisma.medicalRecord.create({
-      data: {
-        patientId: patient.id,
-        title: title || file.originalname,
-        category,
-        fileUrl,
-        fileType,
-      },
-    });
-
-    res.status(201).json({
-      success: true,
-      message: 'Medical document uploaded successfully',
-      data: record,
-    });
-  } catch (error: any) {
-    console.error('uploadRecord error:', error);
-    res.status(500).json({ success: false, message: 'Failed to upload document', error: error.message });
-  }
+export const uploadRecord = async (_req: AuthRequest, res: Response): Promise<void> => {
+  res.status(400).json({
+    success: false,
+    message: 'Medical document and prescription uploads are disabled.',
+  });
 };
 
-export const getPatientRecords = async (req: AuthRequest, res: Response): Promise<void> => {
-  try {
-    if (!req.user) {
-      res.status(401).json({ success: false, message: 'Not authenticated' });
-      return;
-    }
-
-    let patientId = req.query.patientId as string;
-
-    if (req.user.role === 'PATIENT') {
-      let patient = await prisma.patientProfile.findUnique({
-        where: { userId: req.user.id },
-      });
-      if (!patient) {
-        patient = await prisma.patientProfile.create({
-          data: { userId: req.user.id },
-        });
-      }
-      patientId = patient.id;
-    } else if (req.user.role === 'DOCTOR' && !patientId) {
-      res.status(400).json({ success: false, message: 'patientId is required for doctor view' });
-      return;
-    }
-
-    const records = await prisma.medicalRecord.findMany({
-      where: { patientId },
-      orderBy: { uploadedAt: 'desc' },
-    });
-
-    res.json({ success: true, count: records.length, data: records });
-  } catch (error: any) {
-    console.error('getPatientRecords error:', error);
-    res.status(500).json({ success: false, message: 'Failed to retrieve records', error: error.message });
-  }
+export const getPatientRecords = async (_req: AuthRequest, res: Response): Promise<void> => {
+  res.json({ success: true, count: 0, data: [] });
 };
 
 export const deleteRecord = async (req: AuthRequest, res: Response): Promise<void> => {

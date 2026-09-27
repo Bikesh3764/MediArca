@@ -37,12 +37,6 @@ const patientNavItems: DashboardNavItem[] = [
     path: '/patient/appointments',
   },
   {
-    id: 'records',
-    label: 'Medical Records Vault',
-    icon: FileText,
-    path: '/patient/records',
-  },
-  {
     id: 'find-doctors',
     label: 'Find Specialists',
     icon: Stethoscope,
@@ -620,7 +614,7 @@ export const BookAppointment: React.FC = () => {
                 {[
                   'General Consultation',
                   'Routine Checkup',
-                  'Prescription Refill',
+                  'Second Opinion',
                   'Follow-up Review',
                   'Flu / Fever Symptoms',
                 ].map((tag) => (

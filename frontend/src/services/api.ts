@@ -1109,16 +1109,34 @@ export const api = {
     return handleResponse(res);
   },
 
+  async saveConsultationNotes(body: { appointmentId: string; vitals?: any; clinicalNotes?: string }): Promise<Appointment> {
+    return this.updateNotes(body);
+  },
+
+  async completeConsultation(body: {
+    appointmentId: string;
+    clinicalNotes?: string;
+    vitals?: any;
+    diagnosis?: string;
+  }): Promise<{ appointment: Appointment }> {
+    const res = await fetch(`${API_BASE_URL}/consultations/complete`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(body),
+    });
+    return handleResponse(res);
+  },
+
   async completePrescription(body: {
     appointmentId: string;
-    diagnosis: string;
-    medicines: any[];
+    diagnosis?: string;
+    medicines?: any[];
     advice?: string;
     followUpDate?: string;
     clinicalNotes?: string;
     vitals?: any;
-  }): Promise<{ appointment: Appointment; prescription: any }> {
-    const res = await fetch(`${API_BASE_URL}/consultations/complete-prescription`, {
+  }): Promise<{ appointment: Appointment; prescription?: any }> {
+    const res = await fetch(`${API_BASE_URL}/consultations/complete`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(body),

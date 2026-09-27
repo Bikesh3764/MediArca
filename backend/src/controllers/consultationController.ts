@@ -29,10 +29,8 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
         patient: {
           include: {
             user: { select: { fullName: true, email: true, phone: true, avatarUrl: true } },
-            medicalRecords: { take: 5, orderBy: { uploadedAt: 'desc' } },
           },
         },
-        prescription: true,
       },
       orderBy: { queueNumber: 'asc' },
     });
@@ -87,7 +85,6 @@ export const callPatient = async (req: AuthRequest, res: Response): Promise<void
         patient: {
           include: {
             user: true,
-            medicalRecords: true,
           },
         },
       },
@@ -121,10 +118,8 @@ export const callPatient = async (req: AuthRequest, res: Response): Promise<void
         patient: {
           include: {
             user: { select: { fullName: true, email: true, phone: true } },
-            medicalRecords: true,
           },
         },
-        prescription: true,
       },
     });
 
@@ -187,17 +182,17 @@ export const updateNotesAndVitals = async (req: AuthRequest, res: Response): Pro
   }
 };
 
-export const completeWithPrescription = async (req: AuthRequest, res: Response): Promise<void> => {
+export const completeConsultation = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     if (!req.user || req.user.role !== 'DOCTOR') {
       res.status(403).json({ success: false, message: 'Doctor only' });
       return;
     }
 
-    const { appointmentId, diagnosis, medicines, advice, followUpDate, clinicalNotes, vitals } = req.body;
+    const { appointmentId, clinicalNotes, vitals } = req.body;
 
-    if (!appointmentId || !diagnosis || !medicines) {
-      res.status(400).json({ success: false, message: 'appointmentId, diagnosis, and medicines are required' });
+    if (!appointmentId) {
+      res.status(400).json({ success: false, message: 'appointmentId is required' });
       return;
     }
 
@@ -220,47 +215,26 @@ export const completeWithPrescription = async (req: AuthRequest, res: Response):
       return;
     }
 
-    const medicinesJson = typeof medicines === 'string' ? medicines : JSON.stringify(medicines);
-
-    const result = await prisma.$transaction(async (tx) => {
-      // 1. Mark appointment as completed
-      const appt = await tx.appointment.update({
-        where: { id: appointmentId },
-        data: {
-          status: 'COMPLETED',
-          ...(clinicalNotes && { clinicalNotes }),
-          ...(vitals && { vitals: typeof vitals === 'object' ? JSON.stringify(vitals) : vitals }),
-        },
-      });
-
-      // 2. Upsert prescription
-      const prescription = await tx.prescription.upsert({
-        where: { appointmentId },
-        update: {
-          diagnosis,
-          medicines: medicinesJson,
-          advice: advice || null,
-          followUpDate: followUpDate || null,
-        },
-        create: {
-          appointmentId,
-          diagnosis,
-          medicines: medicinesJson,
-          advice: advice || null,
-          followUpDate: followUpDate || null,
-        },
-      });
-
-      return { appointment: appt, prescription };
+    // Mark appointment as COMPLETED with notes and vitals
+    const appt = await prisma.appointment.update({
+      where: { id: appointmentId },
+      data: {
+        status: 'COMPLETED',
+        ...(clinicalNotes !== undefined && { clinicalNotes }),
+        ...(vitals && { vitals: typeof vitals === 'object' ? JSON.stringify(vitals) : vitals }),
+      },
     });
 
     res.json({
       success: true,
-      message: 'Consultation completed and digital prescription issued!',
-      data: result,
+      message: 'Consultation completed successfully!',
+      data: { appointment: appt },
     });
   } catch (error: any) {
-    console.error('completeWithPrescription error:', error);
+    console.error('completeConsultation error:', error);
     res.status(500).json({ success: false, message: 'Failed to complete consultation', error: error.message });
   }
 };
+
+export const completeWithPrescription = completeConsultation;
+

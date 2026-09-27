@@ -46,12 +46,6 @@ export const PatientProfile: React.FC = () => {
       path: '/patient/appointments',
     },
     {
-      id: 'records',
-      label: 'Medical Records Vault',
-      icon: FileText,
-      path: '/patient/records',
-    },
-    {
       id: 'find-doctors',
       label: 'Find Specialists',
       icon: Stethoscope,
@@ -86,7 +80,7 @@ export const PatientProfile: React.FC = () => {
       });
 
       updateUser(updated);
-      setSuccessMsg('Profile and medical records information saved successfully.');
+      setSuccessMsg('Profile information saved successfully.');
     } catch (err: any) {
       setErrorMsg(err.message || 'Failed to update profile. Please try again.');
     } finally {

@@ -437,7 +437,6 @@ export const getAppointmentById = async (req: AuthRequest, res: Response): Promi
         patient: {
           include: {
             user: { select: { id: true, fullName: true, email: true, phone: true, avatarUrl: true } },
-            medicalRecords: { orderBy: { uploadedAt: 'desc' } },
           },
         },
         prescription: true,

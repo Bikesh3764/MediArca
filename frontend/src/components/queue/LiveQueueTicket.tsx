@@ -6,13 +6,11 @@ import { AppleButton } from '../ui/AppleButton';
 interface LiveQueueTicketProps {
   appointment: Appointment;
   onCancel?: (id: string) => void;
-  onViewPrescription?: (appointment: Appointment) => void;
 }
 
 export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
   appointment,
   onCancel,
-  onViewPrescription,
 }) => {
   const { doctor, queueNumber, status, appointmentDate, checkingWindow, estimatedTime, liveQueue } =
     appointment;
@@ -230,18 +228,6 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
-            {status === 'COMPLETED' && appointment.prescription && onViewPrescription && (
-              <AppleButton
-                variant="primary"
-                size="sm"
-                onClick={() => onViewPrescription(appointment)}
-                className="flex items-center gap-1.5"
-              >
-                <FileText className="w-3.5 h-3.5" />
-                View & Print Prescription
-              </AppleButton>
-            )}
-
             {status === 'WAITING' && onCancel && (
               <AppleButton
                 variant="ghost"
