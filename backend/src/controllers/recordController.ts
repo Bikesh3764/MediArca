@@ -1,6 +1,8 @@
+import path from 'path';
 import { Response } from 'express';
 import prisma from '../config/database';
 import { AuthRequest } from '../middleware/authMiddleware';
+import { uploadToR2, deleteFromR2, isR2Configured } from '../config/r2';
 
 export const uploadRecord = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -27,7 +29,18 @@ export const uploadRecord = async (req: AuthRequest, res: Response): Promise<voi
       });
     }
 
-    const fileUrl = `/uploads/${file.filename}`;
+    const ext = path.extname(file.originalname) || (file.mimetype.includes('pdf') ? '.pdf' : '.jpg');
+    const key = `records/${patient.id}/${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+
+    let fileUrl: string;
+    if (isR2Configured() && file.buffer) {
+      fileUrl = await uploadToR2(file.buffer, key, file.mimetype);
+    } else if (file.buffer) {
+      fileUrl = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
+    } else {
+      fileUrl = `/uploads/${(file as any).filename || 'document' + ext}`;
+    }
+
     const fileType = file.mimetype.includes('pdf') ? 'pdf' : 'image';
 
     const record = await prisma.medicalRecord.create({
@@ -107,6 +120,11 @@ export const deleteRecord = async (req: AuthRequest, res: Response): Promise<voi
     }
 
     await prisma.medicalRecord.delete({ where: { id } });
+
+    if (record.fileUrl && (record.fileUrl.startsWith('http') || record.fileUrl.startsWith('records/'))) {
+      await deleteFromR2(record.fileUrl);
+    }
+
     res.json({ success: true, message: 'Record deleted successfully' });
   } catch (error: any) {
     console.error('deleteRecord error:', error);

@@ -1,9 +1,11 @@
+import path from 'path';
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { OAuth2Client } from 'google-auth-library';
 import prisma from '../config/database';
 import { AuthRequest } from '../middleware/authMiddleware';
+import { uploadToR2, deleteFromR2, isR2Configured } from '../config/r2';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'mediarca-fallback-jwt-secret';
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -528,7 +530,26 @@ export const uploadAvatar = async (req: AuthRequest, res: Response): Promise<voi
       return;
     }
 
-    const avatarUrl = `/uploads/${file.filename}`;
+    const ext = path.extname(file.originalname) || '.jpg';
+    const key = `avatars/${req.user.id}-${Date.now()}${ext}`;
+
+    let avatarUrl: string;
+    if (isR2Configured() && file.buffer) {
+      avatarUrl = await uploadToR2(file.buffer, key, file.mimetype || 'image/jpeg');
+    } else if (file.buffer) {
+      avatarUrl = `data:${file.mimetype || 'image/jpeg'};base64,${file.buffer.toString('base64')}`;
+    } else {
+      avatarUrl = `/uploads/${(file as any).filename || 'avatar' + ext}`;
+    }
+
+    // Clean up previous avatar if it was on R2
+    const existingUser = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { avatarUrl: true },
+    });
+    if (existingUser?.avatarUrl && (existingUser.avatarUrl.includes('.r2.dev') || existingUser.avatarUrl.startsWith('avatars/'))) {
+      await deleteFromR2(existingUser.avatarUrl);
+    }
 
     const updatedUser = await prisma.user.update({
       where: { id: req.user.id },
