@@ -19,12 +19,20 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
     }
 
     const dateStr = (req.query.date as string) || new Date().toISOString().split('T')[0];
+    const scope = (req.query.scope as string) || 'date';
+
+    const whereClause: any = {
+      doctorId: doctor.id,
+    };
+
+    if (scope === 'all-upcoming') {
+      whereClause.status = { in: ['WAITING', 'IN_CONSULTATION'] };
+    } else {
+      whereClause.appointmentDate = dateStr;
+    }
 
     const appointments = await prisma.appointment.findMany({
-      where: {
-        doctorId: doctor.id,
-        appointmentDate: dateStr,
-      },
+      where: whereClause,
       include: {
         patient: {
           include: {
@@ -32,22 +40,52 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
           },
         },
       },
-      orderBy: { queueNumber: 'asc' },
+      orderBy: scope === 'all-upcoming'
+        ? [{ appointmentDate: 'asc' }, { queueNumber: 'asc' }]
+        : { queueNumber: 'asc' },
     });
 
     const activeInConsultation = appointments.find((a) => a.status === 'IN_CONSULTATION') || null;
     const waitingQueue = appointments.filter((a) => a.status === 'WAITING');
     const completedQueue = appointments.filter((a) => a.status === 'COMPLETED');
 
+    // Calculate upcoming bookings summary across dates for this doctor
+    const todayIso = new Date().toISOString().split('T')[0];
+    const upcomingWaiting = await prisma.appointment.findMany({
+      where: {
+        doctorId: doctor.id,
+        appointmentDate: { gte: todayIso },
+        status: { in: ['WAITING', 'IN_CONSULTATION'] },
+      },
+      select: {
+        id: true,
+        appointmentDate: true,
+      },
+      orderBy: { appointmentDate: 'asc' },
+    });
+
+    const tomorrowIso = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+    const tomorrowCount = upcomingWaiting.filter((a) => a.appointmentDate === tomorrowIso).length;
+    const futureBookings = upcomingWaiting.filter((a) => a.appointmentDate > dateStr);
+    const nextDateWithBookings = futureBookings[0]?.appointmentDate || null;
+
     res.json({
       success: true,
       data: {
         date: dateStr,
+        scope,
         totalQueue: appointments.length,
         activeInConsultation,
         waitingQueue,
         completedQueue,
         allAppointments: appointments,
+        upcomingSummary: {
+          tomorrowDate: tomorrowIso,
+          tomorrowCount,
+          totalUpcomingCount: upcomingWaiting.length,
+          futureCountFromSelectedDate: futureBookings.length,
+          nextDateWithBookings,
+        },
       },
     });
   } catch (error: any) {

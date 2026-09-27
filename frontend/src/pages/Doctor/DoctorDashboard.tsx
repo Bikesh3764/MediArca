@@ -70,14 +70,23 @@ export const DoctorDashboard: React.FC = () => {
   const [feedbackError, setFeedbackError] = useState<string | null>(null);
 
   const [date, setDate] = useState<string>(() => getLocalDateString());
+  const [queueScope, setQueueScope] = useState<'date' | 'all-upcoming'>('date');
   const [queueSearch, setQueueSearch] = useState('');
   const [queueData, setQueueData] = useState<{
     date: string;
+    scope?: string;
     totalQueue: number;
     activeInConsultation: Appointment | null;
     waitingQueue: Appointment[];
     completedQueue: Appointment[];
     allAppointments: Appointment[];
+    upcomingSummary?: {
+      tomorrowDate: string;
+      tomorrowCount: number;
+      totalUpcomingCount: number;
+      futureCountFromSelectedDate: number;
+      nextDateWithBookings: string | null;
+    };
   } | null>(null);
 
   const [loading, setLoading] = useState(true);
@@ -87,7 +96,7 @@ export const DoctorDashboard: React.FC = () => {
   const fetchQueue = useCallback(async (showLoading = true) => {
     if (showLoading) setLoading(true);
     try {
-      const data = await api.getDoctorQueue(date);
+      const data = await api.getDoctorQueue(queueScope === 'date' ? date : undefined, queueScope);
       setQueueData(data);
       setFetchError(null);
     } catch (err: any) {
@@ -96,7 +105,7 @@ export const DoctorDashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [date]);
+  }, [date, queueScope]);
 
   useEffect(() => {
     if (loadingAuth) return;
@@ -902,25 +911,140 @@ export const DoctorDashboard: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                <label className="text-xs font-medium text-[#86868b]">Queue Date:</label>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs font-medium text-[#86868b] mr-1">Date:</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setQueueScope('date');
+                    setDate(getLocalDateString());
+                  }}
+                  className={`h-9 px-3.5 rounded-xl text-xs font-semibold transition-all ${
+                    queueScope === 'date' && date === getLocalDateString()
+                      ? 'bg-[#1d1d1f] text-white shadow-sm'
+                      : 'bg-[#f5f5f7] hover:bg-slate-200 text-[#1d1d1f] border border-[#e5e5ea]'
+                  }`}
+                >
+                  Today
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setQueueScope('date');
+                    const tomorrowStr = queueData?.upcomingSummary?.tomorrowDate || new Date(Date.now() + 86400000).toISOString().split('T')[0];
+                    setDate(tomorrowStr);
+                  }}
+                  className={`h-9 px-3.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                    queueScope === 'date' && date === (queueData?.upcomingSummary?.tomorrowDate || new Date(Date.now() + 86400000).toISOString().split('T')[0])
+                      ? 'bg-[#1d1d1f] text-white shadow-sm'
+                      : 'bg-[#f5f5f7] hover:bg-slate-200 text-[#1d1d1f] border border-[#e5e5ea]'
+                  }`}
+                >
+                  <span>Tomorrow</span>
+                  {queueData?.upcomingSummary && queueData.upcomingSummary.tomorrowCount > 0 && (
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                      queueScope === 'date' && date === queueData.upcomingSummary.tomorrowDate
+                        ? 'bg-white/20 text-white'
+                        : 'bg-[#0088e8] text-white'
+                    }`}>
+                      {queueData.upcomingSummary.tomorrowCount}
+                    </span>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setQueueScope('all-upcoming');
+                  }}
+                  className={`h-9 px-3.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                    queueScope === 'all-upcoming'
+                      ? 'bg-[#1d1d1f] text-white shadow-sm'
+                      : 'bg-[#f5f5f7] hover:bg-slate-200 text-[#1d1d1f] border border-[#e5e5ea]'
+                  }`}
+                >
+                  <span>All Upcoming</span>
+                  {queueData?.upcomingSummary && queueData.upcomingSummary.totalUpcomingCount > 0 && (
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                      queueScope === 'all-upcoming'
+                        ? 'bg-white/20 text-white'
+                        : 'bg-purple-600 text-white'
+                    }`}>
+                      {queueData.upcomingSummary.totalUpcomingCount}
+                    </span>
+                  )}
+                </button>
                 <input
                   type="date"
                   value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  className="h-10 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0088e8]"
+                  onChange={(e) => {
+                    setQueueScope('date');
+                    setDate(e.target.value);
+                  }}
+                  className="h-9 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0088e8]"
+                  title="Choose Specific Date"
                 />
-                {date !== getLocalDateString() && (
-                  <button
-                    type="button"
-                    onClick={() => setDate(getLocalDateString())}
-                    className="h-10 px-3 rounded-xl border border-[#e5e5ea] bg-[#f5f5f7] hover:bg-slate-200 text-xs font-semibold text-[#1d1d1f] transition-colors"
-                  >
-                    Today
-                  </button>
-                )}
               </div>
             </div>
+
+            {/* Upcoming Bookings Alert Banner */}
+            {queueData?.upcomingSummary && queueData.upcomingSummary.tomorrowCount > 0 && (queueScope !== 'date' || date !== queueData.upcomingSummary.tomorrowDate) && (
+              <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-blue-50 via-sky-50 to-indigo-50 border border-blue-200 text-blue-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-[#0088e8] text-white flex items-center justify-center font-bold flex-shrink-0 shadow-sm">
+                    <Calendar className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-sm text-[#1d1d1f]">
+                      {queueData.upcomingSummary.tomorrowCount} Appointment{queueData.upcomingSummary.tomorrowCount > 1 ? 's' : ''} Scheduled for Tomorrow ({queueData.upcomingSummary.tomorrowDate})
+                    </h4>
+                    <p className="text-xs text-[#86868b] mt-0.5">
+                      You have patients queued for tomorrow. Switch date to review waiting patients and queue tokens.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setQueueScope('date');
+                    setDate(queueData.upcomingSummary!.tomorrowDate);
+                  }}
+                  className="px-4 py-2 rounded-xl bg-[#0088e8] text-white font-semibold text-xs hover:bg-[#0077cc] transition-all shadow-sm flex items-center justify-center gap-1.5 self-start sm:self-auto flex-shrink-0"
+                >
+                  <span>Switch to Tomorrow</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
+            {/* Alert banner if bookings on future date beyond tomorrow */}
+            {queueData?.upcomingSummary && queueData.upcomingSummary.tomorrowCount === 0 && queueData.upcomingSummary.nextDateWithBookings && (queueScope !== 'date' || date !== queueData.upcomingSummary.nextDateWithBookings) && (
+              <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-blue-50 via-sky-50 to-indigo-50 border border-blue-200 text-blue-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-[#0088e8] text-white flex items-center justify-center font-bold flex-shrink-0 shadow-sm">
+                    <Calendar className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-sm text-[#1d1d1f]">
+                      {queueData.upcomingSummary.totalUpcomingCount} Upcoming Appointment{queueData.upcomingSummary.totalUpcomingCount > 1 ? 's' : ''} on Future Dates
+                    </h4>
+                    <p className="text-xs text-[#86868b] mt-0.5">
+                      Next booked consultation date is {queueData.upcomingSummary.nextDateWithBookings}.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setQueueScope('date');
+                    setDate(queueData.upcomingSummary!.nextDateWithBookings!);
+                  }}
+                  className="px-4 py-2 rounded-xl bg-[#0088e8] text-white font-semibold text-xs hover:bg-[#0077cc] transition-all shadow-sm flex items-center justify-center gap-1.5 self-start sm:self-auto flex-shrink-0"
+                >
+                  <span>View {queueData.upcomingSummary.nextDateWithBookings}</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            )}
 
             {/* Top 2 Metric Cards (Matches media_1789192783321.jpg) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-6">
@@ -1050,16 +1174,30 @@ export const DoctorDashboard: React.FC = () => {
                 </div>
 
                 {(!queueData?.allAppointments || queueData.allAppointments.length === 0) ? (
-                  <div className="flex-1 flex flex-col items-center justify-center py-10 text-center">
+                  <div className="flex-1 flex flex-col items-center justify-center py-8 text-center">
                     <div className="w-12 h-12 rounded-2xl bg-[#f5f5f7] flex items-center justify-center text-[#86868b] mb-3">
                       <ClipboardList className="w-6 h-6 stroke-1" />
                     </div>
                     <h4 className="text-sm font-semibold text-[#1d1d1f]">
-                      No appointments yet
+                      No appointments for {queueScope === 'all-upcoming' ? 'upcoming dates' : date === getLocalDateString() ? 'Today' : date}
                     </h4>
-                    <p className="text-xs text-[#86868b] mt-1">
-                      Patient bookings will appear here
+                    <p className="text-xs text-[#86868b] mt-1 max-w-xs">
+                      {queueData?.upcomingSummary && queueData.upcomingSummary.tomorrowCount > 0 && date !== queueData.upcomingSummary.tomorrowDate
+                        ? `You have ${queueData.upcomingSummary.tomorrowCount} appointment(s) booked for Tomorrow.`
+                        : 'Patient bookings will appear here.'}
                     </p>
+                    {queueData?.upcomingSummary && queueData.upcomingSummary.tomorrowCount > 0 && date !== queueData.upcomingSummary.tomorrowDate && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setQueueScope('date');
+                          setDate(queueData.upcomingSummary!.tomorrowDate);
+                        }}
+                        className="mt-3 text-xs font-semibold text-[#0088e8] hover:underline inline-flex items-center gap-1"
+                      >
+                        Switch to Tomorrow ({queueData.upcomingSummary.tomorrowCount}) &rarr;
+                      </button>
+                    )}
                   </div>
                 ) : (
                   <div className="space-y-2.5 flex-1">
@@ -1077,6 +1215,11 @@ export const DoctorDashboard: React.FC = () => {
                               {appt.isForOther && appt.patientName ? appt.patientName : appt.patient?.user.fullName}
                             </p>
                             <p className="text-[11px] text-[#86868b] truncate">
+                              {appt.appointmentDate && (
+                                <span className="font-medium text-[#1d1d1f] mr-1">
+                                  {appt.appointmentDate === getLocalDateString() ? 'Today' : appt.appointmentDate === queueData?.upcomingSummary?.tomorrowDate ? 'Tomorrow' : appt.appointmentDate} •
+                                </span>
+                              )}
                               {appt.estimatedTime} • {appt.checkingWindow || 'Shift'}
                             </p>
                           </div>
@@ -1226,10 +1369,37 @@ export const DoctorDashboard: React.FC = () => {
                 ) : queueData?.waitingQueue.length === 0 ? (
                   <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-8 text-center">
                     <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto mb-2" />
-                    <h4 className="text-base font-semibold text-[#1d1d1f]">Queue is Clear</h4>
-                    <p className="text-xs text-[#86868b] mt-1">
-                      All patients scheduled for this date have either completed consultation or not yet booked.
+                    <h4 className="text-base font-semibold text-[#1d1d1f]">
+                      Queue is Clear for {queueScope === 'all-upcoming' ? 'All Upcoming Dates' : date === getLocalDateString() ? 'Today' : date === queueData?.upcomingSummary?.tomorrowDate ? 'Tomorrow' : date}
+                    </h4>
+                    <p className="text-xs text-[#86868b] mt-1 max-w-md mx-auto">
+                      {queueData?.upcomingSummary && queueData.upcomingSummary.tomorrowCount > 0 && date !== queueData.upcomingSummary.tomorrowDate ? (
+                        <span>
+                          No patients waiting today, but you have <strong className="text-[#1d1d1f]">{queueData.upcomingSummary.tomorrowCount} patient(s) booked for Tomorrow ({queueData.upcomingSummary.tomorrowDate})</strong>.
+                        </span>
+                      ) : queueData?.upcomingSummary && queueData.upcomingSummary.totalUpcomingCount > 0 && queueScope === 'date' ? (
+                        <span>
+                          No patients waiting for this date, but you have <strong className="text-[#1d1d1f]">{queueData.upcomingSummary.totalUpcomingCount} upcoming patient(s)</strong> booked on future dates.
+                        </span>
+                      ) : (
+                        'All patients scheduled for this date have either completed consultation or not yet booked.'
+                      )}
                     </p>
+                    {queueData?.upcomingSummary && queueData.upcomingSummary.tomorrowCount > 0 && date !== queueData.upcomingSummary.tomorrowDate && (
+                      <div className="mt-4">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setQueueScope('date');
+                            setDate(queueData.upcomingSummary!.tomorrowDate);
+                          }}
+                          className="px-4 py-2 rounded-xl bg-[#0088e8] text-white text-xs font-semibold hover:bg-[#0077cc] transition-all inline-flex items-center gap-1.5 shadow-sm"
+                        >
+                          <span>Switch to Tomorrow's Queue ({queueData.upcomingSummary.tomorrowCount} Booked)</span>
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ) : (() => {
                   const filteredWaiting = queueData?.waitingQueue.filter((appt) => {
@@ -1283,6 +1453,17 @@ export const DoctorDashboard: React.FC = () => {
                               {appt.checkingWindow && (
                                 <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-[#0088e8]">
                                   {appt.checkingWindow}
+                                </span>
+                              )}
+                              {appt.appointmentDate && (
+                                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
+                                  appt.appointmentDate === getLocalDateString()
+                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                    : appt.appointmentDate === queueData?.upcomingSummary?.tomorrowDate
+                                    ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                    : 'bg-[#f5f5f7] text-[#1d1d1f] border-[#e5e5ea]'
+                                }`}>
+                                  📅 {appt.appointmentDate === getLocalDateString() ? 'Today' : appt.appointmentDate === queueData?.upcomingSummary?.tomorrowDate ? 'Tomorrow' : appt.appointmentDate}
                                 </span>
                               )}
                             </div>

@@ -1078,15 +1078,30 @@ export const api = {
   },
 
   // Doctor Consultation & Queue Console
-  async getDoctorQueue(date?: string): Promise<{
+  async getDoctorQueue(
+    date?: string,
+    scope?: 'date' | 'all-upcoming'
+  ): Promise<{
     date: string;
+    scope?: string;
     totalQueue: number;
     activeInConsultation: Appointment | null;
     waitingQueue: Appointment[];
     completedQueue: Appointment[];
     allAppointments: Appointment[];
+    upcomingSummary?: {
+      tomorrowDate: string;
+      tomorrowCount: number;
+      totalUpcomingCount: number;
+      futureCountFromSelectedDate: number;
+      nextDateWithBookings: string | null;
+    };
   }> {
-    const url = date ? `${API_BASE_URL}/consultations/queue?date=${date}` : `${API_BASE_URL}/consultations/queue`;
+    const params = new URLSearchParams();
+    if (date) params.append('date', date);
+    if (scope) params.append('scope', scope);
+    const qs = params.toString();
+    const url = qs ? `${API_BASE_URL}/consultations/queue?${qs}` : `${API_BASE_URL}/consultations/queue`;
     const res = await fetch(url, { headers: getHeaders() });
     return handleResponse(res);
   },
