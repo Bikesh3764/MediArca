@@ -1,5 +1,5 @@
 import React from 'react';
-import { Appointment } from '../../services/api';
+import { Appointment, getLocalDateString } from '../../services/api';
 import { Clock, Calendar, MapPin, CheckCircle2, FileText, Building2 } from 'lucide-react';
 import { AppleButton } from '../ui/AppleButton';
 
@@ -17,7 +17,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
   const { doctor, queueNumber, status, appointmentDate, checkingWindow, estimatedTime, liveQueue } =
     appointment;
 
-  const isToday = new Date(appointmentDate).toDateString() === new Date().toDateString();
+  const isToday = appointmentDate === getLocalDateString();
 
   return (
     <div className="bg-white rounded-[20px] border border-[#e5e5ea] overflow-hidden shadow-sm hover:shadow-apple-card transition-all duration-300">
@@ -117,15 +117,15 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
           </div>
         </div>
 
-        {/* Patient Details (When booked for dependent/family member) */}
-        {appointment.isForOther && (
+        {/* Patient Details (When booked for dependent/family member or explicit patient name) */}
+        {(appointment.isForOther || (Boolean(appointment.patientName) && appointment.patient?.user?.fullName && appointment.patientName !== appointment.patient.user.fullName)) && (
           <div className="my-3 p-3 rounded-xl bg-[#0088e8]/5 border border-[#0088e8]/20 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
             <div className="flex items-center gap-2">
               <span className="px-2 py-0.5 rounded-full bg-gradient-to-r from-[#0088e8] to-[#10b981] text-white font-semibold text-[10px]">
-                Dependent / Family
+                {appointment.isForOther ? 'Dependent / Family' : 'Patient'}
               </span>
               <span className="font-semibold text-[#1d1d1f]">
-                Patient: {appointment.patientName || 'Family Member'}
+                Patient: {appointment.patientName || appointment.patient?.user?.fullName || 'Patient'}
               </span>
               {appointment.patientAge && (
                 <span className="text-[#86868b]">

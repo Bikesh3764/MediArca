@@ -5,6 +5,7 @@ import {
   ReceptionistQueueItem,
   getLocalDateString,
 } from '../../services/api';
+import { sanitizeIndianPhone, formatIndianPhone, isValidIndianPhone } from '../../utils/phoneUtils';
 import { useAuth } from '../../context/AuthContext';
 import { AppleButton } from '../../components/ui/AppleButton';
 import { DashboardLayout, DashboardNavItem } from '../../components/layout/DashboardLayout';
@@ -127,6 +128,11 @@ export const ReceptionistDashboard: React.FC = () => {
       return;
     }
 
+    if (!isValidIndianPhone(patientPhone)) {
+      setError('Please enter a valid 10-digit mobile number');
+      return;
+    }
+
     if (bookingFor === 'other') {
       if (!patientName.trim()) {
         setError('Patient full name is required when booking for a dependent or family member.');
@@ -141,10 +147,11 @@ export const ReceptionistDashboard: React.FC = () => {
     setBookingLoading(true);
     setError(null);
     try {
+      const formattedPhone = formatIndianPhone(patientPhone);
       const res = await api.bookWalkinAppointment({
         doctorId: selectedDoctorId,
         patientName: patientName.trim(),
-        patientPhone: patientPhone.trim(),
+        patientPhone: formattedPhone,
         gender,
         patientAge: patientAge.trim() || undefined,
         isForOther: bookingFor === 'other',
@@ -156,7 +163,7 @@ export const ReceptionistDashboard: React.FC = () => {
 
       const queuedDoctor = linkedDoctors.find((d) => d.doctorId === selectedDoctorId);
       const savedPatientName = patientName.trim();
-      const savedPatientPhone = patientPhone.trim();
+      const savedPatientPhone = formattedPhone;
 
       setBookedPass({
         queueNumber: res.data.queueNumber,
@@ -542,8 +549,9 @@ export const ReceptionistDashboard: React.FC = () => {
                         type="tel"
                         required
                         value={patientPhone}
-                        onChange={(e) => setPatientPhone(e.target.value)}
-                        placeholder="+91 98765 43210"
+                        onChange={(e) => setPatientPhone(sanitizeIndianPhone(e.target.value))}
+                        placeholder="10-digit mobile number"
+                        maxLength={10}
                         className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white focus:outline-none focus:border-[#0088e8]"
                       />
                     </div>

@@ -11,6 +11,7 @@ import {
   evaluateSlotStatus,
   SlotStatusResult,
 } from '../utils/scheduleUtils';
+import { formatIndianPhone, sanitizeIndianPhone } from '../utils/phoneUtils';
 
 // Helper to calculate estimated time given start time "09:00" and offset minutes (retained for backward compatibility)
 export const calculateEstimatedTime = (startTime24: string, offsetMinutes: number): string => {
@@ -187,25 +188,34 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
     }
 
     let patient: any;
+    let patientUser: any = null;
     if (req.user.role === 'DOCTOR') {
-      // Doctor booking a walk-in patient
+      // Doctor booking a walk-in patient with phone normalization
       const cleanPhone = patientPhone ? String(patientPhone).trim() : '';
-      let patientUser: any = null;
+      const normalizedPhone = formatIndianPhone(cleanPhone);
+      const rawDigits = sanitizeIndianPhone(cleanPhone);
+
       if (cleanPhone) {
         patientUser = await prisma.user.findFirst({
-          where: { phone: cleanPhone },
+          where: {
+            OR: [
+              ...(normalizedPhone ? [{ phone: normalizedPhone }] : []),
+              ...(rawDigits ? [{ phone: rawDigits }] : []),
+              { phone: cleanPhone },
+            ],
+          },
           include: { patientProfile: true },
         });
       }
       if (!patientUser) {
         const dummySalt = await bcrypt.genSalt(10);
         const dummyHash = await bcrypt.hash('walkin123', dummySalt);
-        const uniqueId = cleanPhone.replace(/\D/g, '') || `${Date.now()}`;
+        const uniqueId = rawDigits || cleanPhone.replace(/\D/g, '') || `${Date.now()}`;
         const walkinEmail = `walkin.${uniqueId}@mediarca.local`;
         patientUser = await prisma.user.create({
           data: {
             fullName: patientName ? String(patientName).trim() : 'Walk-in Patient',
-            phone: cleanPhone || null,
+            phone: normalizedPhone || cleanPhone || null,
             email: walkinEmail,
             passwordHash: dummyHash,
             role: 'PATIENT',
@@ -372,7 +382,7 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
               status: 'WAITING',
               reasonForVisit: reasonForVisit || 'General Medical Consultation',
               symptoms: symptoms || null,
-              isForOther: Boolean(isForOther),
+              isForOther: Boolean(isForOther || (req.user?.role === 'DOCTOR' && patientUser && patientName && patientUser.fullName.trim().toLowerCase() !== String(patientName).trim().toLowerCase())),
               patientName: (isForOther && patientName) || (req.user?.role === 'DOCTOR' && patientName) ? String(patientName).trim() : null,
               patientAge: patientAge ? String(patientAge).trim() : null,
               patientGender: patientGender || null,
@@ -516,6 +526,11 @@ export const getPatientAppointments = async (req: AuthRequest, res: Response): P
         clinic: {
           select: { id: true, clinicName: true, address: true, city: true, phone: true },
         },
+        patient: {
+          include: {
+            user: { select: { fullName: true, email: true, phone: true, avatarUrl: true } },
+          },
+        },
         prescription: true,
         review: true,
       },
@@ -619,7 +634,7 @@ export const cancelAppointment = async (req: AuthRequest, res: Response): Promis
       return;
     }
 
-    // Verify ownership
+    // Verify ownership and permissions
     if (req.user?.role === 'PATIENT' && appointment.patient.userId !== req.user.id) {
       res.status(403).json({ success: false, message: 'You do not have permission to cancel this appointment' });
       return;
@@ -627,6 +642,39 @@ export const cancelAppointment = async (req: AuthRequest, res: Response): Promis
 
     if (req.user?.role === 'DOCTOR' && appointment.doctor.userId !== req.user.id) {
       res.status(403).json({ success: false, message: 'You do not have permission to cancel another doctor\'s appointment' });
+      return;
+    }
+
+    if (req.user?.role === 'RECEPTIONIST') {
+      const receptionist = await prisma.receptionistProfile.findUnique({
+        where: { userId: req.user.id },
+      });
+      if (!receptionist) {
+        res.status(403).json({ success: false, message: 'Receptionist profile not found' });
+        return;
+      }
+      const assignment = await prisma.doctorReceptionist.findUnique({
+        where: {
+          doctorId_receptionistId: {
+            doctorId: appointment.doctorId,
+            receptionistId: receptionist.id,
+          },
+        },
+      });
+      if (!assignment) {
+        res.status(403).json({ success: false, message: 'You do not have permission to cancel appointments for this doctor' });
+        return;
+      }
+    } else if (req.user?.role === 'CLINIC') {
+      const clinic = await prisma.clinicProfile.findUnique({
+        where: { userId: req.user.id },
+      });
+      if (!clinic || appointment.clinicId !== clinic.id) {
+        res.status(403).json({ success: false, message: 'You do not have permission to cancel appointments for this clinic' });
+        return;
+      }
+    } else if (req.user?.role !== 'ADMIN' && req.user?.role !== 'PATIENT' && req.user?.role !== 'DOCTOR') {
+      res.status(403).json({ success: false, message: 'Unauthorized' });
       return;
     }
 

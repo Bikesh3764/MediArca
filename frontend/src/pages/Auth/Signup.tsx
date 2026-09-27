@@ -8,7 +8,7 @@ import { GoogleLogin } from '@react-oauth/google';
 import { isGoogleConfigured } from '../../config/auth';
 import { SearchableSpecialtySelect } from '../../components/ui/SearchableSpecialtySelect';
 import { DEFAULT_PHONE_PREFIX } from '../../services/api';
-import { sanitizeIndianPhone } from '../../utils/phoneUtils';
+import { sanitizeIndianPhone, formatIndianPhone, isValidIndianPhone } from '../../utils/phoneUtils';
 
 export const Signup: React.FC = () => {
   const [role, setRole] = useState<'PATIENT' | 'DOCTOR'>('PATIENT');
@@ -31,6 +31,11 @@ export const Signup: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const rawDigits = sanitizeIndianPhone(phone);
+    if (rawDigits.length > 0 && !isValidIndianPhone(phone)) {
+      setError('Please enter a valid 10-digit Indian mobile number.');
+      return;
+    }
     setError(null);
     setSubmitting(true);
 
@@ -39,7 +44,7 @@ export const Signup: React.FC = () => {
         fullName,
         email,
         password,
-        phone,
+        phone: isValidIndianPhone(phone) ? formatIndianPhone(phone) : undefined,
         role,
       };
 

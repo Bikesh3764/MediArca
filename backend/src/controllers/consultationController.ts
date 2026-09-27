@@ -265,11 +265,19 @@ export const completeConsultation = async (req: AuthRequest, res: Response): Pro
       return;
     }
 
-    const medicinesJson = medicines
-      ? typeof medicines === 'string'
-        ? medicines
-        : JSON.stringify(medicines)
-      : null;
+    let filteredMedicines: any[] = [];
+    if (Array.isArray(medicines)) {
+      filteredMedicines = medicines.filter((m) => m && typeof m.name === 'string' && m.name.trim().length > 0);
+    } else if (typeof medicines === 'string') {
+      try {
+        const parsed = JSON.parse(medicines);
+        if (Array.isArray(parsed)) {
+          filteredMedicines = parsed.filter((m) => m && typeof m.name === 'string' && m.name.trim().length > 0);
+        }
+      } catch {}
+    }
+
+    const medicinesJson = filteredMedicines.length > 0 ? JSON.stringify(filteredMedicines) : null;
 
     // Use transaction to update appointment and upsert prescription if provided
     const result = await prisma.$transaction(async (tx) => {

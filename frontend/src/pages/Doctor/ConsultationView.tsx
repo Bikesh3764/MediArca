@@ -251,7 +251,7 @@ export const ConsultationView: React.FC = () => {
 
   const patientUser = appointment.patient?.user;
   const isForOther = Boolean(appointment.isForOther);
-  const actualPatientName = isForOther && appointment.patientName ? appointment.patientName : (patientUser?.fullName || 'Walk-in Patient');
+  const actualPatientName = appointment.patientName?.trim() || patientUser?.fullName || 'Walk-in Patient';
   const patientAgeDisplay = appointment.patientAge
     ? (appointment.patientAge.toLowerCase().includes('yr') ? appointment.patientAge : `${appointment.patientAge} yrs`)
     : (appointment.patient?.dateOfBirth ? `${new Date().getFullYear() - new Date(appointment.patient.dateOfBirth).getFullYear()} yrs` : undefined);

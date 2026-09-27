@@ -9,6 +9,7 @@ import {
   timeToMinutes,
   minutesTo12Hour,
 } from '../utils/scheduleUtils';
+import { formatIndianPhone, sanitizeIndianPhone } from '../utils/phoneUtils';
 
 /**
  * Get profile and linked doctors for logged-in receptionist
@@ -252,7 +253,7 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
         appointments: appointments.map((a) => ({
           id: a.id,
           queueNumber: a.queueNumber,
-          patientName: a.isForOther && a.patientName ? a.patientName : (a.patient?.user?.fullName || 'Walk-in Patient'),
+          patientName: a.patientName || a.patient?.user?.fullName || 'Walk-in Patient',
           registeredUserName: a.patient?.user?.fullName,
           patientPhone: a.patient?.user?.phone || 'N/A',
           gender: a.patientGender || a.patient?.gender,
@@ -374,22 +375,31 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
       }
     }
 
-    // Find or create walk-in patient profile
+    // Find or create walk-in patient profile with phone normalization
     const cleanPhone = String(patientPhone).trim();
+    const normalizedPhone = formatIndianPhone(cleanPhone);
+    const rawDigits = sanitizeIndianPhone(cleanPhone);
+
     let patientUser = await prisma.user.findFirst({
-      where: { phone: cleanPhone },
+      where: {
+        OR: [
+          ...(normalizedPhone ? [{ phone: normalizedPhone }] : []),
+          ...(rawDigits ? [{ phone: rawDigits }] : []),
+          { phone: cleanPhone },
+        ],
+      },
       include: { patientProfile: true },
     });
 
     if (!patientUser) {
       const dummySalt = await bcrypt.genSalt(10);
       const dummyHash = await bcrypt.hash('walkin123', dummySalt);
-      const walkinEmail = `walkin.${cleanPhone.replace(/\D/g, '') || Date.now()}@mediarca.local`;
+      const walkinEmail = `walkin.${rawDigits || cleanPhone.replace(/\D/g, '') || Date.now()}@mediarca.local`;
 
       patientUser = await prisma.user.create({
         data: {
-          fullName: patientName,
-          phone: cleanPhone,
+          fullName: patientName ? String(patientName).trim() : 'Walk-in Patient',
+          phone: normalizedPhone || cleanPhone,
           email: walkinEmail,
           passwordHash: dummyHash,
           role: 'PATIENT',
@@ -402,6 +412,10 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
         include: { patientProfile: true },
       });
     }
+
+    const isOther = Boolean(
+      isForOther || (patientUser && patientName && patientUser.fullName.trim().toLowerCase() !== String(patientName).trim().toLowerCase())
+    );
 
     let patientProfile = patientUser.patientProfile;
     if (!patientProfile) {
@@ -477,7 +491,7 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
               status: 'WAITING',
               reasonForVisit: reasonForVisit || 'Walk-in Consultation',
               symptoms: symptoms || null,
-              isForOther: Boolean(isForOther),
+              isForOther: isOther,
               patientName: patientName ? String(patientName).trim() : null,
               patientAge: patientAge ? String(patientAge).trim() : null,
               patientGender: gender || null,
@@ -528,6 +542,51 @@ export const updateAppointmentStatus = async (req: AuthRequest, res: Response): 
     if (!validStatuses.includes(status)) {
       res.status(400).json({ success: false, message: `Invalid status. Must be one of: ${validStatuses.join(', ')}` });
       return;
+    }
+
+    const targetAppointment = await prisma.appointment.findUnique({
+      where: { id: appointmentId },
+    });
+
+    if (!targetAppointment) {
+      res.status(404).json({ success: false, message: 'Appointment not found' });
+      return;
+    }
+
+    if (req.user?.role === 'RECEPTIONIST') {
+      const receptionist = await prisma.receptionistProfile.findUnique({
+        where: { userId: req.user.id },
+      });
+
+      if (!receptionist) {
+        res.status(403).json({ success: false, message: 'Access denied: Receptionist profile not found' });
+        return;
+      }
+
+      const assignment = await prisma.doctorReceptionist.findUnique({
+        where: {
+          doctorId_receptionistId: {
+            doctorId: targetAppointment.doctorId,
+            receptionistId: receptionist.id,
+          },
+        },
+      });
+
+      if (!assignment) {
+        res.status(403).json({
+          success: false,
+          message: 'Access denied: You are only authorized to update appointments for doctors assigned to your desk.',
+        });
+        return;
+      }
+
+      if (receptionist.clinicId && targetAppointment.clinicId && targetAppointment.clinicId !== receptionist.clinicId) {
+        res.status(403).json({
+          success: false,
+          message: 'Access denied: Appointment belongs to another clinic facility.',
+        });
+        return;
+      }
     }
 
     const updated = await prisma.appointment.update({

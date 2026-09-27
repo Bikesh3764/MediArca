@@ -91,8 +91,13 @@ export const getPatientRecords = async (req: AuthRequest, res: Response): Promis
         });
       }
       patientId = patient.id;
-    } else if (req.user.role === 'DOCTOR' && !patientId) {
-      res.status(400).json({ success: false, message: 'patientId is required for doctor view' });
+    } else if (req.user.role === 'DOCTOR' || req.user.role === 'ADMIN') {
+      if (req.user.role === 'DOCTOR' && !patientId) {
+        res.status(400).json({ success: false, message: 'patientId is required for doctor view' });
+        return;
+      }
+    } else {
+      res.status(403).json({ success: false, message: 'Forbidden: Insufficient role permissions to view medical records' });
       return;
     }
 

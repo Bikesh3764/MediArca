@@ -3,8 +3,8 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { AppleButton } from '../../components/ui/AppleButton';
 import { BrandLogo } from '../../components/ui/BrandLogo';
-import { Building2, AlertCircle, Sparkles, MapPin, Phone, Mail, Lock } from 'lucide-react';
-import { sanitizeIndianPhone, formatIndianPhone } from '../../utils/phoneUtils';
+import { Building2, AlertCircle, Sparkles, MapPin, Mail, Lock } from 'lucide-react';
+import { sanitizeIndianPhone, formatIndianPhone, isValidIndianPhone } from '../../utils/phoneUtils';
 
 export const ClinicAuth: React.FC = () => {
   const location = useLocation();
@@ -46,6 +46,10 @@ export const ClinicAuth: React.FC = () => {
 
   const handleSignupSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isValidIndianPhone(phone)) {
+      setError('Please enter a valid 10-digit Indian phone number');
+      return;
+    }
     setError(null);
     setSubmitting(true);
     try {
@@ -55,7 +59,7 @@ export const ClinicAuth: React.FC = () => {
         clinicName,
         address,
         city: city || undefined,
-        phone,
+        phone: formatIndianPhone(phone),
         email,
         password,
       });

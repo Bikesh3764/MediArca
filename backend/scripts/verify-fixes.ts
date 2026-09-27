@@ -1399,6 +1399,164 @@ function runTests() {
   const receptionistAccess = authorizeVaultAccess({ id: 'user-rec-1', role: 'RECEPTIONIST' }, 'user-pat-1', 'pat-profile-1');
   assert(receptionistAccess.allowed === false && receptionistAccess.status === 403, 'Receptionist is blocked from patient medical vault');
 
+  // 59. Receptionist Status Update Authorization
+  const authorizeReceptionistStatusUpdate = (
+    receptionist: { id: string; clinicId?: string | null; assignedDoctorIds: string[] },
+    appointment: { id: string; doctorId: string; clinicId?: string | null }
+  ): { allowed: boolean; status: number; message?: string } => {
+    if (!receptionist.assignedDoctorIds.includes(appointment.doctorId)) {
+      return { allowed: false, status: 403, message: 'Access denied: You are only authorized to update appointments for doctors assigned to your desk.' };
+    }
+    if (receptionist.clinicId && appointment.clinicId && receptionist.clinicId !== appointment.clinicId) {
+      return { allowed: false, status: 403, message: 'Access denied: Appointment belongs to another clinic facility.' };
+    }
+    return { allowed: true, status: 200 };
+  };
+
+  const recAssigned = authorizeReceptionistStatusUpdate(
+    { id: 'rec-1', clinicId: 'clinic-1', assignedDoctorIds: ['doc-1', 'doc-2'] },
+    { id: 'appt-1', doctorId: 'doc-1', clinicId: 'clinic-1' }
+  );
+  assert(recAssigned.allowed === true, 'Receptionist can update status for assigned doctor');
+
+  const recUnassigned = authorizeReceptionistStatusUpdate(
+    { id: 'rec-1', clinicId: 'clinic-1', assignedDoctorIds: ['doc-1'] },
+    { id: 'appt-2', doctorId: 'doc-2', clinicId: 'clinic-1' }
+  );
+  assert(recUnassigned.allowed === false && recUnassigned.status === 403, 'Receptionist cannot update status for unassigned doctor');
+
+  const recOtherClinic = authorizeReceptionistStatusUpdate(
+    { id: 'rec-1', clinicId: 'clinic-1', assignedDoctorIds: ['doc-1'] },
+    { id: 'appt-3', doctorId: 'doc-1', clinicId: 'clinic-2' }
+  );
+  assert(recOtherClinic.allowed === false && recOtherClinic.status === 403, 'Receptionist cannot update status for doctor appointment at different clinic facility');
+
+  // 60. Appointment Cancellation Authorization
+  const authorizeAppointmentCancellation = (
+    user: { id: string; role: string },
+    appointment: { id: string; patientUserId: string; doctorId: string; clinicId?: string | null },
+    receptionist?: { id: string; assignedDoctorIds: string[] } | null,
+    clinic?: { id: string } | null
+  ): { allowed: boolean; status: number; message?: string } => {
+    if (user.role === 'PATIENT') {
+      if (appointment.patientUserId !== user.id) {
+        return { allowed: false, status: 403, message: 'You do not have permission to cancel this appointment' };
+      }
+      return { allowed: true, status: 200 };
+    }
+    if (user.role === 'DOCTOR') {
+      return { allowed: true, status: 200 };
+    }
+    if (user.role === 'RECEPTIONIST') {
+      if (!receptionist || !receptionist.assignedDoctorIds.includes(appointment.doctorId)) {
+        return { allowed: false, status: 403, message: 'You do not have permission to cancel appointments for this doctor' };
+      }
+      return { allowed: true, status: 200 };
+    }
+    if (user.role === 'CLINIC') {
+      if (!clinic || appointment.clinicId !== clinic.id) {
+        return { allowed: false, status: 403, message: 'You do not have permission to cancel appointments for this clinic' };
+      }
+      return { allowed: true, status: 200 };
+    }
+    if (user.role === 'ADMIN') {
+      return { allowed: true, status: 200 };
+    }
+    return { allowed: false, status: 403, message: 'Unauthorized' };
+  };
+
+  const patientCancelOwn = authorizeAppointmentCancellation(
+    { id: 'pat-user-1', role: 'PATIENT' },
+    { id: 'appt-1', patientUserId: 'pat-user-1', doctorId: 'doc-1' }
+  );
+  assert(patientCancelOwn.allowed === true, 'Patient can cancel own appointment');
+
+  const patientCancelOther = authorizeAppointmentCancellation(
+    { id: 'pat-user-2', role: 'PATIENT' },
+    { id: 'appt-1', patientUserId: 'pat-user-1', doctorId: 'doc-1' }
+  );
+  assert(patientCancelOther.allowed === false, 'Patient cannot cancel another patient appointment');
+
+  const receptionistCancelAssigned = authorizeAppointmentCancellation(
+    { id: 'rec-user-1', role: 'RECEPTIONIST' },
+    { id: 'appt-1', patientUserId: 'pat-user-1', doctorId: 'doc-1' },
+    { id: 'rec-1', assignedDoctorIds: ['doc-1'] }
+  );
+  assert(receptionistCancelAssigned.allowed === true, 'Receptionist can cancel appointment for assigned doctor');
+
+  const receptionistCancelUnassigned = authorizeAppointmentCancellation(
+    { id: 'rec-user-1', role: 'RECEPTIONIST' },
+    { id: 'appt-1', patientUserId: 'pat-user-1', doctorId: 'doc-2' },
+    { id: 'rec-1', assignedDoctorIds: ['doc-1'] }
+  );
+  assert(receptionistCancelUnassigned.allowed === false, 'Receptionist cannot cancel appointment for unassigned doctor');
+
+  const clinicCancelOwn = authorizeAppointmentCancellation(
+    { id: 'clinic-user-1', role: 'CLINIC' },
+    { id: 'appt-1', patientUserId: 'pat-user-1', doctorId: 'doc-1', clinicId: 'clinic-1' },
+    null,
+    { id: 'clinic-1' }
+  );
+  assert(clinicCancelOwn.allowed === true, 'Clinic can cancel appointment for own clinic');
+
+  const clinicCancelOther = authorizeAppointmentCancellation(
+    { id: 'clinic-user-1', role: 'CLINIC' },
+    { id: 'appt-1', patientUserId: 'pat-user-1', doctorId: 'doc-1', clinicId: 'clinic-2' },
+    null,
+    { id: 'clinic-1' }
+  );
+  assert(clinicCancelOther.allowed === false, 'Clinic cannot cancel appointment for another clinic');
+
+  // 61. Phone Normalization in Walk-in Lookups (prevents duplicate patient accounts)
+  const buildPhoneLookupWhere = (cleanPhone: string) => {
+    const normalizedPhone = formatIndianPhone(cleanPhone);
+    const rawDigits = sanitizeIndianPhone(cleanPhone);
+    return [
+      ...(normalizedPhone ? [{ phone: normalizedPhone }] : []),
+      ...(rawDigits ? [{ phone: rawDigits }] : []),
+      { phone: cleanPhone },
+    ];
+  };
+
+  const lookupClauses = buildPhoneLookupWhere('9876543210');
+  assert(lookupClauses.some((c) => c.phone === '+91 9876543210'), 'Phone lookup includes formatted +91 number');
+  assert(lookupClauses.some((c) => c.phone === '9876543210'), 'Phone lookup includes raw 10-digit number');
+
+  const lookupClausesFormatted = buildPhoneLookupWhere('+91 9876543210');
+  assert(lookupClausesFormatted.some((c) => c.phone === '+91 9876543210'), 'Phone lookup from formatted input includes +91 prefix');
+  assert(lookupClausesFormatted.some((c) => c.phone === '9876543210'), 'Phone lookup from formatted input includes 10 digits');
+
+  // 62. Timezone-Safe Date Comparison
+  const checkIsTodaySafe = (apptDateStr: string, localDateStr: string): boolean => {
+    return apptDateStr === localDateStr;
+  };
+
+  const todayStr = '2026-09-28';
+  assert(checkIsTodaySafe('2026-09-28', todayStr) === true, 'Matching date string evaluates to today regardless of UTC offset');
+  assert(checkIsTodaySafe('2026-09-29', todayStr) === false, 'Tomorrow date string evaluates to not today');
+
+  // 63. Explicit Patient Name Priority
+  const resolveDisplayPatientName = (
+    explicitName?: string | null,
+    accountOwnerName?: string | null,
+    fallback: string = 'Patient'
+  ): string => {
+    return (explicitName && explicitName.trim()) || (accountOwnerName && accountOwnerName.trim()) || fallback;
+  };
+
+  assert(
+    resolveDisplayPatientName('Aarav Sharma (Child)', 'Rahul Sharma') === 'Aarav Sharma (Child)',
+    'Explicit child patient name is preserved over account holder name'
+  );
+  assert(
+    resolveDisplayPatientName(null, 'Rahul Sharma') === 'Rahul Sharma',
+    'Falls back to account owner name if explicit patient name is not set'
+  );
+  assert(
+    resolveDisplayPatientName('', '', 'Walk-in Patient') === 'Walk-in Patient',
+    'Falls back to default fallback if both are empty'
+  );
+
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);
 

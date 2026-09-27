@@ -10,6 +10,7 @@ import {
   DoctorAffiliationsData,
   ClinicProfile,
 } from '../../services/api';
+import { sanitizeIndianPhone, formatIndianPhone, isValidIndianPhone } from '../../utils/phoneUtils';
 import { useAuth } from '../../context/AuthContext';
 import { DashboardLayout, DashboardNavItem } from '../../components/layout/DashboardLayout';
 import { AppleButton } from '../../components/ui/AppleButton';
@@ -184,6 +185,10 @@ export const DoctorDashboard: React.FC = () => {
       setWalkinError('Please enter the patient full name');
       return;
     }
+    if (walkinPhone.trim() && !isValidIndianPhone(walkinPhone)) {
+      setWalkinError('Please enter a valid 10-digit mobile number');
+      return;
+    }
     setWalkinSubmitting(true);
     setWalkinError(null);
     try {
@@ -196,7 +201,7 @@ export const DoctorDashboard: React.FC = () => {
         patientName: walkinName.trim(),
         patientAge: walkinAge.trim() || undefined,
         patientGender: walkinGender || 'Not Specified',
-        patientPhone: walkinPhone.trim() || undefined,
+        patientPhone: walkinPhone.trim() ? formatIndianPhone(walkinPhone) : undefined,
       });
       setWalkinSuccess(`Patient ${walkinName} successfully queued!`);
       setWalkinName('');
@@ -1213,7 +1218,7 @@ export const DoctorDashboard: React.FC = () => {
                           </span>
                           <div className="min-w-0">
                             <p className="font-semibold text-[#1d1d1f] truncate">
-                              {appt.isForOther && appt.patientName ? appt.patientName : appt.patient?.user.fullName}
+                              {appt.patientName || appt.patient?.user?.fullName || 'Patient'}
                             </p>
                             <p className="text-[11px] text-[#86868b] truncate">
                               {appt.appointmentDate && (
@@ -1280,9 +1285,7 @@ export const DoctorDashboard: React.FC = () => {
 
                     <div className="flex items-center gap-2 flex-wrap">
                       <h4 className="text-xl font-semibold text-[#1d1d1f] tracking-tight">
-                        {queueData.activeInConsultation.isForOther && queueData.activeInConsultation.patientName
-                          ? queueData.activeInConsultation.patientName
-                          : queueData.activeInConsultation.patient?.user.fullName}
+                        {queueData.activeInConsultation.patientName || queueData.activeInConsultation.patient?.user?.fullName || 'Patient'}
                       </h4>
                       {queueData.activeInConsultation.isForOther && (
                         <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#0088e8]/10 text-[#0088e8] border border-[#0088e8]/20">
@@ -1406,7 +1409,7 @@ export const DoctorDashboard: React.FC = () => {
                   const filteredWaiting = queueData?.waitingQueue.filter((appt) => {
                     if (!queueSearch.trim()) return true;
                     const q = queueSearch.toLowerCase().trim();
-                    const name = (appt.isForOther && appt.patientName ? appt.patientName : appt.patient?.user?.fullName || '').toLowerCase();
+                    const name = (appt.patientName || appt.patient?.user?.fullName || '').toLowerCase();
                     const phone = (appt.patient?.user?.phone || '').toLowerCase();
                     const token = String(appt.queueNumber || '');
                     return name.includes(q) || phone.includes(q) || token.includes(q);
@@ -1444,7 +1447,7 @@ export const DoctorDashboard: React.FC = () => {
                           <div>
                             <div className="flex items-center gap-2 flex-wrap">
                               <h4 className="text-[16px] font-semibold text-[#1d1d1f]">
-                                {appt.isForOther && appt.patientName ? appt.patientName : appt.patient?.user.fullName}
+                                {appt.patientName || appt.patient?.user?.fullName || 'Patient'}
                               </h4>
                               {appt.isForOther && (
                                 <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#0088e8]/10 text-[#0088e8] border border-[#0088e8]/20">
@@ -1511,7 +1514,7 @@ export const DoctorDashboard: React.FC = () => {
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="font-semibold text-[#86868b]">Queue #{appt.queueNumber}</span>
                             <span className="font-medium text-[#1d1d1f]">
-                              {appt.isForOther && appt.patientName ? `${appt.patientName} (Family)` : appt.patient?.user.fullName}
+                              {appt.patientName || appt.patient?.user?.fullName || 'Patient'}
                             </span>
                           </div>
                           <div className="flex items-center gap-2">
@@ -1704,9 +1707,10 @@ export const DoctorDashboard: React.FC = () => {
                 </label>
                 <input
                   type="tel"
-                  placeholder="e.g. +1 (555) 019-2834"
+                  placeholder="10-digit mobile number"
+                  maxLength={10}
                   value={walkinPhone}
-                  onChange={(e) => setWalkinPhone(e.target.value)}
+                  onChange={(e) => setWalkinPhone(sanitizeIndianPhone(e.target.value))}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] focus:outline-none focus:border-[#0088e8]"
                 />
               </div>

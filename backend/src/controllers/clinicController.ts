@@ -170,7 +170,7 @@ export const getMyClinic = async (req: AuthRequest, res: Response): Promise<void
         totalRevenue,
         recentAppointments: clinicAppointments.slice(0, 15).map((a) => ({
           id: a.id,
-          patientName: a.patient?.user?.fullName || 'Patient',
+          patientName: a.patientName || a.patient?.user?.fullName || 'Patient',
           patientPhone: a.patient?.user?.phone || 'N/A',
           doctorName: a.doctor?.user?.fullName || 'Doctor',
           doctorId: a.doctorId,

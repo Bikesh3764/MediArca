@@ -13,7 +13,7 @@ import {
   CheckCircle2,
   Save,
 } from 'lucide-react';
-import { sanitizeIndianPhone, formatIndianPhone } from '../../utils/phoneUtils';
+import { sanitizeIndianPhone, formatIndianPhone, isValidIndianPhone } from '../../utils/phoneUtils';
 
 export const PatientProfile: React.FC = () => {
   const { user, updateUser } = useAuth();
@@ -64,6 +64,10 @@ export const PatientProfile: React.FC = () => {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (phone.trim() && !isValidIndianPhone(phone)) {
+      setErrorMsg('Please enter a valid 10-digit Indian mobile number.');
+      return;
+    }
     setSaving(true);
     setSuccessMsg(null);
     setErrorMsg(null);
