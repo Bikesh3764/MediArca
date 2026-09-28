@@ -1,612 +1,445 @@
-# MediArca — Third Bug & Security Re-Audit
+# MediArca — Fourth Bug & Security Re-Audit
 
 **Repository:** `Bikesh3764/MediArca`  
 **Branch audited:** `main`  
-**Current commit audited:** `7b562bc95add76773bcc3dbaf9563ff633d8ab83`  
-**Previous remediation commit:** `5a74345aa1b2e92e0a10db098bc63c6b1ae2e896`  
+**Current audited commit:** `5bbab6052d63ea11cfeba948a9133d38f4ecf3eb`  
+**Previous remediation commit:** `b34dd79306a611d3b1c0744744149a3438d83fb2`  
 **Audit date:** 2026-09-28  
-**Method:** Static re-audit of the complete current source tree, with targeted review of the latest security-fix changes and regression hunting across authentication, authorization, medical-record privacy, queue integrity, clinic/receptionist lifecycle, storage, and data validation.
+**Method:** Static re-audit of the current source tree after the latest remediation commits, with targeted review of authentication, authorization, medical-record storage/access, queue concurrency, clinic/receptionist lifecycle, API error handling, accounting logic, and frontend session behavior.
 
-> **Important:** This is a source-code audit, not a guarantee that every runtime bug is found. The repository's `verify-fixes.ts` harness is simulation/unit oriented and does not prove real Express + Prisma behavior. The latest GitHub Actions run for commit `7b562bc` successfully deployed the frontend, but the repository has no backend security/integration-test workflow.
+> **Important:** This is a source-code audit, not proof that every runtime defect has been found. The repository claims 723 passing assertions across 140 test suites, but those tests were not independently executed against the current head in this audit. The existing verification harness is primarily simulation/unit oriented rather than full Express + Prisma integration testing.
 
 ---
 
 # Executive result
 
-The latest changes fixed a substantial portion of the previous findings, including:
+The latest remediation commits successfully addressed nearly all of the previous audit's major findings, including:
 
-- production JWT secret fail-closed handling;
-- removal of client-supplied booking time;
-- public direct-ID doctor verification;
-- production demo-data fallback;
-- receptionist account status gating;
-- medical records being removed from generic appointment responses;
-- MIME/extension + magic-byte upload validation;
-- password and DOB validation;
-- centralized appointment transition logic;
-- production error-message sanitization;
-- proxy-aware/public rate limiting;
-- path traversal protection for local record streaming.
+- private `r2://` storage for newly uploaded clinical documents;
+- removal of query-string JWT transport;
+- random inaccessible walk-in credentials;
+- centralized doctor/receptionist/clinic authorization guards;
+- active affiliation/status checks;
+- strict doctor eligibility on booking/queue paths;
+- strict appointment-date validation;
+- exact public doctor verification state;
+- completed-consultation note protection;
+- strict CORS allowlisting;
+- health-response minimization;
+- safer R2 streaming;
+- improved multi-clinic scoping.
 
-However, **the repository is not yet at “all findings resolved” status**.
+However, **the repository should not yet be marked “all findings resolved.”**
 
-I confirmed the following remaining issues in the current code.
+## Current priority picture
 
-## Priority summary
-
-| Priority | Confirmed remaining |
+| Priority | Confirmed / material remaining |
 |---|---:|
 | Critical | 0 |
-| High | 8 |
-| Medium | 12 |
-| Low / Hardening | 2 |
+| High / High-impact | 2 |
+| Medium | 8 |
+| Functional / Hardening | 4 |
+
+Some items below are configuration-dependent or policy-dependent; those are explicitly identified rather than overstated.
 
 ---
 
-# Remaining HIGH findings
+# Remaining HIGH / HIGH-IMPACT findings
 
-## H1 — Medical records are still stored as public R2 URLs
+## H1 — Clinical-document privacy still depends on R2 bucket configuration and legacy data cleanup
 
 **Files**
 - `backend/src/config/r2.ts`
 - `backend/src/controllers/recordController.ts`
 - `frontend/src/services/api.ts`
 
-`uploadToR2()` still returns a permanent `R2_PUBLIC_URL/object-key` URL, and `getRecordFile()` redirects to that URL for HTTP records.
+New uploads now use `r2://records/...` and are streamed through the authenticated backend endpoint. That is a major improvement.
 
-The frontend also treats HTTP(S) record URLs as directly usable and bypasses the authenticated record endpoint.
+However:
 
-### Impact
+- `R2_PUBLIC_URL` still points to a public `r2.dev` domain;
+- the frontend's generic `getFileUrl()` still converts `r2://...` into the public CDN URL;
+- legacy medical records created before the private-storage migration may still contain public HTTP/R2 URLs;
+- the source code does not prove that the R2 bucket itself is configured so that `records/*` is inaccessible anonymously.
 
-Anyone who obtains the R2 object URL can access the medical document without MediArca authorization.
+### Required remediation
 
-### Required fix
+Use a genuinely private clinical-document bucket/prefix with no public anonymous access.
 
-Use a **private R2 bucket** for clinical documents.
+Keep public R2 access limited to avatars/public assets, ideally in a different bucket.
 
-Expose records through either:
-1. authenticated backend streaming, or
-2. short-lived signed URLs generated only after authorization.
-
-Do not return permanent public clinical-document URLs to the frontend.
+Migrate or invalidate legacy public clinical-document URLs and verify anonymous access is denied.
 
 ---
 
-## H2 — JWT access tokens are transported in query strings for protected files
+## H2 — Receptionist password-change leaves the old JWT with `mustChangePassword=true`
 
 **Files**
+- `frontend/src/pages/Receptionist/ReceptionistAuth.tsx`
 - `backend/src/middleware/authMiddleware.ts`
-- `frontend/src/services/api.ts`
-
-`authenticate()` accepts:
-
-`?token=<JWT>`
-
-and `getMedicalRecordFileUrl()` generates exactly this form when it needs the protected record endpoint.
-
-### Impact
-
-A bearer token in a URL can be exposed through browser history, copied links, logs, monitoring, analytics, referrer leakage, and other URL-processing systems.
-
-The token currently has a long lifetime.
-
-### Required fix
-
-Prefer:
-
-`Authorization: Bearer <token>`
-
-and fetch files with authenticated JavaScript, then display them via a Blob URL.
-
-Longer-term, move authentication to secure HttpOnly cookies with an appropriate CSRF strategy.
-
----
-
-## H3 — Walk-in patients are created with a predictable login credential
-
-**Files**
-- `backend/src/controllers/appointmentController.ts`
 - `backend/src/controllers/receptionistController.ts`
 
-New walk-in accounts use:
+The receptionist first logs in and receives a JWT containing:
 
-- predictable email derived from the patient's phone, such as `walkin.<digits>@mediarca.local`;
-- a fixed password: `walkin123`.
+`mustChangePassword: true`
 
-### Impact
+After changing the password, the backend updates the database to:
 
-A person who knows a walk-in patient's phone number can predict the account identifier and credential and potentially authenticate as that patient.
+`mustChangePassword: false`
 
-That can expose the patient's appointments, prescriptions, profile information, and medical records.
+but the password-change response does not issue a new JWT, and the frontend does not replace the existing token.
 
-### Required fix
+Clinical receptionist operations check both:
+- the current database flag; and
+- `req.user.mustChangePassword` from the old JWT.
 
-Do not create ordinary login-capable patient accounts for walk-ins.
-
-Use a separate walk-in identity/record, or generate an inaccessible random credential and an explicit account-activation flow with identity verification.
-
-Never use a shared static password.
-
----
-
-## H4 — Receptionist walk-in booking and approval paths do not consistently re-check doctor verification/suspension
-
-**Files**
-- `backend/src/controllers/receptionistController.ts`
-
-The online patient booking path checks doctor status, but `bookWalkin()` and the approval path rely mainly on receptionist assignment + clinic affiliation.
+Therefore the same session can remain blocked from desk operations even though the password has successfully been changed.
 
 ### Impact
 
-A doctor that becomes suspended/rejected after assignment can still potentially receive walk-in bookings or have pending bookings approved.
+This is a real session-state regression.
 
-### Required fix
+### Required remediation
 
-Create one reusable server-side practitioner eligibility check and enforce it before:
-- walk-in booking;
-- pending approval;
-- consultation;
-- queue operations.
+After successful password change:
 
-The rule should require the doctor to be verified and currently active.
+1. issue a fresh JWT with `mustChangePassword: false`, or
+2. force logout and require a new login.
 
----
-
-## H5 — Inactive receptionist/doctor-assignment rows can still authorize operations
-
-**Files**
-- `backend/src/controllers/receptionistController.ts`
-- `backend/src/controllers/clinicController.ts`
-- `backend/src/controllers/appointmentController.ts`
-
-Some operations only check that a `DoctorReceptionist` row exists. They do not consistently require:
-
-`assignment.status === 'ACTIVE'`
-
-Also, `updateClinicReceptionistDoctors()` builds allowed doctor IDs from all clinic affiliations rather than only active/accepted affiliations.
-
-### Impact
-
-A stale or inactive assignment can continue granting desk access to a doctor's queue/appointments.
-
-### Required fix
-
-Centralize receptionist authorization around:
-
-- active receptionist profile;
-- active receptionist-doctor assignment;
-- active/accepted clinic-doctor affiliation;
-- matching clinic.
-
-Use the same helper on queue, approval, status-change, appointment-detail, and cancellation endpoints.
+The frontend and backend should use one authoritative session state.
 
 ---
 
-## H6 — Doctor medical-record access is still based on any historical appointment
+# Remaining MEDIUM findings
+
+## M1 — Production booking errors still expose `error.message`
 
 **File**
-- `backend/src/controllers/recordController.ts`
+- `backend/src/controllers/appointmentController.ts`
 
-The doctor-access check is:
+The booking catch block still returns:
 
-`appointment.findFirst({ doctorId, patientId })`
+`message: error.message`
 
-with no status restriction.
+Other production controller responses have been sanitized.
 
 ### Impact
 
-A doctor may gain ongoing access to a patient's full medical-record vault after a rejected, cancelled, or merely pending appointment.
+Internal sentinel/database error messages can reach the client. For example, duplicate-booking logic intentionally throws a message beginning with `DUPLICATE_ACTIVE_BOOKING:`.
 
-The same relationship logic is used for record-file access.
+### Remediation
 
-### Required fix
+Return stable user-facing messages/status codes and log the internal error server-side.
 
-Define a clear clinical-access rule and enforce it consistently, for example:
-- active consultation;
-- completed consultation;
-- or another explicitly approved care relationship.
-
-Do not use any historical appointment as the authorization condition unless that is an intentional documented policy.
+Map expected business errors to 400/409 rather than generic 500.
 
 ---
 
-## H7 — Appointment capacity and duplicate-booking checks remain race-prone
+## M2 — Suspended clinics can still call `GET /my-clinic`
+
+**Files**
+- `backend/src/routes/clinicRoutes.ts`
+- `backend/src/controllers/clinicController.ts`
+
+Most clinic-management routes now use `requireActiveClinic`, but:
+
+`GET /clinics/my-clinic`
+
+is mounted before that middleware.
+
+`getMyClinic()` returns clinic information plus appointment/patient contact data.
+
+### Impact
+
+If suspension is intended to immediately disable clinic portal access, a suspended clinic can still read sensitive operational data.
+
+### Remediation
+
+Apply `requireActiveClinic` to `/my-clinic`, or explicitly document that suspension permits read-only access.
+
+---
+
+## M3 — Doctor affiliation portal is not gated by active doctor status
+
+**File**
+- `backend/src/controllers/doctorController.ts`
+
+`getDoctorAffiliations()` checks only the DOCTOR role.
+
+It does not enforce `isDoctorEligibleForClinicalPractice()`.
+
+### Impact
+
+A suspended/rejected doctor can still access their affiliation/receptionist information.
+
+### Remediation
+
+Decide whether suspended doctors retain read-only profile/affiliation access. If not, use the canonical doctor eligibility guard.
+
+---
+
+## M4 — Runtime DDL still exists as an optional application-startup path
+
+**File**
+- `backend/src/server.ts`
+
+`ensureSchema()` still contains raw:
+- `ALTER TABLE`
+- `CREATE TABLE`
+- `UPDATE`
+
+The latest code disables it by default in production unless `AUTO_SCHEMA_SYNC=true`.
+
+### Status
+
+Not an active default-production vulnerability on the intended Render configuration, but still a deployment reliability/architecture risk.
+
+### Remediation
+
+Remove runtime schema mutation completely and use versioned Prisma migrations before app startup.
+
+---
+
+## M5 — Concurrency lock failure is silently swallowed
+
+**Files**
+- `backend/src/controllers/appointmentController.ts`
+- `backend/src/controllers/receptionistController.ts`
+
+The row-lock statement:
+
+`SELECT id FROM "DoctorProfile" ... FOR UPDATE`
+
+is wrapped in an empty `catch {}`.
+
+### Impact
+
+If the lock operation fails, the transaction continues without the concurrency guarantee the code relies upon.
+
+### Remediation
+
+Do not silently ignore the locking failure. Abort/retry the transaction when the lock cannot be acquired.
+
+---
+
+## M6 — Queue-number scope remains a deliberate design decision that should be enforced consistently
 
 **Files**
 - `backend/src/controllers/appointmentController.ts`
 - `backend/src/controllers/receptionistController.ts`
 - `backend/prisma/schema.prisma`
 
-The application:
-1. reads current bookings;
-2. checks capacity;
-3. calculates a queue number;
-4. inserts/updates.
+The DB uniqueness rule is:
 
-Concurrent requests can still observe the same available capacity before either transaction commits.
+`@@unique([doctorId, appointmentDate, queueNumber])`
 
-There is also no DB uniqueness constraint that directly prevents duplicate active patient bookings for the same doctor/date.
+so queue numbers are globally unique per doctor/day.
 
-### Impact
+Capacity checks, however, are clinic-scoped.
 
-Under concurrent requests, a slot can exceed its intended capacity or a patient can receive duplicate active bookings.
+### Status
 
-### Required fix
+This is not necessarily wrong. It becomes a bug only if the intended product behavior is a separate queue per clinic.
 
-Use a database-level concurrency strategy:
-- serializable transactions / row locking where appropriate;
-- or a dedicated queue/capacity counter row with atomic updates;
-- plus appropriate unique constraints for business invariants.
+### Remediation
 
-Application-level “check then insert” alone is not enough.
+Explicitly choose and document one of:
 
----
-
-## H8 — Clinic-specific doctor schedule can be updated on a non-active affiliation
-
-**File**
-- `backend/src/controllers/doctorController.ts`
-
-When `clinicId` is supplied, the controller looks up the `ClinicDoctor` row by composite key but does not require the affiliation to be ACTIVE/ACCEPTED or the clinic to be verified/active.
-
-### Impact
-
-A doctor can potentially modify schedule/fee data attached to a pending or rejected clinic relationship.
-
-### Required fix
-
-Require:
-- doctor verified/active;
-- clinic verified/active;
-- affiliation status ACTIVE/ACCEPTED.
-
----
-
-# Remaining MEDIUM findings
-
-## M1 — Runtime database DDL is still executed during application startup
-
-**File**
-- `backend/src/server.ts`
-
-`ensureSchema()` still performs raw `ALTER TABLE`, `CREATE TABLE`, and data-update operations on startup, with failures swallowed in multiple places.
-
-### Impact
-
-Production application startup can partially succeed with an unknown schema state.
-
-### Required fix
-
-Use versioned Prisma migrations and run migrations as a deployment step before application startup.
-
----
-
-## M2 — Password hashes can still be returned in authenticated API responses
-
-Confirmed examples:
-
-- `backend/src/controllers/doctorController.ts` uses `include: { user: true }` when returning the result of schedule/profile updates.
-- `backend/src/controllers/adminController.ts` uses `include: { user: true }` in doctor/clinic verification responses.
-
-The `User` model contains `passwordHash`.
-
-### Required fix
-
-Use explicit safe user projections everywhere:
-
-`id, fullName, email, phone, avatarUrl, role`
-
-and never serialize `passwordHash`.
-
----
-
-## M3 — Public queue preview does not enforce the same doctor eligibility rule as public doctor detail
-
-**File**
-- `backend/src/controllers/appointmentController.ts`
-
-`getQueuePreview()` loads the doctor and active clinic relationships but does not require:
-
-- `isVerified === true`;
-- `verificationStatus === 'VERIFIED'`.
-
-### Impact
-
-Scheduling information can still be exposed for doctors who should not be publicly bookable.
-
-### Required fix
-
-Use the same public eligibility helper used by public doctor lookup.
-
----
-
-## M4 — Queue numbering and capacity use mixed clinic scopes
-
-Some queries are clinic-scoped while others are only:
-
-- `doctorId`
-- `appointmentDate`
-
-For example, queue-number allocation remains doctor/date scoped while capacity can be clinic scoped.
-
-### Required fix
-
-Define one explicit business model:
-- one queue per doctor/day, or
+- one global queue per doctor/day; or
 - one queue per doctor/clinic/day.
 
-Then encode that decision consistently in DB constraints and all queue/capacity/consultation queries.
+Then keep preview, capacity, numbering, consultation reset, and UI reporting consistent with that rule.
 
 ---
 
-## M5 — Receptionist walk-in appointment date is not validated centrally
+## M7 — Doctor registration does not use the same strong validation as later schedule updates
 
 **File**
-- `backend/src/controllers/receptionistController.ts`
+- `backend/src/controllers/authController.ts`
 
-`requestedDate` is accepted and assigned to `appointmentDate` without the same `isValidAppointmentDate()` check used by online booking.
+During doctor registration, fields such as:
+- `experienceYears`
+- `consultationFee`
+- `checkingStartTime`
+- `checkingEndTime`
+- `avgConsultationMinutes`
 
-### Required fix
+are accepted with weaker normalization than `updateSchedule()`.
 
-Run every appointment date through the same validation helper before any DB query or write.
+Examples include direct copies of checking times and permissive numeric coercion.
+
+### Remediation
+
+Use the same centralized validation functions for initial doctor creation and later updates.
 
 ---
 
-## M6 — Clinic suspension is not uniformly enforced across clinic-management endpoints
-
-Some clinic operations explicitly block unverified/suspended clinics, while others such as dashboard/staff-management operations mainly require role + profile existence.
-
-### Required fix
-
-Use a shared `requireActiveClinic` authorization layer for all clinic administration operations.
-
----
-
-## M7 — Generic appointment cancellation does not use the same active-receptionist authorization layer
+## M8 — Slot validator does not reject non-finite numeric values
 
 **File**
-- `backend/src/controllers/appointmentController.ts`
+- `backend/src/utils/scheduleUtils.ts`
 
-The generic cancellation route uses only `authenticate`, then checks that a receptionist profile and assignment exist.
+Checks use `isNaN(...)`, which does not reject values such as `Infinity`.
 
-It does not consistently verify:
-- receptionist status ACTIVE;
-- assignment ACTIVE;
-- doctor-clinic affiliation ACTIVE/ACCEPTED.
+Although JSON request bodies normally cannot contain a literal JavaScript Infinity, defensive validation should still require finite numbers before persisting schedule data.
 
-### Required fix
+### Remediation
 
-Reuse the centralized receptionist authorization helper.
-
----
-
-## M8 — Completed clinical appointments can still have notes/vitals edited
-
-**File**
-- `backend/src/controllers/consultationController.ts`
-
-`updateNotesAndVitals()` allows updates for `COMPLETED` appointments, while the central state machine treats COMPLETED as terminal.
-
-### Risk
-
-Clinical information can be changed after finalization without a dedicated correction/audit workflow.
-
-### Required fix
-
-Either:
-- forbid edits after completion, or
-- implement a controlled post-completion correction path with audit logging.
+Use `Number.isFinite()` and explicit bounds for:
+- maxPatients;
+- avgConsultationMinutes;
+- consultationFee;
+- experience.
 
 ---
 
-## M9 — Receptionist request handling treats lowercase ACCEPT incorrectly
+# FUNCTIONAL / ACCOUNTING BUGS
+
+## F1 — Clinic dashboard revenue is currently overstated
 
 **File**
 - `backend/src/controllers/clinicController.ts`
 
-The receptionist request handler checks:
+Current logic effectively treats every non-cancelled appointment as revenue:
 
-`if (action === 'ACCEPT')`
+`revenue = nonCancelledAppointments × fee`
 
-without normalizing/validating the action first.
+That includes statuses such as:
+- `PENDING_APPROVAL`
+- potentially `REJECTED`
 
-A lowercase `accept` can therefore fall into the rejection branch.
+which should not count as collected revenue.
 
-### Required fix
+### Correct business basis
 
-Normalize once:
-
-`const normalizedAction = String(action).toUpperCase()`
-
-and accept only `ACCEPT` or `REJECT`.
+Revenue should normally be based on actual paid/completed transactions, depending on the future payment model.
 
 ---
 
-## M10 — Public verification fields are not always constrained to the exact VERIFIED state
-
-Some public queries use only:
-
-`isVerified: true`
-
-instead of:
-
-`isVerified: true AND verificationStatus: 'VERIFIED'`
-
-### Required fix
-
-Store and query one canonical public eligibility condition.
-
----
-
-## M11 — CORS is still broader than necessary
+## F2 — Doctor affiliation dashboard revenue uses the same flawed calculation
 
 **File**
-- `backend/src/server.ts`
+- `backend/src/controllers/doctorController.ts`
 
-The new configuration is better than a wildcard, but production still accepts arbitrary origins ending in domains such as:
-- `.vercel.app`
-- `.onrender.com`
-- `.github.io`
+The doctor dashboard similarly calculates revenue from all non-cancelled appointments rather than actual paid/settled consultations.
 
-### Risk
-
-This is broader than the actual deployed application origin and should not be treated as a strict allowlist.
-
-### Required fix
-
-Allow exact production origins, with localhost-only exceptions in development.
+This can disagree with real payment state.
 
 ---
 
-## M12 — JWTs are still stored in localStorage
+## F3 — Booking business errors are returned as HTTP 500
 
 **File**
-- `frontend/src/context/AuthContext.tsx`
+- `backend/src/controllers/appointmentController.ts`
 
-A successful XSS can steal a token from localStorage.
+Expected business outcomes such as:
+- duplicate booking;
+- slot full;
+- slot already ended;
 
-### Status
+are thrown as errors and fall into the generic 500 handler.
 
-Not an immediate code-regression from the latest commit, but an important production-hardening item for a healthcare platform.
+### Impact
 
-### Preferred architecture
+A normal user/business conflict appears as a server failure.
 
-HttpOnly + Secure cookies, short-lived access tokens, refresh rotation, and CSRF protection.
+### Remediation
+
+Use explicit typed business errors:
+- 400 for invalid booking request;
+- 409 for duplicate/conflicting booking;
+- appropriate status for closed/full slots.
 
 ---
 
-# Lower-priority findings
-
-## L1 — Local file containment check uses prefix matching
+## F4 — Receptionist password-change UI still says “minimum 6 characters”
 
 **File**
-- `backend/src/controllers/recordController.ts`
+- `frontend/src/pages/Receptionist/ReceptionistAuth.tsx`
 
-The check uses:
+The backend requires 8 characters, while the frontend validation/help text still uses 6.
 
-`fullPath.startsWith(uploadsDir)`
+### Impact
 
-This should preferably compare normalized path boundaries, not only string prefixes.
+A 6–7 character password can pass the frontend and then fail on the server.
 
-The current upload workflow generates controlled paths, so this is defense-in-depth rather than the primary record-access issue.
+### Remediation
 
----
-
-## L2 — Health endpoint exposes operational details
-
-**File**
-- `backend/src/server.ts`
-
-The public health response includes:
-- database connectivity state;
-- service name;
-- uptime;
-- timestamp.
-
-This is low risk but can be reduced to a minimal liveness response if desired.
+Synchronize frontend and backend validation to the same password policy.
 
 ---
 
-# Previous fixes re-checked
+# Re-checked findings that are now FIXED
 
-| Finding | Current status |
+| Previous finding | Current status |
 |---|---|
-| Production JWT fallback | ✅ Fixed |
-| Client-controlled booking clock | ✅ Fixed |
-| Unverified direct doctor detail lookup | ✅ Fixed |
-| Production demo-data substitution | ✅ Fixed |
-| Receptionist pending/rejected login | ✅ Fixed |
-| Receptionist route-level active guard | ✅ Fixed |
-| Generic appointment medical-record exposure | ✅ Fixed |
-| MIME + extension + magic-byte validation | ✅ Fixed |
-| Registration password minimum | ✅ Fixed |
-| Patient DOB string mismatch | ✅ Fixed |
-| Strict appointment date validation in online booking | ✅ Fixed |
-| Doctor slot structural validation | ✅ Fixed |
-| Doctor suspension checks in consultation operations | ✅ Fixed |
-| Central appointment transition helper | ✅ Added |
-| Production error-message sanitization | ✅ Improved |
-| Proxy-aware/public endpoint rate limiting | ✅ Added |
-| Medical-record public storage | ❌ Still open |
-| Walk-in fixed credential design | ❌ Still open |
-| Full DB concurrency guarantees | ❌ Still open |
+| Public R2 URL generation for new clinical uploads | ✅ Reworked to private `r2://` storage |
+| Query-string JWT transport | ✅ Removed |
+| Predictable walk-in password | ✅ Replaced with random high-entropy credential |
+| Walk-in direct login | ✅ Blocked |
+| Receptionist inactive assignment access | ✅ Centralized active assignment guard |
+| Doctor suspended booking | ✅ Canonical doctor eligibility guard |
+| Receptionist doctor/status operations | ✅ Centralized authorization guard |
+| Doctor direct-ID verification bypass | ✅ Exact public eligibility check |
+| Production demo fallback | ✅ DEV-only |
+| Appointment medical-record exposure to staff | ✅ Removed for generic staff responses |
+| Doctor medical-record relationship | ✅ Active/completed relationship requirement |
+| Completed clinical note edits | ✅ Blocked |
+| Lowercase ACCEPT bug | ✅ Fixed |
+| Public verification inconsistency in main doctor/clinic listings | ✅ Exact VERIFIED checks added |
+| CORS wildcard/suffix matching | ✅ Replaced by explicit production allowlist |
+| Health endpoint detail leakage | ✅ Minimized |
+| Magic-byte file validation | ✅ Added |
+| DOB type mismatch | ✅ Fixed |
+| Appointment-date validation | ✅ Centralized |
+| Slot structure validation | ✅ Added |
+| Path traversal | ✅ Strengthened |
+| Password hash serialization in reviewed responses | ✅ Safe projections used |
+| Multi-clinic receptionist authorization | ✅ Centralized facility/affiliation checks |
+| Doctor/clinic schedule-affiliation validation | ✅ Fixed |
 
 ---
 
-# Verification status
+# Testing / CI status
 
-The repository currently contains claims of:
+The repository currently reports:
 
-- **619 passed automated assertions**;
-- backend build success;
-- frontend build success;
-- all security findings resolved.
+- **723 passed assertions**
+- **0 failed**
+- **140 test suites**
+- backend TypeScript/Prisma build success
+- frontend build success
 
-Those claims should **not** be interpreted as independent verification of the current head.
+Those numbers were **not independently reproduced in this audit environment**.
 
-The current GitHub Actions workflow shows a successful frontend deployment for:
+The verification script remains primarily simulation/unit-oriented. The repository still does not contain a dedicated backend CI workflow that proves:
 
-`7b562bc95add76773bcc3dbaf9563ff633d8ab83`
+- real HTTP authorization;
+- real Prisma ownership queries;
+- real R2 access behavior;
+- concurrent appointment creation against PostgreSQL;
+- session/token behavior after receptionist password changes.
 
-There is no dedicated backend CI workflow in `.github/workflows` that runs:
-- Prisma integration tests;
-- HTTP authorization tests;
-- database concurrency tests;
-- end-to-end medical-record access tests.
-
-The existing `backend/scripts/verify-fixes.ts` is valuable as a regression/unit harness, but it should be complemented by real integration tests.
-
----
-
-# Recommended fix order
-
-### 1. Medical-record security
-Make R2 private, remove permanent public record URLs, remove query-string JWT transport.
-
-### 2. Walk-in identity security
-Remove `walkin123` and predictable walk-in login accounts.
-
-### 3. Authorization consistency
-Centralize doctor/receptionist/clinic eligibility checks and require ACTIVE affiliations everywhere.
-
-### 4. Queue concurrency
-Move capacity and duplicate-booking invariants into database-safe concurrency controls.
-
-### 5. Data leakage
-Remove `passwordHash` from every API response and tighten public eligibility/CORS.
-
-### 6. Deployment reliability
-Replace runtime DDL with Prisma migrations and add backend integration CI.
+The latest GitHub Actions frontend deployment for commit `5bbab605...` succeeded, and the scheduled keep-alive run also succeeded.
 
 ---
 
 # Final assessment
 
-The latest commit **materially improved MediArca security**, but the code is **not yet safe to label “all findings resolved.”**
+The current codebase is substantially more secure than the previous audit versions.
 
-The highest-risk remaining area is the medical-document path: the system now has an authenticated record endpoint, but clinical objects can still be represented by public R2 URLs and the frontend can bypass the protection.
+**The previous 22 residual findings are largely closed.**
 
-The next most important architectural issue is the walk-in patient identity model because the current fixed credential can create predictable patient accounts.
+The main remaining issues are now:
 
-The audit should be considered a static engineering assessment. A production readiness decision should additionally require real backend integration/security tests against an isolated database.
+1. **R2 bucket-level privacy / legacy record cleanup**
+2. **stale receptionist JWT after password change**
+3. production booking error leakage
+4. suspended-clinic read access policy
+5. optional runtime DDL architecture
+6. concurrency-lock fail-open behavior
+7. revenue/accounting calculation errors
+8. booking business errors incorrectly returned as 500
+9. a few validation-consistency issues
 
----
-
-# Post-Remediation Status Update (2026-09-28)
-
-All remaining findings from the third re-audit (H1–H8, M1–M12, L1–L2) and subsequent deep verification rounds have now been remediated:
-
-1. **H1 & H2 (Medical Records & Tokens)**: Private R2 storage with streaming backend proxy; JWT query string support removed; frontend uses authenticated Blob retrieval.
-2. **H3 (Walk-in Security)**: Unpredictable 64-char random hex passwords; UUID-derived email; direct login and registration strictly blocked for synthetic walk-in domains/prefixes.
-3. **H4 & H5 (Eligibility & Assignments)**: Centralized `authGuards.ts` enforces active doctor, active receptionist, and active clinic affiliation; facility scope checks strictly enforced.
-4. **H6 (Record Access)**: Limited to active/completed doctor-patient care relationships.
-5. **H7 (Concurrency)**: Database row-level pessimistic locking (`SELECT ... FOR UPDATE`) and in-tx duplicate booking prevention.
-6. **H8 (Clinic Schedules & Affiliations)**: Strict requirement for active clinic and active doctor affiliation; directionality and self-cancellation allowed; strict action validation ('ACCEPT' | 'REJECT') and status gating.
-7. **M1 (Startup DDL)**: Guarded by environment flags.
-8. **M2 (Data Leakage)**: Explicit user projections across all controllers, eliminating passwordHash.
-9. **M3–M11, L1–L2**: Centralized date checks, strict status machine transitions, multi-clinic fee/slot resolution, strict CORS allowlist, sanitized health responses, and bounded path traversal defense.
-
-**Verification Results:**
-- Backend verification suite: **723 passed, 0 failed** across 140 test suites.
-- Backend build: **Clean (0 errors)**.
-- Frontend build: **Clean (0 errors)**.
+The repository should therefore be treated as **“major audit findings remediated, but final hardening and integration verification still required,”** rather than “all bugs resolved.”
