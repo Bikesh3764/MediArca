@@ -295,12 +295,15 @@ async function main() {
     data: {
       email: 'receptionist@mediarca.com',
       passwordHash: receptionistPassword,
-      fullName: 'Clara Oswald',
-      phone: '+1 555-0188',
+      fullName: 'Clara Oswald (Front Desk)',
+      phone: '+91 9876543210',
       role: 'RECEPTIONIST',
+      mustChangePassword: false,
       receptionistProfile: {
         create: {
-          phone: '+1 555-0188',
+          phone: '+91 9876543210',
+          clinicId: clinicUser.clinicProfile!.id,
+          status: 'ACTIVE',
         },
       },
     },

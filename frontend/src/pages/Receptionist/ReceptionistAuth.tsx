@@ -41,7 +41,7 @@ export const ReceptionistAuth: React.FC = () => {
     setError(null);
     setSubmitting(true);
     try {
-      const loggedUser = await login({ email, password });
+      const loggedUser = await login({ email: email.trim(), password });
       if (loggedUser.role !== 'RECEPTIONIST') {
         setError('This account does not have receptionist desk permissions.');
         setSubmitting(false);
@@ -98,8 +98,15 @@ export const ReceptionistAuth: React.FC = () => {
   const handleDemoLogin = async () => {
     setError(null);
     setSubmitting(true);
+    setEmail('receptionist@mediarca.com');
+    setPassword('receptionist123');
     try {
-      await login({ email: 'receptionist@mediarca.com', password: 'receptionist123' });
+      const loggedUser = await login({ email: 'receptionist@mediarca.com', password: 'receptionist123' });
+      if (loggedUser.role !== 'RECEPTIONIST') {
+        setError('This account does not have receptionist desk permissions.');
+        setSubmitting(false);
+        return;
+      }
       navigate('/receptionist/dashboard');
     } catch (err: any) {
       setError(err.message || 'Demo receptionist login failed');
@@ -531,11 +538,14 @@ export const ReceptionistAuth: React.FC = () => {
                     type="button"
                     onClick={handleDemoLogin}
                     disabled={submitting}
-                    className="w-full py-2.5 px-3 rounded-full bg-amber-50 hover:bg-amber-100/70 border border-amber-200 text-xs font-medium text-amber-800 flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] shadow-xs"
+                    className="w-full py-2.5 px-3 rounded-full bg-amber-50 hover:bg-amber-100/70 border border-amber-200 text-xs font-semibold text-amber-800 flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] shadow-xs cursor-pointer"
                   >
                     <Sparkles className="w-3.5 h-3.5 text-amber-600" />
                     <span>One-Click Demo Receptionist Login</span>
                   </button>
+                  <p className="text-[11px] text-center text-[#86868b] mt-2">
+                    Demo Credentials: <span className="font-semibold text-[#1d1d1f]">receptionist@mediarca.com</span> • <span className="font-semibold text-[#1d1d1f]">receptionist123</span>
+                  </p>
                 </div>
               </form>
             </>

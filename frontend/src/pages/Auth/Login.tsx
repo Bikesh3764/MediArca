@@ -125,20 +125,27 @@ export const Login: React.FC = () => {
             <Sparkles className="w-4 h-4 text-amber-500" />
             <span>Instant 1-Click Startup Demo Logins:</span>
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             <button
               type="button"
               onClick={() => handleQuickLogin('john.doe@gmail.com', 'patient123', '/patient/appointments')}
-              className="py-2.5 px-3 rounded-full bg-[#f5f5f7] hover:bg-[#0088e8]/10 text-[#0088e8] border border-[#e5e5ea] text-xs font-semibold transition-all text-center cursor-pointer active:scale-[0.98] shadow-2xs"
+              className="py-2 px-2 rounded-full bg-[#f5f5f7] hover:bg-[#0088e8]/10 text-[#0088e8] border border-[#e5e5ea] text-[11px] font-semibold transition-all text-center cursor-pointer active:scale-[0.98] shadow-2xs truncate"
             >
-              Patient (John Doe)
+              Patient
             </button>
             <button
               type="button"
               onClick={() => handleQuickLogin('dr.sarah@mediarca.com', 'doctor123', '/doctor/dashboard')}
-              className="py-2.5 px-3 rounded-full bg-[#f5f5f7] hover:bg-[#0088e8]/10 text-[#0088e8] border border-[#e5e5ea] text-xs font-semibold transition-all text-center cursor-pointer active:scale-[0.98] shadow-2xs"
+              className="py-2 px-2 rounded-full bg-[#f5f5f7] hover:bg-[#0088e8]/10 text-[#0088e8] border border-[#e5e5ea] text-[11px] font-semibold transition-all text-center cursor-pointer active:scale-[0.98] shadow-2xs truncate"
             >
-              Doctor (Dr. Sarah)
+              Doctor
+            </button>
+            <button
+              type="button"
+              onClick={() => handleQuickLogin('receptionist@mediarca.com', 'receptionist123', '/receptionist/dashboard')}
+              className="py-2 px-2 rounded-full bg-amber-50 hover:bg-amber-100/70 text-amber-800 border border-amber-200 text-[11px] font-semibold transition-all text-center cursor-pointer active:scale-[0.98] shadow-2xs truncate"
+            >
+              Receptionist
             </button>
           </div>
         </div>
