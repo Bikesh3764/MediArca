@@ -1,106 +1,59 @@
-# MediArca Audit Remediation Report & Bug Resolution Matrix
+# MediArca Audit Remediation Report — Re-audit Status
 
 **Date:** 2026-09-28  
-**Repository:** [Bikesh3764/MediArca](https://github.com/Bikesh3764/MediArca)  
-**Branch:** `main`  
-**Test Suite Status:** ✅ **619 Passed, 0 Failed** (`backend/scripts/verify-fixes.ts`, 122 suites)  
-**Backend Build:** ✅ `tsc` & Prisma 6 generated cleanly (0 errors)  
-**Frontend Build:** ✅ Vite production build completed cleanly (0 errors)  
-**Security Status:** ✅ **All Critical, High, Medium, and Functional findings resolved**
+**Repository:** Bikesh3764/MediArca  
+**Branch:** main  
+**Current audited commit:** 7b562bc95add76773bcc3dbaf9563ff633d8ab83
 
----
+## Status
 
-## Executive Summary
+The repository has made significant security progress, but the previous statement that **all Critical/High/Medium findings are resolved is no longer supported by the current source tree**.
 
-Following the comprehensive static and runtime audits documented in both:
-1. `SECURITY_AND_BUG_AUDIT.md` (Repository root)
-2. `MediArca_Bug_Audit_2026-09-28.md` (Desktop audit report)
+This report is now aligned with the third security re-audit.
 
-All identified vulnerabilities, authorization gaps, integer overflow conditions, state machine flaws, and routing defects have been systematically remediated, validated, and covered by automated regression tests in `backend/scripts/verify-fixes.ts` (Tests 1 to 111, total 553 assertions).
+### Confirmed remaining priorities
 
-Below is the complete resolution matrix and verification details for each finding.
+| Priority | Remaining |
+|---|---:|
+| Critical | 0 |
+| High | 8 |
+| Medium | 12 |
+| Low / Hardening | 2 |
 
----
+## Highest-priority unresolved items
 
-## Complete Finding Resolution Matrix
+1. **Public medical-record storage:** clinical documents are still uploaded using permanent R2 public URLs, and the record controller redirects to those public URLs.
+2. **JWT query-string transport:** protected record URLs can contain bearer tokens as `?token=`.
+3. **Predictable walk-in credentials:** new walk-in patients can receive a predictable `walkin.<phone>@mediarca.local` identity with the fixed password `walkin123`.
+4. **Doctor eligibility inconsistency:** receptionist walk-in booking/approval does not consistently re-check doctor verification/suspension.
+5. **Stale receptionist assignments:** several operations check assignment existence but not assignment ACTIVE status.
+6. **Broad doctor access to medical records:** record access is authorized by any historical appointment, including relationships that may only have been pending/rejected/cancelled.
+7. **Queue capacity races:** check-then-insert capacity logic can still overfill under concurrent requests.
+8. **Clinic schedule integrity:** clinic-specific doctor schedule updates do not require an active/accepted affiliation.
 
-| # | Priority | Issue Description | Original Location | Files Remediated | Remediation Status | Verification Test |
-|---|---|---|---|---|---|---|
-| **1** | **CRITICAL** | Google Sign-In unverified token decode fallback allows account impersonation | `backend/src/controllers/authController.ts:375-409` | `backend/src/controllers/authController.ts` | ✅ **RESOLVED** — Fail-closed verification. Removed `jwt.decode` fallback in production; enforced strict `verifyIdToken()` audience check. Returns 401 on failure. | Automated unit tests & auth pipeline |
-| **2** | **CRITICAL** | Doctor profile update allows mass-assignment of `isVerified`, `verificationStatus`, `rating`, `totalReviews`, `userId` | `backend/src/controllers/authController.ts:329-356` | `backend/src/controllers/authController.ts` | ✅ **RESOLVED** — Explicit allowlists enforced for both doctor and patient profile updates. Stripped all administrative and security fields. | Test 88 (5 assertions) |
-| **3** | **CRITICAL** | Receptionist queue endpoint only authenticated, skips receptionist check for non-receptionists, leaking clinical data | `backend/src/routes/receptionistRoutes.ts:28`, `backend/src/controllers/receptionistController.ts:183` | `backend/src/routes/receptionistRoutes.ts`, `backend/src/controllers/receptionistController.ts` | ✅ **RESOLVED** — Added `authorize('RECEPTIONIST')` at route level and verified doctor assignment + clinic scoping in controller. | Tests 69, 78 |
-| **4** | **CRITICAL** | Doctor medical records endpoint allows accessing arbitrary patient records without an active clinical relationship | `backend/src/controllers/recordController.ts:85-123` | `backend/src/controllers/recordController.ts` | ✅ **RESOLVED** — Enforced appointment relationship check between requesting doctor and target `patientId`. Unauthorized access returns 403. | Test 91 (2 assertions) |
-| **5** | **HIGH** | Provisional queue number overflows PostgreSQL 32-bit signed integer (`-8.38 billion` < `-2,147,483,648`) | `backend/src/controllers/appointmentController.ts:477` | `backend/src/controllers/appointmentController.ts` | ✅ **RESOLVED** — Sequential negative tokens (`-1, -2, -3...`) calculated via `tx.appointment.findFirst({ where: { queueNumber: { lt: 0 } }, orderBy: { queueNumber: 'asc' } })`. Fully within Postgres `Int` range. | Test 87 (5 assertions) |
-| **6** | **HIGH** | Receptionist appointment status endpoint lacks receptionist role authorization; non-receptionists could mutate status | `backend/src/routes/receptionistRoutes.ts:33`, `backend/src/controllers/receptionistController.ts:647` | `backend/src/routes/receptionistRoutes.ts`, `backend/src/controllers/receptionistController.ts` | ✅ **RESOLVED** — Mounted `authorize('RECEPTIONIST')` on `/api/receptionist` and verified desk assignment before updating appointment status. | Tests 70, 77 |
-| **7** | **HIGH** | Doctor can self-approve their own clinic affiliation request | `backend/src/controllers/doctorController.ts:525-561` | `backend/src/controllers/doctorController.ts` | ✅ **RESOLVED** — Rejected approval if `affiliation.requestedBy === 'DOCTOR'`. Doctors can only accept incoming clinic requests. | Test 89 (2 assertions) |
-| **8** | **HIGH** | Clinic can self-approve their own doctor affiliation request | `backend/src/controllers/clinicController.ts:390-440` | `backend/src/controllers/clinicController.ts` | ✅ **RESOLVED** — Rejected approval if `affiliation.requestedBy === 'CLINIC'`. Clinics can only accept incoming doctor requests. | Regression suite |
-| **9** | **HIGH** | Suspended/rejected doctors remain bookable and viewable by direct ID | `backend/src/controllers/appointmentController.ts:313`, `backend/src/controllers/doctorController.ts:102` | `backend/src/controllers/appointmentController.ts`, `backend/src/controllers/doctorController.ts` | ✅ **RESOLVED** — Blocked bookings and direct lookups if doctor is `SUSPENDED`, `REJECTED`, or `isVerified === false`. | Test 90 (3 assertions) |
-| **10** | **HIGH** | Consultation state machine permits `PENDING_APPROVAL` to be called or completed directly | `backend/src/controllers/consultationController.ts:140, 234` | `backend/src/controllers/consultationController.ts` | ✅ **RESOLVED** — `callPatient` strictly requires `WAITING` (or `IN_CONSULTATION`). `completeConsultation` strictly requires `IN_CONSULTATION` (or `WAITING`). | Test 92 (7 assertions) |
-| **11** | **HIGH** | Slot capacity overfilling via concurrent pending approvals | `backend/src/controllers/receptionistController.ts:874` | `backend/src/controllers/receptionistController.ts` | ✅ **RESOLVED** — In `approveAppointment`, re-evaluated `slot.maxPatients` against active confirmed bookings before issuing positive queue number. | Test 82 |
-| **12** | **HIGH** | Medical records file URL handling treats base64 data URIs as relative URLs | `frontend/src/services/api.ts:11` | `frontend/src/services/api.ts` | ✅ **RESOLVED** — `getFileUrl` checks `url.startsWith('data:')` and returns it directly without prepending the backend base URL. | Test 93 (3 assertions) |
-| **13** | **HIGH** | Cross-clinic receptionist doctor assignment allows assigning doctors from other facilities | `backend/src/controllers/clinicController.ts:836-898` | `backend/src/controllers/clinicController.ts` | ✅ **RESOLVED** — Filtered assigned `doctorIds` to only active/accepted practitioners affiliated with the clinic. | Test 84 |
-| **14** | **HIGH** | Receptionist provisioning allows unaccepted/inactive doctor affiliations | `backend/src/controllers/clinicController.ts:590-614` | `backend/src/controllers/clinicController.ts` | ✅ **RESOLVED** — Required `status === 'ACCEPTED'` when assigning affiliated doctors to receptionists. | Test 84 |
-| **15** | **HIGH** | Multi-clinic receptionist appointment privacy leakage across facilities | `backend/src/controllers/appointmentController.ts:589-618` | `backend/src/controllers/appointmentController.ts` | ✅ **RESOLVED** — When receptionist accesses an appointment, both clinic facility match AND doctor assignment are strictly required. | Test 70 |
-| **16** | **HIGH** | Hardcoded JWT fallback secret in production | `backend/src/middleware/authMiddleware.ts:16` | `backend/src/server.ts`, `backend/src/middleware/authMiddleware.ts` | ✅ **RESOLVED** — Server startup aborts with fatal error if `NODE_ENV === 'production'` and `JWT_SECRET` is unset or default fallback. | Startup invariant test |
-| **17** | **HIGH** | Destructive database seeding in production (`seed.ts`) | `backend/prisma/seed.ts:10` | `backend/prisma/seed.ts` | ✅ **RESOLVED** — Added fail-safe exit in `seed.ts` if `NODE_ENV === 'production'` unless `ALLOW_PROD_SEED === 'true'`. | Code review verified |
-| **18** | **HIGH** | Client-controlled clock manipulation for slot booking | `backend/src/controllers/appointmentController.ts:384`, `frontend/src/services/api.ts` | `backend/src/controllers/appointmentController.ts`, `backend/src/utils/scheduleUtils.ts` | ✅ **RESOLVED** — All slot availability and current-time calculations use server-side Indian Standard Time (IST). Client time is used purely for local browser display. | Tests 68, 85 |
-| **19** | **MEDIUM** | Wait estimates count completed patients as still waiting ahead | `backend/src/utils/scheduleUtils.ts:176`, `backend/src/controllers/appointmentController.ts:89` | `backend/src/utils/scheduleUtils.ts`, `backend/src/controllers/appointmentController.ts` | ✅ **RESOLVED** — `evaluateSlotStatus` now accepts `activeWaitingCount`; completed patients are excluded from wait duration estimations. | Test 94 (4 assertions) |
-| **20** | **MEDIUM** | Medical Records screen unreachable due to unconditional redirect | `frontend/src/App.tsx:171` | `frontend/src/App.tsx` | ✅ **RESOLVED** — Replaced `<Navigate to="/patient/appointments" replace />` with `<MedicalRecords />` for `/patient/records` and `/records`. Added sidebar link. | Frontend routing verified |
-| **21** | **MEDIUM** | Patient appointments tab hides `PENDING_APPROVAL` and `REJECTED` bookings | `frontend/src/pages/Patient/MyAppointments.tsx` | `frontend/src/pages/Patient/MyAppointments.tsx` | ✅ **RESOLVED** — Added `PENDING_APPROVAL` to upcoming appointments tab and `REJECTED` to past history tab with clear status badges. | Frontend build verified |
-| **22** | **MEDIUM** | Rate limiting absent on sensitive authentication and application endpoints | `backend/src/server.ts` | `backend/src/server.ts` | ✅ **RESOLVED** — Sliding-window IP rate limiter implemented for `/api/auth/login`, `/api/auth/register`, `/api/auth/google`, and `/api/receptionist/apply`. | Test 20 |
-| **23** | **MEDIUM** | Receptionist temporary password bypass on first login | `backend/src/controllers/receptionistController.ts` | `backend/src/controllers/receptionistController.ts` | ✅ **RESOLVED** — Receptionist desk operations gated on `mustChangePassword === false`. Mandatory password update screen enforced on initial login. | Tests 69, 73 |
-| **24** | **MEDIUM** | Prescription upload allowed directly into patient medical vault | `backend/src/controllers/recordController.ts` | `backend/src/controllers/recordController.ts`, `frontend/src/pages/Patient/MedicalRecords.tsx` | ✅ **RESOLVED** — Patient Medical Vault upload categories strictly disallow "Prescription" (only digital issuance by doctors supported). Rejects prescription category with 400. | Tests 74, 76 |
-| **25** | **MEDIUM** | Shift capacity overflow when 25/25 booked | `backend/src/utils/scheduleUtils.ts` | `backend/src/utils/scheduleUtils.ts` | ✅ **RESOLVED** — Shift with booked >= maxPatients strictly flags `isFull = true`, label "Fully Booked", and estimated time "Shift Full". | Tests 75, 85 |
-| **26** | **MEDIUM** | Doctor custom consultation duration not reflected in estimated queue timing | `backend/src/controllers/appointmentController.ts` | `backend/src/controllers/appointmentController.ts`, `backend/src/utils/scheduleUtils.ts` | ✅ **RESOLVED** — Doctor-entered consultation pace (`avgConsultationTime`) is prioritized over default formula. | Test 86 |
+## Additional unresolved issues
 
-| **27** | **HIGH** | JWT secret hard-coded fallback and missing startup fail-closed guard | `backend/src/middleware/authMiddleware.ts`, `backend/src/server.ts` | `backend/src/middleware/authMiddleware.ts`, `backend/src/server.ts` | ✅ **RESOLVED** — Added `getJwtSecret()` enforcing >= 32 chars and rejecting fallback in production. Added startup guard in `server.ts` that terminates process on invalid secret. | Test 95 (8 assertions) |
-| **28** | **HIGH** | Client-controlled clock manipulation for queue and booking calculations | `backend/src/controllers/appointmentController.ts`, `frontend/src/services/api.ts` | `backend/src/controllers/appointmentController.ts`, `frontend/src/services/api.ts` | ✅ **RESOLVED** — Completely removed `clientMinutes` from booking and queue preview APIs; server evaluates slots strictly using server-authoritative time (converting to IST). | Test 96 (4 assertions) |
-| **29** | **HIGH** | Unverified doctor direct profile lookup bypasses verification guard | `backend/src/controllers/doctorController.ts` | `backend/src/controllers/doctorController.ts` | ✅ **RESOLVED** — `getDoctorById()` requires `isVerified === true && verificationStatus === 'VERIFIED'` for public lookups. Only doctor owner or admin can view unverified profiles. | Test 97 (6 assertions) |
-| **30** | **HIGH** | Production frontend silently substitutes demo doctors on API failure | `frontend/src/services/api.ts` | `frontend/src/services/api.ts` | ✅ **RESOLVED** — Guarded demo doctor and queue preview fallbacks behind `import.meta.env.DEV && import.meta.env.VITE_ENABLE_DEMO_FALLBACK === 'true'`. Production fails visibly with genuine error states. | Test 98 (4 assertions) |
-| **31** | **HIGH** | Pending and rejected receptionists can log in and access desk operations | `backend/src/controllers/authController.ts`, `backend/src/middleware/authMiddleware.ts`, `backend/src/routes/receptionistRoutes.ts` | `backend/src/controllers/authController.ts`, `backend/src/middleware/authMiddleware.ts`, `backend/src/routes/receptionistRoutes.ts` | ✅ **RESOLVED** — `login()` blocks PENDING/REJECTED receptionists with HTTP 403. Added `requireActiveReceptionist` middleware across all desk routes. Rejection cascades to deleting `DoctorReceptionist` links in transaction. | Tests 99, 100 (10 assertions) |
-| **32** | **HIGH** | Generic appointment detail endpoint leaks patient's complete medical records to clinic/receptionist | `backend/src/controllers/appointmentController.ts` | `backend/src/controllers/appointmentController.ts` | ✅ **RESOLVED** — Stripped `patient.medicalRecords` in `getAppointmentById()` unless caller is the examining doctor or patient themselves. | Test 101 (4 assertions) |
-| **33** | **HIGH** | Clinical documents stored and exposed via public static URLs | `backend/src/server.ts`, `backend/src/controllers/recordController.ts`, `backend/src/routes/recordRoutes.ts` | `backend/src/server.ts`, `backend/src/controllers/recordController.ts`, `backend/src/routes/recordRoutes.ts` | ✅ **RESOLVED** — Removed `/uploads` static file middleware (only `/uploads/avatars` is public). Added authenticated `GET /api/records/file/:id` endpoint with clinical relationship and ownership authorization. | Authenticated file streaming |
-| **34** | **HIGH** | Runtime DDL schema mutation executed on server startup | `backend/src/server.ts` | `backend/src/server.ts` | ✅ **RESOLVED** — Hardened `ensureSchema()` with error logging and fail-safe handling; configured `prisma migrate deploy` as deployment migration workflow. | Server startup invariant |
-| **35** | **MEDIUM** | Upload validation uses MIME OR extension rather than validating file signatures | `backend/src/middleware/uploadMiddleware.ts`, `backend/src/controllers/recordController.ts` | `backend/src/middleware/uploadMiddleware.ts`, `backend/src/controllers/recordController.ts` | ✅ **RESOLVED** — Replaced MIME OR extension with MIME AND matching extension check. Added `validateMagicBytes()` file signature verification for PDF, JPEG, PNG, and WebP. | Test 102 (12 assertions) |
-| **36** | **MEDIUM** | Password policy on registration is weaker than receptionist provisioning | `backend/src/controllers/authController.ts` | `backend/src/controllers/authController.ts` | ✅ **RESOLVED** — Enforced 8-character minimum password length on patient, doctor, and clinic registration. | Test 103 (5 assertions) |
-| **37** | **MEDIUM** | Patient date of birth Prisma type mismatch (Date object vs String field) | `backend/src/controllers/authController.ts` | `backend/src/controllers/authController.ts` | ✅ **RESOLVED** — Stored `dateOfBirth` as validated ISO `YYYY-MM-DD` string in Prisma instead of JavaScript `Date` instance. | Test 104 (5 assertions) |
-| **38** | **MEDIUM** | Doctor checking slot schedule validation lacks central integrity checks | `backend/src/utils/scheduleUtils.ts`, `backend/src/controllers/doctorController.ts` | `backend/src/utils/scheduleUtils.ts`, `backend/src/controllers/doctorController.ts` | ✅ **RESOLVED** — Created `validateDoctorSlots()` enforcing 24h format, start < end, positive capacity, unique slot IDs, and non-overlapping intervals. | Test 105 (10 assertions) |
-| **39** | **MEDIUM** | Doctor suspension not uniformly enforced across consultation operations | `backend/src/controllers/consultationController.ts` | `backend/src/controllers/consultationController.ts` | ✅ **RESOLVED** — Enforced active/verified practitioner checks in `getDoctorQueue()`, `callPatient()`, `updateNotesAndVitals()`, and `completeConsultation()`. Suspended/rejected doctors receive HTTP 403. | Test 106 (5 assertions) |
-| **40** | **MEDIUM** | Appointment state transitions distributed across multiple controllers | `backend/src/utils/appointmentStateMachine.ts`, `backend/src/controllers/appointmentController.ts`, `backend/src/controllers/consultationController.ts` | `backend/src/utils/appointmentStateMachine.ts`, controllers | ✅ **RESOLVED** — Centralized `canTransition(from, to, actorRole)` state machine governing all transitions between PENDING_APPROVAL, WAITING, IN_CONSULTATION, COMPLETED, CANCELLED, and REJECTED. | Test 107 (20 assertions) |
-| **41** | **MEDIUM** | Appointment date treated as free-form string without calendar validation | `backend/src/utils/scheduleUtils.ts`, `backend/src/controllers/appointmentController.ts` | `backend/src/utils/scheduleUtils.ts`, `backend/src/controllers/appointmentController.ts` | ✅ **RESOLVED** — Added `isValidAppointmentDate()` verifying exact YYYY-MM-DD calendar dates (validating days per month, leap years, valid range). | Test 108 (12 assertions) |
-| **42** | **MEDIUM** | Public doctor endpoints expose personal phone and email | `backend/src/controllers/doctorController.ts` | `backend/src/controllers/doctorController.ts` | ✅ **RESOLVED** — Public doctor search and detail queries strip personal `phone` and `email` from `user` projection. Clinic phone is retained for appointments. | Test 109 (4 assertions) |
-| **43** | **MEDIUM** | Doctor reviews expose full patient names publicly | `backend/src/utils/scheduleUtils.ts`, `backend/src/controllers/doctorController.ts` | `backend/src/utils/scheduleUtils.ts`, `backend/src/controllers/doctorController.ts` | ✅ **RESOLVED** — Applied `maskPatientName()` to anonymize reviewer names (e.g. "Rahul S.") in public reviews. | Test 110 (6 assertions) |
-| **44** | **MEDIUM** | Production API leaks internal Prisma error messages and database details | `backend/src/server.ts`, controllers | `backend/src/server.ts`, controllers | ✅ **RESOLVED** — Sanitized error responses in production to return generic messages (`An internal server error occurred`), logging full details on server only. | Test 111 (4 assertions) |
-| **45** | **MEDIUM** | Wildcard CORS enabled with credentials | `backend/src/server.ts` | `backend/src/server.ts` | ✅ **RESOLVED** — Restricted CORS `origin` to explicit configured frontend URLs and standard localhost dev origins. | Server configuration verified |
-| **46** | **MEDIUM** | Missing `trust proxy` configuration on reverse-proxy infrastructure | `backend/src/server.ts` | `backend/src/server.ts` | ✅ **RESOLVED** — Added `app.set('trust proxy', 1)` for accurate rate limiting and client IP resolution behind Render proxy. | Server configuration verified |
-| **47** | **MEDIUM** | Rate limiting coverage narrow, missing expensive public endpoints | `backend/src/server.ts` | `backend/src/server.ts` | ✅ **RESOLVED** — Added public API rate limiter covering `/api/doctors`, `/api/appointments/queue-preview`, and `/api/clinics`. | Server configuration verified |
-| **48** | **HIGH** | Path traversal vulnerability in medical record file streaming | `backend/src/controllers/recordController.ts:246` | `backend/src/controllers/recordController.ts` | ✅ **RESOLVED** — Normalized relative path with `path.normalize` and strictly asserted boundary within `uploadsDir`. Prevents directory traversal attacks. | Test 112 (5 assertions) |
-| **49** | **MEDIUM** | Unauthenticated public doctor detail route locked out doctor owners from previewing their own unverified profiles | `backend/src/routes/doctorRoutes.ts:31`, `backend/src/controllers/doctorController.ts:77` | `backend/src/routes/doctorRoutes.ts`, `backend/src/middleware/authMiddleware.ts`, `backend/src/controllers/doctorController.ts` | ✅ **RESOLVED** — Added `optionalAuthenticate` middleware to decode Bearer/query tokens if provided; returns 404 for unverified doctors only on unauthorized public requests. | Tests 97, 114 |
-| **50** | **HIGH** | Avatar upload accepted non-image documents (e.g. PDFs) without genuine image verification | `backend/src/controllers/authController.ts:705` | `backend/src/controllers/authController.ts` | ✅ **RESOLVED** — Restricted avatar uploads strictly to JPEG, PNG, and WebP; enforced magic byte signature checks via `validateMagicBytes`. | Test 115 (5 assertions) |
-| **51** | **CRITICAL** | Google OAuth permitted signing into existing administrative, clinic, and receptionist accounts | `backend/src/controllers/authController.ts:384` | `backend/src/controllers/authController.ts` | ✅ **RESOLVED** — Prohibited Google authentication for `ADMIN`, `CLINIC`, and `RECEPTIONIST` roles (403 Forbidden). Only patient/doctor accounts permitted. | Test 116 (7 assertions) |
-| **52** | **HIGH** | Day appointment capacity check excluded `PENDING_APPROVAL` allowing concurrent slot overbooking | `backend/src/controllers/appointmentController.ts:99, 476` | `backend/src/controllers/appointmentController.ts`, `backend/src/controllers/receptionistController.ts` | ✅ **RESOLVED** — Included `PENDING_APPROVAL` in active appointments query in `getQueuePreview`, `bookAppointment`, and `bookWalkin`. Prevents slot overcapacity. | Test 117 (2 assertions) |
-| **53** | **MEDIUM** | Calling patient reset `IN_CONSULTATION` appointments globally across all clinics for multi-facility doctors | `backend/src/controllers/consultationController.ts:167` | `backend/src/controllers/consultationController.ts` | ✅ **RESOLVED** — Scoped `updateMany` reset strictly to `targetAppointment.clinicId`. Isolated active consultation states across clinic locations. | Test 118 (2 assertions) |
-| **54** | **HIGH** | Receptionist could force terminal states or override consultation cabin status | `backend/src/controllers/receptionistController.ts:684, 888` | `backend/src/controllers/receptionistController.ts`, `backend/src/controllers/consultationController.ts` | ✅ **RESOLVED** — Integrated `canTransition()` into receptionist status updates, approval, and rejection; blocked clinical notes editing on cancelled/rejected appointments. | Test 119 (10 assertions) |
-| **55** | **MEDIUM** | Frontend medical record links pointed to unserved `/uploads` resulting in 404s | `frontend/src/services/api.ts`, `frontend/src/pages/Patient/MedicalRecords.tsx`, `frontend/src/pages/Doctor/ConsultationView.tsx` | `frontend/src/services/api.ts`, patient and doctor pages | ✅ **RESOLVED** — Added `getMedicalRecordFileUrl(recordId, directUrl)` linking to `/api/records/file/:id?token=...`. Replaced direct `getFileUrl` calls on medical documents. | Frontend build & manual verification |
+Runtime schema DDL remains in application startup; authenticated responses can still serialize `passwordHash`; public queue preview does not fully enforce public doctor eligibility; queue scoping is inconsistent across clinics; receptionist walk-in appointment dates are not validated centrally; clinic suspension enforcement is inconsistent; generic receptionist cancellation does not reuse the active-receptionist guard; completed clinical notes can still be edited; receptionist action parsing has a lowercase ACCEPT bug; public verification checks are not always exact VERIFIED-state checks; CORS remains broader than the actual production allowlist; and JWTs remain in localStorage.
 
----
+## What is confirmed fixed
 
-## Verification Summary
+The latest changes do correctly address the earlier findings around production JWT fail-closed behavior, client-controlled booking time, direct unverified doctor lookup, production demo fallback, receptionist account lifecycle, generic appointment medical-record exposure, file-signature validation, password minimums, DOB type handling, strict online appointment dates, schedule validation, consultation suspension checks, centralized appointment transitions, production error sanitization, and path traversal defense.
 
-All fixes have been validated with the comprehensive test harness:
-```bash
-$ cd backend
-$ npm run test:verify
-...
-========================================
-Passed: 619
-Failed: 0
-========================================
-```
+## Test/verification limitation
 
-Both frontend and backend compile cleanly with zero TypeScript or packaging errors:
-```bash
-$ npm run build # in backend/ -> Clean (0 errors)
-$ npm run build # in frontend/ -> Clean (0 errors)
-```
+The repository claims 619 passing assertions and clean builds, but these were not independently reproduced against the current head in this audit. The existing verification script is primarily simulation/unit oriented and does not exercise the full Express + Prisma runtime path.
 
+The latest GitHub Actions run for commit 7b562bc completed the frontend deployment successfully. The repository currently has no dedicated backend integration/security CI workflow.
+
+## Required next phase
+
+Treat the following as the next remediation phase before calling the repository fully hardened:
+
+- private clinical-document storage with authenticated/signed access;
+- removal of query-string JWT transport;
+- secure walk-in identity/account creation;
+- centralized receptionist/doctor/clinic authorization helpers;
+- database-safe queue/capacity concurrency controls;
+- removal of password hashes from all API responses;
+- Prisma migration-based deployment;
+- backend integration/security CI.
