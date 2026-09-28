@@ -224,14 +224,22 @@ export const DoctorDetail: React.FC = () => {
           <div className="lg:col-span-2 space-y-6">
             <UtilityCard>
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 pb-6 border-b border-[#f0f0f0]">
-                <div className="w-24 h-24 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] overflow-hidden flex-shrink-0">
+                <div className="w-24 h-24 rounded-full bg-white border border-[#e5e5ea] overflow-hidden flex-shrink-0 flex items-center justify-center shadow-xs">
                   {doctor.user.avatarUrl ? (
-                    <img src={doctor.user.avatarUrl} alt={doctor.user.fullName} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-3xl font-bold bg-gradient-to-br from-[#0088e8]/15 to-[#10b981]/25 text-[#0088e8]">
-                      {doctor.user.fullName[0]}
-                    </div>
-                  )}
+                    <img
+                      src={doctor.user.avatarUrl}
+                      alt={doctor.user.fullName}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLElement).style.display = 'none';
+                        const fallback = e.currentTarget.parentElement?.querySelector('.doc-detail-fallback');
+                        if (fallback) (fallback as HTMLElement).style.display = 'flex';
+                      }}
+                    />
+                  ) : null}
+                  <div className={`doc-detail-fallback w-full h-full ${doctor.user.avatarUrl ? 'hidden' : 'flex'} items-center justify-center text-3xl font-bold bg-gradient-to-br from-[#0088e8] to-[#10b981] text-white shadow-inner select-none`}>
+                    {doctor.user.fullName.replace(/^Dr\.\s*/i, '').trim()[0] || 'D'}
+                  </div>
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
@@ -239,7 +247,7 @@ export const DoctorDetail: React.FC = () => {
                     <span title="Verified Practitioner"><ShieldCheck className="w-5 h-5 text-[#10b981]" /></span>
                   </div>
                   <div className="mt-1">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gradient-to-r from-[#0088e8]/10 to-[#10b981]/10 text-[#0088e8] border border-[#0088e8]/20">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#0088e8]/10 text-[#0088e8] border border-[#0088e8]/20">
                       {doctor.specialty}
                     </span>
                   </div>

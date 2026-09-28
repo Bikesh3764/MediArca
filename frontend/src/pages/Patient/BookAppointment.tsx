@@ -337,7 +337,7 @@ export const BookAppointment: React.FC = () => {
 
           {/* Doctor Info Card */}
           <div className="flex items-center gap-4 pb-6 border-b border-[#f0f0f0]">
-            <div className="w-16 h-16 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] overflow-hidden flex-shrink-0 flex items-center justify-center">
+            <div className="w-16 h-16 rounded-full bg-white border border-[#e5e5ea] overflow-hidden flex-shrink-0 flex items-center justify-center shadow-xs">
               {doctor.user.avatarUrl ? (
                 <img
                   src={doctor.user.avatarUrl}
@@ -351,7 +351,7 @@ export const BookAppointment: React.FC = () => {
                 />
               ) : null}
               <div
-                className={`book-doc-fallback w-full h-full ${doctor.user.avatarUrl ? 'hidden' : 'flex'} items-center justify-center font-bold text-xl text-[#0088e8] bg-gradient-to-br from-[#0088e8]/10 to-[#10b981]/15`}
+                className={`book-doc-fallback w-full h-full ${doctor.user.avatarUrl ? 'hidden' : 'flex'} items-center justify-center font-bold text-xl text-white bg-gradient-to-br from-[#0088e8] to-[#10b981] shadow-inner select-none`}
               >
                 {doctor.user.fullName.replace(/^Dr\.\s*/i, '').trim()[0] || 'D'}
               </div>
@@ -362,7 +362,7 @@ export const BookAppointment: React.FC = () => {
                 <CheckCircle2 className="w-4 h-4 text-[#0088e8] flex-shrink-0" />
               </div>
               <div className="flex flex-wrap items-center gap-2 mt-1">
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gradient-to-r from-[#0088e8]/10 to-[#10b981]/10 text-[#0088e8] border border-[#0088e8]/20">
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#0088e8]/10 text-[#0088e8] border border-[#0088e8]/20">
                   {doctor.specialty}
                 </span>
                 <span className="text-xs text-[#6e6e73] font-medium">{formatDoctorDegrees(doctor.qualifications)}</span>

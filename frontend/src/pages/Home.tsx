@@ -416,7 +416,7 @@ export const Home: React.FC = () => {
                   {/* Clean Avatar with Apple Border & Shadow */}
                   <div
                     onClick={() => navigate(getHomeDoctorDetailPath(doctor.id))}
-                    className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] overflow-hidden flex-shrink-0 flex items-center justify-center cursor-pointer hover:opacity-90 transition-all shadow-2xs group-hover:scale-102"
+                    className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white border border-[#e5e5ea] overflow-hidden flex-shrink-0 flex items-center justify-center cursor-pointer hover:opacity-95 transition-all shadow-xs group-hover:scale-102"
                   >
                     {doctor.user.avatarUrl ? (
                       <img
@@ -431,7 +431,7 @@ export const Home: React.FC = () => {
                       />
                     ) : null}
                     <div
-                      className={`doc-fallback-home w-full h-full ${doctor.user.avatarUrl ? 'hidden' : 'flex'} items-center justify-center font-bold text-lg text-[#0088e8] bg-gradient-to-br from-[#0088e8]/10 to-[#10b981]/15`}
+                      className={`doc-fallback-home w-full h-full ${doctor.user.avatarUrl ? 'hidden' : 'flex'} items-center justify-center font-bold text-xl text-white bg-gradient-to-br from-[#0088e8] to-[#10b981] shadow-inner select-none`}
                     >
                       {doctor.user.fullName.replace(/^Dr\.\s*/i, '').trim()[0] || 'D'}
                     </div>
@@ -448,7 +448,7 @@ export const Home: React.FC = () => {
                         {doctor.user.fullName}
                       </h3>
                       <CheckCircle2 className="w-4 h-4 text-[#0088e8] flex-shrink-0" />
-                      <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200/60 text-[11px] font-semibold text-amber-800">
+                      <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-xs font-semibold text-amber-800">
                         <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
                         <span>{doctor.rating ? doctor.rating.toFixed(1) : '5.0'}</span>
                       </div>
@@ -456,7 +456,7 @@ export const Home: React.FC = () => {
 
                     {/* Specialty & Qualifications */}
                     <div className="flex flex-wrap items-center gap-2 mt-1.5 text-xs text-[#86868b]">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gradient-to-r from-[#0088e8]/10 to-[#10b981]/10 text-[#0088e8] border border-[#0088e8]/20">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#0088e8]/10 text-[#0088e8] border border-[#0088e8]/20">
                         {doctor.specialty}
                       </span>
                       <span className="font-medium text-[#48484a]">{cleanDegrees}</span>
@@ -528,7 +528,6 @@ export const Home: React.FC = () => {
                     <div className="text-xl sm:text-2xl font-bold text-[#1d1d1f] tracking-tight leading-tight">
                       ₹{doctor.consultationFee.toFixed(0)}
                     </div>
-                    <span className="text-[10px] text-emerald-600 font-medium block">Pay at Clinic</span>
                   </div>
 
                   <div>
