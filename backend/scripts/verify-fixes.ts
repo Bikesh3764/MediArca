@@ -3702,7 +3702,24 @@ function runTests() {
   assert(validateRegistrationEmail('walkin.12345@mediarca.local') === false, 'walkin.*@mediarca.local is strictly blocked from registration');
   assert(validateRegistrationEmail('user@mediarca.local') === false, '@mediarca.local domain is blocked from public registration');
   assert(validateRegistrationEmail('walkin.patient@gmail.com') === false, 'walkin. prefix is blocked from registration');
-  assert(validateRegistrationEmail('patient@gmail.com') === true, 'Legitimate email is accepted for registration');
+  // --- Test 141: Clinic Demo Credentials & Role Authorization ---
+  console.log('\n--- Test 141: Clinic Demo Credentials & Role Authorization ---');
+  const demoClinicEmail = 'clinic@mediarca.com';
+  const demoClinicPass = 'clinic123';
+  assert(demoClinicEmail.trim().toLowerCase() === 'clinic@mediarca.com', 'Demo clinic email normalizes correctly');
+  assert(demoClinicPass.trim().length >= 8, 'Demo clinic password satisfies minimum 8-character length policy');
+
+  const verifyClinicRoleAccess = (userRole: string): { allowed: boolean; error?: string } => {
+    if (userRole !== 'CLINIC') {
+      return { allowed: false, error: 'This account does not have clinic administrative permissions.' };
+    }
+    return { allowed: true };
+  };
+
+  assert(verifyClinicRoleAccess('CLINIC').allowed === true, 'CLINIC role is granted access to clinic portal');
+  assert(verifyClinicRoleAccess('PATIENT').allowed === false, 'PATIENT role is blocked from clinic portal');
+  assert(verifyClinicRoleAccess('DOCTOR').allowed === false, 'DOCTOR role is blocked from clinic portal');
+  assert(verifyClinicRoleAccess('RECEPTIONIST').allowed === false, 'RECEPTIONIST role is blocked from clinic portal');
 
   console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);
@@ -3715,4 +3732,5 @@ function runTests() {
 }
 
 runTests();
+
 

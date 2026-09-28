@@ -30,7 +30,7 @@ export const ClinicAuth: React.FC = () => {
     setError(null);
     setSubmitting(true);
     try {
-      const user = await login({ email, password });
+      const user = await login({ email: email.trim(), password });
       if (user.role !== 'CLINIC') {
         setError('This account does not have clinic administrative permissions.');
         setSubmitting(false);
@@ -60,7 +60,7 @@ export const ClinicAuth: React.FC = () => {
         address,
         city: city || undefined,
         phone: formatIndianPhone(phone),
-        email,
+        email: email.trim(),
         password,
       });
       navigate('/clinic/dashboard');
@@ -74,8 +74,15 @@ export const ClinicAuth: React.FC = () => {
   const handleDemoLogin = async () => {
     setError(null);
     setSubmitting(true);
+    setEmail('clinic@mediarca.com');
+    setPassword('clinic123');
     try {
-      await login({ email: 'clinic@mediarca.com', password: 'clinic123' });
+      const loggedUser = await login({ email: 'clinic@mediarca.com', password: 'clinic123' });
+      if (loggedUser.role !== 'CLINIC') {
+        setError('This account does not have clinic administrative permissions.');
+        setSubmitting(false);
+        return;
+      }
       navigate('/clinic/dashboard');
     } catch (err: any) {
       setError(err.message || 'Demo clinic login failed');
@@ -196,11 +203,14 @@ export const ClinicAuth: React.FC = () => {
                   type="button"
                   onClick={handleDemoLogin}
                   disabled={submitting}
-                  className="w-full py-2.5 px-3 rounded-full bg-emerald-50 hover:bg-emerald-100/70 border border-emerald-200 text-xs font-medium text-emerald-800 flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] shadow-xs"
+                  className="w-full py-2.5 px-3 rounded-full bg-emerald-50 hover:bg-emerald-100/70 border border-emerald-200 text-xs font-semibold text-emerald-800 flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] shadow-xs cursor-pointer"
                 >
                   <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
                   <span>One-Click Demo Clinic Partner Login</span>
                 </button>
+                <p className="text-[11px] text-center text-[#86868b] mt-2">
+                  Demo Credentials: <span className="font-semibold text-[#1d1d1f]">clinic@mediarca.com</span> • <span className="font-semibold text-[#1d1d1f]">clinic123</span>
+                </p>
               </div>
             </form>
           ) : (

@@ -125,7 +125,7 @@ export const Login: React.FC = () => {
             <Sparkles className="w-4 h-4 text-amber-500" />
             <span>Instant 1-Click Startup Demo Logins:</span>
           </div>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <button
               type="button"
               onClick={() => handleQuickLogin('john.doe@gmail.com', 'patient123', '/patient/appointments')}
@@ -146,6 +146,13 @@ export const Login: React.FC = () => {
               className="py-2 px-2 rounded-full bg-amber-50 hover:bg-amber-100/70 text-amber-800 border border-amber-200 text-[11px] font-semibold transition-all text-center cursor-pointer active:scale-[0.98] shadow-2xs truncate"
             >
               Receptionist
+            </button>
+            <button
+              type="button"
+              onClick={() => handleQuickLogin('clinic@mediarca.com', 'clinic123', '/clinic/dashboard')}
+              className="py-2 px-2 rounded-full bg-emerald-50 hover:bg-emerald-100/70 text-emerald-800 border border-emerald-200 text-[11px] font-semibold transition-all text-center cursor-pointer active:scale-[0.98] shadow-2xs truncate"
+            >
+              Clinic
             </button>
           </div>
         </div>
