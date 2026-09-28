@@ -253,15 +253,12 @@ export const DoctorDetail: React.FC = () => {
                   </div>
                   <p className="text-xs text-[#6e6e73] font-medium mt-1.5">{formatDoctorDegrees(doctor.qualifications)}</p>
                   <div className="flex items-center gap-3 mt-3 text-xs text-[#1d1d1f]">
-                    <span className="flex items-center gap-1">
-                      <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                      <strong>{doctor.rating.toFixed(1)}</strong> <span className="text-[#86868b]">({doctor.totalReviews} reviews)</span>
-                    </span>
-                    <span className="text-[#d2d2d7]">•</span>
-                    <span className="flex items-center gap-1 text-[#86868b]">
-                      <Award className="w-4 h-4" />
+                    <span className="flex items-center gap-1.5 text-[#1d1d1f] font-medium">
+                      <Award className="w-4 h-4 text-[#0088e8]" />
                       {doctor.experienceYears} Years Experience
                     </span>
+                    <span className="text-[#d2d2d7]">•</span>
+                    <span className="text-[#86868b]">Verified Clinical Specialist</span>
                   </div>
                 </div>
               </div>
