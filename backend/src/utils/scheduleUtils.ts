@@ -234,3 +234,119 @@ export const evaluateSlotStatus = (
     statusLabel,
   };
 };
+
+/**
+ * Validates strict YYYY-MM-DD calendar date semantics
+ */
+export const isValidAppointmentDate = (dateStr: any): boolean => {
+  if (!dateStr || typeof dateStr !== 'string') return false;
+  const match = dateStr.trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return false;
+  const year = parseInt(match[1], 10);
+  const month = parseInt(match[2], 10);
+  const day = parseInt(match[3], 10);
+  if (year < 2020 || year > 2100 || month < 1 || month > 12 || day < 1 || day > 31) return false;
+  const d = new Date(Date.UTC(year, month - 1, day));
+  return (
+    d.getUTCFullYear() === year &&
+    d.getUTCMonth() === month - 1 &&
+    d.getUTCDate() === day
+  );
+};
+
+/**
+ * Masks patient name for public doctor review display (e.g., "John Doe" -> "John D.")
+ */
+export const maskPatientName = (name?: string | null): string => {
+  if (!name || !name.trim()) return 'Verified Patient';
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) {
+    return `${parts[0][0]}.`;
+  }
+  return `${parts[0]} ${parts[parts.length - 1][0]}.`;
+};
+
+/**
+ * Centrally validates doctor checking slot schedule structure
+ * Ensures valid 24h times, positive capacity, non-overlapping windows, and unique slot IDs.
+ */
+export const validateDoctorSlots = (
+  slots: any[]
+): { valid: boolean; error?: string; formatted?: DoctorSlot[] } => {
+  if (!Array.isArray(slots) || slots.length === 0) {
+    return { valid: false, error: 'At least one checking slot shift is required.' };
+  }
+
+  const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
+  const formatted: DoctorSlot[] = [];
+  const seenIds = new Set<string>();
+
+  for (let i = 0; i < slots.length; i++) {
+    const s = slots[i];
+    const sTime = String(s.startTime || '').trim();
+    const eTime = String(s.endTime || '').trim();
+
+    if (!timeRegex.test(sTime) || !timeRegex.test(eTime)) {
+      return {
+        valid: false,
+        error: `Slot ${i + 1} has invalid time format. Times must be in 24-hour HH:mm format (e.g. 09:00, 13:00).`,
+      };
+    }
+
+    const startMins = timeToMinutes(sTime);
+    const endMins = timeToMinutes(eTime);
+    if (endMins <= startMins) {
+      return {
+        valid: false,
+        error: `Slot ${i + 1} end time (${eTime}) must be after start time (${sTime}).`,
+      };
+    }
+
+    const maxPatients = Math.floor(Number(s.maxPatients));
+    if (isNaN(maxPatients) || maxPatients < 1) {
+      return {
+        valid: false,
+        error: `Slot ${i + 1} maxPatients must be a positive integer (at least 1 patient).`,
+      };
+    }
+
+    const slotId = String(s.id || `slot_${i + 1}`).trim();
+    if (seenIds.has(slotId)) {
+      return {
+        valid: false,
+        error: `Duplicate slot ID '${slotId}' found. Each slot must have a unique ID.`,
+      };
+    }
+    seenIds.add(slotId);
+
+    const { avgConsultationMinutes: calculatedAvg } = calculateSlotMetrics(sTime, eTime, maxPatients);
+    const customAvg = Number(s.avgConsultationMinutes);
+    const avgConsultationMinutes =
+      !isNaN(customAvg) && customAvg > 0 ? Math.round(customAvg * 10) / 10 : calculatedAvg;
+
+    formatted.push({
+      id: slotId,
+      name: s.name ? String(s.name).trim() : `Slot ${i + 1} (${format12Hour(sTime)} – ${format12Hour(eTime)})`,
+      startTime: sTime,
+      endTime: eTime,
+      maxPatients,
+      avgConsultationMinutes,
+    });
+  }
+
+  // Check for overlapping shifts
+  const sorted = [...formatted].sort((a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime));
+  for (let i = 1; i < sorted.length; i++) {
+    const prevEnd = timeToMinutes(sorted[i - 1].endTime);
+    const currStart = timeToMinutes(sorted[i].startTime);
+    if (currStart < prevEnd) {
+      return {
+        valid: false,
+        error: `Overlapping checking slots detected: '${sorted[i - 1].name}' ends at ${sorted[i - 1].endTime}, which overlaps with '${sorted[i].name}' starting at ${sorted[i].startTime}.`,
+      };
+    }
+  }
+
+  return { valid: true, formatted };
+};
+

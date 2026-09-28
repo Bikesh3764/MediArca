@@ -3,6 +3,7 @@ import { Response } from 'express';
 import prisma from '../config/database';
 import { AuthRequest } from '../middleware/authMiddleware';
 import { uploadToR2, deleteFromR2, isR2Configured } from '../config/r2';
+import { validateMagicBytes } from '../middleware/uploadMiddleware';
 
 export const uploadRecord = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -17,7 +18,8 @@ export const uploadRecord = async (req: AuthRequest, res: Response): Promise<voi
     if (category && String(category).trim().toLowerCase() === 'prescription') {
       res.status(400).json({
         success: false,
-        message: 'Prescription uploads are not permitted in the patient medical vault. Digital prescriptions are issued directly by doctors during consultation.',
+        message:
+          'Prescription uploads are not permitted in the patient medical vault. Digital prescriptions are issued directly by doctors during consultation.',
       });
       return;
     }
@@ -31,6 +33,16 @@ export const uploadRecord = async (req: AuthRequest, res: Response): Promise<voi
       res.status(400).json({
         success: false,
         message: 'File size exceeds 1 MB limit. Please compress or optimize the file before uploading.',
+      });
+      return;
+    }
+
+    // Verify file magic bytes / signature (Finding #27)
+    if (file.buffer && !validateMagicBytes(file.buffer, file.mimetype)) {
+      res.status(400).json({
+        success: false,
+        message:
+          'Invalid file signature. The uploaded file content does not match its declared type or extension.',
       });
       return;
     }
@@ -76,7 +88,11 @@ export const uploadRecord = async (req: AuthRequest, res: Response): Promise<voi
     });
   } catch (error: any) {
     console.error('uploadRecord error:', error);
-    res.status(500).json({ success: false, message: 'Failed to upload document', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to upload document',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
   }
 };
 
@@ -121,7 +137,8 @@ export const getPatientRecords = async (req: AuthRequest, res: Response): Promis
       if (!hasRelationship) {
         res.status(403).json({
           success: false,
-          message: 'Access denied: You are only authorized to view medical records for patients with an active appointment or consultation history.',
+          message:
+            'Access denied: You are only authorized to view medical records for patients with an active appointment or consultation history.',
         });
         return;
       }
@@ -145,7 +162,97 @@ export const getPatientRecords = async (req: AuthRequest, res: Response): Promis
     res.json({ success: true, count: records.length, data: records });
   } catch (error: any) {
     console.error('getPatientRecords error:', error);
-    res.status(500).json({ success: false, message: 'Failed to retrieve records', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve records',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
+  }
+};
+
+/**
+ * Authenticated and authorized file streaming endpoint for medical records (Finding #22)
+ * Ensures only the owning patient, an authorized treating doctor, or an admin can access clinical files.
+ */
+export const getRecordFile = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Authentication required' });
+      return;
+    }
+
+    const id = String(req.params.id);
+    const record = await prisma.medicalRecord.findUnique({
+      where: { id },
+      include: {
+        patient: {
+          include: { user: true },
+        },
+      },
+    });
+
+    if (!record) {
+      res.status(404).json({ success: false, message: 'Medical record not found' });
+      return;
+    }
+
+    const isOwner = req.user.role === 'PATIENT' && record.patient.userId === req.user.id;
+    const isAdmin = req.user.role === 'ADMIN';
+    let isAuthorizedDoctor = false;
+
+    if (req.user.role === 'DOCTOR') {
+      const doctor = await prisma.doctorProfile.findUnique({
+        where: { userId: req.user.id },
+      });
+      if (doctor) {
+        const hasRelationship = await prisma.appointment.findFirst({
+          where: {
+            doctorId: doctor.id,
+            patientId: record.patientId,
+          },
+        });
+        isAuthorizedDoctor = Boolean(hasRelationship);
+      }
+    }
+
+    if (!isOwner && !isAdmin && !isAuthorizedDoctor) {
+      res.status(403).json({
+        success: false,
+        message: 'Access denied: You are not authorized to view or download this medical record.',
+      });
+      return;
+    }
+
+    // Serve data URI content directly
+    if (record.fileUrl.startsWith('data:')) {
+      const matches = record.fileUrl.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+      if (matches && matches.length === 3) {
+        const contentType = matches[1];
+        const buffer = Buffer.from(matches[2], 'base64');
+        res.setHeader('Content-Type', contentType);
+        res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(record.title)}"`);
+        res.send(buffer);
+        return;
+      }
+    }
+
+    // Remote R2 / HTTP URL
+    if (record.fileUrl.startsWith('http')) {
+      res.redirect(record.fileUrl);
+      return;
+    }
+
+    // Local file path
+    const cleanPath = record.fileUrl.replace(/^\/+/, '');
+    const fullPath = path.resolve(__dirname, '../../', cleanPath);
+    res.sendFile(fullPath);
+  } catch (error: any) {
+    console.error('getRecordFile error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to access medical record file',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
   }
 };
 
@@ -177,6 +284,10 @@ export const deleteRecord = async (req: AuthRequest, res: Response): Promise<voi
     res.json({ success: true, message: 'Record deleted successfully' });
   } catch (error: any) {
     console.error('deleteRecord error:', error);
-    res.status(500).json({ success: false, message: 'Failed to delete record', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete record',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
   }
 };

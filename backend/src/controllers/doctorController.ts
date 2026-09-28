@@ -1,7 +1,13 @@
 import { Request, Response } from 'express';
 import prisma from '../config/database';
 import { AuthRequest } from '../middleware/authMiddleware';
-import { parseDoctorSlots, calculateSlotMetrics, format12Hour } from '../utils/scheduleUtils';
+import {
+  parseDoctorSlots,
+  calculateSlotMetrics,
+  format12Hour,
+  maskPatientName,
+  validateDoctorSlots,
+} from '../utils/scheduleUtils';
 
 export const formatDoctorClinics = (doc: any) => {
   return (doc.clinics || []).map((cd: any) => {
@@ -64,9 +70,7 @@ export const getDoctors = async (req: Request, res: Response): Promise<void> => 
           select: {
             id: true,
             fullName: true,
-            email: true,
             avatarUrl: true,
-            phone: true,
           },
         },
         clinics: {
@@ -90,12 +94,23 @@ export const getDoctors = async (req: Request, res: Response): Promise<void> => 
       ...doc,
       slots: parseDoctorSlots(doc),
       clinics: formatDoctorClinics(doc),
+      reviews: (doc.reviews || []).map((r) => ({
+        ...r,
+        patientUser: {
+          fullName: maskPatientName(r.patientUser?.fullName),
+          avatarUrl: null,
+        },
+      })),
     }));
 
     res.json({ success: true, count: enrichedDoctors.length, data: enrichedDoctors });
   } catch (error: any) {
     console.error('getDoctors error:', error);
-    res.status(500).json({ success: false, message: 'Failed to fetch doctors', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch doctors',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
   }
 };
 
@@ -110,9 +125,7 @@ export const getDoctorById = async (req: Request, res: Response): Promise<void> 
           select: {
             id: true,
             fullName: true,
-            email: true,
             avatarUrl: true,
-            phone: true,
           },
         },
         clinics: {
@@ -140,17 +153,37 @@ export const getDoctorById = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
+    const isOwner = (req as any).user?.role === 'DOCTOR' && doctor.userId === (req as any).user?.id;
+    const isAdmin = (req as any).user?.role === 'ADMIN';
+    if (!isOwner && !isAdmin) {
+      if (!doctor.isVerified || doctor.verificationStatus !== 'VERIFIED') {
+        res.status(403).json({ success: false, message: 'Doctor profile is pending verification and is not publicly accessible' });
+        return;
+      }
+    }
+
     res.json({
       success: true,
       data: {
         ...doctor,
         slots: parseDoctorSlots(doctor),
         clinics: formatDoctorClinics(doctor),
+        reviews: (doctor.reviews || []).map((r) => ({
+          ...r,
+          patientUser: {
+            fullName: maskPatientName(r.patientUser?.fullName),
+            avatarUrl: null,
+          },
+        })),
       },
     });
   } catch (error: any) {
     console.error('getDoctorById error:', error);
-    res.status(500).json({ success: false, message: 'Failed to fetch doctor details', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch doctor details',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
   }
 };
 
@@ -182,6 +215,14 @@ export const updateSchedule = async (req: AuthRequest, res: Response): Promise<v
       return;
     }
 
+    if (consultationFee !== undefined) {
+      const numFee = Number(consultationFee);
+      if (isNaN(numFee) || numFee < 0) {
+        res.status(400).json({ success: false, message: 'Consultation fee must be a non-negative number.' });
+        return;
+      }
+    }
+
     let formattedSlots: any[] = [];
     let derivedStartTime = checkingStartTime;
     let derivedEndTime = checkingEndTime;
@@ -189,29 +230,25 @@ export const updateSchedule = async (req: AuthRequest, res: Response): Promise<v
     let derivedAvgMinutes = avgConsultationMinutes;
 
     if (slots) {
-      const parsed = typeof slots === 'string' ? JSON.parse(slots) : slots;
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        formattedSlots = parsed.map((s: any, idx: number) => {
-          const sTime = s.startTime || '09:00';
-          const eTime = s.endTime || '11:00';
-          const maxP = Math.max(1, Number(s.maxPatients) || 50);
-          const { avgConsultationMinutes: calculatedAvg } = calculateSlotMetrics(sTime, eTime, maxP);
-          return {
-            id: s.id || `slot_${idx + 1}`,
-            name: s.name || `Slot ${idx + 1} (${format12Hour(sTime)} – ${format12Hour(eTime)})`,
-            startTime: sTime,
-            endTime: eTime,
-            maxPatients: maxP,
-            avgConsultationMinutes: Number(s.avgConsultationMinutes) > 0 ? Math.round(Number(s.avgConsultationMinutes) * 10) / 10 : calculatedAvg,
-          };
-        });
-
-        // Set aggregate fields
-        derivedStartTime = formattedSlots[0].startTime;
-        derivedEndTime = formattedSlots[formattedSlots.length - 1].endTime;
-        derivedMaxPatients = formattedSlots.reduce((acc, cur) => acc + cur.maxPatients, 0);
-        derivedAvgMinutes = formattedSlots[0].avgConsultationMinutes;
+      let parsed: any;
+      try {
+        parsed = typeof slots === 'string' ? JSON.parse(slots) : slots;
+      } catch {
+        res.status(400).json({ success: false, message: 'Invalid slots format: JSON parsing failed.' });
+        return;
       }
+
+      const validation = validateDoctorSlots(parsed);
+      if (!validation.valid) {
+        res.status(400).json({ success: false, message: validation.error });
+        return;
+      }
+
+      formattedSlots = validation.formatted!;
+      derivedStartTime = formattedSlots[0].startTime;
+      derivedEndTime = formattedSlots[formattedSlots.length - 1].endTime;
+      derivedMaxPatients = formattedSlots.reduce((acc, cur) => acc + cur.maxPatients, 0);
+      derivedAvgMinutes = formattedSlots[0].avgConsultationMinutes;
     }
 
     // If clinicId is provided, update the clinic-specific schedule on ClinicDoctor
@@ -296,7 +333,11 @@ export const updateSchedule = async (req: AuthRequest, res: Response): Promise<v
     });
   } catch (error: any) {
     console.error('updateSchedule error:', error);
-    res.status(500).json({ success: false, message: 'Failed to update schedule', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update schedule',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
   }
 };
 

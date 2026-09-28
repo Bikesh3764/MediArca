@@ -296,11 +296,46 @@ ensureSchema().catch((e) => console.warn('Schema sync notice:', e?.message));
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+const isProduction = process.env.NODE_ENV === 'production';
 
-// Security & CORS
+// Production Startup Guard: Fail closed if JWT secret is missing, weak, or fallback (Finding #16)
+const jwtSecret = process.env.JWT_SECRET;
+if (isProduction) {
+  if (!jwtSecret || jwtSecret === 'mediarca-fallback-jwt-secret' || jwtSecret.length < 32) {
+    console.error('FATAL: In production, JWT_SECRET must be explicitly set with a minimum of 32 characters and cannot use default fallback.');
+    process.exit(1);
+  }
+}
+
+// Trust proxy for accurate client IP behind Render / reverse proxies (Finding #34)
+app.set('trust proxy', 1);
+
+// Security & CORS (Finding #32)
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  'https://bikesh3764.github.io',
+  'https://mediarca.vercel.app',
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'http://localhost:5000',
+  'http://127.0.0.1:5173',
+].filter(Boolean) as string[];
+
 app.use(
   cors({
-    origin: '*',
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      if (
+        !isProduction ||
+        allowedOrigins.includes(origin) ||
+        origin.endsWith('.vercel.app') ||
+        origin.endsWith('.onrender.com') ||
+        origin.endsWith('.github.io')
+      ) {
+        return callback(null, true);
+      }
+      return callback(new Error('Blocked by CORS policy: Origin not allowed'));
+    },
     credentials: true,
   })
 );
@@ -308,8 +343,8 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static uploaded documents
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+// Serve static uploaded public avatars only; medical records are protected through /api/records/file/:id (Finding #22)
+app.use('/uploads/avatars', express.static(path.join(__dirname, '../uploads/avatars')));
 
 // Health Check (Supports Render /healthz and /api/health)
 // Touches PostgreSQL database so Supabase resets 7-day inactivity countdown
@@ -354,11 +389,15 @@ const authRateLimiter = (maxRequests = 40, windowSeconds = 60) => {
   };
 };
 
-// Mount Routes with Auth Rate Limiting
+// Mount Auth Rate Limiting on authentication & registration endpoints
 app.use(
   ['/api/auth/login', '/api/auth/register', '/api/auth/google', '/api/receptionists/apply', '/api/receptionist/apply'],
   authRateLimiter(40, 60)
 );
+
+// Rate Limiting for public directory & queue preview endpoints (Finding #33)
+const publicApiLimiter = authRateLimiter(120, 60);
+app.use(['/api/doctors', '/api/appointments/queue-preview', '/api/clinics'], publicApiLimiter);
 
 app.use('/api/auth', authRoutes);
 app.put(['/api/users/profile', '/api/user/profile'], authenticate, updateProfile);
@@ -373,7 +412,7 @@ app.use('/api/clinic', clinicRoutes);
 app.use('/api/receptionists', receptionistRoutes);
 app.use('/api/receptionist', receptionistRoutes);
 
-// Global Error Handler
+// Global Error Handler (Finding #31)
 app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   if (err.code === 'LIMIT_FILE_SIZE') {
     res.status(400).json({
@@ -385,7 +424,7 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   console.error('Unhandled Error:', err);
   res.status(err.status || 500).json({
     success: false,
-    message: err.message || 'Internal server error occurred',
+    message: isProduction ? 'Internal server error occurred' : (err.message || 'Internal server error occurred'),
   });
 });
 

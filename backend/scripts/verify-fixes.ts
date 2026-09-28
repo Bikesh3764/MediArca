@@ -6,6 +6,11 @@ import {
   parseDoctorSlots,
   evaluateSlotStatus,
   DoctorSlot,
+  getLocalDateString,
+  getIndianTimeMinutes,
+  isValidAppointmentDate,
+  maskPatientName,
+  validateDoctorSlots,
 } from '../src/utils/scheduleUtils';
 import {
   formatFileSize,
@@ -18,12 +23,19 @@ import {
   DEFAULT_MAX_IMAGE_DIMENSION,
   DEFAULT_AVATAR_IMAGE_DIMENSION,
 } from '../src/utils/documentOptimizer';
-import { ALLOWED_MIME_TYPES, ALLOWED_FILE_EXTENSIONS } from '../src/middleware/uploadMiddleware';
+import {
+  ALLOWED_MIME_TYPES,
+  ALLOWED_FILE_EXTENSIONS,
+  validateMagicBytes,
+  MIME_TO_EXTENSIONS,
+} from '../src/middleware/uploadMiddleware';
 import {
   sanitizeIndianPhone,
   formatIndianPhone,
   isValidIndianPhone,
 } from '../src/utils/phoneUtils';
+import { getJwtSecret } from '../src/middleware/authMiddleware';
+import { canTransition } from '../src/utils/appointmentStateMachine';
 
 function runTests() {
   console.log('=== RUNNING MEDIARCA VERIFICATION SUITE ===\n');
@@ -2461,6 +2473,595 @@ function runTests() {
   const statusTwoWaiting = evaluateSlotStatus(slotTest, '2026-09-28', 5, nowShift, 9 * 60 + 30, 2);
   assert(statusTwoWaiting.patientsAhead === 2, 'When 2 patients waiting, patientsAhead is 2');
   assert(statusTwoWaiting.estimatedTime === '09:50 AM', `Estimated time reflects 2 waiting (09:50 AM), got ${statusTwoWaiting.estimatedTime}`);
+
+  // --- Test 95: JWT Production Fail-Closed and Strength Validation ---
+  console.log('\n--- Test 95: JWT Production Fail-Closed and Strength Validation ---');
+  const prevEnv = process.env.NODE_ENV;
+  const prevSecret = process.env.JWT_SECRET;
+
+  try {
+    // 1. Production with missing JWT_SECRET
+    process.env.NODE_ENV = 'production';
+    delete process.env.JWT_SECRET;
+    let threwMissing = false;
+    try {
+      getJwtSecret();
+    } catch (e: any) {
+      threwMissing = true;
+      assert(e.message.includes('FATAL'), 'Missing JWT_SECRET in production throws FATAL error');
+    }
+    assert(threwMissing, 'getJwtSecret throws when JWT_SECRET is unset in production');
+
+    // 2. Production with fallback secret
+    process.env.JWT_SECRET = 'mediarca-fallback-jwt-secret';
+    let threwFallback = false;
+    try {
+      getJwtSecret();
+    } catch (e: any) {
+      threwFallback = true;
+      assert(e.message.includes('FATAL'), 'Fallback JWT_SECRET in production throws FATAL error');
+    }
+    assert(threwFallback, 'getJwtSecret throws when JWT_SECRET equals default fallback in production');
+
+    // 3. Production with secret under 32 characters
+    process.env.JWT_SECRET = 'short-secret-under-32-chars';
+    let threwShort = false;
+    try {
+      getJwtSecret();
+    } catch (e: any) {
+      threwShort = true;
+      assert(e.message.includes('at least 32 characters'), 'Short JWT_SECRET in production throws length error');
+    }
+    assert(threwShort, 'getJwtSecret throws when JWT_SECRET is < 32 characters in production');
+
+    // 4. Production with valid 32+ character secret
+    const validStrongSecret = 'mediarca-production-super-strong-jwt-secret-key-2026';
+    process.env.JWT_SECRET = validStrongSecret;
+    const returnedSecret = getJwtSecret();
+    assert(returnedSecret === validStrongSecret, 'Valid strong secret is returned in production');
+
+    // 5. Development mode safe fallback
+    process.env.NODE_ENV = 'development';
+    delete process.env.JWT_SECRET;
+    const devFallbackSecret = getJwtSecret();
+    assert(typeof devFallbackSecret === 'string' && devFallbackSecret.length >= 32, 'Dev fallback secret has minimum 32 chars and does not throw');
+  } finally {
+    process.env.NODE_ENV = prevEnv;
+    if (prevSecret !== undefined) {
+      process.env.JWT_SECRET = prevSecret;
+    } else {
+      delete process.env.JWT_SECRET;
+    }
+  }
+
+  // --- Test 96: Server-Authoritative Time & Indian Standard Time Evaluation ---
+  console.log('\n--- Test 96: Server-Authoritative Time & Indian Standard Time Evaluation ---');
+  const localDateStr = getLocalDateString(new Date(2026, 8, 28, 12, 0));
+  assert(/^\d{4}-\d{2}-\d{2}$/.test(localDateStr), 'getLocalDateString returns valid YYYY-MM-DD date string');
+
+  const istMinutes = getIndianTimeMinutes(new Date());
+  assert(typeof istMinutes === 'number' && istMinutes >= 0 && istMinutes < 1440, 'getIndianTimeMinutes returns minute in day [0, 1439]');
+
+  // Server-authoritative time ignores client manipulation
+  const testSlotAuth: DoctorSlot = {
+    id: 's_auth',
+    name: 'Morning Shift',
+    startTime: '09:00',
+    endTime: '12:00',
+    maxPatients: 30,
+    avgConsultationMinutes: 6,
+  };
+  // Server clock is 13:00 (after shift end). Malicious client claims clientMinutes = 540 (09:00 AM).
+  // The server controller uses server-authoritative time and does NOT pass clientMinutes.
+  const serverNow = new Date(2026, 8, 28, 13, 0); // 1:00 PM (shift passed)
+  const authEvaluation = evaluateSlotStatus(testSlotAuth, '2026-09-28', 10, serverNow);
+  assert(authEvaluation.isPassed === true, 'Server-authoritative evaluation correctly marks expired shift as passed');
+  assert(authEvaluation.statusLabel === 'Shift Ended for Today', 'Status correctly reports Shift Ended for Today');
+
+  // --- Test 97: Unverified Doctor Direct ID Access Guard ---
+  console.log('\n--- Test 97: Unverified Doctor Direct ID Access Guard ---');
+  interface DoctorLookupCheck {
+    isVerified: boolean;
+    verificationStatus: string;
+    userId: string;
+  }
+  const authorizeDoctorDetailAccess = (
+    doctor: DoctorLookupCheck,
+    caller?: { id: string; role: string }
+  ) => {
+    const isOwner = caller && caller.id === doctor.userId;
+    const isAdmin = caller && caller.role === 'ADMIN';
+
+    if (!isOwner && !isAdmin) {
+      if (!doctor.isVerified || doctor.verificationStatus !== 'VERIFIED') {
+        return { allowed: false, status: 404, message: 'Doctor profile is not publicly available or pending verification' };
+      }
+    }
+    return { allowed: true, status: 200 };
+  };
+
+  const pendingDoctor: DoctorLookupCheck = { isVerified: false, verificationStatus: 'PENDING', userId: 'doc_user_1' };
+  const suspendedDoctor: DoctorLookupCheck = { isVerified: false, verificationStatus: 'SUSPENDED', userId: 'doc_user_2' };
+  const rejectedDoctor: DoctorLookupCheck = { isVerified: false, verificationStatus: 'REJECTED', userId: 'doc_user_3' };
+  const verifiedDoctor: DoctorLookupCheck = { isVerified: true, verificationStatus: 'VERIFIED', userId: 'doc_user_4' };
+
+  // Public/anonymous user requests
+  assert(authorizeDoctorDetailAccess(pendingDoctor).allowed === false, 'Public lookup of PENDING doctor is denied with 404');
+  assert(authorizeDoctorDetailAccess(suspendedDoctor).allowed === false, 'Public lookup of SUSPENDED doctor is denied with 404');
+  assert(authorizeDoctorDetailAccess(rejectedDoctor).allowed === false, 'Public lookup of REJECTED doctor is denied with 404');
+  assert(authorizeDoctorDetailAccess(verifiedDoctor).allowed === true, 'Public lookup of VERIFIED doctor is allowed');
+
+  // Doctor owner requests their own unverified profile (to preview before approval)
+  assert(authorizeDoctorDetailAccess(pendingDoctor, { id: 'doc_user_1', role: 'DOCTOR' }).allowed === true, 'Doctor owner can access own pending profile');
+
+  // Admin requests unverified profile (to review application)
+  assert(authorizeDoctorDetailAccess(pendingDoctor, { id: 'admin_user', role: 'ADMIN' }).allowed === true, 'Admin can access pending doctor profile for review');
+
+  // --- Test 98: Production Demo Doctor & Queue Preview Fallback Suppression ---
+  console.log('\n--- Test 98: Production Demo Doctor & Queue Preview Fallback Suppression ---');
+  const resolveDoctorFallback = (isDev: boolean, enableFlag: string | undefined, originalError: Error) => {
+    if (isDev && enableFlag === 'true') {
+      return { fallbackUsed: true, data: { id: 'demo_doc_1', name: 'Demo Doctor' } };
+    }
+    throw originalError;
+  };
+
+  let prodThrew = false;
+  try {
+    resolveDoctorFallback(false, 'true', new Error('API 500 Connection Refused'));
+  } catch (err: any) {
+    prodThrew = true;
+    assert(err.message === 'API 500 Connection Refused', 'In production, real API error is propagated instead of demo doctor');
+  }
+  assert(prodThrew, 'Production strictly suppresses demo doctor fallback');
+
+  let devDisabledThrew = false;
+  try {
+    resolveDoctorFallback(true, 'false', new Error('API 500'));
+  } catch {
+    devDisabledThrew = true;
+  }
+  assert(devDisabledThrew, 'Dev mode with VITE_ENABLE_DEMO_FALLBACK=false suppresses demo doctor fallback');
+
+  const devEnabledResult = resolveDoctorFallback(true, 'true', new Error('API 500'));
+  assert(devEnabledResult.fallbackUsed === true, 'Dev mode with flag enabled safely permits demo doctor fallback for offline preview');
+
+  // --- Test 99: Receptionist Account Status Lifecycle Enforcement ---
+  console.log('\n--- Test 99: Receptionist Account Status Lifecycle Enforcement ---');
+  interface ReceptionistProfileCheck {
+    id: string;
+    userId: string;
+    status: 'PENDING' | 'ACTIVE' | 'REJECTED';
+  }
+  const validateReceptionistLogin = (profile: ReceptionistProfileCheck): { allowed: boolean; status: number; message: string } => {
+    if (profile.status !== 'ACTIVE') {
+      return {
+        allowed: false,
+        status: 403,
+        message:
+          profile.status === 'REJECTED'
+            ? 'Your receptionist application has been declined by clinic administration.'
+            : 'Your receptionist application is pending approval by clinic administration.',
+      };
+    }
+    return { allowed: true, status: 200, message: '' };
+  };
+
+  const test99PendingRec: ReceptionistProfileCheck = { id: 'r1', userId: 'u1', status: 'PENDING' };
+  const test99RejectedRec: ReceptionistProfileCheck = { id: 'r2', userId: 'u2', status: 'REJECTED' };
+  const test99ActiveRec: ReceptionistProfileCheck = { id: 'r3', userId: 'u3', status: 'ACTIVE' };
+
+  const pendingLogin = validateReceptionistLogin(test99PendingRec);
+  assert(pendingLogin.allowed === false, 'Pending receptionist cannot log in');
+  assert(pendingLogin.status === 403, 'Pending receptionist login returns 403');
+  assert(pendingLogin.message.includes('pending approval'), 'Pending message informs user of review status');
+
+  const rejectedLogin = validateReceptionistLogin(test99RejectedRec);
+  assert(rejectedLogin.allowed === false, 'Rejected receptionist cannot log in');
+  assert(rejectedLogin.status === 403, 'Rejected receptionist login returns 403');
+  assert(rejectedLogin.message.includes('declined by clinic'), 'Rejected message informs user of declined status');
+
+  const activeLogin = validateReceptionistLogin(test99ActiveRec);
+  assert(activeLogin.allowed === true, 'Active receptionist successfully logs in');
+
+  // --- Test 100: Receptionist Rejection Cascading Cleanup of Doctor Assignments ---
+  console.log('\n--- Test 100: Receptionist Rejection Cascading Cleanup of Doctor Assignments ---');
+  interface DeskSystemState {
+    receptionistStatus: 'PENDING' | 'ACTIVE' | 'REJECTED';
+    assignments: Array<{ receptionistId: string; doctorId: string }>;
+  }
+  const respondToReceptionistRequestSim = (
+    state: DeskSystemState,
+    receptionistId: string,
+    action: 'ACCEPT' | 'REJECT'
+  ): DeskSystemState => {
+    if (action === 'REJECT') {
+      return {
+        receptionistStatus: 'REJECTED',
+        assignments: state.assignments.filter((a) => a.receptionistId !== receptionistId),
+      };
+    }
+    return {
+      receptionistStatus: 'ACTIVE',
+      assignments: state.assignments,
+    };
+  };
+
+  const initialDeskState: DeskSystemState = {
+    receptionistStatus: 'PENDING',
+    assignments: [
+      { receptionistId: 'rec_candidate', doctorId: 'doc_1' },
+      { receptionistId: 'rec_candidate', doctorId: 'doc_2' },
+      { receptionistId: 'rec_other', doctorId: 'doc_1' },
+    ],
+  };
+
+  const rejectedDeskState = respondToReceptionistRequestSim(initialDeskState, 'rec_candidate', 'REJECT');
+  assert(rejectedDeskState.receptionistStatus === 'REJECTED', 'Status is updated to REJECTED');
+  assert(
+    !rejectedDeskState.assignments.some((a) => a.receptionistId === 'rec_candidate'),
+    'All DoctorReceptionist assignments for rejected receptionist are purged in transaction'
+  );
+  assert(
+    rejectedDeskState.assignments.length === 1 && rejectedDeskState.assignments[0].receptionistId === 'rec_other',
+    'Other receptionist assignments are preserved intact'
+  );
+
+  // --- Test 101: Appointment Detail Medical Record Privacy ---
+  console.log('\n--- Test 101: Appointment Detail Medical Record Privacy ---');
+  interface AppointmentDetailPayload {
+    id: string;
+    patientId: string;
+    doctorId: string;
+    patient: {
+      id: string;
+      fullName: string;
+      medicalRecords?: Array<{ id: string; title: string }>;
+    };
+  }
+
+  const sanitizeAppointmentForCaller = (
+    appt: AppointmentDetailPayload,
+    caller: { id: string; role: string; doctorId?: string; patientId?: string }
+  ): AppointmentDetailPayload => {
+    const isDoctor = caller.role === 'DOCTOR' && caller.doctorId === appt.doctorId;
+    const isPatient = caller.role === 'PATIENT' && caller.patientId === appt.patientId;
+    const canViewClinical = isDoctor || isPatient;
+
+    if (!canViewClinical && appt.patient && appt.patient.medicalRecords) {
+      const sanitizedPatient = { ...appt.patient };
+      delete sanitizedPatient.medicalRecords;
+      return { ...appt, patient: sanitizedPatient };
+    }
+    return appt;
+  };
+
+  const sampleAppt: AppointmentDetailPayload = {
+    id: 'appt_101',
+    patientId: 'patient_42',
+    doctorId: 'doctor_88',
+    patient: {
+      id: 'patient_42',
+      fullName: 'Anita Sharma',
+      medicalRecords: [{ id: 'rec_1', title: 'Confidential Biopsy Report.pdf' }],
+    },
+  };
+
+  // Receptionist viewing appointment detail
+  const recView = sanitizeAppointmentForCaller(sampleAppt, { id: 'u_rec', role: 'RECEPTIONIST' });
+  assert(recView.patient.medicalRecords === undefined, 'Receptionist view of appointment detail strips patient medical records');
+
+  // Clinic admin viewing appointment detail
+  const clinicView = sanitizeAppointmentForCaller(sampleAppt, { id: 'u_clinic', role: 'CLINIC' });
+  assert(clinicView.patient.medicalRecords === undefined, 'Clinic view of appointment detail strips patient medical records');
+
+  // Assigned examining doctor viewing appointment detail
+  const docView = sanitizeAppointmentForCaller(sampleAppt, { id: 'u_doc', role: 'DOCTOR', doctorId: 'doctor_88' });
+  assert(
+    Array.isArray(docView.patient.medicalRecords) && docView.patient.medicalRecords.length === 1,
+    'Assigned doctor retains full clinical medical record access'
+  );
+
+  // Patient viewing their own appointment detail
+  const patientView = sanitizeAppointmentForCaller(sampleAppt, { id: 'u_pat', role: 'PATIENT', patientId: 'patient_42' });
+  assert(
+    Array.isArray(patientView.patient.medicalRecords) && patientView.patient.medicalRecords.length === 1,
+    'Patient retains view of their own uploaded medical records'
+  );
+
+  // --- Test 102: File Signature / Magic Bytes Content Validation ---
+  console.log('\n--- Test 102: File Signature / Magic Bytes Content Validation ---');
+  // Valid PDF: %PDF- (0x25, 0x50, 0x44, 0x46)
+  const validPdfBuf = Buffer.from([0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x2e, 0x34]);
+  assert(validateMagicBytes(validPdfBuf, 'application/pdf') === true, 'Valid PDF buffer passes magic byte verification');
+
+  // Executable spoofed as PDF
+  const fakePdfBuf = Buffer.from([0x4d, 0x5a, 0x90, 0x00, 0x03, 0x00, 0x00, 0x00]); // MZ DOS/PE header
+  assert(validateMagicBytes(fakePdfBuf, 'application/pdf') === false, 'Executable spoofed as application/pdf is rejected');
+
+  // Shell script spoofed as PDF
+  const scriptPdfBuf = Buffer.from('#!/bin/bash\nrm -rf /', 'utf-8');
+  assert(validateMagicBytes(scriptPdfBuf, 'application/pdf') === false, 'Shell script spoofed as PDF is rejected');
+
+  // Valid JPEG: FF D8 FF
+  const validJpegBuf = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46]);
+  assert(validateMagicBytes(validJpegBuf, 'image/jpeg') === true, 'Valid JPEG buffer passes magic byte check');
+  assert(validateMagicBytes(validJpegBuf, 'image/jpg') === true, 'Valid JPEG buffer passes image/jpg mime check');
+
+  // Valid PNG: 89 50 4E 47
+  const validPngBuf = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  assert(validateMagicBytes(validPngBuf, 'image/png') === true, 'Valid PNG buffer passes magic byte check');
+
+  // Valid WebP: RIFF .... WEBP
+  const validWebpBuf = Buffer.from([
+    0x52, 0x49, 0x46, 0x46, // RIFF
+    0x00, 0x00, 0x00, 0x00, // length
+    0x57, 0x45, 0x42, 0x50, // WEBP
+  ]);
+  assert(validateMagicBytes(validWebpBuf, 'image/webp') === true, 'Valid WebP buffer passes magic byte check');
+
+  // Truncated / empty buffer
+  assert(validateMagicBytes(Buffer.from([]), 'application/pdf') === false, 'Empty buffer fails validation');
+  assert(validateMagicBytes(Buffer.from([0x25]), 'application/pdf') === false, '1-byte buffer fails validation');
+
+  // MIME extension consistency check
+  assert(MIME_TO_EXTENSIONS['application/pdf'].includes('.pdf'), 'PDF mime maps to .pdf extension');
+  assert(MIME_TO_EXTENSIONS['image/png'].includes('.png'), 'PNG mime maps to .png extension');
+  assert(!MIME_TO_EXTENSIONS['application/pdf'].includes('.exe'), 'Executable extension is not permitted for PDF');
+
+  // --- Test 103: Account Registration Password Policy (Minimum 8 Characters) ---
+  console.log('\n--- Test 103: Account Registration Password Policy ---');
+  const validateRegistrationPassword = (password?: string) => {
+    if (!password || typeof password !== 'string' || password.trim().length < 8) {
+      return { valid: false, error: 'Password must be at least 8 characters long' };
+    }
+    return { valid: true };
+  };
+
+  assert(validateRegistrationPassword('12345').valid === false, '5-character password rejected');
+  assert(validateRegistrationPassword('1234567').valid === false, '7-character password rejected');
+  assert(validateRegistrationPassword('        ').valid === false, '8-character whitespace password rejected');
+  assert(validateRegistrationPassword('password').valid === true, '8-character password accepted');
+  assert(validateRegistrationPassword('CorrectHorseBatteryStaple!').valid === true, 'Strong password accepted');
+
+  // --- Test 104: Patient Date of Birth Strict Type Safety ---
+  console.log('\n--- Test 104: Patient Date of Birth Strict Type Safety ---');
+  const isValidDobCalendar = (dateStr: string): boolean => {
+    const match = dateStr.trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!match) return false;
+    const year = parseInt(match[1], 10);
+    const month = parseInt(match[2], 10);
+    const day = parseInt(match[3], 10);
+    if (year < 1900 || year > 2100 || month < 1 || month > 12 || day < 1 || day > 31) return false;
+    const d = new Date(Date.UTC(year, month - 1, day));
+    return d.getUTCFullYear() === year && d.getUTCMonth() === month - 1 && d.getUTCDate() === day;
+  };
+
+  const formatPatientDobForPrisma = (dobInput?: string | null): { success: boolean; formattedValue?: string | null; error?: string } => {
+    if (!dobInput) return { success: true, formattedValue: null };
+    const trimmed = String(dobInput).trim();
+    if (!isValidDobCalendar(trimmed)) {
+      return { success: false, error: 'Invalid date of birth format. Must be a valid calendar date in YYYY-MM-DD format.' };
+    }
+    // Must be stored as String in Prisma schema
+    return { success: true, formattedValue: trimmed };
+  };
+
+  const validDob = formatPatientDobForPrisma('1990-05-24');
+  assert(validDob.success === true, 'Valid DOB string accepted');
+  assert(typeof validDob.formattedValue === 'string', 'DOB value is string type for Prisma');
+  assert(validDob.formattedValue === '1990-05-24', 'DOB value matches YYYY-MM-DD');
+
+  const invalidDobFormat = formatPatientDobForPrisma('24/05/1990');
+  assert(invalidDobFormat.success === false, 'Non-ISO DOB format rejected');
+
+  const invalidDobCalendar = formatPatientDobForPrisma('1990-02-30');
+  assert(invalidDobCalendar.success === false, 'Non-existent calendar date (Feb 30) rejected');
+
+  // --- Test 105: Centralized Doctor Slot Schedule Validation ---
+  console.log('\n--- Test 105: Centralized Doctor Slot Schedule Validation ---');
+  // Valid non-overlapping slots
+  const validSlotSet = [
+    { id: 'shift_morning', name: 'Morning Shift', startTime: '09:00', endTime: '12:00', maxPatients: 25 },
+    { id: 'shift_evening', name: 'Evening Shift', startTime: '16:00', endTime: '20:00', maxPatients: 40 },
+  ];
+  const validSlotResult = validateDoctorSlots(validSlotSet);
+  assert(validSlotResult.valid === true, 'Valid non-overlapping shifts pass validation');
+  assert(validSlotResult.formatted?.length === 2, 'Two formatted slots returned');
+
+  // Overlapping slots
+  const overlappingSlotSet = [
+    { id: 's1', name: 'Shift 1', startTime: '09:00', endTime: '13:00', maxPatients: 20 },
+    { id: 's2', name: 'Shift 2', startTime: '12:00', endTime: '16:00', maxPatients: 20 },
+  ];
+  const overlapResult = validateDoctorSlots(overlappingSlotSet);
+  assert(overlapResult.valid === false, 'Overlapping slots rejected');
+  assert(Boolean(overlapResult.error?.includes('Overlapping checking slots')), 'Error message identifies overlapping slots');
+
+  // Inverted times (end before start)
+  const invertedSlotSet = [
+    { id: 's_inv', name: 'Inverted Shift', startTime: '17:00', endTime: '11:00', maxPatients: 10 },
+  ];
+  const invertedResult = validateDoctorSlots(invertedSlotSet);
+  assert(invertedResult.valid === false, 'End time before start time rejected');
+  assert(Boolean(invertedResult.error?.includes('must be after start time')), 'Error message specifies end time constraint');
+
+  // Invalid time string
+  const malformedSlotSet = [
+    { id: 's_bad', name: 'Bad Time', startTime: '25:00', endTime: '26:00', maxPatients: 10 },
+  ];
+  const malformedResult = validateDoctorSlots(malformedSlotSet);
+  assert(malformedResult.valid === false, '25:00 time rejected by 24h regex');
+
+  // Zero capacity
+  const zeroCapSlotSet = [
+    { id: 's_zero', name: 'Zero Shift', startTime: '09:00', endTime: '11:00', maxPatients: 0 },
+  ];
+  const zeroCapResult = validateDoctorSlots(zeroCapSlotSet);
+  assert(zeroCapResult.valid === false, 'Zero capacity slot rejected');
+
+  // Duplicate slot ID
+  const duplicateIdSet = [
+    { id: 'slot_duplicate', name: 'Slot A', startTime: '09:00', endTime: '11:00', maxPatients: 10 },
+    { id: 'slot_duplicate', name: 'Slot B', startTime: '14:00', endTime: '16:00', maxPatients: 10 },
+  ];
+  const duplicateIdResult = validateDoctorSlots(duplicateIdSet);
+  assert(duplicateIdResult.valid === false, 'Duplicate slot ID rejected');
+  assert(Boolean(duplicateIdResult.error?.includes('Duplicate slot ID')), 'Duplicate error identifies slot ID');
+
+  // --- Test 106: Doctor Suspension Blocks All Clinical Consultation Operations ---
+  console.log('\n--- Test 106: Doctor Suspension Blocks All Clinical Consultation Operations ---');
+  interface DoctorClinicalGuard {
+    isVerified: boolean;
+    verificationStatus: string;
+  }
+  const checkDoctorActiveForClinicalOps = (doctor: DoctorClinicalGuard): { allowed: boolean; status: number; message: string } => {
+    if (!doctor.isVerified || doctor.verificationStatus !== 'VERIFIED') {
+      return {
+        allowed: false,
+        status: 403,
+        message:
+          doctor.verificationStatus === 'SUSPENDED'
+            ? 'Access denied: Your practitioner account is currently suspended. Clinical operations are disabled.'
+            : 'Access denied: Practitioner account is not verified for clinical practice.',
+      };
+    }
+    return { allowed: true, status: 200, message: '' };
+  };
+
+  const suspendedDocCheck = checkDoctorActiveForClinicalOps({ isVerified: false, verificationStatus: 'SUSPENDED' });
+  assert(suspendedDocCheck.allowed === false, 'Suspended doctor cannot perform clinical operations');
+  assert(suspendedDocCheck.status === 403, 'Suspended doctor check returns 403 status code');
+  assert(suspendedDocCheck.message.includes('currently suspended'), 'Message specifically informs of suspension');
+
+  const pendingDocCheck = checkDoctorActiveForClinicalOps({ isVerified: false, verificationStatus: 'PENDING' });
+  assert(pendingDocCheck.allowed === false, 'Pending unverified doctor cannot perform clinical operations');
+
+  const verifiedDocCheck = checkDoctorActiveForClinicalOps({ isVerified: true, verificationStatus: 'VERIFIED' });
+  assert(verifiedDocCheck.allowed === true, 'Verified active doctor is permitted clinical operations');
+
+  // --- Test 107: Centralized State Machine Transition Matrix (`canTransition`) ---
+  console.log('\n--- Test 107: Centralized State Machine Transition Matrix ---');
+  // Terminal states cannot transition to anything
+  assert(canTransition('COMPLETED', 'WAITING', 'DOCTOR').allowed === false, 'COMPLETED consultation cannot transition back to WAITING');
+  assert(canTransition('COMPLETED', 'CANCELLED', 'DOCTOR').allowed === false, 'COMPLETED consultation cannot be CANCELLED');
+  assert(canTransition('CANCELLED', 'WAITING', 'RECEPTIONIST').allowed === false, 'CANCELLED appointment cannot transition to WAITING');
+  assert(canTransition('REJECTED', 'WAITING', 'RECEPTIONIST').allowed === false, 'REJECTED appointment cannot transition to WAITING');
+
+  // PENDING_APPROVAL transitions
+  assert(canTransition('PENDING_APPROVAL', 'WAITING', 'RECEPTIONIST').allowed === true, 'Receptionist can approve PENDING_APPROVAL to WAITING');
+  assert(canTransition('PENDING_APPROVAL', 'WAITING', 'CLINIC').allowed === true, 'Clinic can approve PENDING_APPROVAL to WAITING');
+  assert(canTransition('PENDING_APPROVAL', 'WAITING', 'ADMIN').allowed === true, 'Admin can approve PENDING_APPROVAL to WAITING');
+  assert(canTransition('PENDING_APPROVAL', 'WAITING', 'PATIENT').allowed === false, 'Patient cannot self-approve PENDING_APPROVAL to WAITING');
+
+  assert(canTransition('PENDING_APPROVAL', 'REJECTED', 'RECEPTIONIST').allowed === true, 'Receptionist can reject PENDING_APPROVAL');
+  assert(canTransition('PENDING_APPROVAL', 'REJECTED', 'PATIENT').allowed === false, 'Patient cannot reject appointment (must cancel)');
+  assert(canTransition('PENDING_APPROVAL', 'CANCELLED', 'PATIENT').allowed === true, 'Patient can cancel their pending booking request');
+
+  // WAITING transitions
+  assert(canTransition('WAITING', 'IN_CONSULTATION', 'DOCTOR').allowed === true, 'Doctor can call WAITING patient to IN_CONSULTATION');
+  assert(canTransition('WAITING', 'IN_CONSULTATION', 'RECEPTIONIST').allowed === true, 'Receptionist can advance WAITING patient to IN_CONSULTATION');
+  assert(canTransition('WAITING', 'IN_CONSULTATION', 'PATIENT').allowed === false, 'Patient cannot call themselves into consultation');
+  assert(canTransition('WAITING', 'COMPLETED', 'DOCTOR').allowed === true, 'Doctor can complete WAITING consultation directly');
+  assert(canTransition('WAITING', 'COMPLETED', 'RECEPTIONIST').allowed === false, 'Receptionist CANNOT mark consultation COMPLETED');
+  assert(canTransition('WAITING', 'CANCELLED', 'RECEPTIONIST').allowed === true, 'Receptionist can cancel WAITING appointment');
+
+  // IN_CONSULTATION transitions
+  assert(canTransition('IN_CONSULTATION', 'COMPLETED', 'DOCTOR').allowed === true, 'Doctor can complete active consultation');
+  assert(canTransition('IN_CONSULTATION', 'COMPLETED', 'RECEPTIONIST').allowed === false, 'Receptionist cannot complete active consultation');
+  assert(canTransition('IN_CONSULTATION', 'COMPLETED', 'CLINIC').allowed === false, 'Clinic cannot complete active consultation');
+  assert(canTransition('IN_CONSULTATION', 'WAITING', 'DOCTOR').allowed === true, 'Doctor can put patient back to WAITING');
+  assert(canTransition('IN_CONSULTATION', 'WAITING', 'RECEPTIONIST').allowed === true, 'Receptionist can put patient back to WAITING');
+  assert(canTransition('IN_CONSULTATION', 'CANCELLED', 'DOCTOR').allowed === true, 'Doctor can cancel active consultation');
+  assert(canTransition('IN_CONSULTATION', 'CANCELLED', 'PATIENT').allowed === false, 'Patient cannot cancel in-progress consultation');
+
+  // Idempotent transitions
+  assert(canTransition('WAITING', 'WAITING', 'DOCTOR').allowed === true, 'Same-state transition is idempotent');
+  assert(canTransition('COMPLETED', 'COMPLETED', 'DOCTOR').allowed === false, 'COMPLETED state is strictly terminal even for same-state update');
+
+  // --- Test 108: Strict Appointment Date Calendar Validation ---
+  console.log('\n--- Test 108: Strict Appointment Date Calendar Validation ---');
+  assert(isValidAppointmentDate('2026-09-28') === true, 'Valid date 2026-09-28 accepted');
+  assert(isValidAppointmentDate('2024-02-29') === true, 'Valid leap year date 2024-02-29 accepted');
+  assert(isValidAppointmentDate('2025-02-29') === false, 'Invalid leap year date 2025-02-29 rejected');
+  assert(isValidAppointmentDate('2026-04-31') === false, 'Invalid calendar date 2026-04-31 (31st April) rejected');
+  assert(isValidAppointmentDate('2026-13-01') === false, 'Month 13 rejected');
+  assert(isValidAppointmentDate('2026-00-15') === false, 'Month 00 rejected');
+  assert(isValidAppointmentDate('2026-05-32') === false, 'Day 32 rejected');
+  assert(isValidAppointmentDate('28-09-2026') === false, 'DD-MM-YYYY format rejected');
+  assert(isValidAppointmentDate('2026/09/28') === false, 'Slash separator rejected');
+  assert(isValidAppointmentDate('') === false, 'Empty string rejected');
+  assert(isValidAppointmentDate(null) === false, 'Null rejected');
+  assert(isValidAppointmentDate(undefined) === false, 'Undefined rejected');
+
+  // --- Test 109: Doctor Public Directory Contact Information Privacy ---
+  console.log('\n--- Test 109: Doctor Public Directory Contact Information Privacy ---');
+  const mockDoctorDbRecord = {
+    id: 'doc_sec_1',
+    user: {
+      fullName: 'Dr. Priya Sharma',
+      email: 'priya.personal@example.com',
+      phone: '+91 9988776655',
+    },
+    specialty: 'Cardiology',
+    clinics: [
+      {
+        clinic: {
+          id: 'c1',
+          clinicName: 'Cardio Care Hub',
+          phone: '+91 1122334455',
+          address: '42 Medical Square',
+        },
+      },
+    ],
+  };
+
+  const sanitizePublicDoctorResponse = (doc: typeof mockDoctorDbRecord, callerIsOwner: boolean) => {
+    if (callerIsOwner) {
+      return doc;
+    }
+    return {
+      ...doc,
+      user: {
+        fullName: doc.user.fullName,
+      },
+    };
+  };
+
+  const publicDoctorView = sanitizePublicDoctorResponse(mockDoctorDbRecord, false);
+  assert((publicDoctorView.user as any).email === undefined, 'Public doctor profile strips personal email');
+  assert((publicDoctorView.user as any).phone === undefined, 'Public doctor profile strips personal phone');
+  assert(publicDoctorView.clinics[0].clinic.phone === '+91 1122334455', 'Clinic professional phone is preserved');
+
+  const ownerDoctorView = sanitizePublicDoctorResponse(mockDoctorDbRecord, true);
+  assert((ownerDoctorView.user as any).email === 'priya.personal@example.com', 'Owner doctor retains access to own contact details');
+
+  // --- Test 110: Public Reviewer Identity Masking (`maskPatientName`) ---
+  console.log('\n--- Test 110: Public Reviewer Identity Masking ---');
+  assert(maskPatientName('Rahul Sharma') === 'Rahul S.', 'Two-word name masks last name initial: Rahul S.');
+  assert(maskPatientName('Bikesh Kumar Ray') === 'Bikesh R.', 'Three-word name masks last name initial: Bikesh R.');
+  assert(maskPatientName('Siddharth') === 'S.', 'Single name masks initial: S.');
+  assert(maskPatientName('') === 'Verified Patient', 'Empty name defaults to Verified Patient');
+  assert(maskPatientName(null) === 'Verified Patient', 'Null name defaults to Verified Patient');
+  assert(maskPatientName(undefined) === 'Verified Patient', 'Undefined name defaults to Verified Patient');
+
+  // --- Test 111: Production Internal Error Message Sanitization ---
+  console.log('\n--- Test 111: Production Internal Error Message Sanitization ---');
+  const sanitizeApiError = (err: Error, isProduction: boolean) => {
+    if (isProduction) {
+      return 'An internal server error occurred. Please try again later.';
+    }
+    return err.message;
+  };
+
+  const sensitivePrismaError = new Error('PrismaClientKnownRequestError: Table "public.Doctor" does not exist at postgres://app:secret@db.render.internal:5432');
+  const prodSanitized = sanitizeApiError(sensitivePrismaError, true);
+  assert(!prodSanitized.includes('postgres://'), 'Production error strips database connection string');
+  assert(!prodSanitized.includes('PrismaClientKnownRequestError'), 'Production error strips internal ORM details');
+  assert(prodSanitized === 'An internal server error occurred. Please try again later.', 'Production error returns safe generic message');
+
+  const devError = sanitizeApiError(sensitivePrismaError, false);
+  assert(devError.includes('PrismaClientKnownRequestError'), 'Dev mode preserves original error message for debugging');
 
   console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);

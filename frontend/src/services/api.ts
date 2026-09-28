@@ -971,16 +971,19 @@ export const api = {
       const res = await fetch(`${API_BASE_URL}/doctors?${query.toString()}`);
       return await handleResponse(res);
     } catch (err) {
-      console.warn('Backend currently waking up, loading instant demo verified specialists', err);
-      let list = [...DEMO_DOCTORS];
-      if (params?.specialty && params.specialty !== 'All') {
-        list = list.filter(d => d.specialty.toLowerCase() === params.specialty?.toLowerCase());
+      if (import.meta.env.DEV && import.meta.env.VITE_ENABLE_DEMO_FALLBACK === 'true') {
+        console.warn('Dev mode: backend unavailable, using demo doctors fallback', err);
+        let list = [...DEMO_DOCTORS];
+        if (params?.specialty && params.specialty !== 'All') {
+          list = list.filter(d => d.specialty.toLowerCase() === params.specialty?.toLowerCase());
+        }
+        if (params?.search) {
+          const s = params.search.toLowerCase();
+          list = list.filter(d => d.user.fullName.toLowerCase().includes(s) || d.specialty.toLowerCase().includes(s));
+        }
+        return list;
       }
-      if (params?.search) {
-        const s = params.search.toLowerCase();
-        list = list.filter(d => d.user.fullName.toLowerCase().includes(s) || d.specialty.toLowerCase().includes(s));
-      }
-      return list;
+      throw err;
     }
   },
 
@@ -989,9 +992,12 @@ export const api = {
       const res = await fetch(`${API_BASE_URL}/doctors/${id}`);
       return await handleResponse(res);
     } catch (err) {
-      const found = DEMO_DOCTORS.find(d => d.id === id);
-      if (found) return found;
-      return DEMO_DOCTORS[0];
+      if (import.meta.env.DEV && import.meta.env.VITE_ENABLE_DEMO_FALLBACK === 'true') {
+        const found = DEMO_DOCTORS.find(d => d.id === id);
+        if (found) return found;
+        return DEMO_DOCTORS[0];
+      }
+      throw err;
     }
   },
 
@@ -1006,78 +1012,80 @@ export const api = {
 
   // Appointments & Queue Preview
   async getQueuePreview(doctorId: string, appointmentDate: string, slotId?: string, clinicId?: string): Promise<QueuePreview> {
-    const clientMinutes = new Date().getHours() * 60 + new Date().getMinutes();
     try {
       const slotQuery = slotId ? `&slotId=${encodeURIComponent(slotId)}` : '';
       const clinicQuery = clinicId ? `&clinicId=${encodeURIComponent(clinicId)}` : '';
       const res = await fetch(
-        `${API_BASE_URL}/appointments/queue-preview?doctorId=${doctorId}&appointmentDate=${appointmentDate}&clientMinutes=${clientMinutes}${slotQuery}${clinicQuery}`
+        `${API_BASE_URL}/appointments/queue-preview?doctorId=${doctorId}&appointmentDate=${appointmentDate}${slotQuery}${clinicQuery}`
       );
       return await handleResponse(res);
     } catch (err) {
-      console.warn('Queue preview API unavailable, using offline preview calculation fallback', err);
-      const doctor = DEMO_DOCTORS.find((d) => d.id === doctorId) || DEMO_DOCTORS[0];
-      const matchedClinic = clinicId ? doctor.clinics?.find(c => c.clinicId === clinicId) : doctor.clinics?.[0];
-      const slots = (matchedClinic?.slots && matchedClinic.slots.length > 0) ? matchedClinic.slots : parseDoctorSlots(doctor);
-      const effectiveFee = matchedClinic?.consultationFee ?? doctor.consultationFee;
-      const now = new Date();
+      if (import.meta.env.DEV && import.meta.env.VITE_ENABLE_DEMO_FALLBACK === 'true') {
+        console.warn('Dev mode: queue preview API unavailable, using offline preview calculation fallback', err);
+        const doctor = DEMO_DOCTORS.find((d) => d.id === doctorId) || DEMO_DOCTORS[0];
+        const matchedClinic = clinicId ? doctor.clinics?.find(c => c.clinicId === clinicId) : doctor.clinics?.[0];
+        const slots = (matchedClinic?.slots && matchedClinic.slots.length > 0) ? matchedClinic.slots : parseDoctorSlots(doctor);
+        const effectiveFee = matchedClinic?.consultationFee ?? doctor.consultationFee;
+        const now = new Date();
 
-      const availableSlots: SlotStatusResult[] = slots.map((slot) => {
-        return evaluateSlotStatus(slot, appointmentDate, 0, now, clientMinutes);
-      });
+        const availableSlots: SlotStatusResult[] = slots.map((slot) => {
+          return evaluateSlotStatus(slot, appointmentDate, 0, now);
+        });
 
-      let chosen = availableSlots.find((s) => s.slot.id === slotId);
-      if (chosen && chosen.isPassed) {
-        const alt = availableSlots.find((s) => !s.isPassed && !s.isFull);
-        if (alt) chosen = alt;
-      }
-      if (!chosen) {
-        chosen = availableSlots.find((s) => !s.isPassed && !s.isFull) || availableSlots[0];
-      }
+        let chosen = availableSlots.find((s) => s.slot.id === slotId);
+        if (chosen && chosen.isPassed) {
+          const alt = availableSlots.find((s) => !s.isPassed && !s.isFull);
+          if (alt) chosen = alt;
+        }
+        if (!chosen) {
+          chosen = availableSlots.find((s) => !s.isPassed && !s.isFull) || availableSlots[0];
+        }
 
-      return {
-        doctorId: doctor.id,
-        doctorName: doctor.user.fullName,
-        appointmentDate,
-        selectedSlotId: chosen.slot.id,
-        selectedSlot: chosen,
-        availableSlots,
-        checkingWindow: chosen.slot.name,
-        checkingStartTime: chosen.slot.startTime,
-        checkingEndTime: chosen.slot.endTime,
-        avgConsultationMinutes: chosen.slot.avgConsultationMinutes,
-        maxDailyPatients: chosen.slot.maxPatients,
-        totalBooked: chosen.totalBooked,
-        nextQueueNumber: 1,
-        patientsAhead: chosen.patientsAhead,
-        estimatedTime: chosen.estimatedTime,
-        isFull: chosen.isFull,
-        isPassed: chosen.isPassed,
-        isInProgress: chosen.isInProgress,
-        statusLabel: chosen.statusLabel,
-        consultationFee: effectiveFee,
-        clinicId: matchedClinic?.clinicId,
-        clinicName: matchedClinic?.clinic.clinicName,
-        selectedClinic: matchedClinic ? {
-          clinicId: matchedClinic.clinicId,
-          clinicName: matchedClinic.clinic.clinicName,
-          address: matchedClinic.clinic.address,
-          city: matchedClinic.clinic.city,
-          phone: matchedClinic.clinic.phone,
+        return {
+          doctorId: doctor.id,
+          doctorName: doctor.user.fullName,
+          appointmentDate,
+          selectedSlotId: chosen.slot.id,
+          selectedSlot: chosen,
+          availableSlots,
+          checkingWindow: chosen.slot.name,
+          checkingStartTime: chosen.slot.startTime,
+          checkingEndTime: chosen.slot.endTime,
+          avgConsultationMinutes: chosen.slot.avgConsultationMinutes,
+          maxDailyPatients: chosen.slot.maxPatients,
+          totalBooked: chosen.totalBooked,
+          nextQueueNumber: 1,
+          patientsAhead: chosen.patientsAhead,
+          estimatedTime: chosen.estimatedTime,
+          isFull: chosen.isFull,
+          isPassed: chosen.isPassed,
+          isInProgress: chosen.isInProgress,
+          statusLabel: chosen.statusLabel,
           consultationFee: effectiveFee,
-        } : null,
-        hasClinics: (doctor.clinics?.length || 0) > 0,
-        clinicsCount: doctor.clinics?.length || 0,
-        clinics: doctor.clinics?.map(c => ({
-          clinicId: c.clinicId,
-          clinicName: c.clinic.clinicName,
-          address: c.clinic.address,
-          city: c.clinic.city,
-          phone: c.clinic.phone,
-          consultationFee: c.consultationFee ?? doctor.consultationFee,
-          slots: c.slots || parseDoctorSlots(doctor),
-        })),
-      };
+          clinicId: matchedClinic?.clinicId,
+          clinicName: matchedClinic?.clinic.clinicName,
+          selectedClinic: matchedClinic ? {
+            clinicId: matchedClinic.clinicId,
+            clinicName: matchedClinic.clinic.clinicName,
+            address: matchedClinic.clinic.address,
+            city: matchedClinic.clinic.city,
+            phone: matchedClinic.clinic.phone,
+            consultationFee: effectiveFee,
+          } : null,
+          hasClinics: (doctor.clinics?.length || 0) > 0,
+          clinicsCount: doctor.clinics?.length || 0,
+          clinics: doctor.clinics?.map(c => ({
+            clinicId: c.clinicId,
+            clinicName: c.clinic.clinicName,
+            address: c.clinic.address,
+            city: c.clinic.city,
+            phone: c.clinic.phone,
+            consultationFee: c.consultationFee ?? doctor.consultationFee,
+            slots: c.slots || parseDoctorSlots(doctor),
+          })),
+        };
+      }
+      throw err;
     }
   },
 
@@ -1094,11 +1102,10 @@ export const api = {
     patientGender?: string;
     patientPhone?: string;
   }): Promise<Appointment> {
-    const clientMinutes = new Date().getHours() * 60 + new Date().getMinutes();
     const res = await fetch(`${API_BASE_URL}/appointments/book`, {
       method: 'POST',
       headers: getHeaders(),
-      body: JSON.stringify({ ...body, clientMinutes }),
+      body: JSON.stringify(body),
     });
     return handleResponse(res);
   },

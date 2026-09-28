@@ -12,15 +12,15 @@ import {
   rejectAppointment,
   applyReceptionist,
 } from '../controllers/receptionistController';
-import { authenticate, authorize } from '../middleware/authMiddleware';
+import { authenticate, authorize, requireActiveReceptionist } from '../middleware/authMiddleware';
 
 const router = Router();
 
 // Public route: Receptionist application to join a verified clinic
 router.post('/apply', applyReceptionist);
 
-// Authenticated receptionist operations
-router.use(authenticate, authorize('RECEPTIONIST'));
+// Authenticated & Active receptionist operations
+router.use(authenticate, authorize('RECEPTIONIST'), requireActiveReceptionist);
 
 router.get('/my-receptionist', getMyReceptionist);
 router.post('/doctors', addDoctorToReceptionist);

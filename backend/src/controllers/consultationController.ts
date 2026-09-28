@@ -2,6 +2,7 @@ import { Response } from 'express';
 import prisma from '../config/database';
 import { AuthRequest } from '../middleware/authMiddleware';
 import { getLocalDateString } from '../utils/scheduleUtils';
+import { canTransition } from '../utils/appointmentStateMachine';
 
 export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -16,6 +17,14 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
 
     if (!doctor) {
       res.status(404).json({ success: false, message: 'Doctor profile not found' });
+      return;
+    }
+
+    if (!doctor.isVerified || doctor.verificationStatus === 'SUSPENDED' || doctor.verificationStatus === 'REJECTED') {
+      res.status(403).json({
+        success: false,
+        message: 'Doctor account is not active, pending verification, or suspended from clinical practice.',
+      });
       return;
     }
 
@@ -120,6 +129,14 @@ export const callPatient = async (req: AuthRequest, res: Response): Promise<void
       return;
     }
 
+    if (!doctor.isVerified || doctor.verificationStatus === 'SUSPENDED' || doctor.verificationStatus === 'REJECTED') {
+      res.status(403).json({
+        success: false,
+        message: 'Doctor account is not active, pending verification, or suspended from clinical practice.',
+      });
+      return;
+    }
+
     // Set any currently in_consultation appointment to WAITING or leave as is, or mark target as IN_CONSULTATION
     const targetAppointment = await prisma.appointment.findUnique({
       where: { id: appointmentId },
@@ -137,10 +154,11 @@ export const callPatient = async (req: AuthRequest, res: Response): Promise<void
       return;
     }
 
-    if (targetAppointment.status !== 'WAITING' && targetAppointment.status !== 'IN_CONSULTATION') {
+    const transitionCheck = canTransition(targetAppointment.status, 'IN_CONSULTATION', 'DOCTOR');
+    if (!transitionCheck.allowed) {
       res.status(400).json({
         success: false,
-        message: `Cannot call an appointment with status '${targetAppointment.status}'. Only WAITING appointments can be called.`,
+        message: transitionCheck.reason || `Cannot call an appointment with status '${targetAppointment.status}'.`,
       });
       return;
     }
@@ -177,7 +195,11 @@ export const callPatient = async (req: AuthRequest, res: Response): Promise<void
     });
   } catch (error: any) {
     console.error('callPatient error:', error);
-    res.status(500).json({ success: false, message: 'Failed to call patient', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to call patient',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
   }
 };
 
@@ -204,6 +226,14 @@ export const updateNotesAndVitals = async (req: AuthRequest, res: Response): Pro
       return;
     }
 
+    if (!doctor.isVerified || doctor.verificationStatus === 'SUSPENDED' || doctor.verificationStatus === 'REJECTED') {
+      res.status(403).json({
+        success: false,
+        message: 'Doctor account is not active, pending verification, or suspended from clinical practice.',
+      });
+      return;
+    }
+
     // Verify appointment belongs to this doctor
     const targetAppointment = await prisma.appointment.findUnique({
       where: { id: appointmentId },
@@ -225,7 +255,11 @@ export const updateNotesAndVitals = async (req: AuthRequest, res: Response): Pro
     res.json({ success: true, message: 'Consultation notes saved', data: updated });
   } catch (error: any) {
     console.error('updateNotesAndVitals error:', error);
-    res.status(500).json({ success: false, message: 'Failed to save notes', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to save notes',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
   }
 };
 
@@ -260,6 +294,14 @@ export const completeConsultation = async (req: AuthRequest, res: Response): Pro
       return;
     }
 
+    if (!doctor.isVerified || doctor.verificationStatus === 'SUSPENDED' || doctor.verificationStatus === 'REJECTED') {
+      res.status(403).json({
+        success: false,
+        message: 'Doctor account is not active, pending verification, or suspended from clinical practice.',
+      });
+      return;
+    }
+
     // Verify appointment belongs to this doctor
     const targetAppointment = await prisma.appointment.findUnique({
       where: { id: appointmentId },
@@ -270,10 +312,11 @@ export const completeConsultation = async (req: AuthRequest, res: Response): Pro
       return;
     }
 
-    if (targetAppointment.status !== 'IN_CONSULTATION' && targetAppointment.status !== 'WAITING') {
+    const transitionCheck = canTransition(targetAppointment.status, 'COMPLETED', 'DOCTOR');
+    if (!transitionCheck.allowed) {
       res.status(400).json({
         success: false,
-        message: `Cannot complete consultation for an appointment with status '${targetAppointment.status}'. Only active appointments can be completed.`,
+        message: transitionCheck.reason || `Cannot complete consultation for an appointment with status '${targetAppointment.status}'.`,
       });
       return;
     }
@@ -335,7 +378,11 @@ export const completeConsultation = async (req: AuthRequest, res: Response): Pro
     });
   } catch (error: any) {
     console.error('completeConsultation error:', error);
-    res.status(500).json({ success: false, message: 'Failed to complete consultation', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to complete consultation',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
   }
 };
 

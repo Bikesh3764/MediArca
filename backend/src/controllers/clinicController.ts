@@ -908,19 +908,28 @@ export const respondToReceptionistRequest = async (req: AuthRequest, res: Respon
         message: 'Receptionist application approved and desk permissions granted.',
       });
     } else {
-      await prisma.receptionistProfile.update({
-        where: { id: receptionist.id },
-        data: { status: 'REJECTED' },
-      });
+      await prisma.$transaction([
+        prisma.receptionistProfile.update({
+          where: { id: receptionist.id },
+          data: { status: 'REJECTED' },
+        }),
+        prisma.doctorReceptionist.deleteMany({
+          where: { receptionistId: receptionist.id },
+        }),
+      ]);
 
       res.json({
         success: true,
-        message: 'Receptionist application declined.',
+        message: 'Receptionist application declined and desk assignments revoked.',
       });
     }
   } catch (error: any) {
     console.error('respondToReceptionistRequest error:', error);
-    res.status(500).json({ success: false, message: 'Failed to respond to receptionist request', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to respond to receptionist request',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
   }
 };
 

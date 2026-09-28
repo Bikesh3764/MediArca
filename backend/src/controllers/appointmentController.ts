@@ -12,7 +12,9 @@ import {
   SlotStatusResult,
   getLocalDateString,
   getIndianTimeMinutes,
+  isValidAppointmentDate,
 } from '../utils/scheduleUtils';
+import { canTransition } from '../utils/appointmentStateMachine';
 import { formatIndianPhone, sanitizeIndianPhone } from '../utils/phoneUtils';
 
 // Helper to calculate estimated time given start time "09:00" and offset minutes (retained for backward compatibility)
@@ -32,10 +34,18 @@ export const calculateEstimatedTime = (startTime24: string, offsetMinutes: numbe
 
 export const getQueuePreview = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { doctorId, appointmentDate, slotId, clientMinutes, clinicId } = req.query;
+    const { doctorId, appointmentDate, slotId, clinicId } = req.query;
 
     if (!doctorId || !appointmentDate) {
       res.status(400).json({ success: false, message: 'doctorId and appointmentDate are required' });
+      return;
+    }
+
+    if (!isValidAppointmentDate(appointmentDate)) {
+      res.status(400).json({
+        success: false,
+        message: 'Invalid appointment date format. Expected valid calendar date in YYYY-MM-DD format.',
+      });
       return;
     }
 
@@ -79,13 +89,13 @@ export const getQueuePreview = async (req: AuthRequest, res: Response): Promise<
     }
 
     const effectiveConsultationFee = selectedAffiliation?.consultationFee ?? doctor.consultationFee;
-    const clientMinsNum = clientMinutes !== undefined ? Number(clientMinutes) : undefined;
 
-    // Fetch all active appointments for this doctor on this date
+    // Fetch all active appointments for this doctor on this date, clinic-scoped if clinic selected
     const dayAppointments = await prisma.appointment.findMany({
       where: {
         doctorId: doctor.id,
         appointmentDate: dateStr,
+        ...(selectedAffiliation?.clinicId ? { clinicId: selectedAffiliation.clinicId } : {}),
         status: { in: ['WAITING', 'IN_CONSULTATION', 'COMPLETED'] },
       },
       select: {
@@ -109,7 +119,7 @@ export const getQueuePreview = async (req: AuthRequest, res: Response): Promise<
     const highestQueue = maxQueueAppt?.queueNumber || 0;
     const nextQueueNumber = highestQueue + 1;
 
-    // Evaluate status for each slot
+    // Evaluate status for each slot using authoritative server time
     const availableSlots: SlotStatusResult[] = slots.map((slot) => {
       const bookedInSlot = dayAppointments.filter((a) => {
         if (a.slotId) return a.slotId === slot.id;
@@ -129,7 +139,7 @@ export const getQueuePreview = async (req: AuthRequest, res: Response): Promise<
         dateStr,
         bookedInSlot,
         new Date(),
-        clientMinsNum,
+        undefined,
         waitingInSlot
       );
     });
@@ -251,6 +261,14 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
 
     if (!doctorId || !appointmentDate) {
       res.status(400).json({ success: false, message: 'Doctor ID and appointment date are required' });
+      return;
+    }
+
+    if (!isValidAppointmentDate(appointmentDate)) {
+      res.status(400).json({
+        success: false,
+        message: 'Invalid appointment date format. Expected valid calendar date in YYYY-MM-DD format.',
+      });
       return;
     }
 
@@ -397,8 +415,6 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
         }
       } catch {}
     }
-    const clientMinsNum = typeof clientMinutes === 'number' && !isNaN(clientMinutes) ? clientMinutes : undefined;
-
     let chosenSlot: any = null;
     if (slotId) {
       chosenSlot = slots.find((s) => s.id === String(slotId));
@@ -411,7 +427,7 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
       }
     } else {
       chosenSlot = slots.find((s) => {
-        const st = evaluateSlotStatus(s, appointmentDate, 0, new Date(), clientMinsNum);
+        const st = evaluateSlotStatus(s, appointmentDate, 0, new Date());
         return !st.isPassed && !st.isFull;
       }) || slots[0];
     }
@@ -456,6 +472,7 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
             where: {
               doctorId: doctor.id,
               appointmentDate,
+              ...(targetClinicId ? { clinicId: targetClinicId } : {}),
               status: { in: ['WAITING', 'IN_CONSULTATION', 'COMPLETED'] },
             },
             select: {
@@ -472,13 +489,12 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
             return slots.length === 1;
           }).length;
 
-          // Check if slot has passed or reached max patients
+          // Check if slot has passed or reached max patients using authoritative server time
           const slotStatus = evaluateSlotStatus(
             chosenSlot!,
             appointmentDate,
             bookedInSlot,
-            new Date(),
-            clientMinsNum
+            new Date()
           );
           if (slotStatus.isPassed) {
             throw new Error(
@@ -646,12 +662,21 @@ export const getAppointmentById = async (req: AuthRequest, res: Response): Promi
         res.status(403).json({ success: false, message: 'Access denied: You are not authorized to view this appointment' });
         return;
       }
+
+      // Restrict medical records strictly to the assigned doctor or the patient themselves (Finding #21)
+      if (appointment.patient && !isDoctor && !isPatient) {
+        delete (appointment.patient as any).medicalRecords;
+      }
     }
 
     res.json({ success: true, data: appointment });
   } catch (error: any) {
     console.error('getAppointmentById error:', error);
-    res.status(500).json({ success: false, message: 'Failed to retrieve appointment', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve appointment',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
   }
 };
 
@@ -872,18 +897,12 @@ export const cancelAppointment = async (req: AuthRequest, res: Response): Promis
       return;
     }
 
-    if (appointment.status === 'CANCELLED') {
-      res.status(400).json({ success: false, message: 'Appointment is already cancelled' });
-      return;
-    }
-
-    if (appointment.status === 'IN_CONSULTATION') {
-      res.status(400).json({ success: false, message: 'Cannot cancel an appointment actively in consultation' });
-      return;
-    }
-
-    if (appointment.status === 'COMPLETED') {
-      res.status(400).json({ success: false, message: 'Cannot cancel a completed consultation' });
+    const transitionCheck = canTransition(appointment.status, 'CANCELLED', req.user?.role as any);
+    if (!transitionCheck.allowed) {
+      res.status(400).json({
+        success: false,
+        message: transitionCheck.reason || 'Cannot cancel appointment in its current status.',
+      });
       return;
     }
 
@@ -895,6 +914,10 @@ export const cancelAppointment = async (req: AuthRequest, res: Response): Promis
     res.json({ success: true, message: 'Appointment cancelled successfully', data: updated });
   } catch (error: any) {
     console.error('cancelAppointment error:', error);
-    res.status(500).json({ success: false, message: 'Failed to cancel appointment', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to cancel appointment',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
   }
 };

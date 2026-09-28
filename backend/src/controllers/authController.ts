@@ -4,10 +4,9 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { OAuth2Client } from 'google-auth-library';
 import prisma from '../config/database';
-import { AuthRequest } from '../middleware/authMiddleware';
+import { AuthRequest, getJwtSecret } from '../middleware/authMiddleware';
 import { uploadToR2, deleteFromR2, isR2Configured } from '../config/r2';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'mediarca-fallback-jwt-secret';
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 export const register = async (req: Request, res: Response): Promise<void> => {
@@ -16,6 +15,11 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
     if (!email || !password || !fullName) {
       res.status(400).json({ success: false, message: 'Email, password, and full name are required' });
+      return;
+    }
+
+    if (typeof password !== 'string' || password.length < 8) {
+      res.status(400).json({ success: false, message: 'Password must be at least 8 characters long.' });
       return;
     }
 
@@ -47,6 +51,16 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
     let newUser;
     if (normalizedRole === 'PATIENT') {
+      let formattedDob: string | null = null;
+      if (profileData.dateOfBirth) {
+        try {
+          const dobStr = typeof profileData.dateOfBirth === 'string' ? profileData.dateOfBirth : new Date(profileData.dateOfBirth).toISOString();
+          formattedDob = dobStr.split('T')[0];
+        } catch {
+          formattedDob = null;
+        }
+      }
+
       newUser = await prisma.user.create({
         data: {
           email: email.toLowerCase().trim(),
@@ -56,7 +70,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
           role: 'PATIENT',
           patientProfile: {
             create: {
-              dateOfBirth: profileData.dateOfBirth || null,
+              dateOfBirth: formattedDob,
               gender: profileData.gender || null,
               bloodGroup: profileData.bloodGroup || null,
               allergies: profileData.allergies || null,
@@ -137,7 +151,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         fullName: newUser.fullName,
         mustChangePassword: newUser.mustChangePassword,
       },
-      JWT_SECRET,
+      getJwtSecret(),
       { expiresIn: '7d' }
     );
 
@@ -152,7 +166,11 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     });
   } catch (error: any) {
     console.error('Register error:', error);
-    res.status(500).json({ success: false, message: 'Internal server error during registration', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error during registration',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
   }
 };
 
@@ -224,6 +242,24 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    if (user.role === 'RECEPTIONIST') {
+      const recStatus = (user.receptionistProfile as any)?.status;
+      if (!user.receptionistProfile || recStatus === 'PENDING') {
+        res.status(403).json({
+          success: false,
+          message: 'Your receptionist account is pending approval by clinic administration.',
+        });
+        return;
+      }
+      if (recStatus === 'REJECTED') {
+        res.status(403).json({
+          success: false,
+          message: 'Your receptionist account application was rejected by clinic administration.',
+        });
+        return;
+      }
+    }
+
     const token = jwt.sign(
       {
         id: user.id,
@@ -232,7 +268,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         fullName: user.fullName,
         mustChangePassword: user.mustChangePassword,
       },
-      JWT_SECRET,
+      getJwtSecret(),
       { expiresIn: '7d' }
     );
 
@@ -247,7 +283,11 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     });
   } catch (error: any) {
     console.error('Login error:', error);
-    res.status(500).json({ success: false, message: 'Internal server error during login', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error during login',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
   }
 };
 
@@ -348,7 +388,18 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
         emergencyContact,
       } = roleSpecificData;
       const safePatientData: any = {};
-      if (dateOfBirth !== undefined) safePatientData.dateOfBirth = dateOfBirth ? new Date(dateOfBirth) : null;
+      if (dateOfBirth !== undefined) {
+        if (!dateOfBirth) {
+          safePatientData.dateOfBirth = null;
+        } else {
+          try {
+            const dobStr = typeof dateOfBirth === 'string' ? dateOfBirth : new Date(dateOfBirth).toISOString();
+            safePatientData.dateOfBirth = dobStr.split('T')[0];
+          } catch {
+            safePatientData.dateOfBirth = null;
+          }
+        }
+      }
       if (gender !== undefined) safePatientData.gender = gender ? String(gender).trim() : null;
       if (bloodGroup !== undefined) safePatientData.bloodGroup = bloodGroup ? String(bloodGroup).trim() : null;
       if (allergies !== undefined) safePatientData.allergies = allergies ? String(allergies).trim() : null;
@@ -383,14 +434,14 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
       const safeDoctorData: any = {};
       if (specialty !== undefined) safeDoctorData.specialty = String(specialty).trim();
       if (qualifications !== undefined) safeDoctorData.qualifications = String(qualifications).trim();
-      if (experienceYears !== undefined) safeDoctorData.experienceYears = Number(experienceYears) || 0;
-      if (consultationFee !== undefined) safeDoctorData.consultationFee = Number(consultationFee) || 0;
+      if (experienceYears !== undefined) safeDoctorData.experienceYears = Math.max(0, Math.floor(Number(experienceYears) || 0));
+      if (consultationFee !== undefined) safeDoctorData.consultationFee = Math.max(0, Number(consultationFee) || 0);
       if (bio !== undefined) safeDoctorData.bio = bio ? String(bio).trim() : null;
       if (clinicAddress !== undefined) safeDoctorData.clinicAddress = clinicAddress ? String(clinicAddress).trim() : null;
       if (checkingStartTime !== undefined) safeDoctorData.checkingStartTime = String(checkingStartTime).trim();
       if (checkingEndTime !== undefined) safeDoctorData.checkingEndTime = String(checkingEndTime).trim();
-      if (avgConsultationMinutes !== undefined) safeDoctorData.avgConsultationMinutes = Number(avgConsultationMinutes) || 15;
-      if (maxDailyPatients !== undefined) safeDoctorData.maxDailyPatients = Number(maxDailyPatients) || 30;
+      if (avgConsultationMinutes !== undefined) safeDoctorData.avgConsultationMinutes = Math.max(1, Math.floor(Number(avgConsultationMinutes) || 15));
+      if (maxDailyPatients !== undefined) safeDoctorData.maxDailyPatients = Math.max(1, Math.floor(Number(maxDailyPatients) || 30));
       if (slots !== undefined) safeDoctorData.slots = typeof slots === 'string' ? slots : JSON.stringify(slots);
 
       await prisma.doctorProfile.upsert({
@@ -549,7 +600,7 @@ export const googleAuth = async (req: Request, res: Response): Promise<void> => 
         role: user.role,
         fullName: user.fullName,
       },
-      JWT_SECRET,
+      getJwtSecret(),
       { expiresIn: '7d' }
     );
 
@@ -564,7 +615,11 @@ export const googleAuth = async (req: Request, res: Response): Promise<void> => 
     });
   } catch (error: any) {
     console.error('Google auth error:', error);
-    res.status(500).json({ success: false, message: 'Google authentication failed', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Google authentication failed',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
   }
 };
 

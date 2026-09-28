@@ -49,6 +49,17 @@ export const getMyReceptionist = async (req: AuthRequest, res: Response): Promis
       return;
     }
 
+    if ((receptionist as any).status !== 'ACTIVE') {
+      res.status(403).json({
+        success: false,
+        message:
+          (receptionist as any).status === 'REJECTED'
+            ? 'Your receptionist application has been declined by clinic administration.'
+            : 'Your receptionist application is pending approval by clinic administration.',
+      });
+      return;
+    }
+
     const todayStr = getLocalDateString();
 
     // Only include doctors currently actively affiliated with receptionist's parent clinic
@@ -983,6 +994,7 @@ export const approveAppointment = async (req: AuthRequest, res: Response): Promi
                 appointmentDate: appointment.appointmentDate,
                 status: { in: ['WAITING', 'IN_CONSULTATION', 'COMPLETED'] },
                 ...(slot.id ? { slotId: slot.id } : {}),
+                ...(appointment.clinicId ? { clinicId: appointment.clinicId } : {}),
               },
             });
             if (confirmedInSlot >= slot.maxPatients) {
