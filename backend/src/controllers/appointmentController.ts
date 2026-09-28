@@ -39,7 +39,13 @@ export const getQueuePreview = async (req: AuthRequest, res: Response): Promise<
 
     const doctor = await prisma.doctorProfile.findUnique({
       where: { id: String(doctorId) },
-      include: { user: { select: { fullName: true } } },
+      include: {
+        user: { select: { fullName: true } },
+        clinics: {
+          where: { clinic: { isVerified: true }, status: { in: ['ACTIVE', 'ACCEPTED'] } },
+          include: { clinic: true },
+        },
+      },
     });
 
     if (!doctor) {
@@ -124,6 +130,15 @@ export const getQueuePreview = async (req: AuthRequest, res: Response): Promise<
         isPassed: selectedSlotStatus.isPassed,
         isInProgress: selectedSlotStatus.isInProgress,
         statusLabel: selectedSlotStatus.statusLabel,
+        hasClinics: (doctor.clinics?.length || 0) > 0,
+        clinicsCount: doctor.clinics?.length || 0,
+        clinics: (doctor.clinics || []).map((c: any) => ({
+          clinicId: c.clinicId,
+          clinicName: c.clinic.clinicName,
+          address: c.clinic.address,
+          city: c.clinic.city,
+          phone: c.clinic.phone,
+        })),
       },
     });
   } catch (error: any) {
@@ -251,12 +266,52 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
 
     const doctor = await prisma.doctorProfile.findUnique({
       where: { id: doctorId },
-      include: { user: { select: { fullName: true } } },
+      include: {
+        user: { select: { fullName: true } },
+        clinics: {
+          where: { clinic: { isVerified: true }, status: { in: ['ACTIVE', 'ACCEPTED'] } },
+          include: { clinic: true },
+        },
+      },
     });
 
     if (!doctor) {
       res.status(404).json({ success: false, message: 'Doctor not found' });
       return;
+    }
+
+    // Strictly enforce clinic affiliation: a doctor must have at least one verified active clinic to accept bookings
+    const activeClinics = doctor.clinics || [];
+    if (activeClinics.length === 0) {
+      res.status(400).json({
+        success: false,
+        message: 'This doctor is currently not associated with any active verified clinic. Online queue booking is unavailable.',
+      });
+      return;
+    }
+
+    // Determine target clinic venue
+    let targetClinicId: string;
+    if (clinicId) {
+      const matched = activeClinics.find((c: any) => c.clinicId === String(clinicId));
+      if (!matched) {
+        res.status(400).json({
+          success: false,
+          message: 'The selected clinic is not an active verified venue for this doctor. Please choose a valid clinic venue.',
+        });
+        return;
+      }
+      targetClinicId = matched.clinicId;
+    } else {
+      if (activeClinics.length === 1) {
+        targetClinicId = activeClinics[0].clinicId;
+      } else {
+        res.status(400).json({
+          success: false,
+          message: 'This doctor practices at multiple clinics. Please select which clinic venue you wish to book an appointment at.',
+        });
+        return;
+      }
     }
 
     const slots = parseDoctorSlots(doctor);
@@ -347,33 +402,11 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
           const highestQueue = dayAppointments.reduce((max, a) => Math.max(max, a.queueNumber), 0);
           const queueNumber = highestQueue + 1;
 
-          let targetClinicId: string | null = null;
-          if (clinicId) {
-            const verifiedClinic = await tx.clinicProfile.findFirst({
-              where: { id: clinicId, isVerified: true },
-            });
-            if (verifiedClinic) {
-              targetClinicId = verifiedClinic.id;
-            }
-          }
-          if (!targetClinicId) {
-            const activeAffiliation = await tx.clinicDoctor.findFirst({
-              where: {
-                doctorId: doctor.id,
-                status: { in: ['ACTIVE', 'ACCEPTED'] },
-                clinic: { isVerified: true },
-              },
-            });
-            if (activeAffiliation) {
-              targetClinicId = activeAffiliation.clinicId;
-            }
-          }
-
           const created = await tx.appointment.create({
             data: {
               patientId: patient!.id,
               doctorId: doctor.id,
-              clinicId: targetClinicId || null,
+              clinicId: targetClinicId,
               appointmentDate,
               queueNumber,
               slotId: chosenSlot!.id,

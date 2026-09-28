@@ -150,6 +150,19 @@ export const BookAppointment: React.FC = () => {
     setError(null);
     setSubmitting(true);
 
+    const hasClinics = Boolean(doctor.clinics && doctor.clinics.length > 0);
+    if (!hasClinics) {
+      setError('This doctor is currently not associated with any active verified clinic. Appointments cannot be booked.');
+      setSubmitting(false);
+      return;
+    }
+
+    if (doctor.clinics!.length > 1 && !selectedClinicId) {
+      setError('Please select which clinic venue you wish to attend.');
+      setSubmitting(false);
+      return;
+    }
+
     const isForOther = bookingFor === 'other';
     if (isForOther && !patientName.trim()) {
       setError('Please provide the patient full name.');
@@ -310,7 +323,21 @@ export const BookAppointment: React.FC = () => {
           </div>
 
           {/* Clinic / Practice Venue Selection */}
-          {doctor.clinics && doctor.clinics.length > 0 && (
+          {!doctor.clinics || doctor.clinics.length === 0 ? (
+            <div className="py-4 border-b border-[#f0f0f0]">
+              <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="text-xs font-bold text-amber-900 uppercase tracking-wide">
+                    No Clinic Affiliation Registered
+                  </h4>
+                  <p className="text-xs text-amber-800/90 mt-1 leading-relaxed">
+                    Dr. {doctor.user.fullName} is currently not practicing at any active verified clinic venue. Online queue reservations cannot be issued.
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : (
             <div className="py-4 border-b border-[#f0f0f0]">
               <label className="block text-xs font-medium text-[#1d1d1f] mb-2 flex items-center justify-between">
                 <span className="flex items-center gap-1.5">
@@ -323,15 +350,25 @@ export const BookAppointment: React.FC = () => {
               </label>
 
               {doctor.clinics.length === 1 ? (
-                <div className="p-3.5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] flex items-start gap-2.5">
-                  <MapPin className="w-4 h-4 text-[#0088e8] mt-0.5 flex-shrink-0" />
-                  <div>
-                    <span className="text-xs font-semibold text-[#1d1d1f] block">
-                      {doctor.clinics[0].clinic.clinicName}
-                    </span>
-                    <span className="text-[11px] text-[#86868b]">
+                <div className="p-3.5 rounded-2xl bg-[#0088e8]/5 border border-[#0088e8]/30 flex items-start gap-3">
+                  <Building2 className="w-4 h-4 text-[#0088e8] mt-0.5 flex-shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-[#1d1d1f] block">
+                        {doctor.clinics[0].clinic.clinicName}
+                      </span>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#0088e8] text-white">
+                        Practicing Venue
+                      </span>
+                    </div>
+                    <span className="text-[11px] text-[#86868b] block mt-0.5">
                       {doctor.clinics[0].clinic.address}{doctor.clinics[0].clinic.city ? `, ${doctor.clinics[0].clinic.city}` : ''}
                     </span>
+                    {doctor.clinics[0].clinic.phone && (
+                      <span className="text-[11px] text-[#0088e8] block mt-1 font-medium">
+                        Contact: {doctor.clinics[0].clinic.phone}
+                      </span>
+                    )}
                   </div>
                 </div>
               ) : (
@@ -343,19 +380,31 @@ export const BookAppointment: React.FC = () => {
                         key={c.clinicId}
                         type="button"
                         onClick={() => setSelectedClinicId(c.clinicId)}
-                        className={`p-3 rounded-2xl border text-left transition-all ${
+                        className={`p-3.5 rounded-2xl border text-left transition-all flex flex-col justify-between ${
                           isSelected
                             ? 'bg-[#0088e8]/10 border-[#0088e8] ring-1 ring-[#0088e8]/30 shadow-xs'
-                            : 'bg-[#f5f5f7] border-[#e5e5ea] hover:bg-white'
+                            : 'bg-[#f5f5f7] border-[#e5e5ea] hover:bg-white hover:border-[#0088e8]/40'
                         }`}
                       >
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs font-semibold text-[#1d1d1f]">{c.clinic.clinicName}</span>
-                          {isSelected && <span className="w-2 h-2 rounded-full bg-[#0088e8]"></span>}
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-xs font-semibold text-[#1d1d1f]">{c.clinic.clinicName}</span>
+                            {isSelected ? (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-[#0088e8] text-white">
+                                <Check className="w-2.5 h-2.5" />
+                                Selected
+                              </span>
+                            ) : null}
+                          </div>
+                          <span className="text-[11px] text-[#86868b] block line-clamp-1">
+                            {c.clinic.address}{c.clinic.city ? `, ${c.clinic.city}` : ''}
+                          </span>
                         </div>
-                        <span className="text-[11px] text-[#86868b] block line-clamp-1">
-                          {c.clinic.address}{c.clinic.city ? `, ${c.clinic.city}` : ''}
-                        </span>
+                        {c.clinic.phone && (
+                          <span className="text-[10px] text-[#0088e8] block mt-2 font-medium">
+                            {c.clinic.phone}
+                          </span>
+                        )}
                       </button>
                     );
                   })}
@@ -691,10 +740,12 @@ export const BookAppointment: React.FC = () => {
                 variant="primary"
                 size="lg"
                 type="submit"
-                disabled={submitting || isSelectedSlotPassed || isSelectedSlotFull}
+                disabled={submitting || isSelectedSlotPassed || isSelectedSlotFull || !doctor.clinics || doctor.clinics.length === 0}
                 className="w-full sm:w-auto"
               >
-                {submitting
+                {!doctor.clinics || doctor.clinics.length === 0
+                  ? 'No Clinic Associated — Booking Disabled'
+                  : submitting
                   ? 'Confirming Token...'
                   : isSelectedSlotPassed
                   ? 'Shift Concluded — Select Next Shift'

@@ -20,6 +20,7 @@ import {
   RefreshCw,
   Building2,
   ChevronRight,
+  AlertCircle,
 } from 'lucide-react';
 
 import { SearchableSpecialtySelect } from '../../components/ui/SearchableSpecialtySelect';
@@ -264,21 +265,22 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
 
                     {/* Practice Clinics & Shifts Status Pills */}
                     <div className="flex flex-wrap items-center gap-2 pt-0.5">
-                      {/* Clinic Venues */}
-                      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#f5f5f7]/90 border border-[#e5e5ea] text-xs text-[#1d1d1f]">
-                        <Building2 className="w-3.5 h-3.5 text-[#0088e8] flex-shrink-0" />
-                        <span className="font-medium truncate max-w-[280px] sm:max-w-md">
-                          {doctor.clinics && doctor.clinics.length > 0 ? (
-                            <>
-                              {doctor.clinics[0].clinic.clinicName}
-                              {doctor.clinics[0].clinic.city ? ` • ${doctor.clinics[0].clinic.city}` : ''}
-                              {doctor.clinics.length > 1 ? ` (+${doctor.clinics.length - 1} more clinic${doctor.clinics.length > 2 ? 's' : ''})` : ''}
-                            </>
-                          ) : (
-                            doctor.clinicAddress || 'MediArca Healthcare Facility'
-                          )}
-                        </span>
-                      </div>
+                      {/* Clinic Venues or No Clinic Warning */}
+                      {doctor.clinics && doctor.clinics.length > 0 ? (
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#f5f5f7]/90 border border-[#e5e5ea] text-xs text-[#1d1d1f]">
+                          <Building2 className="w-3.5 h-3.5 text-[#0088e8] flex-shrink-0" />
+                          <span className="font-medium truncate max-w-[280px] sm:max-w-md">
+                            {doctor.clinics[0].clinic.clinicName}
+                            {doctor.clinics[0].clinic.city ? ` • ${doctor.clinics[0].clinic.city}` : ''}
+                            {doctor.clinics.length > 1 ? ` (+${doctor.clinics.length - 1} more clinic${doctor.clinics.length > 2 ? 's' : ''})` : ''}
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800 font-semibold">
+                          <AlertCircle className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />
+                          <span>No Clinic Associated</span>
+                        </div>
+                      )}
 
                       {/* Shift Timing */}
                       <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#f5f5f7]/90 border border-[#e5e5ea] text-xs text-[#1d1d1f]">
@@ -322,15 +324,26 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
                     >
                       Doctor Profile
                     </AppleButton>
-                    <AppleButton
-                      variant="primary"
-                      size="sm"
-                      onClick={() => navigate(getBookPath(doctor.id))}
-                      className="text-xs px-5 py-2 rounded-full flex items-center gap-1.5 font-semibold shadow-apple-button"
-                    >
-                      <span>Book Token</span>
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    </AppleButton>
+                    {doctor.clinics && doctor.clinics.length > 0 ? (
+                      <AppleButton
+                        variant="primary"
+                        size="sm"
+                        onClick={() => navigate(getBookPath(doctor.id))}
+                        className="text-xs px-5 py-2 rounded-full flex items-center gap-1.5 font-semibold shadow-apple-button"
+                      >
+                        <span>Book Token</span>
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </AppleButton>
+                    ) : (
+                      <AppleButton
+                        variant="secondary"
+                        size="sm"
+                        disabled
+                        className="text-xs px-4 py-2 rounded-full opacity-60 cursor-not-allowed bg-gray-100 border border-gray-200 text-gray-500 font-medium"
+                      >
+                        <span>No Clinic</span>
+                      </AppleButton>
+                    )}
                   </div>
                 </div>
               </div>

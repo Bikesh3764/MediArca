@@ -756,6 +756,15 @@ export interface QueuePreview {
   isPassed?: boolean;
   isInProgress?: boolean;
   statusLabel?: string;
+  hasClinics?: boolean;
+  clinicsCount?: number;
+  clinics?: Array<{
+    clinicId: string;
+    clinicName: string;
+    address: string;
+    city?: string;
+    phone?: string;
+  }>;
 }
 
 export interface Appointment {

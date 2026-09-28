@@ -1557,6 +1557,97 @@ function runTests() {
     'Falls back to default fallback if both are empty'
   );
 
+  // 64. Doctor Clinic Affiliation Enforcement & Venue Resolution
+  interface MockAffiliatedClinic {
+    clinicId: string;
+    clinicName: string;
+    isVerified: boolean;
+    status: string;
+  }
+
+  const resolveBookingClinicVenue = (
+    doctorClinics: MockAffiliatedClinic[],
+    requestedClinicId?: string | null
+  ): { allowed: boolean; status: number; targetClinicId?: string; message?: string } => {
+    const verifiedActive = doctorClinics.filter(
+      (c) => c.isVerified && (c.status === 'ACTIVE' || c.status === 'ACCEPTED')
+    );
+
+    if (verifiedActive.length === 0) {
+      return {
+        allowed: false,
+        status: 400,
+        message: 'This doctor is currently not associated with any active verified clinic. Online queue booking is unavailable.',
+      };
+    }
+
+    if (requestedClinicId) {
+      const match = verifiedActive.find((c) => c.clinicId === requestedClinicId);
+      if (!match) {
+        return {
+          allowed: false,
+          status: 400,
+          message: 'The selected clinic is not an active verified venue for this doctor. Please choose a valid clinic venue.',
+        };
+      }
+      return { allowed: true, status: 200, targetClinicId: match.clinicId };
+    }
+
+    if (verifiedActive.length === 1) {
+      return { allowed: true, status: 200, targetClinicId: verifiedActive[0].clinicId };
+    }
+
+    return {
+      allowed: false,
+      status: 400,
+      message: 'This doctor practices at multiple clinics. Please select which clinic venue you wish to book an appointment at.',
+    };
+  };
+
+  // Test 64.1: Doctor with 0 clinics -> rejected
+  const zeroClinicsResult = resolveBookingClinicVenue([]);
+  assert(zeroClinicsResult.allowed === false && zeroClinicsResult.status === 400, 'Doctor with 0 clinics is blocked from booking');
+  assert(Boolean(zeroClinicsResult.message?.includes('not associated with any active verified clinic')), 'Error explains doctor is not associated with any clinic');
+
+  // Test 64.2: Doctor with unverified clinic -> rejected
+  const unverifiedClinicResult = resolveBookingClinicVenue([
+    { clinicId: 'c-1', clinicName: 'Unverified Clinic', isVerified: false, status: 'ACCEPTED' },
+  ]);
+  assert(unverifiedClinicResult.allowed === false, 'Doctor with unverified clinic is blocked from booking');
+
+  // Test 64.3: Doctor with 1 verified clinic -> automatically assigned
+  const singleClinicResult = resolveBookingClinicVenue([
+    { clinicId: 'c-bikesh', clinicName: 'Bikesh Clinic', isVerified: true, status: 'ACCEPTED' },
+  ]);
+  assert(singleClinicResult.allowed === true && singleClinicResult.targetClinicId === 'c-bikesh', 'Doctor with 1 clinic auto-assigns clinic ID');
+
+  // Test 64.4: Doctor with multiple clinics but no selection -> rejected with prompt
+  const multiClinicNoChoice = resolveBookingClinicVenue([
+    { clinicId: 'c-bikesh', clinicName: 'Bikesh Clinic', isVerified: true, status: 'ACCEPTED' },
+    { clinicId: 'c-central', clinicName: 'Central Clinic', isVerified: true, status: 'ACCEPTED' },
+  ]);
+  assert(multiClinicNoChoice.allowed === false, 'Doctor with multiple clinics requires venue selection');
+  assert(Boolean(multiClinicNoChoice.message?.includes('practices at multiple clinics')), 'Prompt asks user to select clinic venue');
+
+  // Test 64.5: Doctor with multiple clinics with valid selection -> accepted
+  const multiClinicValidChoice = resolveBookingClinicVenue(
+    [
+      { clinicId: 'c-bikesh', clinicName: 'Bikesh Clinic', isVerified: true, status: 'ACCEPTED' },
+      { clinicId: 'c-central', clinicName: 'Central Clinic', isVerified: true, status: 'ACCEPTED' },
+    ],
+    'c-central'
+  );
+  assert(multiClinicValidChoice.allowed === true && multiClinicValidChoice.targetClinicId === 'c-central', 'Selected clinic from multi-clinic roster is assigned');
+
+  // Test 64.6: Doctor with invalid clinic selection -> rejected
+  const multiClinicInvalidChoice = resolveBookingClinicVenue(
+    [
+      { clinicId: 'c-bikesh', clinicName: 'Bikesh Clinic', isVerified: true, status: 'ACCEPTED' },
+    ],
+    'c-random-999'
+  );
+  assert(multiClinicInvalidChoice.allowed === false && multiClinicInvalidChoice.status === 400, 'Invalid clinic venue selection is rejected');
+
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);
 

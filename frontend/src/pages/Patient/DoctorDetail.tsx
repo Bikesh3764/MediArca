@@ -320,11 +320,17 @@ export const DoctorDetail: React.FC = () => {
                     </div>
                   </div>
                 ) : (
-                  <div className="mt-5 p-4 rounded-2xl bg-[#f5f5f7] flex items-start gap-3 border border-[#e5e5ea]">
-                    <MapPin className="w-5 h-5 text-[#0088e8] flex-shrink-0 mt-0.5" />
+                  <div className="mt-5 p-5 rounded-2xl bg-amber-50/70 border border-amber-200 flex items-start gap-3.5">
+                    <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0 text-amber-700">
+                      <Building2 className="w-5 h-5" />
+                    </div>
                     <div>
-                      <h4 className="text-xs font-semibold text-[#1d1d1f]">Clinic / Hospital Location</h4>
-                      <p className="text-xs text-[#86868b] mt-0.5">{doctor.clinicAddress || 'MediArca Healthcare Facility'}</p>
+                      <h4 className="text-xs font-bold text-amber-900 uppercase tracking-wide">
+                        No Affiliated Practice Venue
+                      </h4>
+                      <p className="text-xs text-amber-800/90 mt-1 leading-relaxed">
+                        Dr. {doctor.user.fullName} is currently not practicing at any verified clinic location. Online queue booking is disabled until an active clinic affiliation is established.
+                      </p>
                     </div>
                   </div>
                 )}
@@ -369,15 +375,25 @@ export const DoctorDetail: React.FC = () => {
               <h3 className="text-xl font-semibold text-[#1d1d1f] mb-4">Book Your Token</h3>
 
               {/* Clinic Selection (Step 1) */}
-              {doctor.clinics && doctor.clinics.length > 0 && (
+              {(!doctor.clinics || doctor.clinics.length === 0) ? (
+                <div className="mb-5 p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900">
+                  <div className="flex items-center gap-2 font-semibold text-xs text-amber-900 mb-1">
+                    <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                    <span>Booking Unavailable</span>
+                  </div>
+                  <p className="text-[11px] text-amber-800 leading-relaxed">
+                    This doctor is currently not affiliated with any active verified clinic venue. Online queue reservations cannot be issued.
+                  </p>
+                </div>
+              ) : (
                 <div className="mb-4">
                   <div className="flex items-center justify-between mb-1.5">
                     <label className="text-xs font-medium text-[#1d1d1f] flex items-center gap-1">
                       <Building2 className="w-3.5 h-3.5 text-[#0088e8]" />
-                      Consultation Clinic
+                      Consultation Clinic Venue
                     </label>
                     <span className="text-[11px] text-[#86868b]">
-                      {doctor.clinics.length} Available
+                      {doctor.clinics.length} Venue{doctor.clinics.length > 1 ? 's' : ''}
                     </span>
                   </div>
                   <div className="space-y-1.5">
@@ -410,142 +426,147 @@ export const DoctorDetail: React.FC = () => {
                 </div>
               )}
 
-              {/* Date Selector with Quick Shortcuts */}
-              <div className="mb-4">
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-xs font-medium text-[#1d1d1f] flex items-center gap-1">
-                    <Calendar className="w-3.5 h-3.5 text-[#0088e8]" />
-                    Appointment Date
-                  </label>
-                  <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedDate(getLocalDateString())}
-                      className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium transition-all ${
-                        selectedDate === getLocalDateString()
-                          ? 'bg-gradient-to-r from-[#0088e8] to-[#10b981] text-white shadow-xs'
-                          : 'bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f]'
-                      }`}
-                    >
-                      Today
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedDate(getTomorrowDateString())}
-                      className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium transition-all ${
-                        selectedDate === getTomorrowDateString()
-                          ? 'bg-gradient-to-r from-[#0088e8] to-[#10b981] text-white shadow-xs'
-                          : 'bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f]'
-                      }`}
-                    >
-                      Tomorrow
-                    </button>
-                  </div>
-                </div>
-                <input
-                  type="date"
-                  value={selectedDate}
-                  min={getLocalDateString()}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-[14px] bg-white focus:outline-none focus:border-[#0088e8]"
-                />
-              </div>
-
-              {/* Shift Selector */}
-              {parseDoctorSlots(doctor).length > 1 && (
-                <div className="mb-4">
-                  <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 flex items-center justify-between">
-                    <span>Select Checking Shift</span>
-                    <span className="text-[11px] text-[#86868b]">
-                      {parseDoctorSlots(doctor).length} shifts
-                    </span>
-                  </label>
-                  <div className="space-y-2">
-                    {parseDoctorSlots(doctor).map((slot) => {
-                      const slotStatus = queuePreview?.availableSlots?.find((s) => s.slot.id === slot.id);
-                      const isPassed = Boolean(slotStatus?.isPassed);
-                      const isSelected = selectedSlotId === slot.id;
-                      return (
+              {/* Date & Shift Selectors (Only shown if doctor is affiliated with clinic) */}
+              {doctor.clinics && doctor.clinics.length > 0 ? (
+                <>
+                  {/* Date Selector with Quick Shortcuts */}
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="text-xs font-medium text-[#1d1d1f] flex items-center gap-1">
+                        <Calendar className="w-3.5 h-3.5 text-[#0088e8]" />
+                        Appointment Date
+                      </label>
+                      <div className="flex items-center gap-1">
                         <button
-                          key={slot.id}
                           type="button"
-                          disabled={isPassed}
-                          onClick={() => setSelectedSlotId(slot.id)}
-                          className={`w-full p-3 rounded-xl border text-left text-xs transition-all flex items-center justify-between ${
-                            isPassed
-                              ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed'
-                              : isSelected
-                              ? 'bg-[#0088e8]/10 border-[#0088e8] ring-1 ring-[#0088e8]/30 text-[#1d1d1f]'
-                              : 'bg-white border-[#e5e5ea] text-[#1d1d1f] hover:border-[#0088e8]/50'
+                          onClick={() => setSelectedDate(getLocalDateString())}
+                          className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium transition-all ${
+                            selectedDate === getLocalDateString()
+                              ? 'bg-gradient-to-r from-[#0088e8] to-[#10b981] text-white shadow-xs'
+                              : 'bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f]'
                           }`}
                         >
-                          <div>
-                            <span className="font-semibold block">{slot.name}</span>
-                            <span className="text-[11px] text-[#0088e8] font-medium">
-                              {format12Hour(slot.startTime)} – {format12Hour(slot.endTime)}
-                            </span>
-                          </div>
-                          <div className="text-right">
-                            <span className="text-[10px] block text-[#86868b]">Cap: {slot.maxPatients} pts</span>
-                            {isPassed ? (
-                              <span className="text-[10px] text-gray-500 font-medium">Shift Ended</span>
-                            ) : slotStatus?.isInProgress ? (
-                              <span className="text-[10px] text-emerald-600 font-semibold flex items-center gap-1 justify-end">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                                In Progress
-                              </span>
-                            ) : (
-                              <span className="text-[10px] text-[#0088e8] font-medium">Available</span>
-                            )}
-                          </div>
+                          Today
                         </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Dynamic Queue Preview Card */}
-              {loadingQueue ? (
-                <div className="p-6 rounded-2xl bg-[#f5f5f7] animate-pulse h-40"></div>
-              ) : queuePreview ? (
-                <div className="p-5 rounded-2xl bg-sky-50/60 border border-[#0088e8]/20 mb-5 space-y-3">
-                  <div className="flex justify-between items-center pb-2 border-b border-[#0088e8]/10">
-                    <span className="text-xs text-[#86868b]">Checking Shift:</span>
-                    <strong className="text-xs text-[#0088e8] flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5" />
-                      {queuePreview.checkingWindow}
-                    </strong>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-[11px] text-[#86868b] uppercase block">Assigned Token</span>
-                      <strong className="text-2xl text-[#1d1d1f]">
-                        Queue #{queuePreview.nextQueueNumber}
-                      </strong>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedDate(getTomorrowDateString())}
+                          className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium transition-all ${
+                            selectedDate === getTomorrowDateString()
+                              ? 'bg-gradient-to-r from-[#0088e8] to-[#10b981] text-white shadow-xs'
+                              : 'bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f]'
+                          }`}
+                        >
+                          Tomorrow
+                        </button>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <span className="text-[11px] text-[#86868b] uppercase block">Est. Start Time</span>
-                      <strong
-                        className={`text-base ${
-                          queuePreview.isPassed ? 'text-rose-600' : 'text-[#0088e8]'
-                        }`}
-                      >
-                        {queuePreview.estimatedTime}
-                      </strong>
-                    </div>
+                    <input
+                      type="date"
+                      value={selectedDate}
+                      min={getLocalDateString()}
+                      onChange={(e) => setSelectedDate(e.target.value)}
+                      className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-[14px] bg-white focus:outline-none focus:border-[#0088e8]"
+                    />
                   </div>
 
-                  <div className="pt-2 border-t border-[#0088e8]/10 text-xs text-[#86868b] flex items-center gap-1.5">
-                    <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>
-                      {queuePreview.patientsAhead === 0
-                        ? 'No patients ahead! You will be first in this shift.'
-                        : `${queuePreview.patientsAhead} patient(s) ahead • ~${queuePreview.avgConsultationMinutes}m pace`}
-                    </span>
-                  </div>
-                </div>
+                  {/* Shift Selector */}
+                  {parseDoctorSlots(doctor).length > 1 && (
+                    <div className="mb-4">
+                      <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 flex items-center justify-between">
+                        <span>Select Checking Shift</span>
+                        <span className="text-[11px] text-[#86868b]">
+                          {parseDoctorSlots(doctor).length} shifts
+                        </span>
+                      </label>
+                      <div className="space-y-2">
+                        {parseDoctorSlots(doctor).map((slot) => {
+                          const slotStatus = queuePreview?.availableSlots?.find((s) => s.slot.id === slot.id);
+                          const isPassed = Boolean(slotStatus?.isPassed);
+                          const isSelected = selectedSlotId === slot.id;
+                          return (
+                            <button
+                              key={slot.id}
+                              type="button"
+                              disabled={isPassed}
+                              onClick={() => setSelectedSlotId(slot.id)}
+                              className={`w-full p-3 rounded-xl border text-left text-xs transition-all flex items-center justify-between ${
+                                isPassed
+                                  ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed'
+                                  : isSelected
+                                  ? 'bg-[#0088e8]/10 border-[#0088e8] ring-1 ring-[#0088e8]/30 text-[#1d1d1f]'
+                                  : 'bg-white border-[#e5e5ea] text-[#1d1d1f] hover:border-[#0088e8]/50'
+                              }`}
+                            >
+                              <div>
+                                <span className="font-semibold block">{slot.name}</span>
+                                <span className="text-[11px] text-[#0088e8] font-medium">
+                                  {format12Hour(slot.startTime)} – {format12Hour(slot.endTime)}
+                                </span>
+                              </div>
+                              <div className="text-right">
+                                <span className="text-[10px] block text-[#86868b]">Cap: {slot.maxPatients} pts</span>
+                                {isPassed ? (
+                                  <span className="text-[10px] text-gray-500 font-medium">Shift Ended</span>
+                                ) : slotStatus?.isInProgress ? (
+                                  <span className="text-[10px] text-emerald-600 font-semibold flex items-center gap-1 justify-end">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                    In Progress
+                                  </span>
+                                ) : (
+                                  <span className="text-[10px] text-[#0088e8] font-medium">Available</span>
+                                )}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Dynamic Queue Preview Card */}
+                  {loadingQueue ? (
+                    <div className="p-6 rounded-2xl bg-[#f5f5f7] animate-pulse h-40"></div>
+                  ) : queuePreview ? (
+                    <div className="p-5 rounded-2xl bg-sky-50/60 border border-[#0088e8]/20 mb-5 space-y-3">
+                      <div className="flex justify-between items-center pb-2 border-b border-[#0088e8]/10">
+                        <span className="text-xs text-[#86868b]">Checking Shift:</span>
+                        <strong className="text-xs text-[#0088e8] flex items-center gap-1">
+                          <Clock className="w-3.5 h-3.5" />
+                          {queuePreview.checkingWindow}
+                        </strong>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="text-[11px] text-[#86868b] uppercase block">Assigned Token</span>
+                          <strong className="text-2xl text-[#1d1d1f]">
+                            Queue #{queuePreview.nextQueueNumber}
+                          </strong>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-[11px] text-[#86868b] uppercase block">Est. Start Time</span>
+                          <strong
+                            className={`text-base ${
+                              queuePreview.isPassed ? 'text-rose-600' : 'text-[#0088e8]'
+                            }`}
+                          >
+                            {queuePreview.estimatedTime}
+                          </strong>
+                        </div>
+                      </div>
+
+                      <div className="pt-2 border-t border-[#0088e8]/10 text-xs text-[#86868b] flex items-center gap-1.5">
+                        <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>
+                          {queuePreview.patientsAhead === 0
+                            ? 'No patients ahead! You will be first in this shift.'
+                            : `${queuePreview.patientsAhead} patient(s) ahead • ~${queuePreview.avgConsultationMinutes}m pace`}
+                        </span>
+                      </div>
+                    </div>
+                  ) : null}
+                </>
               ) : null}
 
               {/* Price summary & Proceed */}
@@ -573,7 +594,7 @@ export const DoctorDetail: React.FC = () => {
               <AppleButton
                 variant="primary"
                 size="lg"
-                disabled={Boolean(queuePreview?.isFull || queuePreview?.isPassed)}
+                disabled={Boolean(!doctor.clinics || doctor.clinics.length === 0 || queuePreview?.isFull || queuePreview?.isPassed)}
                 onClick={() =>
                   navigate(
                     isPatient
@@ -583,7 +604,9 @@ export const DoctorDetail: React.FC = () => {
                 }
                 className="w-full"
               >
-                {queuePreview?.isPassed
+                {!doctor.clinics || doctor.clinics.length === 0
+                  ? 'No Clinic Affiliation — Booking Disabled'
+                  : queuePreview?.isPassed
                   ? 'Shift Ended — Choose Next'
                   : queuePreview?.isFull
                   ? 'Fully Booked for Shift'
