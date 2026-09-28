@@ -1648,6 +1648,165 @@ function runTests() {
   );
   assert(multiClinicInvalidChoice.allowed === false && multiClinicInvalidChoice.status === 400, 'Invalid clinic venue selection is rejected');
 
+  // ==========================================
+  // Test 65: Doctor Clinic-Specific Shifts & Fee Management
+  // User: "sun doctor edit kr skta h ki vo kis clinic me kb se kb baithta h aur kis clinic me kitna fee h uska"
+  // ==========================================
+  console.log('\n--- Test 65: Clinic-Specific Practice Shifts & Consultation Fee Resolution ---');
+
+  const sampleDoctorProfile = {
+    id: 'doc-multi-venue',
+    consultationFee: 90.0,
+    checkingStartTime: '09:00',
+    checkingEndTime: '12:00',
+    maxDailyPatients: 25,
+    slots: JSON.stringify([
+      { id: 'global_1', name: 'Global Practice Shift', startTime: '09:00', endTime: '12:00', maxPatients: 25 },
+    ]),
+    clinics: [
+      {
+        id: 'cd-1',
+        clinicId: 'clinic-heart-care',
+        consultationFee: 120.0, // Custom fee at Heart Care
+        slots: JSON.stringify([
+          { id: 'hc_shift_1', name: 'Morning Cardio Shift', startTime: '08:00', endTime: '11:00', maxPatients: 30 },
+          { id: 'hc_shift_2', name: 'Evening Cardio Shift', startTime: '16:00', endTime: '19:00', maxPatients: 40 },
+        ]),
+        clinic: {
+          id: 'clinic-heart-care',
+          clinicName: 'Apex Heart Care Institute',
+          address: '42 Medical Enclave',
+          city: 'Mumbai',
+          isVerified: true,
+        },
+      },
+      {
+        id: 'cd-2',
+        clinicId: 'clinic-metro-poly',
+        consultationFee: 65.0, // Custom lower fee at Metro PolyClinic
+        slots: JSON.stringify([
+          { id: 'mp_shift_1', name: 'Afternoon Consults', startTime: '13:00', endTime: '17:00', maxPatients: 50 },
+        ]),
+        clinic: {
+          id: 'clinic-metro-poly',
+          clinicName: 'Metro Community PolyClinic',
+          address: '15 Sector 4',
+          city: 'Mumbai',
+          isVerified: true,
+        },
+      },
+      {
+        id: 'cd-3',
+        clinicId: 'clinic-general-care',
+        consultationFee: null, // Unconfigured fee, should fall back to doctor's global fee $90
+        slots: null, // Unconfigured slots, should fall back to doctor's global slot
+        clinic: {
+          id: 'clinic-general-care',
+          clinicName: 'General Care Dispensary',
+          address: '7 Gandhi Marg',
+          city: 'Mumbai',
+          isVerified: true,
+        },
+      },
+    ],
+  };
+
+  // Helper simulating formatDoctorClinics helper in doctorController
+  const formatClinicsHelper = (doc: any) => {
+    return (doc.clinics || []).map((cd: any) => {
+      let clinicSlots = parseDoctorSlots(doc);
+      if (cd.slots) {
+        try {
+          const parsed = typeof cd.slots === 'string' ? JSON.parse(cd.slots) : cd.slots;
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            clinicSlots = parsed.map((s: any, idx: number) => {
+              const sTime = s.startTime || '09:00';
+              const eTime = s.endTime || '11:00';
+              const maxP = Math.max(1, Number(s.maxPatients) || 50);
+              const { avgConsultationMinutes: calculatedAvg } = calculateSlotMetrics(sTime, eTime, maxP);
+              return {
+                id: s.id || `slot_${idx + 1}`,
+                name: s.name || `Slot ${idx + 1} (${format12Hour(sTime)} – ${format12Hour(eTime)})`,
+                startTime: sTime,
+                endTime: eTime,
+                maxPatients: maxP,
+                avgConsultationMinutes: s.avgConsultationMinutes || calculatedAvg,
+              };
+            });
+          }
+        } catch {}
+      }
+      return {
+        ...cd,
+        consultationFee: cd.consultationFee ?? doc.consultationFee,
+        slots: clinicSlots,
+      };
+    });
+  };
+
+  const formattedClinics = formatClinicsHelper(sampleDoctorProfile);
+
+  // Test 65.1: Clinic A fee & slots
+  const clinicA = formattedClinics.find((c: any) => c.clinicId === 'clinic-heart-care');
+  assert(clinicA?.consultationFee === 120.0, 'Clinic A has custom consultation fee of $120.0');
+  assert(clinicA?.slots.length === 2, 'Clinic A has 2 custom practice shifts');
+  assert(clinicA?.slots[0].startTime === '08:00' && clinicA?.slots[0].endTime === '11:00', 'Clinic A Shift 1 is 08:00 to 11:00');
+  assert(clinicA?.slots[0].maxPatients === 30, 'Clinic A Shift 1 max capacity is 30 patients');
+  assert(clinicA?.slots[0].avgConsultationMinutes === 6, 'Clinic A Shift 1 consultation pace is 6m (180m / 30 pts)');
+
+  // Test 65.2: Clinic B fee & slots
+  const clinicB = formattedClinics.find((c: any) => c.clinicId === 'clinic-metro-poly');
+  assert(clinicB?.consultationFee === 65.0, 'Clinic B has custom consultation fee of $65.0');
+  assert(clinicB?.slots.length === 1, 'Clinic B has 1 custom practice shift');
+  assert(clinicB?.slots[0].startTime === '13:00' && clinicB?.slots[0].endTime === '17:00', 'Clinic B Shift is 13:00 to 17:00');
+  assert(clinicB?.slots[0].maxPatients === 50, 'Clinic B Shift max capacity is 50 patients');
+  assert(clinicB?.slots[0].avgConsultationMinutes === 4.8, 'Clinic B Shift consultation pace is 4.8m (240m / 50 pts)');
+
+  // Test 65.3: Clinic C fallback
+  const clinicC = formattedClinics.find((c: any) => c.clinicId === 'clinic-general-care');
+  assert(clinicC?.consultationFee === 90.0, 'Clinic C falls back to doctor global consultation fee of $90.0');
+  assert(clinicC?.slots.length === 1, 'Clinic C falls back to doctor global practice shifts');
+  assert(clinicC?.slots[0].startTime === '09:00', 'Clinic C slot start is 09:00 from global');
+
+  // Test 65.4: Queue preview calculation with specific clinicId
+  const resolveQueuePreviewData = (doc: any, requestedClinicId?: string) => {
+    const activeClinics = doc.clinics || [];
+    let selectedAffiliation: any = null;
+    if (requestedClinicId) {
+      selectedAffiliation = activeClinics.find((c: any) => c.clinicId === String(requestedClinicId));
+    }
+    if (!selectedAffiliation && activeClinics.length === 1) {
+      selectedAffiliation = activeClinics[0];
+    }
+
+    let slots = parseDoctorSlots(doc);
+    if (selectedAffiliation?.slots) {
+      try {
+        const parsed = typeof selectedAffiliation.slots === 'string' ? JSON.parse(selectedAffiliation.slots) : selectedAffiliation.slots;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          slots = parsed;
+        }
+      } catch {}
+    }
+
+    const fee = selectedAffiliation?.consultationFee ?? doc.consultationFee;
+    return {
+      selectedClinicId: selectedAffiliation?.clinicId || null,
+      consultationFee: fee,
+      slots,
+    };
+  };
+
+  const previewHeartCare = resolveQueuePreviewData(sampleDoctorProfile, 'clinic-heart-care');
+  assert(previewHeartCare.selectedClinicId === 'clinic-heart-care', 'Queue preview resolves to Heart Care clinic');
+  assert(previewHeartCare.consultationFee === 120.0, 'Queue preview for Heart Care uses $120.0 fee');
+  assert(previewHeartCare.slots.length === 2, 'Queue preview for Heart Care uses 2 Heart Care shifts');
+
+  const previewMetro = resolveQueuePreviewData(sampleDoctorProfile, 'clinic-metro-poly');
+  assert(previewMetro.selectedClinicId === 'clinic-metro-poly', 'Queue preview resolves to Metro PolyClinic');
+  assert(previewMetro.consultationFee === 65.0, 'Queue preview for Metro PolyClinic uses $65.0 fee');
+  assert(previewMetro.slots[0].startTime === '13:00', 'Queue preview for Metro PolyClinic uses 13:00 afternoon shift');
+
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);
 

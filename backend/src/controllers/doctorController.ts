@@ -3,6 +3,25 @@ import prisma from '../config/database';
 import { AuthRequest } from '../middleware/authMiddleware';
 import { parseDoctorSlots, calculateSlotMetrics, format12Hour } from '../utils/scheduleUtils';
 
+export const formatDoctorClinics = (doc: any) => {
+  return (doc.clinics || []).map((cd: any) => {
+    let clinicSlots = parseDoctorSlots(doc);
+    if (cd.slots) {
+      try {
+        const parsed = typeof cd.slots === 'string' ? JSON.parse(cd.slots) : cd.slots;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          clinicSlots = parsed;
+        }
+      } catch {}
+    }
+    return {
+      ...cd,
+      consultationFee: cd.consultationFee ?? doc.consultationFee,
+      slots: clinicSlots,
+    };
+  });
+};
+
 export const getDoctors = async (req: Request, res: Response): Promise<void> => {
   try {
     const { search, specialty, minExp, maxFee, sortBy } = req.query;
@@ -70,6 +89,7 @@ export const getDoctors = async (req: Request, res: Response): Promise<void> => 
     const enrichedDoctors = doctors.map((doc) => ({
       ...doc,
       slots: parseDoctorSlots(doc),
+      clinics: formatDoctorClinics(doc),
     }));
 
     res.json({ success: true, count: enrichedDoctors.length, data: enrichedDoctors });
@@ -120,6 +140,7 @@ export const getDoctorById = async (req: Request, res: Response): Promise<void> 
       data: {
         ...doctor,
         slots: parseDoctorSlots(doctor),
+        clinics: formatDoctorClinics(doctor),
       },
     });
   } catch (error: any) {

@@ -81,14 +81,17 @@ export const DoctorDetail: React.FC = () => {
         const data = await api.getDoctorById(id);
         setDoctor(data);
         if (data.clinics && data.clinics.length > 0) {
-          const firstClinicId = data.clinics[0]?.clinicId;
-          if (firstClinicId) {
-            setSelectedClinicId((prev) => prev || firstClinicId);
+          const firstClinic = data.clinics[0];
+          setSelectedClinicId((prev) => prev || firstClinic.clinicId);
+          const clinicSlots = (firstClinic.slots && firstClinic.slots.length > 0) ? firstClinic.slots : parseDoctorSlots(data);
+          if (clinicSlots.length > 0) {
+            setSelectedSlotId((prev) => prev || clinicSlots[0].id);
           }
-        }
-        const slots = parseDoctorSlots(data);
-        if (slots.length > 0) {
-          setSelectedSlotId((prev) => prev || slots[0].id);
+        } else {
+          const slots = parseDoctorSlots(data);
+          if (slots.length > 0) {
+            setSelectedSlotId((prev) => prev || slots[0].id);
+          }
         }
       } catch (err) {
         console.error('Failed to load doctor:', err);
@@ -104,7 +107,12 @@ export const DoctorDetail: React.FC = () => {
       if (!id || !selectedDate) return;
       setLoadingQueue(true);
       try {
-        const preview = await api.getQueuePreview(id, selectedDate, selectedSlotId || undefined);
+        const preview = await api.getQueuePreview(
+          id,
+          selectedDate,
+          selectedSlotId || undefined,
+          selectedClinicId || undefined
+        );
         setQueuePreview(preview);
         if (preview.selectedSlotId && (!selectedSlotId || (preview.isPassed && preview.selectedSlotId !== selectedSlotId))) {
           setSelectedSlotId(preview.selectedSlotId);
@@ -116,7 +124,7 @@ export const DoctorDetail: React.FC = () => {
       }
     };
     fetchQueue();
-  }, [id, selectedDate, selectedSlotId]);
+  }, [id, selectedDate, selectedSlotId, selectedClinicId]);
 
   if (loading) {
     if (isPatient) {
@@ -199,6 +207,23 @@ export const DoctorDetail: React.FC = () => {
     );
   }
 
+  const selectedClinic = doctor.clinics?.find((c) => c.clinicId === selectedClinicId) || doctor.clinics?.[0];
+  const activeFee = selectedClinic?.consultationFee ?? queuePreview?.consultationFee ?? doctor.consultationFee;
+  const activeSlots = (selectedClinic?.slots && selectedClinic.slots.length > 0)
+    ? selectedClinic.slots
+    : parseDoctorSlots(doctor);
+
+  const handleSelectClinic = (clinicId: string) => {
+    setSelectedClinicId(clinicId);
+    const targetClinic = doctor.clinics?.find((c) => c.clinicId === clinicId);
+    const clinicSlots = (targetClinic?.slots && targetClinic.slots.length > 0)
+      ? targetClinic.slots
+      : parseDoctorSlots(doctor);
+    if (clinicSlots.length > 0 && !clinicSlots.some((s) => s.id === selectedSlotId)) {
+      setSelectedSlotId(clinicSlots[0].id);
+    }
+  };
+
   const detailContent = (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Doctor Bio & Credentials (2 Columns) */}
@@ -239,10 +264,10 @@ export const DoctorDetail: React.FC = () => {
               <div className="py-6 border-b border-[#f0f0f0]">
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-[#86868b] mb-3 flex items-center gap-1.5">
                   <Clock className="w-3.5 h-3.5 text-[#0088e8]" />
-                  Active Practice Shifts & Capacities
+                  Active Practice Shifts & Capacities{selectedClinic ? ` (${selectedClinic.clinic.clinicName})` : ''}
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {parseDoctorSlots(doctor).map((slot, idx) => (
+                  {activeSlots.map((slot, idx) => (
                     <div key={slot.id || idx} className="p-3.5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea]">
                       <span className="text-xs font-semibold text-[#1d1d1f] block mb-1">
                         {slot.name}
@@ -277,10 +302,11 @@ export const DoctorDetail: React.FC = () => {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {doctor.clinics.map((cd) => {
                         const isSelected = selectedClinicId === cd.clinicId;
+                        const clinicFee = cd.consultationFee ?? doctor.consultationFee;
                         return (
                           <div
                             key={cd.clinicId}
-                            onClick={() => setSelectedClinicId(cd.clinicId)}
+                            onClick={() => handleSelectClinic(cd.clinicId)}
                             className={`p-4 rounded-2xl border cursor-pointer transition-all duration-200 flex flex-col justify-between ${
                               isSelected
                                 ? 'bg-[#0088e8]/5 border-[#0088e8] ring-1 ring-[#0088e8]/30 shadow-xs'
@@ -299,14 +325,25 @@ export const DoctorDetail: React.FC = () => {
                                   </span>
                                 )}
                               </div>
-                              <p className="text-xs text-[#86868b] mt-0.5">
-                                {cd.clinic.address}{cd.clinic.city ? `, ${cd.clinic.city}` : ''}
+                              <p className="text-xs text-[#86868b] mt-0.5 flex items-center gap-1">
+                                <MapPin className="w-3 h-3 text-[#86868b] flex-shrink-0" />
+                                <span>{cd.clinic.address}{cd.clinic.city ? `, ${cd.clinic.city}` : ''}</span>
                               </p>
                               {cd.clinic.phone && (
                                 <span className="text-[11px] text-[#0088e8] block mt-1.5 font-medium">
                                   Contact: {cd.clinic.phone}
                                 </span>
                               )}
+                              <div className="flex items-center gap-2 mt-2.5">
+                                <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-xs font-semibold">
+                                  Fee: ${clinicFee}
+                                </span>
+                                {cd.slots && cd.slots.length > 0 && (
+                                  <span className="px-2 py-0.5 rounded-md bg-sky-50 text-[#0088e8] text-xs font-medium">
+                                    {cd.slots.length} shift{cd.slots.length > 1 ? 's' : ''}
+                                  </span>
+                                )}
+                              </div>
                             </div>
                             <div className="mt-3 pt-2.5 border-t border-[#e5e5ea]/70 flex items-center justify-between text-[11px]">
                               <span className="text-[#86868b]">In-Person Clinic</span>
@@ -471,16 +508,16 @@ export const DoctorDetail: React.FC = () => {
                   </div>
 
                   {/* Shift Selector */}
-                  {parseDoctorSlots(doctor).length > 1 && (
+                  {activeSlots.length > 1 && (
                     <div className="mb-4">
                       <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 flex items-center justify-between">
                         <span>Select Checking Shift</span>
                         <span className="text-[11px] text-[#86868b]">
-                          {parseDoctorSlots(doctor).length} shifts
+                          {activeSlots.length} shifts
                         </span>
                       </label>
                       <div className="space-y-2">
-                        {parseDoctorSlots(doctor).map((slot) => {
+                        {activeSlots.map((slot) => {
                           const slotStatus = queuePreview?.availableSlots?.find((s) => s.slot.id === slot.id);
                           const isPassed = Boolean(slotStatus?.isPassed);
                           const isSelected = selectedSlotId === slot.id;
@@ -572,8 +609,8 @@ export const DoctorDetail: React.FC = () => {
               {/* Price summary & Proceed */}
               <div className="pt-2 border-t border-[#f0f0f0] mb-5">
                 <div className="flex justify-between text-xs mb-1 text-[#86868b]">
-                  <span>Consultation Fee:</span>
-                  <span className="font-semibold text-[#1d1d1f] text-sm">${doctor.consultationFee}</span>
+                  <span>Consultation Fee{selectedClinic ? ` (${selectedClinic.clinic.clinicName})` : ''}:</span>
+                  <span className="font-semibold text-[#1d1d1f] text-sm">${activeFee}</span>
                 </div>
                 <div className="flex justify-between text-xs text-[#86868b]">
                   <span>Booking Fee:</span>

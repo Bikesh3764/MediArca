@@ -704,22 +704,39 @@ export const DoctorDashboard: React.FC = () => {
                             </span>
                           </div>
 
-                          <div className="flex items-start justify-between text-xs pt-1.5 border-t border-[#e5e5ea]/60">
-                            <span className="text-[#86868b] flex items-center gap-1.5 font-medium">
-                              <Clock className="w-3.5 h-3.5 text-[#0088e8]" />
-                              Practice Shifts:
-                            </span>
-                            <div className="text-right">
-                              {clinic.slots && clinic.slots.length > 0 ? (
-                                <span className="font-semibold text-[#1d1d1f]">
-                                  {clinic.slots.length} {clinic.slots.length === 1 ? 'Shift' : 'Shifts'} configured
-                                </span>
-                              ) : (
-                                <span className="text-[#86868b] font-medium text-[11px]">
-                                  Default practice shift
-                                </span>
-                              )}
+                          <div className="flex flex-col gap-1.5 text-xs pt-2 border-t border-[#e5e5ea]/60">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[#86868b] flex items-center gap-1.5 font-medium">
+                                <Clock className="w-3.5 h-3.5 text-[#0088e8]" />
+                                Practice Shifts:
+                              </span>
+                              <span className="font-semibold text-[#1d1d1f]">
+                                {clinic.slots && clinic.slots.length > 0
+                                  ? `${clinic.slots.length} ${clinic.slots.length === 1 ? 'Shift' : 'Shifts'}`
+                                  : 'Default shift'}
+                              </span>
                             </div>
+                            {clinic.slots && clinic.slots.length > 0 ? (
+                              <div className="space-y-1 mt-1">
+                                {clinic.slots.map((s, sIdx) => (
+                                  <div
+                                    key={s.id || sIdx}
+                                    className="p-1.5 rounded-lg bg-white border border-[#e5e5ea] flex items-center justify-between text-[11px]"
+                                  >
+                                    <span className="font-medium text-[#1d1d1f] truncate max-w-[140px]">
+                                      {s.name || `Shift ${sIdx + 1}`}
+                                    </span>
+                                    <span className="text-[#0088e8] font-semibold">
+                                      {format12Hour(s.startTime)} – {format12Hour(s.endTime)} ({s.maxPatients} pts)
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-[#86868b] text-[11px] italic">
+                                Using default doctor schedule. Click below to customize shifts for this venue.
+                              </p>
+                            )}
                           </div>
                         </div>
 
@@ -751,7 +768,7 @@ export const DoctorDashboard: React.FC = () => {
                           className="w-full flex items-center justify-center gap-2 text-xs font-semibold text-[#0088e8] border-[#0088e8]/30 hover:bg-[#0088e8]/5 shadow-sm py-2"
                         >
                           <Clock className="w-3.5 h-3.5 text-[#0088e8]" />
-                          Manage Schedule & Shifts
+                          Edit Shifts & Fee for this Clinic
                         </AppleButton>
 
                         <div className="text-[11px] text-[#86868b] flex items-center justify-between pt-2 border-t border-[#f5f5f7]">

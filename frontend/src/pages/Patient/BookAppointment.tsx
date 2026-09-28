@@ -96,12 +96,17 @@ export const BookAppointment: React.FC = () => {
       try {
         const docData = await api.getDoctorById(id);
         setDoctor(docData);
+        let targetClinicId = '';
         if (initialClinic && docData.clinics?.some((c: any) => c.clinicId === initialClinic)) {
+          targetClinicId = initialClinic;
           setSelectedClinicId(initialClinic);
         } else if (docData.clinics && docData.clinics.length > 0) {
+          targetClinicId = docData.clinics[0].clinicId;
           setSelectedClinicId(docData.clinics[0].clinicId);
         }
-        const slots = parseDoctorSlots(docData);
+
+        const activeClinic = docData.clinics?.find((c: any) => c.clinicId === targetClinicId) || docData.clinics?.[0];
+        const slots = (activeClinic?.slots && activeClinic.slots.length > 0) ? activeClinic.slots : parseDoctorSlots(docData);
         if (slots.length > 0) {
           setSelectedSlotId((prev) => {
             if (prev) return prev;
@@ -120,13 +125,18 @@ export const BookAppointment: React.FC = () => {
     fetchDoctor();
   }, [id, user, loadingAuth, navigate, initialSlot, initialClinic]);
 
-  // Fetch queue preview when date or slotId changes
+  // Fetch queue preview when date, slotId, or clinicId changes
   useEffect(() => {
     const fetchQueue = async () => {
       if (!id || !doctor) return;
       setPreviewLoading(true);
       try {
-        const previewData = await api.getQueuePreview(id, appointmentDate, selectedSlotId || undefined);
+        const previewData = await api.getQueuePreview(
+          id,
+          appointmentDate,
+          selectedSlotId || undefined,
+          selectedClinicId || undefined
+        );
         setQueuePreview(previewData);
         if (previewData.selectedSlotId && (!selectedSlotId || (previewData.isPassed && previewData.selectedSlotId !== selectedSlotId))) {
           setSelectedSlotId(previewData.selectedSlotId);
@@ -141,7 +151,7 @@ export const BookAppointment: React.FC = () => {
     if (doctor) {
       fetchQueue();
     }
-  }, [id, doctor, appointmentDate, selectedSlotId]);
+  }, [id, doctor, appointmentDate, selectedSlotId, selectedClinicId]);
 
   const handleBooking = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -289,7 +299,23 @@ export const BookAppointment: React.FC = () => {
     );
   }
 
-  const doctorSlots = parseDoctorSlots(doctor);
+  const selectedClinic = doctor.clinics?.find((c) => c.clinicId === selectedClinicId) || doctor.clinics?.[0];
+  const activeFee = selectedClinic?.consultationFee ?? queuePreview?.consultationFee ?? doctor.consultationFee;
+  const doctorSlots = (selectedClinic?.slots && selectedClinic.slots.length > 0)
+    ? selectedClinic.slots
+    : parseDoctorSlots(doctor);
+
+  const handleSelectClinic = (clinicId: string) => {
+    setSelectedClinicId(clinicId);
+    const targetClinic = doctor.clinics?.find((c) => c.clinicId === clinicId);
+    const clinicSlots = (targetClinic?.slots && targetClinic.slots.length > 0)
+      ? targetClinic.slots
+      : parseDoctorSlots(doctor);
+    if (clinicSlots.length > 0 && !clinicSlots.some((s) => s.id === selectedSlotId)) {
+      setSelectedSlotId(clinicSlots[0].id);
+    }
+  };
+
   const isSelectedSlotPassed = Boolean(queuePreview?.isPassed);
   const isSelectedSlotFull = Boolean(queuePreview?.isFull);
 
@@ -364,8 +390,18 @@ export const BookAppointment: React.FC = () => {
                     <span className="text-[11px] text-[#86868b] block mt-0.5">
                       {doctor.clinics[0].clinic.address}{doctor.clinics[0].clinic.city ? `, ${doctor.clinics[0].clinic.city}` : ''}
                     </span>
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-xs font-semibold">
+                        Fee: ${doctor.clinics[0].consultationFee ?? doctor.consultationFee}
+                      </span>
+                      {doctor.clinics[0].slots && doctor.clinics[0].slots.length > 0 && (
+                        <span className="px-2 py-0.5 rounded-md bg-sky-50 text-[#0088e8] text-xs font-medium">
+                          {doctor.clinics[0].slots.length} shift{doctor.clinics[0].slots.length > 1 ? 's' : ''}
+                        </span>
+                      )}
+                    </div>
                     {doctor.clinics[0].clinic.phone && (
-                      <span className="text-[11px] text-[#0088e8] block mt-1 font-medium">
+                      <span className="text-[11px] text-[#0088e8] block mt-1.5 font-medium">
                         Contact: {doctor.clinics[0].clinic.phone}
                       </span>
                     )}
@@ -375,11 +411,12 @@ export const BookAppointment: React.FC = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   {doctor.clinics.map((c) => {
                     const isSelected = selectedClinicId === c.clinicId;
+                    const clinicFee = c.consultationFee ?? doctor.consultationFee;
                     return (
                       <button
                         key={c.clinicId}
                         type="button"
-                        onClick={() => setSelectedClinicId(c.clinicId)}
+                        onClick={() => handleSelectClinic(c.clinicId)}
                         className={`p-3.5 rounded-2xl border text-left transition-all flex flex-col justify-between ${
                           isSelected
                             ? 'bg-[#0088e8]/10 border-[#0088e8] ring-1 ring-[#0088e8]/30 shadow-xs'
@@ -396,9 +433,20 @@ export const BookAppointment: React.FC = () => {
                               </span>
                             ) : null}
                           </div>
-                          <span className="text-[11px] text-[#86868b] block line-clamp-1">
-                            {c.clinic.address}{c.clinic.city ? `, ${c.clinic.city}` : ''}
+                          <span className="text-[11px] text-[#86868b] flex items-center gap-1 mt-0.5 line-clamp-1">
+                            <MapPin className="w-2.5 h-2.5 text-[#86868b] flex-shrink-0" />
+                            <span>{c.clinic.address}{c.clinic.city ? `, ${c.clinic.city}` : ''}</span>
                           </span>
+                          <div className="flex items-center gap-1.5 mt-2">
+                            <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[11px] font-semibold">
+                              Fee: ${clinicFee}
+                            </span>
+                            {c.slots && c.slots.length > 0 && (
+                              <span className="px-2 py-0.5 rounded-md bg-sky-50 text-[#0088e8] text-[10px] font-medium">
+                                {c.slots.length} shift{c.slots.length > 1 ? 's' : ''}
+                              </span>
+                            )}
+                          </div>
                         </div>
                         {c.clinic.phone && (
                           <span className="text-[10px] text-[#0088e8] block mt-2 font-medium">
@@ -714,7 +762,7 @@ export const BookAppointment: React.FC = () => {
               <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
               <div>
                 <strong>Direct Clinic Token (No Upfront Payment):</strong> Consultation fee of $
-                {doctor.consultationFee} is settled directly with the clinic upon visit. Your queue spot is guaranteed.
+                {activeFee}{selectedClinic ? ` at ${selectedClinic.clinic.clinicName}` : ''} is settled directly with the clinic upon visit. Your queue spot is guaranteed.
               </div>
             </div>
 

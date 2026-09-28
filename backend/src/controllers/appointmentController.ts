@@ -30,7 +30,7 @@ export const calculateEstimatedTime = (startTime24: string, offsetMinutes: numbe
 
 export const getQueuePreview = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { doctorId, appointmentDate, slotId, clientMinutes } = req.query;
+    const { doctorId, appointmentDate, slotId, clientMinutes, clinicId } = req.query;
 
     if (!doctorId || !appointmentDate) {
       res.status(400).json({ success: false, message: 'doctorId and appointmentDate are required' });
@@ -54,7 +54,29 @@ export const getQueuePreview = async (req: AuthRequest, res: Response): Promise<
     }
 
     const dateStr = String(appointmentDate);
-    const slots = parseDoctorSlots(doctor);
+    const activeClinics = doctor.clinics || [];
+
+    // Resolve target clinic affiliation
+    let selectedAffiliation: any = null;
+    if (clinicId) {
+      selectedAffiliation = activeClinics.find((c: any) => c.clinicId === String(clinicId));
+    }
+    if (!selectedAffiliation && activeClinics.length === 1) {
+      selectedAffiliation = activeClinics[0];
+    }
+
+    // Determine slots: prioritize clinic-specific slots if available
+    let slots = parseDoctorSlots(doctor);
+    if (selectedAffiliation?.slots) {
+      try {
+        const parsed = typeof selectedAffiliation.slots === 'string' ? JSON.parse(selectedAffiliation.slots) : selectedAffiliation.slots;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          slots = parsed;
+        }
+      } catch {}
+    }
+
+    const effectiveConsultationFee = selectedAffiliation?.consultationFee ?? doctor.consultationFee;
     const clientMinsNum = clientMinutes !== undefined ? Number(clientMinutes) : undefined;
 
     // Fetch all active appointments for this doctor on this date
@@ -130,15 +152,39 @@ export const getQueuePreview = async (req: AuthRequest, res: Response): Promise<
         isPassed: selectedSlotStatus.isPassed,
         isInProgress: selectedSlotStatus.isInProgress,
         statusLabel: selectedSlotStatus.statusLabel,
-        hasClinics: (doctor.clinics?.length || 0) > 0,
-        clinicsCount: doctor.clinics?.length || 0,
-        clinics: (doctor.clinics || []).map((c: any) => ({
-          clinicId: c.clinicId,
-          clinicName: c.clinic.clinicName,
-          address: c.clinic.address,
-          city: c.clinic.city,
-          phone: c.clinic.phone,
-        })),
+        consultationFee: effectiveConsultationFee,
+        clinicId: selectedAffiliation?.clinicId || null,
+        clinicName: selectedAffiliation?.clinic?.clinicName || null,
+        selectedClinic: selectedAffiliation
+          ? {
+              clinicId: selectedAffiliation.clinicId,
+              clinicName: selectedAffiliation.clinic.clinicName,
+              address: selectedAffiliation.clinic.address,
+              city: selectedAffiliation.clinic.city,
+              phone: selectedAffiliation.clinic.phone,
+              consultationFee: effectiveConsultationFee,
+            }
+          : null,
+        hasClinics: activeClinics.length > 0,
+        clinicsCount: activeClinics.length,
+        clinics: activeClinics.map((c: any) => {
+          let cSlots = parseDoctorSlots(doctor);
+          if (c.slots) {
+            try {
+              const p = typeof c.slots === 'string' ? JSON.parse(c.slots) : c.slots;
+              if (Array.isArray(p) && p.length > 0) cSlots = p;
+            } catch {}
+          }
+          return {
+            clinicId: c.clinicId,
+            clinicName: c.clinic.clinicName,
+            address: c.clinic.address,
+            city: c.clinic.city,
+            phone: c.clinic.phone,
+            consultationFee: c.consultationFee ?? doctor.consultationFee,
+            slots: cSlots,
+          };
+        }),
       },
     });
   } catch (error: any) {
@@ -292,6 +338,7 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
 
     // Determine target clinic venue
     let targetClinicId: string;
+    let targetAffiliation: any = null;
     if (clinicId) {
       const matched = activeClinics.find((c: any) => c.clinicId === String(clinicId));
       if (!matched) {
@@ -302,9 +349,11 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
         return;
       }
       targetClinicId = matched.clinicId;
+      targetAffiliation = matched;
     } else {
       if (activeClinics.length === 1) {
         targetClinicId = activeClinics[0].clinicId;
+        targetAffiliation = activeClinics[0];
       } else {
         res.status(400).json({
           success: false,
@@ -314,7 +363,15 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
       }
     }
 
-    const slots = parseDoctorSlots(doctor);
+    let slots = parseDoctorSlots(doctor);
+    if (targetAffiliation?.slots) {
+      try {
+        const parsed = typeof targetAffiliation.slots === 'string' ? JSON.parse(targetAffiliation.slots) : targetAffiliation.slots;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          slots = parsed;
+        }
+      } catch {}
+    }
     const clientMinsNum = typeof clientMinutes === 'number' && !isNaN(clientMinutes) ? clientMinutes : undefined;
 
     let chosenSlot = slots.find((s) => s.id === slotId);
@@ -554,6 +611,10 @@ export const getPatientAppointments = async (req: AuthRequest, res: Response): P
         doctor: {
           include: {
             user: { select: { fullName: true, avatarUrl: true, email: true } },
+            clinics: {
+              where: { clinic: { isVerified: true } },
+              include: { clinic: true },
+            },
           },
         },
         clinic: {
@@ -573,8 +634,19 @@ export const getPatientAppointments = async (req: AuthRequest, res: Response): P
     // Calculate real-time queue position for active appointments
     const enrichedAppointments = await Promise.all(
       appointments.map(async (appt) => {
+        const targetClinicAffiliation = appt.clinicId
+          ? (appt.doctor as any)?.clinics?.find((c: any) => c.clinicId === appt.clinicId)
+          : null;
+        const clinicFee = targetClinicAffiliation?.consultationFee ?? appt.doctor.consultationFee;
+
         if (appt.status === 'WAITING' || appt.status === 'IN_CONSULTATION') {
-          const slots = parseDoctorSlots(appt.doctor);
+          let slots = parseDoctorSlots(appt.doctor);
+          if (targetClinicAffiliation?.slots) {
+            try {
+              const parsed = typeof targetClinicAffiliation.slots === 'string' ? JSON.parse(targetClinicAffiliation.slots) : targetClinicAffiliation.slots;
+              if (Array.isArray(parsed) && parsed.length > 0) slots = parsed;
+            } catch {}
+          }
           const slot = (appt.slotId && slots.find((s) => s.id === appt.slotId)) || slots[0];
           const pace = slot?.avgConsultationMinutes || 3.0;
 
@@ -631,6 +703,7 @@ export const getPatientAppointments = async (req: AuthRequest, res: Response): P
 
           return {
             ...appt,
+            fee: clinicFee,
             liveQueue: {
               currentServingQueueNumber: currentServingQueueNumber || (isShiftActive ? 1 : 0),
               patientsAway: patientsAhead,
@@ -642,7 +715,10 @@ export const getPatientAppointments = async (req: AuthRequest, res: Response): P
             },
           };
         }
-        return appt;
+        return {
+          ...appt,
+          fee: clinicFee,
+        };
       })
     );
 

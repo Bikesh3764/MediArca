@@ -719,6 +719,8 @@ export interface Doctor {
     id: string;
     clinicId: string;
     clinic: ClinicProfile;
+    consultationFee?: number;
+    slots?: DoctorSlot[];
   }>;
   user: {
     id: string;
@@ -756,6 +758,17 @@ export interface QueuePreview {
   isPassed?: boolean;
   isInProgress?: boolean;
   statusLabel?: string;
+  consultationFee?: number;
+  clinicId?: string | null;
+  clinicName?: string | null;
+  selectedClinic?: {
+    clinicId: string;
+    clinicName: string;
+    address: string;
+    city?: string;
+    phone?: string;
+    consultationFee?: number;
+  } | null;
   hasClinics?: boolean;
   clinicsCount?: number;
   clinics?: Array<{
@@ -764,6 +777,8 @@ export interface QueuePreview {
     address: string;
     city?: string;
     phone?: string;
+    consultationFee?: number;
+    slots?: DoctorSlot[];
   }>;
 }
 
@@ -991,18 +1006,21 @@ export const api = {
   },
 
   // Appointments & Queue Preview
-  async getQueuePreview(doctorId: string, appointmentDate: string, slotId?: string): Promise<QueuePreview> {
+  async getQueuePreview(doctorId: string, appointmentDate: string, slotId?: string, clinicId?: string): Promise<QueuePreview> {
     const clientMinutes = new Date().getHours() * 60 + new Date().getMinutes();
     try {
       const slotQuery = slotId ? `&slotId=${encodeURIComponent(slotId)}` : '';
+      const clinicQuery = clinicId ? `&clinicId=${encodeURIComponent(clinicId)}` : '';
       const res = await fetch(
-        `${API_BASE_URL}/appointments/queue-preview?doctorId=${doctorId}&appointmentDate=${appointmentDate}&clientMinutes=${clientMinutes}${slotQuery}`
+        `${API_BASE_URL}/appointments/queue-preview?doctorId=${doctorId}&appointmentDate=${appointmentDate}&clientMinutes=${clientMinutes}${slotQuery}${clinicQuery}`
       );
       return await handleResponse(res);
     } catch (err) {
       console.warn('Queue preview API unavailable, using offline preview calculation fallback', err);
       const doctor = DEMO_DOCTORS.find((d) => d.id === doctorId) || DEMO_DOCTORS[0];
-      const slots = parseDoctorSlots(doctor);
+      const matchedClinic = clinicId ? doctor.clinics?.find(c => c.clinicId === clinicId) : doctor.clinics?.[0];
+      const slots = (matchedClinic?.slots && matchedClinic.slots.length > 0) ? matchedClinic.slots : parseDoctorSlots(doctor);
+      const effectiveFee = matchedClinic?.consultationFee ?? doctor.consultationFee;
       const now = new Date();
 
       const availableSlots: SlotStatusResult[] = slots.map((slot) => {
@@ -1038,6 +1056,28 @@ export const api = {
         isPassed: chosen.isPassed,
         isInProgress: chosen.isInProgress,
         statusLabel: chosen.statusLabel,
+        consultationFee: effectiveFee,
+        clinicId: matchedClinic?.clinicId,
+        clinicName: matchedClinic?.clinic.clinicName,
+        selectedClinic: matchedClinic ? {
+          clinicId: matchedClinic.clinicId,
+          clinicName: matchedClinic.clinic.clinicName,
+          address: matchedClinic.clinic.address,
+          city: matchedClinic.clinic.city,
+          phone: matchedClinic.clinic.phone,
+          consultationFee: effectiveFee,
+        } : null,
+        hasClinics: (doctor.clinics?.length || 0) > 0,
+        clinicsCount: doctor.clinics?.length || 0,
+        clinics: doctor.clinics?.map(c => ({
+          clinicId: c.clinicId,
+          clinicName: c.clinic.clinicName,
+          address: c.clinic.address,
+          city: c.clinic.city,
+          phone: c.clinic.phone,
+          consultationFee: c.consultationFee ?? doctor.consultationFee,
+          slots: c.slots || parseDoctorSlots(doctor),
+        })),
       };
     }
   },
