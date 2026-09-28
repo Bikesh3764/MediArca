@@ -539,6 +539,8 @@ export const DoctorDetail: React.FC = () => {
                                 <span className="text-[10px] block text-[#86868b]">Cap: {slot.maxPatients} pts</span>
                                 {isPassed ? (
                                   <span className="text-[10px] text-gray-500 font-medium">Shift Ended</span>
+                                ) : slotStatus?.isFull ? (
+                                  <span className="text-[10px] text-rose-600 font-semibold">Fully Booked</span>
                                 ) : slotStatus?.isInProgress ? (
                                   <span className="text-[10px] text-emerald-600 font-semibold flex items-center gap-1 justify-end">
                                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>

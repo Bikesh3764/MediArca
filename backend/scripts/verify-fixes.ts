@@ -160,13 +160,16 @@ function runTests() {
   assert(statusNight.isPassed === false, 'Overnight shift is NOT marked passed at 23:00');
   assert(statusNight.isInProgress === true, 'Overnight shift is active at 23:00');
 
-  // 9. Active In-Progress Slot Overflow (Clock too close to shift end)
+  // 9. Active In-Progress Slot Near Shift End (Within maxPatients capacity)
   // Shift ends at 11:00 AM (660 mins). Clock is 10:55 AM (655 mins). 5 patients ahead * 2.4 min = 12 mins -> 667 mins (11:07 AM).
+  // With maxPatients = 50, only 5 patients are booked: shift is NOT full!
   const nowCloseToEnd = new Date(2026, 8, 11, 10, 55);
-  const statusOverflow = evaluateSlotStatus(slotMorning, '2026-09-11', 5, nowCloseToEnd);
-  assert(statusOverflow.isFull === true, 'Shift with wait exceeding end time is marked isFull');
-  assert(statusOverflow.estimatedTime === 'Shift Full', 'Estimated time reflects Shift Full rather than past/exceeded time');
-  assert(statusOverflow.statusLabel === 'Shift Over Capacity for Today', 'Label reflects Shift Over Capacity');
+  const statusNearEnd = evaluateSlotStatus(slotMorning, '2026-09-11', 5, nowCloseToEnd);
+  assert(statusNearEnd.isFull === false, 'Shift with 5/50 capacity is NOT marked isFull near shift end');
+  assert(statusNearEnd.isPassed === false, 'Shift has not ended yet at 10:55 AM');
+  assert(statusNearEnd.isInProgress === true, 'Shift is active in progress at 10:55 AM');
+  assert(statusNearEnd.estimatedTime === '11:07 AM', `Estimated time reflects accurate time 11:07 AM, got ${statusNearEnd.estimatedTime}`);
+  assert(statusNearEnd.statusLabel === 'Active Now • In Progress', 'Label reflects Active Now • In Progress');
 
   // 10. Client Minutes Timezone Override (Render server in UTC vs client in local time)
   // Server is 04:30 AM UTC (270 mins), but client passes local minute 630 (10:30 AM)
@@ -2264,6 +2267,31 @@ function runTests() {
   );
   assert(rejectedRec.status === 'REJECTED', 'Clinic rejection transitions receptionist status to REJECTED');
   assert(rejectedRec.canAccessDesk === false, 'Rejected receptionist desk access remains revoked');
+
+  // --- Test 85: Shift Capacity with 1/25 Patients Near Shift End (User Bug Report Scenario) ---
+  console.log('\n--- Test 85: Shift Capacity with 1/25 Patients Near Shift End ---');
+  const slotSarah: DoctorSlot = {
+    id: 's_sarah_01',
+    name: 'Shift 1: Morning & Afternoon',
+    startTime: '09:00',
+    endTime: '13:00',
+    maxPatients: 25,
+    avgConsultationMinutes: 20,
+  };
+  // Simulate 12:43 PM today (763 mins) with 1 patient booked (Queue #2):
+  const now1243 = new Date(2026, 8, 28, 12, 43);
+  const statusSarah = evaluateSlotStatus(slotSarah, '2026-09-28', 1, now1243);
+  assert(statusSarah.isPassed === false, 'Shift ending at 13:00 is NOT passed at 12:43 PM');
+  assert(statusSarah.isInProgress === true, 'Shift is actively in progress at 12:43 PM');
+  assert(statusSarah.isFull === false, 'Shift with 1/25 booked is NOT full (24 seats available)');
+  assert(statusSarah.statusLabel === 'Active Now • In Progress', 'Status label reflects Active Now • In Progress');
+  assert(statusSarah.estimatedTime === '01:03 PM', `Estimated time is 01:03 PM, got ${statusSarah.estimatedTime}`);
+
+  // When bookedCount reaches maxPatients (25/25):
+  const statusSarahFull = evaluateSlotStatus(slotSarah, '2026-09-28', 25, now1243);
+  assert(statusSarahFull.isFull === true, 'Shift with 25/25 booked is strictly isFull=true');
+  assert(statusSarahFull.statusLabel === 'Fully Booked', 'Full shift statusLabel evaluates to Fully Booked');
+  assert(statusSarahFull.estimatedTime === 'Shift Full', 'Full shift estimatedTime is Shift Full');
 
   console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);
