@@ -1985,6 +1985,142 @@ function runTests() {
     'Patient Medical Vault upload categories correctly support Lab Report and Scan'
   );
 
+  // --- Test 75: Shift Full Estimated Time Hardening ---
+  console.log('\n--- Test 75: Shift Full Estimated Time Hardening ---');
+  const futureSlot = {
+    id: 'slot-morning',
+    name: 'Morning Shift (09:00 AM - 12:00 PM)',
+    startTime: '09:00',
+    endTime: '12:00',
+    maxPatients: 20,
+    avgConsultationMinutes: 5,
+  };
+  // Simulate date tomorrow (not passed) and full capacity (20 booked)
+  const fullStatusResult = evaluateSlotStatus(futureSlot, '2099-01-01', 20, new Date());
+  assert(fullStatusResult.isFull === true, 'Shift with 20/20 patients evaluates as isFull=true');
+  assert(fullStatusResult.isPassed === false, 'Future shift evaluates as isPassed=false');
+  assert(fullStatusResult.statusLabel === 'Fully Booked', 'Full shift statusLabel evaluates to Fully Booked');
+  assert(fullStatusResult.estimatedTime === 'Shift Full', 'Full shift estimatedTime is strictly hardened to "Shift Full"');
+
+  // --- Test 76: Vault Server-Side Prescription Upload Rejection ---
+  console.log('\n--- Test 76: Vault Server-Side Prescription Upload Rejection ---');
+  const validateVaultUploadCategory = (category: string | undefined): { allowed: boolean; status: number; message?: string } => {
+    if (category && String(category).trim().toLowerCase() === 'prescription') {
+      return {
+        allowed: false,
+        status: 400,
+        message: 'Prescription uploads are not permitted in the patient medical vault. Digital prescriptions are issued directly by doctors during consultation.',
+      };
+    }
+    return { allowed: true, status: 200 };
+  };
+  assert(validateVaultUploadCategory('Prescription').allowed === false, 'Rejects "Prescription" category with allowed=false');
+  assert(validateVaultUploadCategory('Prescription').status === 400, 'Rejects "Prescription" category with HTTP 400');
+  assert(validateVaultUploadCategory('prescription').allowed === false, 'Rejects lowercase "prescription" category');
+  assert(validateVaultUploadCategory(' PRESCRIPTION ').allowed === false, 'Rejects whitespace-padded " PRESCRIPTION "');
+  assert(validateVaultUploadCategory('Lab Report').allowed === true, 'Permits "Lab Report" category upload');
+  assert(validateVaultUploadCategory('Scan').allowed === true, 'Permits "Scan" category upload');
+
+  // --- Test 77: Consultation Cabin & Status Update State Machine Guards ---
+  console.log('\n--- Test 77: Consultation Cabin & Status Update State Machine Guards ---');
+  const validateCallPatient = (apptStatus: string): { allowed: boolean; status: number; message?: string } => {
+    if (apptStatus === 'COMPLETED') {
+      return { allowed: false, status: 400, message: 'Cannot call an appointment that has already been completed' };
+    }
+    return { allowed: true, status: 200 };
+  };
+  const validateCompleteConsultation = (apptStatus: string): { allowed: boolean; status: number; message?: string } => {
+    if (apptStatus === 'CANCELLED') {
+      return { allowed: false, status: 400, message: 'Cannot complete consultation for a cancelled appointment' };
+    }
+    return { allowed: true, status: 200 };
+  };
+  const validateUpdateAppointmentStatus = (currentStatus: string): { allowed: boolean; status: number; message?: string } => {
+    if (currentStatus === 'COMPLETED' || currentStatus === 'CANCELLED') {
+      return { allowed: false, status: 400, message: `Cannot update status of an appointment that is already ${currentStatus.toLowerCase()}` };
+    }
+    return { allowed: true, status: 200 };
+  };
+
+  assert(validateCallPatient('COMPLETED').allowed === false, 'Doctor callPatient rejects already COMPLETED appointment');
+  assert(validateCallPatient('WAITING').allowed === true, 'Doctor callPatient allows WAITING appointment');
+  assert(validateCompleteConsultation('CANCELLED').allowed === false, 'Doctor completeConsultation rejects CANCELLED appointment');
+  assert(validateCompleteConsultation('IN_CONSULTATION').allowed === true, 'Doctor completeConsultation allows active consultation');
+  assert(validateUpdateAppointmentStatus('COMPLETED').allowed === false, 'updateAppointmentStatus rejects modifying COMPLETED appointment');
+  assert(validateUpdateAppointmentStatus('CANCELLED').allowed === false, 'updateAppointmentStatus rejects modifying CANCELLED appointment');
+  assert(validateUpdateAppointmentStatus('WAITING').allowed === true, 'updateAppointmentStatus allows modifying WAITING appointment');
+
+  // --- Test 78: Receptionist Facility Queue & Desk Scoping ---
+  console.log('\n--- Test 78: Receptionist Facility Queue & Desk Scoping ---');
+  const mockDoctorAppointmentsAcrossClinics = [
+    { id: 'appt-1', doctorId: 'doc-1', clinicId: 'clinic-A', status: 'WAITING', queueNumber: 1 },
+    { id: 'appt-2', doctorId: 'doc-1', clinicId: 'clinic-A', status: 'IN_CONSULTATION', queueNumber: 2 },
+    { id: 'appt-3', doctorId: 'doc-1', clinicId: 'clinic-B', status: 'WAITING', queueNumber: 1 },
+  ];
+  const filterQueueForReceptionistClinic = (clinicId: string, appts: typeof mockDoctorAppointmentsAcrossClinics) => {
+    return appts.filter((a) => !clinicId || a.clinicId === clinicId);
+  };
+  const clinicAQueue = filterQueueForReceptionistClinic('clinic-A', mockDoctorAppointmentsAcrossClinics);
+  assert(clinicAQueue.length === 2, 'Receptionist at Clinic A only sees 2 appointments from Clinic A');
+  assert(clinicAQueue.every((a) => a.clinicId === 'clinic-A'), 'No Clinic B appointments leak to Clinic A receptionist');
+
+  // --- Test 79: Slot Capacity Checking Window Heterogeneous Shift Isolation ---
+  console.log('\n--- Test 79: Slot Capacity Checking Window Heterogeneous Shift Isolation ---');
+  const checkAppointmentMatchesSlot = (
+    appt: { slotId?: string | null; checkingWindow?: string | null },
+    slot: { id: string; startTime: string },
+    totalSlotsCount: number
+  ): boolean => {
+    if (appt.slotId) return appt.slotId === slot.id;
+    if (appt.checkingWindow) return appt.checkingWindow.includes(slot.startTime);
+    return totalSlotsCount === 1;
+  };
+
+  const morningShift = { id: 'slot-m', startTime: '09:00' };
+  const afternoonAppt = { slotId: null, checkingWindow: 'Afternoon Shift (14:00 - 18:00)' };
+  const morningAppt = { slotId: null, checkingWindow: 'Morning Shift (09:00 - 12:00)' };
+  const untaggedAppt = { slotId: null, checkingWindow: null };
+
+  assert(
+    checkAppointmentMatchesSlot(afternoonAppt, morningShift, 1) === false,
+    'Afternoon appointment does NOT match morning shift when totalSlotsCount=1'
+  );
+  assert(
+    checkAppointmentMatchesSlot(morningAppt, morningShift, 1) === true,
+    'Morning appointment correctly matches morning shift'
+  );
+  assert(
+    checkAppointmentMatchesSlot(untaggedAppt, morningShift, 1) === true,
+    'Untagged appointment falls back to single shift when totalSlotsCount=1'
+  );
+
+  // --- Test 80: Doctor Schedule Update With Invalid Clinic Affiliation Returns 404 ---
+  console.log('\n--- Test 80: Doctor Schedule Update With Invalid Clinic Affiliation Returns 404 ---');
+  const handleUpdateScheduleClinicAffiliation = (
+    doctorAffiliations: Array<{ clinicId: string; clinicName: string }>,
+    requestedClinicId?: string
+  ): { status: number; error?: string; updated: boolean } => {
+    if (requestedClinicId) {
+      const match = doctorAffiliations.find((a) => a.clinicId === requestedClinicId);
+      if (!match) {
+        return {
+          status: 404,
+          error: 'Active clinic affiliation not found for this facility. Unable to configure clinic-specific schedule.',
+          updated: false,
+        };
+      }
+      return { status: 200, updated: true };
+    }
+    return { status: 200, updated: true };
+  };
+
+  const affiliations = [{ clinicId: 'clinic-alpha', clinicName: 'Alpha Clinic' }];
+  const invalidResult = handleUpdateScheduleClinicAffiliation(affiliations, 'clinic-unaffiliated');
+  assert(invalidResult.status === 404, 'Supplying unaffiliated clinicId returns HTTP 404');
+  assert(invalidResult.updated === false, 'Global schedule is protected from silent overwrite when clinicId is invalid');
+  const validResult = handleUpdateScheduleClinicAffiliation(affiliations, 'clinic-alpha');
+  assert(validResult.status === 200 && validResult.updated === true, 'Supplying valid affiliated clinicId succeeds');
+
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);
 

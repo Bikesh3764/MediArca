@@ -1370,29 +1370,43 @@ export const DoctorDashboard: React.FC = () => {
                   <h3 className="text-sm font-semibold uppercase tracking-wider text-[#86868b]">
                     Waiting Queue ({queueData?.waitingQueue.length || 0})
                   </h3>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      value={queueSearch}
-                      onChange={(e) => setQueueSearch(e.target.value)}
-                      placeholder="Search patient, phone, token..."
-                      className="h-9 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0088e8] w-48 sm:w-56"
-                    />
-                    {queueData && queueData.waitingQueue.length > 0 && (
-                      <AppleButton
-                        variant="primary"
-                        size="sm"
-                        disabled={callingId !== null}
-                        onClick={() => handleCallPatient(queueData.waitingQueue[0].id)}
-                        className="flex items-center gap-1.5 shadow-sm whitespace-nowrap"
-                      >
-                        <Play className="w-3.5 h-3.5 fill-current" />
-                        {callingId === queueData.waitingQueue[0].id
-                          ? 'Calling Next Patient...'
-                          : `Next Patient: Call Queue #${queueData.waitingQueue[0].queueNumber}`}
-                      </AppleButton>
-                    )}
-                  </div>
+                  {(() => {
+                    const filteredWaiting = queueData?.waitingQueue.filter((appt) => {
+                      if (!queueSearch.trim()) return true;
+                      const q = queueSearch.toLowerCase().trim();
+                      const name = (appt.patientName || appt.patient?.user?.fullName || '').toLowerCase();
+                      const phone = (appt.patient?.user?.phone || '').toLowerCase();
+                      const token = String(appt.queueNumber || '');
+                      return name.includes(q) || phone.includes(q) || token.includes(q);
+                    }) || [];
+                    const nextTarget = filteredWaiting[0];
+
+                    return (
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={queueSearch}
+                          onChange={(e) => setQueueSearch(e.target.value)}
+                          placeholder="Search patient, phone, token..."
+                          className="h-9 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0088e8] w-48 sm:w-56"
+                        />
+                        {nextTarget && (
+                          <AppleButton
+                            variant="primary"
+                            size="sm"
+                            disabled={callingId !== null}
+                            onClick={() => handleCallPatient(nextTarget.id)}
+                            className="flex items-center gap-1.5 shadow-sm whitespace-nowrap"
+                          >
+                            <Play className="w-3.5 h-3.5 fill-current" />
+                            {callingId === nextTarget.id
+                              ? 'Calling Next Patient...'
+                              : `Next Patient: Call Queue #${nextTarget.queueNumber}`}
+                          </AppleButton>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 {loading ? (

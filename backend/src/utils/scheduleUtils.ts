@@ -238,9 +238,7 @@ export const evaluateSlotStatus = (
     if (!statusLabel || statusLabel === 'Available' || statusLabel === 'Active Now • In Progress' || statusLabel === 'Upcoming Today' || statusLabel === 'Upcoming') {
       statusLabel = 'Fully Booked';
     }
-    if (!estimatedTime || estimatedTime === 'Shift Ended') {
-      estimatedTime = 'Shift Full';
-    }
+    estimatedTime = 'Shift Full';
   }
 
   return {

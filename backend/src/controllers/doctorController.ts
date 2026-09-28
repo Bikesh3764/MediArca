@@ -221,32 +221,38 @@ export const updateSchedule = async (req: AuthRequest, res: Response): Promise<v
         include: { clinic: true },
       });
 
-      if (clinicAffiliation) {
-        const clinicUpdateData: any = {};
-        if (formattedSlots.length > 0) {
-          clinicUpdateData.slots = JSON.stringify(formattedSlots);
-        }
-        if (consultationFee !== undefined && !isNaN(Number(consultationFee))) {
-          clinicUpdateData.consultationFee = Number(consultationFee);
-        }
-
-        await prisma.clinicDoctor.update({
-          where: { id: clinicAffiliation.id },
-          data: clinicUpdateData,
-        });
-
-        res.json({
-          success: true,
-          message: `Schedule and consultation fee for ${clinicAffiliation.clinic.clinicName} updated successfully`,
-          data: {
-            clinicId,
-            clinicName: clinicAffiliation.clinic.clinicName,
-            consultationFee: clinicUpdateData.consultationFee ?? (clinicAffiliation as any).consultationFee ?? doctor.consultationFee,
-            slots: formattedSlots.length > 0 ? formattedSlots : parseDoctorSlots(doctor),
-          },
+      if (!clinicAffiliation) {
+        res.status(404).json({
+          success: false,
+          message: 'Active clinic affiliation not found for this facility. Unable to configure clinic-specific schedule.',
         });
         return;
       }
+
+      const clinicUpdateData: any = {};
+      if (formattedSlots.length > 0) {
+        clinicUpdateData.slots = JSON.stringify(formattedSlots);
+      }
+      if (consultationFee !== undefined && !isNaN(Number(consultationFee))) {
+        clinicUpdateData.consultationFee = Number(consultationFee);
+      }
+
+      await prisma.clinicDoctor.update({
+        where: { id: clinicAffiliation.id },
+        data: clinicUpdateData,
+      });
+
+      res.json({
+        success: true,
+        message: `Schedule and consultation fee for ${clinicAffiliation.clinic.clinicName} updated successfully`,
+        data: {
+          clinicId,
+          clinicName: clinicAffiliation.clinic.clinicName,
+          consultationFee: clinicUpdateData.consultationFee ?? (clinicAffiliation as any).consultationFee ?? doctor.consultationFee,
+          slots: formattedSlots.length > 0 ? formattedSlots : parseDoctorSlots(doctor),
+        },
+      });
+      return;
     }
 
     const updateData: any = {
@@ -357,7 +363,10 @@ export const getDoctorAffiliations = async (req: AuthRequest, res: Response): Pr
         let clinicSlots = parseDoctorSlots(doctor);
         if ((cd as any).slots) {
           try {
-            clinicSlots = JSON.parse((cd as any).slots);
+            const parsed = typeof (cd as any).slots === 'string' ? JSON.parse((cd as any).slots) : (cd as any).slots;
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              clinicSlots = parsed;
+            }
           } catch {}
         }
 

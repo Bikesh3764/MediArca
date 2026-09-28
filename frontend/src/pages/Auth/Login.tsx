@@ -112,7 +112,7 @@ export const Login: React.FC = () => {
         </h2>
         <p className="mt-2 text-sm text-[#7a7a7a]">
           Or{' '}
-          <Link to="/signup" className="text-[#0088e8] font-medium hover:underline">
+          <Link to="/signup" state={location.state} className="text-[#0088e8] font-medium hover:underline">
             create a new MediArca account
           </Link>
         </p>

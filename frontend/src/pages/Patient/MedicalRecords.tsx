@@ -240,7 +240,7 @@ export const MedicalRecords: React.FC = () => {
       portalSubtitle="PATIENT HEALTH RECORD"
       navItems={navItems}
       title="Medical Records Vault"
-      subtitle="Secure storage for diagnostic reports, imaging scans, and digital prescriptions"
+      subtitle="Secure storage for diagnostic lab reports, imaging scans, and clinical summaries"
       headerAction={
         <AppleButton
           variant="primary"

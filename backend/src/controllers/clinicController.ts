@@ -216,10 +216,10 @@ export const addDoctorToClinic = async (req: AuthRequest, res: Response): Promis
       return;
     }
 
-    if (!clinic.isVerified) {
+    if (!clinic.isVerified || clinic.verificationStatus === 'SUSPENDED') {
       res.status(400).json({
         success: false,
-        message: 'Cannot affiliate with an unverified clinic. Please wait for administrative verification.',
+        message: 'Cannot affiliate with an unverified or suspended clinic. Please wait for administrative verification.',
       });
       return;
     }
@@ -365,10 +365,10 @@ export const respondToDoctorAffiliation = async (req: AuthRequest, res: Response
       return;
     }
 
-    if (!clinic.isVerified) {
+    if (!clinic.isVerified || clinic.verificationStatus === 'SUSPENDED') {
       res.status(400).json({
         success: false,
-        message: 'Cannot affiliate with an unverified clinic. Please wait for administrative verification.',
+        message: 'Cannot affiliate with an unverified or suspended clinic. Please wait for administrative verification.',
       });
       return;
     }
@@ -549,6 +549,14 @@ export const addClinicReceptionist = async (req: AuthRequest, res: Response): Pr
 
     if (!clinic) {
       res.status(404).json({ success: false, message: 'Clinic profile not found' });
+      return;
+    }
+
+    if (!clinic.isVerified || clinic.verificationStatus === 'SUSPENDED') {
+      res.status(403).json({
+        success: false,
+        message: 'Your clinic facility is pending administrative verification or is suspended. Staff provisioning is disabled.',
+      });
       return;
     }
 

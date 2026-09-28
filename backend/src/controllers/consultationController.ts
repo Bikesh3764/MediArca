@@ -142,6 +142,11 @@ export const callPatient = async (req: AuthRequest, res: Response): Promise<void
       return;
     }
 
+    if (targetAppointment.status === 'COMPLETED') {
+      res.status(400).json({ success: false, message: 'Cannot call an appointment that has already been completed' });
+      return;
+    }
+
     // Reset any currently IN_CONSULTATION appointments on this date back to WAITING
     await prisma.appointment.updateMany({
       where: {
@@ -264,6 +269,11 @@ export const completeConsultation = async (req: AuthRequest, res: Response): Pro
 
     if (!targetAppointment || targetAppointment.doctorId !== doctor.id) {
       res.status(403).json({ success: false, message: 'Appointment does not belong to this doctor' });
+      return;
+    }
+
+    if (targetAppointment.status === 'CANCELLED') {
+      res.status(400).json({ success: false, message: 'Cannot complete consultation for a cancelled appointment' });
       return;
     }
 

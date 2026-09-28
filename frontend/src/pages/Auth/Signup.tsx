@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { AppleButton } from '../../components/ui/AppleButton';
 import { BrandLogo } from '../../components/ui/BrandLogo';
@@ -28,6 +28,24 @@ export const Signup: React.FC = () => {
 
   const { register, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const getDestination = (targetRole: string) => {
+    if (targetRole === 'DOCTOR') return '/doctor/dashboard';
+    if (targetRole === 'ADMIN') return '/admin';
+    if (targetRole === 'CLINIC') return '/clinic/dashboard';
+    if (targetRole === 'RECEPTIONIST') return '/receptionist/dashboard';
+    return '/patient/doctors';
+  };
+
+  const getTargetDestination = (targetRole: string) => {
+    const fromPath = (location.state as any)?.from?.pathname;
+    const search = (location.state as any)?.from?.search || '';
+    if (fromPath && fromPath !== '/login' && fromPath !== '/signup') {
+      return `${fromPath}${search}`;
+    }
+    return getDestination(targetRole);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,13 +77,7 @@ export const Signup: React.FC = () => {
       }
 
       const registered = await register(payload);
-      if (registered.role === 'DOCTOR') {
-        navigate('/doctor/dashboard');
-      } else if (registered.role === 'ADMIN') {
-        navigate('/admin');
-      } else {
-        navigate('/patient/doctors');
-      }
+      navigate(getTargetDestination(registered.role), { replace: true });
     } catch (err: any) {
       setError(err.message || 'Registration failed');
     } finally {
@@ -79,13 +91,7 @@ export const Signup: React.FC = () => {
       setSubmitting(true);
       try {
         const loggedUser = await loginWithGoogle(credentialResponse.credential, role);
-        if (loggedUser.role === 'DOCTOR') {
-          navigate('/doctor/dashboard');
-        } else if (loggedUser.role === 'ADMIN') {
-          navigate('/admin');
-        } else {
-          navigate('/patient/doctors');
-        }
+        navigate(getTargetDestination(loggedUser.role), { replace: true });
       } catch (err: any) {
         setError(err.message || 'Google sign-up authentication failed');
       } finally {
@@ -108,13 +114,7 @@ export const Signup: React.FC = () => {
       );
       const simulatedToken = `${header}.${payload}.signature`;
       const loggedUser = await loginWithGoogle(simulatedToken, role);
-      if (loggedUser.role === 'DOCTOR') {
-        navigate('/doctor/dashboard');
-      } else if (loggedUser.role === 'ADMIN') {
-        navigate('/admin');
-      } else {
-        navigate('/patient/doctors');
-      }
+      navigate(getTargetDestination(loggedUser.role), { replace: true });
     } catch (err: any) {
       setError(err.message || 'Simulated Google sign-up failed');
     } finally {

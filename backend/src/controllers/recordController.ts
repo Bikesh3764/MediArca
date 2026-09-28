@@ -14,6 +14,14 @@ export const uploadRecord = async (req: AuthRequest, res: Response): Promise<voi
     const { title, category = 'Lab Report' } = req.body;
     const file = req.file;
 
+    if (category && String(category).trim().toLowerCase() === 'prescription') {
+      res.status(400).json({
+        success: false,
+        message: 'Prescription uploads are not permitted in the patient medical vault. Digital prescriptions are issued directly by doctors during consultation.',
+      });
+      return;
+    }
+
     if (!file) {
       res.status(400).json({ success: false, message: 'No file uploaded' });
       return;

@@ -68,13 +68,14 @@ export const getMyReceptionist = async (req: AuthRequest, res: Response): Promis
       activeDoctorIds.includes(dr.doctorId)
     );
 
-    // Compute today's queue count for each linked doctor
+    // Compute today's queue count for each linked doctor (scoped to this clinic)
     const doctorsWithQueue = await Promise.all(
       activeAssignments.map(async (dr) => {
         const todayCount = await prisma.appointment.count({
           where: {
             doctorId: dr.doctorId,
             appointmentDate: todayStr,
+            ...(receptionist.clinicId ? { clinicId: receptionist.clinicId } : {}),
             status: { in: ['WAITING', 'IN_CONSULTATION', 'COMPLETED'] },
           },
         });
@@ -83,11 +84,29 @@ export const getMyReceptionist = async (req: AuthRequest, res: Response): Promis
           where: {
             doctorId: dr.doctorId,
             appointmentDate: todayStr,
+            ...(receptionist.clinicId ? { clinicId: receptionist.clinicId } : {}),
             status: 'WAITING',
           },
         });
 
-        const activeSlot = parseDoctorSlots(dr.doctor);
+        let activeSlots = parseDoctorSlots(dr.doctor);
+        let consultationFee = dr.doctor.consultationFee;
+        if (receptionist.clinicId) {
+          const cd = dr.doctor.clinics?.find((c: any) => c.clinicId === receptionist.clinicId);
+          if (cd) {
+            if (cd.consultationFee !== null && cd.consultationFee !== undefined) {
+              consultationFee = cd.consultationFee;
+            }
+            if (cd.slots) {
+              try {
+                const parsed = typeof cd.slots === 'string' ? JSON.parse(cd.slots) : cd.slots;
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                  activeSlots = parsed;
+                }
+              } catch {}
+            }
+          }
+        }
 
         return {
           affiliationId: dr.id,
@@ -98,8 +117,8 @@ export const getMyReceptionist = async (req: AuthRequest, res: Response): Promis
           avatarUrl: dr.doctor.user.avatarUrl,
           specialty: dr.doctor.specialty,
           clinicAddress: dr.doctor.clinicAddress,
-          consultationFee: dr.doctor.consultationFee,
-          slots: activeSlot,
+          consultationFee,
+          slots: activeSlots,
           clinics: dr.doctor.clinics,
           todayTotalBookings: todayCount,
           todayWaitingPatients: waitingCount,
@@ -222,6 +241,7 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
       where: {
         doctorId: doctorId,
         appointmentDate: appointmentDate,
+        ...(receptionist?.clinicId ? { clinicId: receptionist.clinicId } : {}),
       },
       include: {
         patient: {
@@ -391,6 +411,17 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
 
     // Verify doctor is actively affiliated with this receptionist's clinic
     if (receptionist.clinicId) {
+      const clinic = await prisma.clinicProfile.findUnique({
+        where: { id: receptionist.clinicId },
+      });
+      if (!clinic || !clinic.isVerified || clinic.verificationStatus === 'SUSPENDED') {
+        res.status(403).json({
+          success: false,
+          message: 'Access denied: Your clinic facility is not verified or is suspended from desk operations.',
+        });
+        return;
+      }
+
       const isAffiliated = await prisma.clinicDoctor.findUnique({
         where: {
           clinicId_doctorId: {
@@ -518,9 +549,8 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
 
           const bookedInSlot = dayAppointments.filter((a) => {
             if (a.slotId) return a.slotId === chosenSlot.id;
-            if (a.checkingWindow && a.checkingWindow.includes(chosenSlot.startTime)) return true;
-            if (slots.length === 1) return true;
-            return false;
+            if (a.checkingWindow) return a.checkingWindow.includes(chosenSlot.startTime);
+            return slots.length === 1;
           }).length;
 
           // Check if slot has passed or reached max patients
@@ -593,9 +623,10 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
         break; // Success!
       } catch (err: any) {
         attempts++;
-        if (attempts >= maxAttempts) {
-          throw err;
+        if (err.code === 'P2002' && attempts < maxAttempts) {
+          continue;
         }
+        throw err;
       }
     }
 
@@ -630,6 +661,14 @@ export const updateAppointmentStatus = async (req: AuthRequest, res: Response): 
 
     if (!targetAppointment) {
       res.status(404).json({ success: false, message: 'Appointment not found' });
+      return;
+    }
+
+    if (targetAppointment.status === 'COMPLETED' || targetAppointment.status === 'CANCELLED') {
+      res.status(400).json({
+        success: false,
+        message: `Cannot update status of an appointment that is already ${targetAppointment.status.toLowerCase()}`,
+      });
       return;
     }
 

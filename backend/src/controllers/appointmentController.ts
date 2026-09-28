@@ -113,9 +113,8 @@ export const getQueuePreview = async (req: AuthRequest, res: Response): Promise<
     const availableSlots: SlotStatusResult[] = slots.map((slot) => {
       const bookedInSlot = dayAppointments.filter((a) => {
         if (a.slotId) return a.slotId === slot.id;
-        if (a.checkingWindow && a.checkingWindow.includes(slot.startTime)) return true;
-        if (slots.length === 1) return true;
-        return false;
+        if (a.checkingWindow) return a.checkingWindow.includes(slot.startTime);
+        return slots.length === 1;
       }).length;
 
       return evaluateSlotStatus(
@@ -441,9 +440,8 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
 
           const bookedInSlot = dayAppointments.filter((a) => {
             if (a.slotId) return a.slotId === chosenSlot!.id;
-            if (a.checkingWindow && a.checkingWindow.includes(chosenSlot!.startTime)) return true;
-            if (slots.length === 1) return true;
-            return false;
+            if (a.checkingWindow) return a.checkingWindow.includes(chosenSlot!.startTime);
+            return slots.length === 1;
           }).length;
 
           // Check if slot has passed or reached max patients
@@ -674,7 +672,12 @@ export const getPatientAppointments = async (req: AuthRequest, res: Response): P
             where: {
               doctorId: appt.doctorId,
               appointmentDate: appt.appointmentDate,
-              ...(appt.slotId ? { slotId: appt.slotId } : {}),
+              ...(appt.clinicId ? { clinicId: appt.clinicId } : {}),
+              ...(appt.slotId
+                ? { slotId: appt.slotId }
+                : appt.checkingWindow
+                ? { checkingWindow: appt.checkingWindow }
+                : {}),
               status: 'IN_CONSULTATION',
             },
           });
@@ -689,7 +692,12 @@ export const getPatientAppointments = async (req: AuthRequest, res: Response): P
             where: {
               doctorId: appt.doctorId,
               appointmentDate: appt.appointmentDate,
-              ...(appt.slotId ? { slotId: appt.slotId } : {}),
+              ...(appt.clinicId ? { clinicId: appt.clinicId } : {}),
+              ...(appt.slotId
+                ? { slotId: appt.slotId }
+                : appt.checkingWindow
+                ? { checkingWindow: appt.checkingWindow }
+                : {}),
               queueNumber: { lt: appt.queueNumber },
               status: { in: ['WAITING', 'IN_CONSULTATION'] },
             },

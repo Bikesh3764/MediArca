@@ -797,6 +797,8 @@ export const BookAppointment: React.FC = () => {
                   ? 'Confirming Token...'
                   : isSelectedSlotPassed
                   ? 'Shift Concluded — Select Next Shift'
+                  : isSelectedSlotFull
+                  ? 'Shift Fully Booked — Select Another Shift'
                   : queuePreview?.nextQueueNumber
                   ? `Confirm Queue #${queuePreview.nextQueueNumber}`
                   : 'Confirm Queue Token'}
