@@ -338,23 +338,69 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
     });
 
     if (req.user.role === 'PATIENT') {
+      const {
+        dateOfBirth,
+        gender,
+        bloodGroup,
+        allergies,
+        existingConditions,
+        currentMedications,
+        emergencyContact,
+      } = roleSpecificData;
+      const safePatientData: any = {};
+      if (dateOfBirth !== undefined) safePatientData.dateOfBirth = dateOfBirth ? new Date(dateOfBirth) : null;
+      if (gender !== undefined) safePatientData.gender = gender ? String(gender).trim() : null;
+      if (bloodGroup !== undefined) safePatientData.bloodGroup = bloodGroup ? String(bloodGroup).trim() : null;
+      if (allergies !== undefined) safePatientData.allergies = allergies ? String(allergies).trim() : null;
+      if (existingConditions !== undefined) safePatientData.existingConditions = existingConditions ? String(existingConditions).trim() : null;
+      if (currentMedications !== undefined) safePatientData.currentMedications = currentMedications ? String(currentMedications).trim() : null;
+      if (emergencyContact !== undefined) safePatientData.emergencyContact = emergencyContact ? String(emergencyContact).trim() : null;
+
       await prisma.patientProfile.upsert({
         where: { userId: req.user.id },
-        update: roleSpecificData,
+        update: safePatientData,
         create: {
           userId: req.user.id,
-          ...roleSpecificData,
+          ...safePatientData,
         },
       });
     } else if (req.user.role === 'DOCTOR') {
+      // Strict allowlist: Prevent doctors from modifying isVerified, verificationStatus, rating, totalReviews, userId, id
+      const {
+        specialty,
+        qualifications,
+        experienceYears,
+        consultationFee,
+        bio,
+        clinicAddress,
+        checkingStartTime,
+        checkingEndTime,
+        avgConsultationMinutes,
+        maxDailyPatients,
+        slots,
+      } = roleSpecificData;
+
+      const safeDoctorData: any = {};
+      if (specialty !== undefined) safeDoctorData.specialty = String(specialty).trim();
+      if (qualifications !== undefined) safeDoctorData.qualifications = String(qualifications).trim();
+      if (experienceYears !== undefined) safeDoctorData.experienceYears = Number(experienceYears) || 0;
+      if (consultationFee !== undefined) safeDoctorData.consultationFee = Number(consultationFee) || 0;
+      if (bio !== undefined) safeDoctorData.bio = bio ? String(bio).trim() : null;
+      if (clinicAddress !== undefined) safeDoctorData.clinicAddress = clinicAddress ? String(clinicAddress).trim() : null;
+      if (checkingStartTime !== undefined) safeDoctorData.checkingStartTime = String(checkingStartTime).trim();
+      if (checkingEndTime !== undefined) safeDoctorData.checkingEndTime = String(checkingEndTime).trim();
+      if (avgConsultationMinutes !== undefined) safeDoctorData.avgConsultationMinutes = Number(avgConsultationMinutes) || 15;
+      if (maxDailyPatients !== undefined) safeDoctorData.maxDailyPatients = Number(maxDailyPatients) || 30;
+      if (slots !== undefined) safeDoctorData.slots = typeof slots === 'string' ? slots : JSON.stringify(slots);
+
       await prisma.doctorProfile.upsert({
         where: { userId: req.user.id },
-        update: roleSpecificData,
+        update: safeDoctorData,
         create: {
           userId: req.user.id,
-          specialty: roleSpecificData.specialty || 'General Physician',
-          qualifications: roleSpecificData.qualifications || 'MBBS',
-          ...roleSpecificData,
+          specialty: safeDoctorData.specialty || 'General Physician',
+          qualifications: safeDoctorData.qualifications || 'MBBS',
+          ...safeDoctorData,
         },
       });
     }
@@ -380,36 +426,39 @@ export const googleAuth = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    let payload: any;
-    try {
-      if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_ID !== 'your-google-client-id') {
+    let payload: any = null;
+    const googleClientId = process.env.GOOGLE_CLIENT_ID;
+    const isConfigured = Boolean(googleClientId && googleClientId !== 'your-google-client-id');
+
+    if (isConfigured) {
+      try {
         const ticket = await googleClient.verifyIdToken({
           idToken: credential,
-          audience: process.env.GOOGLE_CLIENT_ID,
+          audience: googleClientId,
         });
         payload = ticket.getPayload();
-      } else {
-        payload = jwt.decode(credential);
+      } catch (err: any) {
+        console.error('Google token verification failed:', err.message);
+        res.status(401).json({ success: false, message: 'Invalid or unverified Google authentication credential' });
+        return;
       }
-    } catch (e: any) {
-      payload = jwt.decode(credential);
-    }
-
-    if (!payload || !payload.email) {
+    } else {
+      if (process.env.NODE_ENV === 'production') {
+        res.status(500).json({
+          success: false,
+          message: 'Google Sign-In is not configured on this server. GOOGLE_CLIENT_ID required.',
+        });
+        return;
+      }
       try {
-        const parts = credential.split('.');
-        if (parts.length >= 2) {
-          const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
-          const jsonStr = Buffer.from(base64, 'base64').toString('utf-8');
-          payload = JSON.parse(jsonStr);
-        } else {
-          payload = JSON.parse(credential);
-        }
-      } catch (err) {}
+        payload = jwt.decode(credential);
+      } catch {
+        payload = null;
+      }
     }
 
     if (!payload || !payload.email) {
-      res.status(400).json({ success: false, message: 'Unable to extract email from Google credential' });
+      res.status(401).json({ success: false, message: 'Unable to verify Google credential email' });
       return;
     }
 

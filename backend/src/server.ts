@@ -329,7 +329,37 @@ app.get(['/healthz', '/api/health', '/'], async (_req: Request, res: Response) =
   });
 });
 
-// Mount Routes
+// Lightweight sliding-window rate limiter for sensitive authentication & registration endpoints
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+const authRateLimiter = (maxRequests = 40, windowSeconds = 60) => {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    const ip = req.ip || req.headers['x-forwarded-for'] || 'client';
+    const key = `${ip}:${req.path}`;
+    const now = Date.now();
+    const entry = rateLimitMap.get(String(key));
+
+    if (entry && now < entry.resetTime) {
+      if (entry.count >= maxRequests) {
+        res.status(429).json({
+          success: false,
+          message: 'Too many requests. Please wait a moment before trying again.',
+        });
+        return;
+      }
+      entry.count += 1;
+    } else {
+      rateLimitMap.set(String(key), { count: 1, resetTime: now + windowSeconds * 1000 });
+    }
+    next();
+  };
+};
+
+// Mount Routes with Auth Rate Limiting
+app.use(
+  ['/api/auth/login', '/api/auth/register', '/api/auth/google', '/api/receptionists/apply', '/api/receptionist/apply'],
+  authRateLimiter(40, 60)
+);
+
 app.use('/api/auth', authRoutes);
 app.put(['/api/users/profile', '/api/user/profile'], authenticate, updateProfile);
 app.put(['/api/doctors/profile', '/api/doctor/profile'], authenticate, updateProfile);

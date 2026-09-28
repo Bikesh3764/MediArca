@@ -146,7 +146,8 @@ export const evaluateSlotStatus = (
   appointmentDate: string,
   bookedCountForSlot: number,
   now = new Date(),
-  overrideCurrentMinutes?: number
+  overrideCurrentMinutes?: number,
+  activeWaitingCount?: number
 ): SlotStatusResult => {
   const localYear = now.getFullYear();
   const localMonth = String(now.getMonth() + 1).padStart(2, '0');
@@ -173,7 +174,8 @@ export const evaluateSlotStatus = (
     slotEndMins += 24 * 60;
   }
 
-  const patientsAhead = bookedCountForSlot;
+  // Active waiting/in-consultation patients count toward estimated wait time; completed patients are not ahead
+  const patientsAhead = typeof activeWaitingCount === 'number' ? activeWaitingCount : bookedCountForSlot;
   let isPassed = false;
   let isInProgress = false;
   let isUpcoming = false;

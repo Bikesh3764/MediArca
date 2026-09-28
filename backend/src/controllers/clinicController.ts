@@ -404,6 +404,14 @@ export const respondToDoctorAffiliation = async (req: AuthRequest, res: Response
       return;
     }
 
+    if (affiliation.requestedBy === 'CLINIC') {
+      res.status(403).json({
+        success: false,
+        message: 'Cannot accept an affiliation request initiated by your clinic. Awaiting doctor acceptance.',
+      });
+      return;
+    }
+
     const docName = affiliation.doctor.user.fullName;
 
     if (action.toUpperCase() === 'ACCEPT') {
@@ -558,7 +566,11 @@ export const addClinicReceptionist = async (req: AuthRequest, res: Response): Pr
 
     const clinic = await prisma.clinicProfile.findUnique({
       where: { userId: req.user.id },
-      include: { doctors: true },
+      include: {
+        doctors: {
+          where: { status: { in: ['ACTIVE', 'ACCEPTED'] } },
+        },
+      },
     });
 
     if (!clinic) {
@@ -868,17 +880,27 @@ export const respondToReceptionistRequest = async (req: AuthRequest, res: Respon
       });
 
       if (Array.isArray(doctorIds) && doctorIds.length > 0) {
+        // Validate submitted doctor IDs belong to this clinic
+        const clinicDoctors = await prisma.clinicDoctor.findMany({
+          where: { clinicId: clinic.id, status: { in: ['ACTIVE', 'ACCEPTED'] } },
+          select: { doctorId: true },
+        });
+        const clinicDoctorIds = new Set(clinicDoctors.map((cd) => cd.doctorId));
+        const validDoctorIds = doctorIds.filter((docId: string) => clinicDoctorIds.has(docId));
+
         await prisma.doctorReceptionist.deleteMany({
           where: { receptionistId: receptionist.id },
         });
 
-        await prisma.doctorReceptionist.createMany({
-          data: doctorIds.map((docId: string) => ({
-            doctorId: docId,
-            receptionistId: receptionist.id,
-            status: 'ACTIVE',
-          })),
-        });
+        if (validDoctorIds.length > 0) {
+          await prisma.doctorReceptionist.createMany({
+            data: validDoctorIds.map((docId: string) => ({
+              doctorId: docId,
+              receptionistId: receptionist.id,
+              status: 'ACTIVE',
+            })),
+          });
+        }
       }
 
       res.json({

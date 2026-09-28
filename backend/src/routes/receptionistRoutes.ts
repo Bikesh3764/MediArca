@@ -12,7 +12,7 @@ import {
   rejectAppointment,
   applyReceptionist,
 } from '../controllers/receptionistController';
-import { authenticate } from '../middleware/authMiddleware';
+import { authenticate, authorize } from '../middleware/authMiddleware';
 
 const router = Router();
 
@@ -20,7 +20,7 @@ const router = Router();
 router.post('/apply', applyReceptionist);
 
 // Authenticated receptionist operations
-router.use(authenticate);
+router.use(authenticate, authorize('RECEPTIONIST'));
 
 router.get('/my-receptionist', getMyReceptionist);
 router.post('/doctors', addDoctorToReceptionist);

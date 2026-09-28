@@ -137,13 +137,11 @@ export const callPatient = async (req: AuthRequest, res: Response): Promise<void
       return;
     }
 
-    if (targetAppointment.status === 'CANCELLED') {
-      res.status(400).json({ success: false, message: 'Cannot call an appointment that has been cancelled' });
-      return;
-    }
-
-    if (targetAppointment.status === 'COMPLETED') {
-      res.status(400).json({ success: false, message: 'Cannot call an appointment that has already been completed' });
+    if (targetAppointment.status !== 'WAITING' && targetAppointment.status !== 'IN_CONSULTATION') {
+      res.status(400).json({
+        success: false,
+        message: `Cannot call an appointment with status '${targetAppointment.status}'. Only WAITING appointments can be called.`,
+      });
       return;
     }
 
@@ -272,8 +270,11 @@ export const completeConsultation = async (req: AuthRequest, res: Response): Pro
       return;
     }
 
-    if (targetAppointment.status === 'CANCELLED') {
-      res.status(400).json({ success: false, message: 'Cannot complete consultation for a cancelled appointment' });
+    if (targetAppointment.status !== 'IN_CONSULTATION' && targetAppointment.status !== 'WAITING') {
+      res.status(400).json({
+        success: false,
+        message: `Cannot complete consultation for an appointment with status '${targetAppointment.status}'. Only active appointments can be completed.`,
+      });
       return;
     }
 

@@ -185,27 +185,38 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
     const doctorId = String(req.params.doctorId);
     const appointmentDate = String(req.query.date || getLocalDateString());
 
-    let receptionist: any = null;
-    if (req.user && req.user.role === 'RECEPTIONIST') {
-      receptionist = await prisma.receptionistProfile.findUnique({
-        where: { userId: req.user.id },
+    if (!req.user || req.user.role !== 'RECEPTIONIST') {
+      res.status(403).json({
+        success: false,
+        message: 'Access denied: Receptionist role required to access clinical queue.',
       });
-      if (receptionist) {
-        const assignment = await prisma.doctorReceptionist.findUnique({
-          where: {
-            doctorId_receptionistId: {
-              doctorId,
-              receptionistId: receptionist.id,
-            },
-          },
-        });
-        if (!assignment) {
-          res.status(403).json({
-            success: false,
-            message: 'Access denied: You do not have queue management access for this doctor.',
-          });
-          return;
-        }
+      return;
+    }
+
+    const receptionist = await prisma.receptionistProfile.findUnique({
+      where: { userId: req.user.id },
+    });
+
+    if (!receptionist) {
+      res.status(404).json({ success: false, message: 'Receptionist profile not found' });
+      return;
+    }
+
+    const assignment = await prisma.doctorReceptionist.findUnique({
+      where: {
+        doctorId_receptionistId: {
+          doctorId,
+          receptionistId: receptionist.id,
+        },
+      },
+    });
+    if (!assignment) {
+      res.status(403).json({
+        success: false,
+        message: 'Access denied: You do not have queue management access for this doctor.',
+      });
+      return;
+    }
 
         if (receptionist.clinicId) {
           const isAffiliated = await prisma.clinicDoctor.findUnique({
@@ -224,8 +235,6 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
             return;
           }
         }
-      }
-    }
 
     const doctor = await prisma.doctorProfile.findUnique({
       where: { id: doctorId },
@@ -672,52 +681,58 @@ export const updateAppointmentStatus = async (req: AuthRequest, res: Response): 
       return;
     }
 
-    if (req.user?.role === 'RECEPTIONIST') {
-      const userRec = await prisma.user.findUnique({
-        where: { id: req.user.id },
-        select: { mustChangePassword: true },
+    if (!req.user || req.user.role !== 'RECEPTIONIST') {
+      res.status(403).json({
+        success: false,
+        message: 'Access denied: Receptionist role required to update clinical desk appointments.',
       });
-      if (userRec?.mustChangePassword || req.user.mustChangePassword) {
-        res.status(403).json({
-          success: false,
-          message: 'Temporary password must be changed before accessing clinical desk operations.',
-        });
-        return;
-      }
+      return;
+    }
 
-      const receptionist = await prisma.receptionistProfile.findUnique({
-        where: { userId: req.user.id },
+    const userRec = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { mustChangePassword: true },
+    });
+    if (userRec?.mustChangePassword || req.user.mustChangePassword) {
+      res.status(403).json({
+        success: false,
+        message: 'Temporary password must be changed before accessing clinical desk operations.',
       });
+      return;
+    }
 
-      if (!receptionist) {
-        res.status(403).json({ success: false, message: 'Access denied: Receptionist profile not found' });
-        return;
-      }
+    const receptionist = await prisma.receptionistProfile.findUnique({
+      where: { userId: req.user.id },
+    });
 
-      const assignment = await prisma.doctorReceptionist.findUnique({
-        where: {
-          doctorId_receptionistId: {
-            doctorId: targetAppointment.doctorId,
-            receptionistId: receptionist.id,
-          },
+    if (!receptionist) {
+      res.status(403).json({ success: false, message: 'Access denied: Receptionist profile not found' });
+      return;
+    }
+
+    const assignment = await prisma.doctorReceptionist.findUnique({
+      where: {
+        doctorId_receptionistId: {
+          doctorId: targetAppointment.doctorId,
+          receptionistId: receptionist.id,
         },
+      },
+    });
+
+    if (!assignment) {
+      res.status(403).json({
+        success: false,
+        message: 'Access denied: You are only authorized to update appointments for doctors assigned to your desk.',
       });
+      return;
+    }
 
-      if (!assignment) {
-        res.status(403).json({
-          success: false,
-          message: 'Access denied: You are only authorized to update appointments for doctors assigned to your desk.',
-        });
-        return;
-      }
-
-      if (receptionist.clinicId && targetAppointment.clinicId && targetAppointment.clinicId !== receptionist.clinicId) {
-        res.status(403).json({
-          success: false,
-          message: 'Access denied: Appointment belongs to another clinic facility.',
-        });
-        return;
-      }
+    if (receptionist.clinicId && targetAppointment.clinicId && targetAppointment.clinicId !== receptionist.clinicId) {
+      res.status(403).json({
+        success: false,
+        message: 'Access denied: Appointment belongs to another clinic facility.',
+      });
+      return;
     }
 
     const updated = await prisma.appointment.update({
@@ -959,6 +974,22 @@ export const approveAppointment = async (req: AuthRequest, res: Response): Promi
             } catch {}
           }
           const slot = (appointment.slotId && slots.find((s) => s.id === appointment.slotId)) || slots[0];
+
+          // Check if slot has already reached capacity
+          if (slot && slot.maxPatients) {
+            const confirmedInSlot = await tx.appointment.count({
+              where: {
+                doctorId: appointment.doctorId,
+                appointmentDate: appointment.appointmentDate,
+                status: { in: ['WAITING', 'IN_CONSULTATION', 'COMPLETED'] },
+                ...(slot.id ? { slotId: slot.id } : {}),
+              },
+            });
+            if (confirmedInSlot >= slot.maxPatients) {
+              throw new Error(`Cannot approve: checking shift (${slot.name}) has already reached its maximum capacity (${slot.maxPatients} patients).`);
+            }
+          }
+
           const pace = slot?.avgConsultationMinutes || 3.0;
 
           // Estimate start time = slot start + (nextToken - 1) * pace

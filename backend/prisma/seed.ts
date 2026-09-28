@@ -4,6 +4,11 @@ import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 async function main() {
+  if (process.env.NODE_ENV === 'production' && process.env.ALLOW_PROD_SEED !== 'true') {
+    console.error('FATAL: Database seeding is blocked in production environment to prevent accidental data loss. Set ALLOW_PROD_SEED=true to override.');
+    process.exit(1);
+  }
+
   console.log('Seeding MediArca database with production demo data...');
 
   // Clear existing

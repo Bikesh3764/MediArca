@@ -117,12 +117,20 @@ export const getQueuePreview = async (req: AuthRequest, res: Response): Promise<
         return slots.length === 1;
       }).length;
 
+      const waitingInSlot = dayAppointments.filter((a) => {
+        if (a.status !== 'WAITING' && a.status !== 'IN_CONSULTATION') return false;
+        if (a.slotId) return a.slotId === slot.id;
+        if (a.checkingWindow) return a.checkingWindow.includes(slot.startTime);
+        return slots.length === 1;
+      }).length;
+
       return evaluateSlotStatus(
         slot,
         dateStr,
         bookedInSlot,
         new Date(),
-        clientMinsNum
+        clientMinsNum,
+        waitingInSlot
       );
     });
 
@@ -335,6 +343,14 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
       return;
     }
 
+    if (!doctor.isVerified || doctor.verificationStatus === 'SUSPENDED' || doctor.verificationStatus === 'REJECTED') {
+      res.status(403).json({
+        success: false,
+        message: 'This doctor is not currently verified or practice is suspended. Bookings are unavailable.',
+      });
+      return;
+    }
+
     // Strictly enforce clinic affiliation: a doctor must have at least one verified active clinic to accept bookings
     const activeClinics = doctor.clinics || [];
     if (activeClinics.length === 0) {
@@ -383,8 +399,17 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
     }
     const clientMinsNum = typeof clientMinutes === 'number' && !isNaN(clientMinutes) ? clientMinutes : undefined;
 
-    let chosenSlot = slots.find((s) => s.id === slotId);
-    if (!chosenSlot) {
+    let chosenSlot: any = null;
+    if (slotId) {
+      chosenSlot = slots.find((s) => s.id === String(slotId));
+      if (!chosenSlot) {
+        res.status(400).json({
+          success: false,
+          message: `The selected checking shift (${slotId}) is invalid. Please pick an active shift.`,
+        });
+        return;
+      }
+    } else {
       chosenSlot = slots.find((s) => {
         const st = evaluateSlotStatus(s, appointmentDate, 0, new Date(), clientMinsNum);
         return !st.isPassed && !st.isFull;
@@ -475,10 +500,17 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
 
           let queueNumber: number;
           if (isPatientBooking) {
-            // Negative provisional queue token to avoid collision with positive tokens
-            const randomOffset = Math.floor(Math.random() * 10000) + 1;
-            const uniquePending = Math.floor(Date.now() % 100000000) * 100 + randomOffset;
-            queueNumber = -1 * uniquePending;
+            // Negative provisional queue token strictly within PostgreSQL 32-bit signed integer range to prevent DB overflow
+            const minQueueAppt = await tx.appointment.findFirst({
+              where: {
+                doctorId: doctor.id,
+                appointmentDate,
+                queueNumber: { lt: 0 },
+              },
+              orderBy: { queueNumber: 'asc' },
+              select: { queueNumber: true },
+            });
+            queueNumber = minQueueAppt ? minQueueAppt.queueNumber - 1 : -1;
           } else {
             // Direct practitioner / walk-in booking: query max positive queue number
             const maxQueueAppt = await tx.appointment.findFirst({
@@ -604,10 +636,9 @@ export const getAppointmentById = async (req: AuthRequest, res: Response): Promi
           include: { doctors: true },
         });
         if (rec) {
-          isClinicOrRec = Boolean(
-            (rec.clinicId && appointment.clinicId === rec.clinicId) ||
-            rec.doctors.some((d) => d.doctorId === appointment.doctorId)
-          );
+          const isDoctorAssigned = rec.doctors.some((d) => d.doctorId === appointment.doctorId);
+          const isSameClinic = !appointment.clinicId || (rec.clinicId && appointment.clinicId === rec.clinicId);
+          isClinicOrRec = Boolean(isDoctorAssigned && isSameClinic);
         }
       }
 

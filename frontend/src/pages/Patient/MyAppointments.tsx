@@ -53,10 +53,10 @@ export const MyAppointments: React.FC = () => {
   };
 
   const upcomingList = appointments.filter(
-    (a) => a.status === 'WAITING' || a.status === 'IN_CONSULTATION'
+    (a) => a.status === 'WAITING' || a.status === 'IN_CONSULTATION' || a.status === 'PENDING_APPROVAL'
   );
   const pastList = appointments.filter(
-    (a) => a.status === 'COMPLETED' || a.status === 'CANCELLED'
+    (a) => a.status === 'COMPLETED' || a.status === 'CANCELLED' || a.status === 'REJECTED'
   );
 
   const navItems: DashboardNavItem[] = [
@@ -67,6 +67,12 @@ export const MyAppointments: React.FC = () => {
       path: '/patient/appointments',
       active: true,
       badge: upcomingList.length > 0 ? upcomingList.length : undefined,
+    },
+    {
+      id: 'records',
+      label: 'Clinical Records',
+      icon: FileText,
+      path: '/patient/records',
     },
     {
       id: 'find-doctors',

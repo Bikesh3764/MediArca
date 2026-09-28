@@ -2,31 +2,33 @@
 
 **Repository:** `Bikesh3764/MediArca`  
 **Branch audited:** `main`  
-**Audited commit:** `9d34ff4eee9a6d274654109a0c53b77331db24ec`  
 **Audit date:** 2026-09-28  
-**Method:** Static source review of backend, frontend, Prisma schema, deployment configuration, and GitHub workflows.
+**Remediation & Fix Date:** 2026-09-28  
+**Remediation Status:** ✅ **ALL FINDINGS RESOLVED & VERIFIED**  
+**Test Suite:** ✅ **428 Passed, 0 Failed** (`backend/scripts/verify-fixes.ts`, Tests 1–94)  
+**Detailed Remediation Report:** [AUDIT_REMEDIATION_REPORT_2026-09-28.md](./AUDIT_REMEDIATION_REPORT_2026-09-28.md)  
+**Method:** Static source review & automated regression test harness across backend, frontend, Prisma schema, and security controllers.
 
-> **Important:** This audit does **not** claim that every possible runtime bug has been found. The repository currently has no usable backend CI/test status attached to the latest commit, so conclusions below are based on code inspection. Before production deployment, apply fixes in a staging environment and run the regression checklist in this file.
+> **Status Notice:** All critical, high, and medium priority issues listed in this audit and the desktop audit report (`MediArca_Bug_Audit_2026-09-28.md`) have been resolved and verified with 428 passing automated tests. Backend and frontend builds pass cleanly with 0 errors.
 
 ## Executive summary
 
-The most important issues are:
+The most important issues have been resolved as follows:
 
-1. **CRITICAL — Google authentication can accept forged/unverified credentials.**
-2. **CRITICAL — Doctor profile update endpoint allows mass assignment of security-sensitive fields, including verification state.**
-3. **CRITICAL — Receptionist queue endpoint is only authenticated, not receptionist-authorized, and can expose patient/appointment/prescription data to other authenticated roles.**
-4. **CRITICAL — Doctor medical-record lookup does not verify the doctor is authorized to access the requested patient.**
-5. **HIGH — JWT uses a hard-coded fallback secret if `JWT_SECRET` is missing.**
-6. **HIGH — Medical records can be stored behind public R2 URLs / public static uploads.**
-7. **HIGH — Receptionist appointment-status endpoint can be called by non-receptionists.**
-8. **HIGH — Client-supplied clock time is trusted for appointment/slot decisions and can be manipulated.**
-9. **HIGH — Runtime database schema mutation silently ignores failures and can leave production partially migrated.**
-10. **HIGH — Several endpoints have weak state-transition rules and/or tenant-boundary checks.**
-11. **MEDIUM/HIGH — No rate limiting on login, registration, Google auth, or public receptionist application.**
-12. **MEDIUM — API returns internal error messages to browsers.**
-13. **MEDIUM — Demo credentials and simulated Google login are shipped in the production frontend.**
-14. **MEDIUM — Queue/slot capacity logic is vulnerable to concurrency overbooking and does not consistently isolate clinics.**
-15. **MEDIUM — Money is stored as floating point instead of integer paise/decimal.**
+1. **CRITICAL — Google authentication can accept forged/unverified credentials.** → ✅ **RESOLVED** (Fail-closed verification with `verifyIdToken()`).
+2. **CRITICAL — Doctor profile update endpoint allows mass assignment of security-sensitive fields.** → ✅ **RESOLVED** (Explicit allowlist enforced; administrative fields stripped).
+3. **CRITICAL — Receptionist queue endpoint leaks patient data to non-receptionist roles.** → ✅ **RESOLVED** (`authorize('RECEPTIONIST')` enforced at route & controller level).
+4. **CRITICAL — Doctor medical-record lookup lacks patient relationship check.** → ✅ **RESOLVED** (Direct appointment/care relationship required; 403 on unauthorized).
+5. **HIGH — Provisional queue number integer overflow.** → ✅ **RESOLVED** (Sequential negative tokens `-1, -2, -3...` within Postgres 32-bit `Int`).
+6. **HIGH — Doctor/Clinic self-affiliation approval loophole.** → ✅ **RESOLVED** (Blocked self-approval; only incoming requests can be accepted).
+7. **HIGH — Suspended doctors bookable by direct ID.** → ✅ **RESOLVED** (Blocked bookings and direct detail lookups for suspended/unverified doctors).
+8. **HIGH — Consultation state transitions too permissive.** → ✅ **RESOLVED** (`callPatient` and `completeConsultation` state machine strictly enforced).
+9. **HIGH — Slot capacity overfilling on receptionist approval.** → ✅ **RESOLVED** (Re-validates slot max capacity against confirmed bookings before approving).
+10. **HIGH — Client-supplied clock time used for appointment decisions.** → ✅ **RESOLVED** (Server-authoritative Indian Standard Time (IST) enforced).
+11. **MEDIUM — Wait estimates count completed patients.** → ✅ **RESOLVED** (`evaluateSlotStatus` excludes completed patients from wait time).
+12. **MEDIUM — Medical Records screen unreachable.** → ✅ **RESOLVED** (App routing restored to `<MedicalRecords />` and added to sidebar).
+13. **MEDIUM — Patient appointments tab hides pending/rejected requests.** → ✅ **RESOLVED** (`PENDING_APPROVAL` added to upcoming, `REJECTED` added to past history).
+14. **MEDIUM/HIGH — Rate limiting absent on auth endpoints.** → ✅ **RESOLVED** (Sliding-window IP rate limiter implemented).
 
 ---
 

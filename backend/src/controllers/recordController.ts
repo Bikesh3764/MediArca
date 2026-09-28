@@ -99,11 +99,34 @@ export const getPatientRecords = async (req: AuthRequest, res: Response): Promis
         });
       }
       patientId = patient.id;
-    } else if (req.user.role === 'DOCTOR' || req.user.role === 'ADMIN') {
-      if (req.user.role === 'DOCTOR' && !patientId) {
+    } else if (req.user.role === 'DOCTOR') {
+      if (!patientId) {
         res.status(400).json({ success: false, message: 'patientId is required for doctor view' });
         return;
       }
+      const doctor = await prisma.doctorProfile.findUnique({
+        where: { userId: req.user.id },
+      });
+      if (!doctor) {
+        res.status(403).json({ success: false, message: 'Doctor profile not found' });
+        return;
+      }
+      // Verify clinical relationship: doctor must have at least one appointment with this patient
+      const hasRelationship = await prisma.appointment.findFirst({
+        where: {
+          doctorId: doctor.id,
+          patientId: patientId,
+        },
+      });
+      if (!hasRelationship) {
+        res.status(403).json({
+          success: false,
+          message: 'Access denied: You are only authorized to view medical records for patients with an active appointment or consultation history.',
+        });
+        return;
+      }
+    } else if (req.user.role === 'ADMIN') {
+      // Authorized administrative audit access
     } else {
       res.status(403).json({ success: false, message: 'Forbidden: Insufficient role permissions to view medical records' });
       return;

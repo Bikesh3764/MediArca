@@ -135,6 +135,11 @@ export const getDoctorById = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
+    if (doctor.verificationStatus === 'SUSPENDED' || doctor.verificationStatus === 'REJECTED') {
+      res.status(403).json({ success: false, message: 'Doctor profile is not active or has been suspended by administration' });
+      return;
+    }
+
     res.json({
       success: true,
       data: {
@@ -591,6 +596,14 @@ export const respondToClinicAffiliation = async (req: AuthRequest, res: Response
 
     if (!affiliation) {
       res.status(404).json({ success: false, message: 'Affiliation request not found' });
+      return;
+    }
+
+    if (affiliation.requestedBy === 'DOCTOR') {
+      res.status(403).json({
+        success: false,
+        message: 'Cannot accept an affiliation request initiated by yourself. Awaiting clinic approval.',
+      });
       return;
     }
 

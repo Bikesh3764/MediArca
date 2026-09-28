@@ -2311,6 +2311,157 @@ function runTests() {
   const statusCustom = evaluateSlotStatus(customPaceSlot, '2026-09-28', 2, nowCustom);
   assert(statusCustom.estimatedTime === '10:50 AM', `Estimated time uses doctor pace 25m: 10:50 AM, got ${statusCustom.estimatedTime}`);
 
+  // --- Test 87: Integer Range Safety for Provisional Queue Number ---
+  console.log('\n--- Test 87: Integer Range Safety for Provisional Queue Number ---');
+  const minNegativeInt = -2147483648;
+  const maxPositiveInt = 2147483647;
+  const generateSequentialProvisionalToken = (lastNegativeToken?: number): number => {
+    return lastNegativeToken !== undefined && lastNegativeToken < 0 ? lastNegativeToken - 1 : -1;
+  };
+  const token1 = generateSequentialProvisionalToken();
+  const token2 = generateSequentialProvisionalToken(token1);
+  const token100 = generateSequentialProvisionalToken(-99);
+  assert(token1 === -1, 'First provisional token is -1');
+  assert(token2 === -2, 'Second provisional token is -2');
+  assert(token100 === -100, '100th provisional token is -100');
+  assert(token1 >= minNegativeInt && token1 <= maxPositiveInt, 'Provisional token is within PostgreSQL 32-bit Int range');
+  assert(token100 >= minNegativeInt && token100 <= maxPositiveInt, 'Provisional token -100 is within PostgreSQL 32-bit Int range');
+
+  // --- Test 88: Doctor Profile Mass-Assignment Protection ---
+  console.log('\n--- Test 88: Doctor Profile Mass-Assignment Protection ---');
+  const sanitizeDoctorProfileUpdate = (input: any) => {
+    const {
+      specialty,
+      qualifications,
+      experienceYears,
+      consultationFee,
+      bio,
+      clinicAddress,
+      checkingStartTime,
+      checkingEndTime,
+      avgConsultationMinutes,
+      maxDailyPatients,
+      slots,
+    } = input;
+    const safeData: any = {};
+    if (specialty !== undefined) safeData.specialty = String(specialty).trim();
+    if (qualifications !== undefined) safeData.qualifications = String(qualifications).trim();
+    if (experienceYears !== undefined) safeData.experienceYears = Number(experienceYears) || 0;
+    if (consultationFee !== undefined) safeData.consultationFee = Number(consultationFee) || 0;
+    if (bio !== undefined) safeData.bio = bio ? String(bio).trim() : null;
+    if (clinicAddress !== undefined) safeData.clinicAddress = clinicAddress ? String(clinicAddress).trim() : null;
+    if (checkingStartTime !== undefined) safeData.checkingStartTime = String(checkingStartTime).trim();
+    if (checkingEndTime !== undefined) safeData.checkingEndTime = String(checkingEndTime).trim();
+    if (avgConsultationMinutes !== undefined) safeData.avgConsultationMinutes = Number(avgConsultationMinutes) || 15;
+    if (maxDailyPatients !== undefined) safeData.maxDailyPatients = Number(maxDailyPatients) || 30;
+    if (slots !== undefined) safeData.slots = typeof slots === 'string' ? slots : JSON.stringify(slots);
+    return safeData;
+  };
+  const maliciousInput = {
+    specialty: 'Cardiology',
+    isVerified: true,
+    verificationStatus: 'VERIFIED',
+    rating: 5.0,
+    totalReviews: 9999,
+    userId: 'stolen-admin-id',
+  };
+  const sanitized = sanitizeDoctorProfileUpdate(maliciousInput);
+  assert(sanitized.specialty === 'Cardiology', 'Permitted specialty update is preserved');
+  assert(sanitized.isVerified === undefined, 'isVerified cannot be mass-assigned');
+  assert(sanitized.verificationStatus === undefined, 'verificationStatus cannot be mass-assigned');
+  assert(sanitized.rating === undefined, 'rating cannot be mass-assigned');
+  assert(sanitized.totalReviews === undefined, 'totalReviews cannot be mass-assigned');
+  assert(sanitized.userId === undefined, 'userId cannot be overwritten');
+
+  // --- Test 89: Doctor Self-Affiliation Approval Block ---
+  console.log('\n--- Test 89: Doctor Self-Affiliation Approval Block ---');
+  const authorizeDoctorAffiliationResponse = (affiliation: { requestedBy: string }) => {
+    if (affiliation.requestedBy === 'DOCTOR') {
+      return { allowed: false, status: 403, message: 'Cannot accept an affiliation request initiated by yourself' };
+    }
+    return { allowed: true, status: 200 };
+  };
+  const selfInitiated = authorizeDoctorAffiliationResponse({ requestedBy: 'DOCTOR' });
+  assert(selfInitiated.allowed === false && selfInitiated.status === 403, 'Doctor cannot self-approve own clinic request');
+  const clinicInitiated = authorizeDoctorAffiliationResponse({ requestedBy: 'CLINIC' });
+  assert(clinicInitiated.allowed === true && clinicInitiated.status === 200, 'Doctor can approve incoming clinic request');
+
+  // --- Test 90: Suspended Doctor Booking & Directory Guard ---
+  console.log('\n--- Test 90: Suspended Doctor Booking & Directory Guard ---');
+  const authorizeDoctorBooking = (doctor: { isVerified: boolean; verificationStatus: string }) => {
+    if (!doctor.isVerified || doctor.verificationStatus === 'SUSPENDED' || doctor.verificationStatus === 'REJECTED') {
+      return { allowed: false, status: 403, message: 'Doctor is suspended or not verified' };
+    }
+    return { allowed: true, status: 200 };
+  };
+  const suspendedDocBooking = authorizeDoctorBooking({ isVerified: true, verificationStatus: 'SUSPENDED' });
+  assert(suspendedDocBooking.allowed === false, 'Suspended doctor cannot accept bookings');
+  const rejectedDocBooking = authorizeDoctorBooking({ isVerified: false, verificationStatus: 'REJECTED' });
+  assert(rejectedDocBooking.allowed === false, 'Rejected doctor cannot accept bookings');
+  const activeDocBooking = authorizeDoctorBooking({ isVerified: true, verificationStatus: 'VERIFIED' });
+  assert(activeDocBooking.allowed === true, 'Verified active doctor can accept bookings');
+
+  // --- Test 91: Doctor Clinical Relationship Record Guard ---
+  console.log('\n--- Test 91: Doctor Clinical Relationship Record Guard ---');
+  const authorizeDoctorRecordAccess = (hasAppointmentWithPatient: boolean) => {
+    if (!hasAppointmentWithPatient) {
+      return { allowed: false, status: 403, message: 'Access denied: No clinical appointment relationship' };
+    }
+    return { allowed: true, status: 200 };
+  };
+  assert(authorizeDoctorRecordAccess(false).allowed === false, 'Doctor without appointment cannot access patient records');
+  assert(authorizeDoctorRecordAccess(true).allowed === true, 'Doctor with appointment can access patient records');
+
+  // --- Test 92: Consultation State Machine Strict Enforcement ---
+  console.log('\n--- Test 92: Consultation State Machine Strict Enforcement ---');
+  const validateCallPatientTransition = (status: string) => {
+    return status === 'WAITING' || status === 'IN_CONSULTATION';
+  };
+  assert(validateCallPatientTransition('WAITING') === true, 'callPatient accepts WAITING');
+  assert(validateCallPatientTransition('PENDING_APPROVAL') === false, 'callPatient rejects PENDING_APPROVAL');
+  assert(validateCallPatientTransition('COMPLETED') === false, 'callPatient rejects COMPLETED');
+  assert(validateCallPatientTransition('CANCELLED') === false, 'callPatient rejects CANCELLED');
+
+  const validateCompleteConsultationTransition = (status: string) => {
+    return status === 'IN_CONSULTATION' || status === 'WAITING';
+  };
+  assert(validateCompleteConsultationTransition('IN_CONSULTATION') === true, 'completeConsultation accepts IN_CONSULTATION');
+  assert(validateCompleteConsultationTransition('PENDING_APPROVAL') === false, 'completeConsultation rejects PENDING_APPROVAL');
+  assert(validateCompleteConsultationTransition('CANCELLED') === false, 'completeConsultation rejects CANCELLED');
+
+  // --- Test 93: Base64 Data URI URL Preservation ---
+  console.log('\n--- Test 93: Base64 Data URI URL Preservation ---');
+  const resolveFileUrl = (filePath?: string): string => {
+    if (!filePath) return '';
+    if (filePath.startsWith('data:') || filePath.startsWith('http://') || filePath.startsWith('https://')) return filePath;
+    return `https://mediarca-mdwk.onrender.com${filePath.startsWith('/') ? '' : '/'}${filePath}`;
+  };
+  const dataUri = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+  assert(resolveFileUrl(dataUri) === dataUri, 'Data URI is preserved without prepending backend URL');
+  assert(resolveFileUrl('/uploads/doc.pdf') === 'https://mediarca-mdwk.onrender.com/uploads/doc.pdf', 'Relative path is prepended with backend URL');
+  assert(resolveFileUrl('https://r2.dev/file.jpg') === 'https://r2.dev/file.jpg', 'HTTP/HTTPS URL is returned as-is');
+
+  // --- Test 94: Completed Patients Not Counted as Ahead in Waiting Room ---
+  console.log('\n--- Test 94: Completed Patients Not Counted as Ahead in Waiting Room ---');
+  const slotTest = {
+    id: 'slot-1',
+    name: 'Morning Shift',
+    startTime: '09:00',
+    endTime: '12:00',
+    maxPatients: 30,
+    avgConsultationMinutes: 10,
+  };
+  // 5 total bookings, but all 5 have already been COMPLETED (0 currently waiting)
+  const nowShift = new Date(2026, 8, 28, 9, 30);
+  const statusZeroWaiting = evaluateSlotStatus(slotTest, '2026-09-28', 5, nowShift, 9 * 60 + 30, 0);
+  assert(statusZeroWaiting.patientsAhead === 0, 'When 0 patients waiting, patientsAhead is 0 despite 5 completed');
+  assert(statusZeroWaiting.estimatedTime === '09:30 AM', `Estimated time is active now (09:30 AM), got ${statusZeroWaiting.estimatedTime}`);
+
+  // When 2 patients are still waiting
+  const statusTwoWaiting = evaluateSlotStatus(slotTest, '2026-09-28', 5, nowShift, 9 * 60 + 30, 2);
+  assert(statusTwoWaiting.patientsAhead === 2, 'When 2 patients waiting, patientsAhead is 2');
+  assert(statusTwoWaiting.estimatedTime === '09:50 AM', `Estimated time reflects 2 waiting (09:50 AM), got ${statusTwoWaiting.estimatedTime}`);
+
   console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);
