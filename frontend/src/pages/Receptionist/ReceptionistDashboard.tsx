@@ -529,13 +529,13 @@ export const ReceptionistDashboard: React.FC = () => {
                     <label className="block text-xs font-semibold text-[#1d1d1f] mb-1.5">
                       Booking For:
                     </label>
-                    <div className="flex rounded-xl bg-[#f5f5f7] p-1 border border-[#e5e5ea] max-w-xs mb-3">
+                    <div className="flex rounded-full bg-[#f5f5f7] p-1 border border-[#e5e5ea] max-w-xs mb-3 shadow-xs">
                       <button
                         type="button"
                         onClick={() => setBookingFor('self')}
-                        className={`flex-1 py-1 text-xs font-medium rounded-lg transition-all ${
+                        className={`flex-1 py-1.5 text-xs font-semibold rounded-full transition-all active:scale-[0.98] ${
                           bookingFor === 'self'
-                            ? 'bg-white text-[#1d1d1f] shadow-xs font-semibold'
+                            ? 'bg-white text-[#1d1d1f] shadow-xs'
                             : 'text-[#86868b] hover:text-[#1d1d1f]'
                         }`}
                       >
@@ -544,9 +544,9 @@ export const ReceptionistDashboard: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setBookingFor('other')}
-                        className={`flex-1 py-1 text-xs font-medium rounded-lg transition-all ${
+                        className={`flex-1 py-1.5 text-xs font-semibold rounded-full transition-all active:scale-[0.98] ${
                           bookingFor === 'other'
-                            ? 'bg-white text-[#1d1d1f] shadow-xs font-semibold'
+                            ? 'bg-white text-[#1d1d1f] shadow-xs'
                             : 'text-[#86868b] hover:text-[#1d1d1f]'
                         }`}
                       >
@@ -567,7 +567,7 @@ export const ReceptionistDashboard: React.FC = () => {
                         value={patientName}
                         onChange={(e) => setPatientName(e.target.value)}
                         placeholder="e.g. Rahul Ray"
-                        className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white focus:outline-none focus:border-[#0088e8]"
+                        className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
                       />
                     </div>
 
@@ -580,7 +580,7 @@ export const ReceptionistDashboard: React.FC = () => {
                         value={patientAge}
                         onChange={(e) => setPatientAge(e.target.value)}
                         placeholder="e.g. 12"
-                        className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white focus:outline-none focus:border-[#0088e8]"
+                        className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
                       />
                     </div>
 
@@ -595,7 +595,7 @@ export const ReceptionistDashboard: React.FC = () => {
                         onChange={(e) => setPatientPhone(sanitizeIndianPhone(e.target.value))}
                         placeholder="10-digit mobile number"
                         maxLength={10}
-                        className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white focus:outline-none focus:border-[#0088e8]"
+                        className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
                       />
                     </div>
                   </div>
@@ -607,7 +607,7 @@ export const ReceptionistDashboard: React.FC = () => {
                       <select
                         value={gender}
                         onChange={(e) => setGender(e.target.value)}
-                        className="w-full h-11 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white focus:outline-none focus:border-[#0088e8]"
+                        className="w-full h-11 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
                       >
                         <option value="Not Specified">Not Specified</option>
                         <option value="Male">Male</option>
@@ -625,7 +625,7 @@ export const ReceptionistDashboard: React.FC = () => {
                         value={reasonForVisit}
                         onChange={(e) => setReasonForVisit(e.target.value)}
                         placeholder="e.g. Acute fever, migraine, blood pressure check"
-                        className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white focus:outline-none focus:border-[#0088e8]"
+                        className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
                       />
                     </div>
                   </div>
@@ -661,7 +661,7 @@ export const ReceptionistDashboard: React.FC = () => {
                   <select
                     value={queueDoctorId}
                     onChange={(e) => setQueueDoctorId(e.target.value)}
-                    className="h-10 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] text-[#1d1d1f] focus:outline-none focus:border-[#0088e8]"
+                    className="h-10 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] text-[#1d1d1f] transition-all focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
                   >
                     {linkedDoctors.map((doc) => (
                       <option key={doc.doctorId} value={doc.doctorId}>
@@ -674,7 +674,7 @@ export const ReceptionistDashboard: React.FC = () => {
                     type="date"
                     value={queueDate}
                     onChange={(e) => setQueueDate(e.target.value)}
-                    className="h-10 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] text-[#1d1d1f] focus:outline-none focus:border-[#0088e8]"
+                    className="h-10 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] text-[#1d1d1f] transition-all focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
                   />
 
                   <AppleButton
@@ -696,7 +696,7 @@ export const ReceptionistDashboard: React.FC = () => {
                       key={st}
                       type="button"
                       onClick={() => setStatusFilter(st)}
-                      className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-colors whitespace-nowrap ${
+                      className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all active:scale-[0.98] whitespace-nowrap ${
                         statusFilter === st
                           ? 'bg-[#1d1d1f] text-white shadow-xs'
                           : 'bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f]'
@@ -713,7 +713,7 @@ export const ReceptionistDashboard: React.FC = () => {
                     value={queueSearch}
                     onChange={(e) => setQueueSearch(e.target.value)}
                     placeholder="Search patient, phone, token #..."
-                    className="h-9 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white focus:outline-none focus:border-[#0088e8] w-full sm:w-64"
+                    className="h-9 px-4 rounded-full border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] w-full sm:w-64"
                   />
                   {queueSearch && (
                     <button

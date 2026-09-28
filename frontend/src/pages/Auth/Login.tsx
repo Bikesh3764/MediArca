@@ -129,16 +129,16 @@ export const Login: React.FC = () => {
             <button
               type="button"
               onClick={() => handleQuickLogin('john.doe@gmail.com', 'patient123', '/patient/appointments')}
-              className="px-2.5 py-2 rounded-xl bg-[#f5f5f7] hover:bg-[#0088e8]/10 text-[#0088e8] border border-[#e5e5ea] text-xs font-medium transition-all text-center cursor-pointer"
+              className="py-2.5 px-3 rounded-full bg-[#f5f5f7] hover:bg-[#0088e8]/10 text-[#0088e8] border border-[#e5e5ea] text-xs font-semibold transition-all text-center cursor-pointer active:scale-[0.98] shadow-2xs"
             >
-              Patient<br />(John Doe)
+              Patient (John Doe)
             </button>
             <button
               type="button"
               onClick={() => handleQuickLogin('dr.sarah@mediarca.com', 'doctor123', '/doctor/dashboard')}
-              className="px-2.5 py-2 rounded-xl bg-[#f5f5f7] hover:bg-[#0088e8]/10 text-[#0088e8] border border-[#e5e5ea] text-xs font-medium transition-all text-center cursor-pointer"
+              className="py-2.5 px-3 rounded-full bg-[#f5f5f7] hover:bg-[#0088e8]/10 text-[#0088e8] border border-[#e5e5ea] text-xs font-semibold transition-all text-center cursor-pointer active:scale-[0.98] shadow-2xs"
             >
-              Doctor<br />(Dr. Sarah)
+              Doctor (Dr. Sarah)
             </button>
           </div>
         </div>
@@ -169,7 +169,7 @@ export const Login: React.FC = () => {
                   <button
                     type="button"
                     onClick={handleSimulatedGoogleLogin}
-                    className="w-full h-11 px-4 rounded-full border border-[#e0e0e0] bg-white hover:bg-[#f5f5f7] text-[#1d1d1f] text-sm font-medium transition-all shadow-sm flex items-center justify-center gap-3"
+                    className="w-full h-11 px-4 rounded-full border border-[#e5e5ea] bg-white hover:bg-[#f5f5f7] text-[#1d1d1f] text-sm font-medium transition-all shadow-2xs active:scale-[0.98] flex items-center justify-center gap-3 cursor-pointer"
                   >
                     <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24">
                       <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -179,7 +179,7 @@ export const Login: React.FC = () => {
                     </svg>
                     <span>Continue with Google (Demo Sign-In)</span>
                   </button>
-                  <p className="text-[11px] text-center text-[#7a7a7a]">
+                  <p className="text-[11px] text-center text-[#86868b]">
                     To connect live Google credentials, add <span className="font-mono text-[10px] bg-gray-100 px-1 py-0.5 rounded">VITE_GOOGLE_CLIENT_ID</span> (see GOOGLE_AUTH_SETUP.md).
                   </p>
                 </div>
@@ -207,7 +207,7 @@ export const Login: React.FC = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@example.com"
-                className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[15px] focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20 transition-all"
+                className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[15px] text-[#1d1d1f] placeholder:text-[#86868b] focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20 transition-all"
               />
             </div>
 
@@ -221,7 +221,7 @@ export const Login: React.FC = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[15px] focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20 transition-all"
+                className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[15px] text-[#1d1d1f] placeholder:text-[#86868b] focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20 transition-all"
               />
             </div>
 

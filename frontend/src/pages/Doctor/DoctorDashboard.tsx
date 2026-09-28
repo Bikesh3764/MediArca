@@ -956,10 +956,10 @@ export const DoctorDashboard: React.FC = () => {
                     setQueueScope('date');
                     setDate(getLocalDateString());
                   }}
-                  className={`h-9 px-3.5 rounded-xl text-xs font-semibold transition-all ${
+                  className={`h-9 px-4 rounded-full text-xs font-semibold transition-all active:scale-[0.98] ${
                     queueScope === 'date' && date === getLocalDateString()
-                      ? 'bg-[#1d1d1f] text-white shadow-sm'
-                      : 'bg-[#f5f5f7] hover:bg-slate-200 text-[#1d1d1f] border border-[#e5e5ea]'
+                      ? 'bg-[#1d1d1f] text-white shadow-xs'
+                      : 'bg-[#f5f5f7] hover:bg-[#e5e5ea] text-[#1d1d1f] border border-[#e5e5ea]'
                   }`}
                 >
                   Today
@@ -971,10 +971,10 @@ export const DoctorDashboard: React.FC = () => {
                     const tomorrowStr = queueData?.upcomingSummary?.tomorrowDate || getTomorrowDateString();
                     setDate(tomorrowStr);
                   }}
-                  className={`h-9 px-3.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                  className={`h-9 px-4 rounded-full text-xs font-semibold transition-all active:scale-[0.98] flex items-center gap-1.5 ${
                     queueScope === 'date' && date === (queueData?.upcomingSummary?.tomorrowDate || getTomorrowDateString())
-                      ? 'bg-[#1d1d1f] text-white shadow-sm'
-                      : 'bg-[#f5f5f7] hover:bg-slate-200 text-[#1d1d1f] border border-[#e5e5ea]'
+                      ? 'bg-[#1d1d1f] text-white shadow-xs'
+                      : 'bg-[#f5f5f7] hover:bg-[#e5e5ea] text-[#1d1d1f] border border-[#e5e5ea]'
                   }`}
                 >
                   <span>Tomorrow</span>
@@ -993,10 +993,10 @@ export const DoctorDashboard: React.FC = () => {
                   onClick={() => {
                     setQueueScope('all-upcoming');
                   }}
-                  className={`h-9 px-3.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                  className={`h-9 px-4 rounded-full text-xs font-semibold transition-all active:scale-[0.98] flex items-center gap-1.5 ${
                     queueScope === 'all-upcoming'
-                      ? 'bg-[#1d1d1f] text-white shadow-sm'
-                      : 'bg-[#f5f5f7] hover:bg-slate-200 text-[#1d1d1f] border border-[#e5e5ea]'
+                      ? 'bg-[#1d1d1f] text-white shadow-xs'
+                      : 'bg-[#f5f5f7] hover:bg-[#e5e5ea] text-[#1d1d1f] border border-[#e5e5ea]'
                   }`}
                 >
                   <span>All Upcoming</span>
@@ -1017,7 +1017,7 @@ export const DoctorDashboard: React.FC = () => {
                     setQueueScope('date');
                     setDate(e.target.value);
                   }}
-                  className="h-9 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0088e8]"
+                  className="h-9 px-3.5 rounded-full border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
                   title="Choose Specific Date"
                 />
               </div>
@@ -1388,7 +1388,7 @@ export const DoctorDashboard: React.FC = () => {
                           value={queueSearch}
                           onChange={(e) => setQueueSearch(e.target.value)}
                           placeholder="Search patient, phone, token..."
-                          className="h-9 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0088e8] w-48 sm:w-56"
+                          className="h-9 px-3.5 rounded-full border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] w-48 sm:w-56"
                         />
                         {nextTarget && (
                           <AppleButton
@@ -1756,7 +1756,7 @@ export const DoctorDashboard: React.FC = () => {
                   maxLength={10}
                   value={walkinPhone}
                   onChange={(e) => setWalkinPhone(sanitizeIndianPhone(e.target.value))}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] focus:outline-none focus:border-[#0088e8]"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
                 />
               </div>
 
@@ -1773,7 +1773,7 @@ export const DoctorDashboard: React.FC = () => {
                       setWalkinClinicId(e.target.value);
                       setWalkinSlotId('');
                     }}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] focus:outline-none focus:border-[#0088e8]"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
                   >
                     <option value="">Select Clinic Venue</option>
                     {affiliations.clinics.map((c) => (
@@ -1798,7 +1798,7 @@ export const DoctorDashboard: React.FC = () => {
                 <select
                   value={walkinSlotId}
                   onChange={(e) => setWalkinSlotId(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] focus:outline-none focus:border-[#0088e8]"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
                 >
                   <option value="">Current / Default Shift</option>
                   {(
@@ -1822,7 +1822,7 @@ export const DoctorDashboard: React.FC = () => {
                   placeholder="e.g. Fever, cough, general consultation"
                   value={walkinReason}
                   onChange={(e) => setWalkinReason(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] focus:outline-none focus:border-[#0088e8]"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
                 />
               </div>
 

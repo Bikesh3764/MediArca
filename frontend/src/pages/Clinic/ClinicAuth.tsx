@@ -106,14 +106,14 @@ export const ClinicAuth: React.FC = () => {
         {/* Card */}
         <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-6 sm:p-8 shadow-sm">
           {/* Tab Pill Switcher */}
-          <div className="flex bg-[#f5f5f7] p-1 rounded-xl mb-6 border border-[#e5e5ea]">
+          <div className="flex bg-[#f5f5f7] p-1 rounded-full mb-6 border border-[#e5e5ea] shadow-xs">
             <button
               type="button"
               onClick={() => {
                 setMode('login');
                 setError(null);
               }}
-              className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${
+              className={`flex-1 py-2 text-xs font-semibold rounded-full transition-all active:scale-[0.98] ${
                 mode === 'login'
                   ? 'bg-white text-[#1d1d1f] shadow-xs'
                   : 'text-[#86868b] hover:text-[#1d1d1f]'
@@ -127,7 +127,7 @@ export const ClinicAuth: React.FC = () => {
                 setMode('signup');
                 setError(null);
               }}
-              className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${
+              className={`flex-1 py-2 text-xs font-semibold rounded-full transition-all active:scale-[0.98] ${
                 mode === 'signup'
                   ? 'bg-white text-[#1d1d1f] shadow-xs'
                   : 'text-[#86868b] hover:text-[#1d1d1f]'
@@ -158,7 +158,7 @@ export const ClinicAuth: React.FC = () => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="clinic@domain.com"
-                    className="w-full h-11 pl-10 pr-4 rounded-xl border border-[#e5e5ea] text-[14px] bg-[#f5f5f7] focus:bg-white focus:outline-none focus:border-[#0088e8]"
+                    className="w-full h-11 pl-10 pr-4 rounded-xl border border-[#e5e5ea] text-[14px] bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
                   />
                 </div>
               </div>
@@ -173,7 +173,7 @@ export const ClinicAuth: React.FC = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full h-11 pl-10 pr-4 rounded-xl border border-[#e5e5ea] text-[14px] bg-[#f5f5f7] focus:bg-white focus:outline-none focus:border-[#0088e8]"
+                    className="w-full h-11 pl-10 pr-4 rounded-xl border border-[#e5e5ea] text-[14px] bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
                   />
                 </div>
               </div>
@@ -196,7 +196,7 @@ export const ClinicAuth: React.FC = () => {
                   type="button"
                   onClick={handleDemoLogin}
                   disabled={submitting}
-                  className="w-full py-2 px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100/70 border border-emerald-200 text-xs font-medium text-emerald-800 flex items-center justify-center gap-1.5 transition-colors"
+                  className="w-full py-2.5 px-3 rounded-full bg-emerald-50 hover:bg-emerald-100/70 border border-emerald-200 text-xs font-medium text-emerald-800 flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] shadow-xs"
                 >
                   <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
                   <span>One-Click Demo Clinic Partner Login</span>
@@ -217,7 +217,7 @@ export const ClinicAuth: React.FC = () => {
                     value={clinicName}
                     onChange={(e) => setClinicName(e.target.value)}
                     placeholder="e.g. City Polyclinic & Diagnostic"
-                    className="w-full h-10 pl-10 pr-4 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white focus:outline-none focus:border-[#0088e8]"
+                    className="w-full h-10 pl-10 pr-4 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
                   />
                 </div>
               </div>
@@ -234,7 +234,7 @@ export const ClinicAuth: React.FC = () => {
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
                     placeholder="Suite, Floor, Street Address"
-                    className="w-full h-10 pl-10 pr-4 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white focus:outline-none focus:border-[#0088e8]"
+                    className="w-full h-10 pl-10 pr-4 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
                   />
                 </div>
               </div>
@@ -247,12 +247,12 @@ export const ClinicAuth: React.FC = () => {
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
                     placeholder="e.g. New York"
-                    className="w-full h-10 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white focus:outline-none focus:border-[#0088e8]"
+                    className="w-full h-10 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-[#1d1d1f] mb-1">Phone</label>
-                  <div className="flex rounded-xl border border-[#e5e5ea] overflow-hidden focus-within:border-[#0088e8] bg-[#f5f5f7] focus-within:bg-white">
+                  <div className="flex rounded-xl border border-[#e5e5ea] overflow-hidden focus-within:ring-2 focus-within:ring-[#0088e8]/20 focus-within:border-[#0088e8] bg-[#f5f5f7] focus-within:bg-white transition-all">
                     <span className="inline-flex items-center gap-1 px-2.5 bg-[#e5e5ea]/50 border-r border-[#e5e5ea] text-[#1d1d1f] font-semibold text-xs select-none">
                       <span>🇮🇳</span>
                       <span>+91</span>
@@ -267,7 +267,7 @@ export const ClinicAuth: React.FC = () => {
                       }}
                       placeholder="98765 43210"
                       maxLength={10}
-                      className="w-full h-10 px-3 text-xs bg-transparent focus:outline-none tracking-wider font-mono text-[#1d1d1f]"
+                      className="w-full h-10 px-3 text-xs bg-transparent focus:outline-none tracking-wider font-mono text-[#1d1d1f] placeholder:text-[#86868b]"
                     />
                   </div>
                 </div>
@@ -285,7 +285,7 @@ export const ClinicAuth: React.FC = () => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="admin@clinic.com"
-                    className="w-full h-10 pl-10 pr-4 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white focus:outline-none focus:border-[#0088e8]"
+                    className="w-full h-10 pl-10 pr-4 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
                   />
                 </div>
               </div>
@@ -301,7 +301,7 @@ export const ClinicAuth: React.FC = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Minimum 6 characters"
-                    className="w-full h-10 pl-10 pr-4 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white focus:outline-none focus:border-[#0088e8]"
+                    className="w-full h-10 pl-10 pr-4 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
                   />
                 </div>
               </div>

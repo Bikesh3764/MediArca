@@ -132,7 +132,7 @@ export const Signup: React.FC = () => {
         <h2 className="text-3xl font-semibold text-[#1d1d1f] tracking-tight">
           Create your account
         </h2>
-        <p className="mt-2 text-sm text-[#7a7a7a]">
+        <p className="mt-2 text-sm text-[#86868b]">
           Already have an account?{' '}
           <Link to="/login" className="text-[#0088e8] font-medium hover:underline">
             Sign in
@@ -169,7 +169,7 @@ export const Signup: React.FC = () => {
           </button>
         </div>
 
-        <div className="bg-white py-8 px-6 sm:px-10 rounded-[20px] border border-[#e0e0e0] shadow-sm">
+        <div className="bg-white py-8 px-6 sm:px-10 rounded-[24px] border border-[#e5e5ea] shadow-xs">
           {error && (
             <div className="mb-5 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
@@ -194,7 +194,7 @@ export const Signup: React.FC = () => {
                   <button
                     type="button"
                     onClick={handleSimulatedGoogleLogin}
-                    className="w-full h-11 px-4 rounded-full border border-[#e0e0e0] bg-white hover:bg-[#f5f5f7] text-[#1d1d1f] text-sm font-medium transition-all shadow-sm flex items-center justify-center gap-3"
+                    className="w-full h-11 px-4 rounded-full border border-[#e5e5ea] bg-white hover:bg-[#f5f5f7] text-[#1d1d1f] text-sm font-medium transition-all shadow-2xs active:scale-[0.98] flex items-center justify-center gap-3 cursor-pointer"
                   >
                     <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24">
                       <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -204,7 +204,7 @@ export const Signup: React.FC = () => {
                     </svg>
                     <span>Sign up with Google (Demo {role === 'DOCTOR' ? 'Doctor' : 'Patient'})</span>
                   </button>
-                  <p className="text-[11px] text-center text-[#7a7a7a]">
+                  <p className="text-[11px] text-center text-[#86868b]">
                     To connect live Google credentials, add <span className="font-mono text-[10px] bg-gray-100 px-1 py-0.5 rounded">VITE_GOOGLE_CLIENT_ID</span>.
                   </p>
                 </div>
@@ -213,10 +213,10 @@ export const Signup: React.FC = () => {
 
             <div className="relative my-6 text-center">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-[#e0e0e0]" />
+                <div className="w-full border-t border-[#e5e5ea]" />
               </div>
               <div className="relative flex justify-center text-xs">
-                <span className="bg-white px-3 text-[#7a7a7a]">or sign up with email</span>
+                <span className="bg-white px-3 text-[#86868b]">or sign up with email</span>
               </div>
             </div>
           </div>
@@ -232,7 +232,7 @@ export const Signup: React.FC = () => {
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder={role === 'DOCTOR' ? 'Dr. Jane Smith' : 'John Doe'}
-                className="w-full h-11 px-4 rounded-xl border border-[#e0e0e0] text-[15px] focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20"
+                className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[15px] text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20"
               />
             </div>
 
@@ -247,7 +247,7 @@ export const Signup: React.FC = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="email@example.com"
-                  className="w-full h-11 px-4 rounded-xl border border-[#e0e0e0] text-[15px] focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20"
+                  className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[15px] text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20"
                 />
               </div>
 
@@ -255,8 +255,8 @@ export const Signup: React.FC = () => {
                 <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
                   Phone Number (India)
                 </label>
-                <div className="flex rounded-xl border border-[#e0e0e0] overflow-hidden focus-within:border-[#0088e8] focus-within:ring-2 focus-within:ring-[#0088e8]/20 bg-white">
-                  <span className="inline-flex items-center gap-1 px-3 bg-[#f5f5f7] border-r border-[#e0e0e0] text-[#1d1d1f] font-semibold text-xs select-none">
+                <div className="flex rounded-xl border border-[#e5e5ea] overflow-hidden focus-within:border-[#0088e8] focus-within:ring-2 focus-within:ring-[#0088e8]/20 bg-white transition-all">
+                  <span className="inline-flex items-center gap-1 px-3 bg-[#f5f5f7] border-r border-[#e5e5ea] text-[#1d1d1f] font-semibold text-xs select-none">
                     <span>🇮🇳</span>
                     <span>+91</span>
                   </span>
@@ -269,7 +269,7 @@ export const Signup: React.FC = () => {
                     }}
                     placeholder="98765 43210"
                     maxLength={10}
-                    className="w-full h-11 px-3.5 text-[15px] bg-white focus:outline-none tracking-wider font-mono text-[#1d1d1f]"
+                    className="w-full h-11 px-3.5 text-[15px] bg-white focus:outline-none tracking-wider font-mono text-[#1d1d1f] placeholder:text-[#86868b]"
                   />
                 </div>
               </div>
@@ -285,7 +285,7 @@ export const Signup: React.FC = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Minimum 6 characters"
-                className="w-full h-11 px-4 rounded-xl border border-[#e0e0e0] text-[15px] focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20"
+                className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[15px] text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20"
               />
             </div>
 
@@ -321,7 +321,7 @@ export const Signup: React.FC = () => {
                       value={qualifications}
                       onChange={(e) => setQualifications(e.target.value)}
                       placeholder="e.g. MBBS, MD, MS"
-                      className="w-full h-11 px-4 rounded-xl border border-[#e0e0e0] text-[14px] focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20"
+                      className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[14px] text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20"
                     />
                   </div>
 
@@ -336,7 +336,7 @@ export const Signup: React.FC = () => {
                       value={experienceYears}
                       onChange={(e) => setExperienceYears(e.target.value)}
                       placeholder="Years of clinical practice"
-                      className="w-full h-11 px-4 rounded-xl border border-[#e0e0e0] text-[14px] focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20"
+                      className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[14px] text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20"
                     />
                   </div>
                 </div>

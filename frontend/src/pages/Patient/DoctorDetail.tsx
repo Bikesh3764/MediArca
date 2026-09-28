@@ -503,7 +503,7 @@ export const DoctorDetail: React.FC = () => {
                       value={selectedDate}
                       min={getLocalDateString()}
                       onChange={(e) => setSelectedDate(e.target.value)}
-                      className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-[14px] bg-white focus:outline-none focus:border-[#0088e8]"
+                      className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-[14px] bg-white text-[#1d1d1f] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
                     />
                   </div>
 

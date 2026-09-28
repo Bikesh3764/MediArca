@@ -34,11 +34,11 @@
 }
 
 .apple-pill-ghost {
-  @apply apple-pill-btn bg-[#fafafc] text-[#1d1d1f] border border-[#e0e0e0] hover:bg-white hover:border-[#cccccc];
+  @apply apple-pill-btn bg-[#fafafc] text-[#1d1d1f] border border-[#e5e5ea] hover:bg-white hover:border-[#d2d2d7];
 }
 
 .apple-card {
-  @apply bg-white rounded-[18px] border border-[#e0e0e0]/70 p-6 transition-all duration-200;
+  @apply bg-white rounded-[18px] border border-[#e5e5ea] p-6 transition-all duration-200;
 }
 
 .apple-card-hover {
@@ -46,7 +46,7 @@
 }
 
 .apple-frosted {
-  @apply bg-white/80 backdrop-blur-xl backdrop-saturate-[1.8] border-b border-[#e0e0e0]/70;
+  @apply bg-white/80 backdrop-blur-xl backdrop-saturate-[1.8] border-b border-black/[0.06];
 }
 
 .apple-frosted-dark {

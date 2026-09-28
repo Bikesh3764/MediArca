@@ -39,7 +39,7 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       return (
         <div className="min-h-screen bg-[#f5f5f7] flex flex-col justify-center items-center px-4 sm:px-6 text-center select-none">
-          <div className="w-16 h-16 rounded-3xl bg-white border border-[#e0e0e0] flex items-center justify-center text-[#0088e8] shadow-sm mb-6 p-2">
+          <div className="w-16 h-16 rounded-3xl bg-white border border-[#e5e5ea] flex items-center justify-center text-[#0088e8] shadow-2xs mb-6 p-2">
             <BrandLogo variant="icon" size="lg" />
           </div>
 
@@ -51,7 +51,7 @@ export class ErrorBoundary extends Component<Props, State> {
             Something unexpected occurred
           </h1>
 
-          <p className="text-sm text-[#7a7a7a] max-w-md mx-auto leading-relaxed mb-8">
+          <p className="text-sm text-[#86868b] max-w-md mx-auto leading-relaxed mb-8">
             An unexpected application state occurred. Your session data is intact. You can reload this view or return to the main dashboard.
           </p>
 

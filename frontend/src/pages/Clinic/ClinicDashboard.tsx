@@ -655,7 +655,7 @@ export const ClinicDashboard: React.FC = () => {
                       <td className="py-4 text-right pr-2">
                         <button
                           onClick={() => handleDetachDoctor(doc.doctorId, doc.fullName)}
-                          className="px-3 py-1.5 rounded-lg text-[11px] font-medium text-rose-600 hover:bg-rose-50 border border-rose-200 transition-colors inline-flex items-center gap-1"
+                          className="px-3 py-1.5 rounded-full text-[11px] font-medium text-rose-600 hover:bg-rose-50 border border-rose-200 transition-all active:scale-[0.98] inline-flex items-center gap-1 shadow-2xs"
                         >
                           <Trash2 className="w-3 h-3" />
                           Detach
@@ -756,13 +756,13 @@ export const ClinicDashboard: React.FC = () => {
                         <div className="inline-flex items-center gap-2">
                           <button
                             onClick={() => handleOpenEditAssignments(rec)}
-                            className="px-2.5 py-1.5 rounded-lg text-[11px] font-medium text-[#0088e8] hover:bg-blue-50 border border-blue-200 transition-colors"
+                            className="px-3 py-1.5 rounded-full text-[11px] font-medium text-[#0088e8] hover:bg-[#0088e8]/5 border border-[#0088e8]/30 transition-all active:scale-[0.98] shadow-2xs"
                           >
                             Manage Doctors
                           </button>
                           <button
                             onClick={() => handleRemoveReceptionist(rec.id, rec.fullName)}
-                            className="p-1.5 rounded-lg text-rose-600 hover:bg-rose-50 border border-rose-200 transition-colors"
+                            className="p-1.5 rounded-full text-rose-600 hover:bg-rose-50 border border-rose-200 transition-all active:scale-[0.98] shadow-2xs"
                             title="Remove receptionist"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -877,7 +877,7 @@ export const ClinicDashboard: React.FC = () => {
                   value={doctorEmail}
                   onChange={(e) => setDoctorEmail(e.target.value)}
                   placeholder="e.g. dr.sarah@mediarca.com"
-                  className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-xs focus:outline-none focus:border-[#0088e8]"
+                  className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
                 />
               </div>
 
@@ -895,7 +895,7 @@ export const ClinicDashboard: React.FC = () => {
                     value={doctorSearchQuery}
                     onChange={(e) => setDoctorSearchQuery(e.target.value)}
                     placeholder="Filter by name, specialty, or email..."
-                    className="w-full h-8 px-3 rounded-lg border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white focus:outline-none focus:border-[#0088e8] mb-2"
+                    className="w-full h-8 px-3 rounded-full border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] mb-2"
                   />
                   <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
                     {allDoctors
@@ -993,7 +993,7 @@ export const ClinicDashboard: React.FC = () => {
                   value={recFullName}
                   onChange={(e) => setRecFullName(e.target.value)}
                   placeholder="e.g. John Doe"
-                  className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-xs focus:outline-none focus:border-[#0088e8]"
+                  className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
                 />
               </div>
 
@@ -1009,7 +1009,7 @@ export const ClinicDashboard: React.FC = () => {
                     value={recEmail}
                     onChange={(e) => setRecEmail(e.target.value)}
                     placeholder="desk@clinic.com"
-                    className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-xs focus:outline-none focus:border-[#0088e8]"
+                    className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
                   />
                 </div>
                 <div>
@@ -1033,7 +1033,7 @@ export const ClinicDashboard: React.FC = () => {
                     value={recPassword}
                     onChange={(e) => setRecPassword(e.target.value)}
                     placeholder="Min. 6 characters"
-                    className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-xs focus:outline-none focus:border-[#0088e8] font-mono"
+                    className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] font-mono"
                   />
                 </div>
               </div>
@@ -1048,7 +1048,7 @@ export const ClinicDashboard: React.FC = () => {
                   value={recPhone}
                   onChange={(e) => setRecPhone(e.target.value)}
                   placeholder="+1 (555) 000-0000"
-                  className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-xs focus:outline-none focus:border-[#0088e8]"
+                  className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
                 />
               </div>
 

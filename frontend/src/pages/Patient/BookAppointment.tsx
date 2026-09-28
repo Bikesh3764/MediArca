@@ -499,7 +499,7 @@ export const BookAppointment: React.FC = () => {
               value={appointmentDate}
               min={getLocalDateString()}
               onChange={(e) => setAppointmentDate(e.target.value)}
-              className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[14px] bg-white focus:outline-none focus:border-[#0088e8]"
+              className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[14px] bg-white text-[#1d1d1f] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
             />
           </div>
 
@@ -630,13 +630,13 @@ export const BookAppointment: React.FC = () => {
               <label className="block text-xs font-semibold text-[#1d1d1f] mb-2">
                 Booking For:
               </label>
-              <div className="flex rounded-xl bg-[#f5f5f7] p-1 border border-[#e5e5ea] max-w-sm">
+              <div className="flex rounded-full bg-[#f5f5f7] p-1 border border-[#e5e5ea] max-w-sm shadow-xs">
                 <button
                   type="button"
                   onClick={() => setBookingFor('myself')}
-                  className={`flex-1 py-1.5 text-xs font-medium rounded-lg transition-all ${
+                  className={`flex-1 py-1.5 text-xs font-semibold rounded-full transition-all active:scale-[0.98] ${
                     bookingFor === 'myself'
-                      ? 'bg-white text-[#1d1d1f] shadow-xs font-semibold'
+                      ? 'bg-white text-[#1d1d1f] shadow-xs'
                       : 'text-[#86868b] hover:text-[#1d1d1f]'
                   }`}
                 >
@@ -645,9 +645,9 @@ export const BookAppointment: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setBookingFor('other')}
-                  className={`flex-1 py-1.5 text-xs font-medium rounded-lg transition-all ${
+                  className={`flex-1 py-1.5 text-xs font-semibold rounded-full transition-all active:scale-[0.98] ${
                     bookingFor === 'other'
-                      ? 'bg-white text-[#1d1d1f] shadow-xs font-semibold'
+                      ? 'bg-white text-[#1d1d1f] shadow-xs'
                       : 'text-[#86868b] hover:text-[#1d1d1f]'
                   }`}
                 >
@@ -671,7 +671,7 @@ export const BookAppointment: React.FC = () => {
                         value={patientName}
                         onChange={(e) => setPatientName(e.target.value)}
                         placeholder="e.g. Rahul Ray"
-                        className="w-full h-10 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0088e8]"
+                        className="w-full h-10 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
                       />
                     </div>
                     <div>
@@ -684,7 +684,7 @@ export const BookAppointment: React.FC = () => {
                         value={patientAge}
                         onChange={(e) => setPatientAge(e.target.value)}
                         placeholder="e.g. 12"
-                        className="w-full h-10 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0088e8]"
+                        className="w-full h-10 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
                       />
                     </div>
                     <div>
@@ -694,7 +694,7 @@ export const BookAppointment: React.FC = () => {
                       <select
                         value={patientGender}
                         onChange={(e) => setPatientGender(e.target.value)}
-                        className="w-full h-10 px-2.5 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0088e8]"
+                        className="w-full h-10 px-2.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
                       >
                         <option value="Male">Male</option>
                         <option value="Female">Female</option>
@@ -740,7 +740,7 @@ export const BookAppointment: React.FC = () => {
                 value={reasonForVisit}
                 onChange={(e) => setReasonForVisit(e.target.value)}
                 placeholder="e.g. Annual cardiac review, chest tightness, routine check"
-                className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[14px] focus:outline-none focus:border-[#0088e8]"
+                className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[14px] bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
               />
             </div>
 
@@ -753,7 +753,7 @@ export const BookAppointment: React.FC = () => {
                 value={symptoms}
                 onChange={(e) => setSymptoms(e.target.value)}
                 placeholder="Describe any symptoms you are experiencing..."
-                className="w-full p-3 rounded-xl border border-[#e5e5ea] text-[14px] focus:outline-none focus:border-[#0088e8]"
+                className="w-full p-3 rounded-xl border border-[#e5e5ea] text-[14px] bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
               ></textarea>
             </div>
 

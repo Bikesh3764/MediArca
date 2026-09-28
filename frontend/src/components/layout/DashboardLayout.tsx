@@ -136,8 +136,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             </p>
             <div className="flex items-center gap-1.5 mt-0.5">
               <span className="w-1.5 h-1.5 rounded-full bg-[#10b981] flex-shrink-0 animate-pulse" />
-              <span className="text-[11px] text-[#059669] font-medium leading-none">
-                Online
+              <span className="text-[11px] text-[#059669] font-medium leading-none truncate max-w-[125px]" title={getRoleSubtitle()}>
+                {getRoleSubtitle()}
               </span>
             </div>
           </div>
@@ -160,9 +160,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
               const content = (
                 <div
-                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all ${
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-full text-xs font-medium transition-all active:scale-[0.99] ${
                     isItemActive
-                      ? 'bg-[#0088e8]/10 text-[#0088e8] font-semibold'
+                      ? 'bg-[#0088e8]/10 text-[#0088e8] font-semibold shadow-2xs'
                       : 'text-[#48484a] hover:bg-[#f5f5f7] hover:text-[#1d1d1f]'
                   }`}
                 >
@@ -177,7 +177,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                   <div className="flex items-center gap-2">
                     {item.badge !== undefined && (
                       <span
-                        className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${
+                        className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
                           isItemActive
                             ? 'bg-[#0088e8] text-white'
                             : 'bg-[#e5e5ea] text-[#48484a]'
@@ -235,7 +235,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             <Link
               to="/"
               onClick={() => setMobileDrawerOpen(false)}
-              className="flex items-center justify-between px-3.5 py-2 rounded-xl text-xs text-[#48484a] hover:bg-[#f5f5f7] hover:text-[#1d1d1f] transition-all"
+              className="flex items-center justify-between px-3.5 py-2 rounded-full text-xs text-[#48484a] hover:bg-[#f5f5f7] hover:text-[#1d1d1f] transition-all active:scale-[0.99]"
             >
               <div className="flex items-center gap-3">
                 <Globe className="w-4 h-4 text-[#86868b]" />
@@ -247,7 +247,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               <Link
                 to="/doctors"
                 onClick={() => setMobileDrawerOpen(false)}
-                className="flex items-center justify-between px-3.5 py-2 rounded-xl text-xs text-[#48484a] hover:bg-[#f5f5f7] hover:text-[#1d1d1f] transition-all"
+                className="flex items-center justify-between px-3.5 py-2 rounded-full text-xs text-[#48484a] hover:bg-[#f5f5f7] hover:text-[#1d1d1f] transition-all active:scale-[0.99]"
               >
                 <div className="flex items-center gap-3">
                   <Stethoscope className="w-4 h-4 text-[#86868b]" />
@@ -264,7 +264,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       <div className="p-4 border-t border-[#e5e5ea]">
         <button
           onClick={handleLogout}
-          className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-medium text-[#48484a] hover:text-rose-600 hover:bg-rose-50/70 transition-colors"
+          className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-full text-xs font-medium text-[#48484a] hover:text-rose-600 hover:bg-rose-50/70 transition-all active:scale-[0.98]"
         >
           <LogOut className="w-4 h-4" />
           <span>Sign Out</span>
@@ -285,11 +285,11 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       </aside>
 
       {/* Mobile Top Navigation Bar */}
-      <div className="md:hidden sticky top-0 z-40 bg-white border-b border-[#e5e5ea] px-4 py-3 flex items-center justify-between shadow-xs">
+      <div className="md:hidden sticky top-0 z-40 bg-white/85 backdrop-blur-xl border-b border-black/[0.06] px-4 py-3 flex items-center justify-between shadow-2xs">
         <div className="flex items-center gap-2">
           <button
             onClick={() => setMobileDrawerOpen(true)}
-            className="p-1.5 rounded-lg text-[#1d1d1f] hover:bg-[#f5f5f7]"
+            className="p-1.5 rounded-full text-[#1d1d1f] hover:bg-[#f5f5f7] active:scale-95 transition-all"
             aria-label="Open sidebar menu"
           >
             <Menu className="w-5 h-5" />
@@ -298,7 +298,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             <BrandLogo variant="full" size="sm" imgClassName="h-6 w-auto" />
           </div>
         </div>
-        <span className="text-[10px] font-bold text-[#86868b] tracking-wider uppercase px-2 py-0.5 rounded-md bg-[#f5f5f7]">
+        <span className="text-[10px] font-bold text-[#86868b] tracking-wider uppercase px-2.5 py-0.5 rounded-full bg-[#f5f5f7] border border-[#e5e5ea]">
           {getPortalLabel()}
         </span>
       </div>

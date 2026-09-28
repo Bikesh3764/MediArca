@@ -267,13 +267,13 @@ export const MedicalRecords: React.FC = () => {
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1.5 flex-shrink-0 ${
+                className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1.5 flex-shrink-0 active:scale-[0.98] ${
                   isSelected
-                    ? 'bg-[#1d1d1f] text-white shadow-sm'
+                    ? 'bg-[#1d1d1f] text-white shadow-xs font-semibold'
                     : 'bg-[#f5f5f7] text-[#1d1d1f] hover:bg-[#e8e8ed]'
                 }`}
               >
-                <span>{cat === 'Scan' ? 'Scans / Imaging' : cat === 'Prescription' ? 'Prescriptions' : cat}</span>
+                <span>{cat === 'Scan' ? 'Scans / Imaging' : cat}</span>
                 <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
                   isSelected ? 'bg-white/20 text-white' : 'bg-white text-[#86868b]'
                 }`}>
@@ -369,8 +369,8 @@ export const MedicalRecords: React.FC = () => {
 
       {/* Instant In-App Document Preview Modal */}
       {previewRecord && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-[20px] border border-[#e5e5ea] max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xl animate-fadeIn">
+          <div className="bg-white rounded-[24px] border border-[#e5e5ea] max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
             <div className="flex justify-between items-center px-6 py-4 border-b border-[#f0f0f0]">
               <div className="flex items-center gap-2.5">
                 <FileText className="w-5 h-5 text-[#0088e8]" />
@@ -386,7 +386,7 @@ export const MedicalRecords: React.FC = () => {
                   href={getFileUrl(previewRecord.fileUrl)}
                   target="_blank"
                   rel="noreferrer"
-                  className="p-2 rounded-xl text-[#86868b] hover:bg-gray-100 hover:text-[#1d1d1f] transition-colors"
+                  className="p-2 rounded-full text-[#86868b] hover:bg-gray-100 hover:text-[#1d1d1f] transition-colors"
                   title="Open in new window"
                 >
                   <ExternalLink className="w-4 h-4" />
@@ -394,14 +394,14 @@ export const MedicalRecords: React.FC = () => {
                 <a
                   href={getFileUrl(previewRecord.fileUrl)}
                   download
-                  className="p-2 rounded-xl text-[#86868b] hover:bg-gray-100 hover:text-[#1d1d1f] transition-colors"
+                  className="p-2 rounded-full text-[#86868b] hover:bg-gray-100 hover:text-[#1d1d1f] transition-colors"
                   title="Download file"
                 >
                   <Download className="w-4 h-4" />
                 </a>
                 <button
                   onClick={() => setPreviewRecord(null)}
-                  className="p-2 rounded-xl hover:bg-gray-100 text-[#86868b] transition-colors"
+                  className="p-2 rounded-full hover:bg-gray-100 text-[#86868b] transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -450,8 +450,8 @@ export const MedicalRecords: React.FC = () => {
 
       {/* Upload Modal with Progress */}
       {showUploadModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-[20px] border border-[#e5e5ea] max-w-md w-full p-6 sm:p-8 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xl animate-fadeIn">
+          <div className="bg-white rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-6 sm:p-8 shadow-2xl">
             <div className="flex justify-between items-center pb-4 border-b border-[#f0f0f0]">
               <div>
                 <h3 className="text-lg font-semibold text-[#1d1d1f]">Upload Medical Document</h3>
@@ -485,7 +485,7 @@ export const MedicalRecords: React.FC = () => {
                   value={uploadTitle}
                   onChange={(e) => setUploadTitle(e.target.value)}
                   placeholder="e.g. Lipid Profile, Chest X-Ray, Blood Test"
-                  className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[14px] focus:outline-none focus:border-[#0088e8] disabled:opacity-50"
+                  className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[14px] bg-white focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] transition-all disabled:opacity-50"
                 />
               </div>
 
@@ -497,7 +497,7 @@ export const MedicalRecords: React.FC = () => {
                   disabled={uploading || isOptimizing}
                   value={uploadCategory}
                   onChange={(e) => setUploadCategory(e.target.value)}
-                  className="w-full h-11 px-3 rounded-xl border border-[#e5e5ea] text-[14px] bg-white focus:outline-none focus:border-[#0088e8] disabled:opacity-50"
+                  className="w-full h-11 px-3 rounded-xl border border-[#e5e5ea] text-[14px] bg-white focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] transition-all disabled:opacity-50 cursor-pointer"
                 >
                   <option value="Lab Report">Lab Report</option>
                   <option value="Scan">Scan / Imaging (X-Ray, MRI)</option>

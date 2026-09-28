@@ -316,7 +316,7 @@ export const ManageSchedule: React.FC = () => {
                   <select
                     value={selectedClinicId}
                     onChange={(e) => handleClinicChange(e.target.value)}
-                    className="h-9 px-3 rounded-xl border border-[#e5e5ea] text-xs font-semibold text-[#1d1d1f] bg-white focus:outline-none focus:border-[#0088e8] cursor-pointer"
+                    className="h-9 px-4 rounded-full border border-[#e5e5ea] text-xs font-semibold text-[#1d1d1f] bg-white focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] cursor-pointer transition-all hover:bg-[#fafafc]"
                   >
                     {clinics.map((c) => (
                       <option key={c.clinicId} value={c.clinicId}>
@@ -421,7 +421,7 @@ export const ManageSchedule: React.FC = () => {
                             <button
                               type="button"
                               onClick={() => handleRemoveSlot(idx)}
-                              className="text-rose-500 hover:text-rose-700 p-1.5 rounded-lg hover:bg-rose-50 transition-colors"
+                              className="text-rose-500 hover:text-rose-700 p-2 rounded-full hover:bg-rose-50 transition-colors"
                               title="Remove this shift"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -440,7 +440,7 @@ export const ManageSchedule: React.FC = () => {
                               required
                               value={slot.startTime}
                               onChange={(e) => handleSlotChange(idx, 'startTime', e.target.value)}
-                              className="w-full h-10 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0088e8]"
+                              className="w-full h-10 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] transition-all"
                             />
                           </div>
 
@@ -453,7 +453,7 @@ export const ManageSchedule: React.FC = () => {
                               required
                               value={slot.endTime}
                               onChange={(e) => handleSlotChange(idx, 'endTime', e.target.value)}
-                              className="w-full h-10 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0088e8]"
+                              className="w-full h-10 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] transition-all"
                             />
                           </div>
 
@@ -468,7 +468,7 @@ export const ManageSchedule: React.FC = () => {
                               required
                               value={slot.maxPatients}
                               onChange={(e) => handleSlotChange(idx, 'maxPatients', Number(e.target.value))}
-                              className="w-full h-10 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0088e8]"
+                              className="w-full h-10 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] transition-all"
                             />
                           </div>
                         </div>
@@ -512,7 +512,7 @@ export const ManageSchedule: React.FC = () => {
                       required
                       value={consultationFee}
                       onChange={(e) => setConsultationFee(Number(e.target.value))}
-                      className="w-full h-11 pl-9 pr-3.5 rounded-xl border border-[#e5e5ea] text-sm focus:outline-none focus:border-[#0088e8]"
+                      className="w-full h-11 pl-9 pr-3.5 rounded-xl border border-[#e5e5ea] text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] transition-all"
                     />
                   </div>
                   <p className="text-[11px] text-[#86868b] mt-1">

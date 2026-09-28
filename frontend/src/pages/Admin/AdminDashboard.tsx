@@ -201,7 +201,7 @@ export const AdminDashboard: React.FC = () => {
 
             <button
               onClick={handleLogout}
-              className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-medium text-rose-600 bg-rose-50 hover:bg-rose-100 transition-all border border-rose-200 cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-medium text-rose-600 bg-rose-50 hover:bg-rose-100 transition-all border border-rose-200 cursor-pointer active:scale-[0.98]"
               title="Sign Out of Admin Console"
             >
               <LogOut className="w-3.5 h-3.5" />
@@ -235,7 +235,7 @@ export const AdminDashboard: React.FC = () => {
         {loading && !stats ? (
           <div className="flex flex-col items-center justify-center py-24">
             <div className="w-8 h-8 rounded-full border-2 border-[#0088e8] border-t-transparent animate-spin mb-3"></div>
-            <p className="text-xs text-[#7a7a7a]">Loading platform telemetry and practitioner records...</p>
+            <p className="text-xs text-[#86868b]">Loading platform telemetry and practitioner records...</p>
           </div>
         ) : (
           <>
@@ -312,56 +312,58 @@ export const AdminDashboard: React.FC = () => {
             </div>
 
             {/* Verification Navigation Tabs */}
-            <div className="flex flex-wrap items-center gap-2 border-b border-[#e5e5ea] pb-3">
-              <button
-                onClick={() => setActiveTab('doctors')}
-                className={`px-4 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer ${
-                  activeTab === 'doctors'
-                    ? 'bg-[#1d1d1f] text-white shadow-xs'
-                    : 'bg-white text-[#86868b] hover:text-[#1d1d1f] border border-[#e5e5ea]'
-                }`}
-              >
-                <ShieldCheck className="w-4 h-4 text-[#0088e8]" />
-                <span>Doctor Verification</span>
-                {doctors.filter((d) => getPractitionerStatus(d) === 'PENDING').length > 0 ? (
-                  <span className="px-2 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-bold">
-                    {doctors.filter((d) => getPractitionerStatus(d) === 'PENDING').length} pending
-                  </span>
-                ) : (
-                  <span className="text-[10px] opacity-70">({doctors.length})</span>
-                )}
-              </button>
+            <div className="flex flex-wrap items-center gap-2 border-b border-[#e5e5ea] pb-4">
+              <div className="inline-flex p-1 bg-[#f5f5f7] rounded-full border border-[#e5e5ea] shadow-xs">
+                <button
+                  onClick={() => setActiveTab('doctors')}
+                  className={`px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-2 transition-all active:scale-[0.98] cursor-pointer ${
+                    activeTab === 'doctors'
+                      ? 'bg-white text-[#1d1d1f] shadow-xs'
+                      : 'text-[#86868b] hover:text-[#1d1d1f]'
+                  }`}
+                >
+                  <ShieldCheck className="w-4 h-4 text-[#0088e8]" />
+                  <span>Doctor Verification</span>
+                  {doctors.filter((d) => getPractitionerStatus(d) === 'PENDING').length > 0 ? (
+                    <span className="px-2 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-bold">
+                      {doctors.filter((d) => getPractitionerStatus(d) === 'PENDING').length} pending
+                    </span>
+                  ) : (
+                    <span className="text-[10px] opacity-70">({doctors.length})</span>
+                  )}
+                </button>
 
-              <button
-                onClick={() => setActiveTab('clinics')}
-                className={`px-4 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer ${
-                  activeTab === 'clinics'
-                    ? 'bg-[#1d1d1f] text-white shadow-xs'
-                    : 'bg-white text-[#86868b] hover:text-[#1d1d1f] border border-[#e5e5ea]'
-                }`}
-              >
-                <Building2 className="w-4 h-4 text-indigo-600" />
-                <span>Clinic Verification</span>
-                {clinics.filter((c) => getPractitionerStatus(c) === 'PENDING').length > 0 ? (
-                  <span className="px-2 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-bold animate-pulse">
-                    {clinics.filter((c) => getPractitionerStatus(c) === 'PENDING').length} pending
-                  </span>
-                ) : (
-                  <span className="text-[10px] opacity-70">({clinics.length})</span>
-                )}
-              </button>
+                <button
+                  onClick={() => setActiveTab('clinics')}
+                  className={`px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-2 transition-all active:scale-[0.98] cursor-pointer ${
+                    activeTab === 'clinics'
+                      ? 'bg-white text-[#1d1d1f] shadow-xs'
+                      : 'text-[#86868b] hover:text-[#1d1d1f]'
+                  }`}
+                >
+                  <Building2 className="w-4 h-4 text-indigo-600" />
+                  <span>Clinic Verification</span>
+                  {clinics.filter((c) => getPractitionerStatus(c) === 'PENDING').length > 0 ? (
+                    <span className="px-2 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-bold animate-pulse">
+                      {clinics.filter((c) => getPractitionerStatus(c) === 'PENDING').length} pending
+                    </span>
+                  ) : (
+                    <span className="text-[10px] opacity-70">({clinics.length})</span>
+                  )}
+                </button>
 
-              <button
-                onClick={() => setActiveTab('appointments')}
-                className={`px-4 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer ${
-                  activeTab === 'appointments'
-                    ? 'bg-[#1d1d1f] text-white shadow-xs'
-                    : 'bg-white text-[#86868b] hover:text-[#1d1d1f] border border-[#e5e5ea]'
-                }`}
-              >
-                <Calendar className="w-4 h-4 text-purple-600" />
-                <span>Platform Bookings ({appointments.length})</span>
-              </button>
+                <button
+                  onClick={() => setActiveTab('appointments')}
+                  className={`px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-2 transition-all active:scale-[0.98] cursor-pointer ${
+                    activeTab === 'appointments'
+                      ? 'bg-white text-[#1d1d1f] shadow-xs'
+                      : 'text-[#86868b] hover:text-[#1d1d1f]'
+                  }`}
+                >
+                  <Calendar className="w-4 h-4 text-purple-600" />
+                  <span>Platform Bookings ({appointments.length})</span>
+                </button>
+              </div>
             </div>
 
             {/* Tab 1: Doctor Verification Portal */}
@@ -370,16 +372,16 @@ export const AdminDashboard: React.FC = () => {
                 <div className="flex justify-between items-center mb-6">
                   <div>
                     <h3 className="text-lg font-semibold text-[#1d1d1f]">Practitioner Verification Queue</h3>
-                    <p className="text-xs text-[#7a7a7a] mt-0.5">
+                    <p className="text-xs text-[#86868b] mt-0.5">
                       Doctors must be verified by admin before appearing in patient searches.
                     </p>
                   </div>
-                  <span className="text-xs text-[#7a7a7a]">{doctors.length} Registered Doctor(s)</span>
+                  <span className="text-xs text-[#86868b]">{doctors.length} Registered Doctor(s)</span>
                 </div>
 
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs">
-                    <thead className="border-b border-[#e0e0e0] text-[#7a7a7a] uppercase tracking-wider font-semibold">
+                    <thead className="border-b border-[#e5e5ea] text-[#86868b] uppercase tracking-wider font-semibold">
                       <tr>
                         <th className="py-3 px-3">Practitioner</th>
                         <th className="py-3 px-3">Specialty</th>
@@ -395,7 +397,7 @@ export const AdminDashboard: React.FC = () => {
                           <td className="py-3.5 px-3">
                             <div className="flex items-center gap-3">
                               <div
-                                className="w-8 h-8 rounded-full bg-[#e0e0e0] overflow-hidden flex-shrink-0 cursor-pointer"
+                                className="w-8 h-8 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] overflow-hidden flex-shrink-0 cursor-pointer"
                                 onClick={() => setSelectedDoctor(doc)}
                               >
                                 {doc.user.avatarUrl ? (
@@ -418,7 +420,7 @@ export const AdminDashboard: React.FC = () => {
                                 >
                                   {doc.user.fullName}
                                 </button>
-                                <span className="text-[#7a7a7a]">{doc.user.email}</span>
+                                <span className="text-[#86868b]">{doc.user.email}</span>
                               </div>
                             </div>
                           </td>
@@ -517,16 +519,16 @@ export const AdminDashboard: React.FC = () => {
                 <div className="flex justify-between items-center mb-6">
                   <div>
                     <h3 className="text-lg font-semibold text-[#1d1d1f]">Clinic Facility Verification Queue</h3>
-                    <p className="text-xs text-[#7a7a7a] mt-0.5">
+                    <p className="text-xs text-[#86868b] mt-0.5">
                       Clinics must be verified by MediArca administration before appearing in patient searches or doctor affiliation lists.
                     </p>
                   </div>
-                  <span className="text-xs text-[#7a7a7a]">{clinics.length} Registered Clinic(s)</span>
+                  <span className="text-xs text-[#86868b]">{clinics.length} Registered Clinic(s)</span>
                 </div>
 
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs">
-                    <thead className="border-b border-[#e0e0e0] text-[#7a7a7a] uppercase tracking-wider font-semibold">
+                    <thead className="border-b border-[#e5e5ea] text-[#86868b] uppercase tracking-wider font-semibold">
                       <tr>
                         <th className="py-3 px-3">Facility</th>
                         <th className="py-3 px-3">Location</th>
@@ -558,7 +560,7 @@ export const AdminDashboard: React.FC = () => {
                                   >
                                     {c.clinicName}
                                   </button>
-                                  <div className="text-[#7a7a7a]">
+                                  <div className="text-[#86868b]">
                                     {c.user?.fullName} • {c.user?.email}
                                   </div>
                                   {c.phone && <div className="text-[10px] text-[#86868b]">{c.phone}</div>}
@@ -668,16 +670,16 @@ export const AdminDashboard: React.FC = () => {
                 <div className="flex justify-between items-center mb-6">
                   <div>
                     <h3 className="text-lg font-semibold text-[#1d1d1f]">Recent Platform Bookings</h3>
-                    <p className="text-xs text-[#7a7a7a] mt-0.5">
+                    <p className="text-xs text-[#86868b] mt-0.5">
                       Audit trail of queue numbers and consultation statuses across facilities.
                     </p>
                   </div>
-                  <span className="text-xs text-[#7a7a7a]">{appointments.length} Total</span>
+                  <span className="text-xs text-[#86868b]">{appointments.length} Total</span>
                 </div>
 
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs">
-                    <thead className="border-b border-[#e0e0e0] text-[#7a7a7a] uppercase tracking-wider font-semibold">
+                    <thead className="border-b border-[#e5e5ea] text-[#86868b] uppercase tracking-wider font-semibold">
                       <tr>
                         <th className="py-3 px-3">Date</th>
                         <th className="py-3 px-3">Queue Token</th>
@@ -697,7 +699,7 @@ export const AdminDashboard: React.FC = () => {
                           <td className="py-3 px-3">
                             <span className="font-medium text-[11px] uppercase">{appt.status}</span>
                           </td>
-                          <td className="py-3 px-3 text-[#7a7a7a]">{appt.estimatedTime}</td>
+                          <td className="py-3 px-3 text-[#86868b]">{appt.estimatedTime}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -712,10 +714,10 @@ export const AdminDashboard: React.FC = () => {
       {/* Doctor Verification Credentials Inspection Modal */}
       {selectedDoctor && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-[24px] border border-[#e0e0e0] max-w-lg w-full p-6 sm:p-8 shadow-2xl space-y-5">
+          <div className="bg-white rounded-[24px] border border-[#e5e5ea] max-w-lg w-full p-6 sm:p-8 shadow-2xl space-y-5">
             <div className="flex justify-between items-start pb-4 border-b border-[#f0f0f0]">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-[#f5f5f7] border border-[#e0e0e0] overflow-hidden flex items-center justify-center font-bold text-lg text-[#0088e8]">
+                <div className="w-12 h-12 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] overflow-hidden flex items-center justify-center font-bold text-lg text-[#0088e8]">
                   {selectedDoctor.user.avatarUrl ? (
                     <img src={selectedDoctor.user.avatarUrl} alt={selectedDoctor.user.fullName} className="w-full h-full object-cover" />
                   ) : (
@@ -732,24 +734,24 @@ export const AdminDashboard: React.FC = () => {
               </div>
               <button
                 onClick={() => setSelectedDoctor(null)}
-                className="p-1.5 rounded-full hover:bg-gray-100 text-[#7a7a7a]"
+                className="p-1.5 rounded-full hover:bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f] active:scale-95 transition-all cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="space-y-3 text-xs">
-              <div className="grid grid-cols-2 gap-3 p-3.5 rounded-xl bg-[#f5f5f7]">
+              <div className="grid grid-cols-2 gap-3 p-3.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea]">
                 <div>
-                  <span className="text-[#7a7a7a] block">Qualifications:</span>
+                  <span className="text-[#86868b] block">Qualifications:</span>
                   <strong className="text-[#1d1d1f]">{selectedDoctor.qualifications}</strong>
                 </div>
                 <div>
-                  <span className="text-[#7a7a7a] block">Experience:</span>
+                  <span className="text-[#86868b] block">Experience:</span>
                   <strong className="text-[#1d1d1f]">{selectedDoctor.experienceYears} Years</strong>
                 </div>
                 <div>
-                  <span className="text-[#7a7a7a] block">Consultation Fee:</span>
+                  <span className="text-[#86868b] block">Consultation Fee:</span>
                   <strong className="text-[#1d1d1f]">${selectedDoctor.consultationFee}</strong>
                 </div>
                 <div>
@@ -761,22 +763,22 @@ export const AdminDashboard: React.FC = () => {
               </div>
 
               <div>
-                <span className="text-[#7a7a7a] font-semibold block mb-1">Clinic Address:</span>
-                <p className="text-[#1d1d1f] p-2.5 rounded-lg bg-gray-50 border border-gray-100">
+                <span className="text-[#86868b] font-semibold block mb-1">Clinic Address:</span>
+                <p className="text-[#1d1d1f] p-2.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea]">
                   {selectedDoctor.clinicAddress || 'MediArca Clinic Facility'}
                 </p>
               </div>
 
               <div>
-                <span className="text-[#7a7a7a] font-semibold block mb-1">Professional Bio & Practice Philosophy:</span>
-                <p className="text-[#1d1d1f] p-2.5 rounded-lg bg-gray-50 border border-gray-100 leading-relaxed">
+                <span className="text-[#86868b] font-semibold block mb-1">Professional Bio & Practice Philosophy:</span>
+                <p className="text-[#1d1d1f] p-2.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] leading-relaxed">
                   {selectedDoctor.bio || 'Dedicated medical practitioner accepting outpatient consultations.'}
                 </p>
               </div>
 
               <div className="flex justify-between items-center pt-2">
-                <span className="text-[#7a7a7a]">Email: {selectedDoctor.user.email}</span>
-                <span className="text-[#7a7a7a]">Phone: {selectedDoctor.user.phone || 'N/A'}</span>
+                <span className="text-[#86868b]">Email: {selectedDoctor.user.email}</span>
+                <span className="text-[#86868b]">Phone: {selectedDoctor.user.phone || 'N/A'}</span>
               </div>
             </div>
 
@@ -868,7 +870,7 @@ export const AdminDashboard: React.FC = () => {
       {/* Clinic Facility Inspection & Verification Modal */}
       {selectedClinic && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-[24px] border border-[#e0e0e0] max-w-lg w-full p-6 sm:p-8 shadow-2xl space-y-5">
+          <div className="bg-white rounded-[24px] border border-[#e5e5ea] max-w-lg w-full p-6 sm:p-8 shadow-2xl space-y-5">
             <div className="flex justify-between items-start pb-4 border-b border-[#f0f0f0]">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-lg">
@@ -877,14 +879,14 @@ export const AdminDashboard: React.FC = () => {
                 <div>
                   <h3 className="text-lg font-semibold text-[#1d1d1f] tracking-tight">{selectedClinic.clinicName}</h3>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <p className="text-xs text-[#7a7a7a]">Clinical Healthcare Facility Verification</p>
+                    <p className="text-xs text-[#86868b]">Clinical Healthcare Facility Verification</p>
                     {renderStatusBadge(getPractitionerStatus(selectedClinic))}
                   </div>
                 </div>
               </div>
               <button
                 onClick={() => setSelectedClinic(null)}
-                className="p-1 rounded-full text-[#7a7a7a] hover:bg-[#f5f5f7] transition-colors"
+                className="p-1.5 rounded-full hover:bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f] active:scale-95 transition-all cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>

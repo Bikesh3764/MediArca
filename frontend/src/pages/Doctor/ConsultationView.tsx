@@ -371,7 +371,7 @@ export const ConsultationView: React.FC = () => {
                       value={bp}
                       onChange={(e) => setBp(e.target.value)}
                       placeholder="120/80 mmHg"
-                      className="w-full h-9 px-3 rounded-lg border border-[#e5e5ea] focus:border-[#0088e8]"
+                      className="w-full h-9 px-3 rounded-xl border border-[#e5e5ea] bg-white focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] transition-all"
                     />
                   </div>
                   <div>
@@ -381,7 +381,7 @@ export const ConsultationView: React.FC = () => {
                       value={pulse}
                       onChange={(e) => setPulse(e.target.value)}
                       placeholder="72 bpm"
-                      className="w-full h-9 px-3 rounded-lg border border-[#e5e5ea] focus:border-[#0088e8]"
+                      className="w-full h-9 px-3 rounded-xl border border-[#e5e5ea] bg-white focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] transition-all"
                     />
                   </div>
                   <div>
@@ -391,7 +391,7 @@ export const ConsultationView: React.FC = () => {
                       value={temp}
                       onChange={(e) => setTemp(e.target.value)}
                       placeholder="98.6 °F"
-                      className="w-full h-9 px-3 rounded-lg border border-[#e5e5ea] focus:border-[#0088e8]"
+                      className="w-full h-9 px-3 rounded-xl border border-[#e5e5ea] bg-white focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] transition-all"
                     />
                   </div>
                   <div>
@@ -401,7 +401,7 @@ export const ConsultationView: React.FC = () => {
                       value={weight}
                       onChange={(e) => setWeight(e.target.value)}
                       placeholder="70 kg"
-                      className="w-full h-9 px-3 rounded-lg border border-[#e5e5ea] focus:border-[#0088e8]"
+                      className="w-full h-9 px-3 rounded-xl border border-[#e5e5ea] bg-white focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] transition-all"
                     />
                   </div>
                 </div>
@@ -481,7 +481,7 @@ export const ConsultationView: React.FC = () => {
                       value={diagnosis}
                       onChange={(e) => setDiagnosis(e.target.value)}
                       placeholder="e.g. Acute Bronchitis, Essential Hypertension"
-                      className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[14px] focus:outline-none focus:border-[#0088e8]"
+                      className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[14px] bg-white focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] transition-all"
                     />
                   </div>
 
@@ -494,7 +494,7 @@ export const ConsultationView: React.FC = () => {
                       value={clinicalNotes}
                       onChange={(e) => setClinicalNotes(e.target.value)}
                       placeholder="Physical examination observations, clinical summary, remarks..."
-                      className="w-full p-3 rounded-xl border border-[#e5e5ea] text-[14px] focus:outline-none focus:border-[#0088e8]"
+                      className="w-full p-3 rounded-xl border border-[#e5e5ea] text-[14px] bg-white focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] transition-all"
                     ></textarea>
                   </div>
                 </div>
@@ -537,7 +537,7 @@ export const ConsultationView: React.FC = () => {
                             <button
                               type="button"
                               onClick={() => handleRemoveMedicine(idx)}
-                              className="text-[#86868b] hover:text-rose-600 transition-colors p-1 rounded hover:bg-rose-50"
+                              className="text-[#86868b] hover:text-rose-600 transition-colors p-1.5 rounded-full hover:bg-rose-50"
                               title="Remove medication"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
@@ -553,7 +553,7 @@ export const ConsultationView: React.FC = () => {
                               value={med.name}
                               onChange={(e) => handleMedicineChange(idx, 'name', e.target.value)}
                               placeholder="e.g. Amoxicillin 500mg, Paracetamol 650mg"
-                              className="w-full h-9 px-3 rounded-lg border border-[#e5e5ea] bg-white text-xs focus:border-[#0088e8]"
+                              className="w-full h-9 px-3 rounded-xl border border-[#e5e5ea] bg-white text-xs text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
                             />
                           </div>
                           <div>
@@ -563,7 +563,7 @@ export const ConsultationView: React.FC = () => {
                               value={med.dosage}
                               onChange={(e) => handleMedicineChange(idx, 'dosage', e.target.value)}
                               placeholder="1 Tablet / 5ml Syrup / 1 Capsule"
-                              className="w-full h-9 px-3 rounded-lg border border-[#e5e5ea] bg-white text-xs focus:border-[#0088e8]"
+                              className="w-full h-9 px-3 rounded-xl border border-[#e5e5ea] bg-white text-xs text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
                             />
                           </div>
                         </div>
@@ -576,18 +576,18 @@ export const ConsultationView: React.FC = () => {
                               value={med.frequency}
                               onChange={(e) => handleMedicineChange(idx, 'frequency', e.target.value)}
                               placeholder="Twice daily after meals"
-                              className="w-full h-9 px-3 rounded-lg border border-[#e5e5ea] bg-white text-xs focus:border-[#0088e8] mb-1"
+                              className="w-full h-9 px-3 rounded-xl border border-[#e5e5ea] bg-white text-xs text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] mb-1.5"
                             />
-                            <div className="flex flex-wrap gap-1">
+                            <div className="flex flex-wrap gap-1.5">
                               {['Once daily', 'Twice daily', 'Thrice daily', 'As needed'].map((f) => (
                                 <button
                                   key={f}
                                   type="button"
                                   onClick={() => handleMedicineChange(idx, 'frequency', f)}
-                                  className={`text-[10px] px-2 py-0.5 rounded transition-colors ${
+                                  className={`text-[10px] px-2.5 py-0.5 rounded-full font-medium transition-all ${
                                     med.frequency.toLowerCase().includes(f.toLowerCase())
-                                      ? 'bg-[#0088e8] text-white'
-                                      : 'bg-white border border-[#e5e5ea] text-[#86868b] hover:text-[#1d1d1f]'
+                                      ? 'bg-[#0088e8] text-white shadow-xs'
+                                      : 'bg-[#f5f5f7] border border-[#e5e5ea] text-[#86868b] hover:text-[#1d1d1f] hover:bg-[#e5e5ea]/50'
                                   }`}
                                 >
                                   {f}
@@ -603,18 +603,18 @@ export const ConsultationView: React.FC = () => {
                               value={med.duration}
                               onChange={(e) => handleMedicineChange(idx, 'duration', e.target.value)}
                               placeholder="5 Days / 1 Week"
-                              className="w-full h-9 px-3 rounded-lg border border-[#e5e5ea] bg-white text-xs focus:border-[#0088e8] mb-1"
+                              className="w-full h-9 px-3 rounded-xl border border-[#e5e5ea] bg-white text-xs text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] mb-1.5"
                             />
-                            <div className="flex flex-wrap gap-1">
+                            <div className="flex flex-wrap gap-1.5">
                               {['3 Days', '5 Days', '7 Days', '14 Days'].map((d) => (
                                 <button
                                   key={d}
                                   type="button"
                                   onClick={() => handleMedicineChange(idx, 'duration', d)}
-                                  className={`text-[10px] px-2 py-0.5 rounded transition-colors ${
+                                  className={`text-[10px] px-2.5 py-0.5 rounded-full font-medium transition-all ${
                                     med.duration.toLowerCase().includes(d.toLowerCase())
-                                      ? 'bg-[#0088e8] text-white'
-                                      : 'bg-white border border-[#e5e5ea] text-[#86868b] hover:text-[#1d1d1f]'
+                                      ? 'bg-[#0088e8] text-white shadow-xs'
+                                      : 'bg-[#f5f5f7] border border-[#e5e5ea] text-[#86868b] hover:text-[#1d1d1f] hover:bg-[#e5e5ea]/50'
                                   }`}
                                 >
                                   {d}
@@ -632,12 +632,12 @@ export const ConsultationView: React.FC = () => {
                               value={med.instructions}
                               onChange={(e) => handleMedicineChange(idx, 'instructions', e.target.value)}
                               placeholder="e.g. Take with lukewarm water after food"
-                              className="w-full h-9 px-3 rounded-lg border border-[#e5e5ea] bg-white text-xs focus:border-[#0088e8]"
+                              className="w-full h-9 px-3 rounded-xl border border-[#e5e5ea] bg-white text-xs text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
                             />
                           </div>
                           <div>
                             <label className="block text-[#86868b] font-medium mb-1">Total Quantity</label>
-                            <div className="h-9 px-3 rounded-lg border border-[#e5e5ea] bg-[#f5f5f7] flex items-center text-xs font-semibold text-[#1d1d1f]">
+                            <div className="h-9 px-3 rounded-xl border border-[#e5e5ea] bg-[#f5f5f7] flex items-center text-xs font-semibold text-[#1d1d1f]">
                               {med.name ? `~${total} Units` : '—'}
                             </div>
                           </div>
@@ -657,7 +657,7 @@ export const ConsultationView: React.FC = () => {
                       value={advice}
                       onChange={(e) => setAdvice(e.target.value)}
                       placeholder="e.g. Rest, hydration, avoid cold fluids"
-                      className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[14px] focus:outline-none focus:border-[#0088e8]"
+                      className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[14px] text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
                     />
                   </div>
                   <div>
@@ -668,7 +668,7 @@ export const ConsultationView: React.FC = () => {
                       type="date"
                       value={followUpDate}
                       onChange={(e) => setFollowUpDate(e.target.value)}
-                      className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[14px] focus:outline-none focus:border-[#0088e8]"
+                      className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[14px] text-[#1d1d1f] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
                     />
                   </div>
                 </div>

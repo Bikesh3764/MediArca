@@ -40,7 +40,7 @@ export const PrescriptionModal: React.FC<PrescriptionModalProps> = ({ appointmen
             </AppleButton>
             <button
               onClick={onClose}
-              className="p-1.5 rounded-full hover:bg-gray-100 text-[#86868b] transition-colors"
+              className="p-1.5 rounded-full hover:bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f] active:scale-95 transition-all cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -97,12 +97,12 @@ export const PrescriptionModal: React.FC<PrescriptionModalProps> = ({ appointmen
                       Dosage: {med.dosage} • Frequency: {med.frequency}
                     </p>
                   </div>
-                  <span className="text-xs font-medium text-[#86868b] bg-gray-100 px-2 py-0.5 rounded">
+                  <span className="text-xs font-medium text-[#86868b] bg-[#f5f5f7] border border-[#e5e5ea] px-2.5 py-0.5 rounded-full">
                     Duration: {med.duration}
                   </span>
                 </div>
                 {med.instructions && (
-                  <p className="text-xs text-[#86868b] mt-2 border-t border-gray-100 pt-2">
+                  <p className="text-xs text-[#86868b] mt-2 border-t border-[#f0f0f0] pt-2">
                     Instruction: {med.instructions}
                   </p>
                 )}
