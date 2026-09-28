@@ -15,13 +15,50 @@ export const getFileUrl = (filePath?: string): string => {
   return `${backendBase}${filePath.startsWith('/') ? '' : '/'}${filePath}`;
 };
 
-export const getMedicalRecordFileUrl = (recordId: string, directUrl?: string): string => {
-  if (directUrl && (directUrl.startsWith('data:') || directUrl.startsWith('http://') || directUrl.startsWith('https://'))) {
-    return directUrl;
-  }
+export const getMedicalRecordFileUrl = (recordId: string): string => {
+  return `${API_BASE_URL}/records/file/${recordId}`;
+};
+
+export const fetchMedicalRecordBlob = async (recordId: string): Promise<Blob> => {
   const token = typeof localStorage !== 'undefined' ? localStorage.getItem('token') : null;
-  const tokenQuery = token ? `?token=${encodeURIComponent(token)}` : '';
-  return `${API_BASE_URL}/records/file/${recordId}${tokenQuery}`;
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  const res = await fetch(`${API_BASE_URL}/records/file/${recordId}`, {
+    headers,
+  });
+  if (!res.ok) {
+    let msg = 'Failed to fetch medical record';
+    try {
+      const err = await res.json();
+      if (err.message) msg = err.message;
+    } catch {}
+    throw new Error(msg);
+  }
+  return await res.blob();
+};
+
+export const viewMedicalRecord = async (recordId: string, _title?: string): Promise<void> => {
+  const blob = await fetchMedicalRecordBlob(recordId);
+  const blobUrl = URL.createObjectURL(blob);
+  const w = window.open(blobUrl, '_blank');
+  if (!w) {
+    window.location.href = blobUrl;
+  }
+  setTimeout(() => URL.revokeObjectURL(blobUrl), 300000);
+};
+
+export const downloadMedicalRecord = async (recordId: string, filename?: string): Promise<void> => {
+  const blob = await fetchMedicalRecordBlob(recordId);
+  const blobUrl = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = blobUrl;
+  link.download = filename || `medical-record-${recordId}`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
 };
 
 export interface DoctorSlot {
@@ -1247,6 +1284,18 @@ export const api = {
       headers: getHeaders(),
     });
     await handleResponse(res);
+  },
+
+  async fetchRecordBlob(recordId: string): Promise<Blob> {
+    return fetchMedicalRecordBlob(recordId);
+  },
+
+  async viewRecord(recordId: string, title?: string): Promise<void> {
+    return viewMedicalRecord(recordId, title);
+  },
+
+  async downloadRecord(recordId: string, filename?: string): Promise<void> {
+    return downloadMedicalRecord(recordId, filename);
   },
 
   // Admin

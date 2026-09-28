@@ -33,7 +33,8 @@ export const getDoctors = async (req: Request, res: Response): Promise<void> => 
     const { search, specialty, minExp, maxFee, sortBy } = req.query;
 
     const whereClause: any = {
-      isVerified: true, // Only show verified doctors to patients/public
+      isVerified: true,
+      verificationStatus: 'VERIFIED',
     };
 
     if (specialty && typeof specialty === 'string' && specialty !== 'All') {
@@ -74,7 +75,7 @@ export const getDoctors = async (req: Request, res: Response): Promise<void> => 
           },
         },
         clinics: {
-          where: { clinic: { isVerified: true }, status: { in: ['ACTIVE', 'ACCEPTED'] } },
+          where: { clinic: { isVerified: true, verificationStatus: 'VERIFIED' }, status: { in: ['ACTIVE', 'ACCEPTED'] } },
           include: {
             clinic: true,
           },
@@ -129,7 +130,7 @@ export const getDoctorById = async (req: Request, res: Response): Promise<void> 
           },
         },
         clinics: {
-          where: { clinic: { isVerified: true }, status: { in: ['ACTIVE', 'ACCEPTED'] } },
+          where: { clinic: { isVerified: true, verificationStatus: 'VERIFIED' }, status: { in: ['ACTIVE', 'ACCEPTED'] } },
           include: {
             clinic: true,
           },
@@ -270,10 +271,18 @@ export const updateSchedule = async (req: AuthRequest, res: Response): Promise<v
         include: { clinic: true },
       });
 
-      if (!clinicAffiliation) {
-        res.status(404).json({
+      if (!clinicAffiliation || (clinicAffiliation.status !== 'ACTIVE' && clinicAffiliation.status !== 'ACCEPTED')) {
+        res.status(403).json({
           success: false,
-          message: 'Active clinic affiliation not found for this facility. Unable to configure clinic-specific schedule.',
+          message: 'Active clinic affiliation required to configure clinic-specific schedule.',
+        });
+        return;
+      }
+
+      if (!clinicAffiliation.clinic || !clinicAffiliation.clinic.isVerified || clinicAffiliation.clinic.verificationStatus !== 'VERIFIED') {
+        res.status(403).json({
+          success: false,
+          message: 'Clinic facility is not verified or is currently suspended from practice.',
         });
         return;
       }
@@ -327,7 +336,11 @@ export const updateSchedule = async (req: AuthRequest, res: Response): Promise<v
     const updated = await prisma.doctorProfile.update({
       where: { id: doctor.id },
       data: updateData,
-      include: { user: true },
+      include: {
+        user: {
+          select: { id: true, fullName: true, email: true, phone: true, avatarUrl: true, role: true },
+        },
+      },
     });
 
     res.json({

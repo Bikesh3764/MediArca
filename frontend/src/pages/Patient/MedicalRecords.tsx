@@ -24,6 +24,9 @@ export const MedicalRecords: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [previewRecord, setPreviewRecord] = useState<MedicalRecord | null>(null);
+  const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
 
   const { user, loading: loadingAuth } = useAuth();
 
@@ -42,6 +45,40 @@ export const MedicalRecords: React.FC = () => {
   useEffect(() => {
     if (!loadingAuth && user) fetchRecords();
   }, [user, loadingAuth]);
+
+  useEffect(() => {
+    let active = true;
+    let currentBlobUrl: string | null = null;
+
+    if (previewRecord) {
+      setPreviewLoading(true);
+      setPreviewError(null);
+      api.fetchRecordBlob(previewRecord.id)
+        .then((blob) => {
+          if (!active) return;
+          currentBlobUrl = URL.createObjectURL(blob);
+          setPreviewBlobUrl(currentBlobUrl);
+          setPreviewLoading(false);
+        })
+        .catch((err) => {
+          if (!active) return;
+          console.error('Failed to load record blob:', err);
+          setPreviewError(err.message || 'Failed to load document preview');
+          setPreviewLoading(false);
+        });
+    } else {
+      setPreviewBlobUrl(null);
+      setPreviewLoading(false);
+      setPreviewError(null);
+    }
+
+    return () => {
+      active = false;
+      if (currentBlobUrl) {
+        URL.revokeObjectURL(currentBlobUrl);
+      }
+    };
+  }, [previewRecord]);
 
   const handleDelete = async (id: string) => {
     if (!window.confirm('Delete this clinical record from your record history?')) return;
@@ -198,15 +235,14 @@ export const MedicalRecords: React.FC = () => {
                       <Eye className="w-3.5 h-3.5 mr-1" />
                       Preview
                     </AppleButton>
-                    <a
-                      href={getMedicalRecordFileUrl(rec.id, rec.fileUrl)}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      type="button"
+                      onClick={() => api.downloadRecord(rec.id, `${rec.title}.${rec.fileType?.split('/')[1] || 'pdf'}`)}
                       className="p-1.5 text-[#86868b] hover:text-[#0088e8] transition-colors rounded-full hover:bg-gray-100"
-                      title="Download original file"
+                      title="Download file"
                     >
                       <Download className="w-4 h-4" />
-                    </a>
+                    </button>
                   </div>
                 </div>
               </UtilityCard>
@@ -228,15 +264,14 @@ export const MedicalRecords: React.FC = () => {
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                <a
-                  href={getMedicalRecordFileUrl(previewRecord.id, previewRecord.fileUrl)}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  type="button"
+                  onClick={() => api.viewRecord(previewRecord.id, previewRecord.title)}
                   className="flex items-center gap-1 text-xs text-[#0088e8] hover:underline font-medium px-2 py-1"
                 >
                   <ExternalLink className="w-3.5 h-3.5" />
                   Open in New Tab
-                </a>
+                </button>
                 <button
                   onClick={() => setPreviewRecord(null)}
                   className="p-1.5 rounded-full hover:bg-gray-100 text-[#86868b]"
@@ -247,19 +282,31 @@ export const MedicalRecords: React.FC = () => {
             </div>
 
             <div className="flex-1 overflow-auto p-4 bg-[#f5f5f7] flex items-center justify-center min-h-[350px]">
-              {isImageFile(previewRecord) ? (
-                <img
-                  src={getMedicalRecordFileUrl(previewRecord.id, previewRecord.fileUrl)}
-                  alt={previewRecord.title}
-                  className="max-w-full max-h-[70vh] object-contain rounded-xl shadow-sm bg-white"
-                />
-              ) : (
-                <iframe
-                  src={getMedicalRecordFileUrl(previewRecord.id, previewRecord.fileUrl)}
-                  title={previewRecord.title}
-                  className="w-full h-[70vh] rounded-xl border border-[#e5e5ea] bg-white shadow-sm"
-                />
-              )}
+              {previewLoading ? (
+                <div className="flex flex-col items-center gap-2 text-sm text-[#86868b]">
+                  <div className="w-6 h-6 border-2 border-[#0088e8] border-t-transparent rounded-full animate-spin" />
+                  <span>Loading clinical document...</span>
+                </div>
+              ) : previewError ? (
+                <div className="text-center p-6">
+                  <p className="text-sm font-semibold text-rose-600 mb-1">Preview Unavailable</p>
+                  <p className="text-xs text-[#86868b]">{previewError}</p>
+                </div>
+              ) : previewBlobUrl ? (
+                isImageFile(previewRecord) ? (
+                  <img
+                    src={previewBlobUrl}
+                    alt={previewRecord.title}
+                    className="max-w-full max-h-[70vh] object-contain rounded-xl shadow-sm bg-white"
+                  />
+                ) : (
+                  <iframe
+                    src={previewBlobUrl}
+                    title={previewRecord.title}
+                    className="w-full h-[70vh] rounded-xl border border-[#e5e5ea] bg-white shadow-sm"
+                  />
+                )
+              ) : null}
             </div>
           </div>
         </div>

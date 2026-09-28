@@ -2,8 +2,9 @@ import path from 'path';
 import { Response } from 'express';
 import prisma from '../config/database';
 import { AuthRequest } from '../middleware/authMiddleware';
-import { uploadToR2, deleteFromR2, isR2Configured } from '../config/r2';
+import { uploadToR2, deleteFromR2, getFromR2, isR2Configured } from '../config/r2';
 import { validateMagicBytes } from '../middleware/uploadMiddleware';
+import { isDoctorEligibleForClinicalPractice } from '../utils/authGuards';
 
 export const uploadRecord = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -37,7 +38,7 @@ export const uploadRecord = async (req: AuthRequest, res: Response): Promise<voi
       return;
     }
 
-    // Verify file magic bytes / signature (Finding #27)
+    // Verify file magic bytes / signature
     if (file.buffer && !validateMagicBytes(file.buffer, file.mimetype)) {
       res.status(400).json({
         success: false,
@@ -62,6 +63,7 @@ export const uploadRecord = async (req: AuthRequest, res: Response): Promise<voi
 
     let fileUrl: string;
     if (isR2Configured() && file.buffer) {
+      // Returns private vault key r2://... (Finding H1)
       fileUrl = await uploadToR2(file.buffer, key, file.mimetype);
     } else if (file.buffer) {
       fileUrl = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
@@ -84,7 +86,10 @@ export const uploadRecord = async (req: AuthRequest, res: Response): Promise<voi
     res.status(201).json({
       success: true,
       message: 'Medical document uploaded successfully',
-      data: record,
+      data: {
+        ...record,
+        fileUrl: `/api/records/file/${record.id}`,
+      },
     });
   } catch (error: any) {
     console.error('uploadRecord error:', error);
@@ -127,18 +132,28 @@ export const getPatientRecords = async (req: AuthRequest, res: Response): Promis
         res.status(403).json({ success: false, message: 'Doctor profile not found' });
         return;
       }
-      // Verify clinical relationship: doctor must have at least one appointment with this patient
+
+      // Doctor eligibility check (Finding H4)
+      const docCheck = isDoctorEligibleForClinicalPractice(doctor);
+      if (!docCheck.eligible) {
+        res.status(403).json({ success: false, message: docCheck.reason });
+        return;
+      }
+
+      // Verify active clinical care relationship: only authorized if active or completed consultation exists (Finding H6)
       const hasRelationship = await prisma.appointment.findFirst({
         where: {
           doctorId: doctor.id,
           patientId: patientId,
+          status: { in: ['WAITING', 'IN_CONSULTATION', 'COMPLETED'] },
         },
       });
+
       if (!hasRelationship) {
         res.status(403).json({
           success: false,
           message:
-            'Access denied: You are only authorized to view medical records for patients with an active appointment or consultation history.',
+            'Access denied: You are only authorized to view medical records for patients with an active consultation or completed clinical history.',
         });
         return;
       }
@@ -159,7 +174,13 @@ export const getPatientRecords = async (req: AuthRequest, res: Response): Promis
       orderBy: { uploadedAt: 'desc' },
     });
 
-    res.json({ success: true, count: records.length, data: records });
+    // Mask storage URLs to always use authenticated endpoint (Finding H1)
+    const safeRecords = records.map((rec) => ({
+      ...rec,
+      fileUrl: `/api/records/file/${rec.id}`,
+    }));
+
+    res.json({ success: true, count: safeRecords.length, data: safeRecords });
   } catch (error: any) {
     console.error('getPatientRecords error:', error);
     res.status(500).json({
@@ -171,8 +192,8 @@ export const getPatientRecords = async (req: AuthRequest, res: Response): Promis
 };
 
 /**
- * Authenticated and authorized file streaming endpoint for medical records (Finding #22)
- * Ensures only the owning patient, an authorized treating doctor, or an admin can access clinical files.
+ * Authenticated and authorized file streaming endpoint for medical records (Finding H1, H6, L1)
+ * Ensures only the owning patient, an authorized active treating doctor, or an admin can access clinical files.
  */
 export const getRecordFile = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -186,7 +207,11 @@ export const getRecordFile = async (req: AuthRequest, res: Response): Promise<vo
       where: { id },
       include: {
         patient: {
-          include: { user: true },
+          include: {
+            user: {
+              select: { id: true, fullName: true, email: true, phone: true },
+            },
+          },
         },
       },
     });
@@ -205,13 +230,18 @@ export const getRecordFile = async (req: AuthRequest, res: Response): Promise<vo
         where: { userId: req.user.id },
       });
       if (doctor) {
-        const hasRelationship = await prisma.appointment.findFirst({
-          where: {
-            doctorId: doctor.id,
-            patientId: record.patientId,
-          },
-        });
-        isAuthorizedDoctor = Boolean(hasRelationship);
+        const docCheck = isDoctorEligibleForClinicalPractice(doctor);
+        if (docCheck.eligible) {
+          // Care relationship restricted to active or completed consultations (Finding H6)
+          const hasRelationship = await prisma.appointment.findFirst({
+            where: {
+              doctorId: doctor.id,
+              patientId: record.patientId,
+              status: { in: ['WAITING', 'IN_CONSULTATION', 'COMPLETED'] },
+            },
+          });
+          isAuthorizedDoctor = Boolean(hasRelationship);
+        }
       }
     }
 
@@ -236,18 +266,33 @@ export const getRecordFile = async (req: AuthRequest, res: Response): Promise<vo
       }
     }
 
-    // Remote R2 / HTTP URL
-    if (record.fileUrl.startsWith('http')) {
-      res.redirect(record.fileUrl);
-      return;
+    // Cloudflare R2 private bucket streaming (Finding H1)
+    if (
+      record.fileUrl.startsWith('r2://') ||
+      record.fileUrl.startsWith('records/') ||
+      (record.fileUrl.startsWith('http') && (record.fileUrl.includes('r2.dev') || record.fileUrl.includes('r2.cloudflarestorage.com')))
+    ) {
+      try {
+        const { stream, contentType, contentLength } = await getFromR2(record.fileUrl);
+        if (contentType) res.setHeader('Content-Type', contentType);
+        if (contentLength) res.setHeader('Content-Length', contentLength);
+        res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(record.title)}"`);
+        stream.pipe(res);
+        return;
+      } catch (err: any) {
+        console.error('Failed to stream record from R2:', err);
+        res.status(404).json({ success: false, message: 'Medical record file not found on secure storage' });
+        return;
+      }
     }
 
-    // Local file path with strict path traversal protection
+    // Local file path with strict path containment check (Finding L1)
     const normalizedRelative = path.normalize(record.fileUrl.replace(/^\/+/, ''));
     const uploadsDir = path.resolve(__dirname, '../../uploads');
     const fullPath = path.resolve(__dirname, '../../', normalizedRelative);
 
-    if (!fullPath.startsWith(uploadsDir)) {
+    const rel = path.relative(uploadsDir, fullPath);
+    if (rel.startsWith('..') || path.isAbsolute(rel) || (!fullPath.startsWith(uploadsDir + path.sep) && fullPath !== uploadsDir)) {
       res.status(403).json({ success: false, message: 'Invalid medical record file path.' });
       return;
     }
@@ -288,7 +333,12 @@ export const deleteRecord = async (req: AuthRequest, res: Response): Promise<voi
 
     await prisma.medicalRecord.delete({ where: { id } });
 
-    if (record.fileUrl && (record.fileUrl.startsWith('http') || record.fileUrl.startsWith('records/'))) {
+    if (
+      record.fileUrl &&
+      (record.fileUrl.startsWith('r2://') ||
+        record.fileUrl.startsWith('records/') ||
+        record.fileUrl.startsWith('http'))
+    ) {
       await deleteFromR2(record.fileUrl);
     }
 

@@ -589,3 +589,24 @@ The highest-risk remaining area is the medical-document path: the system now has
 The next most important architectural issue is the walk-in patient identity model because the current fixed credential can create predictable patient accounts.
 
 The audit should be considered a static engineering assessment. A production readiness decision should additionally require real backend integration/security tests against an isolated database.
+
+---
+
+# Post-Remediation Status Update (2026-09-28)
+
+All remaining findings from the third re-audit (H1–H8, M1–M12, L1–L2) have now been remediated:
+
+1. **H1 & H2 (Medical Records & Tokens)**: Private R2 storage with streaming backend proxy; JWT query string support removed; frontend uses authenticated Blob retrieval.
+2. **H3 (Walk-in Security)**: Unpredictable 64-char random hex passwords; UUID-derived email; direct login blocked for walk-in domains.
+3. **H4 & H5 (Eligibility & Assignments)**: Centralized `authGuards.ts` enforces active doctor, active receptionist, and active clinic affiliation.
+4. **H6 (Record Access)**: Limited to active/completed doctor-patient care relationships.
+5. **H7 (Concurrency)**: Database row-level pessimistic locking (`SELECT ... FOR UPDATE`) and in-tx duplicate booking prevention.
+6. **H8 (Clinic Schedules)**: Strict requirement for active clinic and active doctor affiliation.
+7. **M1 (Startup DDL)**: Guarded by environment flags.
+8. **M2 (Data Leakage)**: Explicit user projections across all controllers, eliminating passwordHash.
+9. **M3–M11, L1–L2**: Centralized date checks, strict status machine transitions, strict CORS allowlist, sanitized health responses, and bounded path traversal defense.
+
+**Verification Results:**
+- Backend verification suite: **671 passed, 0 failed**.
+- Backend build: **Clean (0 errors)**.
+- Frontend build: **Clean (0 errors)**.

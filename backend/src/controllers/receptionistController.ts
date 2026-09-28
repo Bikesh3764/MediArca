@@ -2,15 +2,22 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import prisma from '../config/database';
 import { AuthRequest } from '../middleware/authMiddleware';
+import crypto from 'crypto';
 import {
   parseDoctorSlots,
   evaluateSlotStatus,
   getLocalDateString,
   timeToMinutes,
   minutesTo12Hour,
+  isValidAppointmentDate,
 } from '../utils/scheduleUtils';
 import { formatIndianPhone, sanitizeIndianPhone } from '../utils/phoneUtils';
 import { canTransition } from '../utils/appointmentStateMachine';
+import {
+  verifyReceptionistDoctorAccess,
+  isDoctorEligibleForClinicalPractice,
+  isClinicActive,
+} from '../utils/authGuards';
 
 /**
  * Get profile and linked doctors for logged-in receptionist
@@ -77,7 +84,9 @@ export const getMyReceptionist = async (req: AuthRequest, res: Response): Promis
       : [];
 
     const activeAssignments = receptionist.doctors.filter((dr) =>
-      activeDoctorIds.includes(dr.doctorId)
+      dr.status === 'ACTIVE' &&
+      activeDoctorIds.includes(dr.doctorId) &&
+      isDoctorEligibleForClinicalPractice(dr.doctor).eligible
     );
 
     // Compute today's queue count for each linked doctor (scoped to this clinic)
@@ -201,6 +210,14 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
     const doctorId = String(req.params.doctorId);
     const appointmentDate = String(req.query.date || getLocalDateString());
 
+    if (req.query.date && !isValidAppointmentDate(String(req.query.date))) {
+      res.status(400).json({
+        success: false,
+        message: 'Invalid appointment date format. Expected valid calendar date in YYYY-MM-DD format.',
+      });
+      return;
+    }
+
     if (!req.user || req.user.role !== 'RECEPTIONIST') {
       res.status(403).json({
         success: false,
@@ -209,48 +226,13 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
       return;
     }
 
-    const receptionist = await prisma.receptionistProfile.findUnique({
-      where: { userId: req.user.id },
-    });
-
-    if (!receptionist) {
-      res.status(404).json({ success: false, message: 'Receptionist profile not found' });
+    const access = await verifyReceptionistDoctorAccess(req.user.id, doctorId, null);
+    if (!access.authorized) {
+      res.status(403).json({ success: false, message: access.reason });
       return;
     }
 
-    const assignment = await prisma.doctorReceptionist.findUnique({
-      where: {
-        doctorId_receptionistId: {
-          doctorId,
-          receptionistId: receptionist.id,
-        },
-      },
-    });
-    if (!assignment) {
-      res.status(403).json({
-        success: false,
-        message: 'Access denied: You do not have queue management access for this doctor.',
-      });
-      return;
-    }
-
-        if (receptionist.clinicId) {
-          const isAffiliated = await prisma.clinicDoctor.findUnique({
-            where: {
-              clinicId_doctorId: {
-                clinicId: receptionist.clinicId,
-                doctorId,
-              },
-            },
-          });
-          if (!isAffiliated || (isAffiliated.status !== 'ACTIVE' && isAffiliated.status !== 'ACCEPTED')) {
-            res.status(403).json({
-              success: false,
-              message: 'Access denied: Practitioner is not currently affiliated with your clinic.',
-            });
-            return;
-          }
-        }
+    const receptionist = access.receptionist;
 
     const doctor = await prisma.doctorProfile.findUnique({
       where: { id: doctorId },
@@ -399,16 +381,23 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
       }
     }
 
-    const appointmentDate = requestedDate || getLocalDateString();
-
-    const receptionist = await prisma.receptionistProfile.findUnique({
-      where: { userId: req.user.id },
-    });
-
-    if (!receptionist) {
-      res.status(404).json({ success: false, message: 'Receptionist profile not found' });
+    if (requestedDate && !isValidAppointmentDate(requestedDate)) {
+      res.status(400).json({
+        success: false,
+        message: 'Invalid appointment date format. Expected valid calendar date in YYYY-MM-DD format.',
+      });
       return;
     }
+
+    const appointmentDate = requestedDate || getLocalDateString();
+
+    const access = await verifyReceptionistDoctorAccess(req.user.id, doctorId, clinicId);
+    if (!access.authorized) {
+      res.status(403).json({ success: false, message: access.reason });
+      return;
+    }
+
+    const receptionist = access.receptionist;
 
     const doctor = await prisma.doctorProfile.findUnique({
       where: { id: doctorId },
@@ -418,54 +407,6 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
     if (!doctor) {
       res.status(404).json({ success: false, message: 'Doctor not found' });
       return;
-    }
-
-    // Verify receptionist is assigned to this doctor
-    const assignment = await prisma.doctorReceptionist.findUnique({
-      where: {
-        doctorId_receptionistId: {
-          doctorId,
-          receptionistId: receptionist.id,
-        },
-      },
-    });
-
-    if (!assignment) {
-      res.status(403).json({
-        success: false,
-        message: 'Access denied: You are only authorized to book appointments for doctors assigned to your desk by your clinic.',
-      });
-      return;
-    }
-
-    // Verify doctor is actively affiliated with this receptionist's clinic
-    if (receptionist.clinicId) {
-      const clinic = await prisma.clinicProfile.findUnique({
-        where: { id: receptionist.clinicId },
-      });
-      if (!clinic || !clinic.isVerified || clinic.verificationStatus === 'SUSPENDED') {
-        res.status(403).json({
-          success: false,
-          message: 'Access denied: Your clinic facility is not verified or is suspended from desk operations.',
-        });
-        return;
-      }
-
-      const isAffiliated = await prisma.clinicDoctor.findUnique({
-        where: {
-          clinicId_doctorId: {
-            clinicId: receptionist.clinicId,
-            doctorId: doctor.id,
-          },
-        },
-      });
-      if (!isAffiliated || (isAffiliated.status !== 'ACTIVE' && isAffiliated.status !== 'ACCEPTED')) {
-        res.status(403).json({
-          success: false,
-          message: 'Access denied: Practitioner is not currently affiliated with your facility.',
-        });
-        return;
-      }
     }
 
     // Find or create walk-in patient profile with phone normalization
@@ -485,9 +426,10 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
     });
 
     if (!patientUser) {
-      const dummySalt = await bcrypt.genSalt(10);
-      const dummyHash = await bcrypt.hash('walkin123', dummySalt);
-      const walkinEmail = `walkin.${rawDigits || cleanPhone.replace(/\D/g, '') || Date.now()}@mediarca.local`;
+      const unguessablePassword = crypto.randomBytes(32).toString('hex');
+      const dummySalt = await bcrypt.genSalt(12);
+      const dummyHash = await bcrypt.hash(unguessablePassword, dummySalt);
+      const walkinEmail = `walkin.${crypto.randomUUID()}@mediarca.local`;
 
       patientUser = await prisma.user.create({
         data: {
@@ -496,6 +438,7 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
           email: walkinEmail,
           passwordHash: dummyHash,
           role: 'PATIENT',
+          mustChangePassword: true,
           patientProfile: {
             create: {
               gender: gender || null,
@@ -562,6 +505,26 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
     while (attempts < maxAttempts) {
       try {
         newAppointment = await prisma.$transaction(async (tx) => {
+          // Pessimistic concurrency control: lock practitioner row for this booking
+          try {
+            await tx.$executeRawUnsafe(`SELECT id FROM "DoctorProfile" WHERE id = '${doctor.id}' FOR UPDATE;`);
+          } catch {}
+
+          // Duplicate booking check within transaction (Finding H7)
+          const existingInTx = await tx.appointment.findFirst({
+            where: {
+              patientId: patientProfile!.id,
+              doctorId: doctor.id,
+              appointmentDate,
+              status: { in: ['PENDING_APPROVAL', 'WAITING', 'IN_CONSULTATION'] },
+            },
+          });
+          if (existingInTx) {
+            throw new Error(
+              `DUPLICATE_ACTIVE_BOOKING: Patient already has an active booking (Queue #${existingInTx.queueNumber}) with this doctor on ${appointmentDate}.`
+            );
+          }
+
           const dayAppointments = await tx.appointment.findMany({
             where: {
               doctorId: doctor.id,
@@ -727,36 +690,11 @@ export const updateAppointmentStatus = async (req: AuthRequest, res: Response): 
       return;
     }
 
-    const receptionist = await prisma.receptionistProfile.findUnique({
-      where: { userId: req.user.id },
-    });
-
-    if (!receptionist) {
-      res.status(403).json({ success: false, message: 'Access denied: Receptionist profile not found' });
-      return;
-    }
-
-    const assignment = await prisma.doctorReceptionist.findUnique({
-      where: {
-        doctorId_receptionistId: {
-          doctorId: targetAppointment.doctorId,
-          receptionistId: receptionist.id,
-        },
-      },
-    });
-
-    if (!assignment) {
+    const access = await verifyReceptionistDoctorAccess(req.user.id, targetAppointment.doctorId, targetAppointment.clinicId);
+    if (!access.authorized) {
       res.status(403).json({
         success: false,
-        message: 'Access denied: You are only authorized to update appointments for doctors assigned to your desk.',
-      });
-      return;
-    }
-
-    if (receptionist.clinicId && targetAppointment.clinicId && targetAppointment.clinicId !== receptionist.clinicId) {
-      res.status(403).json({
-        success: false,
-        message: 'Access denied: Appointment belongs to another clinic facility.',
+        message: access.reason || 'Access denied: You are not authorized to update appointments for this doctor.',
       });
       return;
     }
@@ -864,7 +802,16 @@ export const getPendingAppointments = async (req: AuthRequest, res: Response): P
       where: { userId: req.user.id },
       include: {
         clinic: true,
-        doctors: { include: { doctor: { include: { user: true } } } },
+        doctors: {
+          where: { status: 'ACTIVE' },
+          include: {
+            doctor: {
+              include: {
+                user: { select: { id: true, fullName: true, email: true, phone: true, avatarUrl: true, role: true } },
+              },
+            },
+          },
+        },
       },
     });
 
@@ -873,7 +820,29 @@ export const getPendingAppointments = async (req: AuthRequest, res: Response): P
       return;
     }
 
-    const assignedDoctorIds = receptionist.doctors.map((d) => d.doctorId);
+    if (receptionist.status !== 'ACTIVE') {
+      res.status(403).json({
+        success: false,
+        message:
+          receptionist.status === 'REJECTED'
+            ? 'Your receptionist application has been declined by clinic administration.'
+            : 'Your receptionist application is pending approval by clinic administration.',
+      });
+      return;
+    }
+
+    let activeDoctorIds: string[] = [];
+    if (receptionist.clinicId) {
+      const activeClinicDocs = await prisma.clinicDoctor.findMany({
+        where: { clinicId: receptionist.clinicId, status: { in: ['ACTIVE', 'ACCEPTED'] } },
+        select: { doctorId: true },
+      });
+      activeDoctorIds = activeClinicDocs.map((cd) => cd.doctorId);
+    }
+
+    const assignedDoctorIds = receptionist.doctors
+      .filter((d) => d.status === 'ACTIVE' && (activeDoctorIds.length === 0 || activeDoctorIds.includes(d.doctorId)))
+      .map((d) => d.doctorId);
 
     const pendingAppointments = await prisma.appointment.findMany({
       where: {
@@ -933,29 +902,21 @@ export const approveAppointment = async (req: AuthRequest, res: Response): Promi
 
     const appointmentId = String(req.params.appointmentId);
 
-    const receptionist = await prisma.receptionistProfile.findUnique({
-      where: { userId: req.user.id },
-      include: { doctors: true },
-    });
-
-    if (!receptionist) {
-      res.status(404).json({ success: false, message: 'Receptionist profile not found' });
-      return;
-    }
-
     const appointment = await prisma.appointment.findUnique({
       where: { id: appointmentId },
       include: {
         doctor: {
           include: {
-            user: true,
-            clinics: {
-              where: { clinicId: receptionist.clinicId || undefined },
-            },
+            user: { select: { id: true, fullName: true, email: true, phone: true, avatarUrl: true, role: true } },
+            clinics: true,
           },
         },
         clinic: true,
-        patient: { include: { user: true } },
+        patient: {
+          include: {
+            user: { select: { id: true, fullName: true, email: true, phone: true, avatarUrl: true, role: true } },
+          },
+        },
       },
     });
 
@@ -964,15 +925,17 @@ export const approveAppointment = async (req: AuthRequest, res: Response): Promi
       return;
     }
 
-    // Verify receptionist is assigned to this doctor
-    const isAssigned = receptionist.doctors.some((d) => d.doctorId === appointment.doctorId);
-    if (!isAssigned) {
-      res.status(403).json({ success: false, message: 'Access denied: You are not assigned to manage this doctor.' });
+    const access = await verifyReceptionistDoctorAccess(req.user.id, appointment.doctorId, appointment.clinicId);
+    if (!access.authorized) {
+      res.status(403).json({ success: false, message: access.reason });
       return;
     }
 
-    if (receptionist.clinicId && appointment.clinicId && appointment.clinicId !== receptionist.clinicId) {
-      res.status(403).json({ success: false, message: 'Access denied: Appointment belongs to a different clinic facility.' });
+    const receptionist = access.receptionist;
+
+    const docCheck = isDoctorEligibleForClinicalPractice(appointment.doctor);
+    if (!docCheck.eligible) {
+      res.status(403).json({ success: false, message: docCheck.reason });
       return;
     }
 
@@ -993,6 +956,10 @@ export const approveAppointment = async (req: AuthRequest, res: Response): Promi
     while (attempts < maxAttempts) {
       try {
         updated = await prisma.$transaction(async (tx) => {
+          // Pessimistic concurrency control: lock practitioner row for this approval
+          try {
+            await tx.$executeRawUnsafe(`SELECT id FROM "DoctorProfile" WHERE id = '${appointment.doctorId}' FOR UPDATE;`);
+          } catch {}
           // Find max positive queue number on this date
           const maxQueueAppt = await tx.appointment.findFirst({
             where: {
@@ -1102,16 +1069,6 @@ export const rejectAppointment = async (req: AuthRequest, res: Response): Promis
     const appointmentId = String(req.params.appointmentId);
     const { reason } = req.body;
 
-    const receptionist = await prisma.receptionistProfile.findUnique({
-      where: { userId: req.user.id },
-      include: { doctors: true },
-    });
-
-    if (!receptionist) {
-      res.status(404).json({ success: false, message: 'Receptionist profile not found' });
-      return;
-    }
-
     const appointment = await prisma.appointment.findUnique({
       where: { id: appointmentId },
     });
@@ -1121,9 +1078,9 @@ export const rejectAppointment = async (req: AuthRequest, res: Response): Promis
       return;
     }
 
-    const isAssigned = receptionist.doctors.some((d) => d.doctorId === appointment.doctorId);
-    if (!isAssigned) {
-      res.status(403).json({ success: false, message: 'Access denied: You are not assigned to manage this doctor.' });
+    const access = await verifyReceptionistDoctorAccess(req.user.id, appointment.doctorId, appointment.clinicId);
+    if (!access.authorized) {
+      res.status(403).json({ success: false, message: access.reason });
       return;
     }
 

@@ -292,11 +292,15 @@ async function ensureSchema() {
     } catch {}
   }
 }
-ensureSchema().catch((e) => console.warn('Schema sync notice:', e?.message));
+
+const isProduction = process.env.NODE_ENV === 'production';
+
+if (!isProduction || process.env.AUTO_SCHEMA_SYNC === 'true') {
+  ensureSchema().catch((e) => console.warn('Schema sync notice:', e?.message));
+}
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-const isProduction = process.env.NODE_ENV === 'production';
 
 // Production Startup Guard: Fail closed if JWT secret is missing, weak, or fallback (Finding #16)
 const jwtSecret = process.env.JWT_SECRET;
@@ -310,9 +314,10 @@ if (isProduction) {
 // Trust proxy for accurate client IP behind Render / reverse proxies (Finding #34)
 app.set('trust proxy', 1);
 
-// Security & CORS (Finding #32)
+// Security & CORS (Finding M11)
 const allowedOrigins = [
   process.env.FRONTEND_URL,
+  ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim()) : []),
   'https://bikesh3764.github.io',
   'https://mediarca.vercel.app',
   'http://localhost:5173',
@@ -325,13 +330,10 @@ app.use(
   cors({
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
-      if (
-        !isProduction ||
-        allowedOrigins.includes(origin) ||
-        origin.endsWith('.vercel.app') ||
-        origin.endsWith('.onrender.com') ||
-        origin.endsWith('.github.io')
-      ) {
+      if (!isProduction) {
+        return callback(null, true);
+      }
+      if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
       return callback(new Error('Blocked by CORS policy: Origin not allowed'));
@@ -347,13 +349,19 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads/avatars', express.static(path.join(__dirname, '../uploads/avatars')));
 
 // Health Check (Supports Render /healthz and /api/health)
-// Touches PostgreSQL database so Supabase resets 7-day inactivity countdown
+// Touches PostgreSQL database so Supabase resets 7-day inactivity countdown (Finding L2)
 app.get(['/healthz', '/api/health', '/'], async (_req: Request, res: Response) => {
   let dbStatus = 'connected';
   try {
     await prisma.$queryRawUnsafe('SELECT 1;');
   } catch (err: any) {
     dbStatus = 'disconnected';
+  }
+  if (isProduction) {
+    res.json({
+      status: dbStatus === 'connected' ? 'ok' : 'degraded',
+    });
+    return;
   }
   res.json({
     status: 'ok',

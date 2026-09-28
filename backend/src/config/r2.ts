@@ -1,4 +1,5 @@
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import { Readable } from 'stream';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -31,7 +32,8 @@ export const getR2Client = (): S3Client => {
 };
 
 /**
- * Upload a file buffer to Cloudflare R2 Bucket and return its permanent public CDN URL.
+ * Upload a file buffer to Cloudflare R2 private bucket and return its private vault key (Finding H1).
+ * Clinical documents are strictly private and never exposed via public CDN URLs.
  */
 export const uploadToR2 = async (
   fileBuffer: Buffer,
@@ -52,7 +54,39 @@ export const uploadToR2 = async (
 
   const client = getR2Client();
   await client.send(command);
-  return `${R2_PUBLIC_URL}/${cleanKey}`;
+  return `r2://${cleanKey}`;
+};
+
+/**
+ * Retrieve a private object stream from Cloudflare R2 bucket for authenticated streaming (Finding H1).
+ */
+export const getFromR2 = async (
+  keyOrUrl: string
+): Promise<{ stream: Readable; contentType?: string; contentLength?: number }> => {
+  if (!isR2Configured()) {
+    throw new Error('Cloudflare R2 credentials are not configured in environment variables');
+  }
+
+  let key = keyOrUrl;
+  if (key.startsWith('r2://')) {
+    key = key.replace(/^r2:\/\//, '');
+  } else if (key.startsWith('http://') || key.startsWith('https://')) {
+    const parsed = new URL(key);
+    key = parsed.pathname.replace(/^\/+/, '');
+  }
+
+  const client = getR2Client();
+  const command = new GetObjectCommand({
+    Bucket: R2_BUCKET_NAME,
+    Key: key,
+  });
+
+  const response = await client.send(command);
+  return {
+    stream: response.Body as Readable,
+    contentType: response.ContentType,
+    contentLength: response.ContentLength,
+  };
 };
 
 /**
@@ -63,7 +97,9 @@ export const deleteFromR2 = async (keyOrUrl: string): Promise<void> => {
 
   try {
     let key = keyOrUrl;
-    if (keyOrUrl.startsWith('http')) {
+    if (key.startsWith('r2://')) {
+      key = key.replace(/^r2:\/\//, '');
+    } else if (key.startsWith('http')) {
       const parsed = new URL(keyOrUrl);
       key = parsed.pathname.replace(/^\/+/, '');
     }

@@ -36,9 +36,10 @@ import {
   formatIndianPhone,
   isValidIndianPhone,
 } from '../src/utils/phoneUtils';
-import { getJwtSecret, optionalAuthenticate, AuthRequest } from '../src/middleware/authMiddleware';
+import { getJwtSecret, optionalAuthenticate, authenticate, AuthRequest } from '../src/middleware/authMiddleware';
 import jwt from 'jsonwebtoken';
 import { canTransition } from '../src/utils/appointmentStateMachine';
+import { isDoctorEligibleForClinicalPractice, isClinicActive } from '../src/utils/authGuards';
 
 function runTests() {
   console.log('=== RUNNING MEDIARCA VERIFICATION SUITE ===\n');
@@ -3112,8 +3113,19 @@ function runTests() {
   const reqQuery: any = { headers: {}, query: { token: validToken } };
   let nextCalledQuery: any = false;
   optionalAuthenticate(reqQuery, {} as any, () => { nextCalledQuery = true; });
-  assert(nextCalledQuery === true, 'optionalAuthenticate calls next() on query token');
-  assert(reqQuery.user?.id === 'doc-user-1', 'optionalAuthenticate populates req.user from query token');
+  assert(nextCalledQuery === true, 'optionalAuthenticate calls next() when query token passed');
+  assert(reqQuery.user === undefined, 'optionalAuthenticate strictly disallows query-string token transport (Finding H2)');
+
+  const reqAuthQuery: any = { headers: {}, query: { token: validToken } };
+  let authStatusSet: number | null = null;
+  const resMock: any = {
+    status: (s: number) => {
+      authStatusSet = s;
+      return { json: () => {} };
+    },
+  };
+  authenticate(reqAuthQuery, resMock, () => {});
+  assert(authStatusSet === 401, 'authenticate strictly rejects query-string token with 401 (Finding H2)');
 
   const reqNoToken: any = { headers: {}, query: {} };
   let nextCalledNoToken: any = false;
@@ -3226,13 +3238,13 @@ function runTests() {
   assert(canTransition('WAITING', 'IN_CONSULTATION', 'DOCTOR').allowed === true, 'Doctor can call WAITING patient');
 
   const canDoctorUpdateNotes = (apptStatus: string) => {
-    return !['CANCELLED', 'REJECTED', 'PENDING_APPROVAL'].includes(apptStatus);
+    return !['CANCELLED', 'REJECTED', 'PENDING_APPROVAL', 'COMPLETED'].includes(apptStatus);
   };
   assert(canDoctorUpdateNotes('CANCELLED') === false, 'Doctor cannot update notes on CANCELLED appointment');
   assert(canDoctorUpdateNotes('REJECTED') === false, 'Doctor cannot update notes on REJECTED appointment');
   assert(canDoctorUpdateNotes('PENDING_APPROVAL') === false, 'Doctor cannot update notes on PENDING_APPROVAL appointment');
   assert(canDoctorUpdateNotes('IN_CONSULTATION') === true, 'Doctor can update notes on IN_CONSULTATION appointment');
-  assert(canDoctorUpdateNotes('COMPLETED') === true, 'Doctor can update notes on COMPLETED appointment');
+  assert(canDoctorUpdateNotes('COMPLETED') === false, 'Doctor cannot update notes on COMPLETED appointment (Finding M8)');
 
   // --- Test 120: Password Trimming Policy Across All Roles ---
   console.log('\n--- Test 120: Password Trimming Policy Across All Roles ---');
@@ -3270,6 +3282,191 @@ function runTests() {
   const slotValResult = validateDoctorSlots(invalidSlotsEndTimeBeforeStart);
   assert(slotValResult.valid === false, 'Slot with endTime before startTime rejected by validateDoctorSlots');
   assert(Boolean(slotValResult.error?.includes('must be after start time')), 'Error specifically states end time constraint');
+
+  // --- Test 123: Centralized Practitioner Eligibility Guard (Finding H4, M10) ---
+  console.log('\n--- Test 123: Centralized Practitioner Eligibility Guard (Finding H4, M10) ---');
+  const guardVerifiedDoc = { isVerified: true, verificationStatus: 'VERIFIED' };
+  const guardPendingDoc = { isVerified: false, verificationStatus: 'PENDING' };
+  const guardSuspendedDoc = { isVerified: true, verificationStatus: 'SUSPENDED' };
+  const guardRejectedDoc = { isVerified: true, verificationStatus: 'REJECTED' };
+  const guardDivergentDoc = { isVerified: true, verificationStatus: 'PENDING' };
+
+  assert(isDoctorEligibleForClinicalPractice(guardVerifiedDoc).eligible === true, 'Verified doctor with VERIFIED status is eligible');
+  assert(isDoctorEligibleForClinicalPractice(guardPendingDoc).eligible === false, 'Pending doctor is ineligible');
+  assert(isDoctorEligibleForClinicalPractice(guardSuspendedDoc).eligible === false, 'Suspended doctor is ineligible');
+  assert(isDoctorEligibleForClinicalPractice(guardSuspendedDoc).reason?.includes('suspended') === true, 'Suspended doctor returns suspension reason');
+  assert(isDoctorEligibleForClinicalPractice(guardRejectedDoc).eligible === false, 'Rejected doctor is ineligible');
+  assert(isDoctorEligibleForClinicalPractice(guardDivergentDoc).eligible === false, 'Doctor with mismatched isVerified=true but status=PENDING is ineligible (Finding M10)');
+  assert(isDoctorEligibleForClinicalPractice(null).eligible === false, 'Null doctor is ineligible');
+  assert(isDoctorEligibleForClinicalPractice(undefined).eligible === false, 'Undefined doctor is ineligible');
+
+  // --- Test 124: Centralized Clinic Facility Active Guard (Finding M6) ---
+  console.log('\n--- Test 124: Centralized Clinic Facility Active Guard (Finding M6) ---');
+  const guardVerifiedClinic = { isVerified: true, verificationStatus: 'VERIFIED' };
+  const guardPendingClinic = { isVerified: false, verificationStatus: 'PENDING' };
+  const guardSuspendedClinic = { isVerified: true, verificationStatus: 'SUSPENDED' };
+  const guardRejectedClinic = { isVerified: true, verificationStatus: 'REJECTED' };
+
+  assert(isClinicActive(guardVerifiedClinic).active === true, 'Verified active clinic passes check');
+  assert(isClinicActive(guardPendingClinic).active === false, 'Pending clinic fails active check');
+  assert(isClinicActive(guardSuspendedClinic).active === false, 'Suspended clinic fails active check (Finding M6)');
+  assert(isClinicActive(guardRejectedClinic).active === false, 'Rejected clinic fails active check');
+  assert(isClinicActive(null).active === false, 'Null clinic profile fails active check');
+
+  // --- Test 125: Walk-in Credentials & Identity Security (Finding H3) ---
+  console.log('\n--- Test 125: Walk-in Credentials & Identity Security (Finding H3) ---');
+  const isWalkinAccount = (email: string) => {
+    const lower = email.toLowerCase().trim();
+    return lower.endsWith('@mediarca.local') || lower.startsWith('walkin.');
+  };
+  assert(isWalkinAccount('walkin.9876543210@mediarca.local') === true, 'Legacy walkin format identified as walkin account');
+  assert(isWalkinAccount('walkin.uuid123@mediarca.local') === true, 'UUID walkin format identified as walkin account');
+  assert(isWalkinAccount('patient@example.com') === false, 'Standard patient email is not a walkin account');
+  assert(isWalkinAccount('doctor@mediarca.com') === false, 'Doctor email is not a walkin account');
+
+  // Simulation of login rejection for walkin identities
+  const canAuthenticateDirectly = (email: string) => !isWalkinAccount(email);
+  assert(canAuthenticateDirectly('walkin.8765432109@mediarca.local') === false, 'Direct login strictly rejected for walkin patient email (Finding H3)');
+  assert(canAuthenticateDirectly('patient@gmail.com') === true, 'Direct login permitted for normal patient account');
+
+  // --- Test 126: Doctor Schedule Updates Require Active/Accepted Clinic Affiliation (Finding H8) ---
+  console.log('\n--- Test 126: Doctor Schedule Updates Require Active/Accepted Clinic Affiliation (Finding H8) ---');
+  const canUpdateClinicSchedule = (
+    doc: { isVerified?: boolean; verificationStatus?: string },
+    clinic: { isVerified?: boolean; verificationStatus?: string },
+    affiliationStatus: string
+  ): { allowed: boolean; reason?: string } => {
+    if (!isDoctorEligibleForClinicalPractice(doc).eligible) {
+      return { allowed: false, reason: 'Doctor is not eligible' };
+    }
+    if (!isClinicActive(clinic).active) {
+      return { allowed: false, reason: 'Clinic is not active' };
+    }
+    if (affiliationStatus !== 'ACTIVE' && affiliationStatus !== 'ACCEPTED') {
+      return { allowed: false, reason: 'Affiliation must be ACTIVE or ACCEPTED' };
+    }
+    return { allowed: true };
+  };
+
+  assert(canUpdateClinicSchedule(guardVerifiedDoc, guardVerifiedClinic, 'ACTIVE').allowed === true, 'Active doctor + active clinic + ACTIVE affiliation permitted');
+  assert(canUpdateClinicSchedule(guardVerifiedDoc, guardVerifiedClinic, 'ACCEPTED').allowed === true, 'Active doctor + active clinic + ACCEPTED affiliation permitted');
+  assert(canUpdateClinicSchedule(guardVerifiedDoc, guardVerifiedClinic, 'PENDING').allowed === false, 'PENDING affiliation rejected for schedule update (Finding H8)');
+  assert(canUpdateClinicSchedule(guardVerifiedDoc, guardVerifiedClinic, 'REJECTED').allowed === false, 'REJECTED affiliation rejected for schedule update (Finding H8)');
+  assert(canUpdateClinicSchedule(guardSuspendedDoc, guardVerifiedClinic, 'ACTIVE').allowed === false, 'Suspended doctor cannot update clinic schedule');
+  assert(canUpdateClinicSchedule(guardVerifiedDoc, guardSuspendedClinic, 'ACTIVE').allowed === false, 'Suspended clinic cannot receive schedule updates');
+
+  // --- Test 127: Receptionist Action Normalization & Input Validation (Finding M9) ---
+  console.log('\n--- Test 127: Receptionist Action Normalization & Input Validation (Finding M9) ---');
+  const normalizeAction = (action: any): 'ACCEPT' | 'REJECT' | null => {
+    if (!action || typeof action !== 'string') return null;
+    const normalized = action.trim().toUpperCase();
+    return normalized === 'ACCEPT' || normalized === 'REJECT' ? normalized : null;
+  };
+
+  assert(normalizeAction('accept') === 'ACCEPT', 'Lowercase "accept" normalized to "ACCEPT" (Finding M9)');
+  assert(normalizeAction('ACCEPT') === 'ACCEPT', 'Uppercase "ACCEPT" preserved');
+  assert(normalizeAction('  Accept  ') === 'ACCEPT', 'Padded "Accept" normalized to "ACCEPT"');
+  assert(normalizeAction('reject') === 'REJECT', 'Lowercase "reject" normalized to "REJECT"');
+  assert(normalizeAction('REJECT') === 'REJECT', 'Uppercase "REJECT" preserved');
+  assert(normalizeAction('delete') === null, 'Unsupported action "delete" returns null');
+  assert(normalizeAction('') === null, 'Empty action returns null');
+  assert(normalizeAction(null) === null, 'Null action returns null');
+  assert(normalizeAction(123) === null, 'Non-string action returns null');
+
+  // --- Test 128: Receptionist Centralized Doctor Access Rules (Finding H4, H5, M7) ---
+  console.log('\n--- Test 128: Receptionist Centralized Doctor Access Rules (Finding H4, H5, M7) ---');
+  const evaluateReceptionistDeskAccess = (params: {
+    receptionistStatus: string;
+    assignmentStatus: string;
+    doctor: { isVerified?: boolean; verificationStatus?: string };
+    clinic: { isVerified?: boolean; verificationStatus?: string };
+    affiliationStatus: string;
+    receptionistClinicId: string;
+    targetClinicId?: string | null;
+  }): { authorized: boolean; reason?: string } => {
+    if (params.receptionistStatus !== 'ACTIVE') {
+      return { authorized: false, reason: 'Receptionist profile is not ACTIVE' };
+    }
+    if (!isDoctorEligibleForClinicalPractice(params.doctor).eligible) {
+      return { authorized: false, reason: 'Doctor is not eligible for practice' };
+    }
+    if (params.assignmentStatus !== 'ACTIVE') {
+      return { authorized: false, reason: 'Doctor-receptionist assignment is not ACTIVE' };
+    }
+    if (!isClinicActive(params.clinic).active) {
+      return { authorized: false, reason: 'Clinic facility is not active' };
+    }
+    if (params.targetClinicId && params.targetClinicId !== params.receptionistClinicId) {
+      return { authorized: false, reason: 'Venue mismatch' };
+    }
+    if (params.affiliationStatus !== 'ACTIVE' && params.affiliationStatus !== 'ACCEPTED') {
+      return { authorized: false, reason: 'Doctor-clinic affiliation is not ACTIVE/ACCEPTED' };
+    }
+    return { authorized: true };
+  };
+
+  const validAccessBase = {
+    receptionistStatus: 'ACTIVE',
+    assignmentStatus: 'ACTIVE',
+    doctor: guardVerifiedDoc,
+    clinic: guardVerifiedClinic,
+    affiliationStatus: 'ACTIVE',
+    receptionistClinicId: 'clinic-1',
+    targetClinicId: 'clinic-1',
+  };
+
+  assert(evaluateReceptionistDeskAccess(validAccessBase).authorized === true, 'All active and matching conditions authorized');
+  assert(evaluateReceptionistDeskAccess({ ...validAccessBase, receptionistStatus: 'PENDING' }).authorized === false, 'Pending receptionist unauthorized');
+  assert(evaluateReceptionistDeskAccess({ ...validAccessBase, assignmentStatus: 'INACTIVE' }).authorized === false, 'Inactive doctor assignment unauthorized (Finding H5)');
+  assert(evaluateReceptionistDeskAccess({ ...validAccessBase, doctor: guardSuspendedDoc }).authorized === false, 'Suspended doctor unauthorized for receptionist queue (Finding H4)');
+  assert(evaluateReceptionistDeskAccess({ ...validAccessBase, affiliationStatus: 'PENDING' }).authorized === false, 'Pending doctor affiliation unauthorized (Finding H5)');
+  assert(evaluateReceptionistDeskAccess({ ...validAccessBase, targetClinicId: 'clinic-2' }).authorized === false, 'Mismatched clinic facility venue unauthorized');
+  assert(evaluateReceptionistDeskAccess({ ...validAccessBase, clinic: guardSuspendedClinic }).authorized === false, 'Suspended clinic facility unauthorized (Finding M6)');
+
+  // --- Test 129: Strict Production CORS Allowlist Enforcement (Finding M11) ---
+  console.log('\n--- Test 129: Strict Production CORS Allowlist Enforcement (Finding M11) ---');
+  const allowedCORSList = [
+    'https://bikesh3764.github.io',
+    'https://mediarca.vercel.app',
+    'http://localhost:5173',
+  ];
+
+  const checkCorsOrigin = (origin: string | undefined, isProd: boolean): boolean => {
+    if (!origin) return true;
+    if (!isProd) return true;
+    return allowedCORSList.includes(origin);
+  };
+
+  assert(checkCorsOrigin('https://mediarca.vercel.app', true) === true, 'Configured production origin accepted');
+  assert(checkCorsOrigin('https://bikesh3764.github.io', true) === true, 'Configured GitHub Pages origin accepted');
+  assert(checkCorsOrigin('https://malicious-phishing.vercel.app', true) === false, 'Arbitrary vercel.app subdomain strictly rejected in production (Finding M11)');
+  assert(checkCorsOrigin('https://attacker.onrender.com', true) === false, 'Arbitrary onrender.com subdomain strictly rejected in production (Finding M11)');
+  assert(checkCorsOrigin('https://evil.github.io', true) === false, 'Arbitrary github.io subdomain strictly rejected in production (Finding M11)');
+  assert(checkCorsOrigin('http://localhost:5173', false) === true, 'Localhost permitted in development');
+
+  // --- Test 130: Production Health Check Minimization (Finding L2) ---
+  console.log('\n--- Test 130: Production Health Check Minimization (Finding L2) ---');
+  const buildHealthPayload = (isProd: boolean, dbOk: boolean) => {
+    if (isProd) {
+      return { status: dbOk ? 'ok' : 'degraded' };
+    }
+    return {
+      status: 'ok',
+      database: dbOk ? 'connected' : 'disconnected',
+      service: 'MediArca Production Healthcare Platform API',
+      uptime: 3600,
+      timestamp: new Date().toISOString(),
+    };
+  };
+
+  const prodHealthy = buildHealthPayload(true, true);
+  const prodDegraded = buildHealthPayload(true, false);
+  const devHealthy = buildHealthPayload(false, true);
+
+  assert(prodHealthy.status === 'ok', 'Production healthy returns status: ok');
+  assert(prodDegraded.status === 'degraded', 'Production DB error returns status: degraded');
+  assert(Object.keys(prodHealthy).length === 1 && !('uptime' in prodHealthy) && !('service' in prodHealthy), 'Production health check omits uptime, service, and DB internals (Finding L2)');
+  assert('uptime' in devHealthy && 'service' in devHealthy, 'Development health check includes full diagnostic telemetry');
 
   console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);

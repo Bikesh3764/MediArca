@@ -125,7 +125,11 @@ export const verifyDoctor = async (req: AuthRequest, res: Response): Promise<voi
         isVerified: targetIsVerified,
         verificationStatus: targetStatus,
       },
-      include: { user: true },
+      include: {
+        user: {
+          select: { id: true, fullName: true, email: true, phone: true, avatarUrl: true, role: true },
+        },
+      },
     });
 
     res.json({
@@ -235,7 +239,11 @@ export const verifyClinic = async (req: AuthRequest, res: Response): Promise<voi
         isVerified: targetIsVerified,
         verificationStatus: targetStatus,
       },
-      include: { user: true },
+      include: {
+        user: {
+          select: { id: true, fullName: true, email: true, phone: true, avatarUrl: true, role: true },
+        },
+      },
     });
 
     res.json({

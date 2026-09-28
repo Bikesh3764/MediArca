@@ -246,15 +246,28 @@ export const addDoctorToClinic = async (req: AuthRequest, res: Response): Promis
     if (doctorId) {
       doctor = await prisma.doctorProfile.findUnique({
         where: { id: doctorId },
-        include: { user: true },
+        include: {
+          user: {
+            select: { id: true, fullName: true, email: true, phone: true, avatarUrl: true, role: true },
+          },
+        },
       });
     } else if (doctorEmail) {
       const user = await prisma.user.findUnique({
         where: { email: doctorEmail.toLowerCase().trim() },
-        include: { doctorProfile: true },
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          phone: true,
+          avatarUrl: true,
+          role: true,
+          doctorProfile: true,
+        },
       });
       if (user && user.doctorProfile) {
-        doctor = { ...user.doctorProfile, user };
+        const { doctorProfile, ...safeUser } = user;
+        doctor = { ...doctorProfile, user: safeUser };
       }
     }
 
@@ -518,7 +531,10 @@ export const removeDoctorFromClinic = async (req: AuthRequest, res: Response): P
 export const getPublicClinics = async (req: any, res: Response): Promise<void> => {
   try {
     const { search, city } = req.query || {};
-    const whereClause: any = { isVerified: true };
+    const whereClause: any = {
+      isVerified: true,
+      verificationStatus: 'VERIFIED',
+    };
 
     if (city && typeof city === 'string' && city.trim()) {
       whereClause.city = { contains: city.trim(), mode: 'insensitive' };
@@ -542,7 +558,11 @@ export const getPublicClinics = async (req: any, res: Response): Promise<void> =
         phone: true,
         isVerified: true,
         _count: {
-          select: { doctors: true },
+          select: {
+            doctors: {
+              where: { status: { in: ['ACTIVE', 'ACCEPTED'] } },
+            },
+          },
         },
       },
       orderBy: { clinicName: 'asc' },
@@ -795,9 +815,13 @@ export const updateClinicReceptionistDoctors = async (req: AuthRequest, res: Res
       return;
     }
 
-    // Filter doctorIds to only those affiliated with this clinic
-    const clinicDoctorIds = new Set(clinic.doctors.map((cd) => cd.doctorId));
-    const validDoctorIds = doctorIds.filter((id) => clinicDoctorIds.has(id));
+    // Filter doctorIds to only those actively affiliated with this clinic (Finding H5)
+    const activeClinicDoctorIds = new Set(
+      clinic.doctors
+        .filter((cd) => cd.status === 'ACTIVE' || cd.status === 'ACCEPTED')
+        .map((cd) => cd.doctorId)
+    );
+    const validDoctorIds = doctorIds.filter((id) => activeClinicDoctorIds.has(id));
 
     // Transactionally update doctor assignments
     await prisma.$transaction([
@@ -909,7 +933,14 @@ export const respondToReceptionistRequest = async (req: AuthRequest, res: Respon
       return;
     }
 
-    if (action === 'ACCEPT') {
+    const normalizedAction = String(action || '').trim().toUpperCase();
+
+    if (!['ACCEPT', 'REJECT'].includes(normalizedAction)) {
+      res.status(400).json({ success: false, message: 'Action must be either ACCEPT or REJECT' });
+      return;
+    }
+
+    if (normalizedAction === 'ACCEPT') {
       await prisma.receptionistProfile.update({
         where: { id: receptionist.id },
         data: { status: 'ACTIVE' },

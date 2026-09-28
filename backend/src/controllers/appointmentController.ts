@@ -14,8 +14,10 @@ import {
   getIndianTimeMinutes,
   isValidAppointmentDate,
 } from '../utils/scheduleUtils';
+import crypto from 'crypto';
 import { canTransition } from '../utils/appointmentStateMachine';
 import { formatIndianPhone, sanitizeIndianPhone } from '../utils/phoneUtils';
+import { verifyReceptionistDoctorAccess, isDoctorEligibleForClinicalPractice } from '../utils/authGuards';
 
 // Helper to calculate estimated time given start time "09:00" and offset minutes (retained for backward compatibility)
 export const calculateEstimatedTime = (startTime24: string, offsetMinutes: number): string => {
@@ -54,7 +56,7 @@ export const getQueuePreview = async (req: AuthRequest, res: Response): Promise<
       include: {
         user: { select: { fullName: true } },
         clinics: {
-          where: { clinic: { isVerified: true }, status: { in: ['ACTIVE', 'ACCEPTED'] } },
+          where: { clinic: { isVerified: true, verificationStatus: 'VERIFIED' }, status: { in: ['ACTIVE', 'ACCEPTED'] } },
           include: { clinic: true },
         },
       },
@@ -63,6 +65,19 @@ export const getQueuePreview = async (req: AuthRequest, res: Response): Promise<
     if (!doctor) {
       res.status(404).json({ success: false, message: 'Doctor not found' });
       return;
+    }
+
+    const isOwner = req.user?.role === 'DOCTOR' && doctor.userId === req.user?.id;
+    const isAdmin = req.user?.role === 'ADMIN';
+
+    if (!isOwner && !isAdmin) {
+      if (!doctor.isVerified || doctor.verificationStatus !== 'VERIFIED') {
+        res.status(404).json({
+          success: false,
+          message: 'Doctor profile is not publicly available or pending verification',
+        });
+        return;
+      }
     }
 
     const dateStr = String(appointmentDate);
@@ -308,10 +323,10 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
         });
       }
       if (!patientUser) {
-        const dummySalt = await bcrypt.genSalt(10);
-        const dummyHash = await bcrypt.hash('walkin123', dummySalt);
-        const uniqueId = rawDigits || cleanPhone.replace(/\D/g, '') || `${Date.now()}`;
-        const walkinEmail = `walkin.${uniqueId}@mediarca.local`;
+        const unguessablePassword = crypto.randomBytes(32).toString('hex');
+        const dummySalt = await bcrypt.genSalt(12);
+        const dummyHash = await bcrypt.hash(unguessablePassword, dummySalt);
+        const walkinEmail = `walkin.${crypto.randomUUID()}@mediarca.local`;
         patientUser = await prisma.user.create({
           data: {
             fullName: patientName ? String(patientName).trim() : 'Walk-in Patient',
@@ -319,6 +334,7 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
             email: walkinEmail,
             passwordHash: dummyHash,
             role: 'PATIENT',
+            mustChangePassword: true,
             patientProfile: {
               create: {
                 gender: patientGender || null,
@@ -354,7 +370,7 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
       include: {
         user: { select: { fullName: true } },
         clinics: {
-          where: { clinic: { isVerified: true }, status: { in: ['ACTIVE', 'ACCEPTED'] } },
+          where: { clinic: { isVerified: true, verificationStatus: 'VERIFIED' }, status: { in: ['ACTIVE', 'ACCEPTED'] } },
           include: { clinic: true },
         },
       },
@@ -464,7 +480,7 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
       }
     }
 
-    // Perform atomic transaction with retry on concurrency collision
+    // Perform atomic transaction with retry on concurrency collision (Finding H7)
     let newAppointment: any;
     let attempts = 0;
     const maxAttempts = 3;
@@ -472,6 +488,30 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
     while (attempts < maxAttempts) {
       try {
         newAppointment = await prisma.$transaction(async (tx) => {
+          // Pessimistic concurrency control: lock practitioner row for this booking
+          try {
+            await tx.$executeRawUnsafe(`SELECT id FROM "DoctorProfile" WHERE id = '${doctor.id}' FOR UPDATE;`);
+          } catch {}
+
+          // Re-verify duplicate booking inside the transaction
+          if (req.user?.role === 'PATIENT') {
+            const duplicateInTx = await tx.appointment.findFirst({
+              where: {
+                patientId: patient.id,
+                doctorId: doctor.id,
+                appointmentDate,
+                isForOther: Boolean(isForOther),
+                ...(isForOther && patientName
+                  ? { patientName: { equals: String(patientName).trim(), mode: 'insensitive' } }
+                  : {}),
+                status: { in: ['PENDING_APPROVAL', 'WAITING', 'IN_CONSULTATION'] },
+              },
+            });
+            if (duplicateInTx) {
+              const recipient = isForOther ? `for ${patientName}` : 'for yourself';
+              throw new Error(`DUPLICATE_ACTIVE_BOOKING: You already have an active booking ${recipient} with this doctor on this date.`);
+            }
+          }
           const dayAppointments = await tx.appointment.findMany({
             where: {
               doctorId: doctor.id,
@@ -706,9 +746,9 @@ export const getPatientAppointments = async (req: AuthRequest, res: Response): P
       include: {
         doctor: {
           include: {
-            user: { select: { fullName: true, avatarUrl: true, email: true } },
+            user: { select: { fullName: true, avatarUrl: true } },
             clinics: {
-              where: { clinic: { isVerified: true } },
+              where: { clinic: { isVerified: true, verificationStatus: 'VERIFIED' } },
               include: { clinic: true },
             },
           },
@@ -869,27 +909,9 @@ export const cancelAppointment = async (req: AuthRequest, res: Response): Promis
     }
 
     if (req.user?.role === 'RECEPTIONIST') {
-      const receptionist = await prisma.receptionistProfile.findUnique({
-        where: { userId: req.user.id },
-      });
-      if (!receptionist) {
-        res.status(403).json({ success: false, message: 'Receptionist profile not found' });
-        return;
-      }
-      const assignment = await prisma.doctorReceptionist.findUnique({
-        where: {
-          doctorId_receptionistId: {
-            doctorId: appointment.doctorId,
-            receptionistId: receptionist.id,
-          },
-        },
-      });
-      if (!assignment) {
-        res.status(403).json({ success: false, message: 'You do not have permission to cancel appointments for this doctor' });
-        return;
-      }
-      if (receptionist.clinicId && appointment.clinicId && appointment.clinicId !== receptionist.clinicId) {
-        res.status(403).json({ success: false, message: 'Access denied: Appointment belongs to another clinic facility' });
+      const access = await verifyReceptionistDoctorAccess(req.user.id, appointment.doctorId, appointment.clinicId);
+      if (!access.authorized) {
+        res.status(403).json({ success: false, message: access.reason || 'You do not have permission to cancel appointments for this doctor' });
         return;
       }
     } else if (req.user?.role === 'CLINIC') {

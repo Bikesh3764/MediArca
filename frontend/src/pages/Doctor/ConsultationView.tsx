@@ -418,12 +418,11 @@ export const ConsultationView: React.FC = () => {
                   </div>
                   <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
                     {appointment.patient.medicalRecords.map((doc) => (
-                      <a
+                      <button
                         key={doc.id}
-                        href={getMedicalRecordFileUrl(doc.id, doc.fileUrl)}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="p-2.5 rounded-xl border border-[#e5e5ea] bg-[#fafafc] hover:bg-white transition-all flex items-center justify-between text-xs group"
+                        type="button"
+                        onClick={() => api.viewRecord(doc.id, doc.title)}
+                        className="w-full text-left p-2.5 rounded-xl border border-[#e5e5ea] bg-[#fafafc] hover:bg-white transition-all flex items-center justify-between text-xs group"
                       >
                         <div className="min-w-0 pr-2">
                           <p className="font-semibold text-[#1d1d1f] truncate group-hover:text-[#0088e8]">
@@ -432,7 +431,7 @@ export const ConsultationView: React.FC = () => {
                           <span className="text-[10px] text-[#86868b] block">{doc.category}</span>
                         </div>
                         <ExternalLink className="w-3.5 h-3.5 text-[#86868b] group-hover:text-[#0088e8] flex-shrink-0" />
-                      </a>
+                      </button>
                     ))}
                   </div>
                 </UtilityCard>

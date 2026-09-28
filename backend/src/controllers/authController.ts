@@ -242,6 +242,14 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    if (user.email.toLowerCase().endsWith('@mediarca.local') || user.email.toLowerCase().startsWith('walkin.')) {
+      res.status(403).json({
+        success: false,
+        message: 'Walk-in patient accounts cannot log in directly. Please register an official patient portal account.',
+      });
+      return;
+    }
+
     const isMatch = await bcrypt.compare(password, user.passwordHash);
     if (!isMatch) {
       res.status(401).json({ success: false, message: 'Invalid email or password' });

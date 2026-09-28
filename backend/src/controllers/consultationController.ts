@@ -147,7 +147,9 @@ export const callPatient = async (req: AuthRequest, res: Response): Promise<void
       include: {
         patient: {
           include: {
-            user: true,
+            user: {
+              select: { id: true, fullName: true, email: true, phone: true },
+            },
           },
         },
       },
@@ -249,10 +251,10 @@ export const updateNotesAndVitals = async (req: AuthRequest, res: Response): Pro
       return;
     }
 
-    if (['CANCELLED', 'REJECTED', 'PENDING_APPROVAL'].includes(targetAppointment.status)) {
+    if (['CANCELLED', 'REJECTED', 'PENDING_APPROVAL', 'COMPLETED'].includes(targetAppointment.status)) {
       res.status(400).json({
         success: false,
-        message: `Cannot update clinical notes for an appointment with status '${targetAppointment.status}'.`,
+        message: `Cannot update clinical notes for an appointment with status '${targetAppointment.status}'. Clinical notes and vitals cannot be modified after consultation finalization.`,
       });
       return;
     }

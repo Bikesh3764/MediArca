@@ -37,14 +37,16 @@ export const getJwtSecret = (): string => {
   return secret;
 };
 
+/**
+ * Authentication middleware: enforces Bearer token in Authorization header.
+ * Query-string token transport is strictly disallowed to prevent token leakage in URLs, logs, and history (Finding H2).
+ */
 export const authenticate = (req: AuthRequest, res: Response, next: NextFunction): void => {
   let token: string | undefined;
 
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith('Bearer ')) {
     token = authHeader.split(' ')[1];
-  } else if (req.query && typeof req.query.token === 'string') {
-    token = req.query.token;
   }
 
   if (!token) {
@@ -63,7 +65,7 @@ export const authenticate = (req: AuthRequest, res: Response, next: NextFunction
 };
 
 /**
- * Optional authentication: decodes Bearer token or query token if provided,
+ * Optional authentication: decodes Bearer token if provided in Authorization header,
  * attaching req.user, but proceeds cleanly without error if unauthenticated.
  */
 export const optionalAuthenticate = (req: AuthRequest, _res: Response, next: NextFunction): void => {
@@ -72,8 +74,6 @@ export const optionalAuthenticate = (req: AuthRequest, _res: Response, next: Nex
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith('Bearer ')) {
     token = authHeader.split(' ')[1];
-  } else if (req.query && typeof req.query.token === 'string') {
-    token = req.query.token;
   }
 
   if (token) {
@@ -103,7 +103,7 @@ export const authorize = (...roles: string[]) => {
 };
 
 /**
- * Enforces that a RECEPTIONIST user is strictly ACTIVE and not PENDING or REJECTED.
+ * Enforces that a RECEPTIONIST user is strictly ACTIVE and not PENDING or REJECTED (Finding H5).
  */
 export const requireActiveReceptionist = async (
   req: AuthRequest,
@@ -140,5 +140,48 @@ export const requireActiveReceptionist = async (
   } catch (error: any) {
     console.error('requireActiveReceptionist error:', error);
     res.status(500).json({ success: false, message: 'Failed to verify receptionist account status' });
+  }
+};
+
+/**
+ * Enforces that a CLINIC user's facility is strictly VERIFIED and not SUSPENDED or PENDING (Finding M6).
+ */
+export const requireActiveClinic = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  if (!req.user || req.user.role !== 'CLINIC') {
+    res.status(403).json({ success: false, message: 'Access denied: Clinic role required' });
+    return;
+  }
+
+  try {
+    const clinic = await prisma.clinicProfile.findUnique({
+      where: { userId: req.user.id },
+    });
+
+    if (!clinic) {
+      res.status(404).json({ success: false, message: 'Clinic profile not found' });
+      return;
+    }
+
+    if (!clinic.isVerified || clinic.verificationStatus !== 'VERIFIED') {
+      res.status(403).json({
+        success: false,
+        message:
+          clinic.verificationStatus === 'SUSPENDED'
+            ? 'Access denied: Your clinic facility is currently suspended by administration.'
+            : clinic.verificationStatus === 'REJECTED'
+            ? 'Access denied: Your clinic registration has been declined by administration.'
+            : 'Access denied: Your clinic facility is pending administrative verification.',
+      });
+      return;
+    }
+
+    next();
+  } catch (error: any) {
+    console.error('requireActiveClinic error:', error);
+    res.status(500).json({ success: false, message: 'Failed to verify clinic account status' });
   }
 };
