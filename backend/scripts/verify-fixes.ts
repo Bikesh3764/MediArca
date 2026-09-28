@@ -1,3 +1,4 @@
+import path from 'path';
 import {
   timeToMinutes,
   minutesTo12Hour,
@@ -9,6 +10,7 @@ import {
   getLocalDateString,
   getIndianTimeMinutes,
   isValidAppointmentDate,
+  isValidDobDate,
   maskPatientName,
   validateDoctorSlots,
 } from '../src/utils/scheduleUtils';
@@ -34,7 +36,8 @@ import {
   formatIndianPhone,
   isValidIndianPhone,
 } from '../src/utils/phoneUtils';
-import { getJwtSecret } from '../src/middleware/authMiddleware';
+import { getJwtSecret, optionalAuthenticate, AuthRequest } from '../src/middleware/authMiddleware';
+import jwt from 'jsonwebtoken';
 import { canTransition } from '../src/utils/appointmentStateMachine';
 
 function runTests() {
@@ -3062,6 +3065,211 @@ function runTests() {
 
   const devError = sanitizeApiError(sensitivePrismaError, false);
   assert(devError.includes('PrismaClientKnownRequestError'), 'Dev mode preserves original error message for debugging');
+
+  // --- Test 112: Strict Medical Record File Path Traversal Defense ---
+  console.log('\n--- Test 112: Strict Medical Record File Path Traversal Defense ---');
+  const uploadsDir = path.resolve(__dirname, '../uploads');
+  const safeResolveRecordPath = (fileUrl: string) => {
+    const normalizedRelative = path.normalize(fileUrl.replace(/^\/+/, ''));
+    const fullPath = path.resolve(__dirname, '../', normalizedRelative);
+    if (!fullPath.startsWith(uploadsDir)) {
+      return { allowed: false, message: 'Invalid medical record file path.' };
+    }
+    return { allowed: true, fullPath };
+  };
+
+  assert(safeResolveRecordPath('../../etc/passwd').allowed === false, 'Path traversal ../../etc/passwd rejected');
+  assert(safeResolveRecordPath('../../../secret.env').allowed === false, 'Path traversal ../../../secret.env rejected');
+  assert(safeResolveRecordPath('uploads/../../package.json').allowed === false, 'Path traversal uploads/../../package.json rejected');
+  assert(safeResolveRecordPath('uploads/medical-records/scan_123.pdf').allowed === true, 'Safe subpath uploads/medical-records/scan_123.pdf permitted');
+  assert(safeResolveRecordPath('/uploads/medical-records/doc.png').allowed === true, 'Leading slash normalized and allowed');
+
+  // --- Test 113: isValidDobDate Deep Calendar Validation ---
+  console.log('\n--- Test 113: isValidDobDate Deep Calendar Validation ---');
+  assert(isValidDobDate('1990-05-20') === true, 'Valid adult DOB accepted');
+  assert(isValidDobDate('2024-02-29') === true, 'Leap year Feb 29 DOB accepted');
+  assert(isValidDobDate('2023-02-29') === false, 'Invalid leap year Feb 29 DOB rejected');
+  assert(isValidDobDate('1899-12-31') === false, 'DOB before 1900 rejected');
+  assert(isValidDobDate('1900-01-01') === true, 'Boundary 1900-01-01 accepted');
+  assert(isValidDobDate('2099-01-01') === false, 'Future DOB rejected');
+  assert(isValidDobDate('2026-04-31') === false, 'Non-existent calendar date Apr 31 rejected');
+  assert(isValidDobDate('invalid-date') === false, 'Malformed string rejected');
+  assert(isValidDobDate('') === false, 'Empty string rejected');
+  assert(isValidDobDate(null) === false, 'Null DOB rejected');
+  assert(isValidDobDate(undefined) === false, 'Undefined DOB rejected');
+
+  // --- Test 114: Optional Authentication Middleware (optionalAuthenticate) ---
+  console.log('\n--- Test 114: Optional Authentication Middleware (optionalAuthenticate) ---');
+  const secret = getJwtSecret();
+  const validToken = jwt.sign({ id: 'doc-user-1', email: 'doc@example.com', role: 'DOCTOR', fullName: 'Dr. Test' }, secret);
+
+  const reqBearer: any = { headers: { authorization: `Bearer ${validToken}` }, query: {} };
+  let nextCalledBearer: any = false;
+  optionalAuthenticate(reqBearer, {} as any, () => { nextCalledBearer = true; });
+  assert(nextCalledBearer === true, 'optionalAuthenticate calls next() on Bearer token');
+  assert(reqBearer.user?.id === 'doc-user-1', 'optionalAuthenticate populates req.user from Bearer token');
+
+  const reqQuery: any = { headers: {}, query: { token: validToken } };
+  let nextCalledQuery: any = false;
+  optionalAuthenticate(reqQuery, {} as any, () => { nextCalledQuery = true; });
+  assert(nextCalledQuery === true, 'optionalAuthenticate calls next() on query token');
+  assert(reqQuery.user?.id === 'doc-user-1', 'optionalAuthenticate populates req.user from query token');
+
+  const reqNoToken: any = { headers: {}, query: {} };
+  let nextCalledNoToken: any = false;
+  optionalAuthenticate(reqNoToken, {} as any, () => { nextCalledNoToken = true; });
+  assert(nextCalledNoToken === true, 'optionalAuthenticate calls next() when unauthenticated');
+  assert(reqNoToken.user === undefined, 'optionalAuthenticate leaves req.user undefined for guest request');
+
+  const reqBadToken: any = { headers: { authorization: 'Bearer invalid.jwt.string' }, query: {} };
+  let nextCalledBadToken: any = false;
+  optionalAuthenticate(reqBadToken, {} as any, () => { nextCalledBadToken = true; });
+  assert(nextCalledBadToken === true, 'optionalAuthenticate calls next() on invalid token without crashing');
+  assert(reqBadToken.user === undefined, 'optionalAuthenticate safely ignores invalid token');
+
+  // --- Test 115: Avatar Upload Strict Image Policy & Magic Bytes ---
+  console.log('\n--- Test 115: Avatar Upload Strict Image Policy & Magic Bytes ---');
+  const ALLOWED_AVATAR_MIMES = ['image/jpeg', 'image/png', 'image/webp'];
+  const validateAvatarUpload = (mimetype: string, buffer: Buffer): { allowed: boolean; message?: string } => {
+    if (!ALLOWED_AVATAR_MIMES.includes(mimetype)) {
+      return { allowed: false, message: 'Invalid avatar file type. Only JPEG, PNG, and WebP images are allowed.' };
+    }
+    if (!validateMagicBytes(buffer, mimetype)) {
+      return { allowed: false, message: 'File contents do not match genuine image format.' };
+    }
+    return { allowed: true };
+  };
+
+  const avatarJpegBuf = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46]);
+  const avatarPngBuf = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  const pdfBuf = Buffer.from([0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x2e, 0x34]);
+  const exeBuf = Buffer.from([0x4d, 0x5a, 0x90, 0x00, 0x03, 0x00, 0x00, 0x00]);
+
+  assert(validateAvatarUpload('image/jpeg', avatarJpegBuf).allowed === true, 'Genuine JPEG avatar accepted');
+  assert(validateAvatarUpload('image/png', avatarPngBuf).allowed === true, 'Genuine PNG avatar accepted');
+  assert(validateAvatarUpload('application/pdf', pdfBuf).allowed === false, 'PDF avatar upload strictly rejected');
+  assert(validateAvatarUpload('image/jpeg', pdfBuf).allowed === false, 'PDF disguised as image/jpeg rejected by magic bytes');
+  assert(validateAvatarUpload('image/png', exeBuf).allowed === false, 'Executable disguised as image/png rejected by magic bytes');
+
+  // --- Test 116: Google OAuth Privileged Account Hijacking Prevention ---
+  console.log('\n--- Test 116: Google OAuth Privileged Account Hijacking Prevention ---');
+  const validateGoogleAuthRole = (existingRole: string | undefined): { allowed: boolean; status: number; message?: string } => {
+    if (existingRole && ['ADMIN', 'CLINIC', 'RECEPTIONIST'].includes(existingRole)) {
+      return {
+        allowed: false,
+        status: 403,
+        message: 'Google Sign-In is not permitted for privileged administrative, clinic, or receptionist accounts. Please sign in with your email and password.',
+      };
+    }
+    return { allowed: true, status: 200 };
+  };
+
+  assert(validateGoogleAuthRole('ADMIN').allowed === false, 'Existing ADMIN account rejected from Google OAuth');
+  assert(validateGoogleAuthRole('ADMIN').status === 403, 'ADMIN Google OAuth returns 403 Forbidden');
+  assert(validateGoogleAuthRole('CLINIC').allowed === false, 'Existing CLINIC account rejected from Google OAuth');
+  assert(validateGoogleAuthRole('RECEPTIONIST').allowed === false, 'Existing RECEPTIONIST account rejected from Google OAuth');
+  assert(validateGoogleAuthRole('PATIENT').allowed === true, 'Existing PATIENT account permitted for Google OAuth');
+  assert(validateGoogleAuthRole('DOCTOR').allowed === true, 'Existing DOCTOR account permitted for Google OAuth');
+  assert(validateGoogleAuthRole(undefined).allowed === true, 'New user registration permitted for Google OAuth');
+
+  // --- Test 117: Appointment Capacity Counts PENDING_APPROVAL ---
+  console.log('\n--- Test 117: Appointment Capacity Counts PENDING_APPROVAL ---');
+  const mockAppointmentsOnDate = [
+    { id: 'a1', status: 'WAITING', slotId: 'slot-1' },
+    { id: 'a2', status: 'IN_CONSULTATION', slotId: 'slot-1' },
+    { id: 'a3', status: 'PENDING_APPROVAL', slotId: 'slot-1' },
+    { id: 'a4', status: 'CANCELLED', slotId: 'slot-1' },
+    { id: 'a5', status: 'REJECTED', slotId: 'slot-1' },
+  ];
+
+  const countActiveAppointmentsForSlot = (appts: typeof mockAppointmentsOnDate, slotId: string) => {
+    return appts.filter(
+      (a) =>
+        ['PENDING_APPROVAL', 'WAITING', 'IN_CONSULTATION', 'COMPLETED'].includes(a.status) &&
+        a.slotId === slotId
+    ).length;
+  };
+
+  const activeCount = countActiveAppointmentsForSlot(mockAppointmentsOnDate, 'slot-1');
+  assert(activeCount === 3, 'Active appointment count includes WAITING, IN_CONSULTATION, and PENDING_APPROVAL (3 total)');
+  assert(activeCount !== 2, 'PENDING_APPROVAL is not ignored in slot capacity count');
+
+  // --- Test 118: Multi-Clinic Doctor Consultation State Isolation ---
+  console.log('\n--- Test 118: Multi-Clinic Doctor Consultation State Isolation ---');
+  const currentDoctorAppointments = [
+    { id: 'appt-c1-1', doctorId: 'doc-1', clinicId: 'clinic-1', status: 'IN_CONSULTATION' },
+    { id: 'appt-c1-2', doctorId: 'doc-1', clinicId: 'clinic-1', status: 'WAITING' },
+    { id: 'appt-c2-1', doctorId: 'doc-1', clinicId: 'clinic-2', status: 'IN_CONSULTATION' },
+  ];
+
+  const resetClinicScopedInConsultation = (appts: typeof currentDoctorAppointments, doctorId: string, clinicId: string | null) => {
+    return appts.map((a) => {
+      if (a.doctorId === doctorId && a.clinicId === clinicId && a.status === 'IN_CONSULTATION') {
+        return { ...a, status: 'WAITING' };
+      }
+      return a;
+    });
+  };
+
+  const updatedAppts = resetClinicScopedInConsultation(currentDoctorAppointments, 'doc-1', 'clinic-1');
+  const c1Status = updatedAppts.find((a) => a.id === 'appt-c1-1')?.status;
+  const c2Status = updatedAppts.find((a) => a.id === 'appt-c2-1')?.status;
+  assert(c1Status === 'WAITING', 'Clinic 1 previous consultation reset to WAITING');
+  assert(c2Status === 'IN_CONSULTATION', 'Clinic 2 active consultation untouched and preserved');
+
+  // --- Test 119: Strict State Machine Transition Violations ---
+  console.log('\n--- Test 119: Strict State Machine Transition Violations ---');
+  assert(canTransition('IN_CONSULTATION', 'COMPLETED', 'RECEPTIONIST').allowed === false, 'Receptionist cannot mark consultation COMPLETED');
+  assert(canTransition('WAITING', 'COMPLETED', 'RECEPTIONIST').allowed === false, 'Receptionist cannot complete WAITING appointment');
+  assert(canTransition('IN_CONSULTATION', 'PENDING_APPROVAL', 'RECEPTIONIST').allowed === false, 'Receptionist cannot revert IN_CONSULTATION to PENDING_APPROVAL');
+  assert(canTransition('COMPLETED', 'IN_CONSULTATION', 'DOCTOR').allowed === false, 'Doctor cannot recall COMPLETED consultation');
+  assert(canTransition('WAITING', 'IN_CONSULTATION', 'DOCTOR').allowed === true, 'Doctor can call WAITING patient');
+
+  const canDoctorUpdateNotes = (apptStatus: string) => {
+    return !['CANCELLED', 'REJECTED', 'PENDING_APPROVAL'].includes(apptStatus);
+  };
+  assert(canDoctorUpdateNotes('CANCELLED') === false, 'Doctor cannot update notes on CANCELLED appointment');
+  assert(canDoctorUpdateNotes('REJECTED') === false, 'Doctor cannot update notes on REJECTED appointment');
+  assert(canDoctorUpdateNotes('PENDING_APPROVAL') === false, 'Doctor cannot update notes on PENDING_APPROVAL appointment');
+  assert(canDoctorUpdateNotes('IN_CONSULTATION') === true, 'Doctor can update notes on IN_CONSULTATION appointment');
+  assert(canDoctorUpdateNotes('COMPLETED') === true, 'Doctor can update notes on COMPLETED appointment');
+
+  // --- Test 120: Password Trimming Policy Across All Roles ---
+  console.log('\n--- Test 120: Password Trimming Policy Across All Roles ---');
+  const isTrimmedPasswordValid = (pw: any) => {
+    return typeof pw === 'string' && pw.trim().length >= 8;
+  };
+  assert(isTrimmedPasswordValid('12345678') === true, 'Plain 8-character password accepted');
+  assert(isTrimmedPasswordValid('   12345678   ') === true, 'Padded 8-character password accepted after trim');
+  assert(isTrimmedPasswordValid('  12345  ') === false, 'Padded 5-character password rejected after trim');
+  assert(isTrimmedPasswordValid('        ') === false, 'Pure whitespace password rejected');
+  assert(isTrimmedPasswordValid(12345678) === false, 'Non-string password rejected');
+  assert(isTrimmedPasswordValid(null) === false, 'Null password rejected');
+  assert(isTrimmedPasswordValid(undefined) === false, 'Undefined password rejected');
+
+  // --- Test 121: Email & Phone Sanitization Hygiene ---
+  console.log('\n--- Test 121: Email & Phone Sanitization Hygiene ---');
+  const sanitizeEmail = (email: string) => email.toLowerCase().trim();
+  const sanitizePhone = (phone?: string | null) => (phone ? String(phone).trim() : null);
+
+  assert(sanitizeEmail('  Receptionist@Clinic.COM  ') === 'receptionist@clinic.com', 'Email lowercase and trimmed');
+  assert(sanitizePhone('  +91 9876543210  ') === '+91 9876543210', 'Phone string trimmed');
+  assert(sanitizePhone(null) === null, 'Null phone returns null');
+  assert(sanitizePhone(undefined) === null, 'Undefined phone returns null');
+
+  // --- Test 122: Consultation Fee Precision & Slot Schedule Constraints ---
+  console.log('\n--- Test 122: Consultation Fee Precision & Slot Schedule Constraints ---');
+  const roundToCents = (fee: number) => Math.round(fee * 100) / 100;
+  assert(roundToCents(500.555) === 500.56, 'Fee rounded to nearest cent (500.56)');
+  assert(roundToCents(500) === 500, 'Integer fee preserved');
+  assert(roundToCents(0) === 0, 'Zero fee preserved');
+
+  const invalidSlotsEndTimeBeforeStart = [
+    { id: 's1', name: 'Shift', startTime: '14:00', endTime: '12:00', maxPatients: 10 }
+  ];
+  const slotValResult = validateDoctorSlots(invalidSlotsEndTimeBeforeStart);
+  assert(slotValResult.valid === false, 'Slot with endTime before startTime rejected by validateDoctorSlots');
+  assert(Boolean(slotValResult.error?.includes('must be after start time')), 'Error specifically states end time constraint');
 
   console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);

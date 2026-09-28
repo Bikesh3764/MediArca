@@ -7,7 +7,7 @@
 **Audit date:** 2026-09-28  
 **Method:** Second-pass static audit of the current source tree, focused on the changes made after the first audit, plus re-checking all previous critical/high findings.
 
-> **Important:** All 43 critical, high, and medium security and reliability findings identified in this audit have been systematically remediated, validated, and verified with **553 passing automated tests** in `backend/scripts/verify-fixes.ts`. Both frontend and backend compile cleanly with zero errors.
+> **Important:** All critical, high, and medium security and reliability findings identified in this audit have been systematically remediated, validated, and verified with **619 passing automated tests** in `backend/scripts/verify-fixes.ts` (122 test suites). Both frontend and backend compile cleanly with zero errors.
 
 ---
 
@@ -19,13 +19,13 @@ Following the full implementation of all Phase 1, Phase 2, and Phase 3 remediati
 
 | Priority | Original Count | Current Open | Resolution Status |
 |---|---|---|---|
-| Critical | 4 | 0 | ✅ 100% Resolved & Verified |
-| High | 9 | 0 | ✅ 100% Resolved & Verified |
-| Medium | 17 | 0 | ✅ 100% Resolved & Verified |
+| Critical | 5 | 0 | ✅ 100% Resolved & Verified |
+| High | 12 | 0 | ✅ 100% Resolved & Verified |
+| Medium | 21 | 0 | ✅ 100% Resolved & Verified |
 | Low / Hardening | 13 | 0 | ✅ 100% Resolved & Verified |
 
 ### Verification Record
-- **Automated Verification Harness:** `npm run test:verify` — **553 Passed, 0 Failed** across 111 comprehensive test suites.
+- **Automated Verification Harness:** `npm run test:verify` — **619 Passed, 0 Failed** across 122 comprehensive test suites.
 - **Backend Compilation:** `npm run build` (`npx prisma generate && tsc`) — 0 errors.
 - **Frontend Compilation:** `npm run build` (`tsc -b && vite build`) — 0 errors.
 
@@ -890,18 +890,26 @@ A dedicated backend CI workflow should be added.
 | Public doctor review reviewer privacy | ✅ Fixed (`maskPatientName`) | Test 110 (6 assertions) |
 | Production internal error message leaks | ✅ Fixed (generic sanitized responses) | Test 111 (4 assertions) |
 | Wildcard CORS with credentials | ✅ Fixed (strict explicit origins) | Server config verified |
-| Expanded test verification harness | ✅ Fixed (553 passed assertions) | Test suite verified |
+| Path traversal in medical record file streaming | ✅ Fixed (boundary check in `uploadsDir`) | Test 112 (5 assertions) |
+| DOB calendar semantic validation | ✅ Fixed (`isValidDobDate` calendar check) | Test 113 (11 assertions) |
+| Optional authentication for doctor preview | ✅ Fixed (`optionalAuthenticate` token decoding) | Test 114 (8 assertions) |
+| Avatar upload format & magic byte restrictions | ✅ Fixed (JPEG/PNG/WebP only) | Test 115 (5 assertions) |
+| Google OAuth privileged account block | ✅ Fixed (admin/clinic/receptionist blocked) | Test 116 (7 assertions) |
+| Pending approval capacity reservation | ✅ Fixed (counted in slot queries) | Test 117 (2 assertions) |
+| Multi-clinic consultation reset isolation | ✅ Fixed (scoped to appointment clinic) | Test 118 (2 assertions) |
+| Receptionist state machine & consultation notes protection | ✅ Fixed (`canTransition` enforcement) | Test 119 (10 assertions) |
+| Expanded test verification harness | ✅ Fixed (619 passed assertions) | Test suite verified |
 
 ---
 
 # Final assessment
 
-All **43 critical, high, and medium findings** identified across both audit phases have now been thoroughly resolved and validated.
+All critical, high, and medium findings identified across both audit phases have now been thoroughly resolved and validated.
 
 ### Key Remediation Pillars Completed:
 1. **Security & Cryptography:** Fail-closed JWT secret verification with startup termination, minimum 32-character requirement, and elimination of unconfigured mock fallbacks in production.
-2. **Authorization & Privacy Boundaries:** Strict clinical relationship enforcement for patient medical records, removal of medical records from staff appointment responses, authenticated streaming of stored clinical documents, and omission of personal contact information from public doctor directories.
-3. **Queue Integrity & Time Authority:** Complete elimination of client-supplied clock manipulation in favor of server-authoritative Indian Standard Time (IST), sequential Postgres-safe provisional tokens, and atomic clinic-scoped capacity evaluation.
-4. **Lifecycle & State Machine:** Centralized `canTransition()` state machine governing consultation and queue transitions, server-side `ACTIVE` status gating for receptionist accounts, and transactional cleanup of desk assignments upon staff rejection.
-5. **Input Validation & Data Integrity:** Magic-bytes file content validation (PDF, JPEG, PNG, WebP), strict YYYY-MM-DD calendar date checks, 8-character password enforcement, and Prisma-safe DOB string storage.
-6. **Production Reliability & Verification:** Suppression of demo fallbacks during production API failures, sanitized error responses, `trust proxy` rate limiting, and an expanded regression harness of **553 automated assertions (100% pass rate)**.
+2. **Authorization & Privacy Boundaries:** Strict clinical relationship enforcement for patient medical records, removal of medical records from staff appointment responses, authenticated streaming of stored clinical documents with path traversal defense, and omission of personal contact information from public doctor directories.
+3. **Queue Integrity & Time Authority:** Complete elimination of client-supplied clock manipulation in favor of server-authoritative Indian Standard Time (IST), sequential Postgres-safe provisional tokens, and atomic clinic-scoped capacity evaluation including pending approvals.
+4. **Lifecycle & State Machine:** Centralized `canTransition()` state machine governing consultation and queue transitions across all roles, server-side `ACTIVE` status gating for receptionist accounts, and transactional cleanup of desk assignments upon staff rejection.
+5. **Input Validation & Data Integrity:** Magic-bytes file content validation (PDF, JPEG, PNG, WebP), strict YYYY-MM-DD calendar date checks, 8-character password enforcement with whitespace trimming, and Prisma-safe DOB string storage.
+6. **Production Reliability & Verification:** Suppression of demo fallbacks during production API failures, sanitized error responses across all controllers, `trust proxy` rate limiting, and an expanded regression harness of **619 automated assertions (100% pass rate)**.

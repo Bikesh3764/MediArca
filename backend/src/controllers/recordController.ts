@@ -242,10 +242,21 @@ export const getRecordFile = async (req: AuthRequest, res: Response): Promise<vo
       return;
     }
 
-    // Local file path
-    const cleanPath = record.fileUrl.replace(/^\/+/, '');
-    const fullPath = path.resolve(__dirname, '../../', cleanPath);
-    res.sendFile(fullPath);
+    // Local file path with strict path traversal protection
+    const normalizedRelative = path.normalize(record.fileUrl.replace(/^\/+/, ''));
+    const uploadsDir = path.resolve(__dirname, '../../uploads');
+    const fullPath = path.resolve(__dirname, '../../', normalizedRelative);
+
+    if (!fullPath.startsWith(uploadsDir)) {
+      res.status(403).json({ success: false, message: 'Invalid medical record file path.' });
+      return;
+    }
+
+    res.sendFile(fullPath, (err) => {
+      if (err && !res.headersSent) {
+        res.status(404).json({ success: false, message: 'Medical record file not found on storage server.' });
+      }
+    });
   } catch (error: any) {
     console.error('getRecordFile error:', error);
     res.status(500).json({

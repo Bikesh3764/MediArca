@@ -200,7 +200,11 @@ export const getMyClinic = async (req: AuthRequest, res: Response): Promise<void
     });
   } catch (error: any) {
     console.error('getMyClinic error:', error);
-    res.status(500).json({ success: false, message: 'Failed to retrieve clinic details', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve clinic details',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
   }
 };
 
@@ -349,7 +353,11 @@ export const addDoctorToClinic = async (req: AuthRequest, res: Response): Promis
     });
   } catch (error: any) {
     console.error('addDoctorToClinic error:', error);
-    res.status(500).json({ success: false, message: 'Failed to onboard doctor', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to onboard doctor',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
   }
 };
 
@@ -435,7 +443,11 @@ export const respondToDoctorAffiliation = async (req: AuthRequest, res: Response
     }
   } catch (error: any) {
     console.error('respondToDoctorAffiliation error:', error);
-    res.status(500).json({ success: false, message: 'Failed to process affiliation response', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to process affiliation response',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
   }
 };
 
@@ -492,7 +504,11 @@ export const removeDoctorFromClinic = async (req: AuthRequest, res: Response): P
     });
   } catch (error: any) {
     console.error('removeDoctorFromClinic error:', error);
-    res.status(500).json({ success: false, message: 'Failed to remove doctor affiliation', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to remove doctor affiliation',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
   }
 };
 
@@ -538,7 +554,11 @@ export const getPublicClinics = async (req: any, res: Response): Promise<void> =
     });
   } catch (error: any) {
     console.error('getPublicClinics error:', error);
-    res.status(500).json({ success: false, message: 'Failed to retrieve clinics', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve clinics',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
   }
 };
 
@@ -559,8 +579,8 @@ export const addClinicReceptionist = async (req: AuthRequest, res: Response): Pr
       return;
     }
 
-    if (password.length < 6) {
-      res.status(400).json({ success: false, message: 'Password must be at least 6 characters long' });
+    if (typeof password !== 'string' || password.trim().length < 8) {
+      res.status(400).json({ success: false, message: 'Password must be at least 8 characters long' });
       return;
     }
 
@@ -661,7 +681,11 @@ export const addClinicReceptionist = async (req: AuthRequest, res: Response): Pr
     });
   } catch (error: any) {
     console.error('addClinicReceptionist error:', error);
-    res.status(500).json({ success: false, message: 'Failed to provision receptionist', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to provision receptionist',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
   }
 };
 
@@ -726,7 +750,11 @@ export const getClinicReceptionists = async (req: AuthRequest, res: Response): P
     });
   } catch (error: any) {
     console.error('getClinicReceptionists error:', error);
-    res.status(500).json({ success: false, message: 'Failed to retrieve receptionists', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve receptionists',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
   }
 };
 
@@ -793,7 +821,11 @@ export const updateClinicReceptionistDoctors = async (req: AuthRequest, res: Res
     });
   } catch (error: any) {
     console.error('updateClinicReceptionistDoctors error:', error);
-    res.status(500).json({ success: false, message: 'Failed to update assignments', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update assignments',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
   }
 };
 
@@ -838,7 +870,11 @@ export const removeClinicReceptionist = async (req: AuthRequest, res: Response):
     });
   } catch (error: any) {
     console.error('removeClinicReceptionist error:', error);
-    res.status(500).json({ success: false, message: 'Failed to remove receptionist', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to remove receptionist',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
   }
 };
 

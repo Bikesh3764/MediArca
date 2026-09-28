@@ -15,6 +15,15 @@ export const getFileUrl = (filePath?: string): string => {
   return `${backendBase}${filePath.startsWith('/') ? '' : '/'}${filePath}`;
 };
 
+export const getMedicalRecordFileUrl = (recordId: string, directUrl?: string): string => {
+  if (directUrl && (directUrl.startsWith('data:') || directUrl.startsWith('http://') || directUrl.startsWith('https://'))) {
+    return directUrl;
+  }
+  const token = typeof localStorage !== 'undefined' ? localStorage.getItem('token') : null;
+  const tokenQuery = token ? `?token=${encodeURIComponent(token)}` : '';
+  return `${API_BASE_URL}/records/file/${recordId}${tokenQuery}`;
+};
+
 export interface DoctorSlot {
   id: string;
   name: string;
@@ -989,7 +998,9 @@ export const api = {
 
   async getDoctorById(id: string): Promise<Doctor> {
     try {
-      const res = await fetch(`${API_BASE_URL}/doctors/${id}`);
+      const res = await fetch(`${API_BASE_URL}/doctors/${id}`, {
+        headers: getHeaders(),
+      });
       return await handleResponse(res);
     } catch (err) {
       if (import.meta.env.DEV && import.meta.env.VITE_ENABLE_DEMO_FALLBACK === 'true') {

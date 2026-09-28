@@ -6,6 +6,8 @@ import { OAuth2Client } from 'google-auth-library';
 import prisma from '../config/database';
 import { AuthRequest, getJwtSecret } from '../middleware/authMiddleware';
 import { uploadToR2, deleteFromR2, isR2Configured } from '../config/r2';
+import { isValidDobDate, validateDoctorSlots, timeToMinutes } from '../utils/scheduleUtils';
+import { validateMagicBytes } from '../middleware/uploadMiddleware';
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -18,7 +20,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    if (typeof password !== 'string' || password.length < 8) {
+    if (typeof password !== 'string' || password.trim().length < 8) {
       res.status(400).json({ success: false, message: 'Password must be at least 8 characters long.' });
       return;
     }
@@ -53,12 +55,16 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     if (normalizedRole === 'PATIENT') {
       let formattedDob: string | null = null;
       if (profileData.dateOfBirth) {
-        try {
-          const dobStr = typeof profileData.dateOfBirth === 'string' ? profileData.dateOfBirth : new Date(profileData.dateOfBirth).toISOString();
-          formattedDob = dobStr.split('T')[0];
-        } catch {
-          formattedDob = null;
+        const rawDob = String(profileData.dateOfBirth).trim();
+        const candidateDob = rawDob.includes('T') ? rawDob.split('T')[0] : rawDob;
+        if (!isValidDobDate(candidateDob)) {
+          res.status(400).json({
+            success: false,
+            message: 'Invalid date of birth format. Expected valid calendar date in YYYY-MM-DD format.',
+          });
+          return;
         }
+        formattedDob = candidateDob;
       }
 
       newUser = await prisma.user.create({
@@ -354,8 +360,11 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
     const { passwordHash: _, ...userWithoutPassword } = user;
     res.json({ success: true, data: userWithoutPassword });
   } catch (error: any) {
-    console.error('getMe error:', error);
-    res.status(500).json({ success: false, message: 'Error retrieving user profile', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Error retrieving user profile',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
   }
 };
 
@@ -392,12 +401,16 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
         if (!dateOfBirth) {
           safePatientData.dateOfBirth = null;
         } else {
-          try {
-            const dobStr = typeof dateOfBirth === 'string' ? dateOfBirth : new Date(dateOfBirth).toISOString();
-            safePatientData.dateOfBirth = dobStr.split('T')[0];
-          } catch {
-            safePatientData.dateOfBirth = null;
+          const rawDob = String(dateOfBirth).trim();
+          const candidateDob = rawDob.includes('T') ? rawDob.split('T')[0] : rawDob;
+          if (!isValidDobDate(candidateDob)) {
+            res.status(400).json({
+              success: false,
+              message: 'Invalid date of birth format. Expected valid calendar date in YYYY-MM-DD format.',
+            });
+            return;
           }
+          safePatientData.dateOfBirth = candidateDob;
         }
       }
       if (gender !== undefined) safePatientData.gender = gender ? String(gender).trim() : null;
@@ -435,14 +448,52 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
       if (specialty !== undefined) safeDoctorData.specialty = String(specialty).trim();
       if (qualifications !== undefined) safeDoctorData.qualifications = String(qualifications).trim();
       if (experienceYears !== undefined) safeDoctorData.experienceYears = Math.max(0, Math.floor(Number(experienceYears) || 0));
-      if (consultationFee !== undefined) safeDoctorData.consultationFee = Math.max(0, Number(consultationFee) || 0);
+      if (consultationFee !== undefined) safeDoctorData.consultationFee = Math.max(0, Math.round((Number(consultationFee) || 0) * 100) / 100);
       if (bio !== undefined) safeDoctorData.bio = bio ? String(bio).trim() : null;
       if (clinicAddress !== undefined) safeDoctorData.clinicAddress = clinicAddress ? String(clinicAddress).trim() : null;
-      if (checkingStartTime !== undefined) safeDoctorData.checkingStartTime = String(checkingStartTime).trim();
-      if (checkingEndTime !== undefined) safeDoctorData.checkingEndTime = String(checkingEndTime).trim();
+      
+      const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
+      if (checkingStartTime !== undefined) {
+        const sTime = String(checkingStartTime).trim();
+        if (!timeRegex.test(sTime)) {
+          res.status(400).json({ success: false, message: 'checkingStartTime must be in 24-hour HH:mm format (e.g. 09:00).' });
+          return;
+        }
+        safeDoctorData.checkingStartTime = sTime;
+      }
+      if (checkingEndTime !== undefined) {
+        const eTime = String(checkingEndTime).trim();
+        if (!timeRegex.test(eTime)) {
+          res.status(400).json({ success: false, message: 'checkingEndTime must be in 24-hour HH:mm format (e.g. 13:00).' });
+          return;
+        }
+        safeDoctorData.checkingEndTime = eTime;
+      }
+      if (safeDoctorData.checkingStartTime && safeDoctorData.checkingEndTime) {
+        if (timeToMinutes(safeDoctorData.checkingEndTime) <= timeToMinutes(safeDoctorData.checkingStartTime)) {
+          res.status(400).json({ success: false, message: 'checkingEndTime must be after checkingStartTime.' });
+          return;
+        }
+      }
+
       if (avgConsultationMinutes !== undefined) safeDoctorData.avgConsultationMinutes = Math.max(1, Math.floor(Number(avgConsultationMinutes) || 15));
       if (maxDailyPatients !== undefined) safeDoctorData.maxDailyPatients = Math.max(1, Math.floor(Number(maxDailyPatients) || 30));
-      if (slots !== undefined) safeDoctorData.slots = typeof slots === 'string' ? slots : JSON.stringify(slots);
+      
+      if (slots !== undefined) {
+        let parsed: any[] = [];
+        try {
+          parsed = typeof slots === 'string' ? JSON.parse(slots) : slots;
+        } catch {
+          res.status(400).json({ success: false, message: 'Invalid slots format: JSON parsing failed.' });
+          return;
+        }
+        const validation = validateDoctorSlots(parsed);
+        if (!validation.valid) {
+          res.status(400).json({ success: false, message: validation.error || 'Invalid schedule slots.' });
+          return;
+        }
+        safeDoctorData.slots = JSON.stringify(validation.formatted);
+      }
 
       await prisma.doctorProfile.upsert({
         where: { userId: req.user.id },
@@ -464,8 +515,11 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
     const { passwordHash: _, ...result } = refreshedUser!;
     res.json({ success: true, message: 'Profile updated successfully', data: result });
   } catch (error: any) {
-    console.error('updateProfile error:', error);
-    res.status(500).json({ success: false, message: 'Failed to update profile', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update profile',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
   }
 };
 
@@ -522,6 +576,15 @@ export const googleAuth = async (req: Request, res: Response): Promise<void> => 
       where: { email },
       include: { patientProfile: true, doctorProfile: true },
     });
+
+    if (user && user.role !== 'PATIENT' && user.role !== 'DOCTOR') {
+      res.status(403).json({
+        success: false,
+        message:
+          'Google Sign-In is only permitted for patient and doctor accounts. Clinic and administrative accounts must authenticate with email and password.',
+      });
+      return;
+    }
 
     if (!user) {
       const defaultPassword = await bcrypt.hash(Math.random().toString(36).substring(2), 10);
@@ -636,6 +699,23 @@ export const uploadAvatar = async (req: AuthRequest, res: Response): Promise<voi
       return;
     }
 
+    const mime = (file.mimetype || '').toLowerCase();
+    if (!['image/jpeg', 'image/jpg', 'image/png', 'image/webp'].includes(mime)) {
+      res.status(400).json({
+        success: false,
+        message: 'Avatar must be a valid image file (JPEG, PNG, or WebP). PDF documents are not allowed.',
+      });
+      return;
+    }
+
+    if (file.buffer && !validateMagicBytes(file.buffer, mime)) {
+      res.status(400).json({
+        success: false,
+        message: 'Invalid file signature. The uploaded avatar content does not match its declared image format.',
+      });
+      return;
+    }
+
     const ext = path.extname(file.originalname) || '.jpg';
     const key = `avatars/${req.user.id}-${Date.now()}${ext}`;
 
@@ -679,7 +759,11 @@ export const uploadAvatar = async (req: AuthRequest, res: Response): Promise<voi
     });
   } catch (error: any) {
     console.error('uploadAvatar error:', error);
-    res.status(500).json({ success: false, message: 'Failed to upload avatar', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to upload avatar',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
   }
 };
 

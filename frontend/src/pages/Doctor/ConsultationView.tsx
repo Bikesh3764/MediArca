@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { api, Appointment, getFileUrl } from '../../services/api';
+import { api, Appointment, getFileUrl, getMedicalRecordFileUrl } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { SubNav } from '../../components/layout/SubNav';
 import { AppleButton } from '../../components/ui/AppleButton';
@@ -420,7 +420,7 @@ export const ConsultationView: React.FC = () => {
                     {appointment.patient.medicalRecords.map((doc) => (
                       <a
                         key={doc.id}
-                        href={getFileUrl(doc.fileUrl)}
+                        href={getMedicalRecordFileUrl(doc.id, doc.fileUrl)}
                         target="_blank"
                         rel="noreferrer"
                         className="p-2.5 rounded-xl border border-[#e5e5ea] bg-[#fafafc] hover:bg-white transition-all flex items-center justify-between text-xs group"

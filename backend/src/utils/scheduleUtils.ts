@@ -255,6 +255,32 @@ export const isValidAppointmentDate = (dateStr: any): boolean => {
 };
 
 /**
+ * Validates strict YYYY-MM-DD calendar date semantics for date of birth.
+ * Accepts years from 1900 up to the current calendar date, disallowing future dates.
+ */
+export const isValidDobDate = (dateStr: any): boolean => {
+  if (!dateStr || typeof dateStr !== 'string') return false;
+  const match = dateStr.trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return false;
+  const year = parseInt(match[1], 10);
+  const month = parseInt(match[2], 10);
+  const day = parseInt(match[3], 10);
+  const currentYear = new Date().getFullYear();
+  if (year < 1900 || year > currentYear || month < 1 || month > 12 || day < 1 || day > 31) return false;
+  const d = new Date(Date.UTC(year, month - 1, day));
+  if (
+    d.getUTCFullYear() !== year ||
+    d.getUTCMonth() !== month - 1 ||
+    d.getUTCDate() !== day
+  ) {
+    return false;
+  }
+  const now = new Date();
+  const todayUtc = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+  return d.getTime() <= todayUtc;
+};
+
+/**
  * Masks patient name for public doctor review display (e.g., "John Doe" -> "John D.")
  */
 export const maskPatientName = (name?: string | null): string => {

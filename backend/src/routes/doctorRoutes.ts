@@ -11,7 +11,7 @@ import {
   removeDoctorReceptionist,
 } from '../controllers/doctorController';
 import { updateProfile } from '../controllers/authController';
-import { authenticate, authorize } from '../middleware/authMiddleware';
+import { authenticate, authorize, optionalAuthenticate } from '../middleware/authMiddleware';
 
 const router = Router();
 
@@ -25,7 +25,7 @@ router.post('/me/receptionists', authenticate, authorize('DOCTOR'), addDoctorRec
 router.delete('/me/receptionists/:receptionistId', authenticate, authorize('DOCTOR'), removeDoctorReceptionist);
 
 router.put('/profile', authenticate, authorize('DOCTOR'), updateProfile);
-router.get('/:id', getDoctorById);
+router.get('/:id', optionalAuthenticate, getDoctorById);
 router.put('/schedule', authenticate, authorize('DOCTOR'), updateSchedule);
 
 export default router;

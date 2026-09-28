@@ -10,6 +10,7 @@ import {
   minutesTo12Hour,
 } from '../utils/scheduleUtils';
 import { formatIndianPhone, sanitizeIndianPhone } from '../utils/phoneUtils';
+import { canTransition } from '../utils/appointmentStateMachine';
 
 /**
  * Get profile and linked doctors for logged-in receptionist
@@ -164,7 +165,11 @@ export const getMyReceptionist = async (req: AuthRequest, res: Response): Promis
     });
   } catch (error: any) {
     console.error('getMyReceptionist error:', error);
-    res.status(500).json({ success: false, message: 'Failed to retrieve receptionist profile', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve receptionist profile',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
   }
 };
 
@@ -334,7 +339,11 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
     });
   } catch (error: any) {
     console.error('getDoctorQueue error:', error);
-    res.status(500).json({ success: false, message: 'Failed to retrieve doctor queue', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve doctor queue',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
   }
 };
 
@@ -557,7 +566,8 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
             where: {
               doctorId: doctor.id,
               appointmentDate,
-              status: { in: ['WAITING', 'IN_CONSULTATION', 'COMPLETED'] },
+              ...(receptionist.clinicId ? { clinicId: receptionist.clinicId } : {}),
+              status: { in: ['PENDING_APPROVAL', 'WAITING', 'IN_CONSULTATION', 'COMPLETED'] },
             },
             select: {
               id: true,
@@ -657,7 +667,11 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
     });
   } catch (error: any) {
     console.error('bookWalkin error:', error);
-    res.status(500).json({ success: false, message: 'Failed to book walk-in appointment', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to book walk-in appointment',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
   }
 };
 
@@ -684,10 +698,11 @@ export const updateAppointmentStatus = async (req: AuthRequest, res: Response): 
       return;
     }
 
-    if (targetAppointment.status === 'COMPLETED' || targetAppointment.status === 'CANCELLED') {
+    const transition = canTransition(targetAppointment.status, status, req.user?.role || 'RECEPTIONIST');
+    if (!transition.allowed) {
       res.status(400).json({
         success: false,
-        message: `Cannot update status of an appointment that is already ${targetAppointment.status.toLowerCase()}`,
+        message: transition.reason || `Cannot transition appointment from ${targetAppointment.status} to ${status}.`,
       });
       return;
     }
@@ -762,7 +777,11 @@ export const updateAppointmentStatus = async (req: AuthRequest, res: Response): 
     });
   } catch (error: any) {
     console.error('updateAppointmentStatus error:', error);
-    res.status(500).json({ success: false, message: 'Failed to update appointment status', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update appointment status',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
   }
 };
 
@@ -783,8 +802,8 @@ export const changeReceptionistPassword = async (req: AuthRequest, res: Response
       return;
     }
 
-    if (newPassword.length < 6) {
-      res.status(400).json({ success: false, message: 'New password must be at least 6 characters long' });
+    if (!newPassword || typeof newPassword !== 'string' || newPassword.trim().length < 8) {
+      res.status(400).json({ success: false, message: 'New password must be at least 8 characters long.' });
       return;
     }
 
@@ -823,7 +842,11 @@ export const changeReceptionistPassword = async (req: AuthRequest, res: Response
     });
   } catch (error: any) {
     console.error('changeReceptionistPassword error:', error);
-    res.status(500).json({ success: false, message: 'Failed to update password', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update password',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
   }
 };
 
@@ -890,7 +913,11 @@ export const getPendingAppointments = async (req: AuthRequest, res: Response): P
     res.json({ success: true, count: enriched.length, data: enriched });
   } catch (error: any) {
     console.error('getPendingAppointments error:', error);
-    res.status(500).json({ success: false, message: 'Failed to retrieve pending appointments', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve pending appointments',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
   }
 };
 
@@ -949,8 +976,12 @@ export const approveAppointment = async (req: AuthRequest, res: Response): Promi
       return;
     }
 
-    if (appointment.status !== 'PENDING_APPROVAL') {
-      res.status(400).json({ success: false, message: `Appointment cannot be approved because current status is ${appointment.status}.` });
+    const transition = canTransition(appointment.status, 'WAITING', req.user?.role || 'RECEPTIONIST');
+    if (!transition.allowed) {
+      res.status(400).json({
+        success: false,
+        message: transition.reason || `Appointment cannot be approved because current status is ${appointment.status}.`,
+      });
       return;
     }
 
@@ -1050,7 +1081,11 @@ export const approveAppointment = async (req: AuthRequest, res: Response): Promi
     });
   } catch (error: any) {
     console.error('approveAppointment error:', error);
-    res.status(500).json({ success: false, message: 'Failed to approve appointment', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to approve appointment',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
   }
 };
 
@@ -1092,6 +1127,15 @@ export const rejectAppointment = async (req: AuthRequest, res: Response): Promis
       return;
     }
 
+    const transition = canTransition(appointment.status, 'REJECTED', req.user?.role || 'RECEPTIONIST');
+    if (!transition.allowed) {
+      res.status(400).json({
+        success: false,
+        message: transition.reason || `Appointment cannot be declined because current status is ${appointment.status}.`,
+      });
+      return;
+    }
+
     const updated = await prisma.appointment.update({
       where: { id: appointment.id },
       data: {
@@ -1108,7 +1152,11 @@ export const rejectAppointment = async (req: AuthRequest, res: Response): Promis
     });
   } catch (error: any) {
     console.error('rejectAppointment error:', error);
-    res.status(500).json({ success: false, message: 'Failed to decline appointment', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to decline appointment',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
   }
 };
 
@@ -1121,6 +1169,11 @@ export const applyReceptionist = async (req: Request, res: Response): Promise<vo
 
     if (!fullName || !email || !password || !clinicId) {
       res.status(400).json({ success: false, message: 'Please provide full name, email, password, and target clinic' });
+      return;
+    }
+
+    if (typeof password !== 'string' || password.trim().length < 8) {
+      res.status(400).json({ success: false, message: 'Password must be at least 8 characters long.' });
       return;
     }
 
@@ -1177,7 +1230,11 @@ export const applyReceptionist = async (req: Request, res: Response): Promise<vo
     });
   } catch (error: any) {
     console.error('applyReceptionist error:', error);
-    res.status(500).json({ success: false, message: 'Failed to submit receptionist application', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to submit receptionist application',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
   }
 };
 

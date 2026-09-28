@@ -148,16 +148,15 @@ export const getDoctorById = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
-    if (doctor.verificationStatus === 'SUSPENDED' || doctor.verificationStatus === 'REJECTED') {
-      res.status(403).json({ success: false, message: 'Doctor profile is not active or has been suspended by administration' });
-      return;
-    }
-
     const isOwner = (req as any).user?.role === 'DOCTOR' && doctor.userId === (req as any).user?.id;
     const isAdmin = (req as any).user?.role === 'ADMIN';
+
     if (!isOwner && !isAdmin) {
       if (!doctor.isVerified || doctor.verificationStatus !== 'VERIFIED') {
-        res.status(403).json({ success: false, message: 'Doctor profile is pending verification and is not publicly accessible' });
+        res.status(404).json({
+          success: false,
+          message: 'Doctor profile is not publicly available or pending verification',
+        });
         return;
       }
     }
@@ -212,6 +211,14 @@ export const updateSchedule = async (req: AuthRequest, res: Response): Promise<v
 
     if (!doctor) {
       res.status(404).json({ success: false, message: 'Doctor profile not found' });
+      return;
+    }
+
+    if (!doctor.isVerified || doctor.verificationStatus === 'SUSPENDED' || doctor.verificationStatus === 'REJECTED') {
+      res.status(403).json({
+        success: false,
+        message: 'Doctor account is not active, pending verification, or suspended from clinical practice.',
+      });
       return;
     }
 
@@ -475,7 +482,11 @@ export const getDoctorAffiliations = async (req: AuthRequest, res: Response): Pr
     });
   } catch (error: any) {
     console.error('getDoctorAffiliations error:', error);
-    res.status(500).json({ success: false, message: 'Failed to retrieve affiliations', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve affiliations',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
   }
 };
 
@@ -503,10 +514,10 @@ export const addDoctorClinic = async (req: AuthRequest, res: Response): Promise<
       return;
     }
 
-    if (!doctor.isVerified) {
-      res.status(400).json({
+    if (!doctor.isVerified || doctor.verificationStatus === 'SUSPENDED' || doctor.verificationStatus === 'REJECTED') {
+      res.status(403).json({
         success: false,
-        message: 'Doctor is pending administrative verification. Unverified doctors cannot be affiliated with clinics.',
+        message: 'Doctor account is not active, pending verification, or suspended from clinical practice.',
       });
       return;
     }
@@ -597,7 +608,11 @@ export const addDoctorClinic = async (req: AuthRequest, res: Response): Promise<
     });
   } catch (error: any) {
     console.error('addDoctorClinic error:', error);
-    res.status(500).json({ success: false, message: 'Failed to affiliate clinic', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to affiliate clinic',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
   }
 };
 
@@ -624,6 +639,14 @@ export const respondToClinicAffiliation = async (req: AuthRequest, res: Response
     });
     if (!doctor) {
       res.status(404).json({ success: false, message: 'Doctor profile not found' });
+      return;
+    }
+
+    if (!doctor.isVerified || doctor.verificationStatus === 'SUSPENDED' || doctor.verificationStatus === 'REJECTED') {
+      res.status(403).json({
+        success: false,
+        message: 'Doctor account is not active, pending verification, or suspended from clinical practice.',
+      });
       return;
     }
 
@@ -671,7 +694,11 @@ export const respondToClinicAffiliation = async (req: AuthRequest, res: Response
     }
   } catch (error: any) {
     console.error('respondToClinicAffiliation error:', error);
-    res.status(500).json({ success: false, message: 'Failed to process affiliation response', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to process affiliation response',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
   }
 };
 
@@ -689,6 +716,14 @@ export const removeDoctorClinic = async (req: AuthRequest, res: Response): Promi
     const doctor = await prisma.doctorProfile.findUnique({ where: { userId: req.user.id } });
     if (!doctor) {
       res.status(404).json({ success: false, message: 'Doctor profile not found' });
+      return;
+    }
+
+    if (!doctor.isVerified || doctor.verificationStatus === 'SUSPENDED' || doctor.verificationStatus === 'REJECTED') {
+      res.status(403).json({
+        success: false,
+        message: 'Doctor account is not active, pending verification, or suspended from clinical practice.',
+      });
       return;
     }
 
@@ -718,7 +753,11 @@ export const removeDoctorClinic = async (req: AuthRequest, res: Response): Promi
     res.json({ success: true, message: 'Clinic affiliation removed successfully' });
   } catch (error: any) {
     console.error('removeDoctorClinic error:', error);
-    res.status(500).json({ success: false, message: 'Failed to detach clinic', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to detach clinic',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
   }
 };
 
@@ -749,6 +788,14 @@ export const removeDoctorReceptionist = async (req: AuthRequest, res: Response):
       return;
     }
 
+    if (!doctor.isVerified || doctor.verificationStatus === 'SUSPENDED' || doctor.verificationStatus === 'REJECTED') {
+      res.status(403).json({
+        success: false,
+        message: 'Doctor account is not active, pending verification, or suspended from clinical practice.',
+      });
+      return;
+    }
+
     await prisma.doctorReceptionist.deleteMany({
       where: {
         doctorId: doctor.id,
@@ -759,6 +806,10 @@ export const removeDoctorReceptionist = async (req: AuthRequest, res: Response):
     res.json({ success: true, message: 'Receptionist unlinked successfully' });
   } catch (error: any) {
     console.error('removeDoctorReceptionist error:', error);
-    res.status(500).json({ success: false, message: 'Failed to remove receptionist', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to remove receptionist',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
   }
 };

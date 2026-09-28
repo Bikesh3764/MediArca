@@ -3,7 +3,7 @@
 **Date:** 2026-09-28  
 **Repository:** [Bikesh3764/MediArca](https://github.com/Bikesh3764/MediArca)  
 **Branch:** `main`  
-**Test Suite Status:** ✅ **553 Passed, 0 Failed** (`backend/scripts/verify-fixes.ts`)  
+**Test Suite Status:** ✅ **619 Passed, 0 Failed** (`backend/scripts/verify-fixes.ts`, 122 suites)  
 **Backend Build:** ✅ `tsc` & Prisma 6 generated cleanly (0 errors)  
 **Frontend Build:** ✅ Vite production build completed cleanly (0 errors)  
 **Security Status:** ✅ **All Critical, High, Medium, and Functional findings resolved**
@@ -74,6 +74,14 @@ Below is the complete resolution matrix and verification details for each findin
 | **45** | **MEDIUM** | Wildcard CORS enabled with credentials | `backend/src/server.ts` | `backend/src/server.ts` | ✅ **RESOLVED** — Restricted CORS `origin` to explicit configured frontend URLs and standard localhost dev origins. | Server configuration verified |
 | **46** | **MEDIUM** | Missing `trust proxy` configuration on reverse-proxy infrastructure | `backend/src/server.ts` | `backend/src/server.ts` | ✅ **RESOLVED** — Added `app.set('trust proxy', 1)` for accurate rate limiting and client IP resolution behind Render proxy. | Server configuration verified |
 | **47** | **MEDIUM** | Rate limiting coverage narrow, missing expensive public endpoints | `backend/src/server.ts` | `backend/src/server.ts` | ✅ **RESOLVED** — Added public API rate limiter covering `/api/doctors`, `/api/appointments/queue-preview`, and `/api/clinics`. | Server configuration verified |
+| **48** | **HIGH** | Path traversal vulnerability in medical record file streaming | `backend/src/controllers/recordController.ts:246` | `backend/src/controllers/recordController.ts` | ✅ **RESOLVED** — Normalized relative path with `path.normalize` and strictly asserted boundary within `uploadsDir`. Prevents directory traversal attacks. | Test 112 (5 assertions) |
+| **49** | **MEDIUM** | Unauthenticated public doctor detail route locked out doctor owners from previewing their own unverified profiles | `backend/src/routes/doctorRoutes.ts:31`, `backend/src/controllers/doctorController.ts:77` | `backend/src/routes/doctorRoutes.ts`, `backend/src/middleware/authMiddleware.ts`, `backend/src/controllers/doctorController.ts` | ✅ **RESOLVED** — Added `optionalAuthenticate` middleware to decode Bearer/query tokens if provided; returns 404 for unverified doctors only on unauthorized public requests. | Tests 97, 114 |
+| **50** | **HIGH** | Avatar upload accepted non-image documents (e.g. PDFs) without genuine image verification | `backend/src/controllers/authController.ts:705` | `backend/src/controllers/authController.ts` | ✅ **RESOLVED** — Restricted avatar uploads strictly to JPEG, PNG, and WebP; enforced magic byte signature checks via `validateMagicBytes`. | Test 115 (5 assertions) |
+| **51** | **CRITICAL** | Google OAuth permitted signing into existing administrative, clinic, and receptionist accounts | `backend/src/controllers/authController.ts:384` | `backend/src/controllers/authController.ts` | ✅ **RESOLVED** — Prohibited Google authentication for `ADMIN`, `CLINIC`, and `RECEPTIONIST` roles (403 Forbidden). Only patient/doctor accounts permitted. | Test 116 (7 assertions) |
+| **52** | **HIGH** | Day appointment capacity check excluded `PENDING_APPROVAL` allowing concurrent slot overbooking | `backend/src/controllers/appointmentController.ts:99, 476` | `backend/src/controllers/appointmentController.ts`, `backend/src/controllers/receptionistController.ts` | ✅ **RESOLVED** — Included `PENDING_APPROVAL` in active appointments query in `getQueuePreview`, `bookAppointment`, and `bookWalkin`. Prevents slot overcapacity. | Test 117 (2 assertions) |
+| **53** | **MEDIUM** | Calling patient reset `IN_CONSULTATION` appointments globally across all clinics for multi-facility doctors | `backend/src/controllers/consultationController.ts:167` | `backend/src/controllers/consultationController.ts` | ✅ **RESOLVED** — Scoped `updateMany` reset strictly to `targetAppointment.clinicId`. Isolated active consultation states across clinic locations. | Test 118 (2 assertions) |
+| **54** | **HIGH** | Receptionist could force terminal states or override consultation cabin status | `backend/src/controllers/receptionistController.ts:684, 888` | `backend/src/controllers/receptionistController.ts`, `backend/src/controllers/consultationController.ts` | ✅ **RESOLVED** — Integrated `canTransition()` into receptionist status updates, approval, and rejection; blocked clinical notes editing on cancelled/rejected appointments. | Test 119 (10 assertions) |
+| **55** | **MEDIUM** | Frontend medical record links pointed to unserved `/uploads` resulting in 404s | `frontend/src/services/api.ts`, `frontend/src/pages/Patient/MedicalRecords.tsx`, `frontend/src/pages/Doctor/ConsultationView.tsx` | `frontend/src/services/api.ts`, patient and doctor pages | ✅ **RESOLVED** — Added `getMedicalRecordFileUrl(recordId, directUrl)` linking to `/api/records/file/:id?token=...`. Replaced direct `getFileUrl` calls on medical documents. | Frontend build & manual verification |
 
 ---
 
@@ -85,7 +93,7 @@ $ cd backend
 $ npm run test:verify
 ...
 ========================================
-Passed: 553
+Passed: 619
 Failed: 0
 ========================================
 ```

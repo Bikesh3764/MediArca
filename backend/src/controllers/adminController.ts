@@ -53,7 +53,11 @@ export const getStats = async (req: AuthRequest, res: Response): Promise<void> =
     });
   } catch (error: any) {
     console.error('getStats error:', error);
-    res.status(500).json({ success: false, message: 'Failed to retrieve stats', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve stats',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
   }
 };
 
@@ -81,7 +85,11 @@ export const getDoctorsList = async (req: AuthRequest, res: Response): Promise<v
     res.json({ success: true, count: formattedDoctors.length, data: formattedDoctors });
   } catch (error: any) {
     console.error('getDoctorsList error:', error);
-    res.status(500).json({ success: false, message: 'Failed to retrieve doctors', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve doctors',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
   }
 };
 
@@ -130,7 +138,11 @@ export const verifyDoctor = async (req: AuthRequest, res: Response): Promise<voi
     });
   } catch (error: any) {
     console.error('verifyDoctor error:', error);
-    res.status(500).json({ success: false, message: 'Failed to update doctor verification status', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update doctor verification status',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
   }
 };
 
@@ -148,7 +160,11 @@ export const getAllAppointments = async (_req: AuthRequest, res: Response): Prom
     res.json({ success: true, count: appointments.length, data: appointments });
   } catch (error: any) {
     console.error('getAllAppointments error:', error);
-    res.status(500).json({ success: false, message: 'Failed to retrieve appointments', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve appointments',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
   }
 };
 
@@ -179,7 +195,11 @@ export const getClinicsList = async (_req: AuthRequest, res: Response): Promise<
     res.json({ success: true, count: formattedClinics.length, data: formattedClinics });
   } catch (error: any) {
     console.error('getClinicsList error:', error);
-    res.status(500).json({ success: false, message: 'Failed to retrieve clinics', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve clinics',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
   }
 };
 
@@ -228,6 +248,10 @@ export const verifyClinic = async (req: AuthRequest, res: Response): Promise<voi
     });
   } catch (error: any) {
     console.error('verifyClinic error:', error);
-    res.status(500).json({ success: false, message: 'Failed to update clinic verification status', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update clinic verification status',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
   }
 };

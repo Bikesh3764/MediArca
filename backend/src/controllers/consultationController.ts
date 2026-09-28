@@ -103,7 +103,11 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
     });
   } catch (error: any) {
     console.error('getDoctorQueue error:', error);
-    res.status(500).json({ success: false, message: 'Failed to retrieve doctor queue', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve doctor queue',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
   }
 };
 
@@ -163,11 +167,12 @@ export const callPatient = async (req: AuthRequest, res: Response): Promise<void
       return;
     }
 
-    // Reset any currently IN_CONSULTATION appointments on this date back to WAITING
+    // Reset any currently IN_CONSULTATION appointments on this date back to WAITING at the same practice/clinic
     await prisma.appointment.updateMany({
       where: {
         doctorId: doctor.id,
         appointmentDate: targetAppointment.appointmentDate,
+        clinicId: targetAppointment.clinicId ?? null,
         status: 'IN_CONSULTATION',
       },
       data: { status: 'WAITING' },
@@ -241,6 +246,14 @@ export const updateNotesAndVitals = async (req: AuthRequest, res: Response): Pro
 
     if (!targetAppointment || targetAppointment.doctorId !== doctor.id) {
       res.status(403).json({ success: false, message: 'Appointment does not belong to this doctor' });
+      return;
+    }
+
+    if (['CANCELLED', 'REJECTED', 'PENDING_APPROVAL'].includes(targetAppointment.status)) {
+      res.status(400).json({
+        success: false,
+        message: `Cannot update clinical notes for an appointment with status '${targetAppointment.status}'.`,
+      });
       return;
     }
 

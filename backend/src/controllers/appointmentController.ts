@@ -96,7 +96,7 @@ export const getQueuePreview = async (req: AuthRequest, res: Response): Promise<
         doctorId: doctor.id,
         appointmentDate: dateStr,
         ...(selectedAffiliation?.clinicId ? { clinicId: selectedAffiliation.clinicId } : {}),
-        status: { in: ['WAITING', 'IN_CONSULTATION', 'COMPLETED'] },
+        status: { in: ['PENDING_APPROVAL', 'WAITING', 'IN_CONSULTATION', 'COMPLETED'] },
       },
       select: {
         id: true,
@@ -216,7 +216,11 @@ export const getQueuePreview = async (req: AuthRequest, res: Response): Promise<
     });
   } catch (error: any) {
     console.error('getQueuePreview error:', error);
-    res.status(500).json({ success: false, message: 'Failed to calculate queue preview', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to calculate queue preview',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
   }
 };
 
@@ -473,7 +477,7 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
               doctorId: doctor.id,
               appointmentDate,
               ...(targetClinicId ? { clinicId: targetClinicId } : {}),
-              status: { in: ['WAITING', 'IN_CONSULTATION', 'COMPLETED'] },
+              status: { in: ['PENDING_APPROVAL', 'WAITING', 'IN_CONSULTATION', 'COMPLETED'] },
             },
             select: {
               id: true,
@@ -831,7 +835,11 @@ export const getPatientAppointments = async (req: AuthRequest, res: Response): P
     res.json({ success: true, count: enrichedAppointments.length, data: enrichedAppointments });
   } catch (error: any) {
     console.error('getPatientAppointments error:', error);
-    res.status(500).json({ success: false, message: 'Failed to fetch appointments', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch appointments',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
   }
 };
 

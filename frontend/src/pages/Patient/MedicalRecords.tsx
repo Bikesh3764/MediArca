@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { api, MedicalRecord, getFileUrl } from '../../services/api';
+import { api, MedicalRecord, getFileUrl, getMedicalRecordFileUrl } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { DashboardLayout, DashboardNavItem } from '../../components/layout/DashboardLayout';
 import { AppleButton } from '../../components/ui/AppleButton';
@@ -199,7 +199,7 @@ export const MedicalRecords: React.FC = () => {
                       Preview
                     </AppleButton>
                     <a
-                      href={getFileUrl(rec.fileUrl)}
+                      href={getMedicalRecordFileUrl(rec.id, rec.fileUrl)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="p-1.5 text-[#86868b] hover:text-[#0088e8] transition-colors rounded-full hover:bg-gray-100"
@@ -229,7 +229,7 @@ export const MedicalRecords: React.FC = () => {
               </div>
               <div className="flex items-center gap-2">
                 <a
-                  href={getFileUrl(previewRecord.fileUrl)}
+                  href={getMedicalRecordFileUrl(previewRecord.id, previewRecord.fileUrl)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-1 text-xs text-[#0088e8] hover:underline font-medium px-2 py-1"
@@ -249,13 +249,13 @@ export const MedicalRecords: React.FC = () => {
             <div className="flex-1 overflow-auto p-4 bg-[#f5f5f7] flex items-center justify-center min-h-[350px]">
               {isImageFile(previewRecord) ? (
                 <img
-                  src={getFileUrl(previewRecord.fileUrl)}
+                  src={getMedicalRecordFileUrl(previewRecord.id, previewRecord.fileUrl)}
                   alt={previewRecord.title}
                   className="max-w-full max-h-[70vh] object-contain rounded-xl shadow-sm bg-white"
                 />
               ) : (
                 <iframe
-                  src={getFileUrl(previewRecord.fileUrl)}
+                  src={getMedicalRecordFileUrl(previewRecord.id, previewRecord.fileUrl)}
                   title={previewRecord.title}
                   className="w-full h-[70vh] rounded-xl border border-[#e5e5ea] bg-white shadow-sm"
                 />

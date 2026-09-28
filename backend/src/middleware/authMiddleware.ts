@@ -62,6 +62,32 @@ export const authenticate = (req: AuthRequest, res: Response, next: NextFunction
   }
 };
 
+/**
+ * Optional authentication: decodes Bearer token or query token if provided,
+ * attaching req.user, but proceeds cleanly without error if unauthenticated.
+ */
+export const optionalAuthenticate = (req: AuthRequest, _res: Response, next: NextFunction): void => {
+  let token: string | undefined;
+
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.split(' ')[1];
+  } else if (req.query && typeof req.query.token === 'string') {
+    token = req.query.token;
+  }
+
+  if (token) {
+    try {
+      const secret = getJwtSecret();
+      const decoded = jwt.verify(token, secret) as AuthenticatedUser;
+      req.user = decoded;
+    } catch {
+      // Ignored for optional authentication
+    }
+  }
+  next();
+};
+
 export const authorize = (...roles: string[]) => {
   return (req: AuthRequest, res: Response, next: NextFunction): void => {
     if (!req.user) {
