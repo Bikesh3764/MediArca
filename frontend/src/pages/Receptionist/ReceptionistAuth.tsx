@@ -64,8 +64,8 @@ export const ReceptionistAuth: React.FC = () => {
   const handlePasswordChangeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (newPassword.length < 6) {
-      setError('New password must be at least 6 characters long.');
+    if (newPassword.length < 8) {
+      setError('New password must be at least 8 characters long.');
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -80,9 +80,13 @@ export const ReceptionistAuth: React.FC = () => {
         newPassword,
       });
 
-      // Update auth user in context
-      if (res?.user) {
-        updateUser({ ...res.user, mustChangePassword: false });
+      // Synchronize fresh session token and auth context (Finding H2)
+      if (res?.token) {
+        localStorage.setItem('mediarca_token', res.token);
+      }
+      const targetUser = res?.user || res?.data;
+      if (targetUser) {
+        updateUser({ ...targetUser, mustChangePassword: false });
       } else {
         const currentUser = await api.getMe();
         updateUser({ ...currentUser, mustChangePassword: false });
@@ -149,8 +153,8 @@ export const ReceptionistAuth: React.FC = () => {
       return;
     }
 
-    if (applyPassword.length < 6) {
-      setError('Password must be at least 6 characters.');
+    if (applyPassword.length < 8) {
+      setError('Password must be at least 8 characters.');
       return;
     }
 
@@ -221,12 +225,12 @@ export const ReceptionistAuth: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
-                  New Permanent Password (min. 6 characters)
+                  New Permanent Password (min. 8 characters)
                 </label>
                 <input
                   type="password"
                   required
-                  minLength={6}
+                  minLength={8}
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   placeholder="••••••••"
@@ -241,7 +245,7 @@ export const ReceptionistAuth: React.FC = () => {
                 <input
                   type="password"
                   required
-                  minLength={6}
+                  minLength={8}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="••••••••"
@@ -444,14 +448,14 @@ export const ReceptionistAuth: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
-                  Choose Account Password * (min. 6 characters)
+                  Choose Account Password * (min. 8 characters)
                 </label>
                 <div className="relative">
                   <Lock className="w-4 h-4 text-[#86868b] absolute left-3.5 top-3.5" />
                   <input
                     type="password"
                     required
-                    minLength={6}
+                    minLength={8}
                     value={applyPassword}
                     onChange={(e) => setApplyPassword(e.target.value)}
                     placeholder="••••••••"

@@ -52,6 +52,38 @@ export const getMyClinic = async (req: AuthRequest, res: Response): Promise<void
       return;
     }
 
+    // Gate operational and patient data if clinic is suspended or rejected (Finding M2)
+    const isSuspendedOrRejected =
+      clinic.verificationStatus === 'SUSPENDED' || clinic.verificationStatus === 'REJECTED';
+
+    if (isSuspendedOrRejected) {
+      res.json({
+        success: true,
+        data: {
+          clinic: {
+            id: clinic.id,
+            clinicName: clinic.clinicName,
+            address: clinic.address,
+            city: clinic.city,
+            phone: clinic.phone,
+            isVerified: clinic.isVerified,
+            verificationStatus: clinic.verificationStatus,
+            createdAt: clinic.createdAt,
+          },
+          doctors: [],
+          incomingRequests: [],
+          outgoingRequests: [],
+          receptionists: [],
+          incomingReceptionists: [],
+          totalDoctors: 0,
+          totalBookings: 0,
+          totalRevenue: 0,
+          recentAppointments: [],
+        },
+      });
+      return;
+    }
+
     // Fetch all appointments linked to this clinic
     const clinicAppointments = await prisma.appointment.findMany({
       where: { clinicId: clinic.id },
@@ -84,11 +116,14 @@ export const getMyClinic = async (req: AuthRequest, res: Response): Promise<void
     // Compute stats per doctor specifically for THIS clinic (active doctors only)
     const doctorStats = activeDoctorAffiliations.map((cd) => {
       const docAppointments = clinicAppointments.filter((a) => a.doctorId === cd.doctorId);
-      const activeOrCompleted = docAppointments.filter((a) => a.status !== 'CANCELLED');
+      // Finding F1: Count revenue only on completed consultations or paid transactions
+      const paidOrCompleted = docAppointments.filter(
+        (a) => a.paymentStatus === 'PAID' || a.status === 'COMPLETED'
+      );
       const bookingCount = docAppointments.length;
       const completedCount = docAppointments.filter((a) => a.status === 'COMPLETED').length;
       const effectiveFee = cd.consultationFee ?? cd.doctor.consultationFee ?? 0;
-      const revenue = activeOrCompleted.length * effectiveFee;
+      const revenue = paidOrCompleted.length * effectiveFee;
 
       return {
         affiliationId: cd.id,

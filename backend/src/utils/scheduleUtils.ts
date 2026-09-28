@@ -328,13 +328,14 @@ export const validateDoctorSlots = (
       };
     }
 
-    const maxPatients = Math.floor(Number(s.maxPatients));
-    if (isNaN(maxPatients) || maxPatients < 1) {
+    const rawMax = Number(s.maxPatients);
+    if (!Number.isFinite(rawMax) || Math.floor(rawMax) < 1 || Math.floor(rawMax) > 500) {
       return {
         valid: false,
-        error: `Slot ${i + 1} maxPatients must be a positive integer (at least 1 patient).`,
+        error: `Slot ${i + 1} maxPatients must be a finite integer between 1 and 500 patients.`,
       };
     }
+    const maxPatients = Math.floor(rawMax);
 
     const slotId = String(s.id || `slot_${i + 1}`).trim();
     if (seenIds.has(slotId)) {
@@ -348,7 +349,9 @@ export const validateDoctorSlots = (
     const { avgConsultationMinutes: calculatedAvg } = calculateSlotMetrics(sTime, eTime, maxPatients);
     const customAvg = Number(s.avgConsultationMinutes);
     const avgConsultationMinutes =
-      !isNaN(customAvg) && customAvg > 0 ? Math.round(customAvg * 10) / 10 : calculatedAvg;
+      Number.isFinite(customAvg) && customAvg >= 0.5 && customAvg <= 180
+        ? Math.round(customAvg * 10) / 10
+        : calculatedAvg;
 
     formatted.push({
       id: slotId,
@@ -374,5 +377,82 @@ export const validateDoctorSlots = (
   }
 
   return { valid: true, formatted };
+};
+
+/**
+ * Validates doctor numeric credentials and schedule boundaries (Finding M7 & M8)
+ * Enforces Number.isFinite() and realistic clinical bounds.
+ */
+export const validateDoctorNumericBounds = (data: {
+  experienceYears?: any;
+  consultationFee?: any;
+  avgConsultationMinutes?: any;
+  maxDailyPatients?: any;
+}): {
+  valid: boolean;
+  error?: string;
+  sanitized: {
+    experienceYears: number;
+    consultationFee: number;
+    avgConsultationMinutes: number;
+    maxDailyPatients: number;
+  };
+} => {
+  let experienceYears = 1;
+  if (data.experienceYears !== undefined && data.experienceYears !== null && data.experienceYears !== '') {
+    const rawExp = Number(data.experienceYears);
+    if (!Number.isFinite(rawExp) || rawExp < 0 || rawExp > 75) {
+      return {
+        valid: false,
+        error: 'Experience must be a valid number between 0 and 75 years.',
+        sanitized: { experienceYears: 1, consultationFee: 50, avgConsultationMinutes: 15, maxDailyPatients: 30 },
+      };
+    }
+    experienceYears = Math.floor(rawExp);
+  }
+
+  let consultationFee = 50;
+  if (data.consultationFee !== undefined && data.consultationFee !== null && data.consultationFee !== '') {
+    const rawFee = Number(data.consultationFee);
+    if (!Number.isFinite(rawFee) || rawFee < 0 || rawFee > 100000) {
+      return {
+        valid: false,
+        error: 'Consultation fee must be a valid number between 0 and 100,000.',
+        sanitized: { experienceYears, consultationFee: 50, avgConsultationMinutes: 15, maxDailyPatients: 30 },
+      };
+    }
+    consultationFee = Math.round(rawFee * 100) / 100;
+  }
+
+  let avgConsultationMinutes = 15;
+  if (data.avgConsultationMinutes !== undefined && data.avgConsultationMinutes !== null && data.avgConsultationMinutes !== '') {
+    const rawAvg = Number(data.avgConsultationMinutes);
+    if (!Number.isFinite(rawAvg) || rawAvg < 1 || rawAvg > 180) {
+      return {
+        valid: false,
+        error: 'Average consultation time must be a valid number between 1 and 180 minutes.',
+        sanitized: { experienceYears, consultationFee, avgConsultationMinutes: 15, maxDailyPatients: 30 },
+      };
+    }
+    avgConsultationMinutes = Math.round(rawAvg * 10) / 10;
+  }
+
+  let maxDailyPatients = 30;
+  if (data.maxDailyPatients !== undefined && data.maxDailyPatients !== null && data.maxDailyPatients !== '') {
+    const rawMax = Number(data.maxDailyPatients);
+    if (!Number.isFinite(rawMax) || rawMax < 1 || rawMax > 500) {
+      return {
+        valid: false,
+        error: 'Daily patient capacity must be a valid number between 1 and 500.',
+        sanitized: { experienceYears, consultationFee, avgConsultationMinutes, maxDailyPatients: 30 },
+      };
+    }
+    maxDailyPatients = Math.floor(rawMax);
+  }
+
+  return {
+    valid: true,
+    sanitized: { experienceYears, consultationFee, avgConsultationMinutes, maxDailyPatients },
+  };
 };
 

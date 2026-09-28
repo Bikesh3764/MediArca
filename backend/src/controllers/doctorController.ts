@@ -400,6 +400,13 @@ export const getDoctorAffiliations = async (req: AuthRequest, res: Response): Pr
       return;
     }
 
+    // Gate affiliation operations if doctor is suspended or unverified (Finding M3)
+    const docCheck = isDoctorEligibleForClinicalPractice(doctor);
+    if (!docCheck.eligible) {
+      res.status(403).json({ success: false, message: docCheck.reason });
+      return;
+    }
+
     // Partition affiliations by status & direction
     const activeClinics = doctor.clinics.filter(
       (cd) => cd.status === 'ACCEPTED' || cd.status === 'ACTIVE'
@@ -421,9 +428,12 @@ export const getDoctorAffiliations = async (req: AuthRequest, res: Response): Pr
           },
         });
 
-        const activeOrCompleted = appointmentsAtClinic.filter((a) => a.status !== 'CANCELLED');
+        // Finding F2: Count revenue only on completed consultations or paid transactions
+        const paidOrCompleted = appointmentsAtClinic.filter(
+          (a) => a.paymentStatus === 'PAID' || a.status === 'COMPLETED'
+        );
         const clinicFee = (cd as any).consultationFee ?? doctor.consultationFee;
-        const revenue = activeOrCompleted.length * clinicFee;
+        const revenue = paidOrCompleted.length * clinicFee;
 
         let clinicSlots = parseDoctorSlots(doctor);
         if ((cd as any).slots) {

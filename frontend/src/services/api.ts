@@ -13,6 +13,10 @@ export const getFileUrl = (filePath?: string): string => {
   if (filePath.startsWith('data:') || filePath.startsWith('http://') || filePath.startsWith('https://')) return filePath;
   if (filePath.startsWith('r2://')) {
     const clean = filePath.replace(/^r2:\/\//, '');
+    // Clinical documents (under records/) must never be exposed via public CDN URL
+    if (clean.startsWith('records/')) {
+      return '';
+    }
     const r2PublicUrl =
       (typeof import.meta !== 'undefined' && import.meta.env?.VITE_R2_PUBLIC_URL) ||
       'https://pub-a590817d9f404eb889f6482b025ea9ad.r2.dev';
@@ -27,7 +31,10 @@ export const getMedicalRecordFileUrl = (recordId: string): string => {
 };
 
 export const fetchMedicalRecordBlob = async (recordId: string): Promise<Blob> => {
-  const token = typeof localStorage !== 'undefined' ? localStorage.getItem('token') : null;
+  const token =
+    typeof localStorage !== 'undefined'
+      ? localStorage.getItem('mediarca_token') || localStorage.getItem('token')
+      : null;
   const headers: Record<string, string> = {};
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;

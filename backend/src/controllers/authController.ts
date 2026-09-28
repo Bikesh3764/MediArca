@@ -6,7 +6,7 @@ import { OAuth2Client } from 'google-auth-library';
 import prisma from '../config/database';
 import { AuthRequest, getJwtSecret } from '../middleware/authMiddleware';
 import { uploadToR2, deleteFromR2, isR2Configured } from '../config/r2';
-import { isValidDobDate, validateDoctorSlots, timeToMinutes } from '../utils/scheduleUtils';
+import { isValidDobDate, validateDoctorSlots, timeToMinutes, validateDoctorNumericBounds } from '../utils/scheduleUtils';
 import { validateMagicBytes } from '../middleware/uploadMiddleware';
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -93,6 +93,36 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         include: { patientProfile: true },
       });
     } else if (normalizedRole === 'DOCTOR') {
+      // Centrally validate doctor schedule and numerical credentials (Finding M7 & M8)
+      const startTime = String(profileData.checkingStartTime || '09:00').trim();
+      const endTime = String(profileData.checkingEndTime || '13:00').trim();
+      const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
+      if (!timeRegex.test(startTime) || !timeRegex.test(endTime)) {
+        res.status(400).json({
+          success: false,
+          message: 'Invalid shift hours format. Practice times must be in 24-hour HH:mm format (e.g. 09:00, 13:00).',
+        });
+        return;
+      }
+      if (timeToMinutes(endTime) <= timeToMinutes(startTime)) {
+        res.status(400).json({
+          success: false,
+          message: 'Shift end time must be after shift start time.',
+        });
+        return;
+      }
+
+      const numBounds = validateDoctorNumericBounds({
+        experienceYears: profileData.experienceYears,
+        consultationFee: profileData.consultationFee,
+        avgConsultationMinutes: profileData.avgConsultationMinutes,
+        maxDailyPatients: profileData.maxDailyPatients,
+      });
+      if (!numBounds.valid) {
+        res.status(400).json({ success: false, message: numBounds.error });
+        return;
+      }
+
       newUser = await prisma.user.create({
         data: {
           email: email.toLowerCase().trim(),
@@ -104,14 +134,15 @@ export const register = async (req: Request, res: Response): Promise<void> => {
             create: {
               specialty: profileData.specialty || 'General Physician',
               qualifications: profileData.qualifications || 'MBBS',
-              experienceYears: Number(profileData.experienceYears) || 1,
-              consultationFee: Number(profileData.consultationFee) || 50.0,
+              experienceYears: numBounds.sanitized.experienceYears,
+              consultationFee: numBounds.sanitized.consultationFee,
               bio: profileData.bio || 'Dedicated healthcare practitioner.',
               clinicAddress: profileData.clinicAddress || 'MediArca Clinic Center',
               isVerified: false, // Requires admin approval
-              checkingStartTime: profileData.checkingStartTime || '09:00',
-              checkingEndTime: profileData.checkingEndTime || '13:00',
-              avgConsultationMinutes: Number(profileData.avgConsultationMinutes) || 15,
+              checkingStartTime: startTime,
+              checkingEndTime: endTime,
+              avgConsultationMinutes: numBounds.sanitized.avgConsultationMinutes,
+              maxDailyPatients: numBounds.sanitized.maxDailyPatients,
             },
           },
         },
@@ -461,8 +492,18 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
       const safeDoctorData: any = {};
       if (specialty !== undefined) safeDoctorData.specialty = String(specialty).trim();
       if (qualifications !== undefined) safeDoctorData.qualifications = String(qualifications).trim();
-      if (experienceYears !== undefined) safeDoctorData.experienceYears = Math.max(0, Math.floor(Number(experienceYears) || 0));
-      if (consultationFee !== undefined) safeDoctorData.consultationFee = Math.max(0, Math.round((Number(consultationFee) || 0) * 100) / 100);
+      const numBounds = validateDoctorNumericBounds({
+        experienceYears,
+        consultationFee,
+        avgConsultationMinutes,
+        maxDailyPatients,
+      });
+      if (!numBounds.valid) {
+        res.status(400).json({ success: false, message: numBounds.error });
+        return;
+      }
+      if (experienceYears !== undefined) safeDoctorData.experienceYears = numBounds.sanitized.experienceYears;
+      if (consultationFee !== undefined) safeDoctorData.consultationFee = numBounds.sanitized.consultationFee;
       if (bio !== undefined) safeDoctorData.bio = bio ? String(bio).trim() : null;
       if (clinicAddress !== undefined) safeDoctorData.clinicAddress = clinicAddress ? String(clinicAddress).trim() : null;
       
@@ -490,8 +531,8 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
         }
       }
 
-      if (avgConsultationMinutes !== undefined) safeDoctorData.avgConsultationMinutes = Math.max(1, Math.floor(Number(avgConsultationMinutes) || 15));
-      if (maxDailyPatients !== undefined) safeDoctorData.maxDailyPatients = Math.max(1, Math.floor(Number(maxDailyPatients) || 30));
+      if (avgConsultationMinutes !== undefined) safeDoctorData.avgConsultationMinutes = numBounds.sanitized.avgConsultationMinutes;
+      if (maxDailyPatients !== undefined) safeDoctorData.maxDailyPatients = numBounds.sanitized.maxDailyPatients;
       
       if (slots !== undefined) {
         let parsed: any[] = [];

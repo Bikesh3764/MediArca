@@ -492,7 +492,12 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
           // Pessimistic concurrency control: lock practitioner row for this booking
           try {
             await tx.$executeRaw`SELECT id FROM "DoctorProfile" WHERE id = ${doctor.id} FOR UPDATE;`;
-          } catch {}
+          } catch (lockErr: any) {
+            if (process.env.NODE_ENV === 'production') {
+              console.error('Failed to acquire pessimistic lock on DoctorProfile in bookAppointment:', lockErr);
+              throw new Error('CONCURRENCY_LOCK_FAILURE: Failed to acquire scheduling lock for practitioner. Please try again.');
+            }
+          }
 
           // Re-verify duplicate booking inside the transaction
           if (req.user?.role === 'PATIENT') {
@@ -644,7 +649,29 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
     });
   } catch (error: any) {
     console.error('bookAppointment error:', error);
-    res.status(500).json({ success: false, message: error.message || 'Failed to book appointment' });
+    const msg = error?.message || '';
+    if (msg.startsWith('DUPLICATE_ACTIVE_BOOKING:')) {
+      const cleanMsg = msg.replace('DUPLICATE_ACTIVE_BOOKING:', '').trim();
+      res.status(409).json({ success: false, message: cleanMsg });
+      return;
+    }
+    if (msg.includes('reached its maximum patient capacity')) {
+      res.status(409).json({ success: false, message: msg });
+      return;
+    }
+    if (msg.includes('already ended for today')) {
+      res.status(400).json({ success: false, message: msg });
+      return;
+    }
+    if (msg.startsWith('CONCURRENCY_LOCK_FAILURE:')) {
+      res.status(503).json({ success: false, message: 'Practitioner schedule is busy with concurrent reservations. Please retry in a moment.' });
+      return;
+    }
+    res.status(500).json({
+      success: false,
+      message: 'Failed to book appointment. Please try again.',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
   }
 };
 

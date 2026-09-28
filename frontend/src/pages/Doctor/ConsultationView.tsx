@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { api, Appointment, getFileUrl, getMedicalRecordFileUrl } from '../../services/api';
+import { api, Appointment } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { SubNav } from '../../components/layout/SubNav';
 import { AppleButton } from '../../components/ui/AppleButton';

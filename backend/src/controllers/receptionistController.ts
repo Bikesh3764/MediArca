@@ -1,7 +1,8 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 import prisma from '../config/database';
-import { AuthRequest } from '../middleware/authMiddleware';
+import { AuthRequest, getJwtSecret } from '../middleware/authMiddleware';
 import crypto from 'crypto';
 import {
   parseDoctorSlots,
@@ -508,7 +509,12 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
           // Pessimistic concurrency control: lock practitioner row for this booking
           try {
             await tx.$executeRaw`SELECT id FROM "DoctorProfile" WHERE id = ${doctor.id} FOR UPDATE;`;
-          } catch {}
+          } catch (lockErr: any) {
+            if (process.env.NODE_ENV === 'production') {
+              console.error('Failed to acquire pessimistic lock on DoctorProfile in walk-in booking:', lockErr);
+              throw new Error('CONCURRENCY_LOCK_FAILURE: Failed to acquire scheduling lock for practitioner. Please try again.');
+            }
+          }
 
           // Duplicate booking check within transaction (Finding H7)
           const existingInTx = await tx.appointment.findFirst({
@@ -630,9 +636,27 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
     });
   } catch (error: any) {
     console.error('bookWalkin error:', error);
+    const msg = error?.message || '';
+    if (msg.startsWith('DUPLICATE_ACTIVE_BOOKING:')) {
+      const cleanMsg = msg.replace('DUPLICATE_ACTIVE_BOOKING:', '').trim();
+      res.status(409).json({ success: false, message: cleanMsg });
+      return;
+    }
+    if (msg.includes('reached its maximum patient capacity')) {
+      res.status(409).json({ success: false, message: msg });
+      return;
+    }
+    if (msg.includes('already ended for today')) {
+      res.status(400).json({ success: false, message: msg });
+      return;
+    }
+    if (msg.startsWith('CONCURRENCY_LOCK_FAILURE:')) {
+      res.status(503).json({ success: false, message: 'Practitioner schedule is busy with concurrent reservations. Please retry in a moment.' });
+      return;
+    }
     res.status(500).json({
       success: false,
-      message: 'Failed to book walk-in appointment',
+      message: 'Failed to book walk-in appointment. Please try again.',
       ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
     });
   }
@@ -773,10 +797,26 @@ export const changeReceptionistPassword = async (req: AuthRequest, res: Response
     });
 
     const { passwordHash: _, ...safeUser } = updatedUser;
+
+    const token = jwt.sign(
+      {
+        id: updatedUser.id,
+        userId: updatedUser.id,
+        email: updatedUser.email,
+        fullName: updatedUser.fullName,
+        role: updatedUser.role,
+        mustChangePassword: false,
+      },
+      getJwtSecret(),
+      { expiresIn: '7d' }
+    );
+
     res.json({
       success: true,
       message: 'Password updated successfully. Desk access unlocked.',
+      token,
       data: safeUser,
+      user: safeUser,
     });
   } catch (error: any) {
     console.error('changeReceptionistPassword error:', error);

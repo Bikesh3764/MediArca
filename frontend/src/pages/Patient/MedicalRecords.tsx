@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { api, MedicalRecord, getFileUrl, getMedicalRecordFileUrl } from '../../services/api';
+import { api, MedicalRecord, getMedicalRecordFileUrl } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { DashboardLayout, DashboardNavItem } from '../../components/layout/DashboardLayout';
 import { AppleButton } from '../../components/ui/AppleButton';

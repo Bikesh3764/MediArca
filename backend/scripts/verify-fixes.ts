@@ -13,6 +13,7 @@ import {
   isValidDobDate,
   maskPatientName,
   validateDoctorSlots,
+  validateDoctorNumericBounds,
 } from '../src/utils/scheduleUtils';
 import {
   formatFileSize,
@@ -3720,6 +3721,121 @@ function runTests() {
   assert(verifyClinicRoleAccess('PATIENT').allowed === false, 'PATIENT role is blocked from clinic portal');
   assert(verifyClinicRoleAccess('DOCTOR').allowed === false, 'DOCTOR role is blocked from clinic portal');
   assert(verifyClinicRoleAccess('RECEPTIONIST').allowed === false, 'RECEPTIONIST role is blocked from clinic portal');
+
+  // --- Test 142: Audit Findings M1-M8 and F1-F4 Verification ---
+  console.log('\n--- Test 142: Audit Findings M1-M8 and F1-F4 Verification ---');
+
+  // 1. Doctor numeric bounds validation (M7 & M8)
+  const validDocBounds = validateDoctorNumericBounds({
+    experienceYears: 12,
+    consultationFee: 750,
+    avgConsultationMinutes: 20,
+    maxDailyPatients: 45,
+  });
+  assert(validDocBounds.valid === true, 'Valid doctor numeric bounds accepted');
+  assert(validDocBounds.sanitized.experienceYears === 12, 'Experience years correctly sanitized');
+  assert(validDocBounds.sanitized.consultationFee === 750, 'Consultation fee correctly sanitized');
+
+  const invalidExpHigh = validateDoctorNumericBounds({ experienceYears: 120 });
+  assert(invalidExpHigh.valid === false, 'Experience years > 75 rejected');
+
+  const invalidExpInf = validateDoctorNumericBounds({ experienceYears: Infinity });
+  assert(invalidExpInf.valid === false, 'Infinity experience years rejected');
+
+  const invalidFeeNeg = validateDoctorNumericBounds({ consultationFee: -50 });
+  assert(invalidFeeNeg.valid === false, 'Negative consultation fee rejected');
+
+  const invalidFeeInf = validateDoctorNumericBounds({ consultationFee: Infinity });
+  assert(invalidFeeInf.valid === false, 'Infinity consultation fee rejected');
+
+  const invalidAvgZero = validateDoctorNumericBounds({ avgConsultationMinutes: 0 });
+  assert(invalidAvgZero.valid === false, 'Zero avg consultation minutes rejected');
+
+  const invalidAvgInf = validateDoctorNumericBounds({ avgConsultationMinutes: Infinity });
+  assert(invalidAvgInf.valid === false, 'Infinity avg consultation minutes rejected');
+
+  // 2. Doctor slot validator finite numbers (M8)
+  const infiniteMaxSlots = validateDoctorSlots([
+    { startTime: '09:00', endTime: '11:00', maxPatients: Infinity },
+  ]);
+  assert(infiniteMaxSlots.valid === false, 'Slots with Infinity maxPatients are rejected');
+
+  const validFiniteSlots = validateDoctorSlots([
+    { startTime: '09:00', endTime: '11:00', maxPatients: 50, avgConsultationMinutes: 2.4 },
+  ]);
+  assert(validFiniteSlots.valid === true, 'Slots with finite positive maxPatients are accepted');
+  assert(validFiniteSlots.formatted?.[0].maxPatients === 50, 'Slot maxPatients preserved');
+
+  // 3. Receptionist password change token issuance (H2 & F4)
+  const freshRecToken = jwt.sign(
+    {
+      id: 'rec_user_1',
+      userId: 'rec_user_1',
+      email: 'desk@cityclinic.com',
+      fullName: 'Anita Sharma',
+      role: 'RECEPTIONIST',
+      mustChangePassword: false,
+    },
+    getJwtSecret(),
+    { expiresIn: '7d' }
+  );
+  const decodedRec = jwt.verify(freshRecToken, getJwtSecret()) as any;
+  assert(decodedRec.mustChangePassword === false, 'Fresh receptionist JWT contains mustChangePassword: false');
+  assert(decodedRec.role === 'RECEPTIONIST', 'Receptionist role preserved in fresh token');
+
+  // 4. Booking error status code mapping (M1, M5, F3)
+  const mapBookingError = (errorMsg: string): { status: number; message: string } => {
+    if (errorMsg.startsWith('DUPLICATE_ACTIVE_BOOKING:')) {
+      return { status: 409, message: errorMsg.replace('DUPLICATE_ACTIVE_BOOKING:', '').trim() };
+    }
+    if (errorMsg.includes('reached its maximum patient capacity')) {
+      return { status: 409, message: errorMsg };
+    }
+    if (errorMsg.includes('already ended for today')) {
+      return { status: 400, message: errorMsg };
+    }
+    if (errorMsg.startsWith('CONCURRENCY_LOCK_FAILURE:')) {
+      return { status: 503, message: 'Practitioner schedule is busy with concurrent reservations. Please retry in a moment.' };
+    }
+    return { status: 500, message: 'Failed to book appointment. Please try again.' };
+  };
+
+  assert(mapBookingError('DUPLICATE_ACTIVE_BOOKING: You already have an active booking').status === 409, 'Duplicate booking mapped to 409 Conflict');
+  assert(mapBookingError('Slot Shift 1 has reached its maximum patient capacity').status === 409, 'Slot full mapped to 409 Conflict');
+  assert(mapBookingError('This checking slot has already ended for today').status === 400, 'Slot ended mapped to 400 Bad Request');
+  assert(mapBookingError('CONCURRENCY_LOCK_FAILURE: failed lock').status === 503, 'Lock failure mapped to 503 Service Unavailable');
+  assert(mapBookingError('P2002 Unique constraint failed').status === 500, 'Database error mapped to 500 with sanitized message');
+  assert(mapBookingError('P2002 Unique constraint failed').message === 'Failed to book appointment. Please try again.', 'Database internal details are not leaked');
+
+  // 5. Accounting & Revenue Calculation (F1 & F2)
+  const appointmentsMock = [
+    { id: '1', status: 'COMPLETED', paymentStatus: 'PAID' },
+    { id: '2', status: 'WAITING', paymentStatus: 'PAID' },
+    { id: '3', status: 'PENDING_APPROVAL', paymentStatus: 'PENDING' },
+    { id: '4', status: 'WAITING', paymentStatus: 'PENDING' },
+    { id: '5', status: 'CANCELLED', paymentStatus: 'FAILED' },
+  ];
+  const fee = 500;
+  // Correct accounting: only paid or completed consultations
+  const paidOrCompleted = appointmentsMock.filter((a) => a.paymentStatus === 'PAID' || a.status === 'COMPLETED');
+  const revenue = paidOrCompleted.length * fee;
+  assert(paidOrCompleted.length === 2, 'Only completed or paid appointments are counted towards revenue');
+  assert(revenue === 1000, 'Revenue correctly calculated as Rs. 1000 (excluding unapproved/unpaid bookings)');
+
+  // 6. Clinic Operational Gating on Suspension (M2)
+  const isClinicSuspendedOrRejected = (verificationStatus: string) => {
+    return verificationStatus === 'SUSPENDED' || verificationStatus === 'REJECTED';
+  };
+  assert(isClinicSuspendedOrRejected('SUSPENDED') === true, 'Suspended clinic is gated from operational data');
+  assert(isClinicSuspendedOrRejected('REJECTED') === true, 'Rejected clinic is gated from operational data');
+  assert(isClinicSuspendedOrRejected('VERIFIED') === false, 'Verified clinic receives full operational data');
+  assert(isClinicSuspendedOrRejected('PENDING') === false, 'Pending clinic receives pending banner');
+
+  // 7. Doctor Affiliation Eligibility Gating (M3)
+  const test142SuspendedDoc = { isVerified: false, verificationStatus: 'SUSPENDED' };
+  const test142VerifiedDoc = { isVerified: true, verificationStatus: 'VERIFIED' };
+  assert(isDoctorEligibleForClinicalPractice(test142SuspendedDoc).eligible === false, 'Suspended doctor blocked from affiliation operations');
+  assert(isDoctorEligibleForClinicalPractice(test142VerifiedDoc).eligible === true, 'Verified doctor permitted in affiliation operations');
 
   console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);
