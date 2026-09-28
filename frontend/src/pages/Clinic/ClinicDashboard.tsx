@@ -770,7 +770,7 @@ export const ClinicDashboard: React.FC = () => {
                           setApprovingRec({ id: rec.id, fullName: rec.fullName, email: rec.email });
                           setApprovalDoctorIds([]);
                         }}
-                        className="px-3.5 py-1.5 rounded-full text-xs font-semibold text-white bg-[#0088e8] hover:bg-[#0077cc] shadow-2xs transition-all active:scale-[0.98] disabled:opacity-50 flex items-center gap-1.5"
+                        className="px-3.5 py-1.5 rounded-full text-xs font-semibold text-white bg-gradient-to-r from-[#0088e8] to-[#10b981] hover:from-[#0284c7] hover:to-[#059669] shadow-xs transition-all active:scale-[0.98] disabled:opacity-50 flex items-center gap-1.5"
                       >
                         <Check className="w-3.5 h-3.5" />
                         Review & Assign Doctors

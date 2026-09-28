@@ -126,7 +126,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
               {status === 'PENDING_APPROVAL' ? (
                 <span className="text-lg font-bold tracking-tight text-amber-400">PENDING</span>
               ) : (
-                <span className="text-3xl font-extrabold tracking-tight text-[#0088e8]">#{queueNumber}</span>
+                <span className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-[#0088e8] to-[#10b981] bg-clip-text text-transparent">#{queueNumber}</span>
               )}
             </div>
           </div>
@@ -218,7 +218,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
               <div className="space-y-2">
                 <div className="w-full bg-[#e5e5ea] h-2.5 rounded-full overflow-hidden">
                   <div
-                    className="bg-[#0088e8] h-full transition-all duration-500 rounded-full"
+                    className="bg-gradient-to-r from-[#0088e8] to-[#10b981] h-full transition-all duration-500 rounded-full"
                     style={{
                       width: `${queueNumber > 0 ? Math.min(100, Math.max(10, ((liveQueue.currentServingQueueNumber || 1) / queueNumber) * 100)) : 10}%`,
                     }}

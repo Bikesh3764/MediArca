@@ -133,7 +133,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
         {/* User Capsule Card (Matches media_1789192783321.jpg with soft green tint and Online status) */}
         <div className="bg-[#f0fdf4] border border-[#d1fae5] rounded-2xl p-3 flex items-center gap-3 transition-all hover:bg-[#ecfdf5]">
-          <div className="w-9 h-9 rounded-full bg-[#0d9488] text-white flex items-center justify-center font-bold text-sm shadow-xs flex-shrink-0">
+          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#0088e8] to-[#10b981] text-white flex items-center justify-center font-bold text-sm shadow-xs flex-shrink-0">
             {initialLetter}
           </div>
           <div className="min-w-0 flex-1">
@@ -168,7 +168,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 <div
                   className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-full text-xs font-medium transition-all active:scale-[0.99] ${
                     isItemActive
-                      ? 'bg-[#0088e8]/10 text-[#0088e8] font-semibold shadow-2xs'
+                      ? 'bg-gradient-to-r from-[#0088e8]/10 to-[#10b981]/10 text-[#0088e8] font-semibold shadow-2xs border border-[#0088e8]/15'
                       : 'text-[#48484a] hover:bg-[#f5f5f7] hover:text-[#1d1d1f]'
                   }`}
                 >
@@ -185,7 +185,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                       <span
                         className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
                           isItemActive
-                            ? 'bg-[#0088e8] text-white'
+                            ? 'bg-gradient-to-r from-[#0088e8] to-[#10b981] text-white shadow-2xs'
                             : 'bg-[#e5e5ea] text-[#48484a]'
                         }`}
                       >
@@ -193,7 +193,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                       </span>
                     )}
                     {isItemActive && (
-                      <div className="w-1.5 h-1.5 rounded-full bg-[#0088e8]" />
+                      <div className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-[#0088e8] to-[#10b981]" />
                     )}
                   </div>
                 </div>

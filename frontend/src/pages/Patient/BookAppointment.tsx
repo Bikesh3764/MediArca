@@ -351,7 +351,7 @@ export const BookAppointment: React.FC = () => {
                 />
               ) : null}
               <div
-                className={`book-doc-fallback w-full h-full ${doctor.user.avatarUrl ? 'hidden' : 'flex'} items-center justify-center font-bold text-xl text-[#0088e8] bg-gradient-to-br from-blue-50 to-indigo-100/70`}
+                className={`book-doc-fallback w-full h-full ${doctor.user.avatarUrl ? 'hidden' : 'flex'} items-center justify-center font-bold text-xl text-[#0088e8] bg-gradient-to-br from-[#0088e8]/10 to-[#10b981]/15`}
               >
                 {doctor.user.fullName.replace(/^Dr\.\s*/i, '').trim()[0] || 'D'}
               </div>
@@ -361,9 +361,12 @@ export const BookAppointment: React.FC = () => {
                 <h3 className="text-xl font-bold text-[#1d1d1f] tracking-tight">{doctor.user.fullName}</h3>
                 <CheckCircle2 className="w-4 h-4 text-[#0088e8] flex-shrink-0" />
               </div>
-              <p className="text-xs text-[#0088e8] font-medium mt-0.5">
-                {doctor.specialty} • {formatDoctorDegrees(doctor.qualifications)}
-              </p>
+              <div className="flex flex-wrap items-center gap-2 mt-1">
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gradient-to-r from-[#0088e8]/10 to-[#10b981]/10 text-[#0088e8] border border-[#0088e8]/20">
+                  {doctor.specialty}
+                </span>
+                <span className="text-xs text-[#6e6e73] font-medium">{formatDoctorDegrees(doctor.qualifications)}</span>
+              </div>
               {selectedClinic ? (
                 <p className="text-xs text-[#48484a] font-medium flex items-center gap-1.5 mt-1">
                   <Building2 className="w-3.5 h-3.5 text-[#0088e8] flex-shrink-0" />
@@ -412,7 +415,7 @@ export const BookAppointment: React.FC = () => {
                       <span className="text-sm font-bold text-[#1d1d1f] block">
                         {doctor.clinics[0].clinic.clinicName}
                       </span>
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-[#0088e8] text-white">
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-gradient-to-r from-[#0088e8] to-[#10b981] text-white">
                         Selected Venue
                       </span>
                     </div>
@@ -458,7 +461,7 @@ export const BookAppointment: React.FC = () => {
                           <div className="flex items-center justify-between gap-1 mb-1">
                             <span className="text-xs font-bold text-[#1d1d1f] truncate">{c.clinic.clinicName}</span>
                             {isSelected ? (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#0088e8] text-white flex-shrink-0">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gradient-to-r from-[#0088e8] to-[#10b981] text-white flex-shrink-0">
                                 <Check className="w-2.5 h-2.5" />
                                 Selected
                               </span>
@@ -506,7 +509,7 @@ export const BookAppointment: React.FC = () => {
                   onClick={() => setAppointmentDate(getLocalDateString())}
                   className={`px-2.5 py-0.5 rounded-full text-xs font-medium transition-all ${
                     appointmentDate === getLocalDateString()
-                      ? 'bg-[#0088e8] text-white shadow-2xs font-semibold'
+                      ? 'bg-gradient-to-r from-[#0088e8] to-[#10b981] text-white shadow-xs font-semibold'
                       : 'bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f] hover:bg-[#e8e8ed]'
                   }`}
                 >
@@ -517,7 +520,7 @@ export const BookAppointment: React.FC = () => {
                   onClick={() => setAppointmentDate(getTomorrowDateString())}
                   className={`px-2.5 py-0.5 rounded-full text-xs font-medium transition-all ${
                     appointmentDate === getTomorrowDateString()
-                      ? 'bg-[#0088e8] text-white shadow-2xs font-semibold'
+                      ? 'bg-gradient-to-r from-[#0088e8] to-[#10b981] text-white shadow-xs font-semibold'
                       : 'bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f] hover:bg-[#e8e8ed]'
                   }`}
                 >
@@ -574,7 +577,7 @@ export const BookAppointment: React.FC = () => {
                         {cleanShiftName}
                       </span>
                       {isSelected && !slotPassed && (
-                        <span className="w-4 h-4 rounded-full bg-[#0088e8] text-white flex items-center justify-center flex-shrink-0">
+                        <span className="w-4 h-4 rounded-full bg-gradient-to-r from-[#0088e8] to-[#10b981] text-white flex items-center justify-center flex-shrink-0">
                           <Check className="w-2.5 h-2.5" />
                         </span>
                       )}
@@ -618,12 +621,12 @@ export const BookAppointment: React.FC = () => {
 
           {/* Queue & Schedule Reservation Banner */}
           {queuePreview && (
-            <div className="my-5 p-5 rounded-[22px] bg-gradient-to-br from-blue-50/70 via-white to-sky-50/40 border border-[#0088e8]/20 shadow-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 transition-all">
+            <div className="my-5 p-5 rounded-[22px] bg-gradient-to-br from-[#0088e8]/5 via-white to-[#10b981]/5 border border-[#0088e8]/25 shadow-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 transition-all">
               <div>
                 <span className="text-[10px] uppercase font-bold text-[#0088e8] tracking-wider block">
                   Provisional Queue Allocation
                 </span>
-                <strong className="text-2xl sm:text-3xl font-bold text-[#1d1d1f] tracking-tight block mt-0.5">
+                <strong className="text-2xl sm:text-3xl font-extrabold tracking-tight bg-gradient-to-r from-[#0088e8] to-[#10b981] bg-clip-text text-transparent block mt-0.5">
                   Queue #{queuePreview.nextQueueNumber}
                 </strong>
                 <p className="text-xs text-[#6e6e73] mt-1 flex items-center gap-1.5 font-medium">

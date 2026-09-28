@@ -172,7 +172,7 @@ export const Home: React.FC = () => {
         <div className="max-w-4xl mx-auto text-center">
           {/* Role Aware Status Bar */}
           {user ? (
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#f0fdf4] border border-[#d1fae5] text-xs font-semibold text-[#059669] mb-6 shadow-xs">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-[#0088e8]/10 to-[#10b981]/10 border border-[#0088e8]/20 text-xs font-semibold text-[#0088e8] mb-6 shadow-xs">
               <BrandLogo variant="icon" size="xs" />
               <span>
                 Welcome back, {user.fullName?.split(' ')[0] || user.fullName} •{' '}
@@ -188,14 +188,14 @@ export const Home: React.FC = () => {
               </span>
             </div>
           ) : (
-            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#f0f9ff] border border-[#e0f2fe] text-xs font-medium text-[#0088e8] mb-6 shadow-xs">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-[#0088e8]/10 to-[#10b981]/10 border border-[#0088e8]/20 text-xs font-semibold text-[#0088e8] mb-6 shadow-xs">
               <BrandLogo variant="icon" size="xs" />
               <span>Live Queue • Zero Wait Guesswork</span>
             </div>
           )}
 
           <h1 className="text-3xl sm:text-5xl md:text-6xl font-semibold text-[#1d1d1f] tracking-tight leading-[1.1] mb-4">
-            Healthcare. Organized with clinical clarity.
+            Healthcare. <span className="bg-gradient-to-r from-[#0088e8] to-[#10b981] bg-clip-text text-transparent">Organized with clinical clarity.</span>
           </h1>
 
           <p className="text-base sm:text-lg font-normal text-[#86868b] max-w-2xl mx-auto leading-relaxed mb-8">
@@ -476,7 +476,7 @@ export const Home: React.FC = () => {
 
                     {/* Specialty & Qualifications */}
                     <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-[#86868b]">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#0088e8]/10 text-[#0088e8]">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gradient-to-r from-[#0088e8]/10 to-[#10b981]/10 text-[#0088e8] border border-[#0088e8]/20">
                         {doctor.specialty}
                       </span>
                       <span className="font-medium text-[#48484a]">{cleanDegrees}</span>

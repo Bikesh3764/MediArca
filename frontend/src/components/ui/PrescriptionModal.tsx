@@ -59,8 +59,9 @@ export const PrescriptionModal: React.FC<PrescriptionModalProps> = ({ appointmen
             <span className="text-[#86868b] block">Date of Consultation</span>
             <strong className="text-[14px] text-[#1d1d1f] block mt-0.5">{appointmentDate}</strong>
             <span className="text-[#86868b] block mt-2">Queue Token</span>
-            <span className="inline-block bg-[#1d1d1f] text-white px-2.5 py-0.5 rounded text-xs font-semibold">
-              Queue #{queueNumber}
+            <span className="inline-block bg-[#1d1d1f] px-3 py-1 rounded-full text-xs font-bold border border-black/10 shadow-2xs">
+              <span className="text-white/60 mr-1 text-[11px] font-normal uppercase">Queue</span>
+              <span className="bg-gradient-to-r from-[#0088e8] to-[#10b981] bg-clip-text text-transparent">#{queueNumber}</span>
             </span>
           </div>
         </div>

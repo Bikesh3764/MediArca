@@ -26,7 +26,7 @@
 }
 
 .apple-pill-primary {
-  @apply apple-pill-btn bg-[#0088e8] hover:bg-[#0077cc] text-white shadow-xs;
+  @apply apple-pill-btn bg-gradient-to-r from-[#0088e8] to-[#10b981] hover:from-[#0284c7] hover:to-[#059669] text-white shadow-xs hover:shadow;
 }
 
 .apple-pill-secondary {
@@ -43,6 +43,21 @@
 
 .apple-card-hover {
   @apply apple-card hover:border-[#0088e8]/30 hover:shadow-apple-card;
+}
+
+/* MediArca Signature Brand Theme Utilities */
+.mediarca-gradient {
+  background: linear-gradient(135deg, #0088e8 0%, #10b981 100%);
+}
+
+.mediarca-text-gradient {
+  background: linear-gradient(135deg, #0088e8 0%, #10b981 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.mediarca-badge {
+  @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-[#0088e8]/10 to-[#10b981]/10 text-[#0088e8] border border-[#0088e8]/20;
 }
 
 .apple-frosted {

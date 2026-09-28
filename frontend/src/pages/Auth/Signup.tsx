@@ -148,7 +148,7 @@ export const Signup: React.FC = () => {
             onClick={() => setRole('PATIENT')}
             className={`flex-1 py-2 rounded-full text-xs font-medium transition-all flex items-center justify-center gap-2 ${
               role === 'PATIENT'
-                ? 'bg-[#0088e8] text-white shadow-xs font-semibold'
+                ? 'bg-gradient-to-r from-[#0088e8] to-[#10b981] text-white shadow-xs font-semibold'
                 : 'text-[#86868b] hover:text-[#1d1d1f]'
             }`}
           >
@@ -160,7 +160,7 @@ export const Signup: React.FC = () => {
             onClick={() => setRole('DOCTOR')}
             className={`flex-1 py-2 rounded-full text-xs font-medium transition-all flex items-center justify-center gap-2 ${
               role === 'DOCTOR'
-                ? 'bg-[#0088e8] text-white shadow-xs font-semibold'
+                ? 'bg-gradient-to-r from-[#0088e8] to-[#10b981] text-white shadow-xs font-semibold'
                 : 'text-[#86868b] hover:text-[#1d1d1f]'
             }`}
           >

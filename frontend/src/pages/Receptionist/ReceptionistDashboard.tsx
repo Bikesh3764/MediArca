@@ -1100,7 +1100,7 @@ export const ReceptionistDashboard: React.FC = () => {
                                   appt.status === 'COMPLETED'
                                     ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                                     : appt.status === 'IN_CONSULTATION'
-                                    ? 'bg-[#0088e8]/10 text-[#0088e8] border border-[#0088e8]/20'
+                                    ? 'bg-gradient-to-r from-[#0088e8]/10 to-[#10b981]/10 text-[#0088e8] border border-[#0088e8]/20'
                                     : appt.status === 'WAITING'
                                     ? 'bg-amber-50 text-amber-700 border border-amber-200'
                                     : 'bg-gray-100 text-gray-600'
@@ -1115,7 +1115,7 @@ export const ReceptionistDashboard: React.FC = () => {
                                 {appt.status === 'WAITING' && (
                                   <button
                                     onClick={() => handleStatusChange(appt.id, 'IN_CONSULTATION')}
-                                    className="px-3 py-1 rounded-full bg-[#0088e8] text-white text-[11px] font-medium hover:bg-[#0077cc] shadow-2xs transition-all active:scale-[0.98] cursor-pointer"
+                                    className="px-3 py-1 rounded-full bg-gradient-to-r from-[#0088e8] to-[#10b981] hover:from-[#0284c7] hover:to-[#059669] text-white text-[11px] font-semibold shadow-xs transition-all active:scale-[0.98] cursor-pointer"
                                   >
                                     Call In
                                   </button>
@@ -1183,7 +1183,7 @@ export const ReceptionistDashboard: React.FC = () => {
                     Front-desk staff have queue management and walk-in dispatch permissions for these practitioners as assigned by your Clinic Administrator.
                   </p>
                 </div>
-                <span className="text-xs font-semibold px-3 py-1 rounded-full bg-[#0088e8]/10 text-[#0088e8] border border-[#0088e8]/20 self-start sm:self-auto">
+                <span className="text-xs font-semibold px-3 py-1 rounded-full bg-gradient-to-r from-[#0088e8]/10 to-[#10b981]/10 text-[#0088e8] border border-[#0088e8]/20 self-start sm:self-auto">
                   {linkedDoctors.length} Assigned
                 </span>
               </div>

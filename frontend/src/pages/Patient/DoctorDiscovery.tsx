@@ -226,7 +226,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
                       />
                     ) : null}
                     <div
-                      className={`doc-fallback w-full h-full ${doctor.user.avatarUrl ? 'hidden' : 'flex'} items-center justify-center font-bold text-lg text-[#0088e8] bg-gradient-to-br from-blue-50 to-indigo-100/70`}
+                      className={`doc-fallback w-full h-full ${doctor.user.avatarUrl ? 'hidden' : 'flex'} items-center justify-center font-bold text-lg text-[#0088e8] bg-gradient-to-br from-[#0088e8]/10 to-[#10b981]/15`}
                     >
                       {doctor.user.fullName.replace(/^Dr\.\s*/i, '').trim()[0] || 'D'}
                     </div>
@@ -251,7 +251,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
 
                     {/* Specialty & Qualifications */}
                     <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-[#86868b]">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#0088e8]/10 text-[#0088e8]">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gradient-to-r from-[#0088e8]/10 to-[#10b981]/10 text-[#0088e8] border border-[#0088e8]/20">
                         {doctor.specialty}
                       </span>
                       <span className="font-medium text-[#48484a]">{cleanDegrees}</span>
@@ -355,7 +355,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
         subtitle="Browse verified practitioners, compare checking shifts, and book instant queue tokens"
         headerAction={
           <div className="flex items-center gap-2">
-            <span className="text-xs px-3 py-1 rounded-full bg-[#0088e8]/10 text-[#0088e8] font-medium border border-[#0088e8]/20">
+            <span className="text-xs px-3 py-1 rounded-full bg-gradient-to-r from-[#0088e8]/10 to-[#10b981]/10 text-[#0088e8] font-semibold border border-[#0088e8]/20">
               {doctors.length} Specialist{doctors.length === 1 ? '' : 's'} Available
             </span>
             <AppleButton
