@@ -507,7 +507,7 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
         newAppointment = await prisma.$transaction(async (tx) => {
           // Pessimistic concurrency control: lock practitioner row for this booking
           try {
-            await tx.$executeRawUnsafe(`SELECT id FROM "DoctorProfile" WHERE id = '${doctor.id}' FOR UPDATE;`);
+            await tx.$executeRaw`SELECT id FROM "DoctorProfile" WHERE id = ${doctor.id} FOR UPDATE;`;
           } catch {}
 
           // Duplicate booking check within transaction (Finding H7)
@@ -870,8 +870,14 @@ export const getPendingAppointments = async (req: AuthRequest, res: Response): P
       orderBy: { createdAt: 'desc' },
     });
 
-    const enriched = pendingAppointments.map((appt) => {
-      const cd = (appt.doctor as any)?.clinics?.[0];
+    const eligibleAppointments = pendingAppointments.filter(
+      (appt) => isDoctorEligibleForClinicalPractice(appt.doctor).eligible
+    );
+
+    const enriched = eligibleAppointments.map((appt) => {
+      const cd =
+        (appt.doctor as any)?.clinics?.find((c: any) => c.clinicId === appt.clinicId) ||
+        (appt.doctor as any)?.clinics?.[0];
       const fee = cd?.consultationFee ?? appt.doctor.consultationFee;
       return {
         ...appt,
@@ -958,7 +964,7 @@ export const approveAppointment = async (req: AuthRequest, res: Response): Promi
         updated = await prisma.$transaction(async (tx) => {
           // Pessimistic concurrency control: lock practitioner row for this approval
           try {
-            await tx.$executeRawUnsafe(`SELECT id FROM "DoctorProfile" WHERE id = '${appointment.doctorId}' FOR UPDATE;`);
+            await tx.$executeRaw`SELECT id FROM "DoctorProfile" WHERE id = ${appointment.doctorId} FOR UPDATE;`;
           } catch {}
           // Find max positive queue number on this date
           const maxQueueAppt = await tx.appointment.findFirst({
@@ -975,7 +981,9 @@ export const approveAppointment = async (req: AuthRequest, res: Response): Promi
 
           // Recalculate estimated time based on newly assigned token
           let slots = parseDoctorSlots(appointment.doctor);
-          const cd = (appointment.doctor as any)?.clinics?.[0];
+          const cd =
+            (appointment.doctor as any)?.clinics?.find((c: any) => c.clinicId === appointment.clinicId) ||
+            (appointment.doctor as any)?.clinics?.[0];
           if (cd?.slots) {
             try {
               const p = typeof cd.slots === 'string' ? JSON.parse(cd.slots) : cd.slots;

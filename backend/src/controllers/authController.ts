@@ -39,8 +39,14 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    const cleanEmail = email.toLowerCase().trim();
+    if (cleanEmail.endsWith('@mediarca.local') || cleanEmail.startsWith('walkin.')) {
+      res.status(400).json({ success: false, message: 'Reserved domain or prefix cannot be used for registration.' });
+      return;
+    }
+
     const existingUser = await prisma.user.findUnique({
-      where: { email: email.toLowerCase().trim() },
+      where: { email: cleanEmail },
     });
 
     if (existingUser) {
@@ -575,7 +581,20 @@ export const googleAuth = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
+    if (isConfigured && payload.email_verified !== true) {
+      res.status(401).json({ success: false, message: 'Google account email is not verified by Google' });
+      return;
+    }
+
     const email = payload.email.toLowerCase().trim();
+    if (email.endsWith('@mediarca.local') || email.startsWith('walkin.')) {
+      res.status(403).json({
+        success: false,
+        message: 'Walk-in patient accounts cannot authenticate directly. Please register an official account.',
+      });
+      return;
+    }
+
     const fullName = payload.name || email.split('@')[0];
     const avatarUrl = payload.picture || null;
     const normalizedRole = role.toUpperCase() === 'DOCTOR' ? 'DOCTOR' : 'PATIENT';
@@ -729,7 +748,7 @@ export const uploadAvatar = async (req: AuthRequest, res: Response): Promise<voi
 
     let avatarUrl: string;
     if (isR2Configured() && file.buffer) {
-      avatarUrl = await uploadToR2(file.buffer, key, file.mimetype || 'image/jpeg');
+      avatarUrl = await uploadToR2(file.buffer, key, file.mimetype || 'image/jpeg', false);
     } else if (file.buffer) {
       avatarUrl = `data:${file.mimetype || 'image/jpeg'};base64,${file.buffer.toString('base64')}`;
     } else {

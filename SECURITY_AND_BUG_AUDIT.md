@@ -594,19 +594,19 @@ The audit should be considered a static engineering assessment. A production rea
 
 # Post-Remediation Status Update (2026-09-28)
 
-All remaining findings from the third re-audit (H1–H8, M1–M12, L1–L2) have now been remediated:
+All remaining findings from the third re-audit (H1–H8, M1–M12, L1–L2) and subsequent deep verification rounds have now been remediated:
 
 1. **H1 & H2 (Medical Records & Tokens)**: Private R2 storage with streaming backend proxy; JWT query string support removed; frontend uses authenticated Blob retrieval.
-2. **H3 (Walk-in Security)**: Unpredictable 64-char random hex passwords; UUID-derived email; direct login blocked for walk-in domains.
-3. **H4 & H5 (Eligibility & Assignments)**: Centralized `authGuards.ts` enforces active doctor, active receptionist, and active clinic affiliation.
+2. **H3 (Walk-in Security)**: Unpredictable 64-char random hex passwords; UUID-derived email; direct login and registration strictly blocked for synthetic walk-in domains/prefixes.
+3. **H4 & H5 (Eligibility & Assignments)**: Centralized `authGuards.ts` enforces active doctor, active receptionist, and active clinic affiliation; facility scope checks strictly enforced.
 4. **H6 (Record Access)**: Limited to active/completed doctor-patient care relationships.
 5. **H7 (Concurrency)**: Database row-level pessimistic locking (`SELECT ... FOR UPDATE`) and in-tx duplicate booking prevention.
-6. **H8 (Clinic Schedules)**: Strict requirement for active clinic and active doctor affiliation.
+6. **H8 (Clinic Schedules & Affiliations)**: Strict requirement for active clinic and active doctor affiliation; directionality and self-cancellation allowed; strict action validation ('ACCEPT' | 'REJECT') and status gating.
 7. **M1 (Startup DDL)**: Guarded by environment flags.
 8. **M2 (Data Leakage)**: Explicit user projections across all controllers, eliminating passwordHash.
-9. **M3–M11, L1–L2**: Centralized date checks, strict status machine transitions, strict CORS allowlist, sanitized health responses, and bounded path traversal defense.
+9. **M3–M11, L1–L2**: Centralized date checks, strict status machine transitions, multi-clinic fee/slot resolution, strict CORS allowlist, sanitized health responses, and bounded path traversal defense.
 
 **Verification Results:**
-- Backend verification suite: **671 passed, 0 failed**.
+- Backend verification suite: **723 passed, 0 failed** across 140 test suites.
 - Backend build: **Clean (0 errors)**.
 - Frontend build: **Clean (0 errors)**.

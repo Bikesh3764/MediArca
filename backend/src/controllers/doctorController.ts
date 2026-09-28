@@ -8,6 +8,7 @@ import {
   maskPatientName,
   validateDoctorSlots,
 } from '../utils/scheduleUtils';
+import { isDoctorEligibleForClinicalPractice } from '../utils/authGuards';
 
 export const formatDoctorClinics = (doc: any) => {
   return (doc.clinics || []).map((cd: any) => {
@@ -215,11 +216,9 @@ export const updateSchedule = async (req: AuthRequest, res: Response): Promise<v
       return;
     }
 
-    if (!doctor.isVerified || doctor.verificationStatus === 'SUSPENDED' || doctor.verificationStatus === 'REJECTED') {
-      res.status(403).json({
-        success: false,
-        message: 'Doctor account is not active, pending verification, or suspended from clinical practice.',
-      });
+    const docCheck = isDoctorEligibleForClinicalPractice(doctor);
+    if (!docCheck.eligible) {
+      res.status(403).json({ success: false, message: docCheck.reason });
       return;
     }
 
@@ -527,11 +526,9 @@ export const addDoctorClinic = async (req: AuthRequest, res: Response): Promise<
       return;
     }
 
-    if (!doctor.isVerified || doctor.verificationStatus === 'SUSPENDED' || doctor.verificationStatus === 'REJECTED') {
-      res.status(403).json({
-        success: false,
-        message: 'Doctor account is not active, pending verification, or suspended from clinical practice.',
-      });
+    const docCheck = isDoctorEligibleForClinicalPractice(doctor);
+    if (!docCheck.eligible) {
+      res.status(403).json({ success: false, message: docCheck.reason });
       return;
     }
 
@@ -655,11 +652,15 @@ export const respondToClinicAffiliation = async (req: AuthRequest, res: Response
       return;
     }
 
-    if (!doctor.isVerified || doctor.verificationStatus === 'SUSPENDED' || doctor.verificationStatus === 'REJECTED') {
-      res.status(403).json({
-        success: false,
-        message: 'Doctor account is not active, pending verification, or suspended from clinical practice.',
-      });
+    const docCheck = isDoctorEligibleForClinicalPractice(doctor);
+    if (!docCheck.eligible) {
+      res.status(403).json({ success: false, message: docCheck.reason });
+      return;
+    }
+
+    const normalizedAction = String(action || '').trim().toUpperCase();
+    if (!['ACCEPT', 'REJECT'].includes(normalizedAction)) {
+      res.status(400).json({ success: false, message: 'Action must be either ACCEPT or REJECT' });
       return;
     }
 
@@ -676,7 +677,15 @@ export const respondToClinicAffiliation = async (req: AuthRequest, res: Response
       return;
     }
 
-    if (affiliation.requestedBy === 'DOCTOR') {
+    if (affiliation.status !== 'PENDING') {
+      res.status(400).json({
+        success: false,
+        message: `Affiliation request is already ${affiliation.status.toLowerCase()}. Only pending requests can be responded to.`,
+      });
+      return;
+    }
+
+    if (normalizedAction === 'ACCEPT' && affiliation.requestedBy === 'DOCTOR') {
       res.status(403).json({
         success: false,
         message: 'Cannot accept an affiliation request initiated by yourself. Awaiting clinic approval.',
@@ -686,7 +695,7 @@ export const respondToClinicAffiliation = async (req: AuthRequest, res: Response
 
     const clinicName = affiliation.clinic.clinicName;
 
-    if (action.toUpperCase() === 'ACCEPT') {
+    if (normalizedAction === 'ACCEPT') {
       const updated = await prisma.clinicDoctor.update({
         where: { id: affiliation.id },
         data: { status: 'ACCEPTED' },
@@ -732,11 +741,9 @@ export const removeDoctorClinic = async (req: AuthRequest, res: Response): Promi
       return;
     }
 
-    if (!doctor.isVerified || doctor.verificationStatus === 'SUSPENDED' || doctor.verificationStatus === 'REJECTED') {
-      res.status(403).json({
-        success: false,
-        message: 'Doctor account is not active, pending verification, or suspended from clinical practice.',
-      });
+    const docCheck = isDoctorEligibleForClinicalPractice(doctor);
+    if (!docCheck.eligible) {
+      res.status(403).json({ success: false, message: docCheck.reason });
       return;
     }
 
@@ -801,11 +808,9 @@ export const removeDoctorReceptionist = async (req: AuthRequest, res: Response):
       return;
     }
 
-    if (!doctor.isVerified || doctor.verificationStatus === 'SUSPENDED' || doctor.verificationStatus === 'REJECTED') {
-      res.status(403).json({
-        success: false,
-        message: 'Doctor account is not active, pending verification, or suspended from clinical practice.',
-      });
+    const docCheck = isDoctorEligibleForClinicalPractice(doctor);
+    if (!docCheck.eligible) {
+      res.status(403).json({ success: false, message: docCheck.reason });
       return;
     }
 

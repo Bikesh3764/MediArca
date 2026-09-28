@@ -153,6 +153,13 @@ export const verifyReceptionistDoctorAccess = async (
 
   // 4. Clinic affiliation check
   let clinic = null;
+  if (clinicId && receptionist.clinicId !== clinicId) {
+    return {
+      authorized: false,
+      reason: 'Access denied: Requested appointment or operation belongs to a different clinic facility.',
+    };
+  }
+
   if (receptionist.clinicId) {
     clinic = await prisma.clinicProfile.findUnique({
       where: { id: receptionist.clinicId },
@@ -161,13 +168,6 @@ export const verifyReceptionistDoctorAccess = async (
     const clinicCheck = isClinicActive(clinic);
     if (!clinicCheck.active) {
       return { authorized: false, reason: clinicCheck.reason };
-    }
-
-    if (clinicId && clinicId !== receptionist.clinicId) {
-      return {
-        authorized: false,
-        reason: 'Access denied: Requested appointment or operation belongs to a different clinic facility.',
-      };
     }
 
     const affiliation = await prisma.clinicDoctor.findUnique({

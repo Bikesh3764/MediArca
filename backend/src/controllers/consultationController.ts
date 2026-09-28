@@ -3,6 +3,7 @@ import prisma from '../config/database';
 import { AuthRequest } from '../middleware/authMiddleware';
 import { getLocalDateString } from '../utils/scheduleUtils';
 import { canTransition } from '../utils/appointmentStateMachine';
+import { isDoctorEligibleForClinicalPractice } from '../utils/authGuards';
 
 export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -20,11 +21,9 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
       return;
     }
 
-    if (!doctor.isVerified || doctor.verificationStatus === 'SUSPENDED' || doctor.verificationStatus === 'REJECTED') {
-      res.status(403).json({
-        success: false,
-        message: 'Doctor account is not active, pending verification, or suspended from clinical practice.',
-      });
+    const docCheck = isDoctorEligibleForClinicalPractice(doctor);
+    if (!docCheck.eligible) {
+      res.status(403).json({ success: false, message: docCheck.reason });
       return;
     }
 
@@ -133,11 +132,9 @@ export const callPatient = async (req: AuthRequest, res: Response): Promise<void
       return;
     }
 
-    if (!doctor.isVerified || doctor.verificationStatus === 'SUSPENDED' || doctor.verificationStatus === 'REJECTED') {
-      res.status(403).json({
-        success: false,
-        message: 'Doctor account is not active, pending verification, or suspended from clinical practice.',
-      });
+    const docCheck = isDoctorEligibleForClinicalPractice(doctor);
+    if (!docCheck.eligible) {
+      res.status(403).json({ success: false, message: docCheck.reason });
       return;
     }
 
@@ -233,11 +230,9 @@ export const updateNotesAndVitals = async (req: AuthRequest, res: Response): Pro
       return;
     }
 
-    if (!doctor.isVerified || doctor.verificationStatus === 'SUSPENDED' || doctor.verificationStatus === 'REJECTED') {
-      res.status(403).json({
-        success: false,
-        message: 'Doctor account is not active, pending verification, or suspended from clinical practice.',
-      });
+    const docCheck = isDoctorEligibleForClinicalPractice(doctor);
+    if (!docCheck.eligible) {
+      res.status(403).json({ success: false, message: docCheck.reason });
       return;
     }
 
@@ -309,11 +304,9 @@ export const completeConsultation = async (req: AuthRequest, res: Response): Pro
       return;
     }
 
-    if (!doctor.isVerified || doctor.verificationStatus === 'SUSPENDED' || doctor.verificationStatus === 'REJECTED') {
-      res.status(403).json({
-        success: false,
-        message: 'Doctor account is not active, pending verification, or suspended from clinical practice.',
-      });
+    const docCheck = isDoctorEligibleForClinicalPractice(doctor);
+    if (!docCheck.eligible) {
+      res.status(403).json({ success: false, message: docCheck.reason });
       return;
     }
 

@@ -17,7 +17,7 @@ import {
 import crypto from 'crypto';
 import { canTransition } from '../utils/appointmentStateMachine';
 import { formatIndianPhone, sanitizeIndianPhone } from '../utils/phoneUtils';
-import { verifyReceptionistDoctorAccess, isDoctorEligibleForClinicalPractice } from '../utils/authGuards';
+import { verifyReceptionistDoctorAccess, isDoctorEligibleForClinicalPractice, isClinicActive } from '../utils/authGuards';
 
 // Helper to calculate estimated time given start time "09:00" and offset minutes (retained for backward compatibility)
 export const calculateEstimatedTime = (startTime24: string, offsetMinutes: number): string => {
@@ -381,10 +381,11 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
       return;
     }
 
-    if (!doctor.isVerified || doctor.verificationStatus === 'SUSPENDED' || doctor.verificationStatus === 'REJECTED') {
+    const docCheck = isDoctorEligibleForClinicalPractice(doctor);
+    if (!docCheck.eligible) {
       res.status(403).json({
         success: false,
-        message: 'This doctor is not currently verified or practice is suspended. Bookings are unavailable.',
+        message: docCheck.reason || 'This doctor is not currently verified or practice is suspended. Bookings are unavailable.',
       });
       return;
     }
@@ -490,7 +491,7 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
         newAppointment = await prisma.$transaction(async (tx) => {
           // Pessimistic concurrency control: lock practitioner row for this booking
           try {
-            await tx.$executeRawUnsafe(`SELECT id FROM "DoctorProfile" WHERE id = '${doctor.id}' FOR UPDATE;`);
+            await tx.$executeRaw`SELECT id FROM "DoctorProfile" WHERE id = ${doctor.id} FOR UPDATE;`;
           } catch {}
 
           // Re-verify duplicate booking inside the transaction
@@ -678,9 +679,14 @@ export const getAppointmentById = async (req: AuthRequest, res: Response): Promi
       return;
     }
 
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Authentication required' });
+      return;
+    }
+
     // Access control: Doctor of appointment, patient of appointment, Admin, or authorized Clinic/Receptionist
-    if (req.user) {
-      const isDoctor = req.user.role === 'DOCTOR' && appointment.doctor.userId === req.user.id;
+    const docEligible = isDoctorEligibleForClinicalPractice(appointment.doctor).eligible;
+      const isDoctor = req.user.role === 'DOCTOR' && appointment.doctor.userId === req.user.id && docEligible;
       const isPatient = req.user.role === 'PATIENT' && appointment.patient.userId === req.user.id;
       const isAdmin = req.user.role === 'ADMIN';
 
@@ -689,17 +695,11 @@ export const getAppointmentById = async (req: AuthRequest, res: Response): Promi
         const clinic = await prisma.clinicProfile.findUnique({
           where: { userId: req.user.id },
         });
-        isClinicOrRec = Boolean(clinic && clinic.id === appointment.clinicId);
+        const clinicCheck = isClinicActive(clinic);
+        isClinicOrRec = Boolean(clinicCheck.active && clinic && clinic.id === appointment.clinicId);
       } else if (req.user.role === 'RECEPTIONIST') {
-        const rec = await prisma.receptionistProfile.findUnique({
-          where: { userId: req.user.id },
-          include: { doctors: true },
-        });
-        if (rec) {
-          const isDoctorAssigned = rec.doctors.some((d) => d.doctorId === appointment.doctorId);
-          const isSameClinic = !appointment.clinicId || (rec.clinicId && appointment.clinicId === rec.clinicId);
-          isClinicOrRec = Boolean(isDoctorAssigned && isSameClinic);
-        }
+        const access = await verifyReceptionistDoctorAccess(req.user.id, appointment.doctorId, appointment.clinicId);
+        isClinicOrRec = access.authorized;
       }
 
       if (!isDoctor && !isPatient && !isAdmin && !isClinicOrRec) {
@@ -711,7 +711,6 @@ export const getAppointmentById = async (req: AuthRequest, res: Response): Promi
       if (appointment.patient && !isDoctor && !isPatient) {
         delete (appointment.patient as any).medicalRecords;
       }
-    }
 
     res.json({ success: true, data: appointment });
   } catch (error: any) {
@@ -903,9 +902,16 @@ export const cancelAppointment = async (req: AuthRequest, res: Response): Promis
       return;
     }
 
-    if (req.user?.role === 'DOCTOR' && appointment.doctor.userId !== req.user.id) {
-      res.status(403).json({ success: false, message: 'You do not have permission to cancel another doctor\'s appointment' });
-      return;
+    if (req.user?.role === 'DOCTOR') {
+      if (appointment.doctor.userId !== req.user.id) {
+        res.status(403).json({ success: false, message: 'You do not have permission to cancel another doctor\'s appointment' });
+        return;
+      }
+      const docCheck = isDoctorEligibleForClinicalPractice(appointment.doctor);
+      if (!docCheck.eligible) {
+        res.status(403).json({ success: false, message: docCheck.reason });
+        return;
+      }
     }
 
     if (req.user?.role === 'RECEPTIONIST') {
@@ -918,6 +924,11 @@ export const cancelAppointment = async (req: AuthRequest, res: Response): Promis
       const clinic = await prisma.clinicProfile.findUnique({
         where: { userId: req.user.id },
       });
+      const clinicCheck = isClinicActive(clinic);
+      if (!clinicCheck.active) {
+        res.status(403).json({ success: false, message: clinicCheck.reason });
+        return;
+      }
       if (!clinic || appointment.clinicId !== clinic.id) {
         res.status(403).json({ success: false, message: 'You do not have permission to cancel appointments for this clinic' });
         return;

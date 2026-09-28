@@ -408,6 +408,12 @@ export const respondToDoctorAffiliation = async (req: AuthRequest, res: Response
       return;
     }
 
+    const normalizedAction = String(action || '').trim().toUpperCase();
+    if (!['ACCEPT', 'REJECT'].includes(normalizedAction)) {
+      res.status(400).json({ success: false, message: 'Action must be either ACCEPT or REJECT' });
+      return;
+    }
+
     const affiliation = await prisma.clinicDoctor.findFirst({
       where: {
         id: affiliationId,
@@ -425,7 +431,15 @@ export const respondToDoctorAffiliation = async (req: AuthRequest, res: Response
       return;
     }
 
-    if (affiliation.requestedBy === 'CLINIC') {
+    if (affiliation.status !== 'PENDING') {
+      res.status(400).json({
+        success: false,
+        message: `Affiliation request is already ${affiliation.status.toLowerCase()}. Only pending requests can be responded to.`,
+      });
+      return;
+    }
+
+    if (normalizedAction === 'ACCEPT' && affiliation.requestedBy === 'CLINIC') {
       res.status(403).json({
         success: false,
         message: 'Cannot accept an affiliation request initiated by your clinic. Awaiting doctor acceptance.',
@@ -435,7 +449,7 @@ export const respondToDoctorAffiliation = async (req: AuthRequest, res: Response
 
     const docName = affiliation.doctor.user.fullName;
 
-    if (action.toUpperCase() === 'ACCEPT') {
+    if (normalizedAction === 'ACCEPT') {
       const updated = await prisma.clinicDoctor.update({
         where: { id: affiliation.id },
         data: { status: 'ACCEPTED' },

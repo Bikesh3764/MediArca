@@ -32,13 +32,15 @@ export const getR2Client = (): S3Client => {
 };
 
 /**
- * Upload a file buffer to Cloudflare R2 private bucket and return its private vault key (Finding H1).
- * Clinical documents are strictly private and never exposed via public CDN URLs.
+ * Upload a file buffer to Cloudflare R2 bucket.
+ * Clinical documents are strictly private (r2:// key) and never exposed via public CDN URLs (Finding H1).
+ * Avatars and public assets can set isPrivate = false to return the public CDN URL.
  */
 export const uploadToR2 = async (
   fileBuffer: Buffer,
   key: string,
-  contentType: string
+  contentType: string,
+  isPrivate: boolean = true
 ): Promise<string> => {
   if (!isR2Configured()) {
     throw new Error('Cloudflare R2 credentials are not configured in environment variables');
@@ -54,6 +56,10 @@ export const uploadToR2 = async (
 
   const client = getR2Client();
   await client.send(command);
+
+  if (!isPrivate) {
+    return `${R2_PUBLIC_URL}/${cleanKey}`;
+  }
   return `r2://${cleanKey}`;
 };
 

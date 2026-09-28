@@ -11,7 +11,7 @@ import {
   removeClinicReceptionist,
   respondToReceptionistRequest,
 } from '../controllers/clinicController';
-import { authenticate, requireActiveClinic } from '../middleware/authMiddleware';
+import { authenticate, authorize, requireActiveClinic } from '../middleware/authMiddleware';
 
 const router = Router();
 
@@ -19,7 +19,7 @@ const router = Router();
 router.get('/public', getPublicClinics);
 
 // Clinic authenticated operations
-router.use(authenticate);
+router.use(authenticate, authorize('CLINIC'));
 router.get('/my-clinic', getMyClinic);
 
 // Operations strictly requiring verified, non-suspended clinic status (Finding M6)

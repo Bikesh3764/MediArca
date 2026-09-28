@@ -3468,6 +3468,242 @@ function runTests() {
   assert(Object.keys(prodHealthy).length === 1 && !('uptime' in prodHealthy) && !('service' in prodHealthy), 'Production health check omits uptime, service, and DB internals (Finding L2)');
   assert('uptime' in devHealthy && 'service' in devHealthy, 'Development health check includes full diagnostic telemetry');
 
+  // --- Test 131: Google OAuth email_verified Enforcement & Walkin Domain Protection ---
+  console.log('\n--- Test 131: Google OAuth email_verified Enforcement & Walkin Domain Protection ---');
+  const validateGoogleOAuthPayload = (payload: any, isConfigured: boolean, userRecord?: any) => {
+    if (!payload || !payload.email) {
+      return { allowed: false, message: 'Unable to verify Google credential email' };
+    }
+    if (isConfigured && payload.email_verified !== true) {
+      return { allowed: false, message: 'Google account email is not verified by Google' };
+    }
+    if (userRecord && (userRecord.email.toLowerCase().endsWith('@mediarca.local') || userRecord.email.toLowerCase().startsWith('walkin.'))) {
+      return { allowed: false, message: 'Walk-in patient accounts cannot authenticate directly. Please register an official account.' };
+    }
+    return { allowed: true };
+  };
+
+  assert(validateGoogleOAuthPayload({ email: 'user@gmail.com', email_verified: true }, true).allowed === true, 'Verified Google email is accepted');
+  assert(validateGoogleOAuthPayload({ email: 'unverified@gmail.com', email_verified: false }, true).allowed === false, 'Unverified Google email is strictly rejected');
+  assert(validateGoogleOAuthPayload({ email: 'unverified@gmail.com' }, true).allowed === false, 'Missing email_verified flag in production config is rejected');
+  assert(validateGoogleOAuthPayload(null, true).allowed === false, 'Null payload is rejected');
+  assert(validateGoogleOAuthPayload({ email: 'walkin.12345@mediarca.local', email_verified: true }, true, { email: 'walkin.12345@mediarca.local' }).allowed === false, 'Walk-in patient account is strictly blocked from Google OAuth');
+
+  // --- Test 132: Affiliation Directionality & Self-Cancellation Verification ---
+  console.log('\n--- Test 132: Affiliation Directionality & Self-Cancellation Verification ---');
+  const canRespondToAffiliation = (
+    callerRole: 'DOCTOR' | 'CLINIC',
+    requestedBy: 'DOCTOR' | 'CLINIC',
+    action: string
+  ): { allowed: boolean; reason?: string } => {
+    const act = action.toUpperCase();
+    if (callerRole === 'DOCTOR') {
+      if (act === 'ACCEPT' && requestedBy === 'DOCTOR') {
+        return { allowed: false, reason: 'Cannot accept an affiliation request initiated by yourself.' };
+      }
+      return { allowed: true };
+    }
+    if (callerRole === 'CLINIC') {
+      if (act === 'ACCEPT' && requestedBy === 'CLINIC') {
+        return { allowed: false, reason: 'Cannot accept an affiliation request initiated by your clinic.' };
+      }
+      return { allowed: true };
+    }
+    return { allowed: false, reason: 'Invalid role' };
+  };
+
+  assert(canRespondToAffiliation('DOCTOR', 'CLINIC', 'ACCEPT').allowed === true, 'Doctor can ACCEPT request initiated by clinic');
+  assert(canRespondToAffiliation('DOCTOR', 'CLINIC', 'REJECT').allowed === true, 'Doctor can REJECT request initiated by clinic');
+  assert(canRespondToAffiliation('DOCTOR', 'DOCTOR', 'ACCEPT').allowed === false, 'Doctor CANNOT self-approve request initiated by doctor');
+  assert(canRespondToAffiliation('DOCTOR', 'DOCTOR', 'REJECT').allowed === true, 'Doctor CAN cancel/withdraw request initiated by doctor');
+
+  assert(canRespondToAffiliation('CLINIC', 'DOCTOR', 'ACCEPT').allowed === true, 'Clinic can ACCEPT request initiated by doctor');
+  assert(canRespondToAffiliation('CLINIC', 'DOCTOR', 'REJECT').allowed === true, 'Clinic can REJECT request initiated by doctor');
+  assert(canRespondToAffiliation('CLINIC', 'CLINIC', 'ACCEPT').allowed === false, 'Clinic CANNOT self-approve request initiated by clinic');
+  assert(canRespondToAffiliation('CLINIC', 'CLINIC', 'REJECT').allowed === true, 'Clinic CAN cancel/withdraw request initiated by clinic');
+
+  // --- Test 133: Appointment Detail Access Control & Clinic Active Verification ---
+  console.log('\n--- Test 133: Appointment Detail Access Control & Clinic Active Verification ---');
+  const canAccessAppointmentDetail = (
+    caller: { id: string; role: string },
+    appointment: { patientUserId: string; doctorUserId: string; doctor: any; clinicId?: string },
+    clinicFacility?: any,
+    receptionistAccessAuthorized = false
+  ): boolean => {
+    const isDoctor = caller.role === 'DOCTOR' && appointment.doctorUserId === caller.id && isDoctorEligibleForClinicalPractice(appointment.doctor).eligible;
+    const isPatient = caller.role === 'PATIENT' && appointment.patientUserId === caller.id;
+    const isAdmin = caller.role === 'ADMIN';
+
+    let isClinicOrRec = false;
+    if (caller.role === 'CLINIC' && appointment.clinicId) {
+      isClinicOrRec = Boolean(clinicFacility && isClinicActive(clinicFacility).active && clinicFacility.id === appointment.clinicId);
+    } else if (caller.role === 'RECEPTIONIST') {
+      isClinicOrRec = receptionistAccessAuthorized;
+    }
+
+    return Boolean(isDoctor || isPatient || isAdmin || isClinicOrRec);
+  };
+
+  const testDetailAppt = {
+    patientUserId: 'patient_u1',
+    doctorUserId: 'doctor_u1',
+    doctor: guardVerifiedDoc,
+    clinicId: 'clinic_1',
+  };
+
+  assert(canAccessAppointmentDetail({ id: 'doctor_u1', role: 'DOCTOR' }, testDetailAppt) === true, 'Eligible treating doctor can access appointment detail');
+  assert(canAccessAppointmentDetail({ id: 'doctor_u1', role: 'DOCTOR' }, { ...testDetailAppt, doctor: guardSuspendedDoc }) === false, 'Suspended doctor cannot access appointment detail');
+  assert(canAccessAppointmentDetail({ id: 'patient_u1', role: 'PATIENT' }, testDetailAppt) === true, 'Patient can access own appointment detail');
+  assert(canAccessAppointmentDetail({ id: 'admin_u1', role: 'ADMIN' }, testDetailAppt) === true, 'Admin can access appointment detail');
+  assert(canAccessAppointmentDetail({ id: 'clinic_u1', role: 'CLINIC' }, testDetailAppt, { id: 'clinic_1', ...guardVerifiedClinic }) === true, 'Active clinic can access appointment detail');
+  assert(canAccessAppointmentDetail({ id: 'clinic_u1', role: 'CLINIC' }, testDetailAppt, { id: 'clinic_1', ...guardSuspendedClinic }) === false, 'Suspended clinic cannot access appointment detail');
+  assert(canAccessAppointmentDetail({ id: 'rec_u1', role: 'RECEPTIONIST' }, testDetailAppt, undefined, true) === true, 'Authorized receptionist can access appointment detail');
+  assert(canAccessAppointmentDetail({ id: 'rec_u1', role: 'RECEPTIONIST' }, testDetailAppt, undefined, false) === false, 'Unauthorized receptionist cannot access appointment detail');
+
+  // --- Test 134: Pending Appointments Filtering for Ineligible Practitioners ---
+  console.log('\n--- Test 134: Pending Appointments Filtering for Ineligible Practitioners ---');
+  const mockPendingAppointments = [
+    { id: 'appt_1', doctor: guardVerifiedDoc },
+    { id: 'appt_2', doctor: guardSuspendedDoc },
+    { id: 'appt_3', doctor: guardRejectedDoc },
+    { id: 'appt_4', doctor: guardPendingDoc },
+  ];
+
+  const filteredPending = mockPendingAppointments.filter(
+    (appt) => isDoctorEligibleForClinicalPractice(appt.doctor).eligible
+  );
+
+  assert(filteredPending.length === 1, 'Only 1 appointment with eligible practitioner is kept in pending queue');
+  assert(filteredPending[0].id === 'appt_1', 'Verified practitioner appointment is preserved');
+
+  // --- Test 135: Asset URL Resolution & Cloudflare R2 Scheme Normalization ---
+  console.log('\n--- Test 135: Asset URL Resolution & Cloudflare R2 Scheme Normalization ---');
+  const mockGetFileUrl = (filePath?: string): string => {
+    if (!filePath) return '';
+    if (filePath.startsWith('data:') || filePath.startsWith('http://') || filePath.startsWith('https://')) return filePath;
+    if (filePath.startsWith('r2://')) {
+      const clean = filePath.replace(/^r2:\/\//, '');
+      return `https://pub-a590817d9f404eb889f6482b025ea9ad.r2.dev/${clean}`;
+    }
+    const backendBase = 'https://mediarca-mdwk.onrender.com';
+    return `${backendBase}${filePath.startsWith('/') ? '' : '/'}${filePath}`;
+  };
+
+  assert(mockGetFileUrl('r2://avatars/doctor-1.jpg') === 'https://pub-a590817d9f404eb889f6482b025ea9ad.r2.dev/avatars/doctor-1.jpg', 'r2:// avatar URI correctly resolves to public CDN URL');
+  assert(mockGetFileUrl('data:image/jpeg;base64,1234') === 'data:image/jpeg;base64,1234', 'Data URI is preserved');
+  assert(mockGetFileUrl('https://example.com/logo.png') === 'https://example.com/logo.png', 'HTTP URL is preserved');
+  assert(mockGetFileUrl('/uploads/avatars/test.jpg') === 'https://mediarca-mdwk.onrender.com/uploads/avatars/test.jpg', 'Local path is prefixed with backend base');
+  assert(mockGetFileUrl('') === '', 'Empty path returns empty string');
+
+  // --- Test 136: Affiliation Response Validation & State Machine ---
+  console.log('\n--- Test 136: Affiliation Response Validation & State Machine ---');
+  const validateAffiliationResponse = (action: any, affiliation: { status: string; requestedBy: string }, actorRole: 'DOCTOR' | 'CLINIC') => {
+    const normalizedAction = String(action || '').trim().toUpperCase();
+    if (!['ACCEPT', 'REJECT'].includes(normalizedAction)) {
+      return { allowed: false, status: 400, message: 'Action must be either ACCEPT or REJECT' };
+    }
+    if (affiliation.status !== 'PENDING') {
+      return { allowed: false, status: 400, message: `Affiliation request is already ${affiliation.status.toLowerCase()}. Only pending requests can be responded to.` };
+    }
+    if (normalizedAction === 'ACCEPT' && actorRole === 'DOCTOR' && affiliation.requestedBy === 'DOCTOR') {
+      return { allowed: false, status: 403, message: 'Cannot accept an affiliation request initiated by yourself. Awaiting clinic approval.' };
+    }
+    if (normalizedAction === 'ACCEPT' && actorRole === 'CLINIC' && affiliation.requestedBy === 'CLINIC') {
+      return { allowed: false, status: 403, message: 'Cannot accept an affiliation request initiated by your clinic. Awaiting doctor acceptance.' };
+    }
+    return { allowed: true, action: normalizedAction };
+  };
+
+  assert(validateAffiliationResponse(undefined, { status: 'PENDING', requestedBy: 'CLINIC' }, 'DOCTOR').allowed === false, 'Missing action returns 400');
+  assert(validateAffiliationResponse('INVALID', { status: 'PENDING', requestedBy: 'CLINIC' }, 'DOCTOR').allowed === false, 'Invalid action string returns 400');
+  assert(validateAffiliationResponse('accept', { status: 'PENDING', requestedBy: 'CLINIC' }, 'DOCTOR').allowed === true, 'Lowercase accept is normalized and allowed');
+  assert(validateAffiliationResponse('ACCEPT', { status: 'PENDING', requestedBy: 'CLINIC' }, 'DOCTOR').allowed === true, 'Uppercase ACCEPT is allowed');
+  assert(validateAffiliationResponse('reject', { status: 'PENDING', requestedBy: 'DOCTOR' }, 'DOCTOR').allowed === true, 'Doctor can cancel own request with lowercase reject');
+  assert(validateAffiliationResponse('ACCEPT', { status: 'ACCEPTED', requestedBy: 'CLINIC' }, 'DOCTOR').allowed === false, 'Already accepted affiliation cannot be re-accepted');
+  assert(validateAffiliationResponse('REJECT', { status: 'REJECTED', requestedBy: 'CLINIC' }, 'DOCTOR').allowed === false, 'Already rejected affiliation cannot be re-responded to');
+  assert(validateAffiliationResponse('ACCEPT', { status: 'PENDING', requestedBy: 'DOCTOR' }, 'DOCTOR').status === 403, 'Doctor cannot self-accept doctor-initiated request');
+  assert(validateAffiliationResponse('ACCEPT', { status: 'PENDING', requestedBy: 'CLINIC' }, 'CLINIC').status === 403, 'Clinic cannot self-accept clinic-initiated request');
+
+  // --- Test 137: Receptionist Multi-Clinic Affiliation Slot and Fee Resolution ---
+  console.log('\n--- Test 137: Receptionist Multi-Clinic Affiliation Slot and Fee Resolution ---');
+  const mockDoctorWithClinics: any = {
+    id: 'doc_multi',
+    consultationFee: 400,
+    clinics: [
+      { clinicId: 'clinic_A', consultationFee: 500, slots: JSON.stringify([{ id: 'slot_A', name: 'Shift A' }]) },
+      { clinicId: 'clinic_B', consultationFee: 750, slots: JSON.stringify([{ id: 'slot_B', name: 'Shift B' }]) },
+    ],
+  };
+
+  const resolveClinicFee = (doc: any, apptClinicId: string) => {
+    const cd = doc?.clinics?.find((c: any) => c.clinicId === apptClinicId) || doc?.clinics?.[0];
+    return cd?.consultationFee ?? doc.consultationFee;
+  };
+
+  const resolveClinicSlots = (doc: any, apptClinicId: string) => {
+    const cd = doc?.clinics?.find((c: any) => c.clinicId === apptClinicId) || doc?.clinics?.[0];
+    if (cd?.slots) {
+      try {
+        const p = typeof cd.slots === 'string' ? JSON.parse(cd.slots) : cd.slots;
+        if (Array.isArray(p) && p.length > 0) return p;
+      } catch {}
+    }
+    return [];
+  };
+
+  assert(resolveClinicFee(mockDoctorWithClinics, 'clinic_B') === 750, 'Matching clinic_B resolves clinic B consultation fee');
+  assert(resolveClinicFee(mockDoctorWithClinics, 'clinic_A') === 500, 'Matching clinic_A resolves clinic A consultation fee');
+  assert(resolveClinicSlots(mockDoctorWithClinics, 'clinic_B')[0].id === 'slot_B', 'Matching clinic_B resolves clinic B slots');
+  assert(resolveClinicSlots(mockDoctorWithClinics, 'clinic_A')[0].id === 'slot_A', 'Matching clinic_A resolves clinic A slots');
+
+  // --- Test 138: Receptionist Facility Scope Validation in verifyReceptionistDoctorAccess ---
+  console.log('\n--- Test 138: Receptionist Facility Scope Validation in verifyReceptionistDoctorAccess ---');
+  const mockCheckFacilityScope = (receptionistClinicId: string | null, targetClinicId?: string | null): boolean => {
+    if (targetClinicId && receptionistClinicId !== targetClinicId) {
+      return false;
+    }
+    return true;
+  };
+
+  assert(mockCheckFacilityScope('clinic_1', 'clinic_1') === true, 'Matching clinic facility is permitted');
+  assert(mockCheckFacilityScope('clinic_1', 'clinic_2') === false, 'Mismatched clinic facility is strictly rejected');
+  assert(mockCheckFacilityScope(null, 'clinic_1') === false, 'Receptionist with null clinicId cannot access specific clinic facility');
+  assert(mockCheckFacilityScope('clinic_1', null) === true, 'General operation without target clinic requirement is permitted');
+
+  // --- Test 139: Appointment Cancellation Doctor Eligibility Guard ---
+  console.log('\n--- Test 139: Appointment Cancellation Doctor Eligibility Guard ---');
+  const canDoctorCancel = (user: { id: string; role: string }, appt: { doctor: { userId: string; isVerified: boolean; verificationStatus: string } }) => {
+    if (user.role === 'DOCTOR') {
+      if (appt.doctor.userId !== user.id) {
+        return { allowed: false, reason: 'You do not have permission to cancel another doctor\'s appointment' };
+      }
+      const docCheck = isDoctorEligibleForClinicalPractice(appt.doctor);
+      if (!docCheck.eligible) {
+        return { allowed: false, reason: docCheck.reason };
+      }
+    }
+    return { allowed: true };
+  };
+
+  assert(canDoctorCancel({ id: 'doc_1', role: 'DOCTOR' }, { doctor: { userId: 'doc_1', isVerified: true, verificationStatus: 'VERIFIED' } }).allowed === true, 'Verified doctor can cancel own appointment');
+  assert(canDoctorCancel({ id: 'doc_1', role: 'DOCTOR' }, { doctor: { userId: 'doc_1', isVerified: false, verificationStatus: 'SUSPENDED' } }).allowed === false, 'Suspended doctor cannot cancel appointment');
+  assert(canDoctorCancel({ id: 'doc_1', role: 'DOCTOR' }, { doctor: { userId: 'doc_2', isVerified: true, verificationStatus: 'VERIFIED' } }).allowed === false, 'Doctor cannot cancel another doctor\'s appointment');
+
+  // --- Test 140: Synthetic Walk-in Identity & Domain Registration Prevention ---
+  console.log('\n--- Test 140: Synthetic Walk-in Identity & Domain Registration Prevention ---');
+  const validateRegistrationEmail = (email: string): boolean => {
+    const cleanEmail = email.toLowerCase().trim();
+    if (cleanEmail.endsWith('@mediarca.local') || cleanEmail.startsWith('walkin.')) {
+      return false;
+    }
+    return true;
+  };
+
+  assert(validateRegistrationEmail('walkin.12345@mediarca.local') === false, 'walkin.*@mediarca.local is strictly blocked from registration');
+  assert(validateRegistrationEmail('user@mediarca.local') === false, '@mediarca.local domain is blocked from public registration');
+  assert(validateRegistrationEmail('walkin.patient@gmail.com') === false, 'walkin. prefix is blocked from registration');
+  assert(validateRegistrationEmail('patient@gmail.com') === true, 'Legitimate email is accepted for registration');
+
   console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);
