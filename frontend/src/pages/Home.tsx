@@ -33,18 +33,6 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 
-const POPULAR_SPECIALTIES = [
-  'All',
-  'General Medicine',
-  'Cardiology',
-  'Dermatology',
-  'Pediatrics',
-  'Orthopedics',
-  'Neurology',
-  'Gynecology & Obstetrics',
-  'Dentistry',
-];
-
 export const Home: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -296,43 +284,46 @@ export const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* Explore Doctors Catalog - Modern Apple Clinical Grid */}
+      {/* Explore Doctors Catalog - Full Width Modern Apple Grid */}
       <section id="doctors-catalog" className="max-w-7xl mx-auto px-4 sm:px-6 py-10 flex-1 w-full">
         {/* Section Header & Inline Refine Toolbar */}
         <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-5 sm:p-6 mb-8 shadow-xs">
-          {/* Top Title & Quick Controls Row */}
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-[#f0f0f2]">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-[#f0f0f0]">
             <div>
-              <div className="flex items-center gap-2.5">
-                <h2 className="text-xl sm:text-2xl font-bold text-[#1d1d1f] tracking-tight">
-                  {selectedSpecialty === 'All' ? 'Verified Specialists' : `${selectedSpecialty} Specialists`}
-                </h2>
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gradient-to-r from-[#0088e8]/10 to-[#10b981]/10 text-[#0088e8] border border-[#0088e8]/20">
-                  {filteredDoctors.length} {filteredDoctors.length === 1 ? 'practitioner' : 'practitioners'}
-                </span>
-              </div>
-              <p className="text-xs text-[#86868b] mt-1">
-                Real-time practice shifts, verified credentials, and guaranteed queue tokens.
+              <h2 className="text-xl sm:text-2xl font-semibold text-[#1d1d1f] tracking-tight">
+                {selectedSpecialty === 'All' ? 'Verified Specialists' : `${selectedSpecialty} Specialists`}
+              </h2>
+              <p className="text-xs text-[#86868b] mt-0.5">
+                Showing {filteredDoctors.length} available medical practitioner{filteredDoctors.length === 1 ? '' : 's'}
               </p>
             </div>
 
-            {/* Quick Sort & Experience Filter Pills */}
+            {/* Quick Filter & Sort Pills */}
             <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+              {/* Integrated Searchable Specialty Filter Dropdown */}
+              <SearchableSpecialtySelect
+                value={selectedSpecialty}
+                onChange={setSelectedSpecialty}
+                variant="pill"
+                includeAll={true}
+                counts={specialtyCounts}
+              />
+
               <select
                 value={minExperience}
                 onChange={(e) => setMinExperience(Number(e.target.value))}
-                className="h-8.5 px-3.5 rounded-full border border-[#e5e5ea] bg-[#f5f5f7] text-xs text-[#48484a] font-medium focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20 cursor-pointer hover:bg-[#ebebee] transition-all"
+                className="h-8 px-3 rounded-full border border-[#e5e5ea] bg-[#f5f5f7] text-xs text-[#48484a] font-medium focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20 cursor-pointer hover:bg-[#ebebee] transition-all"
               >
                 <option value={0}>All Experience</option>
-                <option value={5}>5+ Years Exp</option>
-                <option value={10}>10+ Years Exp</option>
-                <option value={15}>15+ Years Exp</option>
+                <option value={5}>5+ Years</option>
+                <option value={10}>10+ Years</option>
+                <option value={15}>15+ Years</option>
               </select>
 
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as any)}
-                className="h-8.5 px-3.5 rounded-full border border-[#e5e5ea] bg-[#f5f5f7] text-xs text-[#48484a] font-medium focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20 cursor-pointer hover:bg-[#ebebee] transition-all"
+                className="h-8 px-3 rounded-full border border-[#e5e5ea] bg-[#f5f5f7] text-xs text-[#48484a] font-medium focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20 cursor-pointer hover:bg-[#ebebee] transition-all"
               >
                 <option value="rating">Top Rated ★</option>
                 <option value="experience">Most Experienced</option>
@@ -344,7 +335,7 @@ export const Home: React.FC = () => {
                 <button
                   type="button"
                   onClick={resetFilters}
-                  className="px-3.5 py-1.5 rounded-full text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-all flex items-center gap-1.5 cursor-pointer active:scale-[0.98]"
+                  className="px-3 py-1.5 rounded-full text-xs font-medium text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-all flex items-center gap-1 cursor-pointer active:scale-[0.98]"
                   title="Reset all filters"
                 >
                   <RotateCcw className="w-3 h-3" />
@@ -354,67 +345,15 @@ export const Home: React.FC = () => {
             </div>
           </div>
 
-          {/* Quick Specialty Navigation Pills */}
-          <div className="pt-4 pb-4 border-b border-[#f0f0f2]">
-            <div className="flex items-center justify-between gap-2 mb-2.5">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">
-                Specialty Categories
-              </span>
-              <span className="text-xs text-[#86868b] hidden sm:inline">
-                Tap to filter instantly
-              </span>
-            </div>
-            <div className="flex items-center gap-2 overflow-x-auto pb-1.5 no-scrollbar scroll-smooth">
-              {POPULAR_SPECIALTIES.map((spec) => {
-                const isSelected = selectedSpecialty.toLowerCase() === spec.toLowerCase();
-                const count = specialtyCounts[spec] ?? 0;
-                return (
-                  <button
-                    key={spec}
-                    type="button"
-                    onClick={() => setSelectedSpecialty(spec)}
-                    className={`whitespace-nowrap px-3.5 py-1.5 rounded-full text-xs font-medium transition-all duration-200 cursor-pointer flex items-center gap-1.5 flex-shrink-0 active:scale-[0.97] ${
-                      isSelected
-                        ? 'bg-gradient-to-r from-[#0088e8] to-[#10b981] text-white shadow-xs font-semibold'
-                        : 'bg-[#f5f5f7] hover:bg-[#ebebee] text-[#48484a] border border-[#e5e5ea]'
-                    }`}
-                  >
-                    <span>{spec}</span>
-                    <span
-                      className={`text-[10px] px-1.5 py-0.2 rounded-full font-semibold ${
-                        isSelected
-                          ? 'bg-white/20 text-white'
-                          : 'bg-black/[0.05] text-[#86868b]'
-                      }`}
-                    >
-                      {count}
-                    </span>
-                  </button>
-                );
-              })}
-
-              {/* More Specialties Searchable Dropdown */}
-              <div className="flex-shrink-0">
-                <SearchableSpecialtySelect
-                  value={selectedSpecialty}
-                  onChange={setSelectedSpecialty}
-                  variant="pill"
-                  includeAll={false}
-                  counts={specialtyCounts}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Quick Search & Location Refine Inputs */}
+          {/* Quick Search & Location Inputs */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4">
-            <div className="flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] focus-within:border-[#0088e8] focus-within:ring-2 focus-within:ring-[#0088e8]/20 focus-within:bg-white transition-all">
+            <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] focus-within:border-[#0088e8] focus-within:ring-2 focus-within:ring-[#0088e8]/20 focus-within:bg-white transition-all">
               <Search className="w-4 h-4 text-[#86868b] flex-shrink-0" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Filter by doctor name, condition, or hospital..."
+                placeholder="Filter by doctor name, condition, or clinic..."
                 className="w-full bg-transparent text-xs text-[#1d1d1f] placeholder-[#86868b] focus:outline-none"
               />
               {searchQuery && (
@@ -428,7 +367,7 @@ export const Home: React.FC = () => {
               )}
             </div>
 
-            <div className="flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] focus-within:border-[#0088e8] focus-within:ring-2 focus-within:ring-[#0088e8]/20 focus-within:bg-white transition-all">
+            <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] focus-within:border-[#0088e8] focus-within:ring-2 focus-within:ring-[#0088e8]/20 focus-within:bg-white transition-all">
               <MapPin className="w-4 h-4 text-[#86868b] flex-shrink-0" />
               <input
                 type="text"
@@ -450,13 +389,13 @@ export const Home: React.FC = () => {
           </div>
         </div>
 
-        {/* Doctor Cards Grid - Apple Clinical 3-Column Grid */}
+        {/* Doctor Cards Grid */}
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
+          <div className="flex flex-col gap-4 w-full">
+            {[1, 2, 3].map((i) => (
               <div
                 key={i}
-                className="h-72 rounded-[24px] bg-white border border-[#e5e5ea] animate-pulse p-6"
+                className="h-36 rounded-[24px] bg-white border border-[#e5e5ea] animate-pulse p-6"
               ></div>
             ))}
           </div>
@@ -469,119 +408,109 @@ export const Home: React.FC = () => {
               No specialists matched your criteria
             </h3>
             <p className="text-xs text-[#86868b] max-w-sm mx-auto mb-5">
-              Try clearing your filters or selecting a different specialty category.
+              Try clearing your filters or searching with different keywords to explore available doctors.
             </p>
             <AppleButton variant="secondary" size="sm" onClick={resetFilters}>
               Clear All Filters
             </AppleButton>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
-            {filteredDoctors.map((doctor) => {
-              const slots = parseDoctorSlots(doctor);
-              const getHomeDoctorDetailPath = (docId: string) =>
-                user?.role === 'PATIENT' ? `/patient/doctor/${docId}` : `/doctor/${docId}`;
-              const getHomeDoctorBookPath = (docId: string) =>
-                user?.role === 'PATIENT' ? `/patient/book/${docId}` : `/book/${docId}`;
-              const cleanDegrees = formatDoctorDegrees(doctor.qualifications);
-              const hasClinics = Boolean(doctor.clinics && doctor.clinics.length > 0);
-              const primaryClinic = hasClinics && doctor.clinics ? doctor.clinics[0].clinic : null;
+        <div className="space-y-4 w-full">
+          {filteredDoctors.map((doctor) => {
+            const slots = parseDoctorSlots(doctor);
+            const getHomeDoctorDetailPath = (docId: string) =>
+              user?.role === 'PATIENT' ? `/patient/doctor/${docId}` : `/doctor/${docId}`;
+            const getHomeDoctorBookPath = (docId: string) =>
+              user?.role === 'PATIENT' ? `/patient/book/${docId}` : `/book/${docId}`;
+            const cleanDegrees = formatDoctorDegrees(doctor.qualifications);
+            const hasClinics = Boolean(doctor.clinics && doctor.clinics.length > 0);
+            const primaryClinic = hasClinics && doctor.clinics ? doctor.clinics[0].clinic : null;
 
-              return (
-                <div
-                  key={doctor.id}
-                  className="bg-white rounded-[24px] border border-[#e5e5ea] p-5 sm:p-6 hover:border-[#0088e8]/30 hover:shadow-apple-card transition-all duration-300 flex flex-col justify-between group relative overflow-hidden shadow-2xs"
-                >
-                  {/* Subtle Top Gradient Accent on Hover */}
-                  <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#0088e8] to-[#10b981] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            return (
+              <div
+                key={doctor.id}
+                className="w-full bg-white rounded-[22px] border border-[#e5e5ea] p-5 sm:p-6 hover:border-[#0088e8]/30 hover:shadow-apple-card transition-all duration-200 flex flex-col md:flex-row md:items-center justify-between gap-5 group"
+              >
+                {/* Left Side: Avatar & Practitioner Credentials */}
+                <div className="flex items-start sm:items-center gap-4 min-w-0 flex-1">
+                  {/* Clean Circular Avatar */}
+                  <div
+                    onClick={() => navigate(getHomeDoctorDetailPath(doctor.id))}
+                    className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] overflow-hidden flex-shrink-0 flex items-center justify-center cursor-pointer hover:opacity-90 transition-opacity"
+                  >
+                    {doctor.user.avatarUrl ? (
+                      <img
+                        src={doctor.user.avatarUrl}
+                        alt={doctor.user.fullName}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                          const fallback = e.currentTarget.parentElement?.querySelector('.doc-fallback-home');
+                          if (fallback) (fallback as HTMLElement).style.display = 'flex';
+                        }}
+                      />
+                    ) : null}
+                    <div
+                      className={`doc-fallback-home w-full h-full ${doctor.user.avatarUrl ? 'hidden' : 'flex'} items-center justify-center font-bold text-lg text-[#0088e8] bg-gradient-to-br from-blue-50 to-indigo-100/70`}
+                    >
+                      {doctor.user.fullName.replace(/^Dr\.\s*/i, '').trim()[0] || 'D'}
+                    </div>
+                  </div>
 
-                  {/* Top Details */}
-                  <div>
-                    {/* Avatar & Header Row */}
-                    <div className="flex items-start gap-3.5 mb-3.5">
-                      <div
+                  {/* Doctor Info */}
+                  <div className="min-w-0 flex-1">
+                    {/* Name + Verified Badge + Rating */}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3
                         onClick={() => navigate(getHomeDoctorDetailPath(doctor.id))}
-                        className="w-14 h-14 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] overflow-hidden flex-shrink-0 flex items-center justify-center cursor-pointer group-hover:scale-105 transition-transform shadow-2xs"
+                        className="text-base sm:text-lg font-bold text-[#1d1d1f] hover:text-[#0088e8] cursor-pointer tracking-tight transition-colors"
                       >
-                        {doctor.user.avatarUrl ? (
-                          <img
-                            src={doctor.user.avatarUrl}
-                            alt={doctor.user.fullName}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              e.currentTarget.style.display = 'none';
-                              const fallback = e.currentTarget.parentElement?.querySelector('.doc-fallback-home');
-                              if (fallback) (fallback as HTMLElement).style.display = 'flex';
-                            }}
-                          />
-                        ) : null}
-                        <div
-                          className={`doc-fallback-home w-full h-full ${doctor.user.avatarUrl ? 'hidden' : 'flex'} items-center justify-center font-bold text-lg text-[#0088e8] bg-gradient-to-br from-[#0088e8]/10 to-[#10b981]/15`}
-                        >
-                          {doctor.user.fullName.replace(/^Dr\.\s*/i, '').trim()[0] || 'D'}
-                        </div>
-                      </div>
-
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center justify-between gap-1.5">
-                          <h3
-                            onClick={() => navigate(getHomeDoctorDetailPath(doctor.id))}
-                            className="text-base font-bold text-[#1d1d1f] hover:text-[#0088e8] cursor-pointer tracking-tight transition-colors truncate"
-                            title={doctor.user.fullName}
-                          >
-                            {doctor.user.fullName}
-                          </h3>
-                          <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200/60 text-[11px] font-semibold text-amber-800 flex-shrink-0">
-                            <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
-                            <span>{doctor.rating ? doctor.rating.toFixed(1) : '5.0'}</span>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-[#0088e8] flex-shrink-0" />
-                          <span className="text-xs text-[#86868b] truncate" title={cleanDegrees}>
-                            {cleanDegrees}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center gap-2 mt-2">
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-gradient-to-r from-[#0088e8]/10 to-[#10b981]/10 text-[#0088e8] border border-[#0088e8]/20 truncate">
-                            {doctor.specialty}
-                          </span>
-                          <span className="text-[11px] text-[#86868b] font-medium whitespace-nowrap">
-                            {doctor.experienceYears}y exp
-                          </span>
-                        </div>
+                        {doctor.user.fullName}
+                      </h3>
+                      <CheckCircle2 className="w-4 h-4 text-[#0088e8] flex-shrink-0" />
+                      <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200/60 text-[11px] font-semibold text-amber-800">
+                        <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
+                        <span>{doctor.rating ? doctor.rating.toFixed(1) : '5.0'}</span>
                       </div>
                     </div>
 
-                    {/* Practice Details Inset Compartment */}
-                    <div className="bg-[#f5f5f7]/80 rounded-2xl p-3 border border-[#e5e5ea]/60 space-y-2 mt-3.5">
+                    {/* Specialty & Qualifications */}
+                    <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-[#86868b]">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gradient-to-r from-[#0088e8]/10 to-[#10b981]/10 text-[#0088e8] border border-[#0088e8]/20">
+                        {doctor.specialty}
+                      </span>
+                      <span className="font-medium text-[#48484a]">{cleanDegrees}</span>
+                      <span>•</span>
+                      <span>{doctor.experienceYears}y exp</span>
+                    </div>
+
+                    {/* Meta Row: Clinic & Shift Timings */}
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2.5 text-xs text-[#6e6e73]">
                       {/* Clinic Venue */}
-                      <div className="flex items-center gap-2 text-xs">
+                      <div className="flex items-center gap-1.5 min-w-0">
                         <Building2 className="w-3.5 h-3.5 text-[#0088e8] flex-shrink-0" />
                         {hasClinics && primaryClinic ? (
-                          <span className="truncate font-medium text-[#1d1d1f]" title={`${primaryClinic.clinicName}${primaryClinic.city ? ` • ${primaryClinic.city}` : ''}`}>
+                          <span className="truncate max-w-[240px] sm:max-w-md font-medium text-[#1d1d1f]">
                             {primaryClinic.clinicName}
                             {primaryClinic.city ? ` • ${primaryClinic.city}` : ''}
                             {(doctor.clinics?.length ?? 0) > 1 && (
-                              <span className="text-[#0088e8] font-medium ml-1">
+                              <span className="text-[#86868b] font-normal ml-1">
                                 (+{(doctor.clinics?.length ?? 0) - 1} more)
                               </span>
                             )}
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-xs text-amber-700 font-medium">
+                          <span className="inline-flex items-center gap-1 text-xs text-amber-700 font-medium bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200/70">
                             <AlertCircle className="w-3 h-3 text-amber-600 flex-shrink-0" />
                             No Clinic Associated
                           </span>
                         )}
                       </div>
 
-                      {/* Shift Timings */}
-                      <div className="flex items-center gap-2 text-xs text-[#1d1d1f]">
-                        <Clock className="w-3.5 h-3.5 text-[#10b981] flex-shrink-0" />
-                        <span className="font-medium truncate">
+                      {/* Shift Timing */}
+                      <div className="flex items-center gap-1.5 font-medium text-[#1d1d1f]">
+                        <Clock className="w-3.5 h-3.5 text-[#0088e8] flex-shrink-0" />
+                        <span>
                           {slots.length > 0
                             ? `${format12Hour(slots[0].startTime)} – ${format12Hour(slots[0].endTime)}`
                             : doctor.checkingStartTime
@@ -589,55 +518,54 @@ export const Home: React.FC = () => {
                             : 'Outpatient Shift'}
                         </span>
                         {slots.length > 1 && (
-                          <span className="text-[10px] text-[#86868b] font-normal whitespace-nowrap">
+                          <span className="text-[11px] text-[#86868b] font-normal">
                             ({slots.length} shifts)
                           </span>
                         )}
                       </div>
                     </div>
                   </div>
+                </div>
 
-                  {/* Card Bottom / Action Row */}
-                  <div className="border-t border-[#f0f0f2] pt-4 mt-5 flex items-center justify-between gap-3">
-                    <div>
-                      <span className="text-[10px] uppercase font-semibold text-[#86868b] tracking-wider block">
-                        Consultation
-                      </span>
-                      <div className="text-xl font-bold text-[#1d1d1f] tracking-tight leading-tight">
-                        ₹{doctor.consultationFee.toFixed(0)}
-                      </div>
-                      <span className="text-[10px] text-emerald-600 font-medium block">
-                        Pay at Clinic
-                      </span>
+                {/* Right Side: Consultation Fee & Single Action CTA */}
+                <div className="flex sm:flex-row md:flex-col lg:flex-row items-center justify-between md:justify-center lg:justify-end gap-3 sm:gap-6 pt-3 md:pt-0 border-t md:border-t-0 border-[#f5f5f7] flex-shrink-0">
+                  <div className="text-left md:text-right">
+                    <span className="text-[10px] uppercase font-semibold text-[#86868b] tracking-wider block">
+                      Consultation
+                    </span>
+                    <div className="text-xl sm:text-2xl font-bold text-[#1d1d1f] tracking-tight leading-tight">
+                      ₹{doctor.consultationFee.toFixed(0)}
                     </div>
+                    <span className="text-[10px] text-emerald-600 font-medium block">Pay at Clinic</span>
+                  </div>
 
-                    <div>
-                      {hasClinics ? (
-                        <AppleButton
-                          variant="primary"
-                          size="sm"
-                          onClick={() => navigate(getHomeDoctorBookPath(doctor.id))}
-                          className="px-4 py-2 text-xs font-semibold rounded-full flex items-center gap-1.5 shadow-xs hover:shadow-apple-button"
-                        >
-                          <span>Book Token</span>
-                          <ChevronRight className="w-3.5 h-3.5" />
-                        </AppleButton>
-                      ) : (
-                        <AppleButton
-                          variant="secondary"
-                          size="sm"
-                          disabled
-                          className="px-3.5 py-2 text-xs font-medium rounded-full opacity-60 cursor-not-allowed bg-[#f5f5f7] border border-[#e5e5ea] text-[#86868b]"
-                        >
-                          <span>No Clinic</span>
-                        </AppleButton>
-                      )}
-                    </div>
+                  <div>
+                    {hasClinics ? (
+                      <AppleButton
+                        variant="primary"
+                        size="sm"
+                        onClick={() => navigate(getHomeDoctorBookPath(doctor.id))}
+                        className="text-xs px-5 py-2.5 rounded-full flex items-center gap-1.5 font-semibold shadow-xs hover:shadow-apple-button"
+                      >
+                        <span>Book Token</span>
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </AppleButton>
+                    ) : (
+                      <AppleButton
+                        variant="secondary"
+                        size="sm"
+                        disabled
+                        className="text-xs px-4 py-2.5 rounded-full opacity-60 cursor-not-allowed bg-[#f5f5f7] border border-[#e5e5ea] text-[#86868b] font-medium"
+                      >
+                        <span>No Clinic</span>
+                      </AppleButton>
+                    )}
                   </div>
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            );
+          })}
+        </div>
         )}
       </section>
 
