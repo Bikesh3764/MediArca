@@ -197,7 +197,7 @@ export const updateSchedule = async (req: AuthRequest, res: Response): Promise<v
             startTime: sTime,
             endTime: eTime,
             maxPatients: maxP,
-            avgConsultationMinutes: s.avgConsultationMinutes || calculatedAvg,
+            avgConsultationMinutes: Number(s.avgConsultationMinutes) > 0 ? Math.round(Number(s.avgConsultationMinutes) * 10) / 10 : calculatedAvg,
           };
         });
 

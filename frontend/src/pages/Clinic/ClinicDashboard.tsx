@@ -6,7 +6,7 @@ import { DashboardLayout, DashboardNavItem } from '../../components/layout/Dashb
 import {
   Users,
   CalendarCheck,
-  DollarSign,
+  IndianRupee,
   UserPlus,
   Trash2,
   AlertCircle,
@@ -463,7 +463,7 @@ export const ClinicDashboard: React.FC = () => {
                 Clinic Revenue
               </span>
               <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                <DollarSign className="w-4 h-4" />
+                <IndianRupee className="w-4 h-4" />
               </div>
             </div>
             <div className="text-3xl font-semibold text-[#1d1d1f]">

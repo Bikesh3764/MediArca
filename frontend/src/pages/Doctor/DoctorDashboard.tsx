@@ -30,7 +30,7 @@ import {
   AlertCircle,
   X,
   MapPin,
-  DollarSign,
+  IndianRupee,
   Settings,
   Check,
   Clock3,
@@ -488,16 +488,16 @@ export const DoctorDashboard: React.FC = () => {
                 <div>
                   <span className="text-xs text-[#86868b] uppercase font-semibold">Clinic Attributed Revenue</span>
                   <h3 className="text-3xl font-bold text-emerald-600 mt-1 tracking-tight">
-                    ${(
+                    ₹{(
                       affiliations?.clinics.reduce(
                         (sum: number, c) => sum + (c.revenue || 0),
                         0
                       ) || 0
-                    ).toLocaleString('en-US')}
+                    ).toLocaleString('en-IN')}
                   </h3>
                 </div>
                 <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                  <DollarSign className="w-6 h-6" />
+                  <IndianRupee className="w-6 h-6" />
                 </div>
               </UtilityCard>
             </div>
@@ -710,11 +710,11 @@ export const DoctorDashboard: React.FC = () => {
                         <div className="mt-4 p-3 rounded-xl bg-[#fafafc] border border-[#e5e5ea]/80 space-y-2">
                           <div className="flex items-center justify-between text-xs">
                             <span className="text-[#86868b] flex items-center gap-1.5 font-medium">
-                              <DollarSign className="w-3.5 h-3.5 text-emerald-600" />
+                              <IndianRupee className="w-3.5 h-3.5 text-emerald-600" />
                               Facility Consultation Fee:
                             </span>
                             <span className="font-bold text-[#1d1d1f]">
-                              ${clinic.consultationFee ?? user?.doctorProfile?.consultationFee ?? 80}
+                              ₹{clinic.consultationFee ?? user?.doctorProfile?.consultationFee ?? 500}
                             </span>
                           </div>
 
@@ -741,7 +741,7 @@ export const DoctorDashboard: React.FC = () => {
                                       {s.name || `Shift ${sIdx + 1}`}
                                     </span>
                                     <span className="text-[#0088e8] font-semibold">
-                                      {format12Hour(s.startTime)} – {format12Hour(s.endTime)} ({s.maxPatients} pts)
+                                      {format12Hour(s.startTime)} – {format12Hour(s.endTime)} ({s.maxPatients} pts • ~{s.avgConsultationMinutes || 15}m pace)
                                     </span>
                                   </div>
                                 ))}
@@ -768,7 +768,7 @@ export const DoctorDashboard: React.FC = () => {
                               Attributed Revenue
                             </span>
                             <p className="text-base font-bold text-emerald-700 mt-0.5">
-                              ${(clinic.revenue ?? 0).toLocaleString('en-US')}
+                              ₹{(clinic.revenue ?? 0).toLocaleString('en-IN')}
                             </p>
                           </div>
                         </div>

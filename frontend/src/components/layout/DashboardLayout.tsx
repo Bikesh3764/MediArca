@@ -110,7 +110,13 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     }
   };
 
-  const initialLetter = (getDisplayName().charAt(0) || 'U').toUpperCase();
+  const rawDisplayName = getDisplayName();
+  const cleanDoctorName = rawDisplayName.replace(/^Dr\.\s*/i, '').trim();
+  const formattedDisplayName =
+    portalType === 'DOCTOR'
+      ? cleanDoctorName ? `Dr. ${cleanDoctorName}` : 'Dr. Specialist'
+      : rawDisplayName;
+  const initialLetter = ((portalType === 'DOCTOR' ? cleanDoctorName : rawDisplayName).charAt(0) || 'U').toUpperCase();
 
   const renderSidebarContent = () => (
     <div className="flex flex-col h-full justify-between bg-white select-none">
@@ -132,7 +138,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-xs font-semibold text-[#1d1d1f] truncate leading-tight">
-              {portalType === 'DOCTOR' ? `Dr. ${getDisplayName()}` : getDisplayName()}
+              {formattedDisplayName}
             </p>
             <div className="flex items-center gap-1.5 mt-0.5">
               <span className="w-1.5 h-1.5 rounded-full bg-[#10b981] flex-shrink-0 animate-pulse" />

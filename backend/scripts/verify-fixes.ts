@@ -2293,6 +2293,24 @@ function runTests() {
   assert(statusSarahFull.statusLabel === 'Fully Booked', 'Full shift statusLabel evaluates to Fully Booked');
   assert(statusSarahFull.estimatedTime === 'Shift Full', 'Full shift estimatedTime is Shift Full');
 
+  // --- Test 86: Doctor Custom Entered Avg Consultation Time & Pacing ---
+  console.log('\n--- Test 86: Doctor Custom Entered Avg Consultation Time & Pacing ---');
+  const customPaceSlot: DoctorSlot = {
+    id: 's_custom_pace',
+    name: 'Consultation Shift',
+    startTime: '10:00',
+    endTime: '14:00', // 240 minutes duration
+    maxPatients: 20, // If auto-calculated, duration / maxPatients = 12 mins
+    avgConsultationMinutes: 25, // But doctor explicitly entered 25 minutes!
+  };
+  // Ensure the doctor-entered 25 minutes is preserved and honored
+  assert(customPaceSlot.avgConsultationMinutes === 25, 'Doctor-entered consultation pace (25m) is preserved');
+  // Evaluate estimated time for patient #3 (2 patients ahead):
+  // 10:00 AM (600m) + 2 * 25m = 650m = 10:50 AM
+  const nowCustom = new Date(2026, 8, 28, 9, 30); // before shift
+  const statusCustom = evaluateSlotStatus(customPaceSlot, '2026-09-28', 2, nowCustom);
+  assert(statusCustom.estimatedTime === '10:50 AM', `Estimated time uses doctor pace 25m: 10:50 AM, got ${statusCustom.estimatedTime}`);
+
   console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);
