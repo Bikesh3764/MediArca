@@ -1,10 +1,11 @@
 import { Response } from 'express';
 import prisma from '../config/database';
 import { AuthRequest } from '../middleware/authMiddleware';
+import { getLocalDateString } from '../utils/scheduleUtils';
 
 export const getStats = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = getLocalDateString();
 
     const [
       totalPatients,

@@ -114,10 +114,31 @@ export interface SlotStatusResult {
 }
 
 export const getLocalDateString = (d: Date = new Date()): string => {
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+  try {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(d);
+  } catch {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+};
+
+export const getIndianTimeMinutes = (d: Date = new Date()): number => {
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Kolkata',
+      hour: 'numeric',
+      minute: 'numeric',
+      hour12: false,
+    }).formatToParts(d);
+    let hour = parseInt(parts.find((p) => p.type === 'hour')?.value || '0', 10);
+    if (hour === 24) hour = 0;
+    const minute = parseInt(parts.find((p) => p.type === 'minute')?.value || '0', 10);
+    return hour * 60 + minute;
+  } catch {
+    return d.getHours() * 60 + d.getMinutes();
+  }
 };
 
 export const evaluateSlotStatus = (
@@ -127,17 +148,24 @@ export const evaluateSlotStatus = (
   now = new Date(),
   overrideCurrentMinutes?: number
 ): SlotStatusResult => {
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  const todayStr = `${year}-${month}-${day}`;
+  const localYear = now.getFullYear();
+  const localMonth = String(now.getMonth() + 1).padStart(2, '0');
+  const localDay = String(now.getDate()).padStart(2, '0');
+  const localTodayStr = `${localYear}-${localMonth}-${localDay}`;
+  const istTodayStr = getLocalDateString(now);
 
-  const isToday = appointmentDate === todayStr;
-  const isPastDate = appointmentDate < todayStr;
-  const currentMinutes =
-    typeof overrideCurrentMinutes === 'number' && !isNaN(overrideCurrentMinutes)
-      ? overrideCurrentMinutes
-      : now.getHours() * 60 + now.getMinutes();
+  const isToday = appointmentDate === localTodayStr || appointmentDate === istTodayStr;
+  const isPastDate = appointmentDate < localTodayStr && appointmentDate < istTodayStr;
+
+  let currentMinutes: number;
+  if (typeof overrideCurrentMinutes === 'number' && !isNaN(overrideCurrentMinutes)) {
+    currentMinutes = overrideCurrentMinutes;
+  } else if (now.getTimezoneOffset() === 0) {
+    // When running on UTC server (Render cloud production), use IST minutes
+    currentMinutes = getIndianTimeMinutes(now);
+  } else {
+    currentMinutes = now.getHours() * 60 + now.getMinutes();
+  }
 
   const slotStartMins = timeToMinutes(slot.startTime);
   let slotEndMins = timeToMinutes(slot.endTime);

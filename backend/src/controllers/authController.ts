@@ -135,6 +135,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         email: newUser.email,
         role: newUser.role,
         fullName: newUser.fullName,
+        mustChangePassword: newUser.mustChangePassword,
       },
       JWT_SECRET,
       { expiresIn: '7d' }
@@ -229,6 +230,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         email: user.email,
         role: user.role,
         fullName: user.fullName,
+        mustChangePassword: user.mustChangePassword,
       },
       JWT_SECRET,
       { expiresIn: '7d' }

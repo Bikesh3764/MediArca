@@ -109,19 +109,6 @@ export const DoctorDashboard: React.FC = () => {
     }
   }, [date, queueScope]);
 
-  useEffect(() => {
-    if (loadingAuth) return;
-    if (!user || user.role?.toUpperCase() !== 'DOCTOR') {
-      navigate('/login');
-      return;
-    }
-    fetchQueue(false);
-
-    // Auto refresh every 10 seconds for real-time clinic updates
-    const interval = setInterval(() => fetchQueue(false), 10000);
-    return () => clearInterval(interval);
-  }, [fetchQueue, user, loadingAuth, navigate]);
-
   const fetchAffiliations = useCallback(async (showLoading = true) => {
     if (showLoading) setAffiliationsLoading(true);
     try {
@@ -137,6 +124,20 @@ export const DoctorDashboard: React.FC = () => {
       setAffiliationsLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    if (loadingAuth) return;
+    if (!user || user.role?.toUpperCase() !== 'DOCTOR') {
+      navigate('/login');
+      return;
+    }
+    fetchQueue(false);
+    fetchAffiliations(false);
+
+    // Auto refresh every 10 seconds for real-time clinic updates
+    const interval = setInterval(() => fetchQueue(false), 10000);
+    return () => clearInterval(interval);
+  }, [fetchQueue, fetchAffiliations, user, loadingAuth, navigate]);
 
   useEffect(() => {
     if (activeTab === 'affiliations') {
@@ -156,6 +157,7 @@ export const DoctorDashboard: React.FC = () => {
   const [walkinPhone, setWalkinPhone] = useState('');
   const [walkinReason, setWalkinReason] = useState('');
   const [walkinSlotId, setWalkinSlotId] = useState('');
+  const [walkinClinicId, setWalkinClinicId] = useState('');
   const [walkinSubmitting, setWalkinSubmitting] = useState(false);
   const [walkinError, setWalkinError] = useState<string | null>(null);
   const [walkinSuccess, setWalkinSuccess] = useState<string | null>(null);
@@ -189,6 +191,16 @@ export const DoctorDashboard: React.FC = () => {
       setWalkinError('Please enter a valid 10-digit mobile number');
       return;
     }
+
+    const effectiveClinicId =
+      walkinClinicId ||
+      (affiliations?.clinics?.length === 1 ? affiliations.clinics[0].clinicId : undefined);
+
+    if (affiliations?.clinics && affiliations.clinics.length > 1 && !effectiveClinicId) {
+      setWalkinError('Please select which clinic venue to book the walk-in at');
+      return;
+    }
+
     setWalkinSubmitting(true);
     setWalkinError(null);
     try {
@@ -202,12 +214,14 @@ export const DoctorDashboard: React.FC = () => {
         patientAge: walkinAge.trim() || undefined,
         patientGender: walkinGender || 'Not Specified',
         patientPhone: walkinPhone.trim() ? formatIndianPhone(walkinPhone) : undefined,
+        clinicId: effectiveClinicId,
       });
       setWalkinSuccess(`Patient ${walkinName} successfully queued!`);
       setWalkinName('');
       setWalkinAge('');
       setWalkinPhone('');
       setWalkinReason('');
+      setWalkinClinicId('');
       await fetchQueue();
       setTimeout(() => {
         setShowAddModal(false);
@@ -1732,6 +1746,37 @@ export const DoctorDashboard: React.FC = () => {
                 />
               </div>
 
+              {/* Clinic Affiliation Venue Selector */}
+              {affiliations?.clinics && affiliations.clinics.length > 1 && (
+                <div>
+                  <label className="block text-[11px] font-semibold text-[#86868b] uppercase mb-1">
+                    Clinic Venue *
+                  </label>
+                  <select
+                    required
+                    value={walkinClinicId}
+                    onChange={(e) => {
+                      setWalkinClinicId(e.target.value);
+                      setWalkinSlotId('');
+                    }}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] focus:outline-none focus:border-[#0088e8]"
+                  >
+                    <option value="">Select Clinic Venue</option>
+                    {affiliations.clinics.map((c) => (
+                      <option key={c.clinicId} value={c.clinicId}>
+                        {c.clinicName} {c.city ? `(${c.city})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {affiliations && affiliations.clinics.length === 0 && (
+                <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs">
+                  <span>No active clinic affiliations found. Please affiliate with a verified clinic to issue walk-in queue tokens.</span>
+                </div>
+              )}
+
               <div>
                 <label className="block text-[11px] font-semibold text-[#86868b] uppercase mb-1">
                   Checking Shift
@@ -1742,7 +1787,11 @@ export const DoctorDashboard: React.FC = () => {
                   className="w-full px-3.5 py-2.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] focus:outline-none focus:border-[#0088e8]"
                 >
                   <option value="">Current / Default Shift</option>
-                  {parseDoctorSlots(user?.doctorProfile).map((slot, i) => (
+                  {(
+                    (walkinClinicId && affiliations?.clinics.find((c) => c.clinicId === walkinClinicId)?.slots) ||
+                    (affiliations?.clinics?.length === 1 && affiliations.clinics[0].slots) ||
+                    parseDoctorSlots(user?.doctorProfile)
+                  ).map((slot, i) => (
                     <option key={slot.id || i} value={slot.id}>
                       {slot.name} ({format12Hour(slot.startTime)}–{format12Hour(slot.endTime)})
                     </option>

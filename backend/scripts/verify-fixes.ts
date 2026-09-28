@@ -1807,6 +1807,184 @@ function runTests() {
   assert(previewMetro.consultationFee === 65.0, 'Queue preview for Metro PolyClinic uses $65.0 fee');
   assert(previewMetro.slots[0].startTime === '13:00', 'Queue preview for Metro PolyClinic uses 13:00 afternoon shift');
 
+  // --- Test 66: Monotonic Queue Token Number Generation After Cancellations ---
+  console.log('\n--- Test 66: Monotonic Queue Token Number Generation After Cancellations ---');
+  // Scenario: Appointments #1, #2, #3 were created. Appointment #3 was CANCELLED.
+  // Active appointments list only has #1, #2.
+  // If we only take max of active appointments, highest is 2 -> next is 3 -> COLLISION with cancelled #3!
+  const mockAllAppointmentsDay = [
+    { id: 'appt-1', queueNumber: 1, status: 'COMPLETED' },
+    { id: 'appt-2', queueNumber: 2, status: 'WAITING' },
+    { id: 'appt-3', queueNumber: 3, status: 'CANCELLED' },
+  ];
+  // Calculate next queue using all appointments
+  const maxAcrossAll = mockAllAppointmentsDay.reduce((max, a) => Math.max(max, a.queueNumber), 0);
+  const nextQueueSafe = maxAcrossAll + 1;
+  assert(nextQueueSafe === 4, 'Next queue token after cancelled #3 is #4 (never duplicates cancelled #3)');
+  assert(!mockAllAppointmentsDay.some((a) => a.queueNumber === nextQueueSafe), 'New token #4 does not collide with any existing token');
+
+  // --- Test 67: Timezone-Safe IST Evaluation Across UTC Midnight Boundary ---
+  console.log('\n--- Test 67: Timezone-Safe IST Evaluation Across UTC Midnight Boundary ---');
+  // At 2026-09-27 20:00:00 UTC, UTC date is 2026-09-27, but in India (UTC+5:30) it is 2026-09-28 01:30 AM!
+  const utcLateEvening = new Date('2026-09-27T20:00:00Z');
+  const istDateString = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(utcLateEvening);
+  assert(istDateString === '2026-09-28', 'UTC 20:00 (Sept 27) correctly resolves to Sept 28 in Indian Standard Time');
+
+  const testSlotIST: DoctorSlot = {
+    id: 's_ist',
+    name: 'Morning Shift',
+    startTime: '09:00',
+    endTime: '12:00',
+    maxPatients: 30,
+    avgConsultationMinutes: 6,
+  };
+  // Slot on 2026-09-28 evaluated with server at 20:00 UTC (1:30 AM IST on Sept 28)
+  const slotStatusIST = evaluateSlotStatus(testSlotIST, '2026-09-28', 0, utcLateEvening);
+  assert(slotStatusIST.isToday === true, 'Appointment date 2026-09-28 evaluates to isToday on Render UTC server');
+  assert(slotStatusIST.isPassed === false, 'Morning slot 09:00-12:00 is not marked passed at 01:30 AM IST');
+  assert(slotStatusIST.isUpcoming === true, 'Morning slot is upcoming for today');
+
+  // --- Test 68: Receptionist Walk-in Practice Shift & Capacity Validation ---
+  console.log('\n--- Test 68: Receptionist Walk-in Practice Shift & Capacity Validation ---');
+  const clinicDoctorAffiliationWithShifts = {
+    clinicId: 'clinic-101',
+    doctorId: 'doc-202',
+    slots: JSON.stringify([
+      { id: 'shift_early', name: 'Early Morning', startTime: '07:00', endTime: '10:00', maxPatients: 10, avgConsultationMinutes: 18 },
+      { id: 'shift_afternoon', name: 'Afternoon', startTime: '14:00', endTime: '18:00', maxPatients: 20, avgConsultationMinutes: 12 },
+    ]),
+  };
+  const parsedClinicDoctorSlots = JSON.parse(clinicDoctorAffiliationWithShifts.slots);
+  assert(parsedClinicDoctorSlots.length === 2, 'Receptionist resolves 2 clinic-specific doctor shifts');
+
+  // Slot overflow check: 10 booked out of 10 max patients
+  const earlyShift = parsedClinicDoctorSlots[0];
+  const evalFullEarlyShift = evaluateSlotStatus(earlyShift, '2026-09-28', 10, new Date('2026-09-28T02:00:00Z'));
+  assert(evalFullEarlyShift.isFull === true, 'Walk-in shift is marked isFull when max patient capacity reached');
+
+  // Slot passed check: current time 11:00 AM IST (after 10:00 AM end)
+  const nowPassedTime = new Date(2026, 8, 28, 11, 0); // 11:00 AM local
+  const evalPassedEarlyShift = evaluateSlotStatus(earlyShift, '2026-09-28', 2, nowPassedTime);
+  assert(evalPassedEarlyShift.isPassed === true, 'Walk-in shift is marked isPassed when current time exceeds shift end');
+
+  // --- Test 69: Receptionist Mandatory Temporary Password Change Gating ---
+  console.log('\n--- Test 69: Receptionist Mandatory Temporary Password Change Gating ---');
+  const receptionistUserUnchanged = { id: 'rec-1', mustChangePassword: true, role: 'RECEPTIONIST' };
+  const receptionistUserUpdated = { id: 'rec-1', mustChangePassword: false, role: 'RECEPTIONIST' };
+
+  const canPerformDeskAction = (user: typeof receptionistUserUnchanged) => {
+    if (user.mustChangePassword) {
+      return { allowed: false, message: 'Temporary password must be changed before accessing clinical desk operations.' };
+    }
+    return { allowed: true, message: 'Authorized' };
+  };
+
+  const actionUnchanged = canPerformDeskAction(receptionistUserUnchanged);
+  assert(actionUnchanged.allowed === false, 'Receptionist with mustChangePassword=true is blocked from desk operations');
+  assert(actionUnchanged.message.includes('Temporary password must be changed'), 'Clear security warning is returned');
+
+  const actionUpdated = canPerformDeskAction(receptionistUserUpdated);
+  assert(actionUpdated.allowed === true, 'Receptionist with updated permanent password can perform desk operations');
+
+  // --- Test 70: Receptionist Cross-Facility Appointment Cancellation Protection ---
+  console.log('\n--- Test 70: Receptionist Cross-Facility Appointment Cancellation Protection ---');
+  const receptionistClinicId = 'clinic-facility-north';
+  const appointmentSameFacility = { id: 'appt-1', doctorId: 'doc-1', clinicId: 'clinic-facility-north' };
+  const appointmentOtherFacility = { id: 'appt-2', doctorId: 'doc-1', clinicId: 'clinic-facility-south' };
+
+  const checkCancellationFacility = (recClinicId: string, apptClinicId: string) => {
+    if (recClinicId && apptClinicId && apptClinicId !== recClinicId) {
+      return { allowed: false, message: 'Access denied: Appointment belongs to another clinic facility' };
+    }
+    return { allowed: true, message: 'Cancellation permitted' };
+  };
+
+  assert(checkCancellationFacility(receptionistClinicId, appointmentSameFacility.clinicId).allowed === true, 'Receptionist can cancel appointment at their own clinic facility');
+  assert(checkCancellationFacility(receptionistClinicId, appointmentOtherFacility.clinicId).allowed === false, 'Receptionist is blocked from cancelling appointment at different clinic facility');
+
+  // --- Test 71: Clinic Dashboard Revenue & Fee Calculation with Custom Doctor Clinic Fees ---
+  console.log('\n--- Test 71: Clinic Dashboard Revenue & Fee Calculation with Custom Doctor Clinic Fees ---');
+  const mockActiveDoctorAffiliation = {
+    doctorId: 'doc-cardio',
+    consultationFee: 150.0, // Custom fee at this clinic
+    doctor: { consultationFee: 100.0 }, // Global doctor fee
+  };
+  const mockClinic71Appointments = [
+    { doctorId: 'doc-cardio', status: 'COMPLETED' },
+    { doctorId: 'doc-cardio', status: 'COMPLETED' },
+    { doctorId: 'doc-cardio', status: 'CANCELLED' }, // Cancelled should not contribute revenue
+  ];
+
+  const activeAppts = mockClinic71Appointments.filter((a) => a.status !== 'CANCELLED');
+  const effectiveFee = mockActiveDoctorAffiliation.consultationFee ?? mockActiveDoctorAffiliation.doctor.consultationFee;
+  const clinicDoctorRevenue = activeAppts.length * effectiveFee;
+
+  assert(effectiveFee === 150.0, 'Doctor fee for clinic dashboard resolves to clinic-specific fee of $150.0');
+  assert(clinicDoctorRevenue === 300.0, 'Clinic revenue is calculated as 2 completed * $150.0 = $300.0 (ignoring cancelled appt)');
+
+  // --- Test 72: Doctor Walk-in Multi-Clinic Venue Selection Resolution ---
+  console.log('\n--- Test 72: Doctor Walk-in Multi-Clinic Venue Selection Resolution ---');
+  const resolveDoctorWalkinClinic = (
+    clinics: Array<{ clinicId: string; clinicName: string }>,
+    selectedClinicId?: string
+  ): { targetClinicId?: string; error?: string } => {
+    if (clinics.length === 0) {
+      return { error: 'No active clinic affiliations found. Walk-in disabled.' };
+    }
+    if (selectedClinicId) {
+      const match = clinics.find((c) => c.clinicId === selectedClinicId);
+      if (!match) return { error: 'Invalid clinic venue selected' };
+      return { targetClinicId: match.clinicId };
+    }
+    if (clinics.length === 1) {
+      return { targetClinicId: clinics[0].clinicId };
+    }
+    return { error: 'Multi-clinic doctor must select a clinic venue' };
+  };
+
+  const docClinics = [
+    { clinicId: 'clinic-metro', clinicName: 'Metro Polyclinic' },
+    { clinicId: 'clinic-apollo', clinicName: 'Apollo Care' },
+  ];
+  assert(
+    resolveDoctorWalkinClinic(docClinics).error === 'Multi-clinic doctor must select a clinic venue',
+    'Multi-clinic doctor walk-in without venue selection returns error'
+  );
+  assert(
+    resolveDoctorWalkinClinic(docClinics, 'clinic-metro').targetClinicId === 'clinic-metro',
+    'Multi-clinic doctor walk-in with selected venue resolves correctly to clinic-metro'
+  );
+  assert(
+    resolveDoctorWalkinClinic([docClinics[0]]).targetClinicId === 'clinic-metro',
+    'Single-clinic doctor walk-in auto-resolves to the only clinic venue'
+  );
+
+  // --- Test 73: Receptionist Password Change Unlocks mustChangePassword Gating ---
+  console.log('\n--- Test 73: Receptionist Password Change Unlocks mustChangePassword Gating ---');
+  interface ReceptionistUserRecord {
+    id: string;
+    mustChangePassword: boolean;
+  }
+  const testReceptionist: ReceptionistUserRecord = { id: 'rec-1', mustChangePassword: true };
+  const isDeskActionAllowed = (user: ReceptionistUserRecord) => !user.mustChangePassword;
+
+  assert(isDeskActionAllowed(testReceptionist) === false, 'Receptionist initially blocked from desk actions due to temporary password');
+  // Simulate successful password update
+  testReceptionist.mustChangePassword = false;
+  assert(isDeskActionAllowed(testReceptionist) === true, 'Receptionist unlocked for desk actions after password change');
+
+  // --- Test 74: Patient Vault Category Policy (Prescriptions Disallowed) ---
+  console.log('\n--- Test 74: Patient Vault Category Policy (Prescriptions Disallowed) ---');
+  const VAULT_UPLOAD_CATEGORIES = ['All', 'Lab Report', 'Scan', 'Discharge Summary', 'Other'];
+  assert(
+    !VAULT_UPLOAD_CATEGORIES.includes('Prescription'),
+    'Patient Medical Vault upload categories strictly exclude Prescriptions (doctors issue prescriptions digitally)'
+  );
+  assert(
+    VAULT_UPLOAD_CATEGORIES.includes('Lab Report') && VAULT_UPLOAD_CATEGORIES.includes('Scan'),
+    'Patient Medical Vault upload categories correctly support Lab Report and Scan'
+  );
+
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);
 

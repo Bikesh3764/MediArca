@@ -10,6 +10,8 @@ import {
   parseDoctorSlots,
   evaluateSlotStatus,
   SlotStatusResult,
+  getLocalDateString,
+  getIndianTimeMinutes,
 } from '../utils/scheduleUtils';
 import { formatIndianPhone, sanitizeIndianPhone } from '../utils/phoneUtils';
 
@@ -95,8 +97,16 @@ export const getQueuePreview = async (req: AuthRequest, res: Response): Promise<
       },
     });
 
-    // Highest queue number on this date to prevent duplicate collisions
-    const highestQueue = dayAppointments.reduce((max, a) => Math.max(max, a.queueNumber), 0);
+    // Highest queue number on this date across ALL appointments (including CANCELLED) to prevent collisions
+    const maxQueueAppt = await prisma.appointment.findFirst({
+      where: {
+        doctorId: doctor.id,
+        appointmentDate: dateStr,
+      },
+      orderBy: { queueNumber: 'desc' },
+      select: { queueNumber: true },
+    });
+    const highestQueue = maxQueueAppt?.queueNumber || 0;
     const nextQueueNumber = highestQueue + 1;
 
     // Evaluate status for each slot
@@ -456,7 +466,16 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
             );
           }
 
-          const highestQueue = dayAppointments.reduce((max, a) => Math.max(max, a.queueNumber), 0);
+          // Query max queue number across ALL appointments (including CANCELLED) to avoid unique constraint collision
+          const maxQueueAppt = await tx.appointment.findFirst({
+            where: {
+              doctorId: doctor.id,
+              appointmentDate,
+            },
+            orderBy: { queueNumber: 'desc' },
+            select: { queueNumber: true },
+          });
+          const highestQueue = maxQueueAppt?.queueNumber || 0;
           const queueNumber = highestQueue + 1;
 
           const created = await tx.appointment.create({
@@ -682,9 +701,13 @@ export const getPatientAppointments = async (req: AuthRequest, res: Response): P
           if (slotEndMins <= slotStartMins) slotEndMins += 24 * 60;
 
           const now = new Date();
-          const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-          const isToday = appt.appointmentDate === todayStr;
-          const currentMinutes = now.getHours() * 60 + now.getMinutes();
+          const localYear = now.getFullYear();
+          const localMonth = String(now.getMonth() + 1).padStart(2, '0');
+          const localDay = String(now.getDate()).padStart(2, '0');
+          const localTodayStr = `${localYear}-${localMonth}-${localDay}`;
+          const istTodayStr = getLocalDateString(now);
+          const isToday = appt.appointmentDate === localTodayStr || appt.appointmentDate === istTodayStr;
+          const currentMinutes = now.getTimezoneOffset() === 0 ? getIndianTimeMinutes(now) : now.getHours() * 60 + now.getMinutes();
 
           const isShiftPassed = isToday && currentMinutes >= slotEndMins;
           const isShiftActive = isToday && currentMinutes >= slotStartMins && currentMinutes < slotEndMins;
@@ -772,6 +795,10 @@ export const cancelAppointment = async (req: AuthRequest, res: Response): Promis
       });
       if (!assignment) {
         res.status(403).json({ success: false, message: 'You do not have permission to cancel appointments for this doctor' });
+        return;
+      }
+      if (receptionist.clinicId && appointment.clinicId && appointment.clinicId !== receptionist.clinicId) {
+        res.status(403).json({ success: false, message: 'Access denied: Appointment belongs to another clinic facility' });
         return;
       }
     } else if (req.user?.role === 'CLINIC') {

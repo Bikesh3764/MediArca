@@ -28,7 +28,7 @@ import {
   formatFileSize,
 } from '../../utils/documentOptimizer';
 
-const CATEGORIES = ['All', 'Prescription', 'Lab Report', 'Scan', 'Discharge Summary', 'Other'];
+const CATEGORIES = ['All', 'Lab Report', 'Scan', 'Discharge Summary', 'Other'];
 
 export const MedicalRecords: React.FC = () => {
   const [records, setRecords] = useState<MedicalRecord[]>([]);
@@ -501,7 +501,6 @@ export const MedicalRecords: React.FC = () => {
                 >
                   <option value="Lab Report">Lab Report</option>
                   <option value="Scan">Scan / Imaging (X-Ray, MRI)</option>
-                  <option value="Prescription">External Prescription</option>
                   <option value="Discharge Summary">Discharge Summary</option>
                   <option value="Other">Other Medical File</option>
                 </select>

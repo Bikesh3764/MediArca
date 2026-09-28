@@ -6,6 +6,7 @@ export interface AuthenticatedUser {
   email: string;
   role: 'PATIENT' | 'DOCTOR' | 'ADMIN' | 'CLINIC' | 'RECEPTIONIST';
   fullName: string;
+  mustChangePassword?: boolean;
 }
 
 export interface AuthRequest extends Request {

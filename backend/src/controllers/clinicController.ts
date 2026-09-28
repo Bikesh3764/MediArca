@@ -87,7 +87,8 @@ export const getMyClinic = async (req: AuthRequest, res: Response): Promise<void
       const activeOrCompleted = docAppointments.filter((a) => a.status !== 'CANCELLED');
       const bookingCount = docAppointments.length;
       const completedCount = docAppointments.filter((a) => a.status === 'COMPLETED').length;
-      const revenue = activeOrCompleted.length * (cd.doctor.consultationFee || 0);
+      const effectiveFee = cd.consultationFee ?? cd.doctor.consultationFee ?? 0;
+      const revenue = activeOrCompleted.length * effectiveFee;
 
       return {
         affiliationId: cd.id,
@@ -99,7 +100,7 @@ export const getMyClinic = async (req: AuthRequest, res: Response): Promise<void
         specialty: cd.doctor.specialty,
         qualifications: cd.doctor.qualifications,
         experienceYears: cd.doctor.experienceYears,
-        consultationFee: cd.doctor.consultationFee,
+        consultationFee: effectiveFee,
         bookingCount,
         completedCount,
         revenue,
@@ -179,7 +180,7 @@ export const getMyClinic = async (req: AuthRequest, res: Response): Promise<void
           checkingWindow: a.checkingWindow,
           estimatedTime: a.estimatedTime,
           status: a.status,
-          fee: a.doctor.consultationFee,
+          fee: activeDoctorAffiliations.find((cd) => cd.doctorId === a.doctorId)?.consultationFee ?? a.doctor.consultationFee,
         })),
       },
     });

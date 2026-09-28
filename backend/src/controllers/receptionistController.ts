@@ -166,8 +166,9 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
     const doctorId = String(req.params.doctorId);
     const appointmentDate = String(req.query.date || getLocalDateString());
 
+    let receptionist: any = null;
     if (req.user && req.user.role === 'RECEPTIONIST') {
-      const receptionist = await prisma.receptionistProfile.findUnique({
+      receptionist = await prisma.receptionistProfile.findUnique({
         where: { userId: req.user.id },
       });
       if (receptionist) {
@@ -233,7 +234,26 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
       orderBy: { queueNumber: 'asc' },
     });
 
-    const slots = parseDoctorSlots(doctor);
+    let targetAffiliation: any = null;
+    let slots = parseDoctorSlots(doctor);
+    if (receptionist?.clinicId) {
+      targetAffiliation = await prisma.clinicDoctor.findUnique({
+        where: {
+          clinicId_doctorId: {
+            clinicId: receptionist.clinicId,
+            doctorId,
+          },
+        },
+      });
+      if (targetAffiliation?.slots) {
+        try {
+          const parsed = typeof targetAffiliation.slots === 'string' ? JSON.parse(targetAffiliation.slots) : targetAffiliation.slots;
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            slots = parsed;
+          }
+        } catch {}
+      }
+    }
 
     res.json({
       success: true,
@@ -242,6 +262,7 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
           id: doctor.id,
           fullName: doctor.user.fullName,
           specialty: doctor.specialty,
+          consultationFee: targetAffiliation?.consultationFee ?? doctor.consultationFee,
           slots,
         },
         appointmentDate,
@@ -284,6 +305,18 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
   try {
     if (!req.user || req.user.role !== 'RECEPTIONIST') {
       res.status(403).json({ success: false, message: 'Access denied: receptionist role required' });
+      return;
+    }
+
+    const userRec = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { mustChangePassword: true },
+    });
+    if (userRec?.mustChangePassword || req.user.mustChangePassword) {
+      res.status(403).json({
+        success: false,
+        message: 'Temporary password must be changed before accessing clinical desk operations.',
+      });
       return;
     }
 
@@ -427,8 +460,38 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
       });
     }
 
-    // Slot determination
-    const slots = parseDoctorSlots(doctor);
+    // Resolve clinic affiliation & custom practice shifts
+    let targetClinicId = receptionist.clinicId || clinicId;
+    let targetAffiliation: any = null;
+    if (targetClinicId) {
+      targetAffiliation = await prisma.clinicDoctor.findUnique({
+        where: {
+          clinicId_doctorId: {
+            clinicId: targetClinicId,
+            doctorId: doctor.id,
+          },
+        },
+      });
+    }
+
+    if (!targetClinicId && !targetAffiliation) {
+      targetAffiliation = await prisma.clinicDoctor.findFirst({
+        where: { doctorId: doctor.id, status: { in: ['ACTIVE', 'ACCEPTED'] } },
+      });
+      if (targetAffiliation) {
+        targetClinicId = targetAffiliation.clinicId;
+      }
+    }
+
+    let slots = parseDoctorSlots(doctor);
+    if (targetAffiliation?.slots) {
+      try {
+        const parsed = typeof targetAffiliation.slots === 'string' ? JSON.parse(targetAffiliation.slots) : targetAffiliation.slots;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          slots = parsed;
+        }
+      } catch {}
+    }
     let chosenSlot = slots.find((s) => s.id === slotId) || slots[0];
 
     // Concurrency-safe atomic transaction
@@ -460,23 +523,40 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
             return false;
           }).length;
 
-          const highestQueue = dayAppointments.reduce((max, a) => Math.max(max, a.queueNumber), 0);
-          const queueNumber = highestQueue + 1;
+          // Check if slot has passed or reached max patients
+          const slotStatus = evaluateSlotStatus(
+            chosenSlot,
+            appointmentDate,
+            bookedInSlot,
+            new Date()
+          );
 
-          let targetClinicId = receptionist.clinicId || clinicId;
-          if (!targetClinicId) {
-            const activeAffiliation = await tx.clinicDoctor.findFirst({
-              where: { doctorId: doctor.id, status: { in: ['ACTIVE', 'ACCEPTED'] } },
-            });
-            if (activeAffiliation) {
-              targetClinicId = activeAffiliation.clinicId;
-            }
+          if (slotStatus.isPassed) {
+            throw new Error(
+              `This checking slot (${chosenSlot.name}) has already ended for today. Please pick an upcoming shift or future date.`
+            );
           }
 
-          const slotStartMins = timeToMinutes(chosenSlot.startTime);
-          const offsetMins = bookedInSlot * chosenSlot.avgConsultationMinutes;
-          const estimatedTime = minutesTo12Hour(slotStartMins + offsetMins);
-          const checkingWindow = `${chosenSlot.startTime} – ${chosenSlot.endTime}`;
+          if (slotStatus.isFull) {
+            throw new Error(
+              `This checking slot (${chosenSlot.name}) has reached its maximum patient capacity (${chosenSlot.maxPatients} patients).`
+            );
+          }
+
+          // Highest queue number on this date across ALL appointments (including CANCELLED) to avoid unique constraint collision
+          const maxQueueAppt = await tx.appointment.findFirst({
+            where: {
+              doctorId: doctor.id,
+              appointmentDate,
+            },
+            orderBy: { queueNumber: 'desc' },
+            select: { queueNumber: true },
+          });
+          const highestQueue = maxQueueAppt?.queueNumber || 0;
+          const queueNumber = highestQueue + 1;
+
+          const estimatedTime = slotStatus.estimatedTime;
+          const checkingWindow = chosenSlot.name;
 
           return await tx.appointment.create({
             data: {
@@ -554,6 +634,18 @@ export const updateAppointmentStatus = async (req: AuthRequest, res: Response): 
     }
 
     if (req.user?.role === 'RECEPTIONIST') {
+      const userRec = await prisma.user.findUnique({
+        where: { id: req.user.id },
+        select: { mustChangePassword: true },
+      });
+      if (userRec?.mustChangePassword || req.user.mustChangePassword) {
+        res.status(403).json({
+          success: false,
+          message: 'Temporary password must be changed before accessing clinical desk operations.',
+        });
+        return;
+      }
+
       const receptionist = await prisma.receptionistProfile.findUnique({
         where: { userId: req.user.id },
       });

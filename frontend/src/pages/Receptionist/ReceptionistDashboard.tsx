@@ -20,6 +20,8 @@ import {
   Stethoscope,
   Activity,
   Building2,
+  ShieldCheck,
+  Lock,
 } from 'lucide-react';
 
 export interface TokenPassData {
@@ -36,7 +38,14 @@ export interface TokenPassData {
 }
 
 export const ReceptionistDashboard: React.FC = () => {
-  const { user } = useAuth();
+  const { user, refreshUser, updateUser } = useAuth();
+
+  // Mandatory password change state for provisioned receptionists
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
 
   const [data, setData] = useState<ReceptionistDashboardData | null>(null);
   const [, setLoading] = useState(true);
@@ -119,6 +128,40 @@ export const ReceptionistDashboard: React.FC = () => {
   const linkedDoctors = data?.doctors || [];
   const activeSelectedDoctor = linkedDoctors.find((d) => d.doctorId === selectedDoctorId);
   const effectiveClinicId = data?.clinic?.id || walkinClinicId || activeSelectedDoctor?.clinics?.[0]?.clinicId;
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError(null);
+    if (!currentPassword) {
+      setPasswordError('Please enter your current temporary password');
+      return;
+    }
+    if (newPassword.length < 6) {
+      setPasswordError('New password must be at least 6 characters long');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordError('New password and confirm password do not match');
+      return;
+    }
+
+    setChangingPassword(true);
+    try {
+      const res = await api.changeReceptionistPassword({
+        currentPassword,
+        newPassword,
+      });
+      if (res?.data && updateUser) {
+        updateUser(res.data);
+      }
+      await refreshUser();
+      setSuccessMsg('Temporary password changed successfully. Receptionist desk unlocked.');
+    } catch (err: any) {
+      setPasswordError(err.message || 'Failed to update password');
+    } finally {
+      setChangingPassword(false);
+    }
+  };
 
   // Handle rapid walk-in booking
   const handleWalkinSubmit = async (e: React.FormEvent) => {
@@ -1053,6 +1096,93 @@ export const ReceptionistDashboard: React.FC = () => {
             Please retain this slip and listen for token announcement.
             <br />
             MediArca Digital OPD
+          </div>
+        </div>
+      )}
+
+      {/* Mandatory Password Change Modal for Provisioned Accounts */}
+      {user?.mustChangePassword && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-fadeIn print:hidden">
+          <div className="bg-white rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-6 sm:p-8 shadow-2xl relative text-left">
+            <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center mx-auto mb-4 border border-amber-500/20">
+              <ShieldCheck className="w-6 h-6" />
+            </div>
+            <h2 className="text-xl font-bold text-[#1d1d1f] text-center mb-1">
+              Update Temporary Password
+            </h2>
+            <p className="text-xs text-[#86868b] text-center mb-6 leading-relaxed">
+              Your clinic administrator provisioned your account with a temporary password. For clinical data security, you must set a permanent password before accessing the receptionist desk.
+            </p>
+
+            {passwordError && (
+              <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <span>{passwordError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleChangePassword} className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
+                  Current Temporary Password
+                </label>
+                <div className="relative">
+                  <input
+                    type="password"
+                    required
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    placeholder="Enter temporary password"
+                    className="w-full h-11 px-3.5 pl-9 rounded-xl border border-[#e5e5ea] text-sm focus:outline-none focus:border-[#0088e8]"
+                  />
+                  <Lock className="w-4 h-4 text-[#86868b] absolute left-3 top-3.5" />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
+                  New Permanent Password (min. 6 characters)
+                </label>
+                <div className="relative">
+                  <input
+                    type="password"
+                    required
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Enter new password"
+                    className="w-full h-11 px-3.5 pl-9 rounded-xl border border-[#e5e5ea] text-sm focus:outline-none focus:border-[#0088e8]"
+                  />
+                  <Lock className="w-4 h-4 text-[#86868b] absolute left-3 top-3.5" />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
+                  Confirm New Password
+                </label>
+                <div className="relative">
+                  <input
+                    type="password"
+                    required
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Re-enter new password"
+                    className="w-full h-11 px-3.5 pl-9 rounded-xl border border-[#e5e5ea] text-sm focus:outline-none focus:border-[#0088e8]"
+                  />
+                  <Lock className="w-4 h-4 text-[#86868b] absolute left-3 top-3.5" />
+                </div>
+              </div>
+
+              <AppleButton
+                variant="primary"
+                size="lg"
+                type="submit"
+                disabled={changingPassword}
+                className="w-full mt-2 shadow-sm"
+              >
+                {changingPassword ? 'Updating Password...' : 'Save & Unlock Receptionist Desk'}
+              </AppleButton>
+            </form>
           </div>
         </div>
       )}

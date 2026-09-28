@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import prisma from '../config/database';
 import { AuthRequest } from '../middleware/authMiddleware';
+import { getLocalDateString } from '../utils/scheduleUtils';
 
 export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -18,7 +19,7 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
       return;
     }
 
-    const dateStr = (req.query.date as string) || new Date().toISOString().split('T')[0];
+    const dateStr = (req.query.date as string) || getLocalDateString();
     const scope = (req.query.scope as string) || 'date';
 
     const whereClause: any = {
@@ -52,7 +53,7 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
     const completedQueue = appointments.filter((a) => a.status === 'COMPLETED');
 
     // Calculate upcoming bookings summary across dates for this doctor
-    const todayIso = new Date().toISOString().split('T')[0];
+    const todayIso = getLocalDateString();
     const upcomingWaiting = await prisma.appointment.findMany({
       where: {
         doctorId: doctor.id,
@@ -66,7 +67,8 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
       orderBy: { appointmentDate: 'asc' },
     });
 
-    const tomorrowIso = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+    const tomorrow = new Date(Date.now() + 86400000);
+    const tomorrowIso = getLocalDateString(tomorrow);
     const tomorrowCount = upcomingWaiting.filter((a) => a.appointmentDate === tomorrowIso).length;
     const futureBookings = upcomingWaiting.filter((a) => a.appointmentDate > dateStr);
     const nextDateWithBookings = futureBookings[0]?.appointmentDate || null;
