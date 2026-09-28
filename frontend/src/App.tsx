@@ -171,20 +171,16 @@ function AppShell() {
             path="/patient/records"
             element={
               <ProtectedRoute allowedRoles={['PATIENT']}>
-                <MedicalRecords />
+                <Navigate to="/patient/appointments" replace />
               </ProtectedRoute>
             }
           />
           <Route
             path="/records"
             element={
-              user?.role === 'PATIENT' ? (
-                <Navigate to="/patient/records" replace />
-              ) : (
-                <ProtectedRoute allowedRoles={['PATIENT']}>
-                  <MedicalRecords />
-                </ProtectedRoute>
-              )
+              <ProtectedRoute allowedRoles={['PATIENT']}>
+                <Navigate to="/patient/appointments" replace />
+              </ProtectedRoute>
             }
           />
           <Route

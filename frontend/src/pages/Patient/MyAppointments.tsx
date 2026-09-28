@@ -69,12 +69,6 @@ export const MyAppointments: React.FC = () => {
       badge: upcomingList.length > 0 ? upcomingList.length : undefined,
     },
     {
-      id: 'records',
-      label: 'Clinical Records',
-      icon: FileText,
-      path: '/patient/records',
-    },
-    {
       id: 'find-doctors',
       label: 'Find Specialists',
       icon: Stethoscope,

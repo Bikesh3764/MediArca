@@ -37,12 +37,6 @@ const patientNavItems: DashboardNavItem[] = [
     path: '/patient/appointments',
   },
   {
-    id: 'records',
-    label: 'Clinical Records',
-    icon: FileText,
-    path: '/patient/records',
-  },
-  {
     id: 'find-doctors',
     label: 'Find Specialists',
     icon: Stethoscope,

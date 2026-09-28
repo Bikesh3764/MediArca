@@ -30,6 +30,7 @@ import {
   ChevronRight,
   X,
   AlertCircle,
+  CheckCircle2,
 } from 'lucide-react';
 
 export const Home: React.FC = () => {
@@ -307,18 +308,6 @@ export const Home: React.FC = () => {
                 includeAll={true}
                 counts={specialtyCounts}
               />
-              <button
-                type="button"
-                onClick={() => setAvailabilityFilter(availabilityFilter === 'ACTIVE_NOW' ? 'ALL' : 'ACTIVE_NOW')}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-2 border cursor-pointer active:scale-[0.98] ${
-                  availabilityFilter === 'ACTIVE_NOW'
-                    ? 'bg-emerald-50 border-emerald-300 text-emerald-700 font-semibold shadow-xs'
-                    : 'bg-[#f5f5f7] border-[#e5e5ea] text-[#48484a] hover:bg-[#ebebee]'
-                }`}
-              >
-                <span className={`w-2 h-2 rounded-full ${availabilityFilter === 'ACTIVE_NOW' ? 'bg-emerald-500 animate-pulse' : 'bg-[#c7c7cc]'}`} />
-                <span>Active Shift Now</span>
-              </button>
 
               <select
                 value={minExperience}
@@ -426,173 +415,157 @@ export const Home: React.FC = () => {
             </AppleButton>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 w-full">
-            {filteredDoctors.map((doctor) => {
-                const slots = parseDoctorSlots(doctor);
-                const todayStr = getLocalDateString();
-                const firstSlotStatus = slots[0]
-                  ? evaluateSlotStatus(slots[0], todayStr, 0, new Date())
-                  : null;
-                const getHomeDoctorDetailPath = (docId: string) =>
-                  user?.role === 'PATIENT' ? `/patient/doctor/${docId}` : `/doctor/${docId}`;
-                const getHomeDoctorBookPath = (docId: string) =>
-                  user?.role === 'PATIENT' ? `/patient/book/${docId}` : `/book/${docId}`;
-                const cleanDegrees = formatDoctorDegrees(doctor.qualifications);
-                const hasClinics = Boolean(doctor.clinics && doctor.clinics.length > 0);
-                const primaryClinic = hasClinics && doctor.clinics ? doctor.clinics[0].clinic : null;
+        <div className="space-y-4 w-full">
+          {filteredDoctors.map((doctor) => {
+            const slots = parseDoctorSlots(doctor);
+            const getHomeDoctorDetailPath = (docId: string) =>
+              user?.role === 'PATIENT' ? `/patient/doctor/${docId}` : `/doctor/${docId}`;
+            const getHomeDoctorBookPath = (docId: string) =>
+              user?.role === 'PATIENT' ? `/patient/book/${docId}` : `/book/${docId}`;
+            const cleanDegrees = formatDoctorDegrees(doctor.qualifications);
+            const hasClinics = Boolean(doctor.clinics && doctor.clinics.length > 0);
+            const primaryClinic = hasClinics && doctor.clinics ? doctor.clinics[0].clinic : null;
 
-                return (
+            return (
+              <div
+                key={doctor.id}
+                className="w-full bg-white rounded-[22px] border border-[#e5e5ea] p-5 sm:p-6 hover:border-[#0088e8]/30 hover:shadow-apple-card transition-all duration-200 flex flex-col md:flex-row md:items-center justify-between gap-5 group"
+              >
+                {/* Left Side: Avatar & Practitioner Credentials */}
+                <div className="flex items-start sm:items-center gap-4 min-w-0 flex-1">
+                  {/* Clean Circular Avatar */}
                   <div
-                    key={doctor.id}
-                    className="bg-white rounded-[24px] border border-[#e5e5ea] p-5 sm:p-6 shadow-xs hover:shadow-apple-card hover:border-[#0088e8]/30 transition-all duration-300 flex flex-col justify-between group"
+                    onClick={() => navigate(getHomeDoctorDetailPath(doctor.id))}
+                    className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] overflow-hidden flex-shrink-0 flex items-center justify-center cursor-pointer hover:opacity-90 transition-opacity"
                   >
-                    <div>
-                      {/* Top: Avatar + Identity Header */}
-                      <div className="flex items-start gap-4">
-                        <div
-                          onClick={() => navigate(getHomeDoctorDetailPath(doctor.id))}
-                          className="w-16 h-16 sm:w-18 sm:h-18 rounded-[20px] bg-[#f5f5f7] border border-[#e5e5ea] overflow-hidden flex-shrink-0 cursor-pointer group-hover:scale-[1.02] transition-transform relative flex items-center justify-center"
-                        >
-                          {doctor.user.avatarUrl ? (
-                            <img
-                              src={doctor.user.avatarUrl}
-                              alt={doctor.user.fullName}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                (e.currentTarget as HTMLElement).style.display = 'none';
-                              }}
-                            />
-                          ) : null}
-                          <div className="w-full h-full flex items-center justify-center font-bold text-xl text-[#0088e8] bg-gradient-to-br from-blue-50 to-indigo-100/80">
-                            {doctor.user.fullName.replace(/^Dr\.\s*/i, '').trim()[0] || 'D'}
-                          </div>
-                          <div className="absolute bottom-1 right-1 bg-white rounded-full p-0.5 shadow-xs" title="Verified Practitioner">
-                            <ShieldCheck className="w-3.5 h-3.5 text-[#10b981]" />
-                          </div>
-                        </div>
+                    {doctor.user.avatarUrl ? (
+                      <img
+                        src={doctor.user.avatarUrl}
+                        alt={doctor.user.fullName}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                          const fallback = e.currentTarget.parentElement?.querySelector('.doc-fallback-home');
+                          if (fallback) (fallback as HTMLElement).style.display = 'flex';
+                        }}
+                      />
+                    ) : null}
+                    <div
+                      className={`doc-fallback-home w-full h-full ${doctor.user.avatarUrl ? 'hidden' : 'flex'} items-center justify-center font-bold text-lg text-[#0088e8] bg-gradient-to-br from-blue-50 to-indigo-100/70`}
+                    >
+                      {doctor.user.fullName.replace(/^Dr\.\s*/i, '').trim()[0] || 'D'}
+                    </div>
+                  </div>
 
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center justify-between gap-2">
-                            <h3
-                              onClick={() => navigate(getHomeDoctorDetailPath(doctor.id))}
-                              className="text-base sm:text-lg font-bold text-[#1d1d1f] hover:text-[#0088e8] cursor-pointer tracking-tight truncate"
-                            >
-                              {doctor.user.fullName}
-                            </h3>
-                            <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200/80 text-[11px] font-semibold text-amber-800 flex-shrink-0">
-                              <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
-                              <span>{doctor.rating ? doctor.rating.toFixed(1) : '5.0'}</span>
-                            </div>
-                          </div>
-
-                          <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#0088e8]/10 text-[#0088e8]">
-                              {doctor.specialty}
-                            </span>
-                            <span className="text-[11px] font-medium text-[#86868b] bg-[#f5f5f7] px-2 py-0.5 rounded-full border border-[#e5e5ea]">
-                              {cleanDegrees}
-                            </span>
-                            <span className="text-[11px] text-[#86868b] font-medium">
-                              • {doctor.experienceYears}y exp
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Practice Venue & Shifts Compartment */}
-                      <div className="mt-4 p-3.5 rounded-2xl bg-[#f5f5f7]/80 border border-[#e5e5ea] space-y-2">
-                        <div className="flex items-center gap-2 text-xs text-[#1d1d1f]">
-                          <Building2 className="w-4 h-4 text-[#0088e8] flex-shrink-0" />
-                          {hasClinics && primaryClinic ? (
-                            <span className="font-medium truncate">
-                              {primaryClinic.clinicName}
-                              {primaryClinic.city ? ` • ${primaryClinic.city}` : ''}
-                              {(doctor.clinics?.length ?? 0) > 1 ? (
-                                <span className="text-[#86868b] font-normal ml-1">
-                                  (+{(doctor.clinics?.length ?? 0) - 1} more)
-                                </span>
-                              ) : null}
-                            </span>
-                          ) : (
-                            <span className="text-amber-700 font-semibold flex items-center gap-1">
-                              <AlertCircle className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />
-                              No Clinic Associated (Unavailable)
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="flex items-center justify-between text-xs text-[#1d1d1f]">
-                          <div className="flex items-center gap-2">
-                            <Clock className="w-4 h-4 text-[#0088e8] flex-shrink-0" />
-                            <span className="font-medium">
-                              {slots.length > 0
-                                ? `${format12Hour(slots[0].startTime)} – ${format12Hour(slots[0].endTime)}`
-                                : doctor.checkingStartTime
-                                ? `${format12Hour(doctor.checkingStartTime)} – ${format12Hour(doctor.checkingEndTime)}`
-                                : 'Outpatient Shift'}
-                            </span>
-                          </div>
-                          {firstSlotStatus?.isInProgress ? (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-full border border-emerald-300/70">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                              Active Now
-                            </span>
-                          ) : slots.length > 1 ? (
-                            <span className="text-[10px] text-[#86868b] font-medium bg-white px-2 py-0.5 rounded-full border border-[#e5e5ea]">
-                              {slots.length} Shifts Today
-                            </span>
-                          ) : null}
-                        </div>
+                  {/* Doctor Info */}
+                  <div className="min-w-0 flex-1">
+                    {/* Name + Verified Badge + Rating */}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3
+                        onClick={() => navigate(getHomeDoctorDetailPath(doctor.id))}
+                        className="text-base sm:text-lg font-bold text-[#1d1d1f] hover:text-[#0088e8] cursor-pointer tracking-tight transition-colors"
+                      >
+                        {doctor.user.fullName}
+                      </h3>
+                      <CheckCircle2 className="w-4 h-4 text-[#0088e8] flex-shrink-0" />
+                      <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200/60 text-[11px] font-semibold text-amber-800">
+                        <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
+                        <span>{doctor.rating ? doctor.rating.toFixed(1) : '5.0'}</span>
                       </div>
                     </div>
 
-                    {/* Card Footer: Consultation Fee & Actions */}
-                    <div className="mt-5 pt-4 border-t border-[#f0f0f0] flex items-center justify-between gap-3">
-                      <div>
-                        <span className="text-[10px] uppercase font-semibold text-[#86868b] tracking-wider block">
-                          Consultation
-                        </span>
-                        <div className="text-xl font-bold text-[#1d1d1f] tracking-tight leading-none mt-0.5">
-                          ₹{doctor.consultationFee.toFixed(0)}
-                        </div>
-                        <span className="text-[10px] text-emerald-600 font-medium block mt-0.5">Pay at Clinic Reception</span>
+                    {/* Specialty & Qualifications */}
+                    <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-[#86868b]">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#0088e8]/10 text-[#0088e8]">
+                        {doctor.specialty}
+                      </span>
+                      <span className="font-medium text-[#48484a]">{cleanDegrees}</span>
+                      <span>•</span>
+                      <span>{doctor.experienceYears}y exp</span>
+                    </div>
+
+                    {/* Meta Row: Clinic & Shift Timings */}
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2.5 text-xs text-[#6e6e73]">
+                      {/* Clinic Venue */}
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <Building2 className="w-3.5 h-3.5 text-[#0088e8] flex-shrink-0" />
+                        {hasClinics && primaryClinic ? (
+                          <span className="truncate max-w-[240px] sm:max-w-md font-medium text-[#1d1d1f]">
+                            {primaryClinic.clinicName}
+                            {primaryClinic.city ? ` • ${primaryClinic.city}` : ''}
+                            {(doctor.clinics?.length ?? 0) > 1 && (
+                              <span className="text-[#86868b] font-normal ml-1">
+                                (+{(doctor.clinics?.length ?? 0) - 1} more)
+                              </span>
+                            )}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-xs text-amber-700 font-medium bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200/70">
+                            <AlertCircle className="w-3 h-3 text-amber-600 flex-shrink-0" />
+                            No Clinic Associated
+                          </span>
+                        )}
                       </div>
 
-                      <div className="flex items-center gap-2">
-                        <AppleButton
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => navigate(getHomeDoctorDetailPath(doctor.id))}
-                          className="text-xs px-3.5 py-1.5 rounded-full border border-[#e5e5ea] text-[#1d1d1f] hover:bg-[#f5f5f7] font-medium"
-                        >
-                          Profile
-                        </AppleButton>
-                        {hasClinics ? (
-                          <AppleButton
-                            variant="primary"
-                            size="sm"
-                            onClick={() => navigate(getHomeDoctorBookPath(doctor.id))}
-                            className="text-xs px-4 py-1.5 rounded-full flex items-center gap-1 font-semibold shadow-apple-button"
-                          >
-                            <span>Book Token</span>
-                            <ChevronRight className="w-3.5 h-3.5" />
-                          </AppleButton>
-                        ) : (
-                          <AppleButton
-                            variant="secondary"
-                            size="sm"
-                            disabled
-                            className="text-xs px-3.5 py-1.5 rounded-full opacity-60 cursor-not-allowed bg-gray-100 border border-gray-200 text-gray-500 font-medium"
-                          >
-                            <span>No Clinic</span>
-                          </AppleButton>
+                      {/* Shift Timing */}
+                      <div className="flex items-center gap-1.5 font-medium text-[#1d1d1f]">
+                        <Clock className="w-3.5 h-3.5 text-[#0088e8] flex-shrink-0" />
+                        <span>
+                          {slots.length > 0
+                            ? `${format12Hour(slots[0].startTime)} – ${format12Hour(slots[0].endTime)}`
+                            : doctor.checkingStartTime
+                            ? `${format12Hour(doctor.checkingStartTime)} – ${format12Hour(doctor.checkingEndTime)}`
+                            : 'Outpatient Shift'}
+                        </span>
+                        {slots.length > 1 && (
+                          <span className="text-[11px] text-[#86868b] font-normal">
+                            ({slots.length} shifts)
+                          </span>
                         )}
                       </div>
                     </div>
                   </div>
-              );
-            })}
-          </div>
+                </div>
+
+                {/* Right Side: Consultation Fee & Single Action CTA */}
+                <div className="flex sm:flex-row md:flex-col lg:flex-row items-center justify-between md:justify-center lg:justify-end gap-3 sm:gap-6 pt-3 md:pt-0 border-t md:border-t-0 border-[#f5f5f7] flex-shrink-0">
+                  <div className="text-left md:text-right">
+                    <span className="text-[10px] uppercase font-semibold text-[#86868b] tracking-wider block">
+                      Consultation
+                    </span>
+                    <div className="text-xl sm:text-2xl font-bold text-[#1d1d1f] tracking-tight leading-tight">
+                      ₹{doctor.consultationFee.toFixed(0)}
+                    </div>
+                    <span className="text-[10px] text-emerald-600 font-medium block">Pay at Clinic</span>
+                  </div>
+
+                  <div>
+                    {hasClinics ? (
+                      <AppleButton
+                        variant="primary"
+                        size="sm"
+                        onClick={() => navigate(getHomeDoctorBookPath(doctor.id))}
+                        className="text-xs px-5 py-2.5 rounded-full flex items-center gap-1.5 font-semibold shadow-xs hover:shadow-apple-button"
+                      >
+                        <span>Book Token</span>
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </AppleButton>
+                    ) : (
+                      <AppleButton
+                        variant="secondary"
+                        size="sm"
+                        disabled
+                        className="text-xs px-4 py-2.5 rounded-full opacity-60 cursor-not-allowed bg-[#f5f5f7] border border-[#e5e5ea] text-[#86868b] font-medium"
+                      >
+                        <span>No Clinic</span>
+                      </AppleButton>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
         )}
       </section>
 

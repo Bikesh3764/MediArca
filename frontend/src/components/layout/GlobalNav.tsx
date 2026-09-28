@@ -97,17 +97,6 @@ export const GlobalNav: React.FC = () => {
                 Live Queue & Passes
               </Link>
               <Link
-                to="/patient/records"
-                className={`px-3.5 py-1.5 rounded-full transition-all duration-200 text-xs flex items-center gap-1.5 ${
-                  isActive('/patient/records')
-                    ? 'bg-[#0088e8]/10 text-[#0088e8] font-semibold border border-[#0088e8]/20 shadow-2xs'
-                    : 'hover:text-[#1d1d1f] hover:bg-black/[0.04] font-medium'
-                }`}
-              >
-                <FileText className="w-3.5 h-3.5" />
-                Medical Vault
-              </Link>
-              <Link
                 to="/patient/profile"
                 className={`px-3.5 py-1.5 rounded-full transition-all duration-200 text-xs ${
                   isActive('/patient/profile')
@@ -327,18 +316,6 @@ export const GlobalNav: React.FC = () => {
                 >
                   <Calendar className="w-4 h-4" />
                   Live Queue Passes
-                </Link>
-                <Link
-                  to="/patient/records"
-                  onClick={closeMenu}
-                  className={`py-2 px-3.5 rounded-full transition-colors flex items-center gap-2 ${
-                    isActive('/patient/records')
-                      ? 'bg-[#0088e8]/10 text-[#0088e8] font-semibold border border-[#0088e8]/20'
-                      : 'hover:bg-black/[0.04] hover:text-[#1d1d1f] font-medium'
-                  }`}
-                >
-                  <FileText className="w-4 h-4" />
-                  Medical Vault
                 </Link>
                 <Link
                   to="/patient/profile"
