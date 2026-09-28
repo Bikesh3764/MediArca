@@ -1,1003 +1,949 @@
-# MediArca Comprehensive Bug & Security Audit
+# MediArca — Second Bug & Security Audit
 
 **Repository:** `Bikesh3764/MediArca`  
 **Branch audited:** `main`  
+**Current commit audited:** `f88f867bedca721266f85eb88f93779186369e18`  
+**Previous audit commit:** `511857f725070ab9d01679ec1cdc832eb9d96fce`  
 **Audit date:** 2026-09-28  
-**Remediation & Fix Date:** 2026-09-28  
-**Remediation Status:** ✅ **ALL FINDINGS RESOLVED & VERIFIED**  
-**Test Suite:** ✅ **428 Passed, 0 Failed** (`backend/scripts/verify-fixes.ts`, Tests 1–94)  
-**Detailed Remediation Report:** [AUDIT_REMEDIATION_REPORT_2026-09-28.md](./AUDIT_REMEDIATION_REPORT_2026-09-28.md)  
-**Method:** Static source review & automated regression test harness across backend, frontend, Prisma schema, and security controllers.
+**Method:** Second-pass static audit of the current source tree, focused on the changes made after the first audit, plus re-checking all previous critical/high findings.
 
-> **Status Notice:** All critical, high, and medium priority issues listed in this audit and the desktop audit report (`MediArca_Bug_Audit_2026-09-28.md`) have been resolved and verified with 428 passing automated tests. Backend and frontend builds pass cleanly with 0 errors.
-
-## Executive summary
-
-The most important issues have been resolved as follows:
-
-1. **CRITICAL — Google authentication can accept forged/unverified credentials.** → ✅ **RESOLVED** (Fail-closed verification with `verifyIdToken()`).
-2. **CRITICAL — Doctor profile update endpoint allows mass assignment of security-sensitive fields.** → ✅ **RESOLVED** (Explicit allowlist enforced; administrative fields stripped).
-3. **CRITICAL — Receptionist queue endpoint leaks patient data to non-receptionist roles.** → ✅ **RESOLVED** (`authorize('RECEPTIONIST')` enforced at route & controller level).
-4. **CRITICAL — Doctor medical-record lookup lacks patient relationship check.** → ✅ **RESOLVED** (Direct appointment/care relationship required; 403 on unauthorized).
-5. **HIGH — Provisional queue number integer overflow.** → ✅ **RESOLVED** (Sequential negative tokens `-1, -2, -3...` within Postgres 32-bit `Int`).
-6. **HIGH — Doctor/Clinic self-affiliation approval loophole.** → ✅ **RESOLVED** (Blocked self-approval; only incoming requests can be accepted).
-7. **HIGH — Suspended doctors bookable by direct ID.** → ✅ **RESOLVED** (Blocked bookings and direct detail lookups for suspended/unverified doctors).
-8. **HIGH — Consultation state transitions too permissive.** → ✅ **RESOLVED** (`callPatient` and `completeConsultation` state machine strictly enforced).
-9. **HIGH — Slot capacity overfilling on receptionist approval.** → ✅ **RESOLVED** (Re-validates slot max capacity against confirmed bookings before approving).
-10. **HIGH — Client-supplied clock time used for appointment decisions.** → ✅ **RESOLVED** (Server-authoritative Indian Standard Time (IST) enforced).
-11. **MEDIUM — Wait estimates count completed patients.** → ✅ **RESOLVED** (`evaluateSlotStatus` excludes completed patients from wait time).
-12. **MEDIUM — Medical Records screen unreachable.** → ✅ **RESOLVED** (App routing restored to `<MedicalRecords />` and added to sidebar).
-13. **MEDIUM — Patient appointments tab hides pending/rejected requests.** → ✅ **RESOLVED** (`PENDING_APPROVAL` added to upcoming, `REJECTED` added to past history).
-14. **MEDIUM/HIGH — Rate limiting absent on auth endpoints.** → ✅ **RESOLVED** (Sliding-window IP rate limiter implemented).
+> **Important:** This report is a code audit, not a guarantee that every possible runtime bug has been found. The repository's current `verify-fixes.ts` suite is heavily simulation/unit oriented and does not exercise the full Express + Prisma authorization paths. The latest GitHub Actions run successfully deployed the frontend, but the workflow does not execute the backend security regression suite.
 
 ---
 
-# 1. CRITICAL — Forged Google credentials accepted
+# Current overall status
 
-**Files**
-- `backend/src/controllers/authController.ts:385-409`
-- `frontend/src/pages/Auth/Login.tsx`
-- `frontend/src/pages/Auth/Signup.tsx`
+The latest security fix commit does resolve a substantial number of the previous findings. However, the repository is **not yet at “all findings resolved” status**.
 
-### Why this is dangerous
+### Current priority picture
 
-The Google auth controller correctly calls `verifyIdToken()` when a configured client ID exists, **but on verification failure it falls back to `jwt.decode()`**. When the client ID is absent it decodes the token directly. It then manually decodes the JWT payload again if needed.
+| Priority | Current status |
+|---|---|
+| Critical | 0 newly confirmed; previous critical findings are largely fixed |
+| High | Several remain open/partially fixed |
+| Medium | Several remain open |
+| Low | Multiple hardening items remain |
 
-That means the backend can accept an arbitrary token containing an attacker-chosen `email` and create/login an account for that identity.
+The most important remaining items are:
 
-The frontend also contains a simulated Google login that constructs a fake JWT-like value.
-
-### Safe fix
-
-Production Google auth must be fail-closed:
-
-- Require `GOOGLE_CLIENT_ID`.
-- Call `verifyIdToken()`.
-- Reject if verification fails.
-- Do **not** use `jwt.decode()` as authentication.
-- Do **not** parse arbitrary credential payloads as proof of identity.
-- Keep demo Google auth behind a strict development-only guard that cannot be enabled in production.
-
-### Regression safety
-
-Test:
-- real Google login succeeds;
-- invalid signature fails;
-- wrong audience fails;
-- expired credential fails;
-- malformed token fails;
-- production build does not expose a simulated-login path.
-
-**Do not** replace the verification call with another decode helper.
+1. **HIGH — JWT secret still has a hard-coded fallback and there is no startup fail-closed guard.**
+2. **HIGH — Server still trusts client-supplied clock minutes for booking/queue decisions.**
+3. **HIGH — Medical records can still be exposed through public storage URLs / public uploads.**
+4. **HIGH — Unverified doctor profiles remain directly accessible by ID.**
+5. **HIGH — Production frontend can silently replace a failed real doctor lookup with a demo doctor.**
+6. **HIGH — Pending/rejected receptionist accounts are still not blocked at the backend session/authorization layer.**
+7. **HIGH — Appointment detail responses still include the patient's complete medical-record collection to non-doctor roles.**
+8. **HIGH — Runtime database DDL is still executed at application startup and failures are swallowed.**
+9. **MEDIUM/HIGH — Multi-clinic queue/capacity logic is still not consistently clinic-scoped.**
+10. **MEDIUM — Patient DOB update writes a JavaScript `Date` into a Prisma `String` field.**
+11. **MEDIUM — Upload validation accepts MIME OR extension rather than validating file content.**
+12. **MEDIUM — Password requirements for normal patient/doctor registration remain weak.**
+13. **MEDIUM — Public APIs expose doctor contact information and reviewer identity data.**
+14. **MEDIUM — Production API still returns internal error messages.**
+15. **MEDIUM — Rate limiting is in-memory and covers only a few endpoints.**
 
 ---
 
-# 2. CRITICAL — Doctor can mass-assign protected profile fields
+# Findings that ARE fixed after the latest commit
 
-**File**
-- `backend/src/controllers/authController.ts:329-356`
+The following earlier findings are now backed by concrete code changes:
 
-### Why this is dangerous
+### 1. Google authentication fail-closed in production — FIXED
 
-`updateProfile()` does:
+`backend/src/controllers/authController.ts` now rejects failed Google ID-token verification when a production Google client ID is configured, instead of falling back to accepting the decoded payload.
 
-`const { fullName, phone, avatarUrl, ...roleSpecificData } = req.body`
+This is a real improvement.
 
-and then spreads `roleSpecificData` into `doctorProfile.update()`.
+**Remaining caveat:** development mode still allows decoded mock credentials. That is acceptable only if the development environment cannot reach real production data.
 
-This permits a doctor to submit fields that should be controlled by platform administration, for example:
+---
 
+### 2. Doctor profile mass assignment — FIXED
+
+`updateProfile()` now explicitly picks doctor fields instead of blindly spreading the request body into Prisma.
+
+Protected fields such as:
 - `isVerified`
 - `verificationStatus`
 - `rating`
 - `totalReviews`
 - `userId`
-- `consultationFee`
-- other sensitive profile fields
+- `id`
 
-The spread order also allows client input to override explicitly supplied values such as `userId` during creates.
-
-### Safe fix
-
-Replace mass assignment with explicit allowlists.
-
-For a doctor self-profile update, allow only fields intentionally editable by doctors, e.g.:
-- fullName
-- phone
-- avatarUrl
-- specialty
-- qualifications
-- experienceYears
-- bio
-- clinicAddress
-- checking times / schedule fields where appropriate
-
-Never accept:
-- userId
-- role
-- isVerified
-- verificationStatus
-- rating
-- totalReviews
-- createdAt / updatedAt
-- any future administrative fields
-
-### Regression safety
-
-Before deployment:
-- verify an unverified doctor cannot set `isVerified=true`;
-- verify a doctor cannot alter their role;
-- verify their profile still saves normal editable fields;
-- verify admin verification continues to work.
-
-**Important:** Do not “fix” this by simply deleting all doctor profile fields from the request. Use an explicit allowlist so legitimate profile editing keeps working.
+are no longer directly assignable by a doctor.
 
 ---
 
-# 3. CRITICAL — Receptionist queue endpoint leaks clinical data to other authenticated roles
+### 3. Receptionist queue role guard — FIXED
+
+`receptionistRoutes.ts` now applies:
+
+`authenticate, authorize('RECEPTIONIST')`
+
+to receptionist operations.
+
+This closes the previous “any authenticated user can call receptionist queue endpoints” path.
+
+---
+
+### 4. Receptionist appointment-status endpoint — FIXED
+
+The controller now explicitly requires the receptionist role and checks receptionist assignment before changing appointment status.
+
+---
+
+### 5. Doctor patient-record relationship check — FIXED/PARTIAL
+
+Doctor record access now requires an appointment relationship with the target patient.
+
+This blocks the previous arbitrary-`patientId` lookup.
+
+**Remaining privacy concern:** the relationship is “any historical appointment”, so a doctor who treated a patient once can continue seeing all of that patient's uploaded records indefinitely. This may be intentional, but should be an explicit retention/access policy rather than an accidental side effect.
+
+---
+
+### 6. Provisional queue integer overflow — FIXED
+
+The previous timestamp/random negative token could exceed PostgreSQL's signed 32-bit integer range.
+
+The code now generates sequential negative values such as:
+
+`-1, -2, -3...`
+
+This is safe within the normal range.
+
+**Remaining edge case:** the sequence should stop/reject before crossing `-2147483648`.
+
+---
+
+### 7. Doctor/clinic affiliation self-approval checks — FIXED
+
+The latest code uses `requestedBy` to prevent an actor from approving an affiliation that they initiated.
+
+---
+
+### 8. Suspended doctor booking — FIXED
+
+Online booking now checks:
+
+- `isVerified`
+- `verificationStatus !== 'SUSPENDED'`
+- `verificationStatus !== 'REJECTED'`
+
+before creating appointments.
+
+---
+
+### 9. Consultation state-machine guard — FIXED/PARTIAL
+
+The latest code blocks calling/completing inappropriate states such as `PENDING_APPROVAL`, `COMPLETED`, and `CANCELLED`.
+
+**Remaining issue:** the transition model is still encoded manually in multiple controllers instead of one centralized transition function.
+
+---
+
+### 10. Cross-clinic receptionist doctor assignment — FIXED
+
+Doctor IDs are now filtered against the clinic's active/accepted affiliations before assignment.
+
+---
+
+### 11. Receptionist provisioning with inactive doctors — FIXED
+
+The clinic's receptionist-provisioning flow now uses active/accepted affiliations.
+
+---
+
+### 12. Patient Medical Records routing — FIXED
+
+`/patient/records` and `/records` now render `MedicalRecords` rather than unconditionally redirecting to appointments.
+
+---
+
+### 13. Pending/rejected appointment visibility — FIXED
+
+The patient appointment page now includes:
+
+- `PENDING_APPROVAL`
+- `REJECTED`
+
+instead of silently dropping those states.
+
+---
+
+### 14. Destructive production seeding — FIXED
+
+`backend/prisma/seed.ts` now blocks production seeding unless explicitly overridden.
+
+---
+
+### 15. Base64 medical-record URL handling — FIXED
+
+`getFileUrl()` now preserves `data:` URLs instead of prepending the API base URL.
+
+---
+
+# Remaining HIGH findings
+
+## 16. HIGH — JWT hard-coded fallback is still present
 
 **Files**
-- `backend/src/routes/receptionistRoutes.ts:14-31`
-- `backend/src/controllers/receptionistController.ts` (`getDoctorQueue`)
-
-### Why this is dangerous
-
-The route only applies `authenticate`.
-
-Inside `getDoctorQueue()`, assignment checks happen only when `req.user.role === 'RECEPTIONIST'`. Other authenticated roles can continue through the function.
-
-The response includes:
-- patient names
-- phone numbers
-- email addresses
-- symptoms
-- reason for visit
-- prescriptions
-
-This creates an authenticated-but-unauthorized data disclosure path.
-
-### Safe fix
-
-Enforce the role at the route:
-
-`router.get('/doctors/:doctorId/queue', authenticate, authorize('RECEPTIONIST'), getDoctorQueue)`
-
-and keep the controller assignment + clinic checks as defense in depth.
-
-### Regression safety
-
-Verify:
-- receptionist assigned to doctor: succeeds;
-- receptionist not assigned: 403;
-- patient: 403;
-- doctor: 403;
-- clinic: 403 unless an intentionally separate endpoint exists;
-- admin: 403 unless a separate admin endpoint is designed.
-
----
-
-# 4. CRITICAL — Doctor patient-record endpoint lacks patient relationship authorization
-
-**File**
-- `backend/src/controllers/recordController.ts:85-123`
-
-### Why this is dangerous
-
-A doctor may submit an arbitrary `patientId`. The controller checks only that the role is `DOCTOR`; it does not verify that the doctor is actually authorized to access that patient's records.
-
-The query then returns all records for that ID.
-
-### Safe fix
-
-For doctors, permit access only when there is an explicit authorized relationship, such as:
-- an appointment between the doctor and patient;
-- optionally the same clinic/tenant if your business rules require it.
-
-Prefer a direct relationship check before reading records.
-
-Also consider adding an audit log for record access.
-
-### Regression safety
-
-Verify:
-- assigned/treated patient records are visible;
-- unrelated patient records return 403;
-- patient can still see own records;
-- admin access works as intended.
-
----
-
-# 5. HIGH — Hard-coded JWT fallback secret
-
-**Files**
-- `backend/src/authController.ts:10`
 - `backend/src/middleware/authMiddleware.ts`
+- `backend/src/controllers/authController.ts`
 
-### Problem
-
-Both use:
+Current code still contains:
 
 `process.env.JWT_SECRET || 'mediarca-fallback-jwt-secret'`
 
-If a production environment is misconfigured, an attacker can potentially mint valid tokens.
+The current `server.ts` does **not** contain a production startup guard that aborts when the secret is absent.
+
+The Render configuration generates a JWT secret, which helps the intended Render deployment, but the application code itself remains fail-open when deployed incorrectly.
 
 ### Safe fix
 
-Fail startup when the secret is absent.
+Require a configured JWT secret at process startup.
 
-Example policy:
-- production: missing/weak secret = startup failure;
-- development: use a clearly local-only secret if needed.
+Production should refuse to start when:
+- `JWT_SECRET` is missing;
+- it equals the fallback;
+- it is below an acceptable minimum strength.
 
-### Regression safety
-
-This change invalidates tokens if the production secret changes. Plan for re-login/token invalidation before switching secrets.
+Do not simply remove the fallback without ensuring deployment environment variables exist.
 
 ---
 
-# 6. HIGH — Medical documents can become publicly accessible
+## 17. HIGH — Client-controlled clock is STILL used for booking decisions
 
 **Files**
-- `backend/src/server.ts`
+- `backend/src/controllers/appointmentController.ts`
+- `frontend/src/services/api.ts`
+
+The backend still receives `clientMinutes` and passes it into:
+
+`evaluateSlotStatus(..., clientMinsNum, ...)`
+
+The frontend also explicitly sends:
+
+`clientMinutes = new Date().getHours() * 60 + new Date().getMinutes()`
+
+This means the browser can alter the clock used by availability calculations.
+
+### Safe fix
+
+Use one server-authoritative time source on the backend.
+
+The frontend clock should only affect display.
+
+A client-supplied time value should be ignored for authorization/booking decisions.
+
+---
+
+## 18. HIGH — Unverified doctors remain accessible by direct ID
+
+**File**
+- `backend/src/controllers/doctorController.ts`
+
+`getDoctorById()` blocks:
+- `SUSPENDED`
+- `REJECTED`
+
+but does **not** block:
+
+`isVerified === false`
+
+The public directory uses `isVerified: true`, so the listing is protected, but direct lookup is not equivalent to the public directory.
+
+### Impact
+
+Anyone who obtains an unverified doctor's ID may still receive the profile response.
+
+### Safe fix
+
+The public detail endpoint should require the same public eligibility rule as the public directory, unless an intentionally separate authenticated “profile preview” endpoint is created.
+
+---
+
+## 19. HIGH — Production frontend silently substitutes demo doctor data after real API failure
+
+**File**
+- `frontend/src/services/api.ts`
+
+`getDoctorById()` catches API errors and returns:
+
+- the requested demo doctor if IDs happen to match; otherwise
+- `DEMO_DOCTORS[0]`
+
+### Why this is especially dangerous
+
+In a booking flow:
+
+1. real doctor lookup fails;
+2. UI receives a demo doctor;
+3. user sees the wrong doctor;
+4. the booking call uses `doctor.id` from that returned object.
+
+That can turn an outage, 403, or 404 into a booking against a different doctor.
+
+The same architectural problem exists in:
+- `getDoctors()`
+- `getQueuePreview()`
+
+because they can fall back to demo data on API failure.
+
+### Safe fix
+
+Production must fail visibly and safely when the backend is unavailable.
+
+Demo fallback should be behind an explicit development/demo flag.
+
+---
+
+## 20. HIGH — Pending/rejected receptionist accounts are not enforced server-side
+
+**Files**
+- `backend/src/controllers/authController.ts`
+- `backend/src/controllers/receptionistController.ts`
+- `frontend/src/pages/Receptionist/ReceptionistAuth.tsx`
+
+`applyReceptionist()` creates the user with:
+
+`receptionistProfile.status = 'PENDING'`
+
+But normal login creates a JWT without checking the receptionist status.
+
+`getMyReceptionist()` checks the role but does not check:
+
+`receptionist.status === 'ACTIVE'`
+
+### Why this matters
+
+The frontend can hide some access, but the backend is the actual security boundary.
+
+A pending/rejected receptionist should not be able to access protected receptionist operations merely because the credentials are correct.
+
+There is an additional issue: rejecting an existing receptionist does not remove the existing `DoctorReceptionist` assignments.
+
+### Safe fix
+
+For receptionist endpoints require:
+- role = RECEPTIONIST;
+- profile exists;
+- status = ACTIVE;
+- temporary password rule satisfied.
+
+For rejected profiles, remove or disable all doctor assignments in the same transaction.
+
+---
+
+## 21. HIGH — Appointment detail endpoint exposes full medical records to clinic/receptionist users
+
+**File**
+- `backend/src/controllers/appointmentController.ts`
+
+The appointment query includes:
+
+`patient.medicalRecords`
+
+The endpoint then authorizes:
+- patient;
+- doctor;
+- admin;
+- clinic;
+- receptionist.
+
+Therefore an authorized clinic/receptionist can receive a patient's uploaded medical documents merely by viewing an appointment detail response.
+
+This is broader than the intended queue/appointment workflow.
+
+### Safe fix
+
+Do not include `medicalRecords` in the generic appointment response.
+
+Create a separate medical-record access path with explicit clinical authorization.
+
+---
+
+## 22. HIGH — Medical-record storage is still public
+
+**Files**
 - `backend/src/config/r2.ts`
 - `backend/src/controllers/recordController.ts`
+- `backend/src/server.ts`
 
-### Problem
+The R2 helper returns a permanent public URL and the application still exposes `/uploads` as static files.
 
-The backend serves `/uploads` as a public static directory, and R2 is configured around a public URL.
+For healthcare documents this is unsafe.
 
-Medical records are sensitive clinical data. A public object URL means access control can be bypassed by anyone who gets the URL.
+### Safe architecture
+
+Store clinical records privately and expose them only through an authenticated backend endpoint or short-lived signed URLs.
+
+Patient ownership must be checked before generating a URL.
+
+---
+
+## 23. HIGH — Runtime database schema mutation is still present
+
+**File**
+- `backend/src/server.ts`
+
+`ensureSchema()` still executes multiple:
+- `ALTER TABLE`
+- `CREATE TABLE`
+- `UPDATE`
+
+statements at application startup.
+
+Many failures are swallowed by empty catch blocks.
+
+### Why the previous “migration fixed” claim is not supported
+
+The current code still performs runtime DDL. There is no evidence in the audited source that this architecture was replaced by a proper Prisma migration workflow.
+
+### Safe fix
+
+Use versioned Prisma migrations and run:
+
+`prisma migrate deploy`
+
+during deployment.
+
+Only start the application after the migration succeeds.
+
+---
+
+# Remaining MEDIUM findings
+
+## 24. MEDIUM/HIGH — Multi-clinic queue logic is still inconsistent
+
+Several queue/capacity queries use:
+
+- `doctorId`
+- `appointmentDate`
+
+without consistently adding `clinicId`.
+
+Examples include:
+- booking capacity;
+- approval capacity;
+- next queue-number selection;
+- consultation reset operations.
+
+Yet clinic-specific schedules and fees exist.
+
+### Risk
+
+A doctor working at Clinic A and Clinic B can have:
+- shared queue numbers;
+- shared capacity calculations;
+- one clinic affecting the other's active consultation state.
+
+### Safe fix
+
+Decide the business rule first:
+
+**A. One global queue per doctor/day**, or  
+**B. Separate queue per clinic/doctor/day.**
+
+Then enforce the same rule in:
+- DB unique indexes;
+- queue assignment;
+- capacity checks;
+- approvals;
+- consultation state;
+- receptionist reporting.
+
+Do not “patch” individual queries independently.
+
+---
+
+## 25. MEDIUM — Patient DOB update type mismatch
+
+**File**
+- `backend/src/controllers/authController.ts`
+
+The controller currently converts:
+
+`dateOfBirth ? new Date(dateOfBirth) : null`
+
+But the Prisma schema defines:
+
+`dateOfBirth String?`
+
+The use of `any` prevents TypeScript from catching this.
+
+### Impact
+
+A normal patient profile update containing date of birth can fail at runtime because Prisma expects a string, not a Date object.
+
+### Safe fix
+
+Either:
+- keep the schema as `String` and store a validated ISO date string, or
+- migrate the schema column to `DateTime`.
+
+For the current design, the least disruptive fix is to store a validated `YYYY-MM-DD` string.
+
+---
+
+## 26. MEDIUM — Doctor profile numeric validation is incomplete
+
+`updateProfile()` accepts values such as:
+- decimal `avgConsultationMinutes` even though schema uses `Int`;
+- negative consultation fee;
+- negative experience;
+- invalid max-patient values.
+
+`updateSchedule()` has some clamping but does not validate the complete slot structure.
+
+### Safe fix
+
+Validate:
+- integers where Prisma expects Int;
+- finite/non-negative fees;
+- sensible consultation durations;
+- positive max patients;
+- valid `HH:mm` times;
+- non-overlapping slots;
+- start/end ordering.
+
+---
+
+## 27. MEDIUM — Upload validation uses MIME OR extension
+
+**File**
+- `backend/src/middleware/uploadMiddleware.ts`
+
+The filter accepts a file when:
+
+`allowed MIME || allowed extension`
+
+A malicious file can therefore pass by using a permitted extension with an untrusted content type.
 
 ### Safe fix
 
 Use:
-- private R2 bucket/object visibility;
-- authenticated download endpoint;
-- short-lived signed URLs if the frontend needs direct object access;
-- never expose a permanent public URL for clinical documents.
+- MIME + extension consistency;
+- file-signature/magic-byte validation;
+- safe server-generated filenames;
+- private storage for medical documents.
 
-Avatars can remain public if that is intentional.
-
-### Regression safety
-
-Test:
-- patient can download own document;
-- unauthorized user cannot download by guessing/copying URL;
-- expired signed URL stops working;
-- deleted record no longer downloads;
-- avatar URLs still work.
+Do not trust `originalname` alone.
 
 ---
 
-# 7. HIGH — Receptionist status endpoint is not role-protected
+## 28. MEDIUM — Registration password policy is weaker than receptionist provisioning
 
-**File**
-- `backend/src/routes/receptionistRoutes.ts`
-- `backend/src/controllers/receptionistController.ts:647-740`
-
-### Problem
-
-The route is behind `authenticate`, but the controller only performs receptionist-specific authorization **inside** an `if (role === 'RECEPTIONIST')` block. Non-receptionist authenticated users can reach the final appointment update.
-
-That can allow unauthorized status changes such as:
-- WAITING
-- IN_CONSULTATION
-- COMPLETED
-- CANCELLED
+Normal patient/doctor registration does not visibly enforce a minimum password length, while receptionist provisioning requires 6 characters.
 
 ### Safe fix
 
-Require `authorize('RECEPTIONIST')` at route level and keep ownership/assignment checks.
-
-Also enforce legal state transitions.
+Apply a consistent password policy to all password-based account creation.
 
 ---
 
-# 8. HIGH — Client-controlled clock is used for security/business decisions
+## 29. MEDIUM — Public doctor responses expose personal contact information
 
 **Files**
-- `backend/src/controllers/appointmentController.ts:384`
-- `frontend/src/services/api.ts:1008-1016, 1089+`
+- `backend/src/controllers/doctorController.ts`
 
-### Problem
+Public doctor APIs select:
+- email;
+- phone.
 
-The frontend sends `clientMinutes`, and the backend passes that value into `evaluateSlotStatus()`.
+These are included in public responses.
 
-A client can change this value.
+A public directory normally only needs professional contact channels or clinic contact information.
 
-That means a malicious caller may attempt to:
-- pretend a slot is still open;
-- manipulate current-time calculations;
-- alter queue/slot decisions.
+---
+
+## 30. MEDIUM — Public doctor responses expose reviewer identity
+
+Doctor listing/detail queries include recent reviews with:
+- reviewer full name;
+- reviewer avatar.
+
+In a healthcare application, tying identifiable people to a doctor review can create privacy concerns.
 
 ### Safe fix
 
-Use server-side time as the authority.
-
-If IST is the business timezone, calculate IST on the backend and use the frontend clock only for display.
-
-### Regression safety
-
-Test from clients with intentionally wrong clocks:
-- client set 2 hours ahead;
-- client set 2 hours behind;
-- no clientMinutes;
-- invalid values.
-
-Server-side behavior should remain correct.
+Use:
+- anonymous review identity;
+- pseudonym;
+- explicit user opt-in for public name display.
 
 ---
 
-# 9. HIGH — Runtime database DDL is unsafe operationally
+## 31. MEDIUM — API exposes internal error messages
 
-**File**
-- `backend/src/server.ts:17+`
-
-### Problem
-
-`ensureSchema()` runs many `ALTER TABLE` and `CREATE TABLE` commands at application startup.
-
-Failures are often swallowed with empty catch blocks.
-
-This can result in:
-- partially migrated production state;
-- startup race conditions;
-- schema drift from Prisma;
-- difficult-to-debug deployments.
-
-### Safe fix
-
-Move schema evolution to Prisma migrations.
-
-Deployment should:
-1. build;
-2. `prisma migrate deploy`;
-3. start the server.
-
-Remove runtime DDL after the migration path is proven.
-
-### Regression safety
-
-Do this in staging first:
-- backup database;
-- run migrations against a copy;
-- run application;
-- verify old records;
-- verify new columns/tables;
-- verify rollback/recovery procedure.
-
-**Do not blindly replace this with `prisma db push` in production.**
-
----
-
-# 10. HIGH — Consultation state transitions are too permissive
-
-**File**
-- `backend/src/controllers/consultationController.ts`
-
-### Problem
-
-`callPatient()` rejects only CANCELLED/COMPLETED, so a `PENDING_APPROVAL` appointment can potentially be moved into consultation if its ID is known.
-
-`completeConsultation()` similarly allows completion of states other than CANCELLED.
-
-This can bypass the intended receptionist/payment workflow.
-
-### Safe state model
-
-Enforce:
-
-- `PENDING_APPROVAL -> WAITING`
-- `WAITING -> IN_CONSULTATION`
-- `IN_CONSULTATION -> COMPLETED`
-- cancellation only from states where cancellation is allowed
-- rejected/pending requests cannot be consulted
-
-Also verify `paymentStatus` when the business rule requires payment before consultation.
-
----
-
-# 11. HIGH — Clinic/tenant boundary is inconsistent when viewing appointments
-
-**File**
-- `backend/src/controllers/appointmentController.ts:589-618`
-
-### Problem
-
-For receptionist access, authorization is true if either:
-- appointment clinic matches receptionist clinic, **or**
-- receptionist is assigned to the doctor.
-
-For a multi-clinic doctor this can allow one clinic's receptionist to view another clinic's appointment.
-
-### Safe fix
-
-When `appointment.clinicId` is present, require the receptionist's clinic to match it **and** require doctor assignment.
-
-Use the same tenant rule everywhere in the application.
-
----
-
-# 12. HIGH — Clinic can assign a receptionist to doctors outside the clinic
-
-**File**
-- `backend/src/controllers/clinicController.ts:836-898`
-
-### Problem
-
-`respondToReceptionistRequest()` creates `DoctorReceptionist` rows directly from the supplied `doctorIds` without checking that those doctors belong to the clinic.
-
-Another function (`updateClinicReceptionistDoctors`) does perform this validation, so the protections are inconsistent.
-
-### Safe fix
-
-Before creating assignments:
-- load clinic's active/accepted doctor IDs;
-- filter/validate the submitted IDs;
-- reject cross-clinic IDs;
-- perform the whole change in one transaction.
-
-Also validate `action` strictly as ACCEPT/REJECT.
-
----
-
-# 13. MEDIUM/HIGH — Receptionist provisioning can include inactive affiliations
-
-**File**
-- `backend/src/controllers/clinicController.ts:590-614`
-
-### Problem
-
-`addClinicReceptionist()` validates only that a doctor is present in the clinic's affiliation list, not that the affiliation status is active/accepted.
-
-### Safe fix
-
-Only allow doctors whose clinic affiliation is in an operational state.
-
----
-
-# 14. HIGH — Slot capacity can be exceeded under concurrency
-
-**Files**
-- `backend/src/controllers/appointmentController.ts`
-- `backend/src/controllers/receptionistController.ts`
-
-### Problem
-
-Capacity is checked by reading a count and then creating an appointment. Concurrent transactions can both observe available capacity.
-
-Retries handle queue-number uniqueness, but do not guarantee that slot capacity itself stays below the limit.
-
-### Safe fix
-
-Use a durable concurrency-control strategy, for example:
-- a slot/date booking counter row with atomic increment;
-- row locking;
-- serializable transaction + retry;
-- another proven atomic capacity design.
-
-Test with concurrent booking requests.
-
----
-
-# 15. MEDIUM/HIGH — Slot/queue capacity is not consistently clinic-scoped
-
-**File**
-- `backend/src/controllers/appointmentController.ts`
-
-Some capacity/queue queries use only:
-- doctorId
-- appointmentDate
-
-even though the application also supports clinic-specific schedules and clinic-specific fees.
-
-This can merge capacity across multiple clinics for the same doctor.
-
-### Safe fix
-
-Decide explicitly whether a doctor's queue is:
-- global across all clinics, or
-- independent per clinic.
-
-Then encode that choice consistently in:
-- queries;
-- unique indexes;
-- queue assignment;
-- capacity checks;
-- receptionist views.
-
-If queues are per clinic, the current uniqueness model is likely insufficient.
-
----
-
-# 16. MEDIUM — Invalid slot IDs silently fall back to another slot
-
-**File**
-- `backend/src/controllers/appointmentController.ts:386-391`
-
-### Problem
-
-If a caller supplies a bad `slotId`, the backend silently picks the first available slot.
-
-This is surprising and can create an appointment in a different slot from the user's request.
-
-### Safe fix
-
-If `slotId` is supplied:
-- validate that it exists in the authoritative server-side slot set;
-- reject invalid slot IDs with 400.
-
-Only auto-select a slot when the caller intentionally omits slotId.
-
----
-
-# 17. MEDIUM — Appointment date is accepted as an arbitrary string
-
-**Files**
-- `backend/src/controllers/appointmentController.ts`
-- `backend/src/controllers/receptionistController.ts`
-
-### Problem
-
-`appointmentDate` is not strictly validated as a real calendar date.
-
-String comparisons can also behave unexpectedly for malformed dates.
-
-### Safe fix
-
-Validate strict `YYYY-MM-DD` and real calendar validity.
-Reject malformed dates and dates outside the allowed booking window.
-
----
-
-# 18. MEDIUM — Walk-in account identity collision risk
-
-**Files**
-- `backend/src/controllers/appointmentController.ts`
-- `backend/src/controllers/receptionistController.ts`
-
-Walk-in lookup searches users by phone across all user roles.
-
-A phone number shared with another account type could accidentally bind a walk-in appointment to that account.
-
-### Safe fix
-
-When linking by phone:
-- only reuse users with `role='PATIENT'`;
-- otherwise require explicit patient identity handling.
-
-Also consider a dedicated walk-in patient entity instead of creating synthetic login accounts.
-
----
-
-# 19. MEDIUM — Weak synthetic walk-in credentials
-
-Walk-in accounts are created with a known password `walkin123`.
-
-Even if those accounts are intended to be internal-only, reusable credentials are unsafe.
-
-### Safe fix
-
-Use a random high-entropy unusable password or a non-login walk-in identity model.
-
----
-
-# 20. MEDIUM/HIGH — No rate limiting on authentication endpoints
-
-**Files**
-- `backend/src/server.ts`
-- `backend/src/routes/authRoutes.ts`
-- `backend/src/routes/receptionistRoutes.ts`
-
-There is no visible rate limiter for:
-- login;
-- registration;
-- Google auth;
-- receptionist application.
-
-### Safe fix
-
-Add IP/account-aware rate limiting, especially to auth and public application endpoints.
-
-Do not rate-limit legitimate patient queue refreshes as aggressively as authentication.
-
----
-
-# 21. MEDIUM — Production API leaks internal error messages
-
-Many controllers return patterns such as:
+Many controllers still return:
 
 `error: error.message`
 
-This can disclose Prisma/database details to clients.
+This can expose Prisma/database details.
 
 ### Safe fix
 
-Production responses should return:
-- stable safe message;
-- optional error code/request ID.
+Production responses should return a stable public message and a request/error ID.
 
-Log the detailed error server-side.
-
-Keep detailed errors available only in development.
+Detailed stack/database information should remain server-side.
 
 ---
 
-# 22. MEDIUM — Demo credentials are committed into the frontend
+## 32. MEDIUM — CORS is still wildcard
 
 **File**
-- `frontend/src/pages/Auth/Login.tsx`
+- `backend/src/server.ts`
 
-The UI contains one-click credentials for patient, doctor, and receptionist accounts.
+Current configuration is effectively:
 
-### Risk
+`origin: '*'`
 
-If those accounts ever contain real or privileged data, anyone can log in using public source code.
+while also enabling credentials.
 
-### Safe fix
-
-For production:
-- remove demo credentials entirely; or
-- enable demo mode only in development/staging;
-- ensure demo data is isolated and non-sensitive.
-
-The current code should not be used against real patient data.
-
----
-
-# 23. MEDIUM — Simulated Google login exists in production frontend
-
-**Files**
-- `frontend/src/pages/Auth/Login.tsx`
-- `frontend/src/pages/Auth/Signup.tsx`
-
-The UI can construct a fake Google token for demo sign-in.
-
-Even after fixing the backend, this is confusing in production and can create an unsafe authentication path later.
+The backend already defines `FRONTEND_URL` in deployment configuration, but it is not being used to restrict allowed origins.
 
 ### Safe fix
 
-Compile/feature-flag demo auth out of production builds.
+Allow only the deployed frontend origin(s).
+
+Keep development localhost origins separate.
 
 ---
 
-# 24. MEDIUM — Frontend stores bearer JWT in localStorage
+## 33. MEDIUM — Rate limiter is too narrow for production protection
 
-**File**
-- `frontend/src/context/AuthContext.tsx`
+The new in-memory limiter is useful, but it only protects:
+- login;
+- register;
+- Google auth;
+- receptionist application.
 
-A token stored in localStorage is accessible to JavaScript running on the page. If the app ever has an XSS vulnerability, the token can be stolen.
+It does not protect expensive public endpoints such as:
+- doctor search;
+- doctor detail;
+- queue preview;
+- public clinic listing.
 
-### Safe long-term architecture
-
-Consider secure, HttpOnly, SameSite cookies plus a CSRF strategy.
-
-This is a larger architectural change and should be implemented separately from the immediate bug fixes.
-
----
-
-# 25. MEDIUM — Public R2 URL is hard-coded as a default
-
-**File**
-- `backend/src/config/r2.ts`
-
-The code contains a fallback public R2 domain.
-
-Even though the URL itself is not a secret, production should not silently inherit a public storage destination.
+It is also process-local, so:
+- restarting the process resets it;
+- multiple instances do not share limits.
 
 ### Safe fix
 
-Make production configuration explicit:
-- require `R2_PUBLIC_URL` only for public assets;
-- use private storage for medical records;
-- fail clearly when a required storage setting is missing.
+Use a shared rate-limit store when scaling and add appropriate limits to public expensive endpoints.
 
 ---
 
-# 26. MEDIUM — Money stored as Float
+## 34. MEDIUM — Rate limiter keying behind a proxy needs verification
+
+The limiter relies on `req.ip`, but the server does not show an explicit `trust proxy` configuration.
+
+On Render/reverse-proxy infrastructure, the real client IP handling should be explicitly configured and tested.
+
+Otherwise rate limiting can become:
+- too broad;
+- ineffective;
+- dependent on proxy behavior.
+
+---
+
+## 35. MEDIUM — Appointment date is still treated as a free-form string
+
+The schema stores:
+
+`appointmentDate String`
+
+and booking endpoints do not visibly validate strict calendar semantics before processing.
+
+A malformed date can therefore enter queue/business logic.
+
+### Safe fix
+
+Validate:
+- exact `YYYY-MM-DD`;
+- real calendar date;
+- allowed booking horizon;
+- server timezone policy.
+
+---
+
+## 36. MEDIUM — Slot validation is incomplete
+
+A doctor can submit arbitrary slot JSON.
+
+There is no clear central validation that:
+- slots are non-overlapping;
+- times are valid;
+- maxPatients is sane;
+- consultation duration is positive;
+- slot IDs are unique;
+- a slot's custom pace is compatible with its duration/capacity.
+
+### Safe fix
+
+Build one shared server-side `validateSchedule()` function and use it everywhere schedule data enters the system.
+
+---
+
+## 37. MEDIUM — Doctor suspension is not uniformly enforced on clinical operations
+
+Booking blocks suspended doctors, but consultation endpoints primarily authorize by role + doctor ownership.
+
+There is no single shared “doctor must currently be active” policy.
+
+### Decision required
+
+If suspension is intended to immediately stop all clinical operations, enforce it in:
+- queue retrieval;
+- call patient;
+- notes/vitals;
+- completion/prescription;
+- future appointment handling.
+
+If suspension only prevents new bookings, document that policy explicitly.
+
+---
+
+## 38. MEDIUM — Appointment state changes are still distributed across controllers
+
+Receptionist, doctor, and cancellation paths each implement pieces of the state machine.
+
+This makes future regressions likely.
+
+### Safe fix
+
+Centralize allowed transitions, e.g.:
+
+`canTransition(from, to, actor)`
+
+and use it everywhere.
+
+---
+
+## 39. MEDIUM — Currency is still stored as Float
 
 **File**
 - `backend/prisma/schema.prisma`
 
 `consultationFee Float`
 
-Floating point is not ideal for currency.
+This is risky for financial calculations.
 
 ### Safe fix
 
 Use:
-- integer paise (e.g. ₹500.00 = 50000), or
-- Prisma Decimal.
-
-This becomes especially important once a real payment gateway is integrated.
+- integer paise, or
+- Prisma `Decimal`.
 
 ---
 
-# 27. MEDIUM — Appointment/payment model lacks payment transaction identity
+## 40. MEDIUM — Payment model is still not production-grade
 
-**File**
-- `backend/prisma/schema.prisma`
+Current appointment payment state is primarily:
 
-There is only:
-- `paymentStatus`
+- `PENDING`
+- `PAID`
+- `FAILED`
 
-There is no:
-- gateway order ID;
-- transaction ID;
+There is no dedicated payment transaction record containing things such as:
 - provider;
+- order ID;
+- transaction/payment ID;
 - amount snapshot;
 - verified timestamp;
-- refund state.
-
-### Why this matters
-
-For a real gateway integration, a boolean-ish payment status is not sufficient for reconciliation or webhook idempotency.
+- refund status;
+- webhook idempotency key.
 
 ### Safe fix
 
-Add a dedicated payment model or equivalent transaction fields before integrating production payment processing.
+Create a dedicated payment entity before connecting a real payment provider.
 
-Do not let the frontend decide `PAID`.
+Never let a frontend request be sufficient evidence that money was received.
 
 ---
 
-# 28. LOW/MEDIUM — Status fields are free-form strings
+# Frontend reliability findings
 
-The schema uses strings for values such as:
-- appointment status;
-- payment status;
-- verification status;
-- receptionist status;
-- affiliation status.
+## 41. HIGH — Demo fallback should never run during production outages
 
-This makes invalid states easier to introduce.
+Affected APIs include:
+- doctor search;
+- doctor detail;
+- queue preview.
+
+This can create a false representation of live clinical state.
+
+### Required rule
+
+**Production:** backend failure = clear error state.  
+**Demo/dev:** optional demo fallback.
+
+Use a build-time or runtime mode flag.
+
+---
+
+# Security architecture finding
+
+## 42. MEDIUM — Bearer JWTs remain in localStorage
+
+**File**
+- `frontend/src/context/AuthContext.tsx`
+
+The current application stores the access token in localStorage.
+
+This is common for prototypes, but any XSS can expose the token.
+
+### Long-term hardening
+
+For a production healthcare platform, consider:
+- HttpOnly secure cookies;
+- SameSite controls;
+- CSRF protection;
+- short-lived access tokens;
+- refresh-token rotation.
+
+This should be a separate architecture change, not mixed into a queue bug fix.
+
+---
+
+# Testing / verification finding
+
+## 43. HIGH — “428 passed” does NOT prove all security fixes are tested
+
+**File**
+- `backend/scripts/verify-fixes.ts`
+
+The test file imports utility functions and constructs simulated authorization/state scenarios.
+
+It does not appear to:
+- instantiate the Express app;
+- send real HTTP requests;
+- connect to Prisma;
+- execute real database authorization queries;
+- test real route middleware composition.
+
+Therefore tests such as “doctor cannot view another patient's records” are mostly simulations of intended logic, not end-to-end proof that the route/database path enforces it.
 
 ### Safe fix
 
-Use Prisma enums where practical, or add centralized validation constants and DB constraints.
+Add real integration tests with a test database or isolated test environment.
+
+At minimum test:
+- forged JWT;
+- each role against each protected endpoint;
+- cross-clinic appointment access;
+- pending/rejected receptionist access;
+- actual Prisma ownership queries;
+- concurrent queue booking.
 
 ---
 
-# 29. LOW/MEDIUM — Appointment cancellation does not model refunds/payment reversal
+# Deployment verification
 
-**File**
-- `backend/src/controllers/appointmentController.ts`
+The latest GitHub Actions frontend deployment run for commit `f88f867bedca721266f85eb88f93779186369e18` completed successfully.
 
-A paid appointment can be cancelled without a payment/refund workflow.
+That confirms the frontend deployment workflow can build/deploy the current frontend.
 
-This is mostly a business-flow gap today, but it becomes important as soon as real gateway payments are enabled.
+It does **not** establish that:
+- backend security tests ran;
+- Prisma integration tests ran;
+- production database migrations ran;
+- backend authorization paths were exercised.
 
----
-
-# 30. LOW/MEDIUM — Patient appointment UI hides PENDING_APPROVAL/REJECTED states
-
-**File**
-- `frontend/src/pages/Patient/MyAppointments.tsx`
-
-The UI's "upcoming" filter includes only:
-- WAITING
-- IN_CONSULTATION
-
-The "past" filter includes:
-- COMPLETED
-- CANCELLED
-
-So an online booking request in `PENDING_APPROVAL` (and a rejected request) may disappear from both tabs.
-
-### Safe fix
-
-Create an explicit pending/requests state and show:
-- pending payment/approval;
-- rejected;
-- cancellation reason where appropriate.
+A dedicated backend CI workflow should be added.
 
 ---
 
-# 31. LOW/MEDIUM — API offline demo fallback can show fake production data
+# Previous finding → current status matrix
 
-**File**
-- `frontend/src/services/api.ts`
-
-Some API failures fall back to `DEMO_DOCTORS` and offline queue calculations.
-
-### Risk
-
-During a real backend outage, the frontend can display fake doctors/fees/availability.
-
-This can be especially dangerous for a healthcare booking application.
-
-### Safe fix
-
-In production, fail clearly when the backend is unavailable.
-
-Keep demo fallback behind an explicit development/demo flag.
-
----
-
-# 32. LOW — Misleading authentication/security wording
-
-**File**
-- `frontend/src/pages/Auth/AdminLogin.tsx`
-
-The UI says “256-bit encrypted JWT”.
-
-JWTs are generally signed, not automatically encrypted.
-
-### Safe fix
-
-Use accurate wording such as “Signed JWT session token”.
+| Previous finding | Current status |
+|---|---|
+| Forged Google auth | ✅ Fixed in production path |
+| Doctor mass assignment | ✅ Fixed |
+| Receptionist queue role bypass | ✅ Fixed |
+| Doctor arbitrary patient-record lookup | ✅ Fixed, but historical-access scope remains broad |
+| Provisional queue integer overflow | ✅ Fixed |
+| Receptionist status role bypass | ✅ Fixed |
+| Doctor self-affiliation approval | ✅ Fixed |
+| Clinic self-affiliation approval | ✅ Fixed |
+| Suspended doctor new booking | ✅ Fixed |
+| Consultation invalid states | ✅ Fixed/strengthened |
+| Concurrent pending capacity issue | ⚠️ Improved, but multi-clinic scope still needs review |
+| Data URI handling | ✅ Fixed |
+| Cross-clinic staff assignment | ✅ Fixed |
+| Inactive doctor receptionist assignment | ✅ Fixed |
+| Receptionist appointment privacy scope | ✅ Improved |
+| JWT production fallback | ❌ Still open |
+| Destructive production seed | ✅ Fixed |
+| Client clock manipulation | ❌ Still open |
+| Completed-patient wait calculation | ✅ Fixed |
+| Medical Records routing | ✅ Fixed |
+| Pending/rejected appointment UI | ✅ Fixed |
+| Auth rate limiting | ⚠️ Added, production-hardening still needed |
+| Receptionist temporary-password enforcement | ✅ Mostly fixed |
+| Prescription vault upload | ✅ Fixed |
+| Shift capacity display | ✅ Fixed |
+| Custom consultation pacing | ✅ Improved |
 
 ---
 
-# 33. LOW — Public health endpoint reveals operational metadata
+# Safest remediation order
 
-**File**
-- `backend/src/server.ts`
+## Phase 1 — Do these before any real patient-data deployment
 
-The public health response includes:
-- service name;
-- uptime;
-- database connectivity state;
-- timestamp.
+1. Remove JWT fallback secret and fail startup if secret is missing.
+2. Remove client time from all server-side booking decisions.
+3. Make medical-record storage private.
+4. Remove demo fallback from production.
+5. Require verified status for public doctor detail.
+6. Enforce receptionist `ACTIVE` status server-side.
+7. Stop including medical records in generic appointment responses.
+8. Replace runtime DDL with Prisma migrations.
 
-This is not a critical issue, but keep public health output minimal.
+## Phase 2 — Prevent data-integrity regressions
 
----
-
-# Recommended remediation order
-
-## Phase 0 — Before touching production
-
-1. Create a staging database.
-2. Back up current production data.
-3. Disable use of real patient data in demos.
-4. Record the current production environment variables.
-5. Keep the current main branch intact.
-
-## Phase 1 — Security blockers
-
-Fix these first:
-
-1. Google credential verification.
-2. Doctor mass-assignment / self-verification.
-3. Receptionist queue authorization.
-4. Doctor patient-record authorization.
-5. JWT fallback secret.
-6. Private medical-document access.
-7. Receptionist status authorization.
-8. Server-authoritative appointment time.
-
-## Phase 2 — Data/tenant integrity
-
-Then fix:
-
-1. Runtime schema migration.
-2. Clinic/receptionist cross-tenant assignment.
-3. Appointment state machine.
-4. Queue/slot concurrency.
-5. Clinic-scoped queue/capacity rules.
-6. Strict date/slot validation.
-7. Walk-in identity collision.
+1. Decide whether queues are per doctor/day or per clinic/doctor/day.
+2. Apply that decision consistently to unique indexes and queue queries.
+3. Fix DOB string/date mismatch.
+4. Centralize appointment state transitions.
+5. Validate schedule input centrally.
+6. Validate appointment dates centrally.
 
 ## Phase 3 — Production hardening
 
-Then add:
-
-1. Rate limiting.
-2. Safe production error responses.
-3. Demo feature flags/removal.
-4. Stronger session architecture.
-5. Currency-safe storage.
-6. Payment transaction model.
-7. Prisma enums/constraints.
-8. Audit logging for clinical-data access.
-
----
-
-# Regression checklist
-
-Run these after every security-related change.
-
-## Authentication
-
-- [ ] Patient login works.
-- [ ] Doctor login works.
-- [ ] Clinic login works.
-- [ ] Receptionist login works.
-- [ ] Admin login works.
-- [ ] Invalid passwords fail.
-- [ ] Expired JWT fails.
-- [ ] Missing JWT_SECRET stops production startup.
-- [ ] Forged Google token fails.
-- [ ] Real Google ID token succeeds.
-
-## Authorization
-
-- [ ] Patient cannot open another patient's appointment.
-- [ ] Patient cannot update appointment status.
-- [ ] Patient cannot view another patient's records.
-- [ ] Doctor cannot verify themselves.
-- [ ] Doctor cannot alter rating/review totals.
-- [ ] Doctor can see only authorized patient records.
-- [ ] Receptionist can see only assigned doctors.
-- [ ] Receptionist can see only their clinic's queue.
-- [ ] Receptionist cannot access another clinic's appointment.
-- [ ] Clinic cannot assign receptionist to another clinic's doctor.
-- [ ] Admin functions remain admin-only.
-
-## Appointments
-
-- [ ] Past dates rejected.
-- [ ] Invalid dates rejected.
-- [ ] Invalid slot IDs rejected.
-- [ ] Closed slots rejected.
-- [ ] Full slots rejected.
-- [ ] Concurrent bookings never exceed slot capacity.
-- [ ] Queue numbers remain unique.
-- [ ] Pending online bookings remain pending until the intended approval/payment event.
-- [ ] Consultation cannot start from PENDING_APPROVAL.
-- [ ] Consultation cannot complete from an invalid state.
-
-## Medical documents
-
-- [ ] Patient can upload permitted file types.
-- [ ] Patient cannot upload oversized files.
-- [ ] Patient can view own records.
-- [ ] Unauthorized user cannot download the file URL directly.
-- [ ] Signed URLs expire.
-- [ ] Deleting the DB record removes storage object where intended.
-
-## Payments (when gateway is integrated)
-
-- [ ] Amount is calculated server-side.
-- [ ] Frontend cannot choose final payable amount.
-- [ ] Webhook signatures are verified.
-- [ ] Webhook is idempotent.
-- [ ] Duplicate webhook does not duplicate appointment/payment.
-- [ ] Payment amount matches the appointment price.
-- [ ] Failed payment never becomes PAID.
-- [ ] Refund state is persisted.
-
-## Deployment
-
-- [ ] Prisma migration succeeds on a clean staging database.
-- [ ] Prisma migration succeeds against a copy of production.
-- [ ] No runtime DDL is required.
-- [ ] Frontend production build contains no demo auth.
-- [ ] Backend CI/build passes.
-- [ ] Database backup and recovery procedure is tested.
+1. Strict upload-content validation.
+2. Strong password policy.
+3. Restrictive CORS.
+4. Safe error responses.
+5. Shared rate limiting.
+6. Currency-safe storage.
+7. Dedicated payment entity.
+8. HttpOnly session architecture.
+9. Real integration tests.
+10. Backend CI.
 
 ---
 
-# What I would NOT change in one giant commit
+# Regression rule for every future fix
 
-To reduce regression risk, do **not** combine these into a single “fix everything” patch:
+Before merging a security fix, verify three things:
 
-- authentication architecture migration;
-- Prisma schema migration;
-- appointment queue algorithm rewrite;
-- payment gateway integration;
-- storage security redesign.
+**1. The intended exploit is closed.**  
+Example: a non-receptionist receives 403.
 
-Ship them as small, independently testable changes.
+**2. The legitimate workflow still works.**  
+Example: an assigned active receptionist can still approve an appointment.
 
-## Suggested commit sequence
-
-1. `fix(auth): fail closed for google identity verification`
-2. `fix(auth): remove profile mass assignment`
-3. `fix(authz): lock receptionist queue endpoints to assigned staff`
-4. `fix(records): enforce doctor patient authorization`
-5. `fix(security): require configured jwt secret`
-6. `fix(storage): make medical records private`
-7. `fix(appointments): use server time and strict validation`
-8. `fix(clinic): enforce tenant boundaries for staff assignments`
-9. `fix(schema): replace runtime ddl with prisma migrations`
-10. `hardening(api): add rate limiting and safe error responses`
+**3. The fix cannot be bypassed through another route.**  
+Example: protecting the route but forgetting the duplicate `/api/receptionist` mount is not sufficient.
 
 ---
 
 # Final assessment
 
-The project has a solid functional structure, and several ownership checks are already present in the appointment and consultation flows. However, the current code should **not be treated as production-safe for real patient data** until the CRITICAL issues above are addressed.
+The latest commit is a meaningful improvement and removes many of the original critical authorization defects.
 
-The safest approach is to implement the security fixes in small commits, validate each on staging, and only then move to schema/queue/payment changes.
+However, the current repository should **not yet be described as having “all critical/high/medium findings resolved.”** The strongest remaining concerns are JWT fallback behavior, client-controlled time, public clinical-document storage, demo-data failover, receptionist lifecycle authorization, appointment-detail medical-record exposure, and runtime schema mutation.
+
+The next round of changes should be small and independently testable. Avoid combining authentication, storage, migrations, and queue architecture into one large patch.
