@@ -402,15 +402,18 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
           ...(isForOther && patientName
             ? { patientName: { equals: String(patientName).trim(), mode: 'insensitive' } }
             : {}),
-          status: { in: ['WAITING', 'IN_CONSULTATION'] },
+          status: { in: ['PENDING_APPROVAL', 'WAITING', 'IN_CONSULTATION'] },
         },
       });
 
       if (existingPatientBooking) {
         const recipient = isForOther ? `for ${patientName}` : 'for yourself';
+        const isPending = existingPatientBooking.status === 'PENDING_APPROVAL';
         res.status(400).json({
           success: false,
-          message: `You already have an active booking (Queue #${existingPatientBooking.queueNumber}) ${recipient} with this doctor on this date.`,
+          message: isPending
+            ? `You already have a booking request ${recipient} awaiting payment & receptionist approval with this doctor on this date.`
+            : `You already have an active booking (Queue #${existingPatientBooking.queueNumber}) ${recipient} with this doctor on this date.`,
         });
         return;
       }
@@ -465,16 +468,31 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
           }
 
           // Query max queue number across ALL appointments (including CANCELLED) to avoid unique constraint collision
-          const maxQueueAppt = await tx.appointment.findFirst({
-            where: {
-              doctorId: doctor.id,
-              appointmentDate,
-            },
-            orderBy: { queueNumber: 'desc' },
-            select: { queueNumber: true },
-          });
-          const highestQueue = maxQueueAppt?.queueNumber || 0;
-          const queueNumber = highestQueue + 1;
+          // Check if booking is made by patient online (requires receptionist & payment confirmation)
+          const isPatientBooking = req.user?.role === 'PATIENT';
+          const status = isPatientBooking ? 'PENDING_APPROVAL' : 'WAITING';
+          const paymentStatus = isPatientBooking ? 'PENDING' : 'PAID';
+
+          let queueNumber: number;
+          if (isPatientBooking) {
+            // Negative provisional queue token to avoid collision with positive tokens
+            const randomOffset = Math.floor(Math.random() * 10000) + 1;
+            const uniquePending = Math.floor(Date.now() % 100000000) * 100 + randomOffset;
+            queueNumber = -1 * uniquePending;
+          } else {
+            // Direct practitioner / walk-in booking: query max positive queue number
+            const maxQueueAppt = await tx.appointment.findFirst({
+              where: {
+                doctorId: doctor.id,
+                appointmentDate,
+                queueNumber: { gt: 0 },
+              },
+              orderBy: { queueNumber: 'desc' },
+              select: { queueNumber: true },
+            });
+            const highestQueue = maxQueueAppt?.queueNumber || 0;
+            queueNumber = highestQueue + 1;
+          }
 
           const created = await tx.appointment.create({
             data: {
@@ -486,7 +504,8 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
               slotId: chosenSlot!.id,
               checkingWindow: chosenSlot!.name,
               estimatedTime: slotStatus.estimatedTime,
-              status: 'WAITING',
+              status,
+              paymentStatus,
               reasonForVisit: reasonForVisit || 'General Medical Consultation',
               symptoms: symptoms || null,
               isForOther: Boolean(isForOther || (req.user?.role === 'DOCTOR' && patientUser && patientName && patientUser.fullName.trim().toLowerCase() !== String(patientName).trim().toLowerCase())),

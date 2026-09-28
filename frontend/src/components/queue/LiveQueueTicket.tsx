@@ -26,6 +26,8 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
         className={`px-6 py-3.5 flex items-center justify-between border-b ${
           status === 'IN_CONSULTATION' || liveQueue?.isYourTurn
             ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-800'
+            : status === 'PENDING_APPROVAL'
+            ? 'bg-amber-500/10 border-amber-500/20 text-amber-800'
             : liveQueue?.patientsAway === 1
             ? 'bg-amber-500/10 border-amber-500/20 text-amber-800'
             : status === 'COMPLETED'
@@ -39,7 +41,12 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
         </div>
 
         {/* Dynamic Status Pill */}
-        {status === 'IN_CONSULTATION' || liveQueue?.isYourTurn ? (
+        {status === 'PENDING_APPROVAL' ? (
+          <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-amber-500 text-white shadow-2xs flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
+            AWAITING PAYMENT & RECEPTION APPROVAL
+          </span>
+        ) : status === 'IN_CONSULTATION' || liveQueue?.isYourTurn ? (
           <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-emerald-600 text-white shadow-sm flex items-center gap-1.5 animate-pulse">
             <span className="w-2 h-2 rounded-full bg-white"></span>
             SERVING NOW
@@ -56,6 +63,10 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
         ) : status === 'COMPLETED' ? (
           <span className="text-[11px] font-semibold px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
             COMPLETED
+          </span>
+        ) : status === 'REJECTED' ? (
+          <span className="text-[11px] font-semibold px-3 py-1 rounded-full bg-rose-50 text-rose-800 border border-rose-200">
+            DECLINED BY CLINIC
           </span>
         ) : (
           <span className="text-[11px] font-semibold px-3 py-1 rounded-full bg-rose-50 text-rose-800 border border-rose-200">
@@ -112,7 +123,11 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
             </span>
             <div className="bg-[#1d1d1f] text-white px-5 py-2.5 rounded-[18px] flex items-baseline gap-1.5 shadow-2xs border border-black/10">
               <span className="text-xs font-normal text-white/60 uppercase">Queue</span>
-              <span className="text-3xl font-extrabold tracking-tight text-[#0088e8]">#{queueNumber}</span>
+              {status === 'PENDING_APPROVAL' ? (
+                <span className="text-lg font-bold tracking-tight text-amber-400">PENDING</span>
+              ) : (
+                <span className="text-3xl font-extrabold tracking-tight text-[#0088e8]">#{queueNumber}</span>
+              )}
             </div>
           </div>
         </div>
@@ -139,6 +154,43 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
                 Booked by account: {appointment.patient.user.fullName}
               </span>
             )}
+          </div>
+        )}
+
+        {/* Pending Receptionist & Payment Verification Callout */}
+        {status === 'PENDING_APPROVAL' && (
+          <div className="my-5 p-4 sm:p-5 rounded-2xl bg-amber-50/90 border border-amber-200/90 text-amber-950">
+            <div className="flex items-start gap-3.5">
+              <div className="p-2.5 rounded-xl bg-amber-200/60 text-amber-900 flex-shrink-0 mt-0.5">
+                <Clock className="w-5 h-5 text-amber-800" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h4 className="text-sm font-bold text-amber-950">
+                    Action Required: Verify Booking with Receptionist
+                  </h4>
+                  <span className="text-xs font-bold text-amber-900 bg-white px-3 py-1 rounded-full border border-amber-300 shadow-2xs">
+                    Consultation Fee: ₹{appointment.fee || (appointment as any).consultationFee || doctor.consultationFee || 0}
+                  </span>
+                </div>
+                <p className="text-xs text-amber-800/90 mt-1.5 leading-relaxed">
+                  To confirm your official queue token and appointment time, please call the clinic receptionist and complete your consultation payment (UPI / Cash / Card). The receptionist will activate your token immediately.
+                </p>
+                {appointment.clinic?.phone && (
+                  <div className="mt-3.5 flex flex-wrap items-center gap-3">
+                    <a
+                      href={`tel:${appointment.clinic.phone}`}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#1d1d1f] text-white text-xs font-semibold hover:bg-black transition-all active:scale-[0.98] shadow-xs"
+                    >
+                      <span>📞 Call Receptionist: {appointment.clinic.phone}</span>
+                    </a>
+                    <span className="text-[11px] text-amber-800">
+                      Clinic: {appointment.clinic.clinicName}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         )}
 

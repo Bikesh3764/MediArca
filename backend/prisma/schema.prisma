@@ -85,7 +85,10 @@ model Appointment {
   queueNumber     Int            // 1, 2, 3...
   checkingWindow  String         // e.g. "09:00 AM - 01:00 PM"
   estimatedTime   String         // e.g. "09:30 AM"
-  status          String         @default("WAITING") // "WAITING", "IN_CONSULTATION", "COMPLETED", "CANCELLED"
+  status          String         @default("WAITING") // "PENDING_APPROVAL", "WAITING", "IN_CONSULTATION", "COMPLETED", "CANCELLED", "REJECTED"
+  paymentStatus   String         @default("PENDING") // "PENDING", "PAID", "FAILED"
+  approvedBy      String?
+  approvedAt      DateTime?
   reasonForVisit  String?
   symptoms        String?
   vitals          String?        // JSON string: { bp, pulse, temp, weight }
@@ -174,6 +177,7 @@ model ReceptionistProfile {
   phone     String?
   clinicId  String?
   clinic    ClinicProfile?       @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  status    String               @default("ACTIVE") // "ACTIVE", "PENDING", "REJECTED"
   doctors   DoctorReceptionist[]
   createdAt DateTime             @default(now())
   updatedAt DateTime             @updatedAt

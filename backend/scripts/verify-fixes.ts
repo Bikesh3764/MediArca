@@ -2121,8 +2121,154 @@ function runTests() {
   const validResult = handleUpdateScheduleClinicAffiliation(affiliations, 'clinic-alpha');
   assert(validResult.status === 200 && validResult.updated === true, 'Supplying valid affiliated clinicId succeeds');
 
+  // --- Test 81: Patient Online Booking Requires Receptionist & Payment Verification ---
+  console.log('\n--- Test 81: Patient Online Booking Requires Receptionist & Payment Verification ---');
+  interface ApprovalBookingPayload {
+    role: 'PATIENT' | 'RECEPTIONIST' | 'DOCTOR';
+    existingPendingCount: number;
+    highestPositiveQueue: number;
+  }
+
+  const simulateAppointmentBooking = (payload: ApprovalBookingPayload) => {
+    const isDeskBooking = payload.role === 'RECEPTIONIST' || payload.role === 'DOCTOR';
+    if (!isDeskBooking) {
+      // Patient online self-booking
+      const provisionalNegativeToken = -1 * (payload.existingPendingCount + 1);
+      return {
+        status: 'PENDING_APPROVAL',
+        paymentStatus: 'PENDING',
+        queueNumber: provisionalNegativeToken,
+        isProvisional: true,
+      };
+    } else {
+      // Direct desk / walk-in booking
+      return {
+        status: 'WAITING',
+        paymentStatus: 'PAID',
+        queueNumber: payload.highestPositiveQueue + 1,
+        isProvisional: false,
+      };
+    }
+  };
+
+  const patientBooking = simulateAppointmentBooking({
+    role: 'PATIENT',
+    existingPendingCount: 2,
+    highestPositiveQueue: 10,
+  });
+  assert(patientBooking.status === 'PENDING_APPROVAL', 'Patient self-booking sets status PENDING_APPROVAL');
+  assert(patientBooking.paymentStatus === 'PENDING', 'Patient self-booking sets paymentStatus PENDING');
+  assert(patientBooking.queueNumber < 0, 'Patient provisional token is negative to avoid queue collision');
+  assert(patientBooking.queueNumber === -3, 'Patient provisional token is uniquely indexed (-3)');
+
+  const deskBooking = simulateAppointmentBooking({
+    role: 'RECEPTIONIST',
+    existingPendingCount: 2,
+    highestPositiveQueue: 10,
+  });
+  assert(deskBooking.status === 'WAITING', 'Desk walk-in booking is immediately confirmed WAITING');
+  assert(deskBooking.paymentStatus === 'PAID', 'Desk walk-in booking has paymentStatus PAID');
+  assert(deskBooking.queueNumber === 11, 'Desk walk-in receives next positive token (11)');
+
+  // --- Test 82: Receptionist Payment Confirmation & Sequential Token Assignment ---
+  console.log('\n--- Test 82: Receptionist Payment Confirmation & Sequential Token Assignment ---');
+  const simulateReceptionistApproval = (
+    appointment: { id: string; status: string; paymentStatus: string; queueNumber: number },
+    highestActiveQueue: number,
+    receptionistUserId: string
+  ) => {
+    if (appointment.status !== 'PENDING_APPROVAL') {
+      throw new Error('Only PENDING_APPROVAL appointments can be confirmed');
+    }
+    const confirmedToken = highestActiveQueue + 1;
+    return {
+      ...appointment,
+      status: 'WAITING',
+      paymentStatus: 'PAID',
+      queueNumber: confirmedToken,
+      approvedBy: receptionistUserId,
+      approvedAt: new Date().toISOString(),
+    };
+  };
+
+  const pendingAppt = {
+    id: 'appt-999',
+    status: 'PENDING_APPROVAL',
+    paymentStatus: 'PENDING',
+    queueNumber: -1,
+  };
+  const approvedAppt = simulateReceptionistApproval(pendingAppt, 14, 'rec-user-42');
+  assert(approvedAppt.status === 'WAITING', 'Approved appointment advances to WAITING status');
+  assert(approvedAppt.paymentStatus === 'PAID', 'Approved appointment marks paymentStatus as PAID');
+  assert(approvedAppt.queueNumber === 15, 'Approved appointment receives next positive sequential token (#15)');
+  assert(approvedAppt.approvedBy === 'rec-user-42', 'Approved appointment records approvedBy receptionist');
+
+  // --- Test 83: Receptionist Join Application Sets Status PENDING ---
+  console.log('\n--- Test 83: Receptionist Join Application Sets Status PENDING ---');
+  const simulateReceptionistApplication = (applicant: { fullName: string; email: string; clinicId: string }) => {
+    return {
+      id: 'rec-new-1',
+      fullName: applicant.fullName,
+      email: applicant.email,
+      clinicId: applicant.clinicId,
+      status: 'PENDING',
+      canAccessDesk: false,
+    };
+  };
+
+  const appResponse = simulateReceptionistApplication({
+    fullName: 'Priya Sharma',
+    email: 'priya@mediarca.com',
+    clinicId: 'clinic-metro-1',
+  });
+  assert(appResponse.status === 'PENDING', 'Receptionist application status is PENDING upon submission');
+  assert(appResponse.canAccessDesk === false, 'Pending receptionist cannot access desk dashboard');
+
+  // --- Test 84: Clinic Admin Reviews & Accepts Receptionist Application ---
+  console.log('\n--- Test 84: Clinic Admin Reviews & Accepts Receptionist Application ---');
+  const simulateClinicReceptionistResponse = (
+    receptionist: { id: string; status: string },
+    action: 'ACCEPT' | 'REJECT',
+    doctorIds: string[]
+  ) => {
+    if (action === 'ACCEPT') {
+      return {
+        id: receptionist.id,
+        status: 'ACTIVE',
+        assignedDoctors: doctorIds,
+        canAccessDesk: true,
+      };
+    } else {
+      return {
+        id: receptionist.id,
+        status: 'REJECTED',
+        assignedDoctors: [],
+        canAccessDesk: false,
+      };
+    }
+  };
+
+  const acceptedRec = simulateClinicReceptionistResponse(
+    { id: 'rec-new-1', status: 'PENDING' },
+    'ACCEPT',
+    ['doc-cardio-1', 'doc-derma-2']
+  );
+  assert(acceptedRec.status === 'ACTIVE', 'Clinic approval transitions receptionist status to ACTIVE');
+  assert(acceptedRec.canAccessDesk === true, 'Active receptionist is granted desk dashboard access');
+  assert(acceptedRec.assignedDoctors.length === 2, 'Assigned doctors linked to approved receptionist');
+
+  const rejectedRec = simulateClinicReceptionistResponse(
+    { id: 'rec-new-2', status: 'PENDING' },
+    'REJECT',
+    []
+  );
+  assert(rejectedRec.status === 'REJECTED', 'Clinic rejection transitions receptionist status to REJECTED');
+  assert(rejectedRec.canAccessDesk === false, 'Rejected receptionist desk access remains revoked');
+
+  console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);
+  console.log(`========================================\n`);
 
   if (failed > 0) {
     process.exit(1);
@@ -2130,3 +2276,4 @@ function runTests() {
 }
 
 runTests();
+

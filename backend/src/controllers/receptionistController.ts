@@ -1,4 +1,4 @@
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import prisma from '../config/database';
 import { AuthRequest } from '../middleware/authMiddleware';
@@ -800,3 +800,341 @@ export const changeReceptionistPassword = async (req: AuthRequest, res: Response
     res.status(500).json({ success: false, message: 'Failed to update password', error: error.message });
   }
 };
+
+/**
+ * Get all pending booking requests awaiting payment and receptionist verification
+ */
+export const getPendingAppointments = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user || req.user.role !== 'RECEPTIONIST') {
+      res.status(403).json({ success: false, message: 'Access denied: Receptionist role required' });
+      return;
+    }
+
+    const receptionist = await prisma.receptionistProfile.findUnique({
+      where: { userId: req.user.id },
+      include: {
+        clinic: true,
+        doctors: { include: { doctor: { include: { user: true } } } },
+      },
+    });
+
+    if (!receptionist) {
+      res.status(404).json({ success: false, message: 'Receptionist profile not found' });
+      return;
+    }
+
+    const assignedDoctorIds = receptionist.doctors.map((d) => d.doctorId);
+
+    const pendingAppointments = await prisma.appointment.findMany({
+      where: {
+        doctorId: { in: assignedDoctorIds },
+        ...(receptionist.clinicId ? { clinicId: receptionist.clinicId } : {}),
+        status: 'PENDING_APPROVAL',
+      },
+      include: {
+        doctor: {
+          include: {
+            user: { select: { fullName: true, avatarUrl: true, email: true, phone: true } },
+            clinics: {
+              where: { clinicId: receptionist.clinicId || undefined },
+              include: { clinic: true },
+            },
+          },
+        },
+        clinic: true,
+        patient: {
+          include: {
+            user: { select: { fullName: true, email: true, phone: true, avatarUrl: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const enriched = pendingAppointments.map((appt) => {
+      const cd = (appt.doctor as any)?.clinics?.[0];
+      const fee = cd?.consultationFee ?? appt.doctor.consultationFee;
+      return {
+        ...appt,
+        consultationFee: fee,
+      };
+    });
+
+    res.json({ success: true, count: enriched.length, data: enriched });
+  } catch (error: any) {
+    console.error('getPendingAppointments error:', error);
+    res.status(500).json({ success: false, message: 'Failed to retrieve pending appointments', error: error.message });
+  }
+};
+
+/**
+ * Approve booking request and confirm payment receipt (assigns official sequential queue token)
+ */
+export const approveAppointment = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user || req.user.role !== 'RECEPTIONIST') {
+      res.status(403).json({ success: false, message: 'Access denied: Receptionist role required' });
+      return;
+    }
+
+    const appointmentId = String(req.params.appointmentId);
+
+    const receptionist = await prisma.receptionistProfile.findUnique({
+      where: { userId: req.user.id },
+      include: { doctors: true },
+    });
+
+    if (!receptionist) {
+      res.status(404).json({ success: false, message: 'Receptionist profile not found' });
+      return;
+    }
+
+    const appointment = await prisma.appointment.findUnique({
+      where: { id: appointmentId },
+      include: {
+        doctor: {
+          include: {
+            user: true,
+            clinics: {
+              where: { clinicId: receptionist.clinicId || undefined },
+            },
+          },
+        },
+        clinic: true,
+        patient: { include: { user: true } },
+      },
+    });
+
+    if (!appointment) {
+      res.status(404).json({ success: false, message: 'Appointment not found' });
+      return;
+    }
+
+    // Verify receptionist is assigned to this doctor
+    const isAssigned = receptionist.doctors.some((d) => d.doctorId === appointment.doctorId);
+    if (!isAssigned) {
+      res.status(403).json({ success: false, message: 'Access denied: You are not assigned to manage this doctor.' });
+      return;
+    }
+
+    if (receptionist.clinicId && appointment.clinicId && appointment.clinicId !== receptionist.clinicId) {
+      res.status(403).json({ success: false, message: 'Access denied: Appointment belongs to a different clinic facility.' });
+      return;
+    }
+
+    if (appointment.status !== 'PENDING_APPROVAL') {
+      res.status(400).json({ success: false, message: `Appointment cannot be approved because current status is ${appointment.status}.` });
+      return;
+    }
+
+    // Atomic transaction: assign real sequential queue token (positive integer), mark WAITING and PAID
+    let updated: any;
+    let attempts = 0;
+    const maxAttempts = 3;
+
+    while (attempts < maxAttempts) {
+      try {
+        updated = await prisma.$transaction(async (tx) => {
+          // Find max positive queue number on this date
+          const maxQueueAppt = await tx.appointment.findFirst({
+            where: {
+              doctorId: appointment.doctorId,
+              appointmentDate: appointment.appointmentDate,
+              queueNumber: { gt: 0 },
+            },
+            orderBy: { queueNumber: 'desc' },
+            select: { queueNumber: true },
+          });
+
+          const nextToken = (maxQueueAppt?.queueNumber || 0) + 1;
+
+          // Recalculate estimated time based on newly assigned token
+          let slots = parseDoctorSlots(appointment.doctor);
+          const cd = (appointment.doctor as any)?.clinics?.[0];
+          if (cd?.slots) {
+            try {
+              const p = typeof cd.slots === 'string' ? JSON.parse(cd.slots) : cd.slots;
+              if (Array.isArray(p) && p.length > 0) slots = p;
+            } catch {}
+          }
+          const slot = (appointment.slotId && slots.find((s) => s.id === appointment.slotId)) || slots[0];
+          const pace = slot?.avgConsultationMinutes || 3.0;
+
+          // Estimate start time = slot start + (nextToken - 1) * pace
+          let estTime = appointment.estimatedTime;
+          if (slot?.startTime) {
+            const [sh, sm] = slot.startTime.split(':').map(Number);
+            const totalMins = sh * 60 + sm + Math.round((nextToken - 1) * pace);
+            const eh = Math.floor(totalMins / 60) % 24;
+            const em = totalMins % 60;
+            const period = eh >= 12 ? 'PM' : 'AM';
+            const h12 = eh % 12 === 0 ? 12 : eh % 12;
+            estTime = `${String(h12).padStart(2, '0')}:${String(em).padStart(2, '0')} ${period}`;
+          }
+
+          return await tx.appointment.update({
+            where: { id: appointment.id },
+            data: {
+              queueNumber: nextToken,
+              status: 'WAITING',
+              paymentStatus: 'PAID',
+              approvedBy: receptionist.id,
+              approvedAt: new Date(),
+              estimatedTime: estTime,
+            },
+            include: {
+              doctor: { include: { user: { select: { fullName: true } } } },
+              clinic: true,
+              patient: { include: { user: { select: { fullName: true, phone: true } } } },
+            },
+          });
+        });
+        break;
+      } catch (err: any) {
+        attempts++;
+        if (err.code === 'P2002' && attempts < maxAttempts) {
+          continue;
+        }
+        throw err;
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Appointment approved successfully. Queue Token #${updated.queueNumber} assigned and payment confirmed.`,
+      data: updated,
+    });
+  } catch (error: any) {
+    console.error('approveAppointment error:', error);
+    res.status(500).json({ success: false, message: 'Failed to approve appointment', error: error.message });
+  }
+};
+
+/**
+ * Decline/reject booking request
+ */
+export const rejectAppointment = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user || req.user.role !== 'RECEPTIONIST') {
+      res.status(403).json({ success: false, message: 'Access denied: Receptionist role required' });
+      return;
+    }
+
+    const appointmentId = String(req.params.appointmentId);
+    const { reason } = req.body;
+
+    const receptionist = await prisma.receptionistProfile.findUnique({
+      where: { userId: req.user.id },
+      include: { doctors: true },
+    });
+
+    if (!receptionist) {
+      res.status(404).json({ success: false, message: 'Receptionist profile not found' });
+      return;
+    }
+
+    const appointment = await prisma.appointment.findUnique({
+      where: { id: appointmentId },
+    });
+
+    if (!appointment) {
+      res.status(404).json({ success: false, message: 'Appointment not found' });
+      return;
+    }
+
+    const isAssigned = receptionist.doctors.some((d) => d.doctorId === appointment.doctorId);
+    if (!isAssigned) {
+      res.status(403).json({ success: false, message: 'Access denied: You are not assigned to manage this doctor.' });
+      return;
+    }
+
+    const updated = await prisma.appointment.update({
+      where: { id: appointment.id },
+      data: {
+        status: 'REJECTED',
+        paymentStatus: 'FAILED',
+        clinicalNotes: reason ? `Declined by reception: ${reason}` : 'Declined by reception',
+      },
+    });
+
+    res.json({
+      success: true,
+      message: 'Appointment booking request has been declined.',
+      data: updated,
+    });
+  } catch (error: any) {
+    console.error('rejectAppointment error:', error);
+    res.status(500).json({ success: false, message: 'Failed to decline appointment', error: error.message });
+  }
+};
+
+/**
+ * Receptionist self-registration / application to join a verified clinic
+ */
+export const applyReceptionist = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { fullName, email, password, phone, clinicId } = req.body;
+
+    if (!fullName || !email || !password || !clinicId) {
+      res.status(400).json({ success: false, message: 'Please provide full name, email, password, and target clinic' });
+      return;
+    }
+
+    const existingUser = await prisma.user.findUnique({
+      where: { email: String(email).toLowerCase().trim() },
+    });
+
+    if (existingUser) {
+      res.status(400).json({ success: false, message: 'An account with this email already exists' });
+      return;
+    }
+
+    const clinic = await prisma.clinicProfile.findUnique({
+      where: { id: String(clinicId) },
+    });
+
+    if (!clinic || !clinic.isVerified) {
+      res.status(400).json({ success: false, message: 'Selected clinic is invalid or not verified' });
+      return;
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+    const formattedPhone = phone ? formatIndianPhone(phone) : null;
+
+    const user = await prisma.user.create({
+      data: {
+        fullName: String(fullName).trim(),
+        email: String(email).toLowerCase().trim(),
+        passwordHash: hashedPassword,
+        role: 'RECEPTIONIST',
+        phone: formattedPhone,
+        mustChangePassword: false,
+      },
+    });
+
+    const receptionist = await prisma.receptionistProfile.create({
+      data: {
+        userId: user.id,
+        phone: formattedPhone,
+        clinicId: clinic.id,
+        status: 'PENDING', // Awaiting clinic administrator approval
+      },
+    });
+
+    res.json({
+      success: true,
+      message: `Your application to join ${clinic.clinicName} has been submitted. The clinic administrator will review and activate your desk access.`,
+      data: {
+        userId: user.id,
+        receptionistId: receptionist.id,
+        status: 'PENDING',
+      },
+    });
+  } catch (error: any) {
+    console.error('applyReceptionist error:', error);
+    res.status(500).json({ success: false, message: 'Failed to submit receptionist application', error: error.message });
+  }
+};
+

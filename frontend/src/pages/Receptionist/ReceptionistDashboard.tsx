@@ -4,6 +4,7 @@ import {
   ReceptionistDashboardData,
   ReceptionistQueueItem,
   getLocalDateString,
+  Appointment,
 } from '../../services/api';
 import { sanitizeIndianPhone, formatIndianPhone, isValidIndianPhone } from '../../utils/phoneUtils';
 import { useAuth } from '../../context/AuthContext';
@@ -22,6 +23,9 @@ import {
   Building2,
   ShieldCheck,
   Lock,
+  Phone,
+  CreditCard,
+  Check,
 } from 'lucide-react';
 
 export interface TokenPassData {
@@ -49,10 +53,16 @@ export const ReceptionistDashboard: React.FC = () => {
 
   const [data, setData] = useState<ReceptionistDashboardData | null>(null);
   const [, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'walkin' | 'queue' | 'doctors'>('walkin');
+  const [activeTab, setActiveTab] = useState<'walkin' | 'queue' | 'pending' | 'doctors'>('walkin');
 
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  // Pending Approvals state
+  const [pendingAppointments, setPendingAppointments] = useState<Appointment[]>([]);
+  const [pendingLoading, setPendingLoading] = useState(false);
+  const [approvingId, setApprovingId] = useState<string | null>(null);
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
 
   // Walk-in form state
   const [selectedDoctorId, setSelectedDoctorId] = useState<string>('');
@@ -78,6 +88,18 @@ export const ReceptionistDashboard: React.FC = () => {
   const [queueSearch, setQueueSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'WAITING' | 'IN_CONSULTATION' | 'COMPLETED' | 'CANCELLED'>('ALL');
 
+  const fetchPendingAppointments = useCallback(async () => {
+    try {
+      setPendingLoading(true);
+      const res = await api.getPendingAppointments();
+      setPendingAppointments(res);
+    } catch (err: any) {
+      console.error('Failed to load pending appointments:', err);
+    } finally {
+      setPendingLoading(false);
+    }
+  }, []);
+
   const fetchDeskData = useCallback(async () => {
     try {
       setError(null);
@@ -90,13 +112,15 @@ export const ReceptionistDashboard: React.FC = () => {
         setSelectedDoctorId((prev) => prev || res.doctors[0].doctorId);
         setQueueDoctorId((prev) => prev || res.doctors[0].doctorId);
       }
+      // Refresh pending approvals badge
+      fetchPendingAppointments();
     } catch (err: any) {
       console.error('Failed to load desk data:', err);
       setError(err.message || 'Failed to load desk details');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [fetchPendingAppointments]);
 
   useEffect(() => {
     fetchDeskData();
@@ -123,7 +147,46 @@ export const ReceptionistDashboard: React.FC = () => {
     if (activeTab === 'queue' && queueDoctorId) {
       fetchQueue();
     }
-  }, [activeTab, queueDoctorId, queueDate, fetchQueue]);
+    if (activeTab === 'pending') {
+      fetchPendingAppointments();
+    }
+  }, [activeTab, queueDoctorId, queueDate, fetchQueue, fetchPendingAppointments]);
+
+  const handleApprovePendingAppointment = async (apptId: string) => {
+    try {
+      setApprovingId(apptId);
+      setError(null);
+      const res = await api.approveAppointment(apptId);
+      setSuccessMsg(res.message || 'Payment confirmed! Positive queue token has been assigned.');
+      await fetchPendingAppointments();
+      fetchDeskData();
+      if (queueDoctorId) {
+        fetchQueue();
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to approve appointment');
+    } finally {
+      setApprovingId(null);
+    }
+  };
+
+  const handleRejectPendingAppointment = async (apptId: string) => {
+    if (!window.confirm('Are you sure you want to decline this booking request?')) {
+      return;
+    }
+    try {
+      setRejectingId(apptId);
+      setError(null);
+      const res = await api.rejectAppointment(apptId, 'Unverified booking request declined by receptionist.');
+      setSuccessMsg(res.message || 'Booking request declined.');
+      await fetchPendingAppointments();
+      fetchDeskData();
+    } catch (err: any) {
+      setError(err.message || 'Failed to decline appointment');
+    } finally {
+      setRejectingId(null);
+    }
+  };
 
   const linkedDoctors = data?.doctors || [];
   const activeSelectedDoctor = linkedDoctors.find((d) => d.doctorId === selectedDoctorId);
@@ -257,6 +320,14 @@ export const ReceptionistDashboard: React.FC = () => {
       onClick: () => setActiveTab('walkin'),
     },
     {
+      id: 'pending',
+      label: 'Pending Approvals',
+      icon: ShieldCheck,
+      active: activeTab === 'pending',
+      onClick: () => setActiveTab('pending'),
+      badge: pendingAppointments.length > 0 ? `${pendingAppointments.length} new` : undefined,
+    },
+    {
       id: 'queue',
       label: 'Live Queue Tracker',
       icon: Clock,
@@ -309,7 +380,7 @@ export const ReceptionistDashboard: React.FC = () => {
         )}
 
         {/* 1. Metrics Overview */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-6 shadow-xs">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-semibold text-[#86868b] uppercase tracking-wider">
@@ -323,19 +394,48 @@ export const ReceptionistDashboard: React.FC = () => {
             <p className="text-[11px] text-[#86868b] mt-1">Practitioners available for walk-in dispatch</p>
           </div>
 
+          <div
+            onClick={() => setActiveTab('pending')}
+            className={`rounded-[20px] border p-6 shadow-xs cursor-pointer transition-all hover:scale-[1.01] active:scale-[0.99] ${
+              pendingAppointments.length > 0
+                ? 'bg-amber-50/50 border-amber-200'
+                : 'bg-white border-[#e5e5ea]'
+            }`}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-semibold text-[#86868b] uppercase tracking-wider">
+                Pending Approvals
+              </span>
+              <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center">
+                <ShieldCheck className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className={`text-3xl font-semibold ${pendingAppointments.length > 0 ? 'text-amber-700 font-bold' : 'text-[#1d1d1f]'}`}>
+                {pendingAppointments.length}
+              </span>
+              {pendingAppointments.length > 0 && (
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-200/80 text-amber-900 uppercase">
+                  Action Required
+                </span>
+              )}
+            </div>
+            <p className="text-[11px] text-[#86868b] mt-1">Online bookings awaiting payment confirmation</p>
+          </div>
+
           <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-6 shadow-xs">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-semibold text-[#86868b] uppercase tracking-wider">
                 Today's Desk Queue
               </span>
-              <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-xl bg-blue-50 text-[#0088e8] flex items-center justify-center">
                 <Clock className="w-4 h-4" />
               </div>
             </div>
             <div className="text-3xl font-semibold text-[#1d1d1f]">
               {linkedDoctors.reduce((sum, d) => sum + d.todayTotalBookings, 0)}
             </div>
-            <p className="text-[11px] text-[#86868b] mt-1">Total appointments booked across your desk today</p>
+            <p className="text-[11px] text-[#86868b] mt-1">Total appointments booked across desk today</p>
           </div>
 
           <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-6 shadow-xs">
@@ -354,7 +454,7 @@ export const ReceptionistDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* 2. Three Main Functionality Tabs */}
+        {/* 2. Main Functionality Tabs */}
         <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-6 sm:p-8 shadow-xs">
           <div className="flex items-center gap-2 border-b border-[#f0f0f0] pb-4 mb-6 overflow-x-auto">
             <button
@@ -367,6 +467,23 @@ export const ReceptionistDashboard: React.FC = () => {
             >
               <UserPlus className="w-3.5 h-3.5" />
               Rapid Walk-in Booking
+            </button>
+
+            <button
+              onClick={() => setActiveTab('pending')}
+              className={`px-4 py-2 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                activeTab === 'pending'
+                  ? 'bg-[#1d1d1f] text-white shadow-xs'
+                  : 'bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f] hover:bg-[#e8e8ed]'
+              }`}
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-amber-500" />
+              Pending Approvals
+              {pendingAppointments.length > 0 && (
+                <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-amber-500 text-white">
+                  {pendingAppointments.length}
+                </span>
+              )}
             </button>
 
             <button
@@ -461,7 +578,7 @@ export const ReceptionistDashboard: React.FC = () => {
                               </div>
                               <div className="text-[11px] text-[#0088e8]">{doc.specialty}</div>
                               <div className="text-[10px] text-[#86868b] mt-0.5">
-                                Fee: ${doc.consultationFee.toFixed(0)} • Queue: {doc.todayWaitingPatients} waiting
+                                Fee: ₹{doc.consultationFee.toFixed(0)} • Queue: {doc.todayWaitingPatients} waiting
                               </div>
                             </div>
                           </div>
@@ -642,6 +759,174 @@ export const ReceptionistDashboard: React.FC = () => {
                     </AppleButton>
                   </div>
                 </form>
+              )}
+            </div>
+          )}
+
+          {/* TAB: Pending Approvals & Online Bookings */}
+          {activeTab === 'pending' && (
+            <div>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                <div>
+                  <h3 className="text-base font-semibold text-[#1d1d1f] flex items-center gap-2">
+                    Online Bookings Awaiting Reception Approval
+                    {pendingAppointments.length > 0 && (
+                      <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">
+                        {pendingAppointments.length} pending
+                      </span>
+                    )}
+                  </h3>
+                  <p className="text-xs text-[#86868b] mt-0.5">
+                    Patients booked online and were instructed to contact this desk to pay. Once payment is confirmed via UPI / Cash / Card, click Approve to assign positive queue token.
+                  </p>
+                </div>
+
+                <AppleButton
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => fetchPendingAppointments()}
+                  disabled={pendingLoading}
+                  className="flex-shrink-0"
+                >
+                  {pendingLoading ? 'Refreshing...' : 'Refresh Requests'}
+                </AppleButton>
+              </div>
+
+              {pendingLoading ? (
+                <div className="py-16 text-center text-xs text-[#86868b]">
+                  Loading pending online bookings...
+                </div>
+              ) : pendingAppointments.length === 0 ? (
+                <div className="py-16 text-center text-xs text-[#86868b] bg-[#fafafc] rounded-2xl border border-dashed border-[#e5e5ea]">
+                  <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-3">
+                    <CheckCircle2 className="w-6 h-6" />
+                  </div>
+                  <p className="font-semibold text-sm text-[#1d1d1f]">All Booking Requests Processed</p>
+                  <p className="mt-1 text-xs max-w-sm mx-auto text-[#86868b]">
+                    There are no online patient booking requests awaiting payment confirmation or approval at your clinic.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {pendingAppointments.map((appt) => {
+                    const fee = appt.fee || appt.doctor?.consultationFee || 0;
+                    const isApproving = approvingId === appt.id;
+                    const isRejecting = rejectingId === appt.id;
+                    const patientDisplay = appt.patientName || appt.patient?.user?.fullName || 'Patient';
+                    const phoneDisplay = appt.patientPhone || appt.patient?.user?.phone || '';
+
+                    return (
+                      <div
+                        key={appt.id}
+                        className="p-5 rounded-2xl bg-white border border-[#e5e5ea] hover:border-amber-300 transition-all shadow-2xs space-y-4"
+                      >
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#f0f0f0] pb-3">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1">
+                              <ShieldCheck className="w-3 h-3 text-amber-600" />
+                              Awaiting Payment & Approval
+                            </span>
+                            <span className="text-xs text-[#86868b]">
+                              Submitted: {appt.createdAt ? new Date(appt.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : 'Recently'}
+                            </span>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-xs font-semibold text-[#86868b]">Provisional Token:</span>{' '}
+                            <span className="font-mono font-semibold text-amber-600">Pending</span>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                          {/* Patient Info */}
+                          <div className="space-y-1.5 p-3 rounded-xl bg-[#fafafc] border border-[#f0f0f0]">
+                            <span className="text-[10px] font-semibold text-[#86868b] uppercase tracking-wider block">
+                              Patient Details
+                            </span>
+                            <div className="font-semibold text-sm text-[#1d1d1f]">{patientDisplay}</div>
+                            {appt.isForOther && (
+                              <div className="text-[11px] text-[#0088e8] font-medium">
+                                Dependent / Family • Age: {appt.patientAge || 'N/A'} {appt.patientGender ? `• ${appt.patientGender}` : ''}
+                              </div>
+                            )}
+                            {phoneDisplay && (
+                              <div className="flex items-center gap-1.5 pt-1">
+                                <a
+                                  href={`tel:${phoneDisplay}`}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-medium text-[11px] transition-colors"
+                                >
+                                  <Phone className="w-3 h-3" />
+                                  Call {phoneDisplay}
+                                </a>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Practitioner & Appointment Slot */}
+                          <div className="space-y-1.5 p-3 rounded-xl bg-[#fafafc] border border-[#f0f0f0]">
+                            <span className="text-[10px] font-semibold text-[#86868b] uppercase tracking-wider block">
+                              Appointment Slot
+                            </span>
+                            <div className="font-semibold text-sm text-[#1d1d1f]">
+                              Dr. {appt.doctor?.user?.fullName || 'Practitioner'}
+                            </div>
+                            <div className="text-[#0088e8] font-medium">{appt.doctor?.specialty}</div>
+                            <div className="text-[#86868b] flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              {appt.appointmentDate} • {appt.checkingWindow || 'General Shift'}
+                            </div>
+                          </div>
+
+                          {/* Fee & Payment Verification */}
+                          <div className="space-y-1.5 p-3 rounded-xl bg-amber-50/40 border border-amber-100">
+                            <span className="text-[10px] font-semibold text-amber-800 uppercase tracking-wider block">
+                              Consultation Fee
+                            </span>
+                            <div className="text-xl font-bold text-amber-900">
+                              ₹{fee}
+                            </div>
+                            <p className="text-[10px] text-amber-800 leading-snug">
+                              Verify payment receipt with patient (via UPI, Card, or Cash) before approving.
+                            </p>
+                          </div>
+                        </div>
+
+                        {appt.reasonForVisit && (
+                          <div className="text-xs text-[#86868b] px-3 py-2 rounded-xl bg-[#f5f5f7]">
+                            <span className="font-medium text-[#1d1d1f]">Reason for Visit:</span> {appt.reasonForVisit}
+                          </div>
+                        )}
+
+                        <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-[#f0f0f0]">
+                          <div className="text-[11px] text-[#86868b] flex items-center gap-1.5">
+                            <CreditCard className="w-3.5 h-3.5 text-amber-600" />
+                            <span>Approving assigns an official positive queue token and confirms booking.</span>
+                          </div>
+
+                          <div className="flex items-center gap-2 w-full sm:w-auto">
+                            <button
+                              type="button"
+                              disabled={isRejecting || isApproving}
+                              onClick={() => handleRejectPendingAppointment(appt.id)}
+                              className="flex-1 sm:flex-initial px-4 py-2 rounded-full text-xs font-medium text-rose-600 hover:bg-rose-50 border border-rose-200 transition-all active:scale-[0.98] disabled:opacity-50"
+                            >
+                              {isRejecting ? 'Declining...' : 'Decline Request'}
+                            </button>
+
+                            <button
+                              type="button"
+                              disabled={isApproving || isRejecting}
+                              onClick={() => handleApprovePendingAppointment(appt.id)}
+                              className="flex-1 sm:flex-initial px-5 py-2 rounded-full text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 shadow-xs transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-1.5"
+                            >
+                              <Check className="w-3.5 h-3.5" />
+                              {isApproving ? 'Confirming...' : `Confirm Payment & Approve Token (₹${fee})`}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               )}
             </div>
           )}
@@ -936,7 +1221,7 @@ export const ReceptionistDashboard: React.FC = () => {
 
                         <div className="text-right">
                           <span className="text-xs font-semibold text-emerald-600 block">
-                            ${doc.consultationFee}
+                            ₹{doc.consultationFee}
                           </span>
                           <span className="text-[10px] text-[#86868b]">
                             {doc.todayTotalBookings} booked today

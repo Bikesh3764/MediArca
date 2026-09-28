@@ -55,7 +55,7 @@ export const DoctorDetail: React.FC = () => {
     },
     {
       id: 'records',
-      label: 'Medical Records Vault',
+      label: 'Clinical Records',
       icon: FileText,
       path: '/patient/records',
     },
@@ -336,7 +336,7 @@ export const DoctorDetail: React.FC = () => {
                               )}
                               <div className="flex items-center gap-2 mt-2.5">
                                 <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-xs font-semibold">
-                                  Fee: ${clinicFee}
+                                  Fee: ₹{clinicFee}
                                 </span>
                                 {cd.slots && cd.slots.length > 0 && (
                                   <span className="px-2 py-0.5 rounded-md bg-sky-50 text-[#0088e8] text-xs font-medium">
@@ -610,11 +610,11 @@ export const DoctorDetail: React.FC = () => {
               <div className="pt-2 border-t border-[#f0f0f0] mb-5">
                 <div className="flex justify-between text-xs mb-1 text-[#86868b]">
                   <span>Consultation Fee{selectedClinic ? ` (${selectedClinic.clinic.clinicName})` : ''}:</span>
-                  <span className="font-semibold text-[#1d1d1f] text-sm">${activeFee}</span>
+                  <span className="font-semibold text-[#1d1d1f] text-sm">₹{activeFee}</span>
                 </div>
                 <div className="flex justify-between text-xs text-[#86868b]">
                   <span>Booking Fee:</span>
-                  <span className="text-emerald-600 font-semibold">$0.00 (Zero Upfront Paywall)</span>
+                  <span className="text-emerald-600 font-semibold">₹0 (Pay at Reception)</span>
                 </div>
               </div>
 

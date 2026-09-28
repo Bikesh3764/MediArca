@@ -9,6 +9,7 @@ import {
   getClinicReceptionists,
   updateClinicReceptionistDoctors,
   removeClinicReceptionist,
+  respondToReceptionistRequest,
 } from '../controllers/clinicController';
 import { authenticate } from '../middleware/authMiddleware';
 
@@ -29,6 +30,7 @@ router.delete('/doctors/:doctorId', removeDoctorFromClinic);
 router.get('/receptionists', getClinicReceptionists);
 router.post('/receptionists', addClinicReceptionist);
 router.put('/receptionists/:receptionistId/doctors', updateClinicReceptionistDoctors);
+router.put('/receptionists/:receptionistId/respond', respondToReceptionistRequest);
 router.delete('/receptionists/:receptionistId', removeClinicReceptionist);
 
 export default router;

@@ -38,7 +38,7 @@ const patientNavItems: DashboardNavItem[] = [
   },
   {
     id: 'records',
-    label: 'Medical Records Vault',
+    label: 'Clinical Records',
     icon: FileText,
     path: '/patient/records',
   },
@@ -757,12 +757,15 @@ export const BookAppointment: React.FC = () => {
               ></textarea>
             </div>
 
-            {/* Zero Payment Policy Notice */}
-            <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-start gap-2.5">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+            {/* Receptionist & Payment Verification Policy Notice */}
+            <div className="p-4.5 rounded-2xl bg-amber-50/80 border border-amber-200/90 text-amber-900 text-xs flex items-start gap-3">
+              <Clock className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
               <div>
-                <strong>Direct Clinic Token (No Upfront Payment):</strong> Consultation fee of $
-                {activeFee}{selectedClinic ? ` at ${selectedClinic.clinic.clinicName}` : ''} is settled directly with the clinic upon visit. Your queue spot is guaranteed.
+                <strong className="block text-[13px] font-semibold text-amber-950 mb-0.5">
+                  Receptionist & Payment Verification Required
+                </strong>
+                Booking requests are reviewed and approved by the clinic receptionist. Once submitted, please contact the clinic reception
+                {selectedClinic?.clinic.phone ? ` at ${selectedClinic.clinic.phone}` : ''} to complete your consultation fee payment of ₹{activeFee}. Upon verification by the receptionist, your official queue token will be confirmed!
               </div>
             </div>
 
@@ -789,19 +792,17 @@ export const BookAppointment: React.FC = () => {
                 size="lg"
                 type="submit"
                 disabled={submitting || isSelectedSlotPassed || isSelectedSlotFull || !doctor.clinics || doctor.clinics.length === 0}
-                className="w-full sm:w-auto"
+                className="w-full sm:w-auto font-semibold shadow-apple-button"
               >
                 {!doctor.clinics || doctor.clinics.length === 0
                   ? 'No Clinic Associated — Booking Disabled'
                   : submitting
-                  ? 'Confirming Token...'
+                  ? 'Submitting Request...'
                   : isSelectedSlotPassed
                   ? 'Shift Concluded — Select Next Shift'
                   : isSelectedSlotFull
                   ? 'Shift Fully Booked — Select Another Shift'
-                  : queuePreview?.nextQueueNumber
-                  ? `Confirm Queue #${queuePreview.nextQueueNumber}`
-                  : 'Confirm Queue Token'}
+                  : `Submit Booking Request (₹${activeFee})`}
               </AppleButton>
             </div>
           </form>

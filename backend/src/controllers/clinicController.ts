@@ -148,24 +148,38 @@ export const getMyClinic = async (req: AuthRequest, res: Response): Promise<void
         outgoingRequests: outgoingDoctorRequests.map(mapRequestInfo),
         receptionists: (() => {
           const activeDocIds = new Set(activeDoctorAffiliations.map((cd) => cd.doctorId));
-          return (clinic.receptionists || []).map((r) => {
-            const validDoctors = r.doctors.filter((d) => activeDocIds.has(d.doctorId));
-            return {
-              id: r.id,
-              userId: r.userId,
-              fullName: r.user.fullName,
-              email: r.user.email,
-              phone: r.phone || r.user.phone || '',
-              doctorIds: validDoctors.map((d) => d.doctorId),
-              doctors: validDoctors.map((d) => ({
-                id: d.doctor.id,
-                fullName: d.doctor.user.fullName,
-                specialty: d.doctor.specialty,
-              })),
-              createdAt: r.createdAt,
-            };
-          });
+          return (clinic.receptionists || [])
+            .filter((r) => (r as any).status !== 'PENDING' && (r as any).status !== 'REJECTED')
+            .map((r) => {
+              const validDoctors = r.doctors.filter((d) => activeDocIds.has(d.doctorId));
+              return {
+                id: r.id,
+                userId: r.userId,
+                fullName: r.user.fullName,
+                email: r.user.email,
+                phone: r.phone || r.user.phone || '',
+                doctorIds: validDoctors.map((d) => d.doctorId),
+                doctors: validDoctors.map((d) => ({
+                  id: d.doctor.id,
+                  fullName: d.doctor.user.fullName,
+                  specialty: d.doctor.specialty,
+                })),
+                status: (r as any).status || 'ACTIVE',
+                createdAt: r.createdAt,
+              };
+            });
         })(),
+        incomingReceptionists: (clinic.receptionists || [])
+          .filter((r) => (r as any).status === 'PENDING')
+          .map((r) => ({
+            id: r.id,
+            userId: r.userId,
+            fullName: r.user.fullName,
+            email: r.user.email,
+            phone: r.phone || r.user.phone || '',
+            status: 'PENDING',
+            createdAt: r.createdAt,
+          })),
         totalDoctors,
         totalBookings,
         totalRevenue,
@@ -815,3 +829,76 @@ export const removeClinicReceptionist = async (req: AuthRequest, res: Response):
     res.status(500).json({ success: false, message: 'Failed to remove receptionist', error: error.message });
   }
 };
+
+/**
+ * Clinic Admin responds to incoming receptionist application (ACCEPT or REJECT)
+ */
+export const respondToReceptionistRequest = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user || req.user.role !== 'CLINIC') {
+      res.status(403).json({ success: false, message: 'Access denied: clinic role required' });
+      return;
+    }
+
+    const { receptionistId } = req.params;
+    const { action, doctorIds } = req.body;
+
+    const clinic = await prisma.clinicProfile.findUnique({
+      where: { userId: req.user.id },
+    });
+
+    if (!clinic) {
+      res.status(404).json({ success: false, message: 'Clinic profile not found' });
+      return;
+    }
+
+    const receptionist = await prisma.receptionistProfile.findFirst({
+      where: { id: String(receptionistId), clinicId: clinic.id },
+    });
+
+    if (!receptionist) {
+      res.status(404).json({ success: false, message: 'Receptionist request not found for your clinic' });
+      return;
+    }
+
+    if (action === 'ACCEPT') {
+      await prisma.receptionistProfile.update({
+        where: { id: receptionist.id },
+        data: { status: 'ACTIVE' },
+      });
+
+      if (Array.isArray(doctorIds) && doctorIds.length > 0) {
+        await prisma.doctorReceptionist.deleteMany({
+          where: { receptionistId: receptionist.id },
+        });
+
+        await prisma.doctorReceptionist.createMany({
+          data: doctorIds.map((docId: string) => ({
+            doctorId: docId,
+            receptionistId: receptionist.id,
+            status: 'ACTIVE',
+          })),
+        });
+      }
+
+      res.json({
+        success: true,
+        message: 'Receptionist application approved and desk permissions granted.',
+      });
+    } else {
+      await prisma.receptionistProfile.update({
+        where: { id: receptionist.id },
+        data: { status: 'REJECTED' },
+      });
+
+      res.json({
+        success: true,
+        message: 'Receptionist application declined.',
+      });
+    }
+  } catch (error: any) {
+    console.error('respondToReceptionistRequest error:', error);
+    res.status(500).json({ success: false, message: 'Failed to respond to receptionist request', error: error.message });
+  }
+};
+

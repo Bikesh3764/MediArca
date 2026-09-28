@@ -604,6 +604,15 @@ export interface ClinicDashboardData {
   incomingRequests?: Array<ClinicDoctorStat & { requestedAt?: string }>;
   outgoingRequests?: Array<ClinicDoctorStat & { requestedAt?: string }>;
   receptionists?: ClinicReceptionistItem[];
+  incomingReceptionists?: Array<{
+    id: string;
+    userId: string;
+    fullName: string;
+    email: string;
+    phone?: string;
+    status: string;
+    createdAt: string;
+  }>;
   totalDoctors: number;
   totalBookings: number;
   totalRevenue: number;
@@ -793,15 +802,24 @@ export interface Appointment {
   slotId?: string;
   checkingWindow: string;
   estimatedTime: string;
-  status: 'WAITING' | 'IN_CONSULTATION' | 'COMPLETED' | 'CANCELLED';
+  status: 'PENDING_APPROVAL' | 'WAITING' | 'IN_CONSULTATION' | 'COMPLETED' | 'CANCELLED' | 'REJECTED';
+  paymentStatus?: 'PENDING' | 'PAID' | 'FAILED' | string;
+  approvedBy?: string;
+  approvedAt?: string;
+  isPendingApproval?: boolean;
+  clinicPhone?: string;
+  fee?: number;
   reasonForVisit?: string;
   symptoms?: string;
   vitals?: string;
   clinicalNotes?: string;
   isForOther?: boolean;
   patientName?: string;
+  patientPhone?: string;
   patientAge?: string;
   patientGender?: string;
+  createdAt?: string;
+  updatedAt?: string;
   doctor: Doctor;
   patient?: {
     id: string;
@@ -1496,6 +1514,59 @@ export const api = {
     const res = await fetch(`${API_BASE_URL}/doctors/me/receptionists/${receptionistId}`, {
       method: 'DELETE',
       headers: getHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  // Receptionist Pending Appointments & Approval Operations
+  async getPendingAppointments(): Promise<Appointment[]> {
+    const res = await fetch(`${API_BASE_URL}/receptionists/pending-appointments`, {
+      headers: getHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  async approveAppointment(appointmentId: string): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/receptionists/appointments/${appointmentId}/approve`, {
+      method: 'POST',
+      headers: getHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  async rejectAppointment(appointmentId: string, reason?: string): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/receptionists/appointments/${appointmentId}/reject`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ reason }),
+    });
+    return handleResponse(res);
+  },
+
+  async applyReceptionist(data: {
+    fullName: string;
+    email: string;
+    password: string;
+    phone?: string;
+    clinicId: string;
+  }): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/receptionists/apply`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
+  async respondToReceptionistRequest(
+    receptionistId: string,
+    action: 'ACCEPT' | 'REJECT',
+    doctorIds?: string[]
+  ): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/clinic/receptionists/${receptionistId}/respond`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify({ action, doctorIds }),
     });
     return handleResponse(res);
   },

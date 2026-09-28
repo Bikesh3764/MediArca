@@ -259,6 +259,38 @@ async function ensureSchema() {
       await prisma.$executeRawUnsafe(`ALTER TABLE "ClinicDoctor" ADD COLUMN "requestedBy" TEXT NOT NULL DEFAULT 'CLINIC';`);
     } catch {}
   }
+
+  // Ensure Appointment paymentStatus, approvedBy, approvedAt
+  try {
+    await prisma.$executeRawUnsafe(`ALTER TABLE "Appointment" ADD COLUMN IF NOT EXISTS "paymentStatus" TEXT NOT NULL DEFAULT 'PENDING';`);
+  } catch {
+    try {
+      await prisma.$executeRawUnsafe(`ALTER TABLE "Appointment" ADD COLUMN "paymentStatus" TEXT NOT NULL DEFAULT 'PENDING';`);
+    } catch {}
+  }
+  try {
+    await prisma.$executeRawUnsafe(`ALTER TABLE "Appointment" ADD COLUMN IF NOT EXISTS "approvedBy" TEXT;`);
+  } catch {
+    try {
+      await prisma.$executeRawUnsafe(`ALTER TABLE "Appointment" ADD COLUMN "approvedBy" TEXT;`);
+    } catch {}
+  }
+  try {
+    await prisma.$executeRawUnsafe(`ALTER TABLE "Appointment" ADD COLUMN IF NOT EXISTS "approvedAt" TIMESTAMP(3);`);
+  } catch {
+    try {
+      await prisma.$executeRawUnsafe(`ALTER TABLE "Appointment" ADD COLUMN "approvedAt" DATETIME;`);
+    } catch {}
+  }
+
+  // Ensure ReceptionistProfile.status
+  try {
+    await prisma.$executeRawUnsafe(`ALTER TABLE "ReceptionistProfile" ADD COLUMN IF NOT EXISTS "status" TEXT NOT NULL DEFAULT 'ACTIVE';`);
+  } catch {
+    try {
+      await prisma.$executeRawUnsafe(`ALTER TABLE "ReceptionistProfile" ADD COLUMN "status" TEXT NOT NULL DEFAULT 'ACTIVE';`);
+    } catch {}
+  }
 }
 ensureSchema().catch((e) => console.warn('Schema sync notice:', e?.message));
 

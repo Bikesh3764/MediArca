@@ -6,27 +6,16 @@ import { AppleButton } from '../../components/ui/AppleButton';
 import { UtilityCard } from '../../components/ui/UtilityCard';
 import {
   FileText,
-  Upload,
   Trash2,
   Eye,
   X,
-  AlertCircle,
   ExternalLink,
   Download,
   Layers,
-  ShieldCheck,
   Calendar,
   Stethoscope,
   User as UserIcon,
-  Sparkles,
-  CheckCircle2,
 } from 'lucide-react';
-import {
-  processVaultDocument,
-  isImageFile as isImageUtility,
-  OptimizationResult,
-  formatFileSize,
-} from '../../utils/documentOptimizer';
 
 const CATEGORIES = ['All', 'Lab Report', 'Scan', 'Discharge Summary', 'Other'];
 
@@ -34,34 +23,9 @@ export const MedicalRecords: React.FC = () => {
   const [records, setRecords] = useState<MedicalRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('All');
-  const [showUploadModal, setShowUploadModal] = useState(false);
-  const [uploadTitle, setUploadTitle] = useState('');
-  const [uploadCategory, setUploadCategory] = useState('Lab Report');
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [isOptimizing, setIsOptimizing] = useState(false);
-  const [optimizationResult, setOptimizationResult] = useState<OptimizationResult | null>(null);
-  const [previewThumbnail, setPreviewThumbnail] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [error, setError] = useState<string | null>(null);
   const [previewRecord, setPreviewRecord] = useState<MedicalRecord | null>(null);
 
   const { user, loading: loadingAuth } = useAuth();
-
-  const resetUploadModal = () => {
-    if (previewThumbnail) {
-      URL.revokeObjectURL(previewThumbnail);
-    }
-    setUploadTitle('');
-    setSelectedFile(null);
-    setOptimizationResult(null);
-    setPreviewThumbnail(null);
-    setIsOptimizing(false);
-    setError(null);
-    setUploadProgress(0);
-    setUploading(false);
-    setShowUploadModal(false);
-  };
 
   const fetchRecords = async () => {
     setLoading(true);
@@ -79,108 +43,8 @@ export const MedicalRecords: React.FC = () => {
     if (!loadingAuth && user) fetchRecords();
   }, [user, loadingAuth]);
 
-  useEffect(() => {
-    return () => {
-      if (previewThumbnail) {
-        URL.revokeObjectURL(previewThumbnail);
-      }
-    };
-  }, [previewThumbnail]);
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const rawFile = e.target.files?.[0] || null;
-    if (!rawFile) {
-      setSelectedFile(null);
-      setOptimizationResult(null);
-      if (previewThumbnail) URL.revokeObjectURL(previewThumbnail);
-      setPreviewThumbnail(null);
-      return;
-    }
-
-    setError(null);
-    setIsOptimizing(true);
-
-    try {
-      if (isImageUtility(rawFile)) {
-        const thumbUrl = URL.createObjectURL(rawFile);
-        if (previewThumbnail) URL.revokeObjectURL(previewThumbnail);
-        setPreviewThumbnail(thumbUrl);
-      } else {
-        if (previewThumbnail) URL.revokeObjectURL(previewThumbnail);
-        setPreviewThumbnail(null);
-      }
-
-      if (!uploadTitle.trim()) {
-        const cleanName = rawFile.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
-        setUploadTitle(cleanName);
-      }
-
-      const result = await processVaultDocument(rawFile);
-      setSelectedFile(result.file);
-      setOptimizationResult(result);
-
-      // Upgrade preview thumbnail to optimized lightweight blob
-      if (result.fileType === 'image') {
-        const optThumb = URL.createObjectURL(result.file);
-        if (previewThumbnail) URL.revokeObjectURL(previewThumbnail);
-        setPreviewThumbnail(optThumb);
-      }
-    } catch (err: any) {
-      setError(err.message || 'Failed to process document');
-      setSelectedFile(null);
-      setOptimizationResult(null);
-      if (previewThumbnail) URL.revokeObjectURL(previewThumbnail);
-      setPreviewThumbnail(null);
-      e.target.value = '';
-    } finally {
-      setIsOptimizing(false);
-    }
-  };
-
-  const handleUpload = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (isOptimizing) return;
-    if (!selectedFile) {
-      setError('Please select a PDF or image file');
-      return;
-    }
-
-    if (selectedFile.size > 1 * 1024 * 1024) {
-      setError('File size exceeds 1 MB limit. Please upload a document under 1 MB.');
-      return;
-    }
-
-    setUploading(true);
-    setUploadProgress(20);
-    setError(null);
-
-    const interval = setInterval(() => {
-      setUploadProgress((prev) => (prev < 90 ? prev + 15 : prev));
-    }, 150);
-
-    const formData = new FormData();
-    formData.append('file', selectedFile);
-    formData.append('title', uploadTitle || selectedFile.name);
-    formData.append('category', uploadCategory);
-
-    try {
-      await api.uploadRecord(formData);
-      setUploadProgress(100);
-      clearInterval(interval);
-      setTimeout(() => {
-        resetUploadModal();
-        fetchRecords();
-      }, 350);
-    } catch (err: any) {
-      clearInterval(interval);
-      setError(err.message || 'Failed to upload document');
-      setUploading(false);
-      setUploadProgress(0);
-    }
-  };
-
   const handleDelete = async (id: string) => {
-    if (!window.confirm('Delete this medical document from your vault?')) return;
+    if (!window.confirm('Delete this clinical record from your record history?')) return;
     try {
       await api.deleteRecord(id);
       fetchRecords();
@@ -214,7 +78,7 @@ export const MedicalRecords: React.FC = () => {
     },
     {
       id: 'records',
-      label: 'Medical Records Vault',
+      label: 'Clinical Records',
       icon: FileText,
       path: '/patient/records',
       active: true,
@@ -239,19 +103,8 @@ export const MedicalRecords: React.FC = () => {
       portalType="PATIENT"
       portalSubtitle="PATIENT HEALTH RECORD"
       navItems={navItems}
-      title="Medical Records Vault"
-      subtitle="Secure storage for diagnostic lab reports, imaging scans, and clinical summaries"
-      headerAction={
-        <AppleButton
-          variant="primary"
-          size="sm"
-          onClick={() => setShowUploadModal(true)}
-          className="flex items-center gap-1.5 shadow-sm"
-        >
-          <Upload className="w-3.5 h-3.5" />
-          Upload Document
-        </AppleButton>
-      }
+      title="Clinical Records"
+      subtitle="Official diagnostic reports, clinical summaries, and consultation documents issued by doctors"
     >
       <div className="space-y-6">
         {/* Category Filters Bar */}
@@ -293,22 +146,13 @@ export const MedicalRecords: React.FC = () => {
           </div>
         ) : filteredRecords.length === 0 ? (
           <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-12 text-center max-w-md mx-auto shadow-sm">
-            <FileText className="w-12 h-12 text-[#86868b] mx-auto mb-3" />
+            <FileText className="w-12 h-12 text-[#86868b] mx-auto mb-3 opacity-60" />
             <h3 className="text-lg font-semibold text-[#1d1d1f]">
-              {selectedCategory === 'All' ? 'Your vault is empty' : `No ${selectedCategory} documents found`}
+              {selectedCategory === 'All' ? 'No Clinical Records Found' : `No ${selectedCategory} records found`}
             </h3>
-            <p className="text-xs text-[#86868b] mt-1 mb-5 leading-relaxed">
-              {selectedCategory === 'All'
-                ? 'Upload blood reports, scan documents, or discharge summaries to share directly with your doctors.'
-                : `Upload your ${selectedCategory} records to access them anytime.`}
+            <p className="text-xs text-[#86868b] mt-1.5 leading-relaxed">
+              Official medical summaries, lab findings, and diagnostic records issued by your doctors will appear here automatically.
             </p>
-            <AppleButton
-              variant="primary"
-              size="md"
-              onClick={() => setShowUploadModal(true)}
-            >
-              Upload Document
-            </AppleButton>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -322,42 +166,46 @@ export const MedicalRecords: React.FC = () => {
                     <button
                       onClick={() => handleDelete(rec.id)}
                       className="text-[#86868b] hover:text-rose-600 transition-colors p-1"
-                      title="Delete document"
+                      title="Delete record"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
-                  <h4
-                    onClick={() => setPreviewRecord(rec)}
-                    className="text-[15px] font-semibold text-[#1d1d1f] line-clamp-2 mb-1 cursor-pointer hover:text-[#0088e8] transition-colors"
-                  >
+                  <h4 className="text-base font-semibold text-[#1d1d1f] mb-1 line-clamp-1">
                     {rec.title}
                   </h4>
-                  <span className="text-[11px] text-[#86868b] block">
-                    Uploaded: {new Date(rec.uploadedAt).toLocaleDateString()}
-                  </span>
+                  <p className="text-xs text-[#86868b] flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5" />
+                    {new Date(rec.uploadedAt).toLocaleDateString(undefined, {
+                      day: 'numeric',
+                      month: 'short',
+                      year: 'numeric',
+                    })}
+                  </p>
                 </div>
 
-                <div className="pt-4 mt-4 border-t border-[#f0f0f0] flex items-center justify-between">
-                  <span className="text-xs font-mono uppercase text-[#86868b]">
-                    {rec.fileType || 'Doc'}
+                <div className="mt-5 pt-3 border-t border-[#f0f0f0] flex items-center justify-between">
+                  <span className="text-[11px] font-mono text-[#86868b] uppercase">
+                    {rec.fileType?.split('/')[1] || 'PDF'}
                   </span>
                   <div className="flex items-center gap-2">
-                    <button
+                    <AppleButton
+                      variant="ghost"
+                      size="sm"
                       onClick={() => setPreviewRecord(rec)}
-                      className="inline-flex items-center gap-1 text-xs font-semibold text-[#0088e8] hover:underline"
+                      className="text-xs px-3 py-1.5"
                     >
-                      <Eye className="w-3.5 h-3.5" />
+                      <Eye className="w-3.5 h-3.5 mr-1" />
                       Preview
-                    </button>
+                    </AppleButton>
                     <a
                       href={getFileUrl(rec.fileUrl)}
                       target="_blank"
-                      rel="noreferrer"
-                      className="text-[#86868b] hover:text-[#1d1d1f] transition-colors"
-                      title="Open in new tab"
+                      rel="noopener noreferrer"
+                      className="p-1.5 text-[#86868b] hover:text-[#0088e8] transition-colors rounded-full hover:bg-gray-100"
+                      title="Download original file"
                     >
-                      <ExternalLink className="w-3.5 h-3.5" />
+                      <Download className="w-4 h-4" />
                     </a>
                   </div>
                 </div>
@@ -367,277 +215,52 @@ export const MedicalRecords: React.FC = () => {
         )}
       </div>
 
-      {/* Instant In-App Document Preview Modal */}
+      {/* Preview Modal */}
       {previewRecord && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xl animate-fadeIn">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xl animate-fadeIn">
           <div className="bg-white rounded-[24px] border border-[#e5e5ea] max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
-            <div className="flex justify-between items-center px-6 py-4 border-b border-[#f0f0f0]">
-              <div className="flex items-center gap-2.5">
-                <FileText className="w-5 h-5 text-[#0088e8]" />
-                <div>
-                  <h3 className="text-base font-semibold text-[#1d1d1f] truncate max-w-[320px] sm:max-w-md">
-                    {previewRecord.title}
-                  </h3>
-                  <span className="text-[11px] text-[#86868b]">{previewRecord.category}</span>
-                </div>
+            <div className="flex justify-between items-center p-5 border-b border-[#f0f0f0]">
+              <div>
+                <h3 className="text-base font-semibold text-[#1d1d1f]">{previewRecord.title}</h3>
+                <p className="text-xs text-[#86868b] mt-0.5">
+                  Category: {previewRecord.category} • Issued on{' '}
+                  {new Date(previewRecord.uploadedAt).toLocaleDateString()}
+                </p>
               </div>
               <div className="flex items-center gap-2">
                 <a
                   href={getFileUrl(previewRecord.fileUrl)}
                   target="_blank"
-                  rel="noreferrer"
-                  className="p-2 rounded-full text-[#86868b] hover:bg-gray-100 hover:text-[#1d1d1f] transition-colors"
-                  title="Open in new window"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-xs text-[#0088e8] hover:underline font-medium px-2 py-1"
                 >
-                  <ExternalLink className="w-4 h-4" />
-                </a>
-                <a
-                  href={getFileUrl(previewRecord.fileUrl)}
-                  download
-                  className="p-2 rounded-full text-[#86868b] hover:bg-gray-100 hover:text-[#1d1d1f] transition-colors"
-                  title="Download file"
-                >
-                  <Download className="w-4 h-4" />
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  Open in New Tab
                 </a>
                 <button
                   onClick={() => setPreviewRecord(null)}
-                  className="p-2 rounded-full hover:bg-gray-100 text-[#86868b] transition-colors"
+                  className="p-1.5 rounded-full hover:bg-gray-100 text-[#86868b]"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
             </div>
 
-            {/* Preview Body */}
-            <div className="flex-1 p-6 overflow-y-auto flex items-center justify-center bg-[#f5f5f7]">
+            <div className="flex-1 overflow-auto p-4 bg-[#f5f5f7] flex items-center justify-center min-h-[350px]">
               {isImageFile(previewRecord) ? (
                 <img
                   src={getFileUrl(previewRecord.fileUrl)}
                   alt={previewRecord.title}
-                  className="max-h-[65vh] max-w-full object-contain rounded-xl shadow-sm border border-[#e5e5ea]"
+                  className="max-w-full max-h-[70vh] object-contain rounded-xl shadow-sm bg-white"
                 />
               ) : (
-                <div className="w-full h-[65vh] flex flex-col bg-white rounded-xl border border-[#e5e5ea] overflow-hidden shadow-inner">
-                  <iframe
-                    src={getFileUrl(previewRecord.fileUrl)}
-                    title={previewRecord.title}
-                    className="w-full flex-1 border-0"
-                  />
-                  <div className="px-4 py-2 bg-gray-50 border-t border-gray-200 flex items-center justify-between text-xs text-[#86868b]">
-                    <span>Viewing PDF preview</span>
-                    <a
-                      href={getFileUrl(previewRecord.fileUrl)}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-[#0088e8] font-medium hover:underline flex items-center gap-1"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" />
-                      Open in New Tab
-                    </a>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="px-6 py-3 border-t border-[#f0f0f0] bg-white flex justify-end">
-              <AppleButton variant="ghost" size="sm" onClick={() => setPreviewRecord(null)}>
-                Close Preview
-              </AppleButton>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Upload Modal with Progress */}
-      {showUploadModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xl animate-fadeIn">
-          <div className="bg-white rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-6 sm:p-8 shadow-2xl">
-            <div className="flex justify-between items-center pb-4 border-b border-[#f0f0f0]">
-              <div>
-                <h3 className="text-lg font-semibold text-[#1d1d1f]">Upload Medical Document</h3>
-                <p className="text-xs text-[#86868b] mt-0.5">Auto-compresses high-res scans & camera photos</p>
-              </div>
-              <button
-                disabled={uploading || isOptimizing}
-                onClick={resetUploadModal}
-                className="p-1.5 rounded-full hover:bg-gray-100 text-[#86868b] disabled:opacity-50"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {error && (
-              <div className="my-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                <span>{error}</span>
-              </div>
-            )}
-
-            <form onSubmit={handleUpload} className="space-y-4 pt-4">
-              <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
-                  Document Title
-                </label>
-                <input
-                  type="text"
-                  required
-                  disabled={uploading || isOptimizing}
-                  value={uploadTitle}
-                  onChange={(e) => setUploadTitle(e.target.value)}
-                  placeholder="e.g. Lipid Profile, Chest X-Ray, Blood Test"
-                  className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[14px] bg-white focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] transition-all disabled:opacity-50"
+                <iframe
+                  src={getFileUrl(previewRecord.fileUrl)}
+                  title={previewRecord.title}
+                  className="w-full h-[70vh] rounded-xl border border-[#e5e5ea] bg-white shadow-sm"
                 />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
-                  Category
-                </label>
-                <select
-                  disabled={uploading || isOptimizing}
-                  value={uploadCategory}
-                  onChange={(e) => setUploadCategory(e.target.value)}
-                  className="w-full h-11 px-3 rounded-xl border border-[#e5e5ea] text-[14px] bg-white focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] transition-all disabled:opacity-50 cursor-pointer"
-                >
-                  <option value="Lab Report">Lab Report</option>
-                  <option value="Scan">Scan / Imaging (X-Ray, MRI)</option>
-                  <option value="Discharge Summary">Discharge Summary</option>
-                  <option value="Other">Other Medical File</option>
-                </select>
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block text-xs font-medium text-[#1d1d1f]">
-                    File (PDF, PNG, JPG, WebP)
-                  </label>
-                  {selectedFile && (
-                    <span className="text-[11px] font-mono text-[#0088e8]">
-                      {formatFileSize(selectedFile.size)}
-                    </span>
-                  )}
-                </div>
-                <input
-                  type="file"
-                  required
-                  disabled={uploading || isOptimizing}
-                  accept=".pdf,.png,.jpg,.jpeg,.webp,image/jpeg,image/png,image/webp,application/pdf"
-                  onClick={(e) => {
-                    (e.target as HTMLInputElement).value = '';
-                  }}
-                  onChange={handleFileChange}
-                  className="w-full text-xs text-[#86868b] file:mr-3 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#0088e8] file:text-white hover:file:bg-[#0284c7] file:cursor-pointer disabled:opacity-50"
-                />
-                <p className="text-[11px] text-[#86868b] mt-1.5 flex items-center gap-1">
-                  <ShieldCheck className="w-3.5 h-3.5 text-[#0088e8]" />
-                  <span>Max file size: 1 MB. Auto-compression enabled for camera photos.</span>
-                </p>
-              </div>
-
-              {/* Optimizing Loading State */}
-              {isOptimizing && (
-                <div className="p-3 rounded-xl bg-blue-50/80 border border-blue-200/60 flex items-center gap-3 text-xs text-[#0088e8] animate-pulse">
-                  <Sparkles className="w-4 h-4 animate-spin text-[#0088e8] flex-shrink-0" />
-                  <div>
-                    <span className="font-semibold block">Optimizing Document for Vault...</span>
-                    <span className="text-[11px] text-[#0088e8]/80">Downscaling resolution & compressing while preserving medical text legibility</span>
-                  </div>
-                </div>
               )}
-
-              {/* Compression & Optimization Feedback Card */}
-              {optimizationResult && !isOptimizing && (
-                <div className={`p-3 rounded-xl border text-xs space-y-1.5 transition-all ${
-                  optimizationResult.isOptimized
-                    ? 'bg-[#f0fdf4] border-[#bbf7d0] text-emerald-800'
-                    : 'bg-[#f8fafc] border-[#e2e8f0] text-slate-700'
-                }`}>
-                  <div className="flex items-center justify-between font-semibold">
-                    <span className="flex items-center gap-1.5">
-                      <CheckCircle2 className={`w-4 h-4 flex-shrink-0 ${
-                        optimizationResult.isOptimized ? 'text-emerald-600' : 'text-slate-500'
-                      }`} />
-                      {optimizationResult.isOptimized ? 'Document Auto-Optimized' : 'Document Verified'}
-                    </span>
-                    {optimizationResult.isOptimized && (
-                      <span className="bg-emerald-200/80 text-emerald-900 px-2 py-0.5 rounded-full text-[10px] font-bold">
-                        -{optimizationResult.reductionPercentage}% Size Saved
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center justify-between text-[11px] font-mono">
-                    {optimizationResult.isOptimized ? (
-                      <div className="flex items-center gap-1.5">
-                        <span className="line-through text-gray-400">{optimizationResult.formattedOriginalSize}</span>
-                        <span className="text-gray-400">→</span>
-                        <span className="font-bold text-emerald-700">{optimizationResult.formattedOptimizedSize}</span>
-                      </div>
-                    ) : (
-                      <span>Vault Size: {optimizationResult.formattedOptimizedSize}</span>
-                    )}
-                    <span className="text-emerald-600 font-sans flex items-center gap-1 text-[10px]">
-                      <ShieldCheck className="w-3 h-3 text-emerald-600" />
-                      Contrast preserved
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {/* Thumbnail & File Preview Card */}
-              {previewThumbnail && !isOptimizing && (
-                <div className="flex items-center gap-3 p-2.5 bg-[#f5f5f7] rounded-xl border border-[#e5e5ea]">
-                  <img
-                    src={previewThumbnail}
-                    alt="Document Scan Preview"
-                    className="w-12 h-12 rounded-lg object-cover border border-white shadow-sm flex-shrink-0"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs font-semibold text-[#1d1d1f] truncate">
-                      {uploadTitle || selectedFile?.name}
-                    </p>
-                    <p className="text-[11px] text-[#86868b] truncate">
-                      {selectedFile?.name} • Ready for upload
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {/* Upload Progress Bar */}
-              {uploading && (
-                <div className="p-3.5 rounded-xl bg-blue-50 border border-blue-100 space-y-2">
-                  <div className="flex justify-between text-xs text-[#0088e8] font-medium">
-                    <span>Securing document into vault...</span>
-                    <span>{uploadProgress}%</span>
-                  </div>
-                  <div className="w-full bg-blue-200 h-2 rounded-full overflow-hidden">
-                    <div
-                      className="bg-[#0088e8] h-full transition-all duration-300 rounded-full"
-                      style={{ width: `${uploadProgress}%` }}
-                    ></div>
-                  </div>
-                </div>
-              )}
-
-              <div className="pt-4 border-t border-[#f0f0f0] flex justify-end gap-2">
-                <AppleButton
-                  variant="ghost"
-                  size="sm"
-                  type="button"
-                  disabled={uploading || isOptimizing}
-                  onClick={resetUploadModal}
-                >
-                  Cancel
-                </AppleButton>
-                <AppleButton
-                  variant="primary"
-                  size="sm"
-                  type="submit"
-                  disabled={uploading || isOptimizing || !selectedFile}
-                >
-                  {uploading ? 'Encrypting & Saving...' : isOptimizing ? 'Optimizing...' : 'Save to Vault'}
-                </AppleButton>
-              </div>
-            </form>
+            </div>
           </div>
         </div>
       )}

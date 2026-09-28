@@ -258,9 +258,36 @@ export const ClinicDashboard: React.FC = () => {
     }
   };
 
+  // Receptionist Application Approval State
+  const [approvingRec, setApprovingRec] = useState<{ id: string; fullName: string; email: string } | null>(null);
+  const [approvalDoctorIds, setApprovalDoctorIds] = useState<string[]>([]);
+  const [processingRecId, setProcessingRecId] = useState<string | null>(null);
+
+  const handleRespondReceptionist = async (
+    receptionistId: string,
+    action: 'ACCEPT' | 'REJECT',
+    doctorIds?: string[]
+  ) => {
+    setProcessingRecId(receptionistId);
+    setError(null);
+    setSuccessMsg(null);
+    try {
+      const res = await api.respondToReceptionistRequest(receptionistId, action, doctorIds);
+      setSuccessMsg(res.message || `Receptionist application ${action.toLowerCase()}ed.`);
+      setApprovingRec(null);
+      setApprovalDoctorIds([]);
+      fetchClinicData();
+    } catch (err: any) {
+      setError(err.message || 'Failed to process receptionist application');
+    } finally {
+      setProcessingRecId(null);
+    }
+  };
+
   const clinic = data?.clinic;
   const doctors = data?.doctors || [];
   const totalPendingRequests = data?.incomingRequests?.length || 0;
+  const incomingRecCount = data?.incomingReceptionists?.length || 0;
 
   const navItems: DashboardNavItem[] = [
     {
@@ -284,7 +311,7 @@ export const ClinicDashboard: React.FC = () => {
       id: 'receptionists',
       label: 'Desk Staff & Reception',
       icon: UserCheck,
-      badge: data?.receptionists?.length || undefined,
+      badge: incomingRecCount > 0 ? `${incomingRecCount} new` : (data?.receptionists?.length || undefined),
       onClick: () => {
         const el = document.getElementById('receptionists-section');
         if (el) el.scrollIntoView({ behavior: 'smooth' });
@@ -440,7 +467,7 @@ export const ClinicDashboard: React.FC = () => {
               </div>
             </div>
             <div className="text-3xl font-semibold text-[#1d1d1f]">
-              ${data?.totalRevenue ? data.totalRevenue.toLocaleString() : '0'}
+              ₹{data?.totalRevenue ? data.totalRevenue.toLocaleString() : '0'}
             </div>
             <p className="text-[11px] text-[#86868b] mt-1">
               Generated specifically at this facility
@@ -633,7 +660,7 @@ export const ClinicDashboard: React.FC = () => {
                       </td>
 
                       <td className="py-4 font-medium text-[#1d1d1f]">
-                        ${doc.consultationFee.toFixed(0)}
+                        ₹{doc.consultationFee.toFixed(0)}
                       </td>
 
                       <td className="py-4 text-center">
@@ -647,7 +674,7 @@ export const ClinicDashboard: React.FC = () => {
 
                       <td className="py-4 text-right">
                         <span className="font-semibold text-emerald-600 text-sm">
-                          ${doc.revenue.toLocaleString()}
+                          ₹{doc.revenue.toLocaleString()}
                         </span>
                         <span className="text-[10px] text-[#86868b] block">at this clinic</span>
                       </td>
@@ -690,6 +717,70 @@ export const ClinicDashboard: React.FC = () => {
               Provision Receptionist
             </AppleButton>
           </div>
+
+          {/* Incoming Receptionist Applications */}
+          {data?.incomingReceptionists && data.incomingReceptionists.length > 0 && (
+            <div className="mb-6 p-5 rounded-2xl bg-amber-50/50 border border-amber-200">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" />
+                  <h3 className="text-sm font-semibold text-amber-900">
+                    Incoming Receptionist Applications ({data.incomingReceptionists.length})
+                  </h3>
+                </div>
+                <span className="text-[11px] font-medium text-amber-800">
+                  Staff requesting front desk access to your facility
+                </span>
+              </div>
+
+              <div className="space-y-2.5">
+                {data.incomingReceptionists.map((rec) => (
+                  <div
+                    key={rec.id}
+                    className="p-3.5 rounded-xl bg-white border border-amber-200/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs"
+                  >
+                    <div>
+                      <div className="font-semibold text-xs text-[#1d1d1f] flex items-center gap-2">
+                        <span>{rec.fullName}</span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 text-amber-800 border border-amber-200">
+                          Pending Approval
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-[#86868b] mt-0.5">
+                        <span className="font-mono text-[#1d1d1f]">{rec.email}</span>
+                        {rec.phone && <span> • {rec.phone}</span>}
+                        <span> • Applied {new Date(rec.createdAt).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        disabled={processingRecId === rec.id}
+                        onClick={() => handleRespondReceptionist(rec.id, 'REJECT')}
+                        className="px-3 py-1.5 rounded-full text-xs font-medium text-rose-600 hover:bg-rose-50 border border-rose-200 transition-all active:scale-[0.98] disabled:opacity-50"
+                      >
+                        Decline
+                      </button>
+
+                      <button
+                        type="button"
+                        disabled={processingRecId === rec.id}
+                        onClick={() => {
+                          setApprovingRec({ id: rec.id, fullName: rec.fullName, email: rec.email });
+                          setApprovalDoctorIds([]);
+                        }}
+                        className="px-3.5 py-1.5 rounded-full text-xs font-semibold text-white bg-[#0088e8] hover:bg-[#0077cc] shadow-2xs transition-all active:scale-[0.98] disabled:opacity-50 flex items-center gap-1.5"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        Review & Assign Doctors
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {(!data?.receptionists || data.receptionists.length === 0) ? (
             <div className="py-12 text-center">
@@ -834,7 +925,7 @@ export const ClinicDashboard: React.FC = () => {
                         </span>
                       </td>
                       <td className="py-3 text-right pr-2 font-medium text-[#1d1d1f]">
-                        ${appt.fee}
+                        ₹{appt.fee}
                       </td>
                     </tr>
                   ))}
@@ -1099,7 +1190,7 @@ export const ClinicDashboard: React.FC = () => {
                               <div className="text-[10px] text-[#86868b]">{doc.specialty}</div>
                             </div>
                           </div>
-                          <span className="text-[10px] text-[#86868b]">${doc.consultationFee}</span>
+                          <span className="text-[10px] text-[#86868b]">₹{doc.consultationFee}</span>
                         </div>
                       );
                     })}
@@ -1190,7 +1281,7 @@ export const ClinicDashboard: React.FC = () => {
                             <div className="text-[10px] text-[#86868b]">{doc.specialty}</div>
                           </div>
                         </div>
-                        <span className="text-[10px] text-[#86868b]">${doc.consultationFee}</span>
+                        <span className="text-[10px] text-[#86868b]">₹{doc.consultationFee}</span>
                       </div>
                     );
                   })}
@@ -1312,6 +1403,112 @@ export const ClinicDashboard: React.FC = () => {
                 onClick={() => setCreatedCredentials(null)}
               >
                 Done
+              </AppleButton>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Review & Approve Incoming Receptionist Modal */}
+      {approvingRec && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-6 sm:p-8 shadow-2xl">
+            <div className="flex justify-between items-center pb-4 border-b border-[#f0f0f0]">
+              <div>
+                <h3 className="text-base font-semibold text-[#1d1d1f]">Approve Receptionist Application</h3>
+                <p className="text-xs text-[#86868b] mt-0.5">
+                  Assign practitioners to {approvingRec.fullName}
+                </p>
+              </div>
+              <button
+                disabled={processingRecId !== null}
+                onClick={() => setApprovingRec(null)}
+                className="p-1.5 rounded-full hover:bg-gray-100 text-[#86868b]"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="py-4 space-y-4">
+              <div className="p-3 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-xs">
+                <div className="font-semibold text-[#1d1d1f]">{approvingRec.fullName}</div>
+                <div className="text-[11px] text-[#86868b] font-mono">{approvingRec.email}</div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[#1d1d1f] mb-1.5">
+                  Assign Doctors Managed by this Receptionist:
+                </label>
+                <p className="text-[11px] text-[#86868b] mb-3">
+                  This receptionist will only be able to view schedules, book walk-ins, and manage queues for selected practitioners.
+                </p>
+
+                {doctors.filter((d) => d.status === 'ACCEPTED').length === 0 ? (
+                  <div className="p-4 rounded-xl bg-amber-50 text-amber-800 text-xs border border-amber-200">
+                    No active affiliated doctors at this clinic yet. You can approve now and assign doctors later.
+                  </div>
+                ) : (
+                  <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                    {doctors
+                      .filter((d) => d.status === 'ACCEPTED')
+                      .map((doc) => {
+                        const isChecked = approvalDoctorIds.includes(doc.doctorId);
+                        return (
+                          <div
+                            key={doc.doctorId}
+                            onClick={() => {
+                              if (isChecked) {
+                                setApprovalDoctorIds(approvalDoctorIds.filter((id) => id !== doc.doctorId));
+                              } else {
+                                setApprovalDoctorIds([...approvalDoctorIds, doc.doctorId]);
+                              }
+                            }}
+                            className={`p-2.5 rounded-xl border cursor-pointer transition-colors flex items-center justify-between text-xs ${
+                              isChecked
+                                ? 'bg-[#0088e8]/5 border-[#0088e8]'
+                                : 'bg-[#f5f5f7] border-[#e5e5ea] hover:bg-[#e8e8ed]'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <div
+                                className={`w-4 h-4 rounded flex items-center justify-center border transition-colors ${
+                                  isChecked
+                                    ? 'bg-[#0088e8] border-[#0088e8] text-white'
+                                    : 'bg-white border-gray-300'
+                                }`}
+                              >
+                                {isChecked && <Check className="w-3 h-3" />}
+                              </div>
+                              <span className="font-medium text-[#1d1d1f]">Dr. {doc.fullName}</span>
+                              <span className="text-[11px] text-[#0088e8]">({doc.specialty})</span>
+                            </div>
+                            <span className="text-[10px] text-[#86868b]">₹{doc.consultationFee}</span>
+                          </div>
+                        );
+                      })}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-[#f0f0f0] flex justify-end gap-2">
+              <AppleButton
+                variant="ghost"
+                size="sm"
+                type="button"
+                disabled={processingRecId !== null}
+                onClick={() => setApprovingRec(null)}
+              >
+                Cancel
+              </AppleButton>
+              <AppleButton
+                variant="primary"
+                size="sm"
+                type="button"
+                disabled={processingRecId !== null}
+                onClick={() => handleRespondReceptionist(approvingRec.id, 'ACCEPT', approvalDoctorIds)}
+              >
+                {processingRecId === approvingRec.id ? 'Approving...' : 'Approve & Activate Desk Access'}
               </AppleButton>
             </div>
           </div>

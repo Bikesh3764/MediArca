@@ -70,7 +70,7 @@ export const MyAppointments: React.FC = () => {
     },
     {
       id: 'records',
-      label: 'Medical Records Vault',
+      label: 'Clinical Records',
       icon: FileText,
       path: '/patient/records',
     },
