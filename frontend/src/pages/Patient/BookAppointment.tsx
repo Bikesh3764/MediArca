@@ -474,8 +474,8 @@ export const BookAppointment: React.FC = () => {
                   onClick={() => setAppointmentDate(getLocalDateString())}
                   className={`px-2.5 py-0.5 rounded-full text-xs font-medium transition-all ${
                     appointmentDate === getLocalDateString()
-                      ? 'bg-gradient-to-r from-[#0088e8] to-[#10b981] text-white shadow-xs'
-                      : 'bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f]'
+                      ? 'bg-[#0088e8] text-white shadow-2xs font-semibold'
+                      : 'bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f] hover:bg-[#e8e8ed]'
                   }`}
                 >
                   Today
@@ -485,8 +485,8 @@ export const BookAppointment: React.FC = () => {
                   onClick={() => setAppointmentDate(getTomorrowDateString())}
                   className={`px-2.5 py-0.5 rounded-full text-xs font-medium transition-all ${
                     appointmentDate === getTomorrowDateString()
-                      ? 'bg-gradient-to-r from-[#0088e8] to-[#10b981] text-white shadow-xs'
-                      : 'bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f]'
+                      ? 'bg-[#0088e8] text-white shadow-2xs font-semibold'
+                      : 'bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f] hover:bg-[#e8e8ed]'
                   }`}
                 >
                   Tomorrow
@@ -591,32 +591,32 @@ export const BookAppointment: React.FC = () => {
 
           {/* Queue & Schedule Reservation Banner */}
           {queuePreview && (
-            <div className="my-5 p-5 rounded-2xl bg-[#0f172a] text-white flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 transition-all border border-slate-800 shadow-md">
+            <div className="my-5 p-5 rounded-[22px] bg-[#1d1d1f] text-white flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 transition-all border border-black/10 shadow-xs">
               <div>
-                <span className="text-[10px] uppercase font-semibold text-[#38bdf8] tracking-wider block">
+                <span className="text-[10px] uppercase font-semibold text-[#0088e8] tracking-wider block">
                   Guaranteed Queue Allocation
                 </span>
                 <strong className="text-3xl font-bold tracking-tight block mt-0.5">
                   Queue #{queuePreview.nextQueueNumber}
                 </strong>
-                <p className="text-xs text-slate-300 mt-1 flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5 text-[#38bdf8]" />
+                <p className="text-xs text-white/70 mt-1 flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-[#0088e8]" />
                   Checking Shift: {queuePreview.checkingWindow}
                 </p>
               </div>
 
               <div className="text-left sm:text-right border-t sm:border-t-0 pt-3 sm:pt-0 border-white/10 w-full sm:w-auto">
-                <span className="text-[10px] uppercase font-semibold text-slate-400 block">
+                <span className="text-[10px] uppercase font-semibold text-white/60 block">
                   Est. Consultation Time
                 </span>
                 <strong
                   className={`text-xl block ${
-                    isSelectedSlotPassed ? 'text-rose-400' : 'text-[#38bdf8]'
+                    isSelectedSlotPassed ? 'text-rose-400' : 'text-[#0088e8]'
                   }`}
                 >
                   {previewLoading ? 'Updating...' : queuePreview.estimatedTime}
                 </strong>
-                <span className="text-xs text-slate-400 block mt-0.5">
+                <span className="text-xs text-white/60 block mt-0.5">
                   {queuePreview.patientsAhead} patient(s) ahead • ~{queuePreview.avgConsultationMinutes}m pace
                 </span>
               </div>
@@ -727,7 +727,7 @@ export const BookAppointment: React.FC = () => {
                     onClick={() => setReasonForVisit(tag)}
                     className={`px-3 py-1 rounded-full text-[11px] transition-colors ${
                       reasonForVisit === tag
-                        ? 'bg-gradient-to-r from-[#0088e8] to-[#10b981] text-white font-medium shadow-xs'
+                        ? 'bg-[#0088e8] text-white font-medium shadow-2xs'
                         : 'bg-[#f5f5f7] text-[#1d1d1f] hover:bg-[#e8e8ed]'
                     }`}
                   >

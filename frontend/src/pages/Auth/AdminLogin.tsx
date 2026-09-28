@@ -126,7 +126,7 @@ export const AdminLogin: React.FC = () => {
               <button
                 type="submit"
                 disabled={submitting || authenticated}
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-semibold text-xs tracking-wider uppercase transition-all shadow-lg shadow-amber-500/20 disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-black font-semibold text-xs tracking-wider uppercase transition-all shadow-xs disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
               >
                 {submitting ? (
                   <>

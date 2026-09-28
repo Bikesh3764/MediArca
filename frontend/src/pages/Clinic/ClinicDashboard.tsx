@@ -930,7 +930,7 @@ export const ClinicDashboard: React.FC = () => {
                                 type="button"
                                 disabled={adding}
                                 onClick={() => handleQuickAdd(d.user.email)}
-                                className="px-2.5 py-1 rounded-full bg-gradient-to-r from-[#0088e8] to-[#10b981] text-white text-[11px] font-medium hover:opacity-95 shadow-xs cursor-pointer"
+                                className="px-2.5 py-1 rounded-full bg-[#0088e8] hover:bg-[#0077cc] text-white text-[11px] font-medium shadow-2xs cursor-pointer transition-all active:scale-[0.98]"
                               >
                                 Add
                               </button>
@@ -1088,7 +1088,7 @@ export const ClinicDashboard: React.FC = () => {
                             <div
                               className={`w-4 h-4 rounded flex items-center justify-center border transition-colors ${
                                 isSelected
-                                  ? 'bg-gradient-to-r from-[#0088e8] to-[#10b981] border-transparent text-white'
+                                  ? 'bg-[#0088e8] border-transparent text-white'
                                   : 'border-[#c7c7cc] bg-white'
                               }`}
                             >
@@ -1179,7 +1179,7 @@ export const ClinicDashboard: React.FC = () => {
                           <div
                             className={`w-4 h-4 rounded flex items-center justify-center border transition-colors ${
                               isSelected
-                                ? 'bg-gradient-to-r from-[#0088e8] to-[#10b981] border-transparent text-white'
+                                ? 'bg-[#0088e8] border-transparent text-white'
                                 : 'border-[#c7c7cc] bg-white'
                             }`}
                           >

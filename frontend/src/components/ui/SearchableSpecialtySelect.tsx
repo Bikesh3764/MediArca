@@ -127,7 +127,7 @@ export const SearchableSpecialtySelect: React.FC<SearchableSpecialtySelectProps>
           <button
             type="button"
             onClick={() => setIsOpen(!isOpen)}
-            className="w-full h-11 px-3.5 rounded-xl border border-[#e0e0e0] text-[14px] bg-white text-[#1d1d1f] hover:border-[#0088e8]/50 focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20 transition-all flex items-center justify-between text-left cursor-pointer"
+            className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-[14px] bg-white text-[#1d1d1f] hover:border-[#0088e8]/50 focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20 transition-all flex items-center justify-between text-left cursor-pointer"
           >
             <span className="truncate">{displayLabel}</span>
             <ChevronDown

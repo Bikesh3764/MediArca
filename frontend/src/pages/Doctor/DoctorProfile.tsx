@@ -361,7 +361,7 @@ export const DoctorProfile: React.FC = () => {
             title="Practicing Clinics, Shifts & Consultation Fees"
             subtitle="Manage practice shifts, consultation fees, and patient caps per clinic facility"
           >
-            <div className="p-5 rounded-2xl bg-gradient-to-br from-[#0088e8]/5 to-indigo-50/50 border border-[#0088e8]/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="p-5 rounded-[20px] bg-[#0088e8]/5 border border-[#0088e8]/15 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
                   <Building2 className="w-4 h-4 text-[#0088e8]" />

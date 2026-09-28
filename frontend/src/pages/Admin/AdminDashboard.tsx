@@ -484,7 +484,7 @@ export const AdminDashboard: React.FC = () => {
                                   size="sm"
                                   disabled={actionId === doc.id}
                                   onClick={() => handleVerify(doc.id, 'VERIFIED')}
-                                  className="text-xs bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white"
+                                  className="text-xs bg-[#10b981] hover:bg-[#059669] text-white shadow-2xs font-medium"
                                 >
                                   {actionId === doc.id ? 'Activating...' : 'Re-activate'}
                                 </AppleButton>
@@ -634,7 +634,7 @@ export const AdminDashboard: React.FC = () => {
                                     size="sm"
                                     disabled={clinicActionId === c.id}
                                     onClick={() => handleVerifyClinic(c.id, 'VERIFIED')}
-                                    className="text-xs bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white"
+                                    className="text-xs bg-[#10b981] hover:bg-[#059669] text-white shadow-2xs font-medium"
                                   >
                                     {clinicActionId === c.id ? 'Activating...' : 'Re-activate'}
                                   </AppleButton>

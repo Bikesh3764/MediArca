@@ -57,7 +57,7 @@ export const QueueBadge: React.FC<QueueBadgeProps> = ({
         <span>Queue #{queueNumber}</span>
       </div>
       {showStatusText && (
-        <span className="text-xs text-[#7a7a7a] font-normal">{statusText}</span>
+        <span className="text-xs text-[#86868b] font-normal">{statusText}</span>
       )}
     </div>
   );

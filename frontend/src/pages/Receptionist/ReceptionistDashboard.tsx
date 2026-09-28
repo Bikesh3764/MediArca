@@ -359,10 +359,10 @@ export const ReceptionistDashboard: React.FC = () => {
           <div className="flex items-center gap-2 border-b border-[#f0f0f0] pb-4 mb-6 overflow-x-auto">
             <button
               onClick={() => setActiveTab('walkin')}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 ${
+              className={`px-4 py-2 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5 ${
                 activeTab === 'walkin'
-                  ? 'bg-gradient-to-r from-[#0088e8] to-[#10b981] text-white shadow-xs'
-                  : 'bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f]'
+                  ? 'bg-[#1d1d1f] text-white shadow-xs'
+                  : 'bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f] hover:bg-[#e8e8ed]'
               }`}
             >
               <UserPlus className="w-3.5 h-3.5" />
@@ -371,10 +371,10 @@ export const ReceptionistDashboard: React.FC = () => {
 
             <button
               onClick={() => setActiveTab('queue')}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 ${
+              className={`px-4 py-2 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5 ${
                 activeTab === 'queue'
-                  ? 'bg-gradient-to-r from-[#0088e8] to-[#10b981] text-white shadow-xs'
-                  : 'bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f]'
+                  ? 'bg-[#1d1d1f] text-white shadow-xs'
+                  : 'bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f] hover:bg-[#e8e8ed]'
               }`}
             >
               <Activity className="w-3.5 h-3.5" />
@@ -383,10 +383,10 @@ export const ReceptionistDashboard: React.FC = () => {
 
             <button
               onClick={() => setActiveTab('doctors')}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 ${
+              className={`px-4 py-2 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5 ${
                 activeTab === 'doctors'
-                  ? 'bg-gradient-to-r from-[#0088e8] to-[#10b981] text-white shadow-xs'
-                  : 'bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f]'
+                  ? 'bg-[#1d1d1f] text-white shadow-xs'
+                  : 'bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f] hover:bg-[#e8e8ed]'
               }`}
             >
               <Users className="w-3.5 h-3.5" />
@@ -830,7 +830,7 @@ export const ReceptionistDashboard: React.FC = () => {
                                 {appt.status === 'WAITING' && (
                                   <button
                                     onClick={() => handleStatusChange(appt.id, 'IN_CONSULTATION')}
-                                    className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-[#0088e8] to-[#10b981] text-white text-[11px] font-medium hover:opacity-95 shadow-xs"
+                                    className="px-3 py-1 rounded-full bg-[#0088e8] text-white text-[11px] font-medium hover:bg-[#0077cc] shadow-2xs transition-all active:scale-[0.98] cursor-pointer"
                                   >
                                     Call In
                                   </button>
@@ -838,7 +838,7 @@ export const ReceptionistDashboard: React.FC = () => {
                                 {appt.status === 'IN_CONSULTATION' && (
                                   <button
                                     onClick={() => handleStatusChange(appt.id, 'COMPLETED')}
-                                    className="px-2.5 py-1 rounded-lg bg-emerald-600 text-white text-[11px] font-medium hover:bg-emerald-700"
+                                    className="px-3 py-1 rounded-full bg-emerald-600 text-white text-[11px] font-medium hover:bg-emerald-700 shadow-2xs transition-all active:scale-[0.98] cursor-pointer"
                                   >
                                     Complete
                                   </button>

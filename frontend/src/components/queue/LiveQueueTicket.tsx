@@ -50,7 +50,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
             NEXT IN LINE
           </span>
         ) : status === 'WAITING' ? (
-          <span className="text-[11px] font-semibold px-3 py-1 rounded-full bg-gradient-to-r from-[#0088e8] to-[#10b981] text-white shadow-xs">
+          <span className="text-[11px] font-semibold px-3 py-1 rounded-full bg-[#0088e8] text-white shadow-2xs">
             SCHEDULED IN QUEUE
           </span>
         ) : status === 'COMPLETED' ? (
@@ -110,9 +110,9 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
             <span className="text-[11px] font-medium text-[#86868b] uppercase tracking-wider mb-1">
               Guaranteed Queue Token
             </span>
-            <div className="bg-[#0f172a] text-white px-6 py-2.5 rounded-2xl flex items-baseline gap-1.5 shadow-md border border-slate-800">
-              <span className="text-xs font-normal text-slate-400 uppercase">Queue</span>
-              <span className="text-3xl font-extrabold tracking-tight text-[#38bdf8]">#{queueNumber}</span>
+            <div className="bg-[#1d1d1f] text-white px-5 py-2.5 rounded-[18px] flex items-baseline gap-1.5 shadow-2xs border border-black/10">
+              <span className="text-xs font-normal text-white/60 uppercase">Queue</span>
+              <span className="text-3xl font-extrabold tracking-tight text-[#0088e8]">#{queueNumber}</span>
             </div>
           </div>
         </div>
@@ -121,7 +121,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
         {(appointment.isForOther || (Boolean(appointment.patientName) && appointment.patient?.user?.fullName && appointment.patientName !== appointment.patient.user.fullName)) && (
           <div className="my-3 p-3 rounded-xl bg-[#0088e8]/5 border border-[#0088e8]/20 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
             <div className="flex items-center gap-2">
-              <span className="px-2 py-0.5 rounded-full bg-gradient-to-r from-[#0088e8] to-[#10b981] text-white font-semibold text-[10px]">
+              <span className="px-2 py-0.5 rounded-full bg-[#0088e8]/15 text-[#0088e8] border border-[#0088e8]/25 font-semibold text-[10px]">
                 {appointment.isForOther ? 'Dependent / Family' : 'Patient'}
               </span>
               <span className="font-semibold text-[#1d1d1f]">
@@ -166,7 +166,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
               <div className="space-y-2">
                 <div className="w-full bg-[#e5e5ea] h-2.5 rounded-full overflow-hidden">
                   <div
-                    className="bg-gradient-to-r from-[#0088e8] to-[#10b981] h-full transition-all duration-500 rounded-full"
+                    className="bg-[#0088e8] h-full transition-all duration-500 rounded-full"
                     style={{
                       width: `${queueNumber > 0 ? Math.min(100, Math.max(10, ((liveQueue.currentServingQueueNumber || 1) / queueNumber) * 100)) : 10}%`,
                     }}

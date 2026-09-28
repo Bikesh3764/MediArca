@@ -110,7 +110,7 @@ export const Login: React.FC = () => {
         <h2 className="text-3xl font-semibold text-[#1d1d1f] tracking-tight">
           Sign in to your account
         </h2>
-        <p className="mt-2 text-sm text-[#7a7a7a]">
+        <p className="mt-2 text-sm text-[#86868b]">
           Or{' '}
           <Link to="/signup" state={location.state} className="text-[#0088e8] font-medium hover:underline">
             create a new MediArca account
@@ -120,7 +120,7 @@ export const Login: React.FC = () => {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         {/* Instant Demo Accounts Banner */}
-        <div className="bg-white/90 border border-[#e0e0e0] rounded-2xl p-4 mb-5 shadow-sm">
+        <div className="bg-white border border-[#e5e5ea] rounded-[22px] p-4 mb-5 shadow-2xs">
           <div className="flex items-center gap-2 mb-2 text-xs font-semibold text-[#1d1d1f]">
             <Sparkles className="w-4 h-4 text-amber-500" />
             <span>Instant 1-Click Startup Demo Logins:</span>
@@ -129,14 +129,14 @@ export const Login: React.FC = () => {
             <button
               type="button"
               onClick={() => handleQuickLogin('john.doe@gmail.com', 'patient123', '/patient/appointments')}
-              className="px-2.5 py-2 rounded-xl bg-[#f5f5f7] hover:bg-[#0088e8]/10 text-[#0088e8] border border-[#e0e0e0] text-xs font-medium transition-all text-center"
+              className="px-2.5 py-2 rounded-xl bg-[#f5f5f7] hover:bg-[#0088e8]/10 text-[#0088e8] border border-[#e5e5ea] text-xs font-medium transition-all text-center cursor-pointer"
             >
               Patient<br />(John Doe)
             </button>
             <button
               type="button"
               onClick={() => handleQuickLogin('dr.sarah@mediarca.com', 'doctor123', '/doctor/dashboard')}
-              className="px-2.5 py-2 rounded-xl bg-[#f5f5f7] hover:bg-[#0088e8]/10 text-[#0088e8] border border-[#e0e0e0] text-xs font-medium transition-all text-center"
+              className="px-2.5 py-2 rounded-xl bg-[#f5f5f7] hover:bg-[#0088e8]/10 text-[#0088e8] border border-[#e5e5ea] text-xs font-medium transition-all text-center cursor-pointer"
             >
               Doctor<br />(Dr. Sarah)
             </button>
@@ -144,7 +144,7 @@ export const Login: React.FC = () => {
         </div>
 
         {/* Regular Login Form */}
-        <div className="bg-white py-8 px-6 sm:px-10 rounded-[20px] border border-[#e0e0e0] shadow-sm">
+        <div className="bg-white py-8 px-6 sm:px-10 rounded-[24px] border border-[#e5e5ea] shadow-xs">
           {error && (
             <div className="mb-5 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
@@ -188,10 +188,10 @@ export const Login: React.FC = () => {
 
             <div className="relative my-6 text-center">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-[#e0e0e0]" />
+                <div className="w-full border-t border-[#e5e5ea]" />
               </div>
               <div className="relative flex justify-center text-xs">
-                <span className="bg-white px-3 text-[#7a7a7a]">or sign in with email</span>
+                <span className="bg-white px-3 text-[#86868b]">or sign in with email</span>
               </div>
             </div>
           </div>
@@ -207,7 +207,7 @@ export const Login: React.FC = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@example.com"
-                className="w-full h-11 px-4 rounded-xl border border-[#e0e0e0] text-[15px] focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20"
+                className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[15px] focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20 transition-all"
               />
             </div>
 
@@ -221,7 +221,7 @@ export const Login: React.FC = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full h-11 px-4 rounded-xl border border-[#e0e0e0] text-[15px] focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20"
+                className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[15px] focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20 transition-all"
               />
             </div>
 

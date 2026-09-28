@@ -479,8 +479,8 @@ export const DoctorDetail: React.FC = () => {
                           onClick={() => setSelectedDate(getLocalDateString())}
                           className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium transition-all ${
                             selectedDate === getLocalDateString()
-                              ? 'bg-gradient-to-r from-[#0088e8] to-[#10b981] text-white shadow-xs'
-                              : 'bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f]'
+                              ? 'bg-[#0088e8] text-white shadow-2xs font-semibold'
+                              : 'bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f] hover:bg-[#e8e8ed]'
                           }`}
                         >
                           Today
@@ -490,8 +490,8 @@ export const DoctorDetail: React.FC = () => {
                           onClick={() => setSelectedDate(getTomorrowDateString())}
                           className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium transition-all ${
                             selectedDate === getTomorrowDateString()
-                              ? 'bg-gradient-to-r from-[#0088e8] to-[#10b981] text-white shadow-xs'
-                              : 'bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f]'
+                              ? 'bg-[#0088e8] text-white shadow-2xs font-semibold'
+                              : 'bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f] hover:bg-[#e8e8ed]'
                           }`}
                         >
                           Tomorrow

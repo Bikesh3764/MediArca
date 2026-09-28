@@ -1025,7 +1025,7 @@ export const DoctorDashboard: React.FC = () => {
 
             {/* Upcoming Bookings Alert Banner */}
             {queueData?.upcomingSummary && queueData.upcomingSummary.tomorrowCount > 0 && (queueScope !== 'date' || date !== queueData.upcomingSummary.tomorrowDate) && (
-              <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-blue-50 via-sky-50 to-indigo-50 border border-blue-200 text-blue-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+              <div className="mb-6 p-4 rounded-[20px] bg-sky-50/70 border border-[#0088e8]/20 text-[#1d1d1f] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-[#0088e8] text-white flex items-center justify-center font-bold flex-shrink-0 shadow-sm">
                     <Calendar className="w-5 h-5" />
@@ -1055,7 +1055,7 @@ export const DoctorDashboard: React.FC = () => {
 
             {/* Alert banner if bookings on future date beyond tomorrow */}
             {queueData?.upcomingSummary && queueData.upcomingSummary.tomorrowCount === 0 && queueData.upcomingSummary.nextDateWithBookings && (queueScope !== 'date' || date !== queueData.upcomingSummary.nextDateWithBookings) && (
-              <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-blue-50 via-sky-50 to-indigo-50 border border-blue-200 text-blue-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+              <div className="mb-6 p-4 rounded-[20px] bg-sky-50/70 border border-[#0088e8]/20 text-[#1d1d1f] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-[#0088e8] text-white flex items-center justify-center font-bold flex-shrink-0 shadow-sm">
                     <Calendar className="w-5 h-5" />

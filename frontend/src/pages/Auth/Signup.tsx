@@ -142,14 +142,14 @@ export const Signup: React.FC = () => {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-lg">
         {/* Role Selector Tabs (Apple Pill Segmented Control) */}
-        <div className="bg-white/80 p-1 rounded-full border border-[#e0e0e0] flex max-w-sm mx-auto mb-6 shadow-sm">
+        <div className="bg-[#f5f5f7] p-1 rounded-full border border-[#e5e5ea] flex max-w-sm mx-auto mb-6 shadow-2xs">
           <button
             type="button"
             onClick={() => setRole('PATIENT')}
             className={`flex-1 py-2 rounded-full text-xs font-medium transition-all flex items-center justify-center gap-2 ${
               role === 'PATIENT'
-                ? 'bg-gradient-to-r from-[#0088e8] to-[#10b981] text-white shadow-sm font-semibold'
-                : 'text-[#7a7a7a] hover:text-[#1d1d1f]'
+                ? 'bg-[#0088e8] text-white shadow-xs font-semibold'
+                : 'text-[#86868b] hover:text-[#1d1d1f]'
             }`}
           >
             <UserCheck className="w-3.5 h-3.5" />
@@ -160,8 +160,8 @@ export const Signup: React.FC = () => {
             onClick={() => setRole('DOCTOR')}
             className={`flex-1 py-2 rounded-full text-xs font-medium transition-all flex items-center justify-center gap-2 ${
               role === 'DOCTOR'
-                ? 'bg-gradient-to-r from-[#0088e8] to-[#10b981] text-white shadow-sm font-semibold'
-                : 'text-[#7a7a7a] hover:text-[#1d1d1f]'
+                ? 'bg-[#0088e8] text-white shadow-xs font-semibold'
+                : 'text-[#86868b] hover:text-[#1d1d1f]'
             }`}
           >
             <Stethoscope className="w-3.5 h-3.5" />

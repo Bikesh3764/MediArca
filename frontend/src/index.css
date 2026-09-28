@@ -26,7 +26,7 @@
 }
 
 .apple-pill-primary {
-  @apply apple-pill-btn bg-gradient-to-r from-[#0088e8] to-[#10b981] hover:from-[#0284c7] hover:to-[#059669] text-white shadow-sm;
+  @apply apple-pill-btn bg-[#0088e8] hover:bg-[#0077cc] text-white shadow-xs;
 }
 
 .apple-pill-secondary {

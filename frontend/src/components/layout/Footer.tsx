@@ -5,22 +5,22 @@ import { BrandLogo } from '../ui/BrandLogo';
 
 export const Footer: React.FC = () => {
   return (
-    <footer className="bg-[#f5f5f7] border-t border-[#e0e0e0] text-[#7a7a7a] mt-auto">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-10 pb-10">
+    <footer className="bg-[#f5f5f7] border-t border-[#e5e5ea] text-[#86868b] mt-auto select-none">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-12 pb-10">
         <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <Link to="/" className="inline-block hover:opacity-85 transition-opacity">
             <BrandLogo variant="full" size="md" imgClassName="h-7 w-auto" />
           </Link>
-          <span className="text-xs text-[#86868b] font-medium">
+          <span className="text-xs text-[#86868b] font-medium tracking-tight">
             Next-Generation Clinical Operations & Queue Platform
           </span>
         </div>
 
         {/* Directory Links */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 py-8 text-[12px] leading-relaxed border-b border-[#e0e0e0]">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 py-8 text-[12px] leading-relaxed border-b border-[#e5e5ea]">
           <div>
-            <span className="font-semibold text-[#1d1d1f] block mb-2">Patients</span>
-            <ul className="space-y-1.5">
+            <span className="font-semibold text-[#1d1d1f] block mb-3 text-xs tracking-tight">Patients</span>
+            <ul className="space-y-2">
               <li><Link to="/doctors" className="hover:text-[#1d1d1f]">Find Doctors</Link></li>
               <li><Link to="/patient/appointments" className="hover:text-[#1d1d1f]">Live Queue Pass</Link></li>
               <li><Link to="/patient/profile" className="hover:text-[#1d1d1f]">Patient Profile</Link></li>

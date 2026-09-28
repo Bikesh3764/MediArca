@@ -468,7 +468,7 @@ export const ConsultationView: React.FC = () => {
                           onClick={() => setDiagnosis(diag)}
                           className={`px-3 py-1 rounded-full text-[11px] transition-colors ${
                             diagnosis === diag
-                              ? 'bg-gradient-to-r from-[#0088e8] to-[#10b981] text-white font-medium shadow-sm'
+                              ? 'bg-[#0088e8] text-white font-medium shadow-2xs'
                               : 'bg-[#f5f5f7] text-[#1d1d1f] hover:bg-[#e8e8ed]'
                           }`}
                         >

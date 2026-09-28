@@ -121,12 +121,12 @@ export const MyAppointments: React.FC = () => {
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Apple Pill Segmented Filter */}
         <div className="flex justify-center mb-8">
-          <div className="bg-white/90 p-1 rounded-full border border-[#e5e5ea] flex shadow-sm">
+          <div className="bg-[#f5f5f7] p-1 rounded-full border border-[#e5e5ea] flex shadow-2xs">
             <button
               onClick={() => setActiveTab('upcoming')}
               className={`px-6 py-2 rounded-full text-xs font-medium transition-all ${
                 activeTab === 'upcoming'
-                  ? 'bg-gradient-to-r from-[#0088e8] to-[#10b981] text-white font-semibold shadow-sm'
+                  ? 'bg-[#0088e8] text-white font-semibold shadow-xs'
                   : 'text-[#86868b] hover:text-[#1d1d1f]'
               }`}
             >
@@ -136,7 +136,7 @@ export const MyAppointments: React.FC = () => {
               onClick={() => setActiveTab('past')}
               className={`px-6 py-2 rounded-full text-xs font-medium transition-all ${
                 activeTab === 'past'
-                  ? 'bg-gradient-to-r from-[#0088e8] to-[#10b981] text-white font-semibold shadow-sm'
+                  ? 'bg-[#0088e8] text-white font-semibold shadow-xs'
                   : 'text-[#86868b] hover:text-[#1d1d1f]'
               }`}
             >
