@@ -28,9 +28,6 @@ export const Footer: React.FC = () => {
             <Link to="/receptionist/login" className="hover:text-[#1d1d1f] transition-colors">
               Reception Desk
             </Link>
-            <Link to="/admin-login" className="hover:text-[#1d1d1f] transition-colors">
-              Admin
-            </Link>
           </div>
         </div>
 

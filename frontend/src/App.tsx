@@ -90,7 +90,8 @@ function AppShell() {
     (location.pathname.startsWith('/doctor/') && user?.role === 'PATIENT') ||
     (location.pathname.startsWith('/book/') && user?.role === 'PATIENT') ||
     (location.pathname === '/records' && user?.role === 'PATIENT') ||
-    location.pathname === '/admin';
+    location.pathname === '/admin' ||
+    location.pathname === '/admin-login';
 
   return (
     <div className="flex flex-col min-h-screen">
