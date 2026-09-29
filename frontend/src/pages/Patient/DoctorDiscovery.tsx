@@ -7,11 +7,7 @@ import { SearchInput } from '../../components/ui/SearchInput';
 import { AppleButton } from '../../components/ui/AppleButton';
 import { SubNav } from '../../components/layout/SubNav';
 import {
-  ShieldCheck,
   Clock,
-  MapPin,
-  SlidersHorizontal,
-  ArrowRight,
   Calendar,
   Stethoscope,
   User as UserIcon,
@@ -197,8 +193,8 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
           {doctors.map((doctor) => {
             const slots = parseDoctorSlots(doctor);
             const cleanDegrees = formatDoctorDegrees(doctor.qualifications);
-            const hasClinics = Boolean(doctor.clinics && doctor.clinics.length > 0);
-            const primaryClinic = hasClinics && doctor.clinics ? doctor.clinics[0].clinic : null;
+            const primaryClinic = doctor.clinics?.find((c) => c?.clinic)?.clinic || null;
+            const hasClinics = Boolean(primaryClinic);
 
             return (
               <div

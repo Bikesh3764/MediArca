@@ -8,11 +8,7 @@ import {
   MapPin,
   CheckCircle2,
   AlertCircle,
-  QrCode,
-  ShieldCheck,
-  Clock,
   ArrowRight,
-  Building2,
   UserCheck,
 } from 'lucide-react';
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { BrandLogo } from '../ui/BrandLogo';
-import { LogOut, ShieldCheck, Stethoscope, Menu, X, Calendar, FileText, Building2, Users } from 'lucide-react';
+import { LogOut, ShieldCheck, Stethoscope, Menu, X, Calendar, Building2, Users } from 'lucide-react';
 
 export const GlobalNav: React.FC = () => {
   const { user, logout } = useAuth();

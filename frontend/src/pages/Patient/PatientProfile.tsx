@@ -8,7 +8,6 @@ import {
   Calendar,
   User as UserIcon,
   Stethoscope,
-  FileText,
   AlertCircle,
   CheckCircle2,
   Save,

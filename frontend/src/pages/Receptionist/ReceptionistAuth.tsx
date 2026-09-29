@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { AppleButton } from '../../components/ui/AppleButton';
 import { BrandLogo } from '../../components/ui/BrandLogo';
-import { Clock, AlertCircle, Sparkles, Mail, Lock, Info, Building2, User, Phone, CheckCircle2, ArrowLeft } from 'lucide-react';
+import { Clock, AlertCircle, Sparkles, Mail, Lock, Info, Building2, User, Phone, CheckCircle2 } from 'lucide-react';
 import { api, ClinicProfile } from '../../services/api';
 import { sanitizeIndianPhone, formatIndianPhone, isValidIndianPhone } from '../../utils/phoneUtils';
 

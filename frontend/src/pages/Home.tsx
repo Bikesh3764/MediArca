@@ -18,9 +18,6 @@ import {
   Search,
   MapPin,
   Clock,
-  ShieldCheck,
-  Calendar,
-  Layers,
   ArrowRight,
   Building2,
   UserCheck,
@@ -398,8 +395,8 @@ export const Home: React.FC = () => {
               const getHomeDoctorBookPath = (docId: string) =>
                 user?.role === 'PATIENT' ? `/patient/book/${docId}` : `/book/${docId}`;
               const cleanDegrees = formatDoctorDegrees(doctor.qualifications);
-              const hasClinics = Boolean(doctor.clinics && doctor.clinics.length > 0);
-              const primaryClinic = hasClinics && doctor.clinics ? doctor.clinics[0].clinic : null;
+              const primaryClinic = doctor.clinics?.find((c) => c?.clinic)?.clinic || null;
+              const hasClinics = Boolean(primaryClinic);
 
               return (
                 <div

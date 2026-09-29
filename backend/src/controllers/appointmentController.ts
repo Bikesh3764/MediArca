@@ -860,7 +860,7 @@ export const getPatientAppointments = async (req: AuthRequest, res: Response): P
           const localTodayStr = `${localYear}-${localMonth}-${localDay}`;
           const istTodayStr = getLocalDateString(now);
           const isToday = appt.appointmentDate === localTodayStr || appt.appointmentDate === istTodayStr;
-          const currentMinutes = now.getTimezoneOffset() === 0 ? getIndianTimeMinutes(now) : now.getHours() * 60 + now.getMinutes();
+          const currentMinutes = getIndianTimeMinutes(now);
 
           const isShiftPassed = isToday && currentMinutes >= slotEndMins;
           const isShiftActive = isToday && currentMinutes >= slotStartMins && currentMinutes < slotEndMins;

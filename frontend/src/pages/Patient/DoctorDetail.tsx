@@ -26,7 +26,6 @@ import {
   UserCheck,
   ChevronLeft,
   Building2,
-  FileText,
   Stethoscope,
   User as UserIcon,
   AlertCircle,

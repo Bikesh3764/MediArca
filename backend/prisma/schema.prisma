@@ -110,6 +110,11 @@ model Appointment {
   review          Review?
 
   @@unique([doctorId, appointmentDate, queueNumber])
+  @@index([patientId])
+  @@index([doctorId, appointmentDate])
+  @@index([clinicId, appointmentDate])
+  @@index([status])
+  @@index([appointmentDate])
 }
 
 model Prescription {
@@ -132,6 +137,8 @@ model MedicalRecord {
   fileUrl     String
   fileType    String?
   uploadedAt  DateTime       @default(now())
+
+  @@index([patientId])
 }
 
 model Review {
@@ -145,6 +152,9 @@ model Review {
   rating        Int           // 1 to 5
   comment       String?
   createdAt     DateTime      @default(now())
+
+  @@index([doctorId])
+  @@index([patientId])
 }
 
 model Notification {
@@ -156,6 +166,8 @@ model Notification {
   type      String   @default("SYSTEM")
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
+
+  @@index([userId, isRead])
 }
 
 model ClinicProfile {
@@ -202,6 +214,8 @@ model ClinicDoctor {
   createdAt       DateTime      @default(now())
 
   @@unique([clinicId, doctorId])
+  @@index([doctorId, status])
+  @@index([clinicId, status])
 }
 
 model DoctorReceptionist {
@@ -214,4 +228,5 @@ model DoctorReceptionist {
   createdAt      DateTime            @default(now())
 
   @@unique([doctorId, receptionistId])
+  @@index([receptionistId, status])
 }

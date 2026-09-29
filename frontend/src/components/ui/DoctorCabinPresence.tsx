@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { api } from '../../services/api';
-import { Clock, Check, AlertCircle, Timer } from 'lucide-react';
+import { Check, AlertCircle, Timer } from 'lucide-react';
 
 export type CabinStatus = 'IN_CABIN' | 'STEPPED_OUT' | 'NOT_IN_CABIN';
 

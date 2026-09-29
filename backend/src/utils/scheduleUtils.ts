@@ -117,9 +117,11 @@ export const getLocalDateString = (d: Date = new Date()): string => {
   try {
     return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(d);
   } catch {
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
+    const istMs = d.getTime() + 330 * 60 * 1000;
+    const istDate = new Date(istMs);
+    const year = istDate.getUTCFullYear();
+    const month = String(istDate.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(istDate.getUTCDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   }
 };
@@ -137,7 +139,8 @@ export const getIndianTimeMinutes = (d: Date = new Date()): number => {
     const minute = parseInt(parts.find((p) => p.type === 'minute')?.value || '0', 10);
     return hour * 60 + minute;
   } catch {
-    return d.getHours() * 60 + d.getMinutes();
+    const utcMinutes = d.getUTCHours() * 60 + d.getUTCMinutes();
+    return (utcMinutes + 330) % (24 * 60);
   }
 };
 
