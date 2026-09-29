@@ -27,6 +27,7 @@ import {
   Phone,
   CreditCard,
   Check,
+  Search,
 } from 'lucide-react';
 
 export interface TokenPassData {
@@ -70,6 +71,7 @@ export const ReceptionistDashboard: React.FC = () => {
   const [pendingLoading, setPendingLoading] = useState(false);
   const [approvingId, setApprovingId] = useState<string | null>(null);
   const [rejectingId, setRejectingId] = useState<string | null>(null);
+  const [pendingSearch, setPendingSearch] = useState('');
 
   // Walk-in form state
   const [selectedDoctorId, setSelectedDoctorId] = useState<string>('');
@@ -867,6 +869,47 @@ export const ReceptionistDashboard: React.FC = () => {
                 </AppleButton>
               </div>
 
+              {/* Search Bar for Pending Approvals */}
+              {pendingAppointments.length > 0 && (
+                <div className="mb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#f0f0f0]">
+                  <div className="relative flex-1 max-w-md">
+                    <Search className="w-4 h-4 text-[#86868b] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <input
+                      type="text"
+                      value={pendingSearch}
+                      onChange={(e) => setPendingSearch(e.target.value)}
+                      placeholder="Search by patient name, phone, or doctor..."
+                      className="w-full h-9 pl-9 pr-8 rounded-full border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
+                    />
+                    {pendingSearch && (
+                      <button
+                        type="button"
+                        onClick={() => setPendingSearch('')}
+                        aria-label="Clear search"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#86868b] hover:text-[#1d1d1f] p-0.5"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                  {pendingSearch && (
+                    <div className="text-[11px] text-[#86868b] font-medium">
+                      Showing {
+                        pendingAppointments.filter((appt) => {
+                          const q = pendingSearch.toLowerCase().trim();
+                          const patient = (appt.patientName || appt.patient?.user?.fullName || '').toLowerCase();
+                          const phone = (appt.patientPhone || appt.patient?.user?.phone || '').toLowerCase();
+                          const doctor = (appt.doctor?.user?.fullName || '').toLowerCase();
+                          const specialty = (appt.doctor?.specialty || '').toLowerCase();
+                          const reason = (appt.reasonForVisit || '').toLowerCase();
+                          return patient.includes(q) || phone.includes(q) || doctor.includes(q) || specialty.includes(q) || reason.includes(q);
+                        }).length
+                      } of {pendingAppointments.length} pending
+                    </div>
+                  )}
+                </div>
+              )}
+
               {pendingLoading ? (
                 <div className="py-16 text-center text-xs text-[#86868b]">
                   Loading pending online bookings...
@@ -881,9 +924,44 @@ export const ReceptionistDashboard: React.FC = () => {
                     No pending online patient bookings awaiting confirmation at this desk.
                   </p>
                 </div>
-              ) : (
-                <div className="space-y-4">
-                  {pendingAppointments.map((appt) => {
+              ) : (() => {
+                const filteredPending = pendingAppointments.filter((appt) => {
+                  if (!pendingSearch.trim()) return true;
+                  const q = pendingSearch.toLowerCase().trim();
+                  const patient = (appt.patientName || appt.patient?.user?.fullName || '').toLowerCase();
+                  const phone = (appt.patientPhone || appt.patient?.user?.phone || '').toLowerCase();
+                  const doctor = (appt.doctor?.user?.fullName || '').toLowerCase();
+                  const specialty = (appt.doctor?.specialty || '').toLowerCase();
+                  const reason = (appt.reasonForVisit || '').toLowerCase();
+                  return patient.includes(q) || phone.includes(q) || doctor.includes(q) || specialty.includes(q) || reason.includes(q);
+                });
+
+                if (filteredPending.length === 0) {
+                  return (
+                    <div className="py-16 text-center bg-[#fafafc] rounded-2xl border border-dashed border-[#e5e5ea]">
+                      <div className="w-12 h-12 rounded-full bg-[#f5f5f7] text-[#86868b] flex items-center justify-center mx-auto mb-3">
+                        <Search className="w-6 h-6" />
+                      </div>
+                      <p className="font-semibold text-sm text-[#1d1d1f]">No Matching Patients Found</p>
+                      <p className="mt-1 text-xs max-w-sm mx-auto text-[#86868b]">
+                        No pending online bookings match "{pendingSearch}". Check the patient name spelling or clear your search filter.
+                      </p>
+                      <div className="mt-4">
+                        <button
+                          type="button"
+                          onClick={() => setPendingSearch('')}
+                          className="px-4 py-1.5 rounded-full text-xs font-semibold bg-white border border-[#e5e5ea] text-[#1d1d1f] hover:bg-gray-50 shadow-xs transition-all active:scale-[0.98]"
+                        >
+                          Clear Search
+                        </button>
+                      </div>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="space-y-4">
+                    {filteredPending.map((appt) => {
                     const fee = appt.fee || appt.doctor?.consultationFee || 0;
                     const isApproving = approvingId === appt.id;
                     const isRejecting = rejectingId === appt.id;
@@ -1002,9 +1080,10 @@ export const ReceptionistDashboard: React.FC = () => {
                     );
                   })}
                 </div>
-              )}
-            </div>
-          )}
+              );
+            })()}
+          </div>
+        )}
 
           {/* TAB 2: Live Queue Manager */}
           {activeTab === 'queue' && (
