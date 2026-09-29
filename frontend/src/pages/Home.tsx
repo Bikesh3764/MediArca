@@ -366,11 +366,11 @@ export const Home: React.FC = () => {
 
         {/* Doctor Cards Grid */}
         {loading ? (
-          <div className="flex flex-col gap-4 w-full">
-            {[1, 2, 3].map((i) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 w-full">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
               <div
                 key={i}
-                className="h-36 rounded-[24px] bg-white border border-[#e5e5ea] animate-pulse p-6"
+                className="h-64 rounded-[24px] bg-white border border-[#e5e5ea] animate-pulse p-6"
               ></div>
             ))}
           </div>
@@ -390,76 +390,78 @@ export const Home: React.FC = () => {
             </AppleButton>
           </div>
         ) : (
-        <div className="space-y-4 w-full">
-          {filteredDoctors.map((doctor) => {
-            const slots = parseDoctorSlots(doctor);
-            const getHomeDoctorDetailPath = (docId: string) =>
-              user?.role === 'PATIENT' ? `/patient/doctor/${docId}` : `/doctor/${docId}`;
-            const getHomeDoctorBookPath = (docId: string) =>
-              user?.role === 'PATIENT' ? `/patient/book/${docId}` : `/book/${docId}`;
-            const cleanDegrees = formatDoctorDegrees(doctor.qualifications);
-            const hasClinics = Boolean(doctor.clinics && doctor.clinics.length > 0);
-            const primaryClinic = hasClinics && doctor.clinics ? doctor.clinics[0].clinic : null;
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 w-full">
+            {filteredDoctors.map((doctor) => {
+              const slots = parseDoctorSlots(doctor);
+              const getHomeDoctorDetailPath = (docId: string) =>
+                user?.role === 'PATIENT' ? `/patient/doctor/${docId}` : `/doctor/${docId}`;
+              const getHomeDoctorBookPath = (docId: string) =>
+                user?.role === 'PATIENT' ? `/patient/book/${docId}` : `/book/${docId}`;
+              const cleanDegrees = formatDoctorDegrees(doctor.qualifications);
+              const hasClinics = Boolean(doctor.clinics && doctor.clinics.length > 0);
+              const primaryClinic = hasClinics && doctor.clinics ? doctor.clinics[0].clinic : null;
 
-            return (
-              <div
-                key={doctor.id}
-                className="w-full bg-white rounded-[22px] border border-[#e5e5ea] p-4 sm:p-5 hover:border-[#0088e8]/30 hover:shadow-apple-card transition-all duration-200 flex flex-col lg:flex-row lg:items-center justify-between gap-4 sm:gap-6 group"
-              >
-                {/* 1. Left Section: Squircle Avatar & Practitioner Credentials */}
-                <div className="flex items-center gap-3.5 sm:gap-4 min-w-0 lg:max-w-[340px] xl:max-w-[380px] shrink-0">
-                  {/* Clean Apple Squircle Avatar */}
-                  <div
-                    onClick={() => navigate(getHomeDoctorDetailPath(doctor.id))}
-                    className="w-13 h-13 sm:w-14 sm:h-14 rounded-2xl bg-white ring-1 ring-black/[0.08] shadow-xs overflow-hidden shrink-0 flex items-center justify-center cursor-pointer hover:opacity-95 transition-all group-hover:scale-[1.02]"
-                  >
-                    {doctor.user.avatarUrl ? (
-                      <img
-                        src={doctor.user.avatarUrl}
-                        alt={doctor.user.fullName}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none';
-                          const fallback = e.currentTarget.parentElement?.querySelector('.doc-fallback-home');
-                          if (fallback) (fallback as HTMLElement).style.display = 'flex';
-                        }}
-                      />
-                    ) : null}
+              return (
+                <div
+                  key={doctor.id}
+                  className="w-full bg-white rounded-[24px] border border-[#e5e5ea] p-5 sm:p-6 hover:border-[#0088e8]/30 hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] transition-all duration-200 flex flex-col justify-between group"
+                >
+                  {/* 1. Top Section: Prominent Doctor Avatar & Practitioner Info */}
+                  <div className="flex items-start gap-4">
+                    {/* Prominent Large Doctor Avatar (80px x 80px) */}
                     <div
-                      className={`doc-fallback-home w-full h-full ${doctor.user.avatarUrl ? 'hidden' : 'flex'} items-center justify-center font-bold text-lg text-white bg-[#0088e8] shadow-inner select-none`}
+                      onClick={() => navigate(getHomeDoctorDetailPath(doctor.id))}
+                      className="w-20 h-20 rounded-2xl bg-[#f5f5f7] ring-1 ring-black/[0.08] shadow-xs overflow-hidden shrink-0 flex items-center justify-center cursor-pointer hover:opacity-95 transition-all group-hover:scale-[1.02]"
                     >
-                      {doctor.user.fullName.replace(/^Dr\.\s*/i, '').trim()[0] || 'D'}
-                    </div>
-                  </div>
-
-                  {/* Doctor Info */}
-                  <div className="min-w-0">
-                    {/* Name + Verified Badge */}
-                    <div className="flex items-center gap-1.5">
-                      <h3
-                        onClick={() => navigate(getHomeDoctorDetailPath(doctor.id))}
-                        className="text-base sm:text-lg font-semibold text-[#1d1d1f] hover:text-[#0088e8] cursor-pointer tracking-tight transition-colors truncate"
+                      {doctor.user.avatarUrl ? (
+                        <img
+                          src={doctor.user.avatarUrl}
+                          alt={doctor.user.fullName}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            const fallback = e.currentTarget.parentElement?.querySelector('.doc-fallback-home');
+                            if (fallback) (fallback as HTMLElement).style.display = 'flex';
+                          }}
+                        />
+                      ) : null}
+                      <div
+                        className={`doc-fallback-home w-full h-full ${doctor.user.avatarUrl ? 'hidden' : 'flex'} items-center justify-center font-bold text-2xl text-white bg-[#0088e8] select-none`}
                       >
-                        {doctor.user.fullName}
-                      </h3>
-                      <CheckCircle2 className="w-4 h-4 text-[#0088e8] fill-[#0088e8]/10 shrink-0" />
+                        {doctor.user.fullName.replace(/^Dr\.\s*/i, '').trim()[0] || 'D'}
+                      </div>
                     </div>
 
-                    {/* Specialty & Qualifications */}
-                    <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-[#86868b]">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-[#0088e8]/8 text-[#0088e8] border border-[#0088e8]/15">
-                        {doctor.specialty}
-                      </span>
-                      <span className="font-normal text-[#48484a]">{cleanDegrees}</span>
-                      <span className="text-[#d2d2d7]">•</span>
-                      <span className="text-[#86868b]">{doctor.experienceYears} yrs exp</span>
+                    {/* Doctor Info */}
+                    <div className="min-w-0 flex-1 pt-0.5">
+                      <div className="flex items-center gap-1.5">
+                        <h3
+                          onClick={() => navigate(getHomeDoctorDetailPath(doctor.id))}
+                          className="text-base sm:text-lg font-semibold text-[#1d1d1f] hover:text-[#0088e8] cursor-pointer tracking-tight transition-colors line-clamp-1"
+                          title={doctor.user.fullName}
+                        >
+                          {doctor.user.fullName}
+                        </h3>
+                        <CheckCircle2 className="w-4 h-4 text-[#0088e8] fill-[#0088e8]/10 shrink-0" />
+                      </div>
+
+                      <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-[#0088e8]/8 text-[#0088e8] border border-[#0088e8]/15">
+                          {doctor.specialty}
+                        </span>
+                        <span className="text-xs text-[#86868b]">{doctor.experienceYears} yrs exp</span>
+                      </div>
+
+                      {cleanDegrees && (
+                        <div className="mt-1 text-xs text-[#48484a] font-normal truncate" title={cleanDegrees}>
+                          {cleanDegrees}
+                        </div>
+                      )}
                     </div>
                   </div>
-                </div>
 
-                {/* 2. Center Section: Practice Facility & Schedule Inset Capsule */}
-                <div className="flex-1 min-w-0 max-w-xl">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4 px-4 py-2.5 rounded-[14px] bg-[#f5f5f7] border border-black/[0.04] text-xs">
+                  {/* 2. Middle Section: Inset Clinic Venue & Shift Capsule */}
+                  <div className="mt-4 p-3 rounded-[16px] bg-[#f5f5f7] border border-black/[0.03] flex flex-col gap-2 text-xs">
                     {/* Practice Venue */}
                     <div className="flex items-center gap-2 min-w-0">
                       <Building2 className="w-3.5 h-3.5 text-[#0088e8] shrink-0" />
@@ -484,13 +486,10 @@ export const Home: React.FC = () => {
                       )}
                     </div>
 
-                    {/* Subtle divider */}
-                    <div className="hidden sm:block w-px h-3.5 bg-[#d2d2d7] shrink-0"></div>
-
                     {/* Shift Timing */}
-                    <div className="flex items-center gap-2 min-w-0 shrink-0">
+                    <div className="flex items-center gap-2 min-w-0">
                       <Clock className="w-3.5 h-3.5 text-[#86868b] shrink-0" />
-                      <span className="font-medium text-[#48484a] whitespace-nowrap">
+                      <span className="font-medium text-[#48484a] truncate">
                         {slots.length > 0
                           ? `${format12Hour(slots[0].startTime)} – ${format12Hour(slots[0].endTime)}`
                           : doctor.checkingStartTime
@@ -504,43 +503,40 @@ export const Home: React.FC = () => {
                       </span>
                     </div>
                   </div>
-                </div>
 
-                {/* 3. Right Side: Consultation Fee & Single Action CTA */}
-                <div className="flex items-center justify-between lg:justify-end gap-5 shrink-0 pt-2 lg:pt-0">
-                  <div className="text-left lg:text-right">
+                  {/* 3. Bottom Section: Consultation Fee & Action CTA */}
+                  <div className="mt-4 pt-3.5 border-t border-[#f5f5f7] flex items-center justify-between gap-4">
                     <span className="text-xl sm:text-2xl font-bold text-[#1d1d1f] tracking-tight">
                       ₹{doctor.consultationFee.toFixed(0)}
                     </span>
-                  </div>
 
-                  <div>
-                    {hasClinics ? (
-                      <AppleButton
-                        variant="primary"
-                        size="sm"
-                        onClick={() => navigate(getHomeDoctorBookPath(doctor.id))}
-                        className="text-xs px-5 py-2.5 rounded-full flex items-center gap-1.5 font-semibold shadow-xs hover:shadow-apple-button active:scale-[0.98] transition-all bg-[#0088e8] hover:bg-[#0077cc]"
-                      >
-                        <span>Book Token</span>
-                        <ChevronRight className="w-3.5 h-3.5 stroke-[2.5]" />
-                      </AppleButton>
-                    ) : (
-                      <AppleButton
-                        variant="secondary"
-                        size="sm"
-                        disabled
-                        className="text-xs px-4 py-2.5 rounded-full opacity-60 cursor-not-allowed bg-[#f5f5f7] border border-[#e5e5ea] text-[#86868b] font-medium"
-                      >
-                        <span>Unavailable</span>
-                      </AppleButton>
-                    )}
+                    <div>
+                      {hasClinics ? (
+                        <AppleButton
+                          variant="primary"
+                          size="sm"
+                          onClick={() => navigate(getHomeDoctorBookPath(doctor.id))}
+                          className="text-xs px-5 py-2.5 rounded-full flex items-center gap-1.5 font-semibold shadow-xs hover:shadow-apple-button active:scale-[0.98] transition-all bg-[#0088e8] hover:bg-[#0077cc]"
+                        >
+                          <span>Book Token</span>
+                          <ChevronRight className="w-3.5 h-3.5 stroke-[2.5]" />
+                        </AppleButton>
+                      ) : (
+                        <AppleButton
+                          variant="secondary"
+                          size="sm"
+                          disabled
+                          className="text-xs px-4 py-2.5 rounded-full opacity-60 cursor-not-allowed bg-[#f5f5f7] border border-[#e5e5ea] text-[#86868b] font-medium"
+                        >
+                          <span>Unavailable</span>
+                        </AppleButton>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
         )}
       </section>
 
