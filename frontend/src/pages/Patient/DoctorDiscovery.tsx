@@ -205,12 +205,12 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
                 key={doctor.id}
                 className="w-full bg-white rounded-[22px] border border-[#e5e5ea] p-4 sm:p-5 hover:border-[#0088e8]/30 hover:shadow-apple-card transition-all duration-200 flex flex-col lg:flex-row lg:items-center justify-between gap-4 sm:gap-6 group"
               >
-                {/* 1. Left Section: Circular Avatar & Practitioner Credentials */}
-                <div className="flex items-center gap-4 min-w-0">
-                  {/* Clean Circular Avatar */}
+                {/* 1. Left Section: Squircle Avatar & Practitioner Credentials */}
+                <div className="flex items-center gap-3.5 sm:gap-4 min-w-0 lg:max-w-[340px] xl:max-w-[380px] shrink-0">
+                  {/* Clean Apple Squircle Avatar */}
                   <div
                     onClick={() => navigate(getDoctorDetailPath(doctor.id))}
-                    className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-white border border-[#e5e5ea] overflow-hidden flex-shrink-0 flex items-center justify-center cursor-pointer hover:opacity-95 transition-all shadow-xs group-hover:scale-102"
+                    className="w-13 h-13 sm:w-14 sm:h-14 rounded-2xl bg-white ring-1 ring-black/[0.08] shadow-xs overflow-hidden shrink-0 flex items-center justify-center cursor-pointer hover:opacity-95 transition-all group-hover:scale-[1.02]"
                   >
                     {doctor.user.avatarUrl ? (
                       <img
@@ -225,7 +225,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
                       />
                     ) : null}
                     <div
-                      className={`doc-fallback w-full h-full ${doctor.user.avatarUrl ? 'hidden' : 'flex'} items-center justify-center font-bold text-xl text-white bg-[#0088e8] shadow-inner select-none`}
+                      className={`doc-fallback w-full h-full ${doctor.user.avatarUrl ? 'hidden' : 'flex'} items-center justify-center font-bold text-lg text-white bg-[#0088e8] shadow-inner select-none`}
                     >
                       {doctor.user.fullName.replace(/^Dr\.\s*/i, '').trim()[0] || 'D'}
                     </div>
@@ -237,16 +237,16 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
                     <div className="flex items-center gap-1.5">
                       <h3
                         onClick={() => navigate(getDoctorDetailPath(doctor.id))}
-                        className="text-base sm:text-lg font-semibold text-[#1d1d1f] hover:text-[#0088e8] cursor-pointer tracking-tight transition-colors"
+                        className="text-base sm:text-lg font-semibold text-[#1d1d1f] hover:text-[#0088e8] cursor-pointer tracking-tight transition-colors truncate"
                       >
                         {doctor.user.fullName}
                       </h3>
-                      <CheckCircle2 className="w-4 h-4 text-[#0088e8] flex-shrink-0" />
+                      <CheckCircle2 className="w-4 h-4 text-[#0088e8] fill-[#0088e8]/10 shrink-0" />
                     </div>
 
                     {/* Specialty & Qualifications */}
                     <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-[#86868b]">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#0088e8]/8 text-[#0088e8] border border-[#0088e8]/15">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-[#0088e8]/8 text-[#0088e8] border border-[#0088e8]/15">
                         {doctor.specialty}
                       </span>
                       <span className="font-normal text-[#48484a]">{cleanDegrees}</span>
@@ -256,54 +256,61 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
                   </div>
                 </div>
 
-                {/* 2. Center Section: Practice Facility & Schedule */}
-                <div className="flex flex-col gap-2 min-w-0 text-xs">
-                  {/* Practice Venue */}
-                  <div className="flex items-center gap-2 min-w-0">
-                    <Building2 className="w-3.5 h-3.5 text-[#0088e8] flex-shrink-0" />
-                    {hasClinics && primaryClinic ? (
-                      <span
-                        className="font-medium text-[#1d1d1f] truncate max-w-[220px] sm:max-w-[280px]"
-                        title={`${primaryClinic.clinicName}${primaryClinic.city ? ` • ${primaryClinic.city}` : ''}`}
-                      >
-                        {primaryClinic.clinicName}
-                        {primaryClinic.city ? ` • ${primaryClinic.city}` : ''}
-                        {(doctor.clinics?.length ?? 0) > 1 && (
-                          <span className="text-[#0088e8] font-normal ml-1">
-                            (+{(doctor.clinics?.length ?? 0) - 1} more)
+                {/* 2. Center Section: Practice Facility & Schedule Inset Capsule */}
+                <div className="flex-1 min-w-0 max-w-xl">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4 px-4 py-2.5 rounded-[14px] bg-[#f5f5f7] border border-black/[0.04] text-xs">
+                    {/* Practice Venue */}
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Building2 className="w-3.5 h-3.5 text-[#0088e8] shrink-0" />
+                      {hasClinics && primaryClinic ? (
+                        <span
+                          className="font-medium text-[#1d1d1f] truncate"
+                          title={`${primaryClinic.clinicName}${primaryClinic.city ? ` • ${primaryClinic.city}` : ''}`}
+                        >
+                          {primaryClinic.clinicName}
+                          {primaryClinic.city ? ` • ${primaryClinic.city}` : ''}
+                          {(doctor.clinics?.length ?? 0) > 1 && (
+                            <span className="text-[#0088e8] font-normal ml-1">
+                              (+{(doctor.clinics?.length ?? 0) - 1} more)
+                            </span>
+                          )}
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-xs text-amber-600 font-medium">
+                          <AlertCircle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                          No Clinic Associated
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Subtle divider */}
+                    <div className="hidden sm:block w-px h-3.5 bg-[#d2d2d7] shrink-0"></div>
+
+                    {/* Shift Timing */}
+                    <div className="flex items-center gap-2 min-w-0 shrink-0">
+                      <Clock className="w-3.5 h-3.5 text-[#86868b] shrink-0" />
+                      <span className="font-medium text-[#48484a] whitespace-nowrap">
+                        {slots.length > 0
+                          ? `${format12Hour(slots[0].startTime)} – ${format12Hour(slots[0].endTime)}`
+                          : doctor.checkingStartTime
+                          ? `${format12Hour(doctor.checkingStartTime)} – ${format12Hour(doctor.checkingEndTime)}`
+                          : 'Outpatient Shift'}
+                        {slots.length > 1 && (
+                          <span className="text-[11px] text-[#86868b] font-normal ml-1.5">
+                            ({slots.length} shifts)
                           </span>
                         )}
                       </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 text-xs text-amber-600 font-medium">
-                        <AlertCircle className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
-                        No Clinic Associated
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Shift Timing */}
-                  <div className="flex items-center gap-2 min-w-0">
-                    <Clock className="w-3.5 h-3.5 text-[#86868b] flex-shrink-0" />
-                    <span className="font-medium text-[#48484a] whitespace-nowrap">
-                      {slots.length > 0
-                        ? `${format12Hour(slots[0].startTime)} – ${format12Hour(slots[0].endTime)}`
-                        : doctor.checkingStartTime
-                        ? `${format12Hour(doctor.checkingStartTime)} – ${format12Hour(doctor.checkingEndTime)}`
-                        : 'Outpatient Shift'}
-                      {slots.length > 1 && (
-                        <span className="text-[11px] text-[#86868b] font-normal ml-1">
-                          ({slots.length} shifts)
-                        </span>
-                      )}
-                    </span>
+                    </div>
                   </div>
                 </div>
 
                 {/* 3. Right Side: Consultation Fee & Single Action CTA */}
-                <div className="flex items-center justify-between lg:justify-end gap-4 sm:gap-6 pt-3 lg:pt-0 border-t lg:border-t-0 border-[#f5f5f7] flex-shrink-0">
-                  <div className="text-xl sm:text-2xl font-bold text-[#1d1d1f] tracking-tight">
-                    ₹{doctor.consultationFee.toFixed(0)}
+                <div className="flex items-center justify-between lg:justify-end gap-5 shrink-0 pt-2 lg:pt-0">
+                  <div className="text-left lg:text-right">
+                    <span className="text-xl sm:text-2xl font-bold text-[#1d1d1f] tracking-tight">
+                      ₹{doctor.consultationFee.toFixed(0)}
+                    </span>
                   </div>
 
                   <div>
@@ -312,10 +319,10 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
                         variant="primary"
                         size="sm"
                         onClick={() => navigate(getBookPath(doctor.id))}
-                        className="text-xs px-5 py-2.5 rounded-full flex items-center gap-1.5 font-semibold shadow-xs hover:shadow-apple-button active:scale-[0.98] transition-all"
+                        className="text-xs px-5 py-2.5 rounded-full flex items-center gap-1.5 font-semibold shadow-xs hover:shadow-apple-button active:scale-[0.98] transition-all bg-[#0088e8] hover:bg-[#0077cc]"
                       >
                         <span>Book Token</span>
-                        <ChevronRight className="w-3.5 h-3.5" />
+                        <ChevronRight className="w-3.5 h-3.5 stroke-[2.5]" />
                       </AppleButton>
                     ) : (
                       <AppleButton
