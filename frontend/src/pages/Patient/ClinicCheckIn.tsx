@@ -188,7 +188,9 @@ export const ClinicCheckIn: React.FC = () => {
                 </div>
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-[#86868b]">Doctor</span>
-                  <span className="font-semibold text-[#1d1d1f]">Dr. {successData.doctor?.user?.fullName}</span>
+                  <span className="font-semibold text-[#1d1d1f]">
+                    {successData.doctor?.user?.fullName ? (successData.doctor.user.fullName.startsWith('Dr.') ? successData.doctor.user.fullName : `Dr. ${successData.doctor.user.fullName}`) : 'Doctor'}
+                  </span>
                 </div>
                 {successData.clinic && (
                   <div className="flex items-center justify-between text-xs pt-1 border-t border-[#e5e5ea]">

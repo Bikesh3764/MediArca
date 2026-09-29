@@ -388,7 +388,7 @@ export const BookAppointment: React.FC = () => {
                     No Clinic Affiliation Registered
                   </h4>
                   <p className="text-xs text-amber-800/90 mt-1 leading-relaxed">
-                    Dr. {doctor.user?.fullName || 'Doctor'} is currently not practicing at any active verified clinic venue. Online queue reservations cannot be issued.
+                    {doctor.user?.fullName ? (doctor.user.fullName.startsWith('Dr.') ? doctor.user.fullName : `Dr. ${doctor.user.fullName}`) : 'The practitioner'} is currently not practicing at any active verified clinic venue. Online queue reservations cannot be issued.
                   </p>
                 </div>
               </div>

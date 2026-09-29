@@ -1640,7 +1640,7 @@ export const DoctorDashboard: React.FC = () => {
                 className="w-52 h-52 object-contain rounded-xl bg-white p-2 shadow-xs mx-auto"
               />
               <div className="mt-3 text-center">
-                <p className="font-semibold text-xs text-[#1d1d1f]">Dr. {user?.fullName}</p>
+                <p className="font-semibold text-xs text-[#1d1d1f]">Dr. {doctorDisplayName}</p>
                 <p className="text-[11px] text-[#86868b]">{user?.doctorProfile?.specialty || 'Specialist'} • {user?.doctorProfile?.clinicAddress || 'Clinic'}</p>
               </div>
             </div>
@@ -1873,7 +1873,7 @@ export const DoctorDashboard: React.FC = () => {
             MediArca Instant Walk-in Check-in
           </div>
           <h1 className="text-3xl font-extrabold tracking-tight text-black">
-            Dr. {user?.fullName}
+            Dr. {doctorDisplayName}
           </h1>
           <p className="text-base font-semibold text-gray-800 mt-1">
             {user?.doctorProfile?.specialty || 'General Specialist'}

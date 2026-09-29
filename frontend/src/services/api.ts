@@ -1048,14 +1048,10 @@ export const api = {
     returnEstimateMinutes?: number | null;
     doctorId?: string;
   }): Promise<{
-    success: boolean;
-    message: string;
-    data: {
-      id: string;
-      cabinStatus: string;
-      expectedReturnTime: string | null;
-      cabinStatusUpdatedAt: string | null;
-    };
+    id: string;
+    cabinStatus: string;
+    expectedReturnTime: string | null;
+    cabinStatusUpdatedAt: string | null;
   }> {
     const res = await fetch(`${API_BASE_URL}/doctors/cabin-status`, {
       method: 'PUT',

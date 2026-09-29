@@ -128,16 +128,23 @@ export const CabinStatusControl: React.FC<CabinStatusControlProps> = ({
         }
       }
 
-      const res = await api.updateDoctorCabinStatus(payload);
-      if (res.success && res.data) {
-        setStatus(res.data.cabinStatus as CabinStatus);
-        setReturnTime(res.data.expectedReturnTime);
-        if (onStatusChange) {
-          onStatusChange(res.data.cabinStatus as CabinStatus, res.data.expectedReturnTime);
-        }
-        setFeedback(res.message || 'Status updated');
-        setTimeout(() => setFeedback(null), 3500);
+      const res: any = await api.updateDoctorCabinStatus(payload);
+      const resultData = res?.data || res;
+      const updatedStatus = (resultData?.cabinStatus || newStatus) as CabinStatus;
+      const updatedReturn =
+        resultData?.expectedReturnTime !== undefined
+          ? resultData.expectedReturnTime
+          : newStatus === 'STEPPED_OUT'
+          ? (explicitTime !== undefined ? explicitTime : (estimateMinutes ? `in ~${estimateMinutes} mins` : returnTime))
+          : null;
+
+      setStatus(updatedStatus);
+      setReturnTime(updatedReturn);
+      if (onStatusChange) {
+        onStatusChange(updatedStatus, updatedReturn);
       }
+      setFeedback('Status updated');
+      setTimeout(() => setFeedback(null), 3500);
     } catch (err: any) {
       console.error('Failed to update doctor presence:', err);
       setErrorMsg(err.message || 'Failed to update presence status');
@@ -220,11 +227,7 @@ export const CabinStatusControl: React.FC<CabinStatusControlProps> = ({
         <button
           type="button"
           disabled={loading}
-          onClick={() => {
-            if (status !== 'STEPPED_OUT') {
-              updateStatus('STEPPED_OUT', 15);
-            }
-          }}
+          onClick={() => updateStatus('STEPPED_OUT', 15)}
           className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all active:scale-[0.98] ${
             status === 'STEPPED_OUT'
               ? 'bg-white text-amber-900 shadow-xs border border-amber-200'

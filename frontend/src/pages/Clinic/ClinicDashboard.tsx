@@ -24,6 +24,12 @@ import {
   Copy,
 } from 'lucide-react';
 
+const cleanDoctorName = (name?: string | null): string => {
+  if (!name) return 'Doctor';
+  const trimmed = name.trim();
+  return /^dr\.?\s+/i.test(trimmed) ? trimmed : `Dr. ${trimmed}`;
+};
+
 export const ClinicDashboard: React.FC = () => {
   const { user } = useAuth();
   const [data, setData] = useState<ClinicDashboardData | null>(null);
@@ -533,7 +539,7 @@ export const ClinicDashboard: React.FC = () => {
                   >
                     <div>
                       <div className="flex items-center gap-2">
-                        <h4 className="font-semibold text-xs text-[#1d1d1f]">Dr. {doc.fullName}</h4>
+                        <h4 className="font-semibold text-xs text-[#1d1d1f]">{cleanDoctorName(doc.fullName)}</h4>
                         <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 text-[#0088e8] font-medium">
                           {doc.specialty}
                         </span>
@@ -582,7 +588,7 @@ export const ClinicDashboard: React.FC = () => {
                     className="p-3 rounded-xl bg-white border border-amber-200 flex items-center justify-between text-xs"
                   >
                     <div>
-                      <span className="font-semibold text-[#1d1d1f]">Dr. {doc.fullName}</span>
+                      <span className="font-semibold text-[#1d1d1f]">{cleanDoctorName(doc.fullName)}</span>
                       <span className="text-[10px] text-[#86868b] block">{doc.specialty}</span>
                     </div>
                     <div className="flex items-center gap-2">
@@ -852,7 +858,7 @@ export const ClinicDashboard: React.FC = () => {
                                 key={doc.id}
                                 className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-50 text-[#0088e8] border border-blue-100"
                               >
-                                Dr. {doc.fullName}
+                                {cleanDoctorName(doc.fullName)}
                               </span>
                             ))}
                           </div>
@@ -1201,7 +1207,7 @@ export const ClinicDashboard: React.FC = () => {
                               {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
                             </div>
                             <div>
-                              <div className="font-medium text-[#1d1d1f]">Dr. {doc.fullName}</div>
+                              <div className="font-medium text-[#1d1d1f]">{cleanDoctorName(doc.fullName)}</div>
                               <div className="text-[10px] text-[#86868b]">{doc.specialty}</div>
                             </div>
                           </div>
@@ -1292,7 +1298,7 @@ export const ClinicDashboard: React.FC = () => {
                             {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
                           </div>
                           <div>
-                            <div className="font-medium text-[#1d1d1f]">Dr. {doc.fullName}</div>
+                            <div className="font-medium text-[#1d1d1f]">{cleanDoctorName(doc.fullName)}</div>
                             <div className="text-[10px] text-[#86868b]">{doc.specialty}</div>
                           </div>
                         </div>
@@ -1494,7 +1500,7 @@ export const ClinicDashboard: React.FC = () => {
                               >
                                 {isChecked && <Check className="w-3 h-3" />}
                               </div>
-                              <span className="font-medium text-[#1d1d1f]">Dr. {doc.fullName}</span>
+                              <span className="font-medium text-[#1d1d1f]">{cleanDoctorName(doc.fullName)}</span>
                               <span className="text-[11px] text-[#0088e8]">({doc.specialty})</span>
                             </div>
                             <span className="text-[10px] text-[#86868b]">₹{doc.consultationFee}</span>

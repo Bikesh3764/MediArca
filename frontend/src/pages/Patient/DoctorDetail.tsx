@@ -370,7 +370,7 @@ export const DoctorDetail: React.FC = () => {
                         No Affiliated Practice Venue
                       </h4>
                       <p className="text-xs text-amber-800/90 mt-1 leading-relaxed">
-                        Dr. {doctor.user?.fullName || 'Doctor'} is currently not practicing at any verified clinic location. Online queue booking is disabled until an active clinic affiliation is established.
+                        {doctor.user?.fullName ? (doctor.user.fullName.startsWith('Dr.') ? doctor.user.fullName : `Dr. ${doctor.user.fullName}`) : 'The practitioner'} is currently not practicing at any verified clinic location. Online queue booking is disabled until an active clinic affiliation is established.
                       </p>
                     </div>
                   </div>
