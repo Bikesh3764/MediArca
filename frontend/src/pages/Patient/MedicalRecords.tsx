@@ -314,8 +314,8 @@ export const MedicalRecords: React.FC = () => {
                 </div>
 
                 <div className="mt-5 pt-3 border-t border-[#f0f0f0] flex items-center justify-between">
-                  <span className="text-[11px] font-mono text-[#86868b] uppercase">
-                    {rec.fileType?.split('/')[1] || 'PDF'}
+                  <span className="text-[11px] font-mono text-[#86868b] uppercase font-semibold">
+                    {isImageFile(rec) ? 'IMAGE' : (rec.fileType || 'PDF').toUpperCase()}
                   </span>
                   <div className="flex items-center gap-2">
                     <AppleButton
@@ -329,7 +329,12 @@ export const MedicalRecords: React.FC = () => {
                     </AppleButton>
                     <button
                       type="button"
-                      onClick={() => api.downloadRecord(rec.id, `${rec.title}.${rec.fileType?.split('/')[1] || 'pdf'}`)}
+                      onClick={() => {
+                        const rawTitle = (rec.title || 'medical-record').trim();
+                        const hasExt = /\.(pdf|jpe?g|png|webp)$/i.test(rawTitle);
+                        const filename = hasExt ? rawTitle : `${rawTitle}.${isImageFile(rec) ? 'jpg' : 'pdf'}`;
+                        api.downloadRecord(rec.id, filename);
+                      }}
                       className="p-1.5 text-[#86868b] hover:text-[#0088e8] transition-colors rounded-full hover:bg-gray-100"
                       title="Download file"
                     >
@@ -358,8 +363,14 @@ export const MedicalRecords: React.FC = () => {
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => api.viewRecord(previewRecord.id, previewRecord.title)}
-                  className="flex items-center gap-1 text-xs text-[#0088e8] hover:underline font-medium px-2 py-1"
+                  onClick={() => {
+                    if (previewBlobUrl) {
+                      window.open(previewBlobUrl, '_blank');
+                    } else {
+                      api.viewRecord(previewRecord.id, previewRecord.title);
+                    }
+                  }}
+                  className="flex items-center gap-1 text-xs text-[#0088e8] hover:underline font-medium px-2 py-1 cursor-pointer"
                 >
                   <ExternalLink className="w-3.5 h-3.5" />
                   Open in New Tab

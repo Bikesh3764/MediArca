@@ -27,6 +27,7 @@ import {
   ChevronLeft,
   Building2,
   Stethoscope,
+  FileText,
   User as UserIcon,
   AlertCircle,
   Check,
@@ -52,6 +53,12 @@ export const DoctorDetail: React.FC = () => {
       label: 'Live Queue & Passes',
       icon: Calendar,
       path: '/patient/appointments',
+    },
+    {
+      id: 'records',
+      label: 'Clinical Records',
+      icon: FileText,
+      path: '/patient/records',
     },
     {
       id: 'find-doctors',

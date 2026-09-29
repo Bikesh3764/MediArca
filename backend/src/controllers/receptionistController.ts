@@ -12,7 +12,7 @@ import {
   minutesTo12Hour,
   isValidAppointmentDate,
 } from '../utils/scheduleUtils';
-import { formatIndianPhone, sanitizeIndianPhone } from '../utils/phoneUtils';
+import { formatIndianPhone, sanitizeIndianPhone, isValidIndianPhone } from '../utils/phoneUtils';
 import { canTransition } from '../utils/appointmentStateMachine';
 import {
   verifyReceptionistDoctorAccess,
@@ -421,6 +421,13 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
 
     // Find or create walk-in patient profile with phone normalization
     const cleanPhone = String(patientPhone).trim();
+    if (!isValidIndianPhone(cleanPhone)) {
+      res.status(400).json({
+        success: false,
+        message: 'Invalid patient phone number. Must be a valid 10-digit Indian mobile number (+91).',
+      });
+      return;
+    }
     const normalizedPhone = formatIndianPhone(cleanPhone);
     const rawDigits = sanitizeIndianPhone(cleanPhone);
 

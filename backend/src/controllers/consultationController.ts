@@ -59,9 +59,25 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
         : { queueNumber: 'asc' },
     });
 
-    const activeInConsultation = appointments.find((a) => a.status === 'IN_CONSULTATION') || null;
-    const waitingQueue = appointments.filter((a) => a.status === 'WAITING');
-    const completedQueue = appointments.filter((a) => a.status === 'COMPLETED');
+    const safeAppointments = appointments.map((appt) => {
+      if (appt.patient?.medicalRecords) {
+        return {
+          ...appt,
+          patient: {
+            ...appt.patient,
+            medicalRecords: appt.patient.medicalRecords.map((rec) => ({
+              ...rec,
+              fileUrl: `/api/records/file/${rec.id}`,
+            })),
+          },
+        };
+      }
+      return appt;
+    });
+
+    const activeInConsultation = safeAppointments.find((a) => a.status === 'IN_CONSULTATION') || null;
+    const waitingQueue = safeAppointments.filter((a) => a.status === 'WAITING');
+    const completedQueue = safeAppointments.filter((a) => a.status === 'COMPLETED');
 
     // Calculate upcoming bookings summary across dates for this doctor
     const todayIso = getLocalDateString();
@@ -89,11 +105,11 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
       data: {
         date: dateStr,
         scope,
-        totalQueue: appointments.length,
+        totalQueue: safeAppointments.length,
         activeInConsultation,
         waitingQueue,
         completedQueue,
-        allAppointments: appointments,
+        allAppointments: safeAppointments,
         upcomingSummary: {
           tomorrowDate: tomorrowIso,
           tomorrowCount,
@@ -195,10 +211,23 @@ export const callPatient = async (req: AuthRequest, res: Response): Promise<void
       },
     });
 
+    const safeUpdated = {
+      ...updated,
+      patient: updated.patient
+        ? {
+            ...updated.patient,
+            medicalRecords: (updated.patient.medicalRecords || []).map((rec: any) => ({
+              ...rec,
+              fileUrl: `/api/records/file/${rec.id}`,
+            })),
+          }
+        : updated.patient,
+    };
+
     res.json({
       success: true,
       message: `Queue #${updated.queueNumber} (${updated.patient.user.fullName}) is now in consultation`,
-      data: updated,
+      data: safeUpdated,
     });
   } catch (error: any) {
     console.error('callPatient error:', error);

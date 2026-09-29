@@ -2,6 +2,7 @@ import { Response } from 'express';
 import bcrypt from 'bcryptjs';
 import prisma from '../config/database';
 import { AuthRequest } from '../middleware/authMiddleware';
+import { isValidIndianPhone, formatIndianPhone } from '../utils/phoneUtils';
 
 /**
  * Get profile and statistics for currently authenticated clinic
@@ -689,6 +690,19 @@ export const addClinicReceptionist = async (req: AuthRequest, res: Response): Pr
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(password, salt);
 
+    let formattedPhone: string | null = null;
+    if (phone !== undefined && phone !== null && String(phone).trim() !== '') {
+      const trimmedPhone = String(phone).trim();
+      if (!isValidIndianPhone(trimmedPhone)) {
+        res.status(400).json({
+          success: false,
+          message: 'Invalid Indian phone number. Please enter a valid 10-digit mobile number (+91).',
+        });
+        return;
+      }
+      formattedPhone = formatIndianPhone(trimmedPhone);
+    }
+
     // Validate that provided doctorIds belong to this clinic
     const clinicDoctorIds = new Set(clinic.doctors.map((cd) => cd.doctorId));
     const validDoctorIds = (Array.isArray(doctorIds) ? doctorIds : []).filter((id: string) =>
@@ -700,13 +714,13 @@ export const addClinicReceptionist = async (req: AuthRequest, res: Response): Pr
         fullName: fullName.trim(),
         email: cleanEmail,
         passwordHash,
-        phone: phone ? String(phone).trim() : null,
+        phone: formattedPhone,
         role: 'RECEPTIONIST',
         mustChangePassword: true,
         receptionistProfile: {
           create: {
             clinicId: clinic.id,
-            phone: phone ? String(phone).trim() : null,
+            phone: formattedPhone,
             doctors: {
               create: validDoctorIds.map((docId: string) => ({
                 doctorId: docId,

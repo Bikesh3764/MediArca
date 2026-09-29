@@ -26,6 +26,7 @@ import {
   MapPin,
   Phone,
   Stethoscope,
+  FileText,
   User as UserIcon,
 } from 'lucide-react';
 
@@ -48,6 +49,12 @@ const patientNavItems: DashboardNavItem[] = [
     label: 'Live Queue & Passes',
     icon: Calendar,
     path: '/patient/appointments',
+  },
+  {
+    id: 'records',
+    label: 'Clinical Records',
+    icon: FileText,
+    path: '/patient/records',
   },
   {
     id: 'find-doctors',

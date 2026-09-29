@@ -8,6 +8,7 @@ import { AuthRequest, getJwtSecret } from '../middleware/authMiddleware';
 import { uploadToR2, deleteFromR2, isR2Configured } from '../config/r2';
 import { isValidDobDate, validateDoctorSlots, timeToMinutes, validateDoctorNumericBounds } from '../utils/scheduleUtils';
 import { validateMagicBytes } from '../middleware/uploadMiddleware';
+import { isValidIndianPhone, formatIndianPhone } from '../utils/phoneUtils';
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -57,6 +58,20 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(password, salt);
 
+    let formattedPhone: string | null = null;
+    const rawPhone = phone || profileData.phone;
+    if (rawPhone !== undefined && rawPhone !== null && String(rawPhone).trim() !== '') {
+      const trimmedPhone = String(rawPhone).trim();
+      if (!isValidIndianPhone(trimmedPhone)) {
+        res.status(400).json({
+          success: false,
+          message: 'Invalid Indian phone number. Please enter a valid 10-digit mobile number (+91).',
+        });
+        return;
+      }
+      formattedPhone = formatIndianPhone(trimmedPhone);
+    }
+
     let newUser;
     if (normalizedRole === 'PATIENT') {
       let formattedDob: string | null = null;
@@ -78,7 +93,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
           email: email.toLowerCase().trim(),
           passwordHash,
           fullName,
-          phone,
+          phone: formattedPhone,
           role: 'PATIENT',
           patientProfile: {
             create: {
@@ -128,7 +143,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
           email: email.toLowerCase().trim(),
           passwordHash,
           fullName,
-          phone,
+          phone: formattedPhone,
           role: 'DOCTOR',
           doctorProfile: {
             create: {
@@ -154,14 +169,14 @@ export const register = async (req: Request, res: Response): Promise<void> => {
           email: email.toLowerCase().trim(),
           passwordHash,
           fullName: profileData.clinicName || fullName,
-          phone: phone || profileData.phone || null,
+          phone: formattedPhone,
           role: 'CLINIC',
           clinicProfile: {
             create: {
               clinicName: profileData.clinicName || fullName,
               address: profileData.address || profileData.clinicAddress || 'Central Healthcare Clinic',
               city: profileData.city || null,
-              phone: phone || profileData.phone || null,
+              phone: formattedPhone,
             },
           },
         },
@@ -174,11 +189,11 @@ export const register = async (req: Request, res: Response): Promise<void> => {
           email: email.toLowerCase().trim(),
           passwordHash,
           fullName,
-          phone: phone || null,
+          phone: formattedPhone,
           role: 'RECEPTIONIST',
           receptionistProfile: {
             create: {
-              phone: phone || null,
+              phone: formattedPhone,
             },
           },
         },
@@ -422,11 +437,28 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
 
     const { fullName, phone, avatarUrl, ...roleSpecificData } = req.body;
 
+    let formattedPhone: string | null | undefined = undefined;
+    if (phone !== undefined) {
+      if (phone === null || String(phone).trim() === '') {
+        formattedPhone = null;
+      } else {
+        const trimmedPhone = String(phone).trim();
+        if (!isValidIndianPhone(trimmedPhone)) {
+          res.status(400).json({
+            success: false,
+            message: 'Invalid Indian phone number. Please enter a valid 10-digit mobile number (+91).',
+          });
+          return;
+        }
+        formattedPhone = formatIndianPhone(trimmedPhone);
+      }
+    }
+
     const updatedUser = await prisma.user.update({
       where: { id: req.user.id },
       data: {
-        ...(fullName && { fullName }),
-        ...(phone !== undefined && { phone }),
+        ...(fullName && { fullName: String(fullName).trim() }),
+        ...(formattedPhone !== undefined && { phone: formattedPhone }),
         ...(avatarUrl && { avatarUrl }),
       },
     });

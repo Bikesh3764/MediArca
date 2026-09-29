@@ -10,6 +10,7 @@ import {
   Clock,
   Calendar,
   Stethoscope,
+  FileText,
   User as UserIcon,
   RefreshCw,
   Building2,
@@ -49,6 +50,12 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
       label: 'Live Queue & Passes',
       icon: Calendar,
       path: '/patient/appointments',
+    },
+    {
+      id: 'records',
+      label: 'Clinical Records',
+      icon: FileText,
+      path: '/patient/records',
     },
     {
       id: 'find-doctors',

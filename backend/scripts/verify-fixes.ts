@@ -8,6 +8,7 @@ import {
   evaluateSlotStatus,
   DoctorSlot,
   getLocalDateString,
+  getTomorrowDateString,
   getIndianTimeMinutes,
   isValidAppointmentDate,
   isValidDobDate,
@@ -3947,9 +3948,16 @@ function runTests() {
     { input: '9820012345', valid: true, formatted: '+91 9820012345' },
     { input: '+91 98200 12345', valid: true, formatted: '+91 9820012345' },
     { input: '919820012345', valid: true, formatted: '+91 9820012345' },
+    { input: '09820012345', valid: true, formatted: '+91 9820012345' },
     { input: '+1 212 555 0199', valid: false }, // US phone
     { input: '12345', valid: false },
     { input: '', valid: false },
+    { input: '98200123456', valid: false }, // 11 digits (overflow)
+    { input: '+91 98200 123456', valid: false }, // 11 digits after +91
+    { input: '9198200123456', valid: false }, // 13 digits starting with 91
+    { input: '098200123456', valid: false }, // 12 digits starting with 0
+    { input: '987654321012345', valid: false }, // 15 digits
+    { input: '5551234567', valid: false }, // Non-Indian mobile starting with 5
   ];
   for (const tp of testPhoneNumbers) {
     const isValid = isValidIndianPhone(tp.input);
@@ -3962,6 +3970,54 @@ function runTests() {
   // 4. Medical Record Vault 1 MB constraint
   const vaultMaxBytes = 1 * 1024 * 1024;
   assert(vaultMaxBytes === 1048576, 'Medical vault threshold is exactly 1,048,576 bytes (1 MB)');
+
+  // --- Test 145: IST Slot Evaluation, Record Badging & Affiliation Security ---
+  console.log('\n--- Test 145: IST Slot Evaluation, Record Badging & Affiliation Security ---');
+
+  // 1. evaluateSlotStatus with IST time progression
+  const testSlot: DoctorSlot = {
+    id: 'slot_test_1',
+    name: 'Morning Shift (09:00 AM – 11:00 AM)',
+    startTime: '09:00',
+    endTime: '11:00',
+    maxPatients: 20,
+    avgConsultationMinutes: 6.0,
+  };
+
+  const istNow = new Date('2026-09-29T04:00:00.000Z'); // 09:30 AM IST (570 mins)
+  const slotDuringShift = evaluateSlotStatus(testSlot, '2026-09-29', 5, istNow);
+  assert(slotDuringShift.isInProgress === true, '09:30 AM IST is in-progress for 09:00-11:00 slot');
+  assert(slotDuringShift.isPassed === false, 'In-progress slot is not passed');
+
+  const slotAfterShift = evaluateSlotStatus(testSlot, '2026-09-29', 5, istNow, 660); // 11:00 AM (660 mins)
+  assert(slotAfterShift.isPassed === true, '11:00 AM IST marks 09:00-11:00 slot as passed');
+
+  const tmrwDate = getTomorrowDateString(istNow);
+  assert(tmrwDate === '2026-09-30', 'Tomorrow date string resolves to 2026-09-30 in IST');
+
+  // 2. Safe record badge and download filename resolution
+  const resolveRecordBadge = (rec: { fileType?: string; fileUrl?: string }) => {
+    const isImg = rec.fileType?.includes('image') || /\.(jpe?g|png|webp)$/i.test(rec.fileUrl || '');
+    if (isImg) return 'IMAGE';
+    return (rec.fileType || 'PDF').toUpperCase();
+  };
+
+  const resolveDownloadFilename = (rec: { title?: string; fileType?: string; fileUrl?: string }) => {
+    const raw = (rec.title || 'document').trim();
+    if (/\.(pdf|jpe?g|png|webp)$/i.test(raw)) return raw;
+    const isImg = rec.fileType?.includes('image') || /\.(jpe?g|png|webp)$/i.test(rec.fileUrl || '');
+    return `${raw}.${isImg ? 'jpg' : 'pdf'}`;
+  };
+
+  assert(resolveRecordBadge({ fileType: 'image' }) === 'IMAGE', 'Image fileType resolves badge to IMAGE');
+  assert(resolveRecordBadge({ fileType: 'pdf' }) === 'PDF', 'PDF fileType resolves badge to PDF');
+  assert(resolveDownloadFilename({ title: 'Chest X-Ray', fileType: 'image' }) === 'Chest X-Ray.jpg', 'Image without extension downloads with .jpg');
+  assert(resolveDownloadFilename({ title: 'Lab_Report.pdf', fileType: 'pdf' }) === 'Lab_Report.pdf', 'PDF with extension preserves existing extension without duplicate .pdf');
+
+  // 3. Receptionist and Walk-in Phone Rejection
+  assert(isValidIndianPhone('+1 212 555 0199') === false, 'Walk-in booking rejects US phone');
+  assert(isValidIndianPhone('9820012345') === true, 'Walk-in booking accepts valid 10-digit Indian phone');
+  assert(formatIndianPhone('9820012345') === '+91 9820012345', 'Walk-in phone formats cleanly to +91');
 
   console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);

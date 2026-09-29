@@ -144,6 +144,11 @@ export const getIndianTimeMinutes = (d: Date = new Date()): number => {
   }
 };
 
+export const getTomorrowDateString = (d: Date = new Date()): string => {
+  const tomorrow = new Date(d.getTime() + 24 * 60 * 60 * 1000);
+  return getLocalDateString(tomorrow);
+};
+
 export const evaluateSlotStatus = (
   slot: DoctorSlot,
   appointmentDate: string,
@@ -152,24 +157,15 @@ export const evaluateSlotStatus = (
   overrideCurrentMinutes?: number,
   activeWaitingCount?: number
 ): SlotStatusResult => {
-  const localYear = now.getFullYear();
-  const localMonth = String(now.getMonth() + 1).padStart(2, '0');
-  const localDay = String(now.getDate()).padStart(2, '0');
-  const localTodayStr = `${localYear}-${localMonth}-${localDay}`;
-  const istTodayStr = getLocalDateString(now);
+  const todayStr = getLocalDateString(now);
 
-  const isToday = appointmentDate === localTodayStr || appointmentDate === istTodayStr;
-  const isPastDate = appointmentDate < localTodayStr && appointmentDate < istTodayStr;
+  const isToday = appointmentDate === todayStr;
+  const isPastDate = appointmentDate < todayStr;
 
-  let currentMinutes: number;
-  if (typeof overrideCurrentMinutes === 'number' && !isNaN(overrideCurrentMinutes)) {
-    currentMinutes = overrideCurrentMinutes;
-  } else if (now.getTimezoneOffset() === 0) {
-    // When running on UTC server (Render cloud production), use IST minutes
-    currentMinutes = getIndianTimeMinutes(now);
-  } else {
-    currentMinutes = now.getHours() * 60 + now.getMinutes();
-  }
+  const currentMinutes =
+    typeof overrideCurrentMinutes === 'number' && !isNaN(overrideCurrentMinutes)
+      ? overrideCurrentMinutes
+      : getIndianTimeMinutes(now);
 
   const slotStartMins = timeToMinutes(slot.startTime);
   let slotEndMins = timeToMinutes(slot.endTime);

@@ -54,13 +54,22 @@ export const fetchMedicalRecordBlob = async (recordId: string): Promise<Blob> =>
 };
 
 export const viewMedicalRecord = async (recordId: string, _title?: string): Promise<void> => {
-  const blob = await fetchMedicalRecordBlob(recordId);
-  const blobUrl = URL.createObjectURL(blob);
-  const w = window.open(blobUrl, '_blank');
-  if (!w) {
-    window.location.href = blobUrl;
+  const targetWindow = typeof window !== 'undefined' ? window.open('about:blank', '_blank') : null;
+  try {
+    const blob = await fetchMedicalRecordBlob(recordId);
+    const blobUrl = URL.createObjectURL(blob);
+    if (targetWindow && !targetWindow.closed) {
+      targetWindow.location.href = blobUrl;
+    } else if (typeof window !== 'undefined') {
+      window.location.href = blobUrl;
+    }
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 300000);
+  } catch (err) {
+    if (targetWindow && !targetWindow.closed) {
+      targetWindow.close();
+    }
+    throw err;
   }
-  setTimeout(() => URL.revokeObjectURL(blobUrl), 300000);
 };
 
 export const downloadMedicalRecord = async (recordId: string, filename?: string): Promise<void> => {
@@ -68,7 +77,14 @@ export const downloadMedicalRecord = async (recordId: string, filename?: string)
   const blobUrl = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = blobUrl;
-  link.download = filename || `medical-record-${recordId}`;
+
+  let safeName = (filename || `medical-record-${recordId}`).trim();
+  if (!/\.[a-zA-Z0-9]+$/.test(safeName)) {
+    const ext = blob.type.includes('pdf') ? '.pdf' : blob.type.includes('png') ? '.png' : blob.type.includes('webp') ? '.webp' : '.jpg';
+    safeName = `${safeName}${ext}`;
+  }
+
+  link.download = safeName;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);

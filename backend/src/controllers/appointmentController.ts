@@ -16,7 +16,7 @@ import {
 } from '../utils/scheduleUtils';
 import crypto from 'crypto';
 import { canTransition } from '../utils/appointmentStateMachine';
-import { formatIndianPhone, sanitizeIndianPhone } from '../utils/phoneUtils';
+import { formatIndianPhone, sanitizeIndianPhone, isValidIndianPhone } from '../utils/phoneUtils';
 import { verifyReceptionistDoctorAccess, isDoctorEligibleForClinicalPractice, isClinicActive } from '../utils/authGuards';
 
 // Helper to calculate estimated time given start time "09:00" and offset minutes (retained for backward compatibility)
@@ -307,6 +307,13 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
     if (req.user.role === 'DOCTOR') {
       // Doctor booking a walk-in patient with phone normalization
       const cleanPhone = patientPhone ? String(patientPhone).trim() : '';
+      if (cleanPhone && !isValidIndianPhone(cleanPhone)) {
+        res.status(400).json({
+          success: false,
+          message: 'Invalid patient phone number. Must be a valid 10-digit Indian mobile number (+91).',
+        });
+        return;
+      }
       const normalizedPhone = formatIndianPhone(cleanPhone);
       const rawDigits = sanitizeIndianPhone(cleanPhone);
 
@@ -737,6 +744,11 @@ export const getAppointmentById = async (req: AuthRequest, res: Response): Promi
       // Restrict medical records strictly to the assigned doctor or the patient themselves (Finding #21)
       if (appointment.patient && !isDoctor && !isPatient) {
         delete (appointment.patient as any).medicalRecords;
+      } else if (appointment.patient && (appointment.patient as any).medicalRecords) {
+        (appointment.patient as any).medicalRecords = (appointment.patient as any).medicalRecords.map((rec: any) => ({
+          ...rec,
+          fileUrl: `/api/records/file/${rec.id}`,
+        }));
       }
 
     res.json({ success: true, data: appointment });

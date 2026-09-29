@@ -38,6 +38,12 @@ export const getDoctors = async (req: Request, res: Response): Promise<void> => 
     const whereClause: any = {
       isVerified: true,
       verificationStatus: 'VERIFIED',
+      clinics: {
+        some: {
+          status: { in: ['ACTIVE', 'ACCEPTED'] },
+          clinic: { isVerified: true, verificationStatus: 'VERIFIED' },
+        },
+      },
     };
 
     if (specialty && typeof specialty === 'string' && specialty !== 'All') {

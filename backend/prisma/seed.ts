@@ -341,6 +341,14 @@ async function main() {
     },
   });
 
+  await prisma.clinicDoctor.create({
+    data: {
+      clinicId: clinicUser.clinicProfile!.id,
+      doctorId: drElenaUser.doctorProfile!.id,
+      status: 'ACTIVE',
+    },
+  });
+
   // Link Dr. Sarah Jenkins to Receptionist Clara
   await prisma.doctorReceptionist.create({
     data: {
