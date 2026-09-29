@@ -19,7 +19,8 @@ export const sanitizeIndianPhone = (raw: string | undefined | null): string => {
   // Strip explicit +91 or + prefix
   if (cleaned.startsWith('+91')) {
     cleaned = cleaned.slice(3).trim();
-  } else if (cleaned.startsWith('+')) {
+  } else if (cleaned.startsWith('+') && /^\+[6-9]/.test(cleaned)) {
+    // If user typed + before an Indian mobile starting with 6-9
     cleaned = cleaned.slice(1).trim();
   }
 
@@ -51,6 +52,11 @@ export const formatIndianPhone = (raw: string | undefined | null): string => {
  * Validates whether the given string contains a valid 10-digit Indian mobile number.
  */
 export const isValidIndianPhone = (raw: string | undefined | null): boolean => {
+  if (!raw) return false;
+  const trimmed = raw.trim();
+  if (trimmed.startsWith('+') && !trimmed.startsWith('+91')) {
+    return false;
+  }
   const digits = sanitizeIndianPhone(raw);
-  return digits.length === 10;
+  return digits.length === 10 && /^[6-9]/.test(digits);
 };

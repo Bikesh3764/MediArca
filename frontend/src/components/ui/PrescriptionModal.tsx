@@ -51,7 +51,7 @@ export const PrescriptionModal: React.FC<PrescriptionModalProps> = ({ appointmen
         <div className="my-6 grid grid-cols-2 gap-4 pb-6 border-b border-[#f0f0f0] text-xs">
           <div>
             <span className="text-[#86868b] block">Healthcare Provider</span>
-            <h3 className="text-[16px] font-semibold text-[#1d1d1f] mt-0.5">{doctor.user.fullName}</h3>
+            <h3 className="text-[16px] font-semibold text-[#1d1d1f] mt-0.5">{doctor?.user?.fullName || 'Practitioner'}</h3>
             <p className="text-[#0088e8] font-medium">{doctor.specialty} • {doctor.qualifications}</p>
             <p className="text-[#86868b] mt-1">{doctor.clinicAddress}</p>
           </div>

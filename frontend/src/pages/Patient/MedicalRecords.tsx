@@ -15,9 +15,19 @@ import {
   Calendar,
   Stethoscope,
   User as UserIcon,
+  UploadCloud,
+  CheckCircle2,
+  AlertCircle,
+  Sparkles,
 } from 'lucide-react';
+import {
+  processVaultDocument,
+  formatFileSize,
+  OptimizationResult,
+} from '../../utils/documentOptimizer';
 
 const CATEGORIES = ['All', 'Lab Report', 'Scan', 'Discharge Summary', 'Other'];
+const UPLOAD_CATEGORIES = ['Lab Report', 'Scan', 'Discharge Summary', 'Other'];
 
 export const MedicalRecords: React.FC = () => {
   const [records, setRecords] = useState<MedicalRecord[]>([]);
@@ -90,6 +100,70 @@ export const MedicalRecords: React.FC = () => {
     }
   };
 
+  // Upload State & Handlers
+  const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [uploadCategory, setUploadCategory] = useState<string>('Lab Report');
+  const [uploadTitle, setUploadTitle] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [optimizationResult, setOptimizationResult] = useState<OptimizationResult | null>(null);
+  const [optimizing, setOptimizing] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadError(null);
+    setOptimizing(true);
+    try {
+      const result = await processVaultDocument(file);
+      setSelectedFile(result.file);
+      setOptimizationResult(result);
+      if (!uploadTitle.trim()) {
+        const baseName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+        setUploadTitle(baseName);
+      }
+    } catch (err: any) {
+      setUploadError(err.message || 'Failed to process document');
+      setSelectedFile(null);
+      setOptimizationResult(null);
+    } finally {
+      setOptimizing(false);
+    }
+  };
+
+  const handleUploadSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedFile) {
+      setUploadError('Please select a diagnostic report or medical document to upload.');
+      return;
+    }
+    setUploading(true);
+    setUploadError(null);
+    try {
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+      formData.append('title', uploadTitle.trim() || selectedFile.name);
+      formData.append('category', uploadCategory);
+
+      await api.uploadRecord(formData);
+      setUploadSuccess('Medical document securely stored in your vault.');
+      await fetchRecords();
+      setTimeout(() => {
+        setIsUploadOpen(false);
+        setSelectedFile(null);
+        setOptimizationResult(null);
+        setUploadTitle('');
+        setUploadSuccess(null);
+      }, 1200);
+    } catch (err: any) {
+      setUploadError(err.message || 'Failed to upload document');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const filteredRecords = selectedCategory === 'All'
     ? records
     : records.filter((r) => r.category.toLowerCase().includes(selectedCategory.toLowerCase()));
@@ -142,6 +216,24 @@ export const MedicalRecords: React.FC = () => {
       navItems={navItems}
       title="Medical Records"
       subtitle="Your diagnostic reports, clinical notes, and prescriptions"
+      headerAction={
+        <AppleButton
+          variant="primary"
+          size="sm"
+          onClick={() => {
+            setIsUploadOpen(true);
+            setUploadError(null);
+            setUploadSuccess(null);
+            setSelectedFile(null);
+            setOptimizationResult(null);
+            setUploadTitle('');
+          }}
+          className="flex items-center gap-1.5"
+        >
+          <UploadCloud className="w-4 h-4" />
+          <span>Upload Document</span>
+        </AppleButton>
+      }
     >
       <div className="space-y-6">
         {/* Category Filters Bar */}
@@ -308,6 +400,145 @@ export const MedicalRecords: React.FC = () => {
                 )
               ) : null}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Upload Modal */}
+      {isUploadOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xl animate-fadeIn">
+          <div className="bg-white rounded-[24px] border border-[#e5e5ea] max-w-lg w-full flex flex-col shadow-2xl overflow-hidden">
+            <div className="flex justify-between items-center p-5 border-b border-[#f0f0f0]">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-full bg-[#0088e8]/10 text-[#0088e8] flex items-center justify-center">
+                  <UploadCloud className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-semibold text-[#1d1d1f]">Upload to Health Vault</h3>
+                  <p className="text-xs text-[#86868b]">Lab findings, scans, and clinical reports (max 1 MB)</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!uploading) setIsUploadOpen(false);
+                }}
+                className="p-1.5 rounded-full hover:bg-gray-100 text-[#86868b] transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleUploadSubmit} className="p-6 space-y-4">
+              {uploadSuccess ? (
+                <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-center gap-2.5 text-xs font-medium">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+                  <span>{uploadSuccess}</span>
+                </div>
+              ) : null}
+
+              {uploadError ? (
+                <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 flex items-start gap-2.5 text-xs">
+                  <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0 mt-0.5" />
+                  <span className="leading-relaxed">{uploadError}</span>
+                </div>
+              ) : null}
+
+              {/* Category Selection */}
+              <div>
+                <label className="block text-xs font-semibold text-[#1d1d1f] mb-1.5">Document Category</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {UPLOAD_CATEGORIES.map((cat) => (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setUploadCategory(cat)}
+                      className={`px-3 py-2 rounded-xl text-xs font-medium border text-left transition-all ${
+                        uploadCategory === cat
+                          ? 'border-[#0088e8] bg-[#0088e8]/5 text-[#0088e8] font-semibold'
+                          : 'border-[#e5e5ea] bg-white text-[#48484a] hover:bg-[#f5f5f7]'
+                      }`}
+                    >
+                      {cat === 'Scan' ? 'Scan / Imaging' : cat}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[11px] text-[#86868b] mt-1.5 flex items-center gap-1">
+                  <span>ℹ️ Prescriptions are generated digitally by doctors and archived automatically.</span>
+                </p>
+              </div>
+
+              {/* Document Title */}
+              <div>
+                <label className="block text-xs font-semibold text-[#1d1d1f] mb-1.5">Document Title</label>
+                <input
+                  type="text"
+                  value={uploadTitle}
+                  onChange={(e) => setUploadTitle(e.target.value)}
+                  placeholder="e.g. Complete Blood Count (CBC) Report"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#e5e5ea] bg-[#f5f5f7] text-xs text-[#1d1d1f] focus:outline-none focus:ring-2 focus:ring-[#0088e8] focus:bg-white transition-all"
+                />
+              </div>
+
+              {/* File Dropzone */}
+              <div>
+                <label className="block text-xs font-semibold text-[#1d1d1f] mb-1.5">Select File (PDF, JPEG, PNG, WebP)</label>
+                <label className="border-2 border-dashed border-[#d2d2d7] hover:border-[#0088e8] rounded-2xl p-5 flex flex-col items-center justify-center cursor-pointer transition-colors bg-[#f5f5f7]/50 hover:bg-[#f5f5f7]">
+                  <input
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                    disabled={uploading || optimizing}
+                  />
+                  {optimizing ? (
+                    <div className="flex items-center gap-2 text-xs text-[#0088e8]">
+                      <div className="w-4 h-4 border-2 border-[#0088e8] border-t-transparent rounded-full animate-spin" />
+                      <span>Optimizing document client-side...</span>
+                    </div>
+                  ) : selectedFile ? (
+                    <div className="text-center space-y-1">
+                      <p className="text-xs font-semibold text-[#1d1d1f] break-all">{selectedFile.name}</p>
+                      <p className="text-[11px] text-[#86868b]">Size: {formatFileSize(selectedFile.size)}</p>
+                      {optimizationResult?.isOptimized && (
+                        <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-medium border border-emerald-200 mt-1">
+                          <Sparkles className="w-3 h-3" />
+                          <span>Compressed: {optimizationResult.reductionPercentage}% saved</span>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-center space-y-1">
+                      <UploadCloud className="w-8 h-8 text-[#86868b] mx-auto mb-1 opacity-70" />
+                      <p className="text-xs font-semibold text-[#1d1d1f]">Click or drag file to upload</p>
+                      <p className="text-[11px] text-[#86868b]">PDF or photo up to 1 MB (photos compressed automatically)</p>
+                    </div>
+                  )}
+                </label>
+              </div>
+
+              {/* Actions */}
+              <div className="pt-2 flex items-center justify-end gap-2">
+                <AppleButton
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsUploadOpen(false)}
+                  disabled={uploading}
+                >
+                  Cancel
+                </AppleButton>
+                <AppleButton
+                  type="submit"
+                  variant="primary"
+                  size="sm"
+                  disabled={!selectedFile || uploading || optimizing}
+                  className="min-w-[120px]"
+                >
+                  {uploading ? 'Uploading...' : 'Save to Vault'}
+                </AppleButton>
+              </div>
+            </form>
           </div>
         </div>
       )}

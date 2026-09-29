@@ -211,15 +211,38 @@ export const formatDoctorDegrees = (qualifications?: string | null): string => {
 };
 
 export const getLocalDateString = (d: Date = new Date()): string => {
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+  try {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(d);
+  } catch {
+    const istMs = d.getTime() + 330 * 60 * 1000;
+    const istDate = new Date(istMs);
+    const year = istDate.getUTCFullYear();
+    const month = String(istDate.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(istDate.getUTCDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+};
+
+export const getIndianTimeMinutes = (d: Date = new Date()): number => {
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Kolkata',
+      hour: 'numeric',
+      minute: 'numeric',
+      hour12: false,
+    }).formatToParts(d);
+    let hour = parseInt(parts.find((p) => p.type === 'hour')?.value || '0', 10);
+    if (hour === 24) hour = 0;
+    const minute = parseInt(parts.find((p) => p.type === 'minute')?.value || '0', 10);
+    return hour * 60 + minute;
+  } catch {
+    const utcMinutes = d.getUTCHours() * 60 + d.getUTCMinutes();
+    return (utcMinutes + 330) % (24 * 60);
+  }
 };
 
 export const getTomorrowDateString = (d: Date = new Date()): string => {
-  const tomorrow = new Date(d);
-  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrow = new Date(d.getTime() + 24 * 60 * 60 * 1000);
   return getLocalDateString(tomorrow);
 };
 
@@ -276,7 +299,7 @@ export const evaluateSlotStatus = (
   const currentMinutes =
     typeof overrideCurrentMinutes === 'number' && !isNaN(overrideCurrentMinutes)
       ? overrideCurrentMinutes
-      : now.getHours() * 60 + now.getMinutes();
+      : getIndianTimeMinutes(now);
 
   const slotStartMins = timeToMinutes(slot.startTime);
   let slotEndMins = timeToMinutes(slot.endTime);
@@ -351,9 +374,9 @@ export const DEMO_DOCTORS: Doctor[] = [
     specialty: 'Cardiology',
     qualifications: 'MD, FACC',
     experienceYears: 14,
-    consultationFee: 80.0,
+    consultationFee: 800,
     bio: 'Specialist in preventive cardiology, hypertension, coronary artery disease, and heart failure management with over 14 years of clinical experience.',
-    clinicAddress: 'City Heart & Vascular Institute, Suite 402, New York, NY',
+    clinicAddress: 'City Heart & Vascular Institute, Suite 402, Bandra West, Mumbai, MH',
     isVerified: true,
     checkingStartTime: '09:00',
     checkingEndTime: '20:00',
@@ -386,9 +409,9 @@ export const DEMO_DOCTORS: Doctor[] = [
         clinic: {
           id: 'clinic_demo_1',
           clinicName: 'City Heart & Vascular Institute',
-          address: 'Suite 402, 5th Avenue',
-          city: 'New York',
-          phone: '+1 (212) 555-0199',
+          address: 'Suite 402, Hill Road, Bandra West',
+          city: 'Mumbai',
+          phone: '+91 98200 12345',
           isVerified: true,
         },
       },
@@ -397,10 +420,10 @@ export const DEMO_DOCTORS: Doctor[] = [
         clinicId: 'clinic_demo_2',
         clinic: {
           id: 'clinic_demo_2',
-          clinicName: 'Manhattan Specialty Outpatient Clinic',
-          address: 'Floor 3, Lexington Ave',
-          city: 'New York',
-          phone: '+1 (212) 555-0244',
+          clinicName: 'Mumbai Specialty Outpatient Clinic',
+          address: 'Floor 3, Linking Road, Khar West',
+          city: 'Mumbai',
+          phone: '+91 98200 54321',
           isVerified: true,
         },
       },
@@ -418,9 +441,9 @@ export const DEMO_DOCTORS: Doctor[] = [
     specialty: 'Dermatology',
     qualifications: 'MD, Board Certified',
     experienceYears: 10,
-    consultationFee: 65.0,
+    consultationFee: 650,
     bio: 'Consultant dermatologist focusing on acne, eczema, psoriasis, skin cancer screening, and cosmetic laser treatments.',
-    clinicAddress: 'Apex Skin & Aesthetics Clinic, Floor 2, San Francisco, CA',
+    clinicAddress: 'Apex Skin & Aesthetics Clinic, Floor 2, Indiranagar, Bengaluru, KA',
     isVerified: true,
     checkingStartTime: '10:00',
     checkingEndTime: '18:30',
@@ -453,9 +476,9 @@ export const DEMO_DOCTORS: Doctor[] = [
         clinic: {
           id: 'clinic_demo_3',
           clinicName: 'Apex Skin & Aesthetics Clinic',
-          address: 'Floor 2, Market Street',
-          city: 'San Francisco',
-          phone: '+1 (415) 555-0177',
+          address: 'Floor 2, 100 Feet Road, Indiranagar',
+          city: 'Bengaluru',
+          phone: '+91 98450 11223',
           isVerified: true,
         },
       },
@@ -473,9 +496,9 @@ export const DEMO_DOCTORS: Doctor[] = [
     specialty: 'Pediatrics',
     qualifications: 'MD, FAAP',
     experienceYears: 12,
-    consultationFee: 70.0,
+    consultationFee: 700,
     bio: 'Dedicated pediatrician providing comprehensive child wellness care, developmental tracking, vaccinations, and adolescent healthcare.',
-    clinicAddress: 'Little Steps Children Care, Building B, Chicago, IL',
+    clinicAddress: 'Little Steps Children Care, Building B, Vasant Vihar, New Delhi, DL',
     isVerified: true,
     checkingStartTime: '08:30',
     checkingEndTime: '18:00',
@@ -508,9 +531,9 @@ export const DEMO_DOCTORS: Doctor[] = [
         clinic: {
           id: 'clinic_demo_4',
           clinicName: 'Little Steps Children Care',
-          address: 'Building B, Michigan Ave',
-          city: 'Chicago',
-          phone: '+1 (312) 555-0188',
+          address: 'Building B, Community Centre, Vasant Vihar',
+          city: 'New Delhi',
+          phone: '+91 98110 33445',
           isVerified: true,
         },
       },
@@ -520,9 +543,9 @@ export const DEMO_DOCTORS: Doctor[] = [
         clinic: {
           id: 'clinic_demo_5',
           clinicName: 'Metro Pediatric Center',
-          address: 'Suite 104, West Adams St',
-          city: 'Chicago',
-          phone: '+1 (312) 555-0192',
+          address: 'Suite 104, Palam Marg, Vasant Vihar',
+          city: 'New Delhi',
+          phone: '+91 98110 55667',
           isVerified: true,
         },
       },
@@ -1142,7 +1165,7 @@ export const api = {
 
         return {
           doctorId: doctor.id,
-          doctorName: doctor.user.fullName,
+          doctorName: doctor?.user?.fullName || 'Doctor',
           appointmentDate,
           selectedSlotId: chosen.slot.id,
           selectedSlot: chosen,

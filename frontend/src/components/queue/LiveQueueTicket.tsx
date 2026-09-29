@@ -82,22 +82,22 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
           {/* Doctor Info */}
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] overflow-hidden flex-shrink-0">
-              {doctor.user.avatarUrl ? (
+              {doctor.user?.avatarUrl ? (
                 <img
                   src={doctor.user.avatarUrl}
-                  alt={doctor.user.fullName}
+                  alt={doctor.user?.fullName || 'Doctor'}
                   className="w-full h-full object-cover"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center font-bold text-xl text-[#0088e8]">
-                  {doctor.user.fullName[0]}
+                  {(doctor.user?.fullName || 'D')[0]}
                 </div>
               )}
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="text-[19px] font-semibold text-[#1d1d1f] tracking-tight">
-                  {doctor.user.fullName}
+                  {doctor.user?.fullName || 'Doctor'}
                 </h3>
                 <CabinStatusBadge status={doctor.cabinStatus} expectedReturnTime={doctor.expectedReturnTime} size="sm" />
               </div>
@@ -259,7 +259,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
               <div className="flex items-center gap-2 text-emerald-800 bg-emerald-100/70 p-3 rounded-xl text-xs font-medium border border-emerald-300">
                 <CheckCircle2 className="w-4 h-4 text-emerald-700 flex-shrink-0" />
                 <span>
-                  <strong>It is your turn!</strong> Doctor {doctor.user.fullName} is ready to consult with you now.
+                  <strong>It is your turn!</strong> Doctor {doctor.user?.fullName || 'the Doctor'} is ready to consult with you now.
                 </span>
               </div>
             ) : (

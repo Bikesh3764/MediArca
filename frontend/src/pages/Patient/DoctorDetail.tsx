@@ -225,10 +225,10 @@ export const DoctorDetail: React.FC = () => {
             <UtilityCard>
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 pb-6 border-b border-[#f0f0f0]">
                 <div className="w-24 h-24 rounded-full bg-white border border-[#e5e5ea] overflow-hidden flex-shrink-0 flex items-center justify-center shadow-xs">
-                  {doctor.user.avatarUrl ? (
+                  {doctor.user?.avatarUrl ? (
                     <img
                       src={doctor.user.avatarUrl}
-                      alt={doctor.user.fullName}
+                      alt={doctor.user?.fullName || 'Doctor'}
                       className="w-full h-full object-cover"
                       onError={(e) => {
                         (e.currentTarget as HTMLElement).style.display = 'none';
@@ -237,13 +237,13 @@ export const DoctorDetail: React.FC = () => {
                       }}
                     />
                   ) : null}
-                  <div className={`doc-detail-fallback w-full h-full ${doctor.user.avatarUrl ? 'hidden' : 'flex'} items-center justify-center text-3xl font-bold bg-[#0088e8] text-white shadow-inner select-none`}>
-                    {doctor.user.fullName.replace(/^Dr\.\s*/i, '').trim()[0] || 'D'}
+                  <div className={`doc-detail-fallback w-full h-full ${doctor.user?.avatarUrl ? 'hidden' : 'flex'} items-center justify-center text-3xl font-bold bg-[#0088e8] text-white shadow-inner select-none`}>
+                    {(doctor.user?.fullName ? doctor.user.fullName.replace(/^Dr\.\s*/i, '').trim()[0] : null) || 'D'}
                   </div>
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h2 className="text-2xl font-semibold text-[#1d1d1f] tracking-tight">{doctor.user.fullName}</h2>
+                    <h2 className="text-2xl font-semibold text-[#1d1d1f] tracking-tight">{doctor.user?.fullName || 'Doctor'}</h2>
                     <span title="Verified Practitioner"><ShieldCheck className="w-5 h-5 text-[#10b981]" /></span>
                   </div>
                   <div className="mt-1.5 flex items-center gap-2 flex-wrap">
@@ -370,7 +370,7 @@ export const DoctorDetail: React.FC = () => {
                         No Affiliated Practice Venue
                       </h4>
                       <p className="text-xs text-amber-800/90 mt-1 leading-relaxed">
-                        Dr. {doctor.user.fullName} is currently not practicing at any verified clinic location. Online queue booking is disabled until an active clinic affiliation is established.
+                        Dr. {doctor.user?.fullName || 'Doctor'} is currently not practicing at any verified clinic location. Online queue booking is disabled until an active clinic affiliation is established.
                       </p>
                     </div>
                   </div>
@@ -666,7 +666,7 @@ export const DoctorDetail: React.FC = () => {
         portalType="PATIENT"
         portalSubtitle="PATIENT PORTAL"
         navItems={patientNavItems}
-        title={doctor.user.fullName}
+        title={doctor.user?.fullName || 'Doctor'}
         subtitle={`${doctor.specialty} • ${doctor.experienceYears} Years Experience`}
         headerAction={
           <AppleButton
@@ -689,7 +689,7 @@ export const DoctorDetail: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#f5f5f7] pb-16">
-      <SubNav title={doctor.user.fullName} subtitle={doctor.specialty}>
+      <SubNav title={doctor.user?.fullName || 'Doctor'} subtitle={doctor.specialty}>
         <AppleButton variant="ghost" size="sm" onClick={() => navigate('/doctors')} className="flex items-center gap-1">
           <ChevronLeft className="w-4 h-4" />
           Back to Directory

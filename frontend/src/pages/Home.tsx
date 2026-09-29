@@ -410,10 +410,10 @@ export const Home: React.FC = () => {
                       onClick={() => navigate(getHomeDoctorDetailPath(doctor.id))}
                       className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-[#f5f5f7] ring-2 ring-black/[0.05] border-2 border-white shadow-md overflow-hidden shrink-0 flex items-center justify-center cursor-pointer hover:opacity-95 transition-all group-hover:scale-[1.02]"
                     >
-                      {doctor.user.avatarUrl ? (
+                      {doctor.user?.avatarUrl ? (
                         <img
                           src={doctor.user.avatarUrl}
-                          alt={doctor.user.fullName}
+                          alt={doctor.user?.fullName || 'Doctor'}
                           className="w-full h-full object-cover"
                           loading="eager"
                           onError={(e) => {
@@ -424,9 +424,9 @@ export const Home: React.FC = () => {
                         />
                       ) : null}
                       <div
-                        className={`doc-fallback-home w-full h-full ${doctor.user.avatarUrl ? 'hidden' : 'flex'} items-center justify-center font-bold text-3xl text-white bg-gradient-to-br from-[#0088e8] to-[#0066cc] select-none`}
+                        className={`doc-fallback-home w-full h-full ${doctor.user?.avatarUrl ? 'hidden' : 'flex'} items-center justify-center font-bold text-3xl text-white bg-gradient-to-br from-[#0088e8] to-[#0066cc] select-none`}
                       >
-                        {doctor.user.fullName.replace(/^Dr\.\s*/i, '').trim()[0] || 'D'}
+                        {(doctor.user?.fullName ? doctor.user.fullName.replace(/^Dr\.\s*/i, '').trim()[0] : null) || 'D'}
                       </div>
                     </div>
 
@@ -436,9 +436,9 @@ export const Home: React.FC = () => {
                         <h3
                           onClick={() => navigate(getHomeDoctorDetailPath(doctor.id))}
                           className="text-lg sm:text-xl font-bold text-[#1d1d1f] hover:text-[#0088e8] cursor-pointer tracking-tight transition-colors line-clamp-1"
-                          title={doctor.user.fullName}
+                          title={doctor.user?.fullName || 'Doctor'}
                         >
-                          {doctor.user.fullName}
+                          {doctor.user?.fullName || 'Doctor'}
                         </h3>
                         <CheckCircle2 className="w-5 h-5 text-[#0088e8] fill-[#0088e8]/10 shrink-0" />
                       </div>

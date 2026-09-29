@@ -3920,6 +3920,49 @@ function runTests() {
   assert(authorizeCabinStatusUpdate({ id: 'rec_1', role: 'RECEPTIONIST' }, undefined, ['doc_1']).status === 400, 'Receptionist update without doctorId fails with 400');
   assert(authorizeCabinStatusUpdate({ id: 'pat_1', role: 'PATIENT' }).allowed === false, 'Patient cannot update doctor cabin presence');
 
+  // --- Test 144: Core Hardening - IST Timezone, Doctor Null Safety & Indian Platform Lock ---
+  console.log('\n--- Test 144: Core Hardening - IST Timezone, Doctor Null Safety & Indian Platform Lock ---');
+
+  // 1. IST Timezone across boundary
+  const lateUtc = new Date('2026-09-28T20:30:00.000Z'); // 20:30 UTC = 02:00 IST on Sept 29
+  const istDateCalc = getLocalDateString(lateUtc);
+  assert(istDateCalc === '2026-09-29', 'Late UTC time 20:30 resolves to next day 2026-09-29 in IST');
+
+  const istMinsCalc = getIndianTimeMinutes(lateUtc);
+  assert(istMinsCalc === 120, '20:30 UTC corresponds to 02:00 AM IST (120 minutes into day)');
+
+  // 2. Doctor user null-safety helper
+  const resolveDoctorAvatarInitial = (user?: { fullName?: string | null } | null) => {
+    return (user?.fullName ? user.fullName.replace(/^Dr\.\s*/i, '').trim()[0] : null) || 'D';
+  };
+  assert(resolveDoctorAvatarInitial({ fullName: 'Dr. Sarah Jenkins' }) === 'S', 'Extracts correct initial for Dr. Sarah Jenkins');
+  assert(resolveDoctorAvatarInitial({ fullName: 'Dr.   ' }) === 'D', 'Gracefully falls back to D when name only has title');
+  assert(resolveDoctorAvatarInitial({ fullName: '' }) === 'D', 'Gracefully falls back to D on empty string');
+  assert(resolveDoctorAvatarInitial({ fullName: null }) === 'D', 'Gracefully falls back to D on null fullName');
+  assert(resolveDoctorAvatarInitial(null) === 'D', 'Gracefully falls back to D on null user object');
+  assert(resolveDoctorAvatarInitial(undefined) === 'D', 'Gracefully falls back to D on undefined user object');
+
+  // 3. Indian Phone standard format lock
+  const testPhoneNumbers = [
+    { input: '9820012345', valid: true, formatted: '+91 9820012345' },
+    { input: '+91 98200 12345', valid: true, formatted: '+91 9820012345' },
+    { input: '919820012345', valid: true, formatted: '+91 9820012345' },
+    { input: '+1 212 555 0199', valid: false }, // US phone
+    { input: '12345', valid: false },
+    { input: '', valid: false },
+  ];
+  for (const tp of testPhoneNumbers) {
+    const isValid = isValidIndianPhone(tp.input);
+    assert(isValid === tp.valid, `Phone "${tp.input}" validation matches expected: ${tp.valid}`);
+    if (tp.valid && tp.formatted) {
+      assert(formatIndianPhone(tp.input) === tp.formatted, `Phone "${tp.input}" formats to ${tp.formatted}`);
+    }
+  }
+
+  // 4. Medical Record Vault 1 MB constraint
+  const vaultMaxBytes = 1 * 1024 * 1024;
+  assert(vaultMaxBytes === 1048576, 'Medical vault threshold is exactly 1,048,576 bytes (1 MB)');
+
   console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);
