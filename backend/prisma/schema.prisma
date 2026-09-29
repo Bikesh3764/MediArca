@@ -46,6 +46,9 @@ model DoctorProfile {
   rating                Float         @default(5.0)
   totalReviews          Int           @default(0)
   slots                 String?       // JSON array of DoctorSlot[]: [{id, name, startTime, endTime, maxPatients, avgConsultationMinutes}]
+  cabinStatus           String        @default("IN_CABIN") // "IN_CABIN", "STEPPED_OUT", "NOT_IN_CABIN"
+  expectedReturnTime    String?       // e.g. "11:45 AM" or "in 15 mins"
+  cabinStatusUpdatedAt  DateTime?     @default(now())
 
   appointments          Appointment[]
   reviews               Review[]

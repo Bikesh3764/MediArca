@@ -27,6 +27,27 @@ async function ensureSchema() {
     } catch {}
   }
   try {
+    await prisma.$executeRawUnsafe(`ALTER TABLE "DoctorProfile" ADD COLUMN IF NOT EXISTS "cabinStatus" TEXT NOT NULL DEFAULT 'IN_CABIN';`);
+  } catch {
+    try {
+      await prisma.$executeRawUnsafe(`ALTER TABLE "DoctorProfile" ADD COLUMN "cabinStatus" TEXT DEFAULT 'IN_CABIN';`);
+    } catch {}
+  }
+  try {
+    await prisma.$executeRawUnsafe(`ALTER TABLE "DoctorProfile" ADD COLUMN IF NOT EXISTS "expectedReturnTime" TEXT;`);
+  } catch {
+    try {
+      await prisma.$executeRawUnsafe(`ALTER TABLE "DoctorProfile" ADD COLUMN "expectedReturnTime" TEXT;`);
+    } catch {}
+  }
+  try {
+    await prisma.$executeRawUnsafe(`ALTER TABLE "DoctorProfile" ADD COLUMN IF NOT EXISTS "cabinStatusUpdatedAt" TIMESTAMP(3);`);
+  } catch {
+    try {
+      await prisma.$executeRawUnsafe(`ALTER TABLE "DoctorProfile" ADD COLUMN "cabinStatusUpdatedAt" DATETIME;`);
+    } catch {}
+  }
+  try {
     await prisma.$executeRawUnsafe(`ALTER TABLE "Appointment" ADD COLUMN IF NOT EXISTS "slotId" TEXT;`);
   } catch {
     try {

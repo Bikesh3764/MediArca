@@ -15,6 +15,7 @@ import { useAuth } from '../../context/AuthContext';
 import { DashboardLayout, DashboardNavItem } from '../../components/layout/DashboardLayout';
 import { AppleButton } from '../../components/ui/AppleButton';
 import { UtilityCard } from '../../components/ui/UtilityCard';
+import { CabinStatusControl } from '../../components/ui/DoctorCabinPresence';
 import {
   Stethoscope,
   Users,
@@ -45,7 +46,7 @@ import {
 } from 'lucide-react';
 
 export const DoctorDashboard: React.FC = () => {
-  const { user, loading: loadingAuth } = useAuth();
+  const { user, loading: loadingAuth, updateUser } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -924,6 +925,26 @@ export const DoctorDashboard: React.FC = () => {
                 </AppleButton>
               </div>
             )}
+
+            {/* Doctor Live Cabin Availability & Presence */}
+            <div className="mb-6">
+              <CabinStatusControl
+                currentStatus={user?.doctorProfile?.cabinStatus}
+                expectedReturnTime={user?.doctorProfile?.expectedReturnTime}
+                onStatusChange={(newStatus, newReturnTime) => {
+                  if (user?.doctorProfile) {
+                    updateUser({
+                      ...user,
+                      doctorProfile: {
+                        ...user.doctorProfile,
+                        cabinStatus: newStatus,
+                        expectedReturnTime: newReturnTime,
+                      },
+                    });
+                  }
+                }}
+              />
+            </div>
 
             {/* Top Shift & Date Selector Header */}
             <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-6 mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm">

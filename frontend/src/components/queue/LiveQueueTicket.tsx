@@ -2,6 +2,7 @@ import React from 'react';
 import { Appointment, getLocalDateString } from '../../services/api';
 import { Clock, Calendar, MapPin, CheckCircle2, Building2, FileText } from 'lucide-react';
 import { AppleButton } from '../ui/AppleButton';
+import { CabinStatusBadge } from '../ui/DoctorCabinPresence';
 
 interface LiveQueueTicketProps {
   appointment: Appointment;
@@ -94,9 +95,12 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
               )}
             </div>
             <div>
-              <h3 className="text-[19px] font-semibold text-[#1d1d1f] tracking-tight">
-                {doctor.user.fullName}
-              </h3>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-[19px] font-semibold text-[#1d1d1f] tracking-tight">
+                  {doctor.user.fullName}
+                </h3>
+                <CabinStatusBadge status={doctor.cabinStatus} expectedReturnTime={doctor.expectedReturnTime} size="sm" />
+              </div>
               <p className="text-[14px] text-[#0088e8] font-medium">{doctor.specialty}</p>
               <div className="flex items-center gap-1.5 text-xs text-[#86868b] mt-0.5">
                 {appointment.clinic ? (
@@ -206,6 +210,23 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
                 Currently Serving: <strong className="text-[#1d1d1f]">Queue #{liveQueue.currentServingQueueNumber || 1}</strong>
               </span>
             </div>
+
+            {doctor.cabinStatus === 'STEPPED_OUT' && (
+              <div className="mb-3 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-900 text-xs flex items-center gap-2 animate-fadeIn">
+                <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse flex-shrink-0"></span>
+                <span>
+                  <strong>Doctor stepped out:</strong> Expected back {doctor.expectedReturnTime ? `around ${doctor.expectedReturnTime}` : 'soon'}. Consultations will resume upon return.
+                </span>
+              </div>
+            )}
+            {doctor.cabinStatus === 'NOT_IN_CABIN' && (
+              <div className="mb-3 p-3 rounded-xl bg-gray-100 border border-gray-200 text-gray-700 text-xs flex items-center gap-2 animate-fadeIn">
+                <span className="w-2 h-2 rounded-full bg-gray-400 flex-shrink-0"></span>
+                <span>
+                  <strong>Doctor not yet in cabin:</strong> Waiting for practitioner arrival.
+                </span>
+              </div>
+            )}
 
             {liveQueue.isYourTurn ? (
               <div className="flex items-center gap-2 text-emerald-800 bg-emerald-100/70 p-3 rounded-xl text-xs font-medium border border-emerald-300">

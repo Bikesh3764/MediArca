@@ -10,6 +10,7 @@ import { sanitizeIndianPhone, formatIndianPhone, isValidIndianPhone } from '../.
 import { useAuth } from '../../context/AuthContext';
 import { AppleButton } from '../../components/ui/AppleButton';
 import { DashboardLayout, DashboardNavItem } from '../../components/layout/DashboardLayout';
+import { CabinStatusBadge, CabinStatusControl } from '../../components/ui/DoctorCabinPresence';
 import {
   Clock,
   UserPlus,
@@ -136,6 +137,24 @@ export const ReceptionistDashboard: React.FC = () => {
     try {
       const res = await api.getReceptionistDoctorQueue(targetDoc, targetDate);
       setQueueAppointments(res.appointments);
+      if (res.doctor && res.doctor.cabinStatus) {
+        setData((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            doctors: prev.doctors.map((d) =>
+              d.doctorId === targetDoc
+                ? {
+                    ...d,
+                    cabinStatus: res.doctor.cabinStatus,
+                    expectedReturnTime: res.doctor.expectedReturnTime,
+                    cabinStatusUpdatedAt: res.doctor.cabinStatusUpdatedAt,
+                  }
+                : d
+            ),
+          };
+        });
+      }
     } catch (err: any) {
       console.error('Failed to load queue:', err);
     } finally {
@@ -973,6 +992,35 @@ export const ReceptionistDashboard: React.FC = () => {
                 </div>
               </div>
 
+              {/* Doctor Cabin Availability & Presence Control */}
+              {(() => {
+                const targetDoctor = linkedDoctors.find((d) => d.doctorId === queueDoctorId);
+                if (!targetDoctor) return null;
+                return (
+                  <div className="mb-6">
+                    <CabinStatusControl
+                      currentStatus={targetDoctor.cabinStatus}
+                      expectedReturnTime={targetDoctor.expectedReturnTime}
+                      doctorId={targetDoctor.doctorId}
+                      doctorName={targetDoctor.fullName}
+                      onStatusChange={(newStatus, newReturnTime) => {
+                        setData((prev) => {
+                          if (!prev) return prev;
+                          return {
+                            ...prev,
+                            doctors: prev.doctors.map((d) =>
+                              d.doctorId === targetDoctor.doctorId
+                                ? { ...d, cabinStatus: newStatus, expectedReturnTime: newReturnTime }
+                                : d
+                            ),
+                          };
+                        });
+                      }}
+                    />
+                  </div>
+                );
+              })()}
+
               {/* Status Filter & Live Queue Search */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-4 border-b border-[#f0f0f0]">
                 <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
@@ -1216,6 +1264,9 @@ export const ReceptionistDashboard: React.FC = () => {
                             <div className="font-semibold text-xs text-[#1d1d1f]">{doc.fullName}</div>
                             <div className="text-[11px] text-[#0088e8]">{doc.specialty}</div>
                             <div className="text-[10px] text-[#86868b]">{doc.clinicAddress || 'Clinic Practice'}</div>
+                            <div className="mt-1">
+                              <CabinStatusBadge status={doc.cabinStatus} expectedReturnTime={doc.expectedReturnTime} size="sm" />
+                            </div>
                           </div>
                         </div>
 

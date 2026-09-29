@@ -571,6 +571,9 @@ export interface User {
     rating: number;
     totalReviews: number;
     slots?: DoctorSlot[];
+    cabinStatus?: 'IN_CABIN' | 'STEPPED_OUT' | 'NOT_IN_CABIN' | string;
+    expectedReturnTime?: string | null;
+    cabinStatusUpdatedAt?: string | null;
   };
   clinicProfile?: ClinicProfile;
   receptionistProfile?: ReceptionistProfile;
@@ -679,6 +682,9 @@ export interface ReceptionistLinkedDoctor {
   todayTotalBookings: number;
   todayWaitingPatients: number;
   joinedAt: string;
+  cabinStatus?: 'IN_CABIN' | 'STEPPED_OUT' | 'NOT_IN_CABIN' | string;
+  expectedReturnTime?: string | null;
+  cabinStatusUpdatedAt?: string | null;
 }
 
 export interface ReceptionistDashboardData {
@@ -765,6 +771,9 @@ export interface Doctor {
   rating: number;
   totalReviews: number;
   slots?: DoctorSlot[];
+  cabinStatus?: 'IN_CABIN' | 'STEPPED_OUT' | 'NOT_IN_CABIN' | string;
+  expectedReturnTime?: string | null;
+  cabinStatusUpdatedAt?: string | null;
   clinics?: Array<{
     id: string;
     clinicId: string;
@@ -1068,6 +1077,29 @@ export const api = {
       method: 'PUT',
       headers: getHeaders(),
       body: JSON.stringify(body),
+    });
+    return handleResponse(res);
+  },
+
+  async updateDoctorCabinStatus(data: {
+    status: 'IN_CABIN' | 'STEPPED_OUT' | 'NOT_IN_CABIN';
+    expectedReturnTime?: string | null;
+    returnEstimateMinutes?: number | null;
+    doctorId?: string;
+  }): Promise<{
+    success: boolean;
+    message: string;
+    data: {
+      id: string;
+      cabinStatus: string;
+      expectedReturnTime: string | null;
+      cabinStatusUpdatedAt: string | null;
+    };
+  }> {
+    const res = await fetch(`${API_BASE_URL}/doctors/cabin-status`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
     });
     return handleResponse(res);
   },
@@ -1466,7 +1498,15 @@ export const api = {
     doctorId: string,
     date?: string
   ): Promise<{
-    doctor: { id: string; fullName: string; specialty: string; slots: DoctorSlot[] };
+    doctor: {
+      id: string;
+      fullName: string;
+      specialty: string;
+      slots: DoctorSlot[];
+      cabinStatus?: string;
+      expectedReturnTime?: string | null;
+      cabinStatusUpdatedAt?: string | null;
+    };
     appointmentDate: string;
     totalPatients: number;
     waitingCount: number;

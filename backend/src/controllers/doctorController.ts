@@ -7,8 +7,10 @@ import {
   format12Hour,
   maskPatientName,
   validateDoctorSlots,
+  getIndianTimeMinutes,
+  minutesTo12Hour,
 } from '../utils/scheduleUtils';
-import { isDoctorEligibleForClinicalPractice } from '../utils/authGuards';
+import { isDoctorEligibleForClinicalPractice, verifyReceptionistDoctorAccess } from '../utils/authGuards';
 
 export const formatDoctorClinics = (doc: any) => {
   return (doc.clinics || []).map((cd: any) => {
@@ -837,6 +839,118 @@ export const removeDoctorReceptionist = async (req: AuthRequest, res: Response):
     res.status(500).json({
       success: false,
       message: 'Failed to remove receptionist',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
+  }
+};
+
+/**
+ * Update Doctor Presence / Cabin Status
+ * Accessible by:
+ * - DOCTOR: updates own presence
+ * - RECEPTIONIST: updates assigned doctor's presence
+ */
+export const updateCabinStatus = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user || !['DOCTOR', 'RECEPTIONIST'].includes(req.user.role)) {
+      res.status(403).json({ success: false, message: 'Access denied: doctor or receptionist role required' });
+      return;
+    }
+
+    const { status, expectedReturnTime, returnEstimateMinutes, doctorId: targetDoctorId } = req.body;
+
+    const validStatuses = ['IN_CABIN', 'STEPPED_OUT', 'NOT_IN_CABIN'];
+    const normalizedStatus = String(status || '').toUpperCase().trim();
+    if (!validStatuses.includes(normalizedStatus)) {
+      res.status(400).json({
+        success: false,
+        message: 'Invalid cabin status. Must be IN_CABIN, STEPPED_OUT, or NOT_IN_CABIN',
+      });
+      return;
+    }
+
+    let doctor: any;
+
+    if (req.user.role === 'DOCTOR') {
+      doctor = await prisma.doctorProfile.findUnique({
+        where: { userId: req.user.id },
+      });
+      if (!doctor) {
+        res.status(404).json({ success: false, message: 'Doctor profile not found' });
+        return;
+      }
+      const docCheck = isDoctorEligibleForClinicalPractice(doctor);
+      if (!docCheck.eligible) {
+        res.status(403).json({ success: false, message: docCheck.reason });
+        return;
+      }
+    } else {
+      // RECEPTIONIST
+      if (!targetDoctorId) {
+        res.status(400).json({ success: false, message: 'doctorId is required for receptionist updates' });
+        return;
+      }
+
+      const access = await verifyReceptionistDoctorAccess(req.user.id, targetDoctorId, null);
+      if (!access.authorized) {
+        res.status(403).json({ success: false, message: access.reason || 'Unauthorized for this practitioner' });
+        return;
+      }
+
+      doctor = await prisma.doctorProfile.findUnique({
+        where: { id: targetDoctorId },
+      });
+      if (!doctor) {
+        res.status(404).json({ success: false, message: 'Doctor profile not found' });
+        return;
+      }
+    }
+
+    // Determine expected return time formatting
+    let cleanReturnTime: string | null = null;
+    if (normalizedStatus === 'STEPPED_OUT') {
+      if (expectedReturnTime && typeof expectedReturnTime === 'string' && expectedReturnTime.trim()) {
+        cleanReturnTime = expectedReturnTime.trim();
+      } else if (returnEstimateMinutes && Number.isFinite(Number(returnEstimateMinutes))) {
+        const mins = Math.max(1, Math.min(480, Math.floor(Number(returnEstimateMinutes))));
+        const nowMinutes = getIndianTimeMinutes(new Date());
+        cleanReturnTime = minutesTo12Hour(nowMinutes + mins);
+      }
+    }
+
+    const updated = await prisma.doctorProfile.update({
+      where: { id: doctor.id },
+      data: {
+        cabinStatus: normalizedStatus,
+        expectedReturnTime: cleanReturnTime,
+        cabinStatusUpdatedAt: new Date(),
+      },
+      select: {
+        id: true,
+        cabinStatus: true,
+        expectedReturnTime: true,
+        cabinStatusUpdatedAt: true,
+      },
+    });
+
+    const statusLabels: Record<string, string> = {
+      IN_CABIN: 'Doctor has arrived and is in cabin',
+      STEPPED_OUT: cleanReturnTime
+        ? `Doctor stepped out (expected back around ${cleanReturnTime})`
+        : 'Doctor has stepped out',
+      NOT_IN_CABIN: 'Doctor has not yet arrived in cabin',
+    };
+
+    res.json({
+      success: true,
+      message: statusLabels[normalizedStatus] || 'Cabin status updated successfully',
+      data: updated,
+    });
+  } catch (error: any) {
+    console.error('updateCabinStatus error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update cabin status',
       ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
     });
   }

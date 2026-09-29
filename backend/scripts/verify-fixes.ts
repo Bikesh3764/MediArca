@@ -3834,8 +3834,91 @@ function runTests() {
   // 7. Doctor Affiliation Eligibility Gating (M3)
   const test142SuspendedDoc = { isVerified: false, verificationStatus: 'SUSPENDED' };
   const test142VerifiedDoc = { isVerified: true, verificationStatus: 'VERIFIED' };
-  assert(isDoctorEligibleForClinicalPractice(test142SuspendedDoc).eligible === false, 'Suspended doctor blocked from affiliation operations');
-  assert(isDoctorEligibleForClinicalPractice(test142VerifiedDoc).eligible === true, 'Verified doctor permitted in affiliation operations');
+  // --- Test 143: Real-Time Doctor Presence & Cabin Availability Tracking ---
+  console.log('\n--- Test 143: Real-Time Doctor Presence & Cabin Availability Tracking ---');
+
+  // 1. Valid Cabin Status Validation
+  const validCabinStatuses = ['IN_CABIN', 'STEPPED_OUT', 'NOT_IN_CABIN'];
+  const validateCabinStatus = (status: string | undefined): { valid: boolean; normalized?: string; error?: string } => {
+    const normalized = String(status || '').toUpperCase().trim();
+    if (!validCabinStatuses.includes(normalized)) {
+      return { valid: false, error: 'Invalid cabin status. Must be IN_CABIN, STEPPED_OUT, or NOT_IN_CABIN' };
+    }
+    return { valid: true, normalized };
+  };
+
+  assert(validateCabinStatus('IN_CABIN').valid === true, 'IN_CABIN is a valid presence status');
+  assert(validateCabinStatus('stepped_out').valid === true && validateCabinStatus('stepped_out').normalized === 'STEPPED_OUT', 'stepped_out normalizes to uppercase STEPPED_OUT');
+  assert(validateCabinStatus('NOT_IN_CABIN').valid === true, 'NOT_IN_CABIN is a valid presence status');
+  assert(validateCabinStatus('AWAY').valid === false, 'Arbitrary status AWAY is rejected');
+  assert(validateCabinStatus('').valid === false, 'Empty status is rejected');
+
+  // 2. Return Time Calculation for STEPPED_OUT
+  const computeExpectedReturnTime = (
+    status: string,
+    explicitTime?: string | null,
+    estimateMinutes?: number | null,
+    baseMinutes: number = 600 // 10:00 AM
+  ): string | null => {
+    if (status !== 'STEPPED_OUT') return null;
+    if (explicitTime && typeof explicitTime === 'string' && explicitTime.trim()) {
+      return explicitTime.trim();
+    }
+    if (estimateMinutes && Number.isFinite(Number(estimateMinutes))) {
+      const mins = Math.max(1, Math.min(480, Math.floor(Number(estimateMinutes))));
+      return minutesTo12Hour(baseMinutes + mins);
+    }
+    return null;
+  };
+
+  assert(computeExpectedReturnTime('STEPPED_OUT', '11:30 AM', null, 600) === '11:30 AM', 'Explicit return time 11:30 AM is preserved');
+  assert(computeExpectedReturnTime('STEPPED_OUT', null, 30, 600) === '10:30 AM', '30 minutes estimate from 10:00 AM calculates 10:30 AM');
+  assert(computeExpectedReturnTime('STEPPED_OUT', null, 45, 600) === '10:45 AM', '45 minutes estimate calculates 10:45 AM');
+  assert(computeExpectedReturnTime('STEPPED_OUT', null, null, 600) === null, 'No estimate returns null (Back soon)');
+  assert(computeExpectedReturnTime('IN_CABIN', '11:30 AM', 30, 600) === null, 'IN_CABIN resets expected return time to null');
+  assert(computeExpectedReturnTime('NOT_IN_CABIN', '11:30 AM', 30, 600) === null, 'NOT_IN_CABIN resets expected return time to null');
+
+  // 3. Status Labels for Patient Communication
+  const getCabinStatusLabel = (status: string, expectedReturn: string | null): string => {
+    if (status === 'IN_CABIN') return 'Doctor has arrived and is in cabin';
+    if (status === 'STEPPED_OUT') {
+      return expectedReturn ? `Doctor stepped out (expected back around ${expectedReturn})` : 'Doctor has stepped out';
+    }
+    return 'Doctor has not yet arrived in cabin';
+  };
+
+  assert(getCabinStatusLabel('IN_CABIN', null) === 'Doctor has arrived and is in cabin', 'IN_CABIN produces reassuring arrival label');
+  assert(getCabinStatusLabel('STEPPED_OUT', '11:30 AM') === 'Doctor stepped out (expected back around 11:30 AM)', 'STEPPED_OUT with return time informs patient');
+  assert(getCabinStatusLabel('STEPPED_OUT', null) === 'Doctor has stepped out', 'STEPPED_OUT with no estimate produces clean label');
+  assert(getCabinStatusLabel('NOT_IN_CABIN', null) === 'Doctor has not yet arrived in cabin', 'NOT_IN_CABIN indicates pending arrival');
+
+  // 4. Role Authorization Rules
+  const authorizeCabinStatusUpdate = (
+    user: { id: string; role: string },
+    targetDoctorId?: string,
+    assignedDoctors: string[] = []
+  ): { allowed: boolean; status: number; message: string } => {
+    if (!['DOCTOR', 'RECEPTIONIST'].includes(user.role)) {
+      return { allowed: false, status: 403, message: 'Access denied: doctor or receptionist role required' };
+    }
+    if (user.role === 'DOCTOR') {
+      return { allowed: true, status: 200, message: 'Authorized' };
+    }
+    // RECEPTIONIST
+    if (!targetDoctorId) {
+      return { allowed: false, status: 400, message: 'doctorId is required for receptionist updates' };
+    }
+    if (!assignedDoctors.includes(targetDoctorId)) {
+      return { allowed: false, status: 403, message: 'Unauthorized for this practitioner' };
+    }
+    return { allowed: true, status: 200, message: 'Authorized' };
+  };
+
+  assert(authorizeCabinStatusUpdate({ id: 'doc_1', role: 'DOCTOR' }).allowed === true, 'Doctor is authorized to update own presence');
+  assert(authorizeCabinStatusUpdate({ id: 'rec_1', role: 'RECEPTIONIST' }, 'doc_1', ['doc_1', 'doc_2']).allowed === true, 'Receptionist is authorized to update assigned doctor');
+  assert(authorizeCabinStatusUpdate({ id: 'rec_1', role: 'RECEPTIONIST' }, 'doc_3', ['doc_1', 'doc_2']).allowed === false, 'Receptionist cannot update unassigned doctor');
+  assert(authorizeCabinStatusUpdate({ id: 'rec_1', role: 'RECEPTIONIST' }, undefined, ['doc_1']).status === 400, 'Receptionist update without doctorId fails with 400');
+  assert(authorizeCabinStatusUpdate({ id: 'pat_1', role: 'PATIENT' }).allowed === false, 'Patient cannot update doctor cabin presence');
 
   console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);

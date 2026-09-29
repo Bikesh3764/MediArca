@@ -12,6 +12,7 @@ import {
   rejectAppointment,
   applyReceptionist,
 } from '../controllers/receptionistController';
+import { updateCabinStatus } from '../controllers/doctorController';
 import { authenticate, authorize, requireActiveReceptionist } from '../middleware/authMiddleware';
 
 const router = Router();
@@ -26,6 +27,7 @@ router.get('/my-receptionist', getMyReceptionist);
 router.post('/doctors', addDoctorToReceptionist);
 router.delete('/doctors/:doctorId', removeDoctorFromReceptionist);
 router.get('/doctors/:doctorId/queue', getDoctorQueue);
+router.put('/doctor-status', updateCabinStatus);
 router.get('/pending-appointments', getPendingAppointments);
 router.post('/appointments/:appointmentId/approve', approveAppointment);
 router.post('/appointments/:appointmentId/reject', rejectAppointment);

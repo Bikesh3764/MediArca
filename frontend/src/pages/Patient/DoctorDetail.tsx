@@ -15,6 +15,7 @@ import { DashboardLayout, DashboardNavItem } from '../../components/layout/Dashb
 import { SubNav } from '../../components/layout/SubNav';
 import { AppleButton } from '../../components/ui/AppleButton';
 import { UtilityCard } from '../../components/ui/UtilityCard';
+import { CabinStatusBadge } from '../../components/ui/DoctorCabinPresence';
 import {
   ShieldCheck,
   Star,
@@ -246,10 +247,11 @@ export const DoctorDetail: React.FC = () => {
                     <h2 className="text-2xl font-semibold text-[#1d1d1f] tracking-tight">{doctor.user.fullName}</h2>
                     <span title="Verified Practitioner"><ShieldCheck className="w-5 h-5 text-[#10b981]" /></span>
                   </div>
-                  <div className="mt-1">
+                  <div className="mt-1.5 flex items-center gap-2 flex-wrap">
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#0088e8]/10 text-[#0088e8] border border-[#0088e8]/20">
                       {doctor.specialty}
                     </span>
+                    <CabinStatusBadge status={doctor.cabinStatus} expectedReturnTime={doctor.expectedReturnTime} size="sm" />
                   </div>
                   <p className="text-xs text-[#6e6e73] font-medium mt-1.5">{formatDoctorDegrees(doctor.qualifications)}</p>
                   <div className="flex items-center gap-3 mt-3 text-xs text-[#1d1d1f]">
