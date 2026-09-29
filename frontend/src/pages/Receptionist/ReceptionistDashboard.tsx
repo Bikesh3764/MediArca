@@ -14,13 +14,11 @@ import { CabinStatusBadge, CabinStatusControl } from '../../components/ui/Doctor
 import {
   Clock,
   UserPlus,
-  Users,
   CheckCircle2,
   AlertCircle,
   X,
   Printer,
   Stethoscope,
-  Activity,
   Building2,
   ShieldCheck,
   Lock,
@@ -419,12 +417,12 @@ export const ReceptionistDashboard: React.FC = () => {
       <div className="space-y-6 print:hidden">
         {/* Banner Feedback */}
         {successMsg && (
-          <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center justify-between shadow-xs">
+          <div className="p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] text-xs flex items-center justify-between shadow-xs">
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+              <CheckCircle2 className="w-4 h-4 text-[#0088e8] flex-shrink-0" />
               <span>{successMsg}</span>
             </div>
-            <button onClick={() => setSuccessMsg(null)} className="text-emerald-700 hover:text-emerald-900">
+            <button onClick={() => setSuccessMsg(null)} className="text-[#86868b] hover:text-[#1d1d1f]">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -446,154 +444,83 @@ export const ReceptionistDashboard: React.FC = () => {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <div
             onClick={() => setActiveTab('doctors')}
-            className="bg-white rounded-2xl border border-[#e5e5ea] p-4 sm:p-5 shadow-xs cursor-pointer hover:border-[#0088e8]/30 transition-all active:scale-[0.99]"
+            className={`bg-white rounded-2xl border p-4 sm:p-5 shadow-xs cursor-pointer transition-all active:scale-[0.99] ${
+              activeTab === 'doctors' ? 'border-[#0088e8]/50 ring-1 ring-[#0088e8]/20' : 'border-[#e5e5ea] hover:border-black/15'
+            }`}
           >
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[11px] font-semibold text-[#86868b] uppercase tracking-wider">
-                Assigned Doctors
-              </span>
-              <div className="w-7 h-7 rounded-xl bg-[#0088e8]/10 text-[#0088e8] flex items-center justify-center">
-                <Stethoscope className="w-3.5 h-3.5" />
-              </div>
-            </div>
+            <span className="text-[11px] font-semibold text-[#86868b] uppercase tracking-wider block mb-2">
+              Assigned Doctors
+            </span>
             <div className="text-2xl sm:text-3xl font-bold tracking-tight text-[#1d1d1f]">
               {linkedDoctors.length}
             </div>
-            <p className="text-[11px] text-[#86868b] mt-0.5">Practitioners at desk</p>
+            <p className="text-xs text-[#86868b] mt-1">Practitioners at desk</p>
           </div>
 
           <div
             onClick={() => setActiveTab('pending')}
-            className={`rounded-2xl border p-4 sm:p-5 shadow-xs cursor-pointer transition-all active:scale-[0.99] ${
-              pendingAppointments.length > 0
-                ? 'bg-amber-50/50 border-amber-300 hover:border-amber-400'
-                : 'bg-white border-[#e5e5ea] hover:border-gray-300'
+            className={`bg-white rounded-2xl border p-4 sm:p-5 shadow-xs cursor-pointer transition-all active:scale-[0.99] ${
+              activeTab === 'pending' ? 'border-[#0088e8]/50 ring-1 ring-[#0088e8]/20' : 'border-[#e5e5ea] hover:border-black/15'
             }`}
           >
-            <div className="flex items-center justify-between mb-1.5">
+            <div className="flex items-center justify-between mb-2">
               <span className="text-[11px] font-semibold text-[#86868b] uppercase tracking-wider">
                 Pending Approvals
               </span>
-              <div className={`w-7 h-7 rounded-xl flex items-center justify-center ${pendingAppointments.length > 0 ? 'bg-amber-500 text-white' : 'bg-gray-100 text-gray-500'}`}>
-                <ShieldCheck className="w-3.5 h-3.5" />
-              </div>
-            </div>
-            <div className="flex items-baseline gap-2">
-              <span className={`text-2xl sm:text-3xl font-bold tracking-tight ${pendingAppointments.length > 0 ? 'text-amber-900 font-extrabold' : 'text-[#1d1d1f]'}`}>
-                {pendingAppointments.length}
-              </span>
               {pendingAppointments.length > 0 && (
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-200 text-amber-900">
-                  Action
-                </span>
+                <span className="w-2 h-2 rounded-full bg-[#0088e8]"></span>
               )}
             </div>
-            <p className="text-[11px] text-[#86868b] mt-0.5">Awaiting desk payment</p>
+            <div className="text-2xl sm:text-3xl font-bold tracking-tight text-[#1d1d1f]">
+              {pendingAppointments.length}
+            </div>
+            <p className="text-xs text-[#86868b] mt-1">
+              {pendingAppointments.length === 1 ? '1 awaiting confirmation' : `${pendingAppointments.length} awaiting confirmation`}
+            </p>
           </div>
 
           <div
             onClick={() => setActiveTab('queue')}
-            className="bg-white rounded-2xl border border-[#e5e5ea] p-4 sm:p-5 shadow-xs cursor-pointer hover:border-[#0088e8]/30 transition-all active:scale-[0.99]"
+            className={`bg-white rounded-2xl border p-4 sm:p-5 shadow-xs cursor-pointer transition-all active:scale-[0.99] ${
+              activeTab === 'queue' ? 'border-[#0088e8]/50 ring-1 ring-[#0088e8]/20' : 'border-[#e5e5ea] hover:border-black/15'
+            }`}
           >
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[11px] font-semibold text-[#86868b] uppercase tracking-wider">
-                Today's Bookings
-              </span>
-              <div className="w-7 h-7 rounded-xl bg-blue-50 text-[#0088e8] flex items-center justify-center">
-                <Clock className="w-3.5 h-3.5" />
-              </div>
-            </div>
+            <span className="text-[11px] font-semibold text-[#86868b] uppercase tracking-wider block mb-2">
+              Today's Bookings
+            </span>
             <div className="text-2xl sm:text-3xl font-bold tracking-tight text-[#1d1d1f]">
               {linkedDoctors.reduce((sum, d) => sum + d.todayTotalBookings, 0)}
             </div>
-            <p className="text-[11px] text-[#86868b] mt-0.5">Total registered today</p>
+            <p className="text-xs text-[#86868b] mt-1">Total registered today</p>
           </div>
 
           <div
             onClick={() => setActiveTab('queue')}
-            className="bg-white rounded-2xl border border-[#e5e5ea] p-4 sm:p-5 shadow-xs cursor-pointer hover:border-emerald-300 transition-all active:scale-[0.99]"
+            className={`bg-white rounded-2xl border p-4 sm:p-5 shadow-xs cursor-pointer transition-all active:scale-[0.99] ${
+              activeTab === 'queue' ? 'border-[#0088e8]/50 ring-1 ring-[#0088e8]/20' : 'border-[#e5e5ea] hover:border-black/15'
+            }`}
           >
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[11px] font-semibold text-[#86868b] uppercase tracking-wider">
-                Patients Waiting
-              </span>
-              <div className="w-7 h-7 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                <Users className="w-3.5 h-3.5" />
-              </div>
-            </div>
+            <span className="text-[11px] font-semibold text-[#86868b] uppercase tracking-wider block mb-2">
+              Patients Waiting
+            </span>
             <div className="text-2xl sm:text-3xl font-bold tracking-tight text-[#1d1d1f]">
               {linkedDoctors.reduce((sum, d) => sum + d.todayWaitingPatients, 0)}
             </div>
-            <p className="text-[11px] text-[#86868b] mt-0.5">In clinic waiting area</p>
+            <p className="text-xs text-[#86868b] mt-1">In clinic waiting area</p>
           </div>
         </div>
 
-        {/* 2. Main Functionality Tabs */}
+        {/* 2. Main Content Container */}
         <div className="bg-white rounded-2xl border border-[#e5e5ea] p-5 sm:p-7 shadow-xs">
-          <div className="inline-flex p-1 bg-[#f5f5f7] rounded-2xl border border-[#e5e5ea] mb-6 overflow-x-auto max-w-full">
-            <button
-              onClick={() => setActiveTab('walkin')}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 whitespace-nowrap active:scale-[0.98] ${
-                activeTab === 'walkin'
-                  ? 'bg-white text-[#1d1d1f] shadow-xs'
-                  : 'text-[#86868b] hover:text-[#1d1d1f]'
-              }`}
-            >
-              <UserPlus className="w-3.5 h-3.5" />
-              Walk-in Booking
-            </button>
-
-            <button
-              onClick={() => setActiveTab('pending')}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 whitespace-nowrap active:scale-[0.98] ${
-                activeTab === 'pending'
-                  ? 'bg-white text-[#1d1d1f] shadow-xs'
-                  : 'text-[#86868b] hover:text-[#1d1d1f]'
-              }`}
-            >
-              <ShieldCheck className="w-3.5 h-3.5 text-amber-500" />
-              Approvals
-              {pendingAppointments.length > 0 && (
-                <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-white">
-                  {pendingAppointments.length}
-                </span>
-              )}
-            </button>
-
-            <button
-              onClick={() => setActiveTab('queue')}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 whitespace-nowrap active:scale-[0.98] ${
-                activeTab === 'queue'
-                  ? 'bg-white text-[#1d1d1f] shadow-xs'
-                  : 'text-[#86868b] hover:text-[#1d1d1f]'
-              }`}
-            >
-              <Activity className="w-3.5 h-3.5" />
-              Live Queue
-            </button>
-
-            <button
-              onClick={() => setActiveTab('doctors')}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 whitespace-nowrap active:scale-[0.98] ${
-                activeTab === 'doctors'
-                  ? 'bg-white text-[#1d1d1f] shadow-xs'
-                  : 'text-[#86868b] hover:text-[#1d1d1f]'
-              }`}
-            >
-              <Users className="w-3.5 h-3.5" />
-              Assigned Doctors
-            </button>
-          </div>
-
           {/* TAB 1: Rapid Walk-in Booking */}
           {activeTab === 'walkin' && (
             <div>
-              <div className="mb-6">
+              <div className="mb-6 pb-4 border-b border-[#f0f0f0]">
                 <h3 className="text-base font-semibold text-[#1d1d1f]">
-                  Walk-in Patient Instant Booking
+                  Walk-in Patient Booking
                 </h3>
                 <p className="text-xs text-[#86868b] mt-0.5">
-                  Directly dispatch incoming patients into a practitioner's live queue with guaranteed token generation.
+                  Generate queue tokens for patients arriving directly at reception.
                 </p>
               </div>
 
@@ -843,18 +770,18 @@ export const ReceptionistDashboard: React.FC = () => {
           {/* TAB: Pending Approvals & Online Bookings */}
           {activeTab === 'pending' && (
             <div>
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-[#f0f0f0]">
                 <div>
                   <h3 className="text-base font-semibold text-[#1d1d1f] flex items-center gap-2">
-                    Online Bookings Awaiting Confirmation
+                    Pending Approvals
                     {pendingAppointments.length > 0 && (
-                      <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">
+                      <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea]">
                         {pendingAppointments.length} pending
                       </span>
                     )}
                   </h3>
                   <p className="text-xs text-[#86868b] mt-0.5">
-                    Confirm payment with patient to assign official positive queue token.
+                    Review incoming online bookings and issue official queue tokens.
                   </p>
                 </div>
 
@@ -916,12 +843,12 @@ export const ReceptionistDashboard: React.FC = () => {
                 </div>
               ) : pendingAppointments.length === 0 ? (
                 <div className="py-16 text-center text-xs text-[#86868b] bg-[#fafafc] rounded-2xl border border-dashed border-[#e5e5ea]">
-                  <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-3">
-                    <CheckCircle2 className="w-6 h-6" />
+                  <div className="w-10 h-10 rounded-full bg-[#f5f5f7] text-[#1d1d1f] flex items-center justify-center mx-auto mb-3">
+                    <CheckCircle2 className="w-5 h-5 text-[#0088e8]" />
                   </div>
-                  <p className="font-semibold text-sm text-[#1d1d1f]">All Booking Requests Processed</p>
+                  <p className="font-semibold text-sm text-[#1d1d1f]">All Bookings Processed</p>
                   <p className="mt-1 text-xs max-w-sm mx-auto text-[#86868b]">
-                    No pending online patient bookings awaiting confirmation at this desk.
+                    No pending online patient bookings awaiting confirmation.
                   </p>
                 </div>
               ) : (() => {
@@ -971,21 +898,21 @@ export const ReceptionistDashboard: React.FC = () => {
                     return (
                       <div
                         key={appt.id}
-                        className="p-5 rounded-2xl bg-white border border-[#e5e5ea] hover:border-amber-300 transition-all shadow-xs space-y-4"
+                        className="p-5 rounded-2xl bg-white border border-[#e5e5ea] hover:border-black/20 transition-all shadow-xs space-y-4"
                       >
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#f0f0f0] pb-3">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1">
-                              <ShieldCheck className="w-3 h-3 text-amber-600" />
-                              Awaiting Desk Payment
+                            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea] flex items-center gap-1.5">
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                              Pending Confirmation
                             </span>
                             <span className="text-xs text-[#86868b]">
                               {appt.createdAt ? new Date(appt.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : 'Recently'}
                             </span>
                           </div>
                           <div className="text-right">
-                            <span className="text-xs font-semibold text-[#86868b]">Provisional Token:</span>{' '}
-                            <span className="font-mono font-semibold text-amber-600">Pending</span>
+                            <span className="text-xs text-[#86868b]">Token:</span>{' '}
+                            <span className="text-xs font-medium text-[#86868b]">Assigned on confirm</span>
                           </div>
                         </div>
 
@@ -1005,10 +932,10 @@ export const ReceptionistDashboard: React.FC = () => {
                               <div className="flex items-center gap-1.5 pt-1">
                                 <a
                                   href={`tel:${phoneDisplay}`}
-                                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-medium text-[11px] transition-colors"
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#f5f5f7] text-[#1d1d1f] hover:bg-gray-200 border border-[#e5e5ea] font-medium text-[11px] transition-colors"
                                 >
-                                  <Phone className="w-3 h-3" />
-                                  Call {phoneDisplay}
+                                  <Phone className="w-3 h-3 text-[#86868b]" />
+                                  <span>{phoneDisplay}</span>
                                 </a>
                               </div>
                             )}
@@ -1030,15 +957,15 @@ export const ReceptionistDashboard: React.FC = () => {
                           </div>
 
                           {/* Fee & Payment Verification */}
-                          <div className="space-y-1.5 p-3.5 rounded-xl bg-amber-50/30 border border-amber-100">
-                            <span className="text-[10px] font-semibold text-amber-800 uppercase tracking-wider block">
+                          <div className="space-y-1.5 p-3.5 rounded-xl bg-[#fafafc] border border-[#f0f0f0]">
+                            <span className="text-[10px] font-semibold text-[#86868b] uppercase tracking-wider block">
                               Consultation Fee
                             </span>
-                            <div className="text-2xl font-bold text-amber-900">
+                            <div className="text-2xl font-bold text-[#1d1d1f]">
                               ₹{fee}
                             </div>
-                            <p className="text-[10px] text-amber-700 leading-snug">
-                              Collect payment via UPI, Cash, or Card before approving.
+                            <p className="text-[10px] text-[#86868b] leading-snug">
+                              Payment due at reception desk.
                             </p>
                           </div>
                         </div>
@@ -1051,7 +978,7 @@ export const ReceptionistDashboard: React.FC = () => {
 
                         <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-[#f0f0f0]">
                           <div className="text-[11px] text-[#86868b] flex items-center gap-1.5">
-                            <CreditCard className="w-3.5 h-3.5 text-emerald-600" />
+                            <CreditCard className="w-3.5 h-3.5 text-[#86868b]" />
                             <span>Confirming assigns official queue token to patient pass.</span>
                           </div>
 
@@ -1060,7 +987,7 @@ export const ReceptionistDashboard: React.FC = () => {
                               type="button"
                               disabled={isRejecting || isApproving}
                               onClick={() => handleRejectPendingAppointment(appt.id)}
-                              className="flex-1 sm:flex-initial px-4 py-2 rounded-full text-xs font-medium text-rose-600 hover:bg-rose-50 border border-rose-200 transition-all active:scale-[0.98] disabled:opacity-50"
+                              className="flex-1 sm:flex-initial px-4 py-2 rounded-full text-xs font-medium text-[#86868b] hover:text-rose-600 hover:bg-rose-50 border border-[#e5e5ea] transition-all active:scale-[0.98] disabled:opacity-50"
                             >
                               {isRejecting ? 'Declining...' : 'Decline'}
                             </button>
@@ -1069,7 +996,7 @@ export const ReceptionistDashboard: React.FC = () => {
                               type="button"
                               disabled={isApproving || isRejecting}
                               onClick={() => handleApprovePendingAppointment(appt.id)}
-                              className="flex-1 sm:flex-initial px-5 py-2 rounded-full text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 shadow-xs transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-1.5"
+                              className="flex-1 sm:flex-initial px-5 py-2 rounded-full text-xs font-semibold text-white bg-[#0088e8] hover:bg-[#0077cc] shadow-xs transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-1.5"
                             >
                               <Check className="w-3.5 h-3.5" />
                               {isApproving ? 'Confirming...' : `Confirm & Issue Token (₹${fee})`}
@@ -1294,12 +1221,12 @@ export const ReceptionistDashboard: React.FC = () => {
                                   <span className="w-3 h-3 rounded-full border-2 border-current border-t-transparent animate-spin inline-block"></span>
                                 ) : appt.isCheckedIn ? (
                                   <>
-                                    <Check className="w-3.5 h-3.5 text-emerald-600" />
-                                    <span>At Clinic 📍</span>
+                                    <span className="w-1.5 h-1.5 rounded-full bg-[#0088e8]"></span>
+                                    <span>At Clinic</span>
                                   </>
                                 ) : (
                                   <>
-                                    <span className="w-2 h-2 rounded-full bg-slate-400"></span>
+                                    <span className="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
                                     <span>Mark Arrived</span>
                                   </>
                                 )}
@@ -1308,17 +1235,17 @@ export const ReceptionistDashboard: React.FC = () => {
 
                             <td className="py-3">
                               <span
-                                className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold ${
+                                className={`px-2.5 py-0.5 rounded-full text-[10px] font-medium border ${
                                   appt.status === 'COMPLETED'
-                                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                    ? 'bg-[#f5f5f7] text-[#86868b] border-[#e5e5ea]'
                                     : appt.status === 'IN_CONSULTATION'
                                     ? 'bg-[#0088e8]/10 text-[#0088e8] border border-[#0088e8]/20'
                                     : appt.status === 'WAITING'
-                                    ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                                    : 'bg-gray-100 text-gray-600'
+                                    ? 'bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea]'
+                                    : 'bg-[#f5f5f7] text-gray-500 border-[#e5e5ea]'
                                 }`}
                               >
-                                {appt.status}
+                                {appt.status.replace('_', ' ')}
                               </span>
                             </td>
 
@@ -1327,7 +1254,7 @@ export const ReceptionistDashboard: React.FC = () => {
                                 {appt.status === 'WAITING' && (
                                   <button
                                     onClick={() => handleStatusChange(appt.id, 'IN_CONSULTATION')}
-                                    className="px-3 py-1 rounded-full bg-[#0088e8] hover:bg-[#0077cc] text-white text-[11px] font-semibold shadow-xs transition-all active:scale-[0.98] cursor-pointer"
+                                    className="px-3.5 py-1.5 rounded-full bg-[#0088e8] hover:bg-[#0077cc] text-white text-[11px] font-semibold shadow-xs transition-all active:scale-[0.98] cursor-pointer"
                                   >
                                     Call In
                                   </button>
@@ -1335,7 +1262,7 @@ export const ReceptionistDashboard: React.FC = () => {
                                 {appt.status === 'IN_CONSULTATION' && (
                                   <button
                                     onClick={() => handleStatusChange(appt.id, 'COMPLETED')}
-                                    className="px-3 py-1 rounded-full bg-emerald-600 text-white text-[11px] font-medium hover:bg-emerald-700 shadow-2xs transition-all active:scale-[0.98] cursor-pointer"
+                                    className="px-3.5 py-1.5 rounded-full bg-[#1d1d1f] hover:bg-black text-white text-[11px] font-semibold shadow-xs transition-all active:scale-[0.98] cursor-pointer"
                                   >
                                     Complete
                                   </button>
@@ -1343,7 +1270,7 @@ export const ReceptionistDashboard: React.FC = () => {
                                 {appt.status !== 'CANCELLED' && appt.status !== 'COMPLETED' && (
                                   <button
                                     onClick={() => handleStatusChange(appt.id, 'CANCELLED')}
-                                    className="px-2 py-1 rounded-lg text-rose-600 hover:bg-rose-50 text-[11px] font-medium border border-rose-200"
+                                    className="px-2.5 py-1 rounded-full text-[#86868b] hover:text-rose-600 hover:bg-rose-50 text-[11px] font-medium border border-[#e5e5ea] transition-all"
                                   >
                                     Cancel
                                   </button>
@@ -1365,7 +1292,7 @@ export const ReceptionistDashboard: React.FC = () => {
                                       clinicAddress: data?.clinic?.address,
                                     });
                                   }}
-                                  className="p-1 rounded-lg text-[#0088e8] hover:bg-blue-50 border border-blue-200 transition-colors"
+                                  className="p-1.5 rounded-full text-[#86868b] hover:text-[#0088e8] hover:bg-gray-100 border border-[#e5e5ea] transition-colors"
                                   title="Reprint Token Pass"
                                 >
                                   <Printer className="w-3.5 h-3.5" />
@@ -1385,18 +1312,17 @@ export const ReceptionistDashboard: React.FC = () => {
           {/* TAB 3: Assigned Doctors Desk Roster */}
           {activeTab === 'doctors' && (
             <div className="space-y-6">
-              <div className="p-4 sm:p-5 rounded-2xl bg-[#fafafc] border border-[#e5e5ea] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center justify-between gap-3 mb-6 pb-4 border-b border-[#f0f0f0]">
                 <div>
-                  <h3 className="text-sm font-semibold text-[#1d1d1f] flex items-center gap-2">
-                    <Building2 className="w-4 h-4 text-[#0088e8]" />
-                    {data?.clinic?.clinicName || 'Clinic'} Assigned Practitioners
+                  <h3 className="text-base font-semibold text-[#1d1d1f]">
+                    Assigned Practitioners
                   </h3>
                   <p className="text-xs text-[#86868b] mt-0.5">
-                    Manage real-time cabin availability and queue operations for your clinic doctors.
+                    Clinic doctor presence and queue operations.
                   </p>
                 </div>
-                <span className="text-xs font-semibold px-3 py-1 rounded-full bg-[#0088e8]/10 text-[#0088e8] border border-[#0088e8]/20 self-start sm:self-auto">
-                  {linkedDoctors.length} Assigned
+                <span className="text-xs font-medium px-3 py-1 rounded-full bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea]">
+                  {linkedDoctors.length} {linkedDoctors.length === 1 ? 'Doctor' : 'Doctors'}
                 </span>
               </div>
 
@@ -1412,7 +1338,7 @@ export const ReceptionistDashboard: React.FC = () => {
                     {linkedDoctors.map((doc) => (
                       <div
                         key={doc.doctorId}
-                        className="p-5 rounded-2xl bg-white border border-[#e5e5ea] shadow-xs space-y-4 hover:border-[#0088e8]/30 transition-all"
+                        className="p-5 rounded-2xl bg-white border border-[#e5e5ea] shadow-xs space-y-4 hover:border-black/15 transition-all"
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex items-center gap-3">
@@ -1430,12 +1356,12 @@ export const ReceptionistDashboard: React.FC = () => {
                                 {cleanDoctorName(doc.fullName)}
                               </div>
                               <div className="text-xs text-[#0088e8] font-medium">{doc.specialty}</div>
-                              <div className="text-[11px] text-[#86868b] mt-0.5">{doc.clinicAddress || 'Clinic Venue'}</div>
+                              <div className="text-[11px] text-[#86868b] mt-0.5">{data?.clinic?.clinicName || 'Clinic Desk'}</div>
                             </div>
                           </div>
 
                           <div className="text-right flex-shrink-0">
-                            <span className="text-sm font-bold text-emerald-600 block">
+                            <span className="text-sm font-semibold text-[#1d1d1f] block">
                               ₹{doc.consultationFee}
                             </span>
                             <span className="text-[11px] text-[#86868b]">
@@ -1481,11 +1407,11 @@ export const ReceptionistDashboard: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fadeIn print:hidden">
           <div className="bg-white rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-6 sm:p-8 shadow-2xl">
             <div className="text-center pb-4 border-b border-[#f0f0f0]">
-              <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-3">
-                <CheckCircle2 className="w-6 h-6" />
+              <div className="w-10 h-10 rounded-full bg-[#f5f5f7] text-[#1d1d1f] flex items-center justify-center mx-auto mb-3">
+                <CheckCircle2 className="w-5 h-5 text-[#0088e8]" />
               </div>
               <h3 className="text-lg font-semibold text-[#1d1d1f]">Walk-in Token Issued</h3>
-              <p className="text-xs text-[#86868b] mt-0.5">Live guaranteed consultation queue pass</p>
+              <p className="text-xs text-[#86868b] mt-0.5">Live consultation queue pass</p>
             </div>
 
             {/* Token Badge Display */}
