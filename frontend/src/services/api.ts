@@ -587,6 +587,7 @@ export interface ClinicProfile {
   phone?: string;
   isVerified?: boolean;
   verificationStatus?: 'PENDING' | 'VERIFIED' | 'SUSPENDED' | 'REJECTED' | string;
+  checkinCode?: string | null;
   createdAt?: string;
 }
 
@@ -710,6 +711,8 @@ export interface ReceptionistQueueItem {
   estimatedTime: string;
   slotId?: string;
   status: string;
+  isCheckedIn?: boolean;
+  checkedInAt?: string | null;
   reasonForVisit?: string;
   symptoms?: string;
   hasPrescription: boolean;
@@ -868,6 +871,8 @@ export interface Appointment {
   patientPhone?: string;
   patientAge?: string;
   patientGender?: string;
+  isCheckedIn?: boolean;
+  checkedInAt?: string | null;
   createdAt?: string;
   updatedAt?: string;
   doctor: Doctor;
@@ -1222,6 +1227,33 @@ export const api = {
   async getAppointmentById(id: string): Promise<Appointment> {
     const res = await fetch(`${API_BASE_URL}/appointments/${id}`, {
       headers: getHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  async checkInWithQR(data: { clinicId: string; code: string; appointmentId?: string }): Promise<{
+    success: boolean;
+    alreadyCheckedIn?: boolean;
+    message: string;
+    data: Appointment;
+  }> {
+    const res = await fetch(`${API_BASE_URL}/appointments/check-in`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
+  async checkInAppointmentDirect(appointmentId: string, isCheckedIn?: boolean): Promise<{
+    success: boolean;
+    message: string;
+    data: Appointment;
+  }> {
+    const res = await fetch(`${API_BASE_URL}/appointments/${appointmentId}/check-in`, {
+      method: 'PATCH',
+      headers: getHeaders(),
+      body: JSON.stringify(isCheckedIn !== undefined ? { isCheckedIn } : {}),
     });
     return handleResponse(res);
   },

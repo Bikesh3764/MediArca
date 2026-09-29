@@ -198,6 +198,33 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
           </div>
         )}
 
+        {/* Physical Clinic Check-In Status */}
+        {appointment.isCheckedIn ? (
+          <div className="my-3 p-3 rounded-xl bg-emerald-50/80 border border-emerald-200 text-xs flex items-center justify-between animate-fadeIn">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span className="font-semibold text-emerald-900">
+                Physically Checked In at Clinic 📍
+              </span>
+            </div>
+            <span className="text-[11px] font-medium text-emerald-700">
+              Doctor notified • In Waiting Area
+            </span>
+          </div>
+        ) : isToday && (status === 'WAITING' || status === 'IN_CONSULTATION') ? (
+          <div className="my-3 p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-slate-400"></span>
+              <span className="font-medium text-[#1d1d1f]">
+                Not Yet Checked In at Clinic (En Route)
+              </span>
+            </div>
+            <span className="text-[11px] font-semibold text-[#0088e8] bg-white px-2.5 py-1 rounded-full border border-[#0088e8]/20 self-start sm:self-auto">
+              Scan Clinic Desk QR Upon Arrival
+            </span>
+          </div>
+        ) : null}
+
         {/* Live Queue Position Tracker */}
         {(status === 'WAITING' || status === 'IN_CONSULTATION') && liveQueue && (
           <div className="my-5 p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea]/80">

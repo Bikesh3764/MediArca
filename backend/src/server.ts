@@ -312,6 +312,31 @@ async function ensureSchema() {
       await prisma.$executeRawUnsafe(`ALTER TABLE "ReceptionistProfile" ADD COLUMN "status" TEXT NOT NULL DEFAULT 'ACTIVE';`);
     } catch {}
   }
+
+  // Ensure Appointment.isCheckedIn & checkedInAt
+  try {
+    await prisma.$executeRawUnsafe(`ALTER TABLE "Appointment" ADD COLUMN IF NOT EXISTS "isCheckedIn" BOOLEAN NOT NULL DEFAULT FALSE;`);
+  } catch {
+    try {
+      await prisma.$executeRawUnsafe(`ALTER TABLE "Appointment" ADD COLUMN "isCheckedIn" BOOLEAN NOT NULL DEFAULT 0;`);
+    } catch {}
+  }
+  try {
+    await prisma.$executeRawUnsafe(`ALTER TABLE "Appointment" ADD COLUMN IF NOT EXISTS "checkedInAt" TIMESTAMP(3);`);
+  } catch {
+    try {
+      await prisma.$executeRawUnsafe(`ALTER TABLE "Appointment" ADD COLUMN "checkedInAt" DATETIME;`);
+    } catch {}
+  }
+
+  // Ensure ClinicProfile.checkinCode
+  try {
+    await prisma.$executeRawUnsafe(`ALTER TABLE "ClinicProfile" ADD COLUMN IF NOT EXISTS "checkinCode" TEXT;`);
+  } catch {
+    try {
+      await prisma.$executeRawUnsafe(`ALTER TABLE "ClinicProfile" ADD COLUMN "checkinCode" TEXT;`);
+    } catch {}
+  }
 }
 
 const isProduction = process.env.NODE_ENV === 'production';

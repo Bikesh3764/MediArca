@@ -25,6 +25,7 @@ import { ClinicAuth } from './pages/Clinic/ClinicAuth';
 import { ClinicDashboard } from './pages/Clinic/ClinicDashboard';
 import { ReceptionistAuth } from './pages/Receptionist/ReceptionistAuth';
 import { ReceptionistDashboard } from './pages/Receptionist/ReceptionistDashboard';
+import { ClinicCheckIn } from './pages/Patient/ClinicCheckIn';
 
 // Redirect helpers for seamless patient portal continuity
 const DoctorRedirectToPatientDetail: React.FC = () => {
@@ -86,6 +87,7 @@ function AppShell() {
     location.pathname.startsWith('/clinic/dashboard') ||
     location.pathname.startsWith('/receptionist/dashboard') ||
     location.pathname.startsWith('/patient/') ||
+    location.pathname === '/clinic-checkin' ||
     (location.pathname === '/doctors' && user?.role === 'PATIENT') ||
     (location.pathname.startsWith('/doctor/') && user?.role === 'PATIENT') ||
     (location.pathname.startsWith('/book/') && user?.role === 'PATIENT') ||
@@ -102,6 +104,7 @@ function AppShell() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/clinic-checkin" element={<ClinicCheckIn />} />
           <Route
             path="/doctors"
             element={

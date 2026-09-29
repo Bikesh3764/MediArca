@@ -171,6 +171,7 @@ export const getMyReceptionist = async (req: AuthRequest, res: Response): Promis
               phone: receptionist.clinic.phone,
               isVerified: receptionist.clinic.isVerified,
               verificationStatus: receptionist.clinic.verificationStatus,
+              checkinCode: (receptionist.clinic as any).checkinCode || null,
             }
           : null,
         doctors: doctorsWithQueue,
@@ -317,6 +318,8 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
           estimatedTime: a.estimatedTime,
           slotId: a.slotId,
           status: a.status,
+          isCheckedIn: Boolean(a.isCheckedIn),
+          checkedInAt: a.checkedInAt || null,
           reasonForVisit: a.reasonForVisit,
           symptoms: a.symptoms,
           hasPrescription: Boolean(a.prescription),

@@ -301,6 +301,8 @@ export const DoctorDashboard: React.FC = () => {
   const isVerified = user?.doctorProfile?.isVerified ?? true;
   const totalPendingRequests = affiliations?.incomingRequests?.length || 0;
 
+  const doctorDisplayName = (user?.fullName || 'Doctor').replace(/^Dr\.?\s+/i, '');
+
   const navItems: DashboardNavItem[] = [
     {
       id: 'dashboard',
@@ -311,20 +313,6 @@ export const DoctorDashboard: React.FC = () => {
         setActiveTab('queue');
         window.scrollTo({ top: 0, behavior: 'smooth' });
       },
-    },
-    {
-      id: 'appointments',
-      label: 'Appointments',
-      icon: Calendar,
-      active: false,
-      onClick: scrollToQueue,
-      badge: queueData?.waitingQueue.length || undefined,
-    },
-    {
-      id: 'walkin-qr',
-      label: 'Walk-in QR',
-      icon: QrCode,
-      onClick: () => setShowQrModal(true),
     },
     {
       id: 'affiliations',
@@ -350,7 +338,7 @@ export const DoctorDashboard: React.FC = () => {
       portalType="DOCTOR"
       portalSubtitle="DOCTOR PORTAL"
       navItems={navItems}
-      title={`Good ${new Date().getHours() < 12 ? 'Morning' : new Date().getHours() < 17 ? 'Afternoon' : 'Evening'}, Dr. ${user?.fullName || 'Doctor'}`}
+      title={`Good ${new Date().getHours() < 12 ? 'Morning' : new Date().getHours() < 17 ? 'Afternoon' : 'Evening'}, Dr. ${doctorDisplayName}`}
       subtitle={user?.doctorProfile?.specialty ? `${user.doctorProfile.specialty} • ${user?.doctorProfile?.clinicAddress || 'Practice Console'}` : 'Practice Queue & Patient Roster'}
       headerAction={
         <div className="flex items-center gap-2">
@@ -1536,6 +1524,16 @@ export const DoctorDashboard: React.FC = () => {
                                   📅 {appt.appointmentDate === getLocalDateString() ? 'Today' : appt.appointmentDate === queueData?.upcomingSummary?.tomorrowDate ? 'Tomorrow' : appt.appointmentDate}
                                 </span>
                               )}
+                              {appt.isCheckedIn ? (
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                                  <span>At Clinic 📍</span>
+                                </span>
+                              ) : (
+                                <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200">
+                                  En Route
+                                </span>
+                              )}
                             </div>
                             <p className="text-xs text-[#86868b] flex items-center gap-1.5 mt-0.5">
                               <span>Est. {appt.estimatedTime}</span>
@@ -1549,14 +1547,18 @@ export const DoctorDashboard: React.FC = () => {
 
                         <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
                           <AppleButton
-                            variant="primary"
+                            variant={appt.isCheckedIn ? "primary" : "secondary"}
                             size="sm"
                             disabled={callingId === appt.id}
                             onClick={() => handleCallPatient(appt.id)}
                             className="flex items-center gap-1.5"
                           >
                             <Play className="w-3.5 h-3.5 fill-current" />
-                            {callingId === appt.id ? 'Calling...' : 'Call Patient'}
+                            {callingId === appt.id
+                              ? 'Calling...'
+                              : appt.isCheckedIn
+                              ? 'Call Patient (Present 📍)'
+                              : 'Call Patient'}
                           </AppleButton>
                         </div>
                       </div>

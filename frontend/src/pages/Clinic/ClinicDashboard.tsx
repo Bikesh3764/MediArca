@@ -19,6 +19,9 @@ import {
   Clock3,
   Stethoscope,
   Sparkles,
+  QrCode,
+  Printer,
+  Copy,
 } from 'lucide-react';
 
 export const ClinicDashboard: React.FC = () => {
@@ -52,6 +55,10 @@ export const ClinicDashboard: React.FC = () => {
   const [createdCredentials, setCreatedCredentials] = useState<{ fullName: string; email: string; password: string } | null>(null);
   const [doctorSearchQuery, setDoctorSearchQuery] = useState('');
   const [copiedCreds, setCopiedCreds] = useState(false);
+
+  // Clinic Check-in QR Poster Modal
+  const [showPosterModal, setShowPosterModal] = useState(false);
+  const [copiedPosterUrl, setCopiedPosterUrl] = useState(false);
 
   const fetchClinicData = useCallback(async (showLoading = true) => {
     try {
@@ -340,6 +347,15 @@ export const ClinicDashboard: React.FC = () => {
       }`}
       headerAction={
         <div className="flex items-center gap-2.5">
+          <AppleButton
+            variant="secondary"
+            size="sm"
+            onClick={() => setShowPosterModal(true)}
+            className="flex items-center gap-1.5"
+          >
+            <QrCode className="w-3.5 h-3.5 text-[#0088e8]" />
+            Check-In Poster
+          </AppleButton>
           <AppleButton
             variant="secondary"
             size="sm"
@@ -1509,6 +1525,82 @@ export const ClinicDashboard: React.FC = () => {
                 onClick={() => handleRespondReceptionist(approvingRec.id, 'ACCEPT', approvalDoctorIds)}
               >
                 {processingRecId === approvingRec.id ? 'Approving...' : 'Approve & Activate Desk Access'}
+              </AppleButton>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Clinic Physical Check-In QR Poster Modal */}
+      {showPosterModal && clinic && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-6 shadow-2xl relative">
+            <button
+              onClick={() => setShowPosterModal(false)}
+              className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div className="text-center">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100 px-3 py-1 rounded-full border border-emerald-300 inline-block mb-3">
+                Official Clinic Arrival QR
+              </span>
+              <h3 className="text-lg font-bold text-[#1d1d1f]">
+                {clinic.clinicName}
+              </h3>
+              <p className="text-xs text-[#86868b] mt-0.5">
+                {clinic.address}{clinic.city ? `, ${clinic.city}` : ''}
+              </p>
+            </div>
+
+            {/* Poster Card */}
+            <div id="clinic-printable-poster" className="my-6 p-6 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] text-center">
+              <div className="w-48 h-48 mx-auto bg-white p-3 rounded-2xl border border-[#e5e5ea] shadow-xs flex items-center justify-center">
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(
+                    `${window.location.origin}${window.location.pathname}#/clinic-checkin?clinicId=${clinic.id}&code=${clinic.checkinCode || ''}`
+                  )}`}
+                  alt="Clinic Arrival QR Code"
+                  className="w-full h-full object-contain"
+                />
+              </div>
+
+              <div className="mt-4">
+                <p className="text-xs font-semibold text-[#1d1d1f]">
+                  Scan Upon Arrival at Clinic Desk
+                </p>
+                <p className="text-[11px] text-[#86868b] mt-1">
+                  Patients scan this QR code with their mobile camera to verify physical presence in the waiting room.
+                </p>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center gap-2 pt-2 border-t border-[#f0f0f0]">
+              <AppleButton
+                variant="secondary"
+                size="sm"
+                onClick={() => {
+                  const checkinLink = `${window.location.origin}${window.location.pathname}#/clinic-checkin?clinicId=${clinic.id}&code=${clinic.checkinCode || ''}`;
+                  navigator.clipboard.writeText(checkinLink);
+                  setCopiedPosterUrl(true);
+                  setTimeout(() => setCopiedPosterUrl(false), 2000);
+                }}
+                className="flex-1 flex items-center justify-center gap-1.5"
+              >
+                {copiedPosterUrl ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                <span>{copiedPosterUrl ? 'Copied Link' : 'Copy Check-In Link'}</span>
+              </AppleButton>
+
+              <AppleButton
+                variant="primary"
+                size="sm"
+                onClick={() => window.print()}
+                className="flex-1 flex items-center justify-center gap-1.5 shadow-sm"
+              >
+                <Printer className="w-3.5 h-3.5" />
+                <span>Print Poster</span>
               </AppleButton>
             </div>
           </div>

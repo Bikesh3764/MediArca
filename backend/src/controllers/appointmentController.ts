@@ -989,3 +989,225 @@ export const cancelAppointment = async (req: AuthRequest, res: Response): Promis
     });
   }
 };
+
+/**
+ * Patient Physical Clinic Check-In via Scanned Clinic QR Code
+ * Accessible by authenticated PATIENT.
+ * Requires clinicId and the clinic's physical QR security code.
+ */
+export const checkInAppointmentWithQR = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Authentication required to check in' });
+      return;
+    }
+
+    const { clinicId, code, appointmentId } = req.body;
+
+    if (!clinicId || !code) {
+      res.status(400).json({
+        success: false,
+        message: 'Clinic ID and physical QR security code are required to verify clinic arrival.',
+      });
+      return;
+    }
+
+    const clinic = await prisma.clinicProfile.findUnique({
+      where: { id: String(clinicId) },
+    });
+
+    if (!clinic) {
+      res.status(404).json({ success: false, message: 'Clinic facility not found' });
+      return;
+    }
+
+    // Anti-spoofing verification: check security code on physical poster
+    const normalizedCode = String(code).trim();
+    if (!clinic.checkinCode || clinic.checkinCode !== normalizedCode) {
+      res.status(403).json({
+        success: false,
+        message: 'Invalid clinic check-in security code. Please scan the physical QR poster displayed at the clinic.',
+      });
+      return;
+    }
+
+    const todayStr = getLocalDateString(new Date());
+    let appointment: any = null;
+
+    if (appointmentId) {
+      appointment = await prisma.appointment.findUnique({
+        where: { id: String(appointmentId) },
+        include: {
+          patient: true,
+          doctor: { include: { user: { select: { fullName: true } } } },
+          clinic: true,
+        },
+      });
+
+      if (!appointment || appointment.patient.userId !== req.user.id) {
+        res.status(404).json({ success: false, message: 'Appointment not found or not owned by your account' });
+        return;
+      }
+      if (appointment.clinicId && appointment.clinicId !== clinic.id) {
+        res.status(400).json({
+          success: false,
+          message: `This appointment is booked at a different venue (${appointment.clinic?.clinicName || 'another clinic'}).`,
+        });
+        return;
+      }
+    } else {
+      // Find today's active appointment for this patient at this clinic
+      const patient = await prisma.patientProfile.findUnique({
+        where: { userId: req.user.id },
+      });
+
+      if (!patient) {
+        res.status(404).json({ success: false, message: 'Patient profile not found' });
+        return;
+      }
+
+      appointment = await prisma.appointment.findFirst({
+        where: {
+          patientId: patient.id,
+          appointmentDate: todayStr,
+          status: { in: ['WAITING', 'IN_CONSULTATION'] },
+          OR: [
+            { clinicId: clinic.id },
+            { clinicId: null },
+          ],
+        },
+        include: {
+          patient: true,
+          doctor: { include: { user: { select: { fullName: true } } } },
+          clinic: true,
+        },
+        orderBy: { queueNumber: 'asc' },
+      });
+    }
+
+    if (!appointment) {
+      res.status(404).json({
+        success: false,
+        message: `No active consultation appointment found for today (${todayStr}) at ${clinic.clinicName}.`,
+      });
+      return;
+    }
+
+    if (appointment.appointmentDate !== todayStr) {
+      res.status(400).json({
+        success: false,
+        message: `Check-in is only available on the date of your consultation (${appointment.appointmentDate}). Today is ${todayStr}.`,
+      });
+      return;
+    }
+
+    if (appointment.status !== 'WAITING' && appointment.status !== 'IN_CONSULTATION') {
+      res.status(400).json({
+        success: false,
+        message: `Cannot check in appointment in '${appointment.status}' status.`,
+      });
+      return;
+    }
+
+    if (appointment.isCheckedIn) {
+      res.json({
+        success: true,
+        alreadyCheckedIn: true,
+        message: `You are already checked in at ${clinic.clinicName} (Queue #${appointment.queueNumber}).`,
+        data: appointment,
+      });
+      return;
+    }
+
+    const updated = await prisma.appointment.update({
+      where: { id: appointment.id },
+      data: {
+        isCheckedIn: true,
+        checkedInAt: new Date(),
+      },
+      include: {
+        doctor: { include: { user: { select: { fullName: true } } } },
+        clinic: true,
+      },
+    });
+
+    res.json({
+      success: true,
+      message: `Arrival verified! You are checked in at ${clinic.clinicName} (Queue #${updated.queueNumber}). Dr. ${updated.doctor.user.fullName} and reception desk are notified.`,
+      data: updated,
+    });
+  } catch (error: any) {
+    console.error('checkInAppointmentWithQR error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to process physical clinic check-in',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
+  }
+};
+
+/**
+ * Direct Receptionist / Doctor Check-In Toggle
+ * Accessible by RECEPTIONIST, DOCTOR, or ADMIN.
+ */
+export const checkInAppointmentDirect = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user || !['RECEPTIONIST', 'DOCTOR', 'ADMIN'].includes(req.user.role)) {
+      res.status(403).json({ success: false, message: 'Access denied: staff privileges required' });
+      return;
+    }
+
+    const id = String(req.params.id);
+    const appointment = await prisma.appointment.findUnique({
+      where: { id },
+      include: { doctor: true, clinic: true },
+    });
+
+    if (!appointment) {
+      res.status(404).json({ success: false, message: 'Appointment not found' });
+      return;
+    }
+
+    if (req.user.role === 'DOCTOR') {
+      if (appointment.doctor.userId !== req.user.id) {
+        res.status(403).json({ success: false, message: "Unauthorized for another practitioner's appointment" });
+        return;
+      }
+    } else if (req.user.role === 'RECEPTIONIST') {
+      const access = await verifyReceptionistDoctorAccess(req.user.id, appointment.doctorId, appointment.clinicId);
+      if (!access.authorized) {
+        res.status(403).json({ success: false, message: access.reason || 'Unauthorized for this doctor' });
+        return;
+      }
+    }
+
+    const newCheckedInState =
+      req.body.isCheckedIn !== undefined ? Boolean(req.body.isCheckedIn) : !appointment.isCheckedIn;
+
+    const updated = await prisma.appointment.update({
+      where: { id },
+      data: {
+        isCheckedIn: newCheckedInState,
+        checkedInAt: newCheckedInState ? new Date() : null,
+      },
+      include: {
+        patient: { include: { user: { select: { fullName: true } } } },
+      },
+    });
+
+    res.json({
+      success: true,
+      message: newCheckedInState
+        ? `Patient marked as arrived at clinic (Queue #${updated.queueNumber})`
+        : `Patient check-in removed (Queue #${updated.queueNumber})`,
+      data: updated,
+    });
+  } catch (error: any) {
+    console.error('checkInAppointmentDirect error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update patient check-in status',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
+  }
+};

@@ -879,9 +879,12 @@ export const updateCabinStatus = async (req: AuthRequest, res: Response): Promis
         res.status(404).json({ success: false, message: 'Doctor profile not found' });
         return;
       }
-      const docCheck = isDoctorEligibleForClinicalPractice(doctor);
-      if (!docCheck.eligible) {
-        res.status(403).json({ success: false, message: docCheck.reason });
+      if (doctor.verificationStatus === 'SUSPENDED') {
+        res.status(403).json({ success: false, message: 'Practitioner account is currently suspended from clinical practice.' });
+        return;
+      }
+      if (doctor.verificationStatus === 'REJECTED') {
+        res.status(403).json({ success: false, message: 'Practitioner registration has been declined by administration.' });
         return;
       }
     } else {

@@ -176,6 +176,7 @@ export const getMyClinic = async (req: AuthRequest, res: Response): Promise<void
           phone: clinic.phone,
           isVerified: clinic.isVerified,
           verificationStatus: clinic.verificationStatus,
+          checkinCode: (clinic as any).checkinCode || null,
           createdAt: clinic.createdAt,
         },
         doctors: doctorStats,

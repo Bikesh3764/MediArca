@@ -13,6 +13,7 @@ import {
   applyReceptionist,
 } from '../controllers/receptionistController';
 import { updateCabinStatus } from '../controllers/doctorController';
+import { checkInAppointmentDirect } from '../controllers/appointmentController';
 import { authenticate, authorize, requireActiveReceptionist } from '../middleware/authMiddleware';
 
 const router = Router();
@@ -33,6 +34,7 @@ router.post('/appointments/:appointmentId/approve', approveAppointment);
 router.post('/appointments/:appointmentId/reject', rejectAppointment);
 router.post('/book-walkin', bookWalkin);
 router.patch('/appointments/:appointmentId/status', updateAppointmentStatus);
+router.patch('/appointments/:appointmentId/check-in', checkInAppointmentDirect);
 router.put('/change-password', changeReceptionistPassword);
 
 export default router;

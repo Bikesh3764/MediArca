@@ -101,6 +101,8 @@ model Appointment {
   patientName     String?
   patientAge      String?
   patientGender   String?
+  isCheckedIn     Boolean        @default(false)
+  checkedInAt     DateTime?
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 
@@ -166,6 +168,7 @@ model ClinicProfile {
   phone        String?
   isVerified   Boolean               @default(false)
   verificationStatus String            @default("PENDING") // "PENDING", "VERIFIED", "SUSPENDED", "REJECTED"
+  checkinCode  String?
   doctors      ClinicDoctor[]
   receptionists ReceptionistProfile[]
   appointments Appointment[]
