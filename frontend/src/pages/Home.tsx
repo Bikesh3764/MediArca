@@ -458,70 +458,53 @@ export const Home: React.FC = () => {
                 </div>
 
                 {/* 2. Center Section: Practice Facility & Schedule */}
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-6 text-xs min-w-0 py-0.5">
+                <div className="flex flex-col gap-2 min-w-0 text-xs">
                   {/* Practice Venue */}
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-7 h-7 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] flex items-center justify-center flex-shrink-0 text-[#0088e8]">
-                      <Building2 className="w-3.5 h-3.5" />
-                    </div>
-                    <div className="min-w-0">
-                      <span className="text-[11px] text-[#86868b] block font-normal leading-tight">Practice Venue</span>
-                      {hasClinics && primaryClinic ? (
-                        <span
-                          className="font-medium text-[#1d1d1f] truncate block max-w-[190px] sm:max-w-[210px] text-xs mt-0.5"
-                          title={`${primaryClinic.clinicName}${primaryClinic.city ? ` • ${primaryClinic.city}` : ''}`}
-                        >
-                          {primaryClinic.clinicName}
-                          {primaryClinic.city ? ` • ${primaryClinic.city}` : ''}
-                          {(doctor.clinics?.length ?? 0) > 1 && (
-                            <span className="text-[#0088e8] font-normal ml-1">
-                              (+{(doctor.clinics?.length ?? 0) - 1} more)
-                            </span>
-                          )}
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 text-xs text-amber-600 font-medium mt-0.5">
-                          <AlertCircle className="w-3 h-3 text-amber-500 flex-shrink-0" />
-                          No Clinic Associated
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="hidden sm:block w-px h-6 bg-[#e5e5ea]"></div>
-
-                  {/* Shift Timing */}
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-7 h-7 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] flex items-center justify-center flex-shrink-0 text-[#0088e8]">
-                      <Clock className="w-3.5 h-3.5" />
-                    </div>
-                    <div className="min-w-0">
-                      <span className="text-[11px] text-[#86868b] block font-normal leading-tight">Checking Hours</span>
-                      <span className="font-medium text-[#1d1d1f] block whitespace-nowrap text-xs mt-0.5">
-                        {slots.length > 0
-                          ? `${format12Hour(slots[0].startTime)} – ${format12Hour(slots[0].endTime)}`
-                          : doctor.checkingStartTime
-                          ? `${format12Hour(doctor.checkingStartTime)} – ${format12Hour(doctor.checkingEndTime)}`
-                          : 'Outpatient Shift'}
-                        {slots.length > 1 && (
-                          <span className="text-[10px] text-[#86868b] font-normal ml-1">
-                            ({slots.length} shifts)
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Building2 className="w-3.5 h-3.5 text-[#0088e8] flex-shrink-0" />
+                    {hasClinics && primaryClinic ? (
+                      <span
+                        className="font-medium text-[#1d1d1f] truncate max-w-[220px] sm:max-w-[280px]"
+                        title={`${primaryClinic.clinicName}${primaryClinic.city ? ` • ${primaryClinic.city}` : ''}`}
+                      >
+                        {primaryClinic.clinicName}
+                        {primaryClinic.city ? ` • ${primaryClinic.city}` : ''}
+                        {(doctor.clinics?.length ?? 0) > 1 && (
+                          <span className="text-[#0088e8] font-normal ml-1">
+                            (+{(doctor.clinics?.length ?? 0) - 1} more)
                           </span>
                         )}
                       </span>
-                    </div>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-xs text-amber-600 font-medium">
+                        <AlertCircle className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
+                        No Clinic Associated
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Shift Timing */}
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Clock className="w-3.5 h-3.5 text-[#86868b] flex-shrink-0" />
+                    <span className="font-medium text-[#48484a] whitespace-nowrap">
+                      {slots.length > 0
+                        ? `${format12Hour(slots[0].startTime)} – ${format12Hour(slots[0].endTime)}`
+                        : doctor.checkingStartTime
+                        ? `${format12Hour(doctor.checkingStartTime)} – ${format12Hour(doctor.checkingEndTime)}`
+                        : 'Outpatient Shift'}
+                      {slots.length > 1 && (
+                        <span className="text-[11px] text-[#86868b] font-normal ml-1">
+                          ({slots.length} shifts)
+                        </span>
+                      )}
+                    </span>
                   </div>
                 </div>
 
                 {/* 3. Right Side: Consultation Fee & Single Action CTA */}
-                <div className="flex items-center justify-between lg:justify-end gap-5 pt-3 lg:pt-0 border-t lg:border-t-0 border-[#f5f5f7] flex-shrink-0">
-                  <div className="text-left lg:text-right">
-                    <span className="text-[11px] font-normal text-[#86868b] block leading-tight">
-                      Consultation
-                    </span>
-                    <div className="text-xl sm:text-2xl font-bold text-[#1d1d1f] tracking-tight leading-tight mt-0.5">
-                      ₹{doctor.consultationFee.toFixed(0)}
-                    </div>
+                <div className="flex items-center justify-between lg:justify-end gap-4 sm:gap-6 pt-3 lg:pt-0 border-t lg:border-t-0 border-[#f5f5f7] flex-shrink-0">
+                  <div className="text-xl sm:text-2xl font-bold text-[#1d1d1f] tracking-tight">
+                    ₹{doctor.consultationFee.toFixed(0)}
                   </div>
 
                   <div>
