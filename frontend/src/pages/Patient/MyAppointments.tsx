@@ -4,15 +4,13 @@ import { api, Appointment } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { DashboardLayout, DashboardNavItem } from '../../components/layout/DashboardLayout';
 import { LiveQueueTicket } from '../../components/queue/LiveQueueTicket';
-import { PrescriptionModal } from '../../components/ui/PrescriptionModal';
 import { AppleButton } from '../../components/ui/AppleButton';
-import { Calendar, Plus, RefreshCw, Stethoscope, User as UserIcon, FileText } from 'lucide-react';
+import { Calendar, Plus, RefreshCw, Stethoscope, User as UserIcon } from 'lucide-react';
 
 export const MyAppointments: React.FC = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
-  const [selectedPrescriptionAppt, setSelectedPrescriptionAppt] = useState<Appointment | null>(null);
 
   const { user, loading: loadingAuth } = useAuth();
   const navigate = useNavigate();
@@ -67,12 +65,6 @@ export const MyAppointments: React.FC = () => {
       path: '/patient/appointments',
       active: true,
       badge: upcomingList.length > 0 ? upcomingList.length : undefined,
-    },
-    {
-      id: 'records',
-      label: 'Clinical Records',
-      icon: FileText,
-      path: '/patient/records',
     },
     {
       id: 'find-doctors',
@@ -176,7 +168,6 @@ export const MyAppointments: React.FC = () => {
                   key={appt.id}
                   appointment={appt}
                   onCancel={handleCancel}
-                  onViewPrescription={(a) => setSelectedPrescriptionAppt(a)}
                 />
               ))}
             </div>
@@ -186,7 +177,7 @@ export const MyAppointments: React.FC = () => {
             <Calendar className="w-10 h-10 text-[#86868b] mx-auto mb-3" />
             <h3 className="text-lg font-semibold text-[#1d1d1f]">No past consultations recorded</h3>
             <p className="text-xs text-[#86868b] mt-1">
-              Completed consultations and digital prescriptions will appear here.
+              Completed consultations will appear here.
             </p>
           </div>
         ) : (
@@ -195,18 +186,11 @@ export const MyAppointments: React.FC = () => {
               <LiveQueueTicket
                 key={appt.id}
                 appointment={appt}
-                onViewPrescription={(a) => setSelectedPrescriptionAppt(a)}
               />
             ))}
           </div>
         )}
       </div>
-
-      {/* Official Digital Prescription Modal */}
-      <PrescriptionModal
-        appointment={selectedPrescriptionAppt}
-        onClose={() => setSelectedPrescriptionAppt(null)}
-      />
     </DashboardLayout>
   );
 };

@@ -13,7 +13,6 @@ import { DoctorDiscovery } from './pages/Patient/DoctorDiscovery';
 import { DoctorDetail } from './pages/Patient/DoctorDetail';
 import { BookAppointment } from './pages/Patient/BookAppointment';
 import { MyAppointments } from './pages/Patient/MyAppointments';
-import { MedicalRecords } from './pages/Patient/MedicalRecords';
 import { PatientProfile } from './pages/Patient/PatientProfile';
 import { DoctorDashboard } from './pages/Doctor/DoctorDashboard';
 import { ConsultationView } from './pages/Doctor/ConsultationView';
@@ -91,7 +90,6 @@ function AppShell() {
     (location.pathname === '/doctors' && user?.role === 'PATIENT') ||
     (location.pathname.startsWith('/doctor/') && user?.role === 'PATIENT') ||
     (location.pathname.startsWith('/book/') && user?.role === 'PATIENT') ||
-    (location.pathname === '/records' && user?.role === 'PATIENT') ||
     location.pathname === '/admin' ||
     location.pathname === '/admin-login';
 
@@ -173,19 +171,11 @@ function AppShell() {
           />
           <Route
             path="/patient/records"
-            element={
-              <ProtectedRoute allowedRoles={['PATIENT']}>
-                <MedicalRecords />
-              </ProtectedRoute>
-            }
+            element={<Navigate to="/patient/appointments" replace />}
           />
           <Route
             path="/records"
-            element={
-              <ProtectedRoute allowedRoles={['PATIENT']}>
-                <MedicalRecords />
-              </ProtectedRoute>
-            }
+            element={<Navigate to="/patient/appointments" replace />}
           />
           <Route
             path="/patient/profile"

@@ -700,10 +700,8 @@ export const getAppointmentById = async (req: AuthRequest, res: Response): Promi
         patient: {
           include: {
             user: { select: { id: true, fullName: true, email: true, phone: true, avatarUrl: true } },
-            medicalRecords: { orderBy: { uploadedAt: 'desc' } },
           },
         },
-        prescription: true,
         review: true,
       },
     });
@@ -739,16 +737,6 @@ export const getAppointmentById = async (req: AuthRequest, res: Response): Promi
       if (!isDoctor && !isPatient && !isAdmin && !isClinicOrRec) {
         res.status(403).json({ success: false, message: 'Access denied: You are not authorized to view this appointment' });
         return;
-      }
-
-      // Restrict medical records strictly to the assigned doctor or the patient themselves (Finding #21)
-      if (appointment.patient && !isDoctor && !isPatient) {
-        delete (appointment.patient as any).medicalRecords;
-      } else if (appointment.patient && (appointment.patient as any).medicalRecords) {
-        (appointment.patient as any).medicalRecords = (appointment.patient as any).medicalRecords.map((rec: any) => ({
-          ...rec,
-          fileUrl: `/api/records/file/${rec.id}`,
-        }));
       }
 
     res.json({ success: true, data: appointment });
@@ -799,7 +787,6 @@ export const getPatientAppointments = async (req: AuthRequest, res: Response): P
             user: { select: { fullName: true, email: true, phone: true, avatarUrl: true } },
           },
         },
-        prescription: true,
         review: true,
       },
       orderBy: [{ appointmentDate: 'desc' }, { queueNumber: 'asc' }],

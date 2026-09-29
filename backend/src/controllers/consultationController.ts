@@ -49,35 +49,17 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
         patient: {
           include: {
             user: { select: { fullName: true, email: true, phone: true, avatarUrl: true } },
-            medicalRecords: { take: 5, orderBy: { uploadedAt: 'desc' } },
           },
         },
-        prescription: true,
       },
       orderBy: scope === 'all-upcoming'
         ? [{ appointmentDate: 'asc' }, { queueNumber: 'asc' }]
         : { queueNumber: 'asc' },
     });
 
-    const safeAppointments = appointments.map((appt) => {
-      if (appt.patient?.medicalRecords) {
-        return {
-          ...appt,
-          patient: {
-            ...appt.patient,
-            medicalRecords: appt.patient.medicalRecords.map((rec) => ({
-              ...rec,
-              fileUrl: `/api/records/file/${rec.id}`,
-            })),
-          },
-        };
-      }
-      return appt;
-    });
-
-    const activeInConsultation = safeAppointments.find((a) => a.status === 'IN_CONSULTATION') || null;
-    const waitingQueue = safeAppointments.filter((a) => a.status === 'WAITING');
-    const completedQueue = safeAppointments.filter((a) => a.status === 'COMPLETED');
+    const activeInConsultation = appointments.find((a) => a.status === 'IN_CONSULTATION') || null;
+    const waitingQueue = appointments.filter((a) => a.status === 'WAITING');
+    const completedQueue = appointments.filter((a) => a.status === 'COMPLETED');
 
     // Calculate upcoming bookings summary across dates for this doctor
     const todayIso = getLocalDateString();
@@ -105,11 +87,11 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
       data: {
         date: dateStr,
         scope,
-        totalQueue: safeAppointments.length,
+        totalQueue: appointments.length,
         activeInConsultation,
         waitingQueue,
         completedQueue,
-        allAppointments: safeAppointments,
+        allAppointments: appointments,
         upcomingSummary: {
           tomorrowDate: tomorrowIso,
           tomorrowCount,
@@ -204,30 +186,15 @@ export const callPatient = async (req: AuthRequest, res: Response): Promise<void
         patient: {
           include: {
             user: { select: { fullName: true, email: true, phone: true } },
-            medicalRecords: { orderBy: { uploadedAt: 'desc' } },
           },
         },
-        prescription: true,
       },
     });
-
-    const safeUpdated = {
-      ...updated,
-      patient: updated.patient
-        ? {
-            ...updated.patient,
-            medicalRecords: (updated.patient.medicalRecords || []).map((rec: any) => ({
-              ...rec,
-              fileUrl: `/api/records/file/${rec.id}`,
-            })),
-          }
-        : updated.patient,
-    };
 
     res.json({
       success: true,
       message: `Queue #${updated.queueNumber} (${updated.patient.user.fullName}) is now in consultation`,
-      data: safeUpdated,
+      data: updated,
     });
   } catch (error: any) {
     console.error('callPatient error:', error);
@@ -361,60 +328,37 @@ export const completeConsultation = async (req: AuthRequest, res: Response): Pro
       return;
     }
 
-    let filteredMedicines: any[] = [];
-    if (Array.isArray(medicines)) {
-      filteredMedicines = medicines.filter((m) => m && typeof m.name === 'string' && m.name.trim().length > 0);
-    } else if (typeof medicines === 'string') {
-      try {
-        const parsed = JSON.parse(medicines);
-        if (Array.isArray(parsed)) {
-          filteredMedicines = parsed.filter((m) => m && typeof m.name === 'string' && m.name.trim().length > 0);
-        }
-      } catch {}
+    let finalNotes = clinicalNotes;
+    const notesParts: string[] = [];
+    if (diagnosis && diagnosis.trim()) {
+      notesParts.push(`Diagnosis: ${diagnosis.trim()}`);
+    }
+    if (clinicalNotes && clinicalNotes.trim()) {
+      notesParts.push(clinicalNotes.trim());
+    }
+    if (advice && advice.trim()) {
+      notesParts.push(`Advice: ${advice.trim()}`);
+    }
+    if (followUpDate && followUpDate.trim()) {
+      notesParts.push(`Follow-up Date: ${followUpDate.trim()}`);
+    }
+    if (notesParts.length > 0) {
+      finalNotes = notesParts.join('\n\n');
     }
 
-    const medicinesJson = filteredMedicines.length > 0 ? JSON.stringify(filteredMedicines) : null;
-
-    // Use transaction to update appointment and upsert prescription if provided
-    const result = await prisma.$transaction(async (tx) => {
-      const appt = await tx.appointment.update({
-        where: { id: appointmentId },
-        data: {
-          status: 'COMPLETED',
-          ...(clinicalNotes !== undefined && { clinicalNotes }),
-          ...(vitals && { vitals: typeof vitals === 'object' ? JSON.stringify(vitals) : vitals }),
-        },
-      });
-
-      let prescription: any = null;
-      if (diagnosis || medicinesJson) {
-        prescription = await tx.prescription.upsert({
-          where: { appointmentId },
-          update: {
-            diagnosis: diagnosis || 'General Medical Consultation',
-            medicines: medicinesJson || '[]',
-            advice: advice || null,
-            followUpDate: followUpDate || null,
-          },
-          create: {
-            appointmentId,
-            diagnosis: diagnosis || 'General Medical Consultation',
-            medicines: medicinesJson || '[]',
-            advice: advice || null,
-            followUpDate: followUpDate || null,
-          },
-        });
-      }
-
-      return { appointment: appt, prescription };
+    const appt = await prisma.appointment.update({
+      where: { id: appointmentId },
+      data: {
+        status: 'COMPLETED',
+        ...(finalNotes !== undefined && { clinicalNotes: finalNotes }),
+        ...(vitals && { vitals: typeof vitals === 'object' ? JSON.stringify(vitals) : vitals }),
+      },
     });
 
     res.json({
       success: true,
-      message: result.prescription
-        ? 'Consultation completed and digital prescription issued!'
-        : 'Consultation completed successfully!',
-      data: result,
+      message: 'Consultation completed successfully!',
+      data: { appointment: appt },
     });
   } catch (error: any) {
     console.error('completeConsultation error:', error);

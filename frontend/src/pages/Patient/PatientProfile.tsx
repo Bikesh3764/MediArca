@@ -8,7 +8,6 @@ import {
   Calendar,
   User as UserIcon,
   Stethoscope,
-  FileText,
   AlertCircle,
   CheckCircle2,
   Save,
@@ -35,12 +34,6 @@ export const PatientProfile: React.FC = () => {
       label: 'Live Queue & Passes',
       icon: Calendar,
       path: '/patient/appointments',
-    },
-    {
-      id: 'records',
-      label: 'Clinical Records',
-      icon: FileText,
-      path: '/patient/records',
     },
     {
       id: 'find-doctors',

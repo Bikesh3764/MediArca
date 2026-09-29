@@ -1,19 +1,17 @@
 import React from 'react';
 import { Appointment, getLocalDateString } from '../../services/api';
-import { Clock, Calendar, MapPin, CheckCircle2, Building2, FileText } from 'lucide-react';
+import { Clock, Calendar, MapPin, CheckCircle2, Building2 } from 'lucide-react';
 import { AppleButton } from '../ui/AppleButton';
 import { CabinStatusBadge } from '../ui/DoctorCabinPresence';
 
 interface LiveQueueTicketProps {
   appointment: Appointment;
   onCancel?: (id: string) => void;
-  onViewPrescription?: (appointment: Appointment) => void;
 }
 
 export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
   appointment,
   onCancel,
-  onViewPrescription,
 }) => {
   const { doctor, queueNumber, status, appointmentDate, checkingWindow, estimatedTime, liveQueue } =
     appointment;
@@ -330,17 +328,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
-            {status === 'COMPLETED' && (appointment.prescription || appointment.clinicalNotes) && onViewPrescription ? (
-              <AppleButton
-                variant="primary"
-                size="sm"
-                onClick={() => onViewPrescription(appointment)}
-                className="flex items-center gap-1.5"
-              >
-                <FileText className="w-3.5 h-3.5" />
-                <span>View Prescription</span>
-              </AppleButton>
-            ) : status === 'COMPLETED' ? (
+            {status === 'COMPLETED' ? (
               <span className="text-xs font-semibold px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1.5">
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                 <span>Consultation Completed</span>

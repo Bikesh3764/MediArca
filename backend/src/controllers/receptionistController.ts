@@ -261,7 +261,6 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
             user: { select: { fullName: true, phone: true, email: true } },
           },
         },
-        prescription: true,
       },
       orderBy: { queueNumber: 'asc' },
     });
@@ -322,7 +321,6 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
           checkedInAt: a.checkedInAt || null,
           reasonForVisit: a.reasonForVisit,
           symptoms: a.symptoms,
-          hasPrescription: Boolean(a.prescription),
           isForOther: Boolean(a.isForOther),
           patientAge: a.patientAge,
           createdAt: a.createdAt,

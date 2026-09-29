@@ -26,70 +26,6 @@ export const getFileUrl = (filePath?: string): string => {
   return `${backendBase}${filePath.startsWith('/') ? '' : '/'}${filePath}`;
 };
 
-export const getMedicalRecordFileUrl = (recordId: string): string => {
-  return `${API_BASE_URL}/records/file/${recordId}`;
-};
-
-export const fetchMedicalRecordBlob = async (recordId: string): Promise<Blob> => {
-  const token =
-    typeof localStorage !== 'undefined'
-      ? localStorage.getItem('mediarca_token') || localStorage.getItem('token')
-      : null;
-  const headers: Record<string, string> = {};
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-  const res = await fetch(`${API_BASE_URL}/records/file/${recordId}`, {
-    headers,
-  });
-  if (!res.ok) {
-    let msg = 'Failed to fetch medical record';
-    try {
-      const err = await res.json();
-      if (err.message) msg = err.message;
-    } catch {}
-    throw new Error(msg);
-  }
-  return await res.blob();
-};
-
-export const viewMedicalRecord = async (recordId: string, _title?: string): Promise<void> => {
-  const targetWindow = typeof window !== 'undefined' ? window.open('about:blank', '_blank') : null;
-  try {
-    const blob = await fetchMedicalRecordBlob(recordId);
-    const blobUrl = URL.createObjectURL(blob);
-    if (targetWindow && !targetWindow.closed) {
-      targetWindow.location.href = blobUrl;
-    } else if (typeof window !== 'undefined') {
-      window.location.href = blobUrl;
-    }
-    setTimeout(() => URL.revokeObjectURL(blobUrl), 300000);
-  } catch (err) {
-    if (targetWindow && !targetWindow.closed) {
-      targetWindow.close();
-    }
-    throw err;
-  }
-};
-
-export const downloadMedicalRecord = async (recordId: string, filename?: string): Promise<void> => {
-  const blob = await fetchMedicalRecordBlob(recordId);
-  const blobUrl = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = blobUrl;
-
-  let safeName = (filename || `medical-record-${recordId}`).trim();
-  if (!/\.[a-zA-Z0-9]+$/.test(safeName)) {
-    const ext = blob.type.includes('pdf') ? '.pdf' : blob.type.includes('png') ? '.png' : blob.type.includes('webp') ? '.webp' : '.jpg';
-    safeName = `${safeName}${ext}`;
-  }
-
-  link.download = safeName;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
-};
 
 export interface DoctorSlot {
   id: string;
@@ -754,7 +690,6 @@ export interface ReceptionistQueueItem {
   checkedInAt?: string | null;
   reasonForVisit?: string;
   symptoms?: string;
-  hasPrescription: boolean;
   isForOther?: boolean;
   patientAge?: string;
   createdAt: string;
@@ -924,14 +859,6 @@ export interface Appointment {
     allergies?: string;
     existingConditions?: string;
     user: { fullName: string; email: string; phone?: string; avatarUrl?: string };
-    medicalRecords?: MedicalRecord[];
-  };
-  prescription?: {
-    id: string;
-    diagnosis: string;
-    medicines: string;
-    advice?: string;
-    followUpDate?: string;
   };
   review?: {
     id: string;
@@ -947,16 +874,6 @@ export interface Appointment {
     isShiftPassed?: boolean;
     liveEstimatedTime?: string;
   };
-}
-
-export interface MedicalRecord {
-  id: string;
-  patientId: string;
-  title: string;
-  category: string;
-  fileUrl: string;
-  fileType?: string;
-  uploadedAt: string;
 }
 
 const getHeaders = (isMultipart = false) => {
@@ -1350,9 +1267,12 @@ export const api = {
 
   async completeConsultation(body: {
     appointmentId: string;
+    diagnosis?: string;
+    advice?: string;
+    followUpDate?: string;
     clinicalNotes?: string;
     vitals?: any;
-    diagnosis?: string;
+    medicines?: any[];
   }): Promise<{ appointment: Appointment }> {
     const res = await fetch(`${API_BASE_URL}/consultations/complete`, {
       method: 'POST',
@@ -1371,48 +1291,7 @@ export const api = {
     clinicalNotes?: string;
     vitals?: any;
   }): Promise<{ appointment: Appointment; prescription?: any }> {
-    const res = await fetch(`${API_BASE_URL}/consultations/complete`, {
-      method: 'POST',
-      headers: getHeaders(),
-      body: JSON.stringify(body),
-    });
-    return handleResponse(res);
-  },
-
-  // Medical Records
-  async getRecords(patientId?: string): Promise<MedicalRecord[]> {
-    const url = patientId ? `${API_BASE_URL}/records?patientId=${patientId}` : `${API_BASE_URL}/records`;
-    const res = await fetch(url, { headers: getHeaders() });
-    return handleResponse(res);
-  },
-
-  async uploadRecord(formData: FormData): Promise<MedicalRecord> {
-    const res = await fetch(`${API_BASE_URL}/records/upload`, {
-      method: 'POST',
-      headers: getHeaders(true),
-      body: formData,
-    });
-    return handleResponse(res);
-  },
-
-  async deleteRecord(id: string): Promise<void> {
-    const res = await fetch(`${API_BASE_URL}/records/${id}`, {
-      method: 'DELETE',
-      headers: getHeaders(),
-    });
-    await handleResponse(res);
-  },
-
-  async fetchRecordBlob(recordId: string): Promise<Blob> {
-    return fetchMedicalRecordBlob(recordId);
-  },
-
-  async viewRecord(recordId: string, title?: string): Promise<void> {
-    return viewMedicalRecord(recordId, title);
-  },
-
-  async downloadRecord(recordId: string, filename?: string): Promise<void> {
-    return downloadMedicalRecord(recordId, filename);
+    return this.completeConsultation(body) as any;
   },
 
   // Admin

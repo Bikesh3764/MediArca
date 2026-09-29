@@ -15,9 +15,7 @@ async function main() {
   await prisma.clinicDoctor.deleteMany();
   await prisma.doctorReceptionist.deleteMany();
   await prisma.review.deleteMany();
-  await prisma.prescription.deleteMany();
   await prisma.appointment.deleteMany();
-  await prisma.medicalRecord.deleteMany();
   await prisma.clinicProfile.deleteMany();
   await prisma.receptionistProfile.deleteMany();
   await prisma.doctorProfile.deleteMany();
@@ -433,32 +431,6 @@ async function main() {
     },
   });
 
-  // Create Digital Prescription for past appointment
-  await prisma.prescription.create({
-    data: {
-      appointmentId: pastAppt.id,
-      diagnosis: 'Allergic Rhinitis with Mild Reactive Airway',
-      medicines: JSON.stringify([
-        {
-          name: 'Cetirizine 10mg',
-          dosage: '1 Tablet',
-          frequency: 'Once daily at bedtime',
-          duration: '7 Days',
-          instructions: 'Take with water after dinner. May cause mild drowsiness.',
-        },
-        {
-          name: 'Fluticasone Propionate Nasal Spray 50mcg',
-          dosage: '1 Spray in each nostril',
-          frequency: 'Twice daily',
-          duration: '14 Days',
-          instructions: 'Gently shake before use. Avoid blowing nose immediately after.',
-        },
-      ]),
-      advice: 'Avoid exposure to heavy dust and dry cold air. Use steam inhalation twice daily.',
-      followUpDate: '2026-08-25',
-    },
-  });
-
   // Create Review for past appointment
   await prisma.review.create({
     data: {
@@ -466,28 +438,8 @@ async function main() {
       doctorId: drElenaUser.doctorProfile!.id,
       patientId: patientUser.id,
       rating: 5,
-      comment: 'Dr. Elena was exceptionally attentive and explained the allergy triggers in detail. Recovered within 3 days!',
+      comment: 'Dr. Elena was exceptionally attentive and explained the clinical findings in detail. Recovered within 3 days!',
     },
-  });
-
-  // 5. Create Medical Records for John Doe
-  await prisma.medicalRecord.createMany({
-    data: [
-      {
-        patientId: patientUser.patientProfile!.id,
-        title: 'Complete Blood Count (CBC) & Lipid Profile',
-        category: 'Lab Report',
-        fileUrl: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&w=600&q=80',
-        fileType: 'pdf',
-      },
-      {
-        patientId: patientUser.patientProfile!.id,
-        title: 'Resting ECG & Rhythm Strip',
-        category: 'Scan',
-        fileUrl: 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&w=600&q=80',
-        fileType: 'pdf',
-      },
-    ],
   });
 
   console.log('Database seeded successfully!');

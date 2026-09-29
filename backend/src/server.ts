@@ -9,7 +9,6 @@ import authRoutes from './routes/authRoutes';
 import doctorRoutes from './routes/doctorRoutes';
 import appointmentRoutes from './routes/appointmentRoutes';
 import consultationRoutes from './routes/consultationRoutes';
-import recordRoutes from './routes/recordRoutes';
 import adminRoutes from './routes/adminRoutes';
 import clinicRoutes from './routes/clinicRoutes';
 import receptionistRoutes from './routes/receptionistRoutes';
@@ -391,7 +390,7 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static uploaded public avatars only; medical records are protected through /api/records/file/:id (Finding #22)
+// Serve static uploaded public avatars only
 app.use('/uploads/avatars', express.static(path.join(__dirname, '../uploads/avatars')));
 
 // Health Check (Supports Render /healthz and /api/health)
@@ -459,7 +458,6 @@ app.put(['/api/doctors/profile', '/api/doctor/profile'], authenticate, updatePro
 app.use('/api/doctors', doctorRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/consultations', consultationRoutes);
-app.use('/api/records', recordRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/clinics', clinicRoutes);
 app.use('/api/clinic', clinicRoutes);
