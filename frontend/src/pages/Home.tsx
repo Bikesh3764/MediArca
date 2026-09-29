@@ -193,13 +193,9 @@ export const Home: React.FC = () => {
             </div>
           )}
 
-          <h1 className="text-3xl sm:text-5xl md:text-6xl font-semibold text-[#1d1d1f] tracking-tight leading-[1.1] mb-4">
+          <h1 className="text-3xl sm:text-5xl md:text-6xl font-semibold text-[#1d1d1f] tracking-tight leading-[1.1] mb-8">
             Find doctors. <span className="text-[#0088e8]">Book queue tokens.</span>
           </h1>
-
-          <p className="text-base sm:text-lg font-normal text-[#86868b] max-w-xl mx-auto leading-relaxed mb-8">
-            Check live practitioner shifts, reserve your consultation number, and skip waiting room delays.
-          </p>
 
           {/* Central Integrated Search Bar */}
           <form
@@ -558,93 +554,78 @@ export const Home: React.FC = () => {
         )}
       </section>
 
-      {/* 4. Clinical Portals Operations Quick Strip */}
-      <section className="bg-white border-t border-[#e5e5ea] py-12 px-4 sm:px-6 mt-12">
+      {/* 4. Operational Portals */}
+      <section className="bg-white border-t border-[#e5e5ea] py-10 px-4 sm:px-6 mt-10">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center max-w-xl mx-auto mb-8">
-            <span className="text-xs font-semibold text-[#0088e8] uppercase tracking-wider block mb-1">
+          <div className="text-center max-w-xl mx-auto mb-6">
+            <h3 className="text-xl font-semibold text-[#1d1d1f] tracking-tight">
               Operational Portals
-            </span>
-            <h3 className="text-2xl font-semibold text-[#1d1d1f] tracking-tight">
-              Designed for patients, clinics, and care teams.
             </h3>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Patient Portal */}
             <div
               onClick={() => navigate('/patient/appointments')}
-              className="p-6 rounded-[22px] bg-white border border-[#e5e5ea] hover:border-[#0088e8]/40 cursor-pointer transition-all duration-200 hover:shadow-apple-card flex flex-col justify-between group shadow-xs"
+              className="p-5 rounded-2xl bg-[#f5f5f7] hover:bg-white border border-[#e5e5ea] hover:border-[#0088e8]/30 cursor-pointer transition-all duration-200 hover:shadow-xs flex items-center justify-between group"
             >
-              <div>
-                <div className="w-10 h-10 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-[#0088e8] flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
+              <div className="flex items-center gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-white border border-[#e5e5ea] text-[#0088e8] flex items-center justify-center group-hover:scale-105 transition-transform shadow-2xs">
                   <UserCheck className="w-5 h-5" />
                 </div>
-                <h4 className="text-base font-semibold text-[#1d1d1f] mb-1 group-hover:text-[#0088e8] transition-colors">Patient Portal</h4>
-                <p className="text-xs text-[#86868b] leading-relaxed">
-                  Track live queue numbers, view appointment tickets, and store medical files.
-                </p>
+                <h4 className="text-sm font-semibold text-[#1d1d1f] group-hover:text-[#0088e8] transition-colors">
+                  Patient Portal
+                </h4>
               </div>
-              <span className="text-xs text-[#0088e8] font-semibold flex items-center gap-1 mt-5 group-hover:translate-x-0.5 transition-transform">
-                Open Portal <ArrowRight className="w-3.5 h-3.5" />
-              </span>
+              <ArrowRight className="w-4 h-4 text-[#86868b] group-hover:text-[#0088e8] group-hover:translate-x-0.5 transition-all" />
             </div>
 
             {/* Doctor Console */}
             <div
               onClick={() => navigate('/doctor/dashboard')}
-              className="p-6 rounded-[22px] bg-white border border-[#e5e5ea] hover:border-[#0088e8]/40 cursor-pointer transition-all duration-200 hover:shadow-apple-card flex flex-col justify-between group shadow-xs"
+              className="p-5 rounded-2xl bg-[#f5f5f7] hover:bg-white border border-[#e5e5ea] hover:border-[#0088e8]/30 cursor-pointer transition-all duration-200 hover:shadow-xs flex items-center justify-between group"
             >
-              <div>
-                <div className="w-10 h-10 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-[#0088e8] flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
+              <div className="flex items-center gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-white border border-[#e5e5ea] text-[#0088e8] flex items-center justify-center group-hover:scale-105 transition-transform shadow-2xs">
                   <Stethoscope className="w-5 h-5" />
                 </div>
-                <h4 className="text-base font-semibold text-[#1d1d1f] mb-1 group-hover:text-[#0088e8] transition-colors">Doctor Console</h4>
-                <p className="text-xs text-[#86868b] leading-relaxed">
-                  Call next patient, review health history, issue digital Rx, and set clinic hours.
-                </p>
+                <h4 className="text-sm font-semibold text-[#1d1d1f] group-hover:text-[#0088e8] transition-colors">
+                  Doctor Console
+                </h4>
               </div>
-              <span className="text-xs text-[#0088e8] font-semibold flex items-center gap-1 mt-5 group-hover:translate-x-0.5 transition-transform">
-                Open Console <ArrowRight className="w-3.5 h-3.5" />
-              </span>
+              <ArrowRight className="w-4 h-4 text-[#86868b] group-hover:text-[#0088e8] group-hover:translate-x-0.5 transition-all" />
             </div>
 
             {/* Clinic Partner Portal */}
             <div
               onClick={() => navigate(user?.role === 'CLINIC' ? '/clinic/dashboard' : '/clinic/login')}
-              className="p-6 rounded-[22px] bg-white border border-[#e5e5ea] hover:border-[#0088e8]/40 cursor-pointer transition-all duration-200 hover:shadow-apple-card flex flex-col justify-between group shadow-xs"
+              className="p-5 rounded-2xl bg-[#f5f5f7] hover:bg-white border border-[#e5e5ea] hover:border-[#0088e8]/30 cursor-pointer transition-all duration-200 hover:shadow-xs flex items-center justify-between group"
             >
-              <div>
-                <div className="w-10 h-10 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-[#0088e8] flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
+              <div className="flex items-center gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-white border border-[#e5e5ea] text-[#0088e8] flex items-center justify-center group-hover:scale-105 transition-transform shadow-2xs">
                   <Building2 className="w-5 h-5" />
                 </div>
-                <h4 className="text-base font-semibold text-[#1d1d1f] mb-1 group-hover:text-[#0088e8] transition-colors">Clinic Portal</h4>
-                <p className="text-xs text-[#86868b] leading-relaxed">
-                  Onboard doctors, print arrival QR poster, and manage clinic staff.
-                </p>
+                <h4 className="text-sm font-semibold text-[#1d1d1f] group-hover:text-[#0088e8] transition-colors">
+                  Clinic Portal
+                </h4>
               </div>
-              <span className="text-xs text-[#0088e8] font-semibold flex items-center gap-1 mt-5 group-hover:translate-x-0.5 transition-transform">
-                {user?.role === 'CLINIC' ? 'Open Dashboard' : 'Clinic Sign In'} <ArrowRight className="w-3.5 h-3.5" />
-              </span>
+              <ArrowRight className="w-4 h-4 text-[#86868b] group-hover:text-[#0088e8] group-hover:translate-x-0.5 transition-all" />
             </div>
 
             {/* Receptionist Desk */}
             <div
               onClick={() => navigate(user?.role === 'RECEPTIONIST' ? '/receptionist/dashboard' : '/receptionist/login')}
-              className="p-6 rounded-[22px] bg-white border border-[#e5e5ea] hover:border-[#0088e8]/40 cursor-pointer transition-all duration-200 hover:shadow-apple-card flex flex-col justify-between group shadow-xs"
+              className="p-5 rounded-2xl bg-[#f5f5f7] hover:bg-white border border-[#e5e5ea] hover:border-[#0088e8]/30 cursor-pointer transition-all duration-200 hover:shadow-xs flex items-center justify-between group"
             >
-              <div>
-                <div className="w-10 h-10 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-[#0088e8] flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
+              <div className="flex items-center gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-white border border-[#e5e5ea] text-[#0088e8] flex items-center justify-center group-hover:scale-105 transition-transform shadow-2xs">
                   <Clock className="w-5 h-5" />
                 </div>
-                <h4 className="text-base font-semibold text-[#1d1d1f] mb-1 group-hover:text-[#0088e8] transition-colors">Reception Desk</h4>
-                <p className="text-xs text-[#86868b] leading-relaxed">
-                  Check in patients, book rapid walk-ins, and print token passes.
-                </p>
+                <h4 className="text-sm font-semibold text-[#1d1d1f] group-hover:text-[#0088e8] transition-colors">
+                  Reception Desk
+                </h4>
               </div>
-              <span className="text-xs text-[#0088e8] font-semibold flex items-center gap-1 mt-5 group-hover:translate-x-0.5 transition-transform">
-                {user?.role === 'RECEPTIONIST' ? 'Open Desk' : 'Desk Sign In'} <ArrowRight className="w-3.5 h-3.5" />
-              </span>
+              <ArrowRight className="w-4 h-4 text-[#86868b] group-hover:text-[#0088e8] group-hover:translate-x-0.5 transition-all" />
             </div>
           </div>
         </div>
