@@ -225,7 +225,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
                       />
                     ) : null}
                     <div
-                      className={`doc-fallback w-full h-full ${doctor.user.avatarUrl ? 'hidden' : 'flex'} items-center justify-center font-bold text-xl text-white bg-gradient-to-br from-[#0088e8] to-[#10b981] shadow-inner select-none`}
+                      className={`doc-fallback w-full h-full ${doctor.user.avatarUrl ? 'hidden' : 'flex'} items-center justify-center font-bold text-xl text-white bg-[#0088e8] shadow-inner select-none`}
                     >
                       {doctor.user.fullName.replace(/^Dr\.\s*/i, '').trim()[0] || 'D'}
                     </div>
@@ -291,7 +291,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
 
                   {/* Shift Timing */}
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-7 h-7 rounded-full bg-[#10b981]/10 flex items-center justify-center flex-shrink-0 text-[#10b981]">
+                    <div className="w-7 h-7 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] flex items-center justify-center flex-shrink-0 text-[#0088e8]">
                       <Clock className="w-3.5 h-3.5" />
                     </div>
                     <div className="min-w-0">
@@ -360,12 +360,12 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
         portalType="PATIENT"
         portalSubtitle="PATIENT PORTAL"
         navItems={patientNavItems}
-        title="Find Healthcare Specialists"
+        title="Find Specialists"
         subtitle="Browse verified practitioners, compare checking shifts, and book instant queue tokens"
         headerAction={
           <div className="flex items-center gap-2">
-            <span className="text-xs px-3 py-1 rounded-full bg-gradient-to-r from-[#0088e8]/10 to-[#10b981]/10 text-[#0088e8] font-semibold border border-[#0088e8]/20">
-              {doctors.length} Specialist{doctors.length === 1 ? '' : 's'} Available
+            <span className="text-xs px-3 py-1 rounded-full bg-[#f5f5f7] text-[#1d1d1f] font-medium border border-[#e5e5ea]">
+              {doctors.length} Specialist{doctors.length === 1 ? '' : 's'}
             </span>
             <AppleButton
               variant="ghost"

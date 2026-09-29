@@ -496,11 +496,10 @@ export const ClinicDashboard: React.FC = () => {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-[#f0f0f0] mb-6">
             <div>
               <h2 className="text-lg font-semibold text-[#1d1d1f] tracking-tight">
-                Practitioner Roster & Attribution
+                Affiliated Doctors
               </h2>
               <p className="text-xs text-[#86868b] mt-0.5">
-                Each practitioner's bookings and revenue generated specifically at{' '}
-                {clinic?.clinicName || 'this clinic'}.
+                Doctors and revenue generated at {clinic?.clinicName || 'this clinic'}.
               </p>
             </div>
             <AppleButton
@@ -786,7 +785,7 @@ export const ClinicDashboard: React.FC = () => {
                           setApprovingRec({ id: rec.id, fullName: rec.fullName, email: rec.email });
                           setApprovalDoctorIds([]);
                         }}
-                        className="px-3.5 py-1.5 rounded-full text-xs font-semibold text-white bg-gradient-to-r from-[#0088e8] to-[#10b981] hover:from-[#0284c7] hover:to-[#059669] shadow-xs transition-all active:scale-[0.98] disabled:opacity-50 flex items-center gap-1.5"
+                        className="px-3.5 py-1.5 rounded-full text-xs font-semibold text-white bg-[#0088e8] hover:bg-[#0077cc] shadow-xs transition-all active:scale-[0.98] disabled:opacity-50 flex items-center gap-1.5"
                       >
                         <Check className="w-3.5 h-3.5" />
                         Review & Assign Doctors

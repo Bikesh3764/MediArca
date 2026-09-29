@@ -351,7 +351,7 @@ export const BookAppointment: React.FC = () => {
                 />
               ) : null}
               <div
-                className={`book-doc-fallback w-full h-full ${doctor.user.avatarUrl ? 'hidden' : 'flex'} items-center justify-center font-bold text-xl text-white bg-gradient-to-br from-[#0088e8] to-[#10b981] shadow-inner select-none`}
+                className={`book-doc-fallback w-full h-full ${doctor.user.avatarUrl ? 'hidden' : 'flex'} items-center justify-center font-bold text-xl text-white bg-[#0088e8] shadow-inner select-none`}
               >
                 {doctor.user.fullName.replace(/^Dr\.\s*/i, '').trim()[0] || 'D'}
               </div>
@@ -415,7 +415,7 @@ export const BookAppointment: React.FC = () => {
                       <span className="text-sm font-bold text-[#1d1d1f] block">
                         {doctor.clinics[0].clinic.clinicName}
                       </span>
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-gradient-to-r from-[#0088e8] to-[#10b981] text-white">
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-[#0088e8] text-white">
                         Selected Venue
                       </span>
                     </div>
@@ -424,7 +424,7 @@ export const BookAppointment: React.FC = () => {
                       <span>{doctor.clinics[0].clinic.address}{doctor.clinics[0].clinic.city ? `, ${doctor.clinics[0].clinic.city}` : ''}</span>
                     </span>
                     <div className="flex flex-wrap items-center gap-2 mt-2.5">
-                      <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200/60 text-emerald-700 text-xs font-semibold">
+                      <span className="px-2.5 py-0.5 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] text-xs font-semibold">
                         Fee: ₹{doctor.clinics[0].consultationFee ?? doctor.consultationFee}
                       </span>
                       {doctor.clinics[0].slots && doctor.clinics[0].slots.length > 0 && (
@@ -461,7 +461,7 @@ export const BookAppointment: React.FC = () => {
                           <div className="flex items-center justify-between gap-1 mb-1">
                             <span className="text-xs font-bold text-[#1d1d1f] truncate">{c.clinic.clinicName}</span>
                             {isSelected ? (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gradient-to-r from-[#0088e8] to-[#10b981] text-white flex-shrink-0">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#0088e8] text-white flex-shrink-0">
                                 <Check className="w-2.5 h-2.5" />
                                 Selected
                               </span>
@@ -509,7 +509,7 @@ export const BookAppointment: React.FC = () => {
                   onClick={() => setAppointmentDate(getLocalDateString())}
                   className={`px-2.5 py-0.5 rounded-full text-xs font-medium transition-all ${
                     appointmentDate === getLocalDateString()
-                      ? 'bg-gradient-to-r from-[#0088e8] to-[#10b981] text-white shadow-xs font-semibold'
+                      ? 'bg-[#1d1d1f] text-white shadow-2xs'
                       : 'bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f] hover:bg-[#e8e8ed]'
                   }`}
                 >
@@ -520,7 +520,7 @@ export const BookAppointment: React.FC = () => {
                   onClick={() => setAppointmentDate(getTomorrowDateString())}
                   className={`px-2.5 py-0.5 rounded-full text-xs font-medium transition-all ${
                     appointmentDate === getTomorrowDateString()
-                      ? 'bg-gradient-to-r from-[#0088e8] to-[#10b981] text-white shadow-xs font-semibold'
+                      ? 'bg-[#1d1d1f] text-white shadow-2xs'
                       : 'bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f] hover:bg-[#e8e8ed]'
                   }`}
                 >
@@ -577,7 +577,7 @@ export const BookAppointment: React.FC = () => {
                         {cleanShiftName}
                       </span>
                       {isSelected && !slotPassed && (
-                        <span className="w-4 h-4 rounded-full bg-gradient-to-r from-[#0088e8] to-[#10b981] text-white flex items-center justify-center flex-shrink-0">
+                        <span className="w-4 h-4 rounded-full bg-[#0088e8] text-white flex items-center justify-center flex-shrink-0">
                           <Check className="w-2.5 h-2.5" />
                         </span>
                       )}
@@ -601,15 +601,15 @@ export const BookAppointment: React.FC = () => {
                     <div className="mt-2.5">
                       {slotPassed ? (
                         <span className="inline-block text-[10px] font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
-                          Shift Ended for Today
+                          Shift Ended
                         </span>
                       ) : slotFull ? (
                         <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200">
                           Capacity Reached
                         </span>
                       ) : (
-                        <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/60">
-                          Available for Booking
+                        <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f]">
+                          Available
                         </span>
                       )}
                     </div>
@@ -621,15 +621,15 @@ export const BookAppointment: React.FC = () => {
 
           {/* Queue & Schedule Reservation Banner */}
           {queuePreview && (
-            <div className="my-5 p-5 rounded-[22px] bg-gradient-to-br from-[#0088e8]/5 via-white to-[#10b981]/5 border border-[#0088e8]/25 shadow-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 transition-all">
+            <div className="my-5 p-5 rounded-[22px] bg-[#f5f5f7] border border-[#e5e5ea] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 transition-all">
               <div>
-                <span className="text-[10px] uppercase font-bold text-[#0088e8] tracking-wider block">
-                  Provisional Queue Allocation
+                <span className="text-[10px] uppercase font-semibold text-[#86868b] tracking-wider block">
+                  Queue Allocation
                 </span>
-                <strong className="text-2xl sm:text-3xl font-extrabold tracking-tight bg-gradient-to-r from-[#0088e8] to-[#10b981] bg-clip-text text-transparent block mt-0.5">
+                <strong className="text-2xl sm:text-3xl font-bold tracking-tight text-[#0088e8] block mt-0.5">
                   Queue #{queuePreview.nextQueueNumber}
                 </strong>
-                <p className="text-xs text-[#6e6e73] mt-1 flex items-center gap-1.5 font-medium">
+                <p className="text-xs text-[#86868b] mt-1 flex items-center gap-1.5 font-medium">
                   <Clock className="w-3.5 h-3.5 text-[#0088e8]" />
                   Checking Shift: {queuePreview.checkingWindow}
                 </p>

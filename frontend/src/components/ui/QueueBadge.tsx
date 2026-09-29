@@ -13,7 +13,7 @@ export const QueueBadge: React.FC<QueueBadgeProps> = ({
   size = 'md',
   showStatusText = false,
 }) => {
-  let statusBg = 'bg-gradient-to-r from-[#0088e8]/10 to-[#10b981]/10 text-[#0088e8] border border-[#0088e8]/25 font-semibold';
+  let statusBg = 'bg-[#0088e8]/10 text-[#0088e8] border border-[#0088e8]/25 font-semibold';
   let pulseColor = 'bg-[#0088e8]';
   let statusText = 'Waiting in Queue';
 

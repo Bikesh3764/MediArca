@@ -238,7 +238,7 @@ export const DoctorDetail: React.FC = () => {
                       }}
                     />
                   ) : null}
-                  <div className={`doc-detail-fallback w-full h-full ${doctor.user.avatarUrl ? 'hidden' : 'flex'} items-center justify-center text-3xl font-bold bg-gradient-to-br from-[#0088e8] to-[#10b981] text-white shadow-inner select-none`}>
+                  <div className={`doc-detail-fallback w-full h-full ${doctor.user.avatarUrl ? 'hidden' : 'flex'} items-center justify-center text-3xl font-bold bg-[#0088e8] text-white shadow-inner select-none`}>
                     {doctor.user.fullName.replace(/^Dr\.\s*/i, '').trim()[0] || 'D'}
                   </div>
                 </div>
@@ -324,9 +324,9 @@ export const DoctorDetail: React.FC = () => {
                                   {cd.clinic.clinicName}
                                 </span>
                                 {isSelected && (
-                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gradient-to-r from-[#0088e8] to-[#10b981] text-white flex-shrink-0">
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#0088e8] text-white flex-shrink-0">
                                     <Check className="w-3 h-3" />
-                                    Active Venue
+                                    Selected
                                   </span>
                                 )}
                               </div>
@@ -484,7 +484,7 @@ export const DoctorDetail: React.FC = () => {
                           onClick={() => setSelectedDate(getLocalDateString())}
                           className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium transition-all ${
                             selectedDate === getLocalDateString()
-                              ? 'bg-gradient-to-r from-[#0088e8] to-[#10b981] text-white shadow-xs font-semibold'
+                              ? 'bg-[#1d1d1f] text-white shadow-2xs'
                               : 'bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f] hover:bg-[#e8e8ed]'
                           }`}
                         >
@@ -495,7 +495,7 @@ export const DoctorDetail: React.FC = () => {
                           onClick={() => setSelectedDate(getTomorrowDateString())}
                           className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium transition-all ${
                             selectedDate === getTomorrowDateString()
-                              ? 'bg-gradient-to-r from-[#0088e8] to-[#10b981] text-white shadow-xs font-semibold'
+                              ? 'bg-[#1d1d1f] text-white shadow-2xs'
                               : 'bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f] hover:bg-[#e8e8ed]'
                           }`}
                         >
@@ -572,8 +572,8 @@ export const DoctorDetail: React.FC = () => {
                   {loadingQueue ? (
                     <div className="p-6 rounded-2xl bg-[#f5f5f7] animate-pulse h-40"></div>
                   ) : queuePreview ? (
-                    <div className="p-5 rounded-2xl bg-gradient-to-br from-[#0088e8]/5 via-white to-[#10b981]/5 border border-[#0088e8]/25 mb-5 space-y-3 shadow-xs">
-                      <div className="flex justify-between items-center pb-2 border-b border-[#0088e8]/10">
+                    <div className="p-5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] mb-5 space-y-3">
+                      <div className="flex justify-between items-center pb-2 border-b border-[#e5e5ea]">
                         <span className="text-xs text-[#86868b]">Checking Shift:</span>
                         <strong className="text-xs text-[#0088e8] flex items-center gap-1 font-semibold">
                           <Clock className="w-3.5 h-3.5" />
@@ -584,7 +584,7 @@ export const DoctorDetail: React.FC = () => {
                       <div className="flex items-center justify-between">
                         <div>
                           <span className="text-[11px] text-[#86868b] uppercase block">Assigned Token</span>
-                          <strong className="text-2xl font-extrabold tracking-tight bg-gradient-to-r from-[#0088e8] to-[#10b981] bg-clip-text text-transparent">
+                          <strong className="text-2xl font-bold tracking-tight text-[#0088e8]">
                             Queue #{queuePreview.nextQueueNumber}
                           </strong>
                         </div>

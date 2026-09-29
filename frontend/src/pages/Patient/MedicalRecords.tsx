@@ -140,8 +140,8 @@ export const MedicalRecords: React.FC = () => {
       portalType="PATIENT"
       portalSubtitle="PATIENT HEALTH RECORD"
       navItems={navItems}
-      title="Clinical Records"
-      subtitle="Official diagnostic reports, clinical summaries, and consultation documents issued by doctors"
+      title="Medical Records"
+      subtitle="Your diagnostic reports, clinical notes, and prescriptions"
     >
       <div className="space-y-6">
         {/* Category Filters Bar */}
@@ -197,7 +197,7 @@ export const MedicalRecords: React.FC = () => {
               <UtilityCard key={rec.id} hoverEffect className="flex flex-col justify-between">
                 <div>
                   <div className="flex items-start justify-between gap-2 mb-3">
-                    <span className="text-[11px] font-semibold text-[#0088e8] bg-gradient-to-r from-[#0088e8]/10 to-[#10b981]/10 border border-[#0088e8]/20 px-2.5 py-0.5 rounded-full">
+                    <span className="text-[11px] font-semibold text-[#0088e8] bg-[#0088e8]/10 border border-[#0088e8]/20 px-2.5 py-0.5 rounded-full">
                       {rec.category}
                     </span>
                     <button

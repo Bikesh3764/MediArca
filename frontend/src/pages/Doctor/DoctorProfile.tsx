@@ -209,7 +209,7 @@ export const DoctorProfile: React.FC = () => {
                 type="button"
                 disabled={avatarLoading}
                 onClick={() => avatarInputRef.current?.click()}
-                className="absolute -bottom-1 -right-1 bg-gradient-to-r from-[#0088e8] to-[#10b981] hover:from-[#0284c7] hover:to-[#059669] text-white p-2 rounded-full shadow-md transition-all disabled:opacity-50"
+                className="absolute -bottom-1 -right-1 bg-[#0088e8] hover:bg-[#0077cc] text-white p-2 rounded-full shadow-md transition-all disabled:opacity-50"
                 title="Change doctor headshot"
               >
                 <Camera className="w-3.5 h-3.5" />
@@ -361,7 +361,7 @@ export const DoctorProfile: React.FC = () => {
             title="Practicing Clinics, Shifts & Consultation Fees"
             subtitle="Manage practice shifts, consultation fees, and patient caps per clinic facility"
           >
-            <div className="p-5 rounded-[20px] bg-gradient-to-br from-[#0088e8]/5 via-white to-[#10b981]/5 border border-[#0088e8]/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-2xs">
+            <div className="p-5 rounded-[20px] bg-[#f5f5f7] border border-[#e5e5ea] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-2xs">
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
                   <Building2 className="w-4 h-4 text-[#0088e8]" />

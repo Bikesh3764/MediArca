@@ -171,34 +171,34 @@ export const Home: React.FC = () => {
         <div className="max-w-4xl mx-auto text-center">
           {/* Role Aware Status Bar */}
           {user ? (
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-[#0088e8]/10 to-[#10b981]/10 border border-[#0088e8]/20 text-xs font-semibold text-[#0088e8] mb-6 shadow-xs">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-xs font-medium text-[#1d1d1f] mb-6">
               <BrandLogo variant="icon" size="xs" />
               <span>
-                Welcome back, {user.fullName?.split(' ')[0] || user.fullName} •{' '}
+                {user.fullName?.split(' ')[0] || user.fullName} •{' '}
                 {isDoctor
                   ? 'Doctor Console'
                   : isClinic
-                  ? 'Clinic Partner Portal'
+                  ? 'Clinic Portal'
                   : isReceptionist
-                  ? 'Receptionist Desk'
+                  ? 'Reception Desk'
                   : isAdmin
-                  ? 'Admin Control Center'
-                  : 'Patient Dashboard'}
+                  ? 'Admin Portal'
+                  : 'Patient Portal'}
               </span>
             </div>
           ) : (
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-[#0088e8]/10 to-[#10b981]/10 border border-[#0088e8]/20 text-xs font-semibold text-[#0088e8] mb-6 shadow-xs">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-xs font-medium text-[#1d1d1f] mb-6">
               <BrandLogo variant="icon" size="xs" />
-              <span>Live Queue • Zero Wait Guesswork</span>
+              <span>Live Queue & Instant Booking</span>
             </div>
           )}
 
           <h1 className="text-3xl sm:text-5xl md:text-6xl font-semibold text-[#1d1d1f] tracking-tight leading-[1.1] mb-4">
-            Healthcare. <span className="bg-gradient-to-r from-[#0088e8] to-[#10b981] bg-clip-text text-transparent">Organized with clinical clarity.</span>
+            Find doctors. <span className="text-[#0088e8]">Book queue tokens.</span>
           </h1>
 
-          <p className="text-base sm:text-lg font-normal text-[#86868b] max-w-2xl mx-auto leading-relaxed mb-8">
-            Find verified specialists, inspect real-time checking shifts, and secure guaranteed appointment tokens.
+          <p className="text-base sm:text-lg font-normal text-[#86868b] max-w-xl mx-auto leading-relaxed mb-8">
+            Check live practitioner shifts, reserve your consultation number, and skip waiting room delays.
           </p>
 
           {/* Central Integrated Search Bar */}
@@ -430,7 +430,7 @@ export const Home: React.FC = () => {
                       />
                     ) : null}
                     <div
-                      className={`doc-fallback-home w-full h-full ${doctor.user.avatarUrl ? 'hidden' : 'flex'} items-center justify-center font-bold text-xl text-white bg-gradient-to-br from-[#0088e8] to-[#10b981] shadow-inner select-none`}
+                      className={`doc-fallback-home w-full h-full ${doctor.user.avatarUrl ? 'hidden' : 'flex'} items-center justify-center font-bold text-xl text-white bg-[#0088e8] shadow-inner select-none`}
                     >
                       {doctor.user.fullName.replace(/^Dr\.\s*/i, '').trim()[0] || 'D'}
                     </div>
@@ -465,7 +465,7 @@ export const Home: React.FC = () => {
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-6 text-xs min-w-0 py-0.5">
                   {/* Practice Venue */}
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-7 h-7 rounded-full bg-[#0088e8]/8 flex items-center justify-center flex-shrink-0 text-[#0088e8]">
+                    <div className="w-7 h-7 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] flex items-center justify-center flex-shrink-0 text-[#0088e8]">
                       <Building2 className="w-3.5 h-3.5" />
                     </div>
                     <div className="min-w-0">
@@ -496,7 +496,7 @@ export const Home: React.FC = () => {
 
                   {/* Shift Timing */}
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-7 h-7 rounded-full bg-[#10b981]/10 flex items-center justify-center flex-shrink-0 text-[#10b981]">
+                    <div className="w-7 h-7 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] flex items-center justify-center flex-shrink-0 text-[#0088e8]">
                       <Clock className="w-3.5 h-3.5" />
                     </div>
                     <div className="min-w-0">
@@ -574,15 +574,15 @@ export const Home: React.FC = () => {
             {/* Patient Portal */}
             <div
               onClick={() => navigate('/patient/appointments')}
-              className="p-6 rounded-[24px] bg-white border border-[#e5e5ea] hover:border-[#0088e8]/40 cursor-pointer transition-all duration-300 hover:shadow-apple-card hover:-translate-y-0.5 flex flex-col justify-between group shadow-2xs"
+              className="p-6 rounded-[22px] bg-white border border-[#e5e5ea] hover:border-[#0088e8]/40 cursor-pointer transition-all duration-200 hover:shadow-apple-card flex flex-col justify-between group shadow-xs"
             >
               <div>
-                <div className="w-11 h-11 rounded-2xl bg-sky-50 text-[#0088e8] border border-sky-100 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
+                <div className="w-10 h-10 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-[#0088e8] flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
                   <UserCheck className="w-5 h-5" />
                 </div>
-                <h4 className="text-base font-semibold text-[#1d1d1f] mb-1.5 group-hover:text-[#0088e8] transition-colors">Patient Portal</h4>
+                <h4 className="text-base font-semibold text-[#1d1d1f] mb-1 group-hover:text-[#0088e8] transition-colors">Patient Portal</h4>
                 <p className="text-xs text-[#86868b] leading-relaxed">
-                  Track your active live token, check remaining queue numbers, and manage medical files.
+                  Track live queue numbers, view appointment tickets, and store medical files.
                 </p>
               </div>
               <span className="text-xs text-[#0088e8] font-semibold flex items-center gap-1 mt-5 group-hover:translate-x-0.5 transition-transform">
@@ -593,15 +593,15 @@ export const Home: React.FC = () => {
             {/* Doctor Console */}
             <div
               onClick={() => navigate('/doctor/dashboard')}
-              className="p-6 rounded-[24px] bg-white border border-[#e5e5ea] hover:border-[#0088e8]/40 cursor-pointer transition-all duration-300 hover:shadow-apple-card hover:-translate-y-0.5 flex flex-col justify-between group shadow-2xs"
+              className="p-6 rounded-[22px] bg-white border border-[#e5e5ea] hover:border-[#0088e8]/40 cursor-pointer transition-all duration-200 hover:shadow-apple-card flex flex-col justify-between group shadow-xs"
             >
               <div>
-                <div className="w-11 h-11 rounded-2xl bg-teal-50 text-[#0088e8] border border-teal-100 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
+                <div className="w-10 h-10 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-[#0088e8] flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
                   <Stethoscope className="w-5 h-5" />
                 </div>
-                <h4 className="text-base font-semibold text-[#1d1d1f] mb-1.5 group-hover:text-[#0088e8] transition-colors">Doctor Console</h4>
+                <h4 className="text-base font-semibold text-[#1d1d1f] mb-1 group-hover:text-[#0088e8] transition-colors">Doctor Console</h4>
                 <p className="text-xs text-[#86868b] leading-relaxed">
-                  Call next patient, review clinical history, write digital Rx, and manage clinic affiliations.
+                  Call next patient, review health history, issue digital Rx, and set clinic hours.
                 </p>
               </div>
               <span className="text-xs text-[#0088e8] font-semibold flex items-center gap-1 mt-5 group-hover:translate-x-0.5 transition-transform">
@@ -612,15 +612,15 @@ export const Home: React.FC = () => {
             {/* Clinic Partner Portal */}
             <div
               onClick={() => navigate(user?.role === 'CLINIC' ? '/clinic/dashboard' : '/clinic/login')}
-              className="p-6 rounded-[24px] bg-white border border-[#e5e5ea] hover:border-[#0088e8]/40 cursor-pointer transition-all duration-300 hover:shadow-apple-card hover:-translate-y-0.5 flex flex-col justify-between group shadow-2xs"
+              className="p-6 rounded-[22px] bg-white border border-[#e5e5ea] hover:border-[#0088e8]/40 cursor-pointer transition-all duration-200 hover:shadow-apple-card flex flex-col justify-between group shadow-xs"
             >
               <div>
-                <div className="w-11 h-11 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
+                <div className="w-10 h-10 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-[#0088e8] flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
                   <Building2 className="w-5 h-5" />
                 </div>
-                <h4 className="text-base font-semibold text-[#1d1d1f] mb-1.5 group-hover:text-[#0088e8] transition-colors">Clinic Partner Portal</h4>
+                <h4 className="text-base font-semibold text-[#1d1d1f] mb-1 group-hover:text-[#0088e8] transition-colors">Clinic Portal</h4>
                 <p className="text-xs text-[#86868b] leading-relaxed">
-                  Onboard doctors, view appointments booked at your clinic, and track clinic-specific revenue.
+                  Onboard doctors, print arrival QR poster, and manage clinic staff.
                 </p>
               </div>
               <span className="text-xs text-[#0088e8] font-semibold flex items-center gap-1 mt-5 group-hover:translate-x-0.5 transition-transform">
@@ -631,15 +631,15 @@ export const Home: React.FC = () => {
             {/* Receptionist Desk */}
             <div
               onClick={() => navigate(user?.role === 'RECEPTIONIST' ? '/receptionist/dashboard' : '/receptionist/login')}
-              className="p-6 rounded-[24px] bg-white border border-[#e5e5ea] hover:border-[#0088e8]/40 cursor-pointer transition-all duration-300 hover:shadow-apple-card hover:-translate-y-0.5 flex flex-col justify-between group shadow-2xs"
+              className="p-6 rounded-[22px] bg-white border border-[#e5e5ea] hover:border-[#0088e8]/40 cursor-pointer transition-all duration-200 hover:shadow-apple-card flex flex-col justify-between group shadow-xs"
             >
               <div>
-                <div className="w-11 h-11 rounded-2xl bg-teal-50 text-teal-600 border border-teal-100 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
+                <div className="w-10 h-10 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-[#0088e8] flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
                   <Clock className="w-5 h-5" />
                 </div>
-                <h4 className="text-base font-semibold text-[#1d1d1f] mb-1.5 group-hover:text-[#0088e8] transition-colors">Reception Desk</h4>
+                <h4 className="text-base font-semibold text-[#1d1d1f] mb-1 group-hover:text-[#0088e8] transition-colors">Reception Desk</h4>
                 <p className="text-xs text-[#86868b] leading-relaxed">
-                  Book walk-in patients into doctor's live queue, print tokens, and advance consultation queue.
+                  Check in patients, book rapid walk-ins, and print token passes.
                 </p>
               </div>
               <span className="text-xs text-[#0088e8] font-semibold flex items-center gap-1 mt-5 group-hover:translate-x-0.5 transition-transform">

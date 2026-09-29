@@ -93,8 +93,8 @@ export const MyAppointments: React.FC = () => {
       portalType="PATIENT"
       portalSubtitle="PATIENT PORTAL"
       navItems={navItems}
-      title="My Appointments & Live Passes"
-      subtitle="Track your live queue position and view consultation boarding passes"
+      title="Appointments & Passes"
+      subtitle="Track your live queue position and consultation tokens"
       headerAction={
         <div className="flex items-center gap-2">
           <AppleButton
@@ -113,7 +113,7 @@ export const MyAppointments: React.FC = () => {
             className="flex items-center gap-1.5 shadow-sm"
           >
             <Plus className="w-3.5 h-3.5" />
-            Book Specialist
+            Book Doctor
           </AppleButton>
         </div>
       }
@@ -130,7 +130,7 @@ export const MyAppointments: React.FC = () => {
                   : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
               }`}
             >
-              Active Queue Passes ({upcomingList.length})
+              Active Passes ({upcomingList.length})
             </button>
             <button
               onClick={() => setActiveTab('past')}
@@ -140,7 +140,7 @@ export const MyAppointments: React.FC = () => {
                   : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
               }`}
             >
-              Past Consultations ({pastList.length})
+              Past ({pastList.length})
             </button>
           </div>
         </div>

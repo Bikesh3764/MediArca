@@ -389,11 +389,11 @@ export const ManageSchedule: React.FC = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-8">
-              {/* Header & Capacity Summary Card (Apple Clinical Gradient) */}
-              <div className="p-6 rounded-[22px] bg-gradient-to-br from-[#0088e8]/5 via-white to-[#10b981]/5 border border-[#0088e8]/25 shadow-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              {/* Header & Capacity Summary Card */}
+              <div className="p-6 rounded-[22px] bg-[#f5f5f7] border border-[#e5e5ea] shadow-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-gradient-to-r from-[#0088e8]/10 to-[#10b981]/10 text-[#0088e8] border border-[#0088e8]/20">
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#0088e8]/10 text-[#0088e8] border border-[#0088e8]/20">
                       {selectedClinic?.clinicName} Capacity Overview
                     </span>
                   </div>
@@ -457,7 +457,7 @@ export const ManageSchedule: React.FC = () => {
                         {/* Shift Header */}
                         <div className="flex items-center justify-between gap-3 pb-3 border-b border-[#f5f5f7]">
                           <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                            <span className="w-7 h-7 rounded-full bg-gradient-to-br from-[#0088e8]/10 to-[#10b981]/15 text-[#0088e8] text-xs font-bold flex items-center justify-center flex-shrink-0">
+                            <span className="w-7 h-7 rounded-full bg-[#0088e8]/10 text-[#0088e8] text-xs font-bold flex items-center justify-center flex-shrink-0">
                               {idx + 1}
                             </span>
                             <input
@@ -470,7 +470,7 @@ export const ManageSchedule: React.FC = () => {
                           </div>
 
                           <div className="flex items-center gap-2 flex-shrink-0">
-                            <span className="px-3 py-1 rounded-full bg-gradient-to-r from-[#0088e8]/10 to-[#10b981]/10 text-[#0088e8] border border-[#0088e8]/20 text-xs font-semibold flex items-center gap-1.5">
+                            <span className="px-3 py-1 rounded-full bg-[#0088e8]/10 text-[#0088e8] border border-[#0088e8]/20 text-xs font-semibold flex items-center gap-1.5">
                               <Clock className="w-3.5 h-3.5" />
                               <span>
                                 {format12Hour(slot.startTime)} – {format12Hour(slot.endTime)}

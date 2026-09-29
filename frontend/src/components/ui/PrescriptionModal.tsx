@@ -61,7 +61,7 @@ export const PrescriptionModal: React.FC<PrescriptionModalProps> = ({ appointmen
             <span className="text-[#86868b] block mt-2">Queue Token</span>
             <span className="inline-block bg-[#1d1d1f] px-3 py-1 rounded-full text-xs font-bold border border-black/10 shadow-2xs">
               <span className="text-white/60 mr-1 text-[11px] font-normal uppercase">Queue</span>
-              <span className="bg-gradient-to-r from-[#0088e8] to-[#10b981] bg-clip-text text-transparent">#{queueNumber}</span>
+              <span className="text-[#0088e8]">#{queueNumber}</span>
             </span>
           </div>
         </div>
@@ -69,7 +69,7 @@ export const PrescriptionModal: React.FC<PrescriptionModalProps> = ({ appointmen
         {/* Clinical Diagnosis */}
         <div className="mb-6 p-4 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea]">
           <span className="text-xs font-semibold text-[#86868b] uppercase tracking-wider block">
-            Clinical Diagnosis / Impression
+            Diagnosis
           </span>
           <p className="text-[15px] font-medium text-[#1d1d1f] mt-1">{prescription.diagnosis}</p>
           {appointment.clinicalNotes && (

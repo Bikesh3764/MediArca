@@ -25,8 +25,8 @@ export const AppleButton: React.FC<AppleButtonProps> = ({
   let variantClass = '';
   switch (variant) {
     case 'primary':
-      // MediArca Signature Brand Gradient (Clinical Cyan to Emerald)
-      variantClass = 'bg-gradient-to-r from-[#0088e8] to-[#10b981] hover:from-[#0284c7] hover:to-[#059669] text-white shadow-xs hover:shadow-md rounded-full font-semibold';
+      // Apple Action Blue (#0088e8)
+      variantClass = 'bg-[#0088e8] hover:bg-[#0077cc] text-white shadow-xs hover:shadow-md rounded-full font-semibold';
       break;
     case 'secondary':
       // MediArca secondary pill with Brand Cyan outline

@@ -99,15 +99,15 @@ export const ClinicCheckIn: React.FC = () => {
       <div className="max-w-md w-full">
         {/* Brand Header */}
         <div className="text-center mb-6">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-800 border border-emerald-500/20 text-xs font-semibold mb-3">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Official Physical Clinic Check-In</span>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#f5f5f7] text-[#0088e8] border border-[#e5e5ea] text-xs font-semibold mb-3">
+            <MapPin className="w-3.5 h-3.5 text-[#0088e8]" />
+            <span>Clinic Arrival Check-In</span>
           </div>
           <h1 className="text-2xl font-bold text-[#1d1d1f] tracking-tight">
-            Clinic Arrival Verification
+            Clinic Check-In
           </h1>
           <p className="text-xs text-[#86868b] mt-1">
-            Zero waiting room guesswork. Let your doctor know you're in the waiting area.
+            Confirm your arrival at the clinic.
           </p>
         </div>
 
@@ -163,8 +163,8 @@ export const ClinicCheckIn: React.FC = () => {
           {checkingIn && (
             <div className="text-center py-8">
               <div className="w-10 h-10 rounded-full border-3 border-[#0088e8] border-t-transparent animate-spin mx-auto mb-4"></div>
-              <h3 className="text-sm font-semibold text-[#1d1d1f]">Verifying Physical Arrival...</h3>
-              <p className="text-xs text-[#86868b] mt-1">Authenticating QR security token with clinic desk...</p>
+              <h3 className="text-sm font-semibold text-[#1d1d1f]">Verifying Check-In...</h3>
+              <p className="text-xs text-[#86868b] mt-1">Confirming arrival with clinic...</p>
             </div>
           )}
 

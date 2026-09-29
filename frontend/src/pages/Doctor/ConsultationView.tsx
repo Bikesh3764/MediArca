@@ -335,7 +335,7 @@ export const ConsultationView: React.FC = () => {
                 <div className="py-4 border-b border-[#f0f0f0] text-xs space-y-2">
                   <div className="flex justify-between">
                     <span className="text-[#86868b]">Queue Token:</span>
-                    <strong className="bg-gradient-to-r from-[#0088e8] to-[#10b981] bg-clip-text text-transparent font-bold">Queue #{appointment.queueNumber}</strong>
+                    <strong className="text-[#0088e8] font-bold">Queue #{appointment.queueNumber}</strong>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-[#86868b]">Blood Group:</span>

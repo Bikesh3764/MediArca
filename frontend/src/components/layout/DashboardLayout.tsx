@@ -131,9 +131,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           </div>
         </div>
 
-        {/* User Capsule Card (Matches media_1789192783321.jpg with soft green tint and Online status) */}
-        <div className="bg-[#f0fdf4] border border-[#d1fae5] rounded-2xl p-3 flex items-center gap-3 transition-all hover:bg-[#ecfdf5]">
-          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#0088e8] to-[#10b981] text-white flex items-center justify-center font-bold text-sm shadow-xs flex-shrink-0">
+        {/* User Capsule Card */}
+        <div className="bg-[#f5f5f7] border border-[#e5e5ea] rounded-2xl p-3 flex items-center gap-3 transition-all hover:bg-[#ebebeb]">
+          <div className="w-9 h-9 rounded-full bg-[#0088e8] text-white flex items-center justify-center font-bold text-sm shadow-xs flex-shrink-0">
             {initialLetter}
           </div>
           <div className="min-w-0 flex-1">
@@ -141,8 +141,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               {formattedDisplayName}
             </p>
             <div className="flex items-center gap-1.5 mt-0.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#10b981] flex-shrink-0 animate-pulse" />
-              <span className="text-[11px] text-[#059669] font-medium leading-none truncate max-w-[125px]" title={getRoleSubtitle()}>
+              <span className="text-[11px] text-[#86868b] font-medium leading-none truncate max-w-[125px]" title={getRoleSubtitle()}>
                 {getRoleSubtitle()}
               </span>
             </div>
@@ -168,7 +167,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 <div
                   className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-full text-xs font-medium transition-all active:scale-[0.99] ${
                     isItemActive
-                      ? 'bg-gradient-to-r from-[#0088e8]/10 to-[#10b981]/10 text-[#0088e8] font-semibold shadow-2xs border border-[#0088e8]/15'
+                      ? 'bg-[#0088e8]/10 text-[#0088e8] font-semibold border border-[#0088e8]/20'
                       : 'text-[#48484a] hover:bg-[#f5f5f7] hover:text-[#1d1d1f]'
                   }`}
                 >
@@ -185,7 +184,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                       <span
                         className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
                           isItemActive
-                            ? 'bg-gradient-to-r from-[#0088e8] to-[#10b981] text-white shadow-2xs'
+                            ? 'bg-[#0088e8] text-white shadow-2xs'
                             : 'bg-[#e5e5ea] text-[#48484a]'
                         }`}
                       >
@@ -193,7 +192,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                       </span>
                     )}
                     {isItemActive && (
-                      <div className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-[#0088e8] to-[#10b981]" />
+                      <div className="w-1.5 h-1.5 rounded-full bg-[#0088e8]" />
                     )}
                   </div>
                 </div>

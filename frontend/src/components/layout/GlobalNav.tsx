@@ -239,7 +239,7 @@ export const GlobalNav: React.FC = () => {
               </Link>
               <Link
                 to="/signup"
-                className="bg-gradient-to-r from-[#0088e8] to-[#10b981] hover:from-[#0284c7] hover:to-[#059669] text-white px-4 py-1.5 rounded-full text-xs font-semibold shadow-xs hover:shadow active:scale-[0.98] transition-all"
+                className="bg-[#0088e8] hover:bg-[#0077cc] text-white px-4 py-1.5 rounded-full text-xs font-semibold shadow-xs active:scale-[0.98] transition-all"
               >
                 Register
               </Link>
@@ -437,7 +437,7 @@ export const GlobalNav: React.FC = () => {
                 <Link
                   to="/signup"
                   onClick={closeMenu}
-                  className="flex-1 py-2.5 text-center rounded-full bg-gradient-to-r from-[#0088e8] to-[#10b981] hover:from-[#0284c7] hover:to-[#059669] text-white font-semibold text-xs active:scale-[0.98] transition-all shadow-xs hover:shadow"
+                  className="flex-1 py-2.5 text-center rounded-full bg-[#0088e8] hover:bg-[#0077cc] text-white font-semibold text-xs active:scale-[0.98] transition-all shadow-xs"
                 >
                   Register
                 </Link>

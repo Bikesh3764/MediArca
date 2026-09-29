@@ -57,7 +57,7 @@ export const AdminLogin: React.FC = () => {
           </span>
         </h1>
         <p className="mt-2 text-xs text-neutral-400 font-mono">
-          RESTRICTED PROTOCOL · AUTHORIZED ACCESS ONLY
+          Authorized administrator access only
         </p>
       </div>
 
@@ -131,12 +131,12 @@ export const AdminLogin: React.FC = () => {
                 {submitting ? (
                   <>
                     <div className="w-3.5 h-3.5 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
-                    <span>Verifying Cryptographic Session...</span>
+                    <span>Verifying...</span>
                   </>
                 ) : (
                   <>
                     <Lock className="w-3.5 h-3.5" />
-                    <span>Authorize & Unlock Admin Console</span>
+                    <span>Sign In as Admin</span>
                   </>
                 )}
               </button>
@@ -146,7 +146,7 @@ export const AdminLogin: React.FC = () => {
           {/* Security Notice */}
           <div className="mt-6 pt-4 border-t border-white/5 text-center">
             <p className="text-[11px] text-neutral-500 leading-relaxed font-mono">
-              Session is secured with 256-bit encrypted JWT. Unauthorized connection attempts are actively audited.
+              Authorized administrator access only.
             </p>
           </div>
         </div>

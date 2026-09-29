@@ -189,7 +189,7 @@ export const AdminDashboard: React.FC = () => {
               title="Refresh platform statistics"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-[#0088e8]' : ''}`} />
-              <span className="hidden md:inline">Refresh Telemetry</span>
+              <span className="hidden md:inline">Refresh</span>
             </AppleButton>
 
             <div className="h-4 w-px bg-[#e5e5ea] hidden sm:block" />
@@ -216,10 +216,10 @@ export const AdminDashboard: React.FC = () => {
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f]">
-              Administrative Oversight
+              Admin Dashboard
             </h1>
             <p className="text-xs text-[#86868b] mt-0.5 font-normal">
-              Platform verification queue, credential auditing & multi-tenant clinical telemetry
+              Manage doctor and clinic verifications, view platform statistics
             </p>
           </div>
           <div className="flex items-center gap-2 text-xs text-[#86868b]">
@@ -235,7 +235,7 @@ export const AdminDashboard: React.FC = () => {
         {loading && !stats ? (
           <div className="flex flex-col items-center justify-center py-24">
             <div className="w-8 h-8 rounded-full border-2 border-[#0088e8] border-t-transparent animate-spin mb-3"></div>
-            <p className="text-xs text-[#86868b]">Loading platform telemetry and practitioner records...</p>
+            <p className="text-xs text-[#86868b]">Loading records...</p>
           </div>
         ) : (
           <>

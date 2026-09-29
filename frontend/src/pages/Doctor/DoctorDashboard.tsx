@@ -991,7 +991,7 @@ export const DoctorDashboard: React.FC = () => {
                     <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
                       queueScope === 'date' && date === queueData.upcomingSummary.tomorrowDate
                         ? 'bg-white/20 text-white'
-                        : 'bg-gradient-to-r from-[#0088e8] to-[#10b981] text-white shadow-2xs'
+                        : 'bg-[#0088e8] text-white'
                     }`}>
                       {queueData.upcomingSummary.tomorrowCount}
                     </span>
@@ -1034,9 +1034,9 @@ export const DoctorDashboard: React.FC = () => {
 
             {/* Upcoming Bookings Alert Banner */}
             {queueData?.upcomingSummary && queueData.upcomingSummary.tomorrowCount > 0 && (queueScope !== 'date' || date !== queueData.upcomingSummary.tomorrowDate) && (
-              <div className="mb-6 p-4 rounded-[20px] bg-gradient-to-br from-[#0088e8]/5 via-white to-[#10b981]/5 border border-[#0088e8]/25 text-[#1d1d1f] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+              <div className="mb-6 p-4 rounded-[20px] bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-[#0088e8] to-[#10b981] text-white flex items-center justify-center font-bold flex-shrink-0 shadow-xs">
+                  <div className="w-10 h-10 rounded-xl bg-[#0088e8] text-white flex items-center justify-center font-bold flex-shrink-0 shadow-xs">
                     <Calendar className="w-5 h-5" />
                   </div>
                   <div>
@@ -1054,7 +1054,7 @@ export const DoctorDashboard: React.FC = () => {
                     setQueueScope('date');
                     setDate(queueData.upcomingSummary!.tomorrowDate);
                   }}
-                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#0088e8] to-[#10b981] hover:from-[#0284c7] hover:to-[#059669] text-white font-semibold text-xs transition-all shadow-xs flex items-center justify-center gap-1.5 self-start sm:self-auto flex-shrink-0"
+                  className="px-4 py-2 rounded-xl bg-[#0088e8] hover:bg-[#0077cc] text-white font-semibold text-xs transition-all shadow-xs flex items-center justify-center gap-1.5 self-start sm:self-auto flex-shrink-0"
                 >
                   <span>Switch to Tomorrow</span>
                   <ChevronRight className="w-4 h-4" />
@@ -1064,9 +1064,9 @@ export const DoctorDashboard: React.FC = () => {
 
             {/* Alert banner if bookings on future date beyond tomorrow */}
             {queueData?.upcomingSummary && queueData.upcomingSummary.tomorrowCount === 0 && queueData.upcomingSummary.nextDateWithBookings && (queueScope !== 'date' || date !== queueData.upcomingSummary.nextDateWithBookings) && (
-              <div className="mb-6 p-4 rounded-[20px] bg-gradient-to-br from-[#0088e8]/5 via-white to-[#10b981]/5 border border-[#0088e8]/25 text-[#1d1d1f] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+              <div className="mb-6 p-4 rounded-[20px] bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-[#0088e8] to-[#10b981] text-white flex items-center justify-center font-bold flex-shrink-0 shadow-xs">
+                  <div className="w-10 h-10 rounded-xl bg-[#0088e8] text-white flex items-center justify-center font-bold flex-shrink-0 shadow-xs">
                     <Calendar className="w-5 h-5" />
                   </div>
                   <div>
@@ -1084,7 +1084,7 @@ export const DoctorDashboard: React.FC = () => {
                     setQueueScope('date');
                     setDate(queueData.upcomingSummary!.nextDateWithBookings!);
                   }}
-                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#0088e8] to-[#10b981] hover:from-[#0284c7] hover:to-[#059669] text-white font-semibold text-xs transition-all shadow-xs flex items-center justify-center gap-1.5 self-start sm:self-auto flex-shrink-0"
+                  className="px-4 py-2 rounded-xl bg-[#0088e8] hover:bg-[#0077cc] text-white font-semibold text-xs transition-all shadow-xs flex items-center justify-center gap-1.5 self-start sm:self-auto flex-shrink-0"
                 >
                   <span>View {queueData.upcomingSummary.nextDateWithBookings}</span>
                   <ChevronRight className="w-4 h-4" />
@@ -1140,7 +1140,7 @@ export const DoctorDashboard: React.FC = () => {
                     className="w-full rounded-2xl border border-[#e0f2fe] bg-[#f0f9ff]/60 hover:bg-[#f0f9ff] p-3.5 flex items-center justify-between text-left transition-all group"
                   >
                     <div className="flex items-center gap-3.5">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-[#0088e8] to-[#10b981] text-white flex items-center justify-center shadow-xs flex-shrink-0">
+                      <div className="w-10 h-10 rounded-xl bg-[#0088e8] text-white flex items-center justify-center shadow-xs flex-shrink-0">
                         <Calendar className="w-5 h-5" />
                       </div>
                       <div>
@@ -1451,7 +1451,7 @@ export const DoctorDashboard: React.FC = () => {
                             setQueueScope('date');
                             setDate(queueData.upcomingSummary!.tomorrowDate);
                           }}
-                          className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#0088e8] to-[#10b981] hover:from-[#0284c7] hover:to-[#059669] text-white text-xs font-semibold transition-all inline-flex items-center gap-1.5 shadow-xs"
+                          className="px-4 py-2 rounded-xl bg-[#0088e8] hover:bg-[#0077cc] text-white text-xs font-semibold transition-all inline-flex items-center gap-1.5 shadow-xs"
                         >
                           <span>Switch to Tomorrow's Queue ({queueData.upcomingSummary.tomorrowCount} Booked)</span>
                           <ChevronRight className="w-4 h-4" />

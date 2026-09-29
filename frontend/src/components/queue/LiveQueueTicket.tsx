@@ -43,35 +43,35 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
 
         {/* Dynamic Status Pill */}
         {status === 'PENDING_APPROVAL' ? (
-          <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-amber-500 text-white shadow-2xs flex items-center gap-1.5">
+          <span className="text-[11px] font-medium px-3 py-1 rounded-full bg-amber-500 text-white shadow-2xs flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
-            AWAITING PAYMENT & RECEPTION APPROVAL
+            Awaiting Desk Approval
           </span>
         ) : status === 'IN_CONSULTATION' || liveQueue?.isYourTurn ? (
           <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-emerald-600 text-white shadow-sm flex items-center gap-1.5 animate-pulse">
             <span className="w-2 h-2 rounded-full bg-white"></span>
-            SERVING NOW
+            Serving Now
           </span>
         ) : status === 'WAITING' && liveQueue?.patientsAway === 1 ? (
-          <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-amber-500 text-white shadow-sm flex items-center gap-1.5 animate-pulse">
+          <span className="text-[11px] font-medium px-3 py-1 rounded-full bg-amber-500 text-white shadow-sm flex items-center gap-1.5 animate-pulse">
             <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
-            NEXT IN LINE
+            Next in Line
           </span>
         ) : status === 'WAITING' ? (
-          <span className="text-[11px] font-semibold px-3 py-1 rounded-full bg-[#0088e8] text-white shadow-2xs">
-            SCHEDULED IN QUEUE
+          <span className="text-[11px] font-medium px-3 py-1 rounded-full bg-[#0088e8] text-white shadow-2xs">
+            In Queue
           </span>
         ) : status === 'COMPLETED' ? (
-          <span className="text-[11px] font-semibold px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
-            COMPLETED
+          <span className="text-[11px] font-medium px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+            Completed
           </span>
         ) : status === 'REJECTED' ? (
-          <span className="text-[11px] font-semibold px-3 py-1 rounded-full bg-rose-50 text-rose-800 border border-rose-200">
-            DECLINED BY CLINIC
+          <span className="text-[11px] font-medium px-3 py-1 rounded-full bg-rose-50 text-rose-800 border border-rose-200">
+            Declined
           </span>
         ) : (
-          <span className="text-[11px] font-semibold px-3 py-1 rounded-full bg-rose-50 text-rose-800 border border-rose-200">
-            CANCELLED
+          <span className="text-[11px] font-medium px-3 py-1 rounded-full bg-rose-50 text-rose-800 border border-rose-200">
+            Cancelled
           </span>
         )}
       </div>
@@ -123,14 +123,14 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
           {/* Prominent Queue Badge (Apple Boarding Pass Style) */}
           <div className="flex flex-col items-start sm:items-end">
             <span className="text-[11px] font-medium text-[#86868b] uppercase tracking-wider mb-1">
-              Guaranteed Queue Token
+              Queue Token
             </span>
             <div className="bg-[#1d1d1f] text-white px-5 py-2.5 rounded-[18px] flex items-baseline gap-1.5 shadow-2xs border border-black/10">
               <span className="text-xs font-normal text-white/60 uppercase">Queue</span>
               {status === 'PENDING_APPROVAL' ? (
                 <span className="text-lg font-bold tracking-tight text-amber-400">PENDING</span>
               ) : (
-                <span className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-[#0088e8] to-[#10b981] bg-clip-text text-transparent">#{queueNumber}</span>
+                <span className="text-3xl font-extrabold tracking-tight text-[#0088e8]">#{queueNumber}</span>
               )}
             </div>
           </div>
@@ -231,10 +231,10 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-semibold text-[#1d1d1f] flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                Live Clinic Radar
+                Live Queue Tracker
               </span>
               <span className="text-xs text-[#86868b]">
-                Currently Serving: <strong className="text-[#1d1d1f]">Queue #{liveQueue.currentServingQueueNumber || 1}</strong>
+                Serving: <strong className="text-[#1d1d1f]">Queue #{liveQueue.currentServingQueueNumber || 1}</strong>
               </span>
             </div>
 
@@ -250,7 +250,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
               <div className="mb-3 p-3 rounded-xl bg-gray-100 border border-gray-200 text-gray-700 text-xs flex items-center gap-2 animate-fadeIn">
                 <span className="w-2 h-2 rounded-full bg-gray-400 flex-shrink-0"></span>
                 <span>
-                  <strong>Doctor not yet in cabin:</strong> Waiting for practitioner arrival.
+                  <strong>Doctor not yet in cabin:</strong> Waiting for doctor arrival.
                 </span>
               </div>
             )}
@@ -266,7 +266,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
               <div className="space-y-2">
                 <div className="w-full bg-[#e5e5ea] h-2.5 rounded-full overflow-hidden">
                   <div
-                    className="bg-gradient-to-r from-[#0088e8] to-[#10b981] h-full transition-all duration-500 rounded-full"
+                    className="bg-[#0088e8] h-full transition-all duration-500 rounded-full"
                     style={{
                       width: `${queueNumber > 0 ? Math.min(100, Math.max(10, ((liveQueue.currentServingQueueNumber || 1) / queueNumber) * 100)) : 10}%`,
                     }}
