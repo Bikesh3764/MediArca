@@ -201,14 +201,14 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
             return (
               <div
                 key={doctor.id}
-                className="w-full bg-white rounded-[28px] border border-[#e5e5ea] p-6 sm:p-7 hover:border-[#0088e8]/40 hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] transition-all duration-200 flex flex-col justify-between group"
+                className="w-full bg-white rounded-[22px] sm:rounded-[26px] border border-[#e5e5ea] p-5 sm:p-6 hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] hover:border-[#0088e8]/30 transition-all duration-200 flex flex-col justify-between group"
               >
-                {/* 1. Top Section: Large High-Res Doctor Avatar & Practitioner Info */}
-                <div className="flex items-start gap-4 sm:gap-5">
-                  {/* Large, Clear Doctor Avatar (96px to 112px) */}
+                {/* 1. Top Section: Clean Doctor Avatar & Practitioner Info */}
+                <div className="flex items-start gap-3.5 sm:gap-4">
+                  {/* Refined Doctor Avatar (Squircle Apple Style) */}
                   <div
                     onClick={() => navigate(getDoctorDetailPath(doctor.id))}
-                    className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-[#f5f5f7] ring-2 ring-black/[0.05] border-2 border-white shadow-md overflow-hidden shrink-0 flex items-center justify-center cursor-pointer hover:opacity-95 transition-all group-hover:scale-[1.02]"
+                    className="w-16 h-16 sm:w-18 sm:h-18 rounded-[18px] sm:rounded-[20px] bg-[#f5f5f7] border border-black/[0.06] overflow-hidden shrink-0 flex items-center justify-center cursor-pointer transition-transform group-hover:scale-[1.02] shadow-xs"
                   >
                     {doctor.user?.avatarUrl ? (
                       <img
@@ -224,45 +224,44 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
                       />
                     ) : null}
                     <div
-                      className={`doc-fallback w-full h-full ${doctor.user?.avatarUrl ? 'hidden' : 'flex'} items-center justify-center font-bold text-3xl text-white bg-gradient-to-br from-[#0088e8] to-[#0066cc] select-none`}
+                      className={`doc-fallback w-full h-full ${doctor.user?.avatarUrl ? 'hidden' : 'flex'} items-center justify-center font-semibold text-2xl text-white bg-gradient-to-br from-[#0088e8] to-[#0066cc] select-none`}
                     >
                       {(doctor.user?.fullName ? doctor.user.fullName.replace(/^Dr\.\s*/i, '').trim()[0] : null) || 'D'}
                     </div>
                   </div>
 
                   {/* Doctor Info */}
-                  <div className="min-w-0 flex-1 pt-1">
-                    <div className="flex items-center gap-1.5 sm:gap-2">
+                  <div className="min-w-0 flex-1 pt-0.5">
+                    <div className="flex items-center gap-1.5">
                       <h3
                         onClick={() => navigate(getDoctorDetailPath(doctor.id))}
-                        className="text-lg sm:text-xl font-bold text-[#1d1d1f] hover:text-[#0088e8] cursor-pointer tracking-tight transition-colors line-clamp-1"
+                        className="text-base sm:text-lg font-semibold text-[#1d1d1f] hover:text-[#0088e8] cursor-pointer tracking-tight transition-colors line-clamp-1"
                         title={doctor.user?.fullName || 'Doctor'}
                       >
                         {doctor.user?.fullName || 'Doctor'}
                       </h3>
-                      <CheckCircle2 className="w-5 h-5 text-[#0088e8] fill-[#0088e8]/10 shrink-0" />
+                      <CheckCircle2 className="w-4 h-4 text-[#0088e8] fill-[#0088e8]/10 shrink-0" />
                     </div>
 
-                    <div className="mt-2 flex flex-wrap items-center gap-2">
-                      <span className="inline-flex items-center px-3 py-0.5 rounded-full text-xs font-semibold bg-[#0088e8]/8 text-[#0088e8] border border-[#0088e8]/15">
-                        {doctor.specialty}
-                      </span>
-                      <span className="text-xs sm:text-sm text-[#86868b] font-medium">{doctor.experienceYears} yrs exp</span>
+                    <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs sm:text-sm text-[#86868b]">
+                      <span className="font-medium text-[#0088e8]">{doctor.specialty}</span>
+                      <span className="text-[#d1d1d6]">•</span>
+                      <span>{doctor.experienceYears} yrs exp</span>
                     </div>
 
                     {cleanDegrees && (
-                      <div className="mt-1.5 text-xs sm:text-sm text-[#48484a] font-normal truncate">
+                      <div className="mt-0.5 text-xs text-[#86868b] truncate">
                         {cleanDegrees}
                       </div>
                     )}
                   </div>
                 </div>
 
-                {/* 2. Middle Section: Inset Clinic Venue & Shift Capsule */}
-                <div className="mt-5 p-3.5 sm:p-4 rounded-[18px] bg-[#f5f5f7] border border-black/[0.03] flex flex-col gap-2.5 text-xs sm:text-sm">
+                {/* 2. Middle Section: Practice Venue & Shift Timing */}
+                <div className="mt-4 pt-3.5 border-t border-[#f0f0f2] flex flex-col gap-2 text-xs sm:text-sm">
                   {/* Practice Venue */}
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <Building2 className="w-4 h-4 text-[#0088e8] shrink-0" />
+                  <div className="flex items-center gap-2 text-[#48484a] min-w-0">
+                    <Building2 className="w-4 h-4 text-[#86868b] shrink-0" />
                     {hasClinics && primaryClinic ? (
                       <span
                         className="font-medium text-[#1d1d1f] truncate"
@@ -277,24 +276,24 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
                         )}
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1.5 text-xs sm:text-sm text-amber-600 font-medium">
-                        <AlertCircle className="w-4 h-4 text-amber-500 shrink-0" />
+                      <span className="inline-flex items-center gap-1.5 text-xs text-amber-600 font-medium">
+                        <AlertCircle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                         No Clinic Associated
                       </span>
                     )}
                   </div>
 
                   {/* Shift Timing */}
-                  <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="flex items-center gap-2 text-[#86868b] min-w-0">
                     <Clock className="w-4 h-4 text-[#86868b] shrink-0" />
-                    <span className="font-medium text-[#48484a] truncate">
+                    <span className="font-normal truncate">
                       {slots.length > 0
                         ? `${format12Hour(slots[0].startTime)} – ${format12Hour(slots[0].endTime)}`
                         : doctor.checkingStartTime
                         ? `${format12Hour(doctor.checkingStartTime)} – ${format12Hour(doctor.checkingEndTime)}`
                         : 'Outpatient Shift'}
                       {slots.length > 1 && (
-                        <span className="text-xs text-[#86868b] font-normal ml-1.5">
+                        <span className="text-[#86868b] font-normal ml-1">
                           ({slots.length} shifts)
                         </span>
                       )}
@@ -303,10 +302,13 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
                 </div>
 
                 {/* 3. Bottom Section: Consultation Fee & Action CTA */}
-                <div className="mt-5 pt-4 border-t border-[#f5f5f7] flex items-center justify-between gap-4">
-                  <span className="text-2xl sm:text-3xl font-bold text-[#1d1d1f] tracking-tight">
-                    ₹{doctor.consultationFee.toFixed(0)}
-                  </span>
+                <div className="mt-4 pt-3.5 border-t border-[#f0f0f2] flex items-center justify-between gap-4">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-medium uppercase tracking-wider text-[#86868b]">Consultation</span>
+                    <span className="text-xl sm:text-2xl font-bold text-[#1d1d1f] tracking-tight">
+                      ₹{doctor.consultationFee.toFixed(0)}
+                    </span>
+                  </div>
 
                   <div>
                     {hasClinics ? (
@@ -314,17 +316,17 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
                         variant="primary"
                         size="sm"
                         onClick={() => navigate(getBookPath(doctor.id))}
-                        className="text-xs sm:text-sm px-6 py-2.5 sm:py-3 rounded-full flex items-center gap-2 font-semibold shadow-xs hover:shadow-apple-button active:scale-[0.98] transition-all bg-[#0088e8] hover:bg-[#0077cc]"
+                        className="text-xs sm:text-sm px-5 py-2.5 rounded-full flex items-center gap-1.5 font-semibold shadow-xs hover:shadow-apple-button active:scale-[0.98] transition-all bg-[#0088e8] hover:bg-[#0077cc] text-white"
                       >
                         <span>Book Token</span>
-                        <ChevronRight className="w-4 h-4 stroke-[2.5]" />
+                        <ChevronRight className="w-3.5 h-3.5 stroke-[2.5]" />
                       </AppleButton>
                     ) : (
                       <AppleButton
                         variant="secondary"
                         size="sm"
                         disabled
-                        className="text-xs sm:text-sm px-5 py-2.5 sm:py-3 rounded-full opacity-60 cursor-not-allowed bg-[#f5f5f7] border border-[#e5e5ea] text-[#86868b] font-medium"
+                        className="text-xs sm:text-sm px-4 py-2.5 rounded-full opacity-60 cursor-not-allowed bg-[#f5f5f7] border border-[#e5e5ea] text-[#86868b] font-medium"
                       >
                         <span>Unavailable</span>
                       </AppleButton>
