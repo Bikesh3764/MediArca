@@ -15,6 +15,7 @@ import { useAuth } from '../context/AuthContext';
 import { AppleButton } from '../components/ui/AppleButton';
 import { BrandLogo } from '../components/ui/BrandLogo';
 import { SearchableSpecialtySelect } from '../components/ui/SearchableSpecialtySelect';
+import healthcareHeroBg from '../assets/healthcare-hero-bg.jpg';
 import {
   Search,
   MapPin,
@@ -164,12 +165,25 @@ export const Home: React.FC = () => {
 
   return (
     <div className="flex flex-col min-h-screen bg-[#f5f5f7]">
-      {/* 1. Hero Section - Search-Driven Apple Aesthetic */}
-      <section className="bg-white border-b border-[#e5e5ea] pt-12 pb-14 px-4 sm:px-6">
-        <div className="max-w-4xl mx-auto text-center">
+      {/* 1. Hero Section - Search-Driven Apple Aesthetic with Healthcare Background */}
+      <section className="relative overflow-hidden border-b border-[#e5e5ea] py-16 sm:py-24 md:py-28 lg:py-32 px-4 sm:px-6 min-h-[460px] sm:min-h-[520px] flex items-center justify-center">
+        {/* Apple Healthcare Themed Hero Background */}
+        <div className="absolute inset-0 pointer-events-none select-none overflow-hidden">
+          <img
+            src={healthcareHeroBg}
+            alt="Healthcare clinical setting"
+            className="w-full h-full object-cover object-center filter saturate-[1.08] scale-105"
+          />
+          {/* Apple Frosted Glass & Light Gradient Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-b from-white/85 via-white/75 to-white/95 backdrop-blur-[1px]" />
+          {/* Subtle Radial Vignette for Content Focus */}
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.65)_0%,rgba(255,255,255,0.92)_100%)]" />
+        </div>
+
+        <div className="relative z-10 max-w-4xl mx-auto text-center w-full">
           {/* Role Aware Status Bar */}
           {user ? (
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-xs font-medium text-[#1d1d1f] mb-6">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full backdrop-blur-md bg-white/85 border border-white/80 shadow-[0_2px_8px_rgba(0,0,0,0.04)] text-xs font-medium text-[#1d1d1f] mb-6">
               <BrandLogo variant="icon" size="xs" />
               <span>
                 {user.fullName?.split(' ')[0] || user.fullName} •{' '}
@@ -185,20 +199,24 @@ export const Home: React.FC = () => {
               </span>
             </div>
           ) : (
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-xs font-medium text-[#1d1d1f] mb-6">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full backdrop-blur-md bg-white/85 border border-white/80 shadow-[0_2px_8px_rgba(0,0,0,0.04)] text-xs font-medium text-[#1d1d1f] mb-6">
               <BrandLogo variant="icon" size="xs" />
               <span>Live Queue & Instant Booking</span>
             </div>
           )}
 
-          <h1 className="text-3xl sm:text-5xl md:text-6xl font-semibold text-[#1d1d1f] tracking-tight leading-[1.1] mb-8">
+          <h1 className="text-3xl sm:text-5xl md:text-6xl font-semibold text-[#1d1d1f] tracking-tight leading-[1.1] mb-3">
             Find doctors. <span className="text-[#0088e8]">Book queue tokens.</span>
           </h1>
+
+          <p className="text-sm sm:text-base text-[#48484a] max-w-xl mx-auto mb-8 font-normal leading-relaxed">
+            Book live token passes, verify queue status in real-time, and skip clinic waiting rooms.
+          </p>
 
           {/* Central Integrated Search Bar */}
           <form
             onSubmit={handleHeroSearch}
-            className="bg-white sm:bg-[#f5f5f7] p-2 sm:p-2.5 rounded-[24px] sm:rounded-full border border-[#e5e5ea] shadow-sm max-w-3xl mx-auto flex flex-col sm:flex-row items-center gap-2 transition-all focus-within:border-[#0088e8] focus-within:shadow-[0_4px_24px_-4px_rgba(0,136,232,0.18)] focus-within:bg-white"
+            className="backdrop-blur-xl bg-white/95 sm:bg-white/90 p-2 sm:p-2.5 rounded-[24px] sm:rounded-full border border-white/90 sm:border-[#e5e5ea] shadow-[0_12px_40px_rgba(0,0,0,0.08)] max-w-3xl mx-auto flex flex-col sm:flex-row items-center gap-2 transition-all focus-within:border-[#0088e8] focus-within:shadow-[0_16px_48px_rgba(0,136,232,0.18)] focus-within:bg-white"
           >
             {/* Doctor or Keyword Input */}
             <div className="flex items-center gap-2.5 flex-1 w-full px-4 py-2 sm:py-0">
