@@ -2,17 +2,101 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { BrandLogo } from '../ui/BrandLogo';
-import { LogOut, ShieldCheck, Stethoscope, Menu, X, Calendar, Building2, Users } from 'lucide-react';
+import {
+  LogOut,
+  ShieldCheck,
+  Stethoscope,
+  Menu,
+  X,
+  Calendar,
+  Building2,
+  Users,
+  Bell,
+  CheckCheck,
+  Clock,
+  AlertCircle,
+} from 'lucide-react';
+import { api, getFileUrl, AppNotification } from '../../services/api';
+
+const formatNotificationTimeAgo = (dateStr: string): string => {
+  try {
+    const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
+    if (diff < 60) return 'Just now';
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    return `${Math.floor(diff / 86400)}d ago`;
+  } catch {
+    return '';
+  }
+};
 
 export const GlobalNav: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  const fetchNotifications = React.useCallback(async () => {
+    if (!user) return;
+    try {
+      const res = await api.getNotifications();
+      if (res && Array.isArray(res.notifications)) {
+        setNotifications(res.notifications);
+        setUnreadCount(
+          typeof res.unreadCount === 'number'
+            ? res.unreadCount
+            : res.notifications.filter((n) => !n.isRead).length
+        );
+      }
+    } catch {
+      // background polling fails gracefully
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) {
+      queueMicrotask(() => {
+        setNotifications([]);
+        setUnreadCount(0);
+      });
+      return;
+    }
+    queueMicrotask(() => {
+      fetchNotifications();
+    });
+    const interval = setInterval(fetchNotifications, 25000);
+    return () => clearInterval(interval);
+  }, [user, fetchNotifications]);
+
+  const handleMarkAsRead = async (notificationId: string) => {
+    try {
+      await api.markNotificationRead(notificationId);
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === notificationId ? { ...n, isRead: true } : n))
+      );
+      setUnreadCount((prev) => Math.max(0, prev - 1));
+    } catch (err) {
+      console.error('Failed to mark notification read:', err);
+    }
+  };
+
+  const handleMarkAllRead = async () => {
+    try {
+      await api.markAllNotificationsRead();
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+      setUnreadCount(0);
+    } catch (err) {
+      console.error('Failed to mark all notifications read:', err);
+    }
+  };
 
   useEffect(() => {
     queueMicrotask(() => {
       setMobileMenuOpen(false);
+      setNotificationsOpen(false);
     });
   }, [location.pathname]);
 
@@ -194,6 +278,100 @@ export const GlobalNav: React.FC = () => {
         <div className="hidden md:flex items-center gap-2.5">
           {user ? (
             <div className="flex items-center gap-2">
+              {/* Notification Bell Dropdown */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setNotificationsOpen(!notificationsOpen)}
+                  className="relative p-2 rounded-full text-[#1d1d1f] hover:bg-black/[0.04] transition-all active:scale-95"
+                  title="Notifications"
+                  aria-label="Notifications"
+                >
+                  <Bell className="w-4 h-4" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-[#0088e8] text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-xs border-2 border-white">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
+                </button>
+
+                {notificationsOpen && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setNotificationsOpen(false)}
+                    />
+                    <div className="absolute right-0 top-11 w-80 sm:w-96 bg-white/95 backdrop-blur-2xl border border-[#e5e5ea] rounded-2xl shadow-2xl z-50 overflow-hidden animate-fadeIn text-left">
+                      <div className="px-4 py-3 border-b border-[#f0f0f0] flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-xs text-[#1d1d1f]">Notifications</span>
+                          {unreadCount > 0 && (
+                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#0088e8]/10 text-[#0088e8]">
+                              {unreadCount} new
+                            </span>
+                          )}
+                        </div>
+                        {unreadCount > 0 && (
+                          <button
+                            type="button"
+                            onClick={handleMarkAllRead}
+                            className="text-[11px] font-medium text-[#0088e8] hover:underline flex items-center gap-1"
+                          >
+                            <CheckCheck className="w-3 h-3" />
+                            Mark all read
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="max-h-80 overflow-y-auto divide-y divide-[#f5f5f7]">
+                        {notifications.length === 0 ? (
+                          <div className="p-8 text-center text-[#86868b]">
+                            <Bell className="w-6 h-6 mx-auto mb-2 text-[#d2d2d7]" />
+                            <p className="text-xs">No notifications yet</p>
+                          </div>
+                        ) : (
+                          notifications.map((notif) => (
+                            <div
+                              key={notif.id}
+                              onClick={() => !notif.isRead && handleMarkAsRead(notif.id)}
+                              className={`p-3.5 transition-colors cursor-pointer flex items-start gap-3 ${
+                                notif.isRead ? 'bg-white hover:bg-[#fafafc]' : 'bg-[#f0f8ff]/70 hover:bg-[#e6f2fc]'
+                              }`}
+                            >
+                              <div className="p-2 rounded-xl bg-white border border-[#e5e5ea] flex-shrink-0 mt-0.5">
+                                {notif.type === 'APPOINTMENT' && <Calendar className="w-3.5 h-3.5 text-[#0088e8]" />}
+                                {notif.type === 'QUEUE' && <Clock className="w-3.5 h-3.5 text-amber-600" />}
+                                {notif.type === 'CLINICAL' && <Stethoscope className="w-3.5 h-3.5 text-emerald-600" />}
+                                {notif.type === 'SYSTEM' && <ShieldCheck className="w-3.5 h-3.5 text-purple-600" />}
+                                {!['APPOINTMENT', 'QUEUE', 'CLINICAL', 'SYSTEM'].includes(notif.type) && (
+                                  <AlertCircle className="w-3.5 h-3.5 text-[#0088e8]" />
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between gap-1 mb-0.5">
+                                  <h4 className="text-xs font-semibold text-[#1d1d1f] truncate">
+                                    {notif.title}
+                                  </h4>
+                                  <span className="text-[10px] text-[#86868b] flex-shrink-0">
+                                    {formatNotificationTimeAgo(notif.createdAt)}
+                                  </span>
+                                </div>
+                                <p className="text-[11px] text-[#86868b] leading-relaxed line-clamp-2">
+                                  {notif.message}
+                                </p>
+                              </div>
+                              {!notif.isRead && (
+                                <span className="w-2 h-2 rounded-full bg-[#0088e8] flex-shrink-0 mt-2" />
+                              )}
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+
               <Link
                 to={
                   user.role === 'PATIENT'
@@ -211,7 +389,7 @@ export const GlobalNav: React.FC = () => {
               >
                 <div className="w-6 h-6 rounded-full bg-[#0088e8] flex items-center justify-center text-[10px] font-bold text-white shadow-2xs overflow-hidden flex-shrink-0">
                   {user.avatarUrl ? (
-                    <img src={user.avatarUrl} alt={user.fullName} className="w-full h-full object-cover" />
+                    <img src={getFileUrl(user.avatarUrl)} alt={user.fullName} className="w-full h-full object-cover" />
                   ) : (
                     <span>{getInitials(user.fullName)}</span>
                   )}
@@ -249,12 +427,27 @@ export const GlobalNav: React.FC = () => {
           )}
         </div>
 
-        {/* Mobile Hamburger Toggle */}
-        <div className="flex items-center md:hidden gap-2">
+        {/* Mobile Hamburger Toggle & Mobile Bell */}
+        <div className="flex items-center md:hidden gap-1.5">
           {user && (
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#0088e8]/10 text-[#0088e8] font-semibold border border-[#0088e8]/20">
-              {user.role}
-            </span>
+            <>
+              <button
+                type="button"
+                onClick={() => setNotificationsOpen(!notificationsOpen)}
+                className="relative p-1.5 text-[#1d1d1f] rounded-full hover:bg-black/[0.04]"
+                aria-label="Notifications"
+              >
+                <Bell className="w-4 h-4" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-[16px] px-0.5 bg-[#0088e8] text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </button>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#0088e8]/10 text-[#0088e8] font-semibold border border-[#0088e8]/20">
+                {user.role}
+              </span>
+            </>
           )}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -273,7 +466,7 @@ export const GlobalNav: React.FC = () => {
             <div className="flex items-center gap-3 pb-3.5 border-b border-black/[0.06]">
               <div className="w-9 h-9 rounded-full bg-[#0088e8] flex items-center justify-center text-xs font-bold text-white shadow-2xs overflow-hidden flex-shrink-0">
                 {user.avatarUrl ? (
-                  <img src={user.avatarUrl} alt={user.fullName} className="w-full h-full object-cover" />
+                  <img src={getFileUrl(user.avatarUrl)} alt={user.fullName} className="w-full h-full object-cover" />
                 ) : (
                   <span>{getInitials(user.fullName)}</span>
                 )}

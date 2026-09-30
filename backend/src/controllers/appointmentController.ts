@@ -497,15 +497,8 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
     while (attempts < maxAttempts) {
       try {
         newAppointment = await prisma.$transaction(async (tx) => {
-          // Pessimistic concurrency control: lock practitioner row for this booking
-          try {
-            await tx.$executeRaw`SELECT id FROM "DoctorProfile" WHERE id = ${doctor.id} FOR UPDATE;`;
-          } catch (lockErr: any) {
-            if (process.env.NODE_ENV === 'production') {
-              console.error('Failed to acquire pessimistic lock on DoctorProfile in bookAppointment:', lockErr);
-              throw new Error('CONCURRENCY_LOCK_FAILURE: Failed to acquire scheduling lock for practitioner. Please try again.');
-            }
-          }
+          // Concurrency control: lock practitioner row for this booking without swallowing errors (BUG-05)
+          await tx.$executeRaw`SELECT id FROM "DoctorProfile" WHERE id = ${doctor.id} FOR UPDATE;`;
 
           // Re-verify duplicate booking inside the transaction
           if (req.user?.role === 'PATIENT') {
@@ -642,12 +635,32 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
         break; // Successfully booked
       } catch (err: any) {
         attempts++;
-        if (err.code === 'P2002' && attempts < maxAttempts) {
-          // Retry on unique constraint collision
+        if (
+          (err.code === 'P2002' || err.code === 'P2034' || err.code === '40P01' || err.message?.includes('deadlock')) &&
+          attempts < maxAttempts
+        ) {
+          // Retry on unique constraint collision or concurrency lock contention
           continue;
         }
         throw err;
       }
+    }
+
+    if (req.user?.id) {
+      createNotification(
+        req.user.id,
+        'Appointment Booking Confirmed',
+        `Your visit request with Dr. ${doctor.user?.fullName || 'Practitioner'} for ${appointmentDate} (${chosenSlot.name}) has been confirmed.`,
+        'APPOINTMENT'
+      ).catch(() => {});
+    }
+    if (doctor?.userId) {
+      createNotification(
+        doctor.userId,
+        'New Appointment Booking',
+        `A patient has booked a visit for ${appointmentDate} (${chosenSlot.name}).`,
+        'APPOINTMENT'
+      ).catch(() => {});
     }
 
     res.status(201).json({
@@ -807,6 +820,7 @@ export const getPatientAppointments = async (req: AuthRequest, res: Response): P
               doctorId: { in: doctorIds },
               appointmentDate: { in: dates },
               status: { in: ['WAITING', 'IN_CONSULTATION'] },
+              queueNumber: { gt: 0 },
             },
             select: {
               doctorId: true,
@@ -854,6 +868,7 @@ export const getPatientAppointments = async (req: AuthRequest, res: Response): P
           a.appointmentDate === appt.appointmentDate &&
           (appt.clinicId ? a.clinicId === appt.clinicId : true) &&
           (appt.slotId ? a.slotId === appt.slotId : appt.checkingWindow ? a.checkingWindow === appt.checkingWindow : true) &&
+          a.queueNumber > 0 &&
           a.queueNumber < appt.queueNumber
         ).length;
 
@@ -982,6 +997,22 @@ export const cancelAppointment = async (req: AuthRequest, res: Response): Promis
       where: { id },
       data: { status: 'CANCELLED' },
     });
+
+    if (req.user?.role === 'PATIENT' && appointment.doctor?.userId) {
+      createNotification(
+        appointment.doctor.userId,
+        'Appointment Cancelled by Patient',
+        `The appointment for ${appointment.appointmentDate} (Token #${appointment.queueNumber}) was cancelled by the patient.`,
+        'APPOINTMENT'
+      ).catch(() => {});
+    } else if (req.user?.role !== 'PATIENT' && appointment.patient?.userId) {
+      createNotification(
+        appointment.patient.userId,
+        'Appointment Cancelled',
+        `Your appointment with Dr. ${appointment.doctor?.user?.fullName || 'Practitioner'} for ${appointment.appointmentDate} was cancelled.`,
+        'APPOINTMENT'
+      ).catch(() => {});
+    }
 
     res.json({ success: true, message: 'Appointment cancelled successfully', data: updated });
   } catch (error: any) {
@@ -1134,6 +1165,21 @@ export const checkInAppointmentWithQR = async (req: AuthRequest, res: Response):
         clinic: true,
       },
     });
+
+    if (updated.doctor?.user) {
+      const docProfile = await prisma.doctorProfile.findUnique({
+        where: { id: updated.doctorId },
+        select: { userId: true },
+      });
+      if (docProfile?.userId) {
+        createNotification(
+          docProfile.userId,
+          'Patient Arrived at Clinic Desk',
+          `Queue Token #${updated.queueNumber} (${appointment.patientName || 'Patient'}) has checked in at ${clinic.clinicName}.`,
+          'QUEUE'
+        ).catch(() => {});
+      }
+    }
 
     res.json({
       success: true,

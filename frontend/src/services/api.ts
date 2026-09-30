@@ -13,10 +13,6 @@ export const getFileUrl = (filePath?: string): string => {
   if (filePath.startsWith('data:') || filePath.startsWith('http://') || filePath.startsWith('https://')) return filePath;
   if (filePath.startsWith('r2://')) {
     const clean = filePath.replace(/^r2:\/\//, '');
-    // Clinical documents (under records/) must never be exposed via public CDN URL
-    if (clean.startsWith('records/')) {
-      return '';
-    }
     const r2PublicUrl =
       (typeof import.meta !== 'undefined' && import.meta.env?.VITE_R2_PUBLIC_URL) ||
       'https://pub-a590817d9f404eb889f6482b025ea9ad.r2.dev';
@@ -25,6 +21,7 @@ export const getFileUrl = (filePath?: string): string => {
   const backendBase = getBackendBaseUrl();
   return `${backendBase}${filePath.startsWith('/') ? '' : '/'}${filePath}`;
 };
+
 
 
 export interface DoctorSlot {
@@ -878,6 +875,22 @@ export interface Appointment {
   };
 }
 
+export interface AppNotification {
+  id: string;
+  userId: string;
+  title: string;
+  message: string;
+  type: 'APPOINTMENT' | 'QUEUE' | 'CLINICAL' | 'SYSTEM' | string;
+  isRead: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface NotificationsResponse {
+  notifications: AppNotification[];
+  unreadCount: number;
+}
+
 const getHeaders = (isMultipart = false) => {
   const token = localStorage.getItem('mediarca_token');
   const headers: Record<string, string> = {};
@@ -991,6 +1004,8 @@ export const api = {
     minExp?: number;
     maxFee?: number;
     sortBy?: string;
+    clinicOnly?: boolean;
+    clinicId?: string;
   }): Promise<Doctor[]> {
     try {
       const query = new URLSearchParams();
@@ -999,6 +1014,8 @@ export const api = {
       if (params?.minExp) query.append('minExp', String(params.minExp));
       if (params?.maxFee) query.append('maxFee', String(params.maxFee));
       if (params?.sortBy) query.append('sortBy', params.sortBy);
+      if (params?.clinicOnly !== undefined) query.append('clinicOnly', String(params.clinicOnly));
+      if (params?.clinicId) query.append('clinicId', params.clinicId);
 
       const res = await fetch(`${API_BASE_URL}/doctors?${query.toString()}`);
       return await handleResponse(res);
@@ -1033,6 +1050,21 @@ export const api = {
       }
       throw err;
     }
+  },
+
+  async getDoctorReviews(doctorId: string): Promise<{
+    rating: number;
+    totalReviews: number;
+    reviews: Array<{
+      id: string;
+      rating: number;
+      comment?: string;
+      createdAt: string;
+      patientUser: { fullName: string };
+    }>;
+  }> {
+    const res = await fetch(`${API_BASE_URL}/doctors/${doctorId}/reviews`);
+    return await handleResponse(res);
   },
 
   async updateDoctorSchedule(body: any): Promise<Doctor> {

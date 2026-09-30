@@ -72,7 +72,11 @@ export const getDoctors = async (req: Request, res: Response): Promise<void> => 
           clinics: {
             some: {
               clinic: {
-                clinicName: { contains: search, mode: 'insensitive' },
+                OR: [
+                  { clinicName: { contains: search, mode: 'insensitive' } },
+                  { address: { contains: search, mode: 'insensitive' } },
+                  { city: { contains: search, mode: 'insensitive' } },
+                ],
               },
             },
           },
@@ -980,3 +984,56 @@ export const updateCabinStatus = async (req: AuthRequest, res: Response): Promis
     });
   }
 };
+
+/**
+ * Get public reviews for a doctor with masked patient identity (BUG-08)
+ */
+export const getDoctorReviews = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const id = String(req.params.id);
+    const doctor = await prisma.doctorProfile.findUnique({
+      where: { id },
+      select: { id: true, rating: true, totalReviews: true },
+    });
+
+    if (!doctor) {
+      res.status(404).json({ success: false, message: 'Doctor not found' });
+      return;
+    }
+
+    const reviews = await prisma.review.findMany({
+      where: { doctorId: id },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        patientUser: { select: { fullName: true } },
+      },
+    });
+
+    const maskedReviews = reviews.map((r) => ({
+      id: r.id,
+      rating: r.rating,
+      comment: r.comment,
+      createdAt: r.createdAt,
+      patientUser: {
+        fullName: maskPatientName(r.patientUser?.fullName),
+      },
+    }));
+
+    res.json({
+      success: true,
+      data: {
+        rating: doctor.rating,
+        totalReviews: doctor.totalReviews,
+        reviews: maskedReviews,
+      },
+    });
+  } catch (error: any) {
+    console.error('getDoctorReviews error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch doctor reviews',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
+  }
+};
+

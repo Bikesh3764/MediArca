@@ -254,6 +254,7 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
       where: {
         doctorId: doctorId,
         appointmentDate: appointmentDate,
+        queueNumber: { gt: 0 },
         ...(receptionist?.clinicId ? { clinicId: receptionist.clinicId } : {}),
       },
       include: {
@@ -525,15 +526,8 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
     while (attempts < maxAttempts) {
       try {
         newAppointment = await prisma.$transaction(async (tx) => {
-          // Pessimistic concurrency control: lock practitioner row for this booking
-          try {
-            await tx.$executeRaw`SELECT id FROM "DoctorProfile" WHERE id = ${doctor.id} FOR UPDATE;`;
-          } catch (lockErr: any) {
-            if (process.env.NODE_ENV === 'production') {
-              console.error('Failed to acquire pessimistic lock on DoctorProfile in walk-in booking:', lockErr);
-              throw new Error('CONCURRENCY_LOCK_FAILURE: Failed to acquire scheduling lock for practitioner. Please try again.');
-            }
-          }
+          // Concurrency control: lock practitioner row for this booking without swallowing errors (BUG-05)
+          await tx.$executeRaw`SELECT id FROM "DoctorProfile" WHERE id = ${doctor.id} FOR UPDATE;`;
 
           // Duplicate booking check within transaction (Finding H7)
           const existingInTx = await tx.appointment.findFirst({
@@ -641,7 +635,10 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
         break; // Success!
       } catch (err: any) {
         attempts++;
-        if (err.code === 'P2002' && attempts < maxAttempts) {
+        if (
+          (err.code === 'P2002' || err.code === 'P2034' || err.code === '40P01' || err.message?.includes('deadlock')) &&
+          attempts < maxAttempts
+        ) {
           continue;
         }
         throw err;

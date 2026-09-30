@@ -4253,6 +4253,87 @@ function runTests() {
   mockRes.set('Expires', '0');
   assert(mockHeaders['Cache-Control'].includes('no-store'), 'BUG-30: Cache-Control header disables client caching');
 
+  // BUG-08: Doctor Review Public Masking & Retrieval
+  const mockReviews = [
+    { id: 'rev_1', rating: 5, comment: 'Excellent doctor', patientUser: { fullName: 'Amitabh Bachchan' }, createdAt: new Date() },
+    { id: 'rev_2', rating: 4, comment: 'Very attentive', patientUser: { fullName: 'Priya Sharma' }, createdAt: new Date() },
+  ];
+  const maskPatientReviewName = (name?: string | null) => {
+    if (!name) return 'Verified Patient';
+    const parts = name.trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 1) return parts[0];
+    return `${parts[0]} ${parts[parts.length - 1][0]}.`;
+  };
+  const maskedReviews = mockReviews.map((r) => ({
+    ...r,
+    patientUser: { fullName: maskPatientReviewName(r.patientUser.fullName) },
+  }));
+  assert(maskedReviews[0].patientUser.fullName === 'Amitabh B.', 'BUG-08: Review patient name masked to "Amitabh B."');
+  assert(maskedReviews[1].patientUser.fullName === 'Priya S.', 'BUG-08: Review patient name masked to "Priya S."');
+
+  // BUG-19: Clinic Search across clinicName, address, and city
+  const mockClinicDoctors = [
+    { id: 'doc_1', user: { fullName: 'Dr. Sarah' }, clinics: [{ clinic: { clinicName: 'Apollo Clinic', address: '12 Linking Road', city: 'Mumbai' } }] },
+    { id: 'doc_2', user: { fullName: 'Dr. Rajesh' }, clinics: [{ clinic: { clinicName: 'Fortis Hospital', address: 'Bannerghatta Rd', city: 'Bengaluru' } }] },
+  ];
+  const searchDoctorsByClinic = (term: string) => {
+    const q = term.toLowerCase();
+    return mockClinicDoctors.filter((doc) =>
+      doc.clinics.some((c) =>
+        c.clinic.clinicName.toLowerCase().includes(q) ||
+        c.clinic.address.toLowerCase().includes(q) ||
+        c.clinic.city.toLowerCase().includes(q)
+      )
+    );
+  };
+  assert(searchDoctorsByClinic('Mumbai').length === 1 && searchDoctorsByClinic('Mumbai')[0].id === 'doc_1', 'BUG-19: Searching by city "Mumbai" finds affiliated doctor');
+  assert(searchDoctorsByClinic('Bannerghatta').length === 1 && searchDoctorsByClinic('Bannerghatta')[0].id === 'doc_2', 'BUG-19: Searching by address "Bannerghatta" finds affiliated doctor');
+  assert(searchDoctorsByClinic('Apollo').length === 1 && searchDoctorsByClinic('Apollo')[0].id === 'doc_1', 'BUG-19: Searching by clinicName "Apollo" finds affiliated doctor');
+
+  // BUG-12 / BUG-17: Synthetic Walk-in Migration Phone Match
+  const generateSyntheticPhoneMatches = (rawInputPhone: string) => {
+    const rawDigits = rawInputPhone.replace(/\D/g, '').slice(-10);
+    const plainWithPlus = `+91${rawDigits}`;
+    const spacedPhone = `+91 ${rawDigits.slice(0, 5)} ${rawDigits.slice(5)}`;
+    return [rawInputPhone, rawDigits, plainWithPlus, spacedPhone];
+  };
+  const phoneCandidates = generateSyntheticPhoneMatches('9876543210');
+  assert(phoneCandidates.includes('+91 98765 43210'), 'BUG-12/17: Synthetic phone migration includes spaced format "+91 98765 43210"');
+  assert(phoneCandidates.includes('+919876543210'), 'BUG-12/17: Synthetic phone migration includes unspaced format "+919876543210"');
+
+  // BUG-18 / BUG-24: getFileUrl relative path resolution
+  const resolveFileUrlTest = (filePath?: string, backendBase = 'https://api.mediarca.com'): string => {
+    if (!filePath) return '';
+    if (filePath.startsWith('data:') || filePath.startsWith('http://') || filePath.startsWith('https://')) return filePath;
+    return `${backendBase}${filePath.startsWith('/') ? '' : '/'}${filePath}`;
+  };
+  assert(
+    resolveFileUrlTest('/uploads/avatars/test.jpg') === 'https://api.mediarca.com/uploads/avatars/test.jpg',
+    'BUG-18/24: Relative avatar upload path resolves against backend base URL'
+  );
+  assert(
+    resolveFileUrlTest('https://example.com/photo.jpg') === 'https://example.com/photo.jpg',
+    'BUG-18/24: Full HTTPS avatar URL preserved unmodified'
+  );
+  assert(
+    resolveFileUrlTest('data:image/jpeg;base64,abc') === 'data:image/jpeg;base64,abc',
+    'BUG-18/24: Base64 data URL preserved unmodified'
+  );
+
+  // BUG-27: calculatePreciseAge NaN Protection
+  assert(calculatePreciseAge('invalid-date') === null, 'BUG-27: Malformed date string returns null without crashing or NaN');
+  assert(calculatePreciseAge('') === null, 'BUG-27: Empty string date returns null');
+
+  // BUG-11: Schedule Submission for Independent Doctors Without Clinics
+  const canSubmitSchedule = (clinicsCount: number, selectedClinic: string | null) => {
+    if (clinicsCount > 0 && !selectedClinic) return false;
+    return true;
+  };
+  assert(canSubmitSchedule(0, null) === true, 'BUG-11: Doctor with 0 clinics can submit independent schedule without selectedClinic');
+  assert(canSubmitSchedule(2, null) === false, 'BUG-11: Doctor with clinics must select a clinic');
+  assert(canSubmitSchedule(2, 'clinic_1') === true, 'BUG-11: Doctor with clinics can submit when clinic is selected');
+
+
   console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);

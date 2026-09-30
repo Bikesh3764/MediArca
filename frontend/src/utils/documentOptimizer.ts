@@ -1,13 +1,13 @@
 /**
- * Client-Side Document & Image Optimizer
+ * Client-Side Image & Avatar Optimizer
  * Performs automatic canvas-based downscaling and compression for images before upload.
- * Preserves clinical contrast, legibility for medicine names, and ensures all uploads
- * comfortably fit within the 1 MB Medical Records Vault threshold.
+ * Preserves high contrast and ensures photo uploads are optimized under 250 KB.
  */
 
-export const MAX_VAULT_FILE_SIZE = 1 * 1024 * 1024; // 1 MB (1,048,576 bytes)
-export const DEFAULT_MAX_DIMENSION = 1920; // 1920px max dimension provides ~230 DPI on A4, ideal for prescriptions
-export const DEFAULT_JPEG_QUALITY = 0.80; // High contrast text clarity with 80-90% size reduction
+export const MAX_IMAGE_FILE_SIZE = 1 * 1024 * 1024; // 1 MB (1,048,576 bytes)
+export const MAX_VAULT_FILE_SIZE = MAX_IMAGE_FILE_SIZE; // Retained for backwards-compatibility test assertions
+export const DEFAULT_MAX_DIMENSION = 1920;
+export const DEFAULT_JPEG_QUALITY = 0.80;
 
 export interface OptimizationResult {
   file: File;
@@ -298,59 +298,6 @@ export async function optimizeImageFile(
     formattedOptimizedSize: formatFileSize(optimizedFile.size),
     mimeType: targetMime,
     statusMessage: `Optimized: ${formatFileSize(file.size)} → ${formatFileSize(optimizedFile.size)} (${reductionPercentage}% reduction)`,
-  };
-}
-
-/**
- * Main vault entrypoint: processes images or verifies PDFs before upload.
- * Provides clear actionable feedback for PDFs and instant automatic compression for images.
- */
-export async function processVaultDocument(file: File): Promise<OptimizationResult> {
-  if (isImageFile(file)) {
-    return await optimizeImageFile(file);
-  }
-
-  if (isPdfFile(file)) {
-    if (file.size > MAX_VAULT_FILE_SIZE) {
-      throw new Error(
-        `PDF file size (${formatFileSize(file.size)}) exceeds the 1 MB platform limit. Please compress your PDF or upload photo scans of the document pages for automatic instant optimization.`
-      );
-    }
-
-    return {
-      file,
-      originalFile: file,
-      originalSize: file.size,
-      optimizedSize: file.size,
-      reductionPercentage: 0,
-      isOptimized: false,
-      fileType: 'pdf',
-      formattedOriginalSize: formatFileSize(file.size),
-      formattedOptimizedSize: formatFileSize(file.size),
-      mimeType: 'application/pdf',
-      statusMessage: `PDF ready for vault (${formatFileSize(file.size)})`,
-    };
-  }
-
-  // Unsupported file format
-  if (file.size > MAX_VAULT_FILE_SIZE) {
-    throw new Error(
-      `File size (${formatFileSize(file.size)}) exceeds 1 MB limit. Accepted formats are PDF, PNG, JPG, and WebP.`
-    );
-  }
-
-  return {
-    file,
-    originalFile: file,
-    originalSize: file.size,
-    optimizedSize: file.size,
-    reductionPercentage: 0,
-    isOptimized: false,
-    fileType: 'unsupported',
-    formattedOriginalSize: formatFileSize(file.size),
-    formattedOptimizedSize: formatFileSize(file.size),
-    mimeType: file.type || 'application/octet-stream',
-    statusMessage: `File ready (${formatFileSize(file.size)})`,
   };
 }
 

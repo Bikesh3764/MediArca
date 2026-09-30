@@ -10,6 +10,7 @@ import {
   addDoctorReceptionist,
   removeDoctorReceptionist,
   updateCabinStatus,
+  getDoctorReviews,
 } from '../controllers/doctorController';
 import { updateProfile } from '../controllers/authController';
 import { authenticate, authorize, optionalAuthenticate } from '../middleware/authMiddleware';
@@ -27,6 +28,7 @@ router.delete('/me/receptionists/:receptionistId', authenticate, authorize('DOCT
 
 router.put('/cabin-status', authenticate, authorize('DOCTOR', 'RECEPTIONIST'), updateCabinStatus);
 router.put('/profile', authenticate, authorize('DOCTOR'), updateProfile);
+router.get('/:id/reviews', getDoctorReviews);
 router.get('/:id', optionalAuthenticate, getDoctorById);
 router.put('/schedule', authenticate, authorize('DOCTOR'), updateSchedule);
 

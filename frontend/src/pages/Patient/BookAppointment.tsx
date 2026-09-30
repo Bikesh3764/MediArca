@@ -9,6 +9,7 @@ import {
   getLocalDateString,
   getTomorrowDateString,
   formatDoctorDegrees,
+  getFileUrl,
 } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { DashboardLayout, DashboardNavItem } from '../../components/layout/DashboardLayout';
@@ -340,7 +341,7 @@ export const BookAppointment: React.FC = () => {
             <div className="w-16 h-16 rounded-full bg-white border border-[#e5e5ea] overflow-hidden flex-shrink-0 flex items-center justify-center shadow-xs">
               {doctor.user?.avatarUrl ? (
                 <img
-                  src={doctor.user.avatarUrl}
+                  src={getFileUrl(doctor.user.avatarUrl)}
                   alt={doctor.user?.fullName || 'Doctor'}
                   className="w-full h-full object-cover"
                   onError={(e) => {

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
-import { api, Doctor, parseDoctorSlots, format12Hour, formatDoctorDegrees } from '../../services/api';
+import { api, Doctor, parseDoctorSlots, format12Hour, formatDoctorDegrees, getFileUrl } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { DashboardLayout, DashboardNavItem } from '../../components/layout/DashboardLayout';
 import { SearchInput } from '../../components/ui/SearchInput';
@@ -212,7 +212,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
                   >
                     {doctor.user?.avatarUrl ? (
                       <img
-                        src={doctor.user.avatarUrl}
+                        src={getFileUrl(doctor.user.avatarUrl)}
                         alt={doctor.user?.fullName || 'Doctor'}
                         className="w-full h-full object-cover"
                         loading="eager"

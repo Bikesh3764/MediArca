@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { api, Doctor, format12Hour } from '../../services/api';
+import { api, Doctor, format12Hour, getFileUrl } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { BrandLogo } from '../../components/ui/BrandLogo';
@@ -408,7 +408,7 @@ export const AdminDashboard: React.FC = () => {
                               >
                                 {doc.user.avatarUrl ? (
                                   <img
-                                    src={doc.user.avatarUrl}
+                                    src={getFileUrl(doc.user.avatarUrl)}
                                     alt={doc.user.fullName}
                                     className="w-full h-full object-cover"
                                   />
@@ -725,7 +725,7 @@ export const AdminDashboard: React.FC = () => {
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] overflow-hidden flex items-center justify-center font-bold text-lg text-[#0088e8]">
                   {selectedDoctor.user.avatarUrl ? (
-                    <img src={selectedDoctor.user.avatarUrl} alt={selectedDoctor.user.fullName} className="w-full h-full object-cover" />
+                    <img src={getFileUrl(selectedDoctor.user.avatarUrl)} alt={selectedDoctor.user.fullName} className="w-full h-full object-cover" />
                   ) : (
                     selectedDoctor.user.fullName[0]
                   )}

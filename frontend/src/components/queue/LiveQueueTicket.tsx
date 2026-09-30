@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { api, Appointment, getLocalDateString } from '../../services/api';
+import { api, Appointment, getLocalDateString, getFileUrl } from '../../services/api';
 import { Clock, Calendar, MapPin, CheckCircle2, Building2, Star } from 'lucide-react';
 import { AppleButton } from '../ui/AppleButton';
 import { CabinStatusBadge } from '../ui/DoctorCabinPresence';
@@ -104,7 +104,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
             <div className="w-16 h-16 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] overflow-hidden flex-shrink-0">
               {doctor.user?.avatarUrl ? (
                 <img
-                  src={doctor.user.avatarUrl}
+                  src={getFileUrl(doctor.user.avatarUrl)}
                   alt={doctor.user?.fullName || 'Doctor'}
                   className="w-full h-full object-cover"
                 />

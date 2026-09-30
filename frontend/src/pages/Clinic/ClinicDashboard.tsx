@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { api, ClinicDashboardData, ClinicReceptionistItem, Doctor } from '../../services/api';
+import { api, ClinicDashboardData, ClinicReceptionistItem, Doctor, getFileUrl } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { AppleButton } from '../../components/ui/AppleButton';
 import { DashboardLayout, DashboardNavItem } from '../../components/layout/DashboardLayout';
@@ -659,7 +659,7 @@ export const ClinicDashboard: React.FC = () => {
                           <div className="w-10 h-10 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] overflow-hidden flex-shrink-0">
                             {doc.avatarUrl ? (
                               <img
-                                src={doc.avatarUrl}
+                                src={getFileUrl(doc.avatarUrl)}
                                 alt={doc.fullName}
                                 className="w-full h-full object-cover"
                               />

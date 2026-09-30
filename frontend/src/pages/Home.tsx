@@ -9,6 +9,7 @@ import {
   getLocalDateString,
   formatDoctorDegrees,
   ALL_SPECIALTIES,
+  getFileUrl,
 } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { AppleButton } from '../components/ui/AppleButton';
@@ -412,7 +413,7 @@ export const Home: React.FC = () => {
                     >
                       {doctor.user?.avatarUrl ? (
                         <img
-                          src={doctor.user.avatarUrl}
+                          src={getFileUrl(doctor.user.avatarUrl)}
                           alt={doctor.user?.fullName || 'Doctor'}
                           className="w-full h-full object-cover"
                           loading="eager"

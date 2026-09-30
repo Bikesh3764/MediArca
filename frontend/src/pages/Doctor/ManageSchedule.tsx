@@ -231,7 +231,7 @@ export const ManageSchedule: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedClinic) {
+    if (clinics.length > 0 && !selectedClinic) {
       setError('Please select an affiliated clinic first.');
       return;
     }

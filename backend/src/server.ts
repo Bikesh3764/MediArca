@@ -392,6 +392,14 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Prevent aggressive client-side caching of dynamic live queue & medical data (BUG-30)
+app.use('/api', (_req: Request, res: Response, next: NextFunction) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  next();
+});
+
 // Ensure avatars upload directory exists on disk (BUG-24)
 const avatarsDir = path.join(__dirname, '../uploads/avatars');
 if (!fs.existsSync(avatarsDir)) {
@@ -464,14 +472,6 @@ const authRateLimiter = (maxRequests = 40, windowSeconds = 60) => {
     next();
   };
 };
-
-// Prevent aggressive client-side caching of dynamic live queue & medical data (BUG-30)
-app.use('/api', (_req: Request, res: Response, next: NextFunction) => {
-  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-  res.setHeader('Pragma', 'no-cache');
-  res.setHeader('Expires', '0');
-  next();
-});
 
 // Mount Auth Rate Limiting on authentication & registration endpoints
 app.use(

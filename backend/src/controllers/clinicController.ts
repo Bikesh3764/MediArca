@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import prisma from '../config/database';
 import { AuthRequest } from '../middleware/authMiddleware';
 import { isValidIndianPhone, formatIndianPhone } from '../utils/phoneUtils';
+import { createNotification } from '../services/notificationService';
 
 /**
  * Get profile and statistics for currently authenticated clinic
@@ -362,6 +363,13 @@ export const addDoctorToClinic = async (req: AuthRequest, res: Response): Promis
               },
             },
           });
+          createNotification(
+            doctor.userId,
+            'Affiliation Request Accepted',
+            `${clinic.clinicName} has accepted your clinic affiliation request.`,
+            'SYSTEM'
+          ).catch(() => {});
+
           res.status(200).json({
             success: true,
             message: `Accepted affiliation request from Dr. ${doctor.user.fullName}`,
@@ -385,6 +393,14 @@ export const addDoctorToClinic = async (req: AuthRequest, res: Response): Promis
             },
           },
         });
+
+        createNotification(
+          doctor.userId,
+          'Clinic Affiliation Invitation',
+          `${clinic.clinicName} has invited you to affiliate with their clinic facility.`,
+          'SYSTEM'
+        ).catch(() => {});
+
         res.status(201).json({
           success: true,
           message: `Affiliation request sent to Dr. ${doctor.user.fullName}. They must accept before appearing in active staff.`,
@@ -409,6 +425,13 @@ export const addDoctorToClinic = async (req: AuthRequest, res: Response): Promis
         },
       },
     });
+
+    createNotification(
+      doctor.userId,
+      'Clinic Affiliation Invitation',
+      `${clinic.clinicName} has invited you to affiliate with their clinic facility.`,
+      'SYSTEM'
+    ).catch(() => {});
 
     res.status(201).json({
       success: true,
@@ -505,6 +528,20 @@ export const respondToDoctorAffiliation = async (req: AuthRequest, res: Response
         where: { id: affiliation.id },
         data: { status: 'ACCEPTED' },
       });
+
+      const docProf = await prisma.doctorProfile.findUnique({
+        where: { id: affiliation.doctorId },
+        select: { userId: true },
+      });
+      if (docProf?.userId) {
+        createNotification(
+          docProf.userId,
+          'Affiliation Request Accepted',
+          `Your affiliation request with ${clinic.clinicName} was accepted. You are now active on their roster.`,
+          'SYSTEM'
+        ).catch(() => {});
+      }
+
       res.json({
         success: true,
         message: `Accepted affiliation with Dr. ${docName}. Doctor is now in your active roster.`,
@@ -514,6 +551,20 @@ export const respondToDoctorAffiliation = async (req: AuthRequest, res: Response
       await prisma.clinicDoctor.delete({
         where: { id: affiliation.id },
       });
+
+      const docProf = await prisma.doctorProfile.findUnique({
+        where: { id: affiliation.doctorId },
+        select: { userId: true },
+      });
+      if (docProf?.userId) {
+        createNotification(
+          docProf.userId,
+          'Affiliation Request Declined',
+          `Your affiliation request with ${clinic.clinicName} was not accepted.`,
+          'SYSTEM'
+        ).catch(() => {});
+      }
+
       res.json({
         success: true,
         message: `Rejected affiliation request from Dr. ${docName}.`,

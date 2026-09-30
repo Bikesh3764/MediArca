@@ -14,6 +14,54 @@ import { isValidIndianPhone, formatIndianPhone, sanitizeIndianPhone } from '../u
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
+/**
+ * Reclaims and reassigns past appointments from synthetic walk-in accounts with matching phone (BUG-12, BUG-17)
+ */
+export const migrateSyntheticWalkinAppointments = async (userId: string, formattedPhone: string): Promise<number> => {
+  try {
+    const rawDigits = sanitizeIndianPhone(formattedPhone);
+    const plainWithPlus = rawDigits ? `+91${rawDigits}` : null;
+    const spacedPhone = rawDigits && rawDigits.length === 10 ? `+91 ${rawDigits.slice(0, 5)} ${rawDigits.slice(5)}` : null;
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { patientProfile: true },
+    });
+    if (!user || !user.patientProfile) return 0;
+
+    const syntheticUsers = await prisma.user.findMany({
+      where: {
+        id: { not: userId },
+        OR: [
+          { phone: formattedPhone },
+          ...(rawDigits ? [{ phone: rawDigits }] : []),
+          ...(plainWithPlus ? [{ phone: plainWithPlus }] : []),
+          ...(spacedPhone ? [{ phone: spacedPhone }] : []),
+        ],
+        email: { contains: '@mediarca.local' },
+      },
+      include: { patientProfile: true },
+    });
+
+    let migratedCount = 0;
+    for (const synUser of syntheticUsers) {
+      if (synUser.patientProfile) {
+        const updateResult = await prisma.appointment.updateMany({
+          where: { patientId: synUser.patientProfile.id },
+          data: { patientId: user.patientProfile.id },
+        });
+        migratedCount += updateResult.count;
+        await prisma.patientProfile.delete({ where: { id: synUser.patientProfile.id } }).catch(() => {});
+        await prisma.user.delete({ where: { id: synUser.id } }).catch(() => {});
+      }
+    }
+    return migratedCount;
+  } catch (migrationErr) {
+    console.error('Failed to migrate synthetic walk-in appointments:', migrationErr);
+    return 0;
+  }
+};
+
 export const register = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, password, fullName, phone, role = 'PATIENT', ...profileData } = req.body;
@@ -204,37 +252,9 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       });
     }
 
-    // Reclaim/reassign past appointments from any synthetic walk-in account with the same phone (BUG-12)
+    // Reclaim/reassign past appointments from any synthetic walk-in account with the same phone (BUG-12, BUG-17)
     if (normalizedRole === 'PATIENT' && formattedPhone) {
-      try {
-        const rawDigits = sanitizeIndianPhone(formattedPhone);
-        const syntheticUsers = await prisma.user.findMany({
-          where: {
-            id: { not: newUser.id },
-            OR: [
-              { phone: formattedPhone },
-              ...(rawDigits ? [{ phone: rawDigits }] : []),
-              ...(rawDigits ? [{ phone: `+91${rawDigits}` }] : []),
-            ],
-            email: { contains: '@mediarca.local' },
-          },
-          include: { patientProfile: true },
-        });
-
-        for (const synUser of syntheticUsers) {
-          const newPatient = (newUser as any)?.patientProfile;
-          if (synUser.patientProfile && newPatient) {
-            await prisma.appointment.updateMany({
-              where: { patientId: synUser.patientProfile.id },
-              data: { patientId: newPatient.id },
-            });
-            await prisma.patientProfile.delete({ where: { id: synUser.patientProfile.id } }).catch(() => {});
-            await prisma.user.delete({ where: { id: synUser.id } }).catch(() => {});
-          }
-        }
-      } catch (migrationErr) {
-        console.error('Failed to migrate synthetic walk-in appointments on register:', migrationErr);
-      }
+      await migrateSyntheticWalkinAppointments(newUser.id, formattedPhone);
     }
 
     const token = jwt.sign(
@@ -558,6 +578,10 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
           ...safePatientData,
         },
       });
+
+      if (formattedPhone) {
+        await migrateSyntheticWalkinAppointments(req.user.id, formattedPhone);
+      }
     } else if (req.user.role === 'DOCTOR') {
       // Strict allowlist: Prevent doctors from modifying isVerified, verificationStatus, rating, totalReviews, userId, id
       const {

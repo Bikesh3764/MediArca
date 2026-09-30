@@ -9,6 +9,7 @@ import {
   Heart,
   ChevronLeft,
   AlertCircle,
+  AlertTriangle,
   CheckCircle2,
   Save,
   Check,
@@ -172,7 +173,9 @@ export const ConsultationView: React.FC = () => {
   }
 
 const calculatePreciseAge = (dobString: string): number => {
+  if (!dobString) return 0;
   const birth = new Date(dobString);
+  if (isNaN(birth.getTime())) return 0;
   const now = new Date();
   let age = now.getFullYear() - birth.getFullYear();
   const m = now.getMonth() - birth.getMonth();
@@ -272,6 +275,58 @@ const calculatePreciseAge = (dobString: string): number => {
                   <p className="mt-2 text-[#86868b]">
                     <strong>Symptoms: </strong> {appointment.symptoms}
                   </p>
+                )}
+              </div>
+            </UtilityCard>
+
+            {/* Patient Clinical History & Known Allergies (BUG-22) */}
+            <UtilityCard>
+              <div className="flex items-center gap-2 mb-3">
+                <AlertTriangle className="w-4 h-4 text-amber-500" />
+                <h4 className="text-xs font-semibold uppercase tracking-wider text-[#1d1d1f]">
+                  Clinical History & Allergies
+                </h4>
+              </div>
+
+              <div className="space-y-3 text-xs">
+                <div>
+                  <span className="text-[#86868b] block text-[11px] font-medium mb-1">Known Allergies</span>
+                  {appointment.patient?.allergies ? (
+                    <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 font-medium">
+                      ⚠️ {appointment.patient.allergies}
+                    </div>
+                  ) : (
+                    <span className="text-[#86868b] italic">No known drug allergies reported</span>
+                  )}
+                </div>
+
+                <div>
+                  <span className="text-[#86868b] block text-[11px] font-medium mb-1">Existing Conditions / Chronic Illness</span>
+                  {appointment.patient?.existingConditions ? (
+                    <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 font-medium">
+                      {appointment.patient.existingConditions}
+                    </div>
+                  ) : (
+                    <span className="text-[#86868b] italic">No chronic conditions recorded</span>
+                  )}
+                </div>
+
+                <div>
+                  <span className="text-[#86868b] block text-[11px] font-medium mb-1">Current Active Medications</span>
+                  {appointment.patient?.currentMedications ? (
+                    <div className="p-2.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-900 font-medium">
+                      💊 {appointment.patient.currentMedications}
+                    </div>
+                  ) : (
+                    <span className="text-[#86868b] italic">No active medications recorded</span>
+                  )}
+                </div>
+
+                {appointment.patient?.emergencyContact && (
+                  <div className="pt-2 border-t border-[#f0f0f0] flex justify-between">
+                    <span className="text-[#86868b]">Emergency Contact:</span>
+                    <span className="font-medium text-[#1d1d1f]">{appointment.patient.emergencyContact}</span>
+                  </div>
                 )}
               </div>
             </UtilityCard>

@@ -5,6 +5,7 @@ import {
   ReceptionistQueueItem,
   getLocalDateString,
   Appointment,
+  getFileUrl,
 } from '../../services/api';
 import { sanitizeIndianPhone, formatIndianPhone, isValidIndianPhone } from '../../utils/phoneUtils';
 import { useAuth } from '../../context/AuthContext';
@@ -583,7 +584,7 @@ export const ReceptionistDashboard: React.FC = () => {
                             <div className="w-10 h-10 rounded-full bg-white border border-[#e5e5ea] overflow-hidden flex-shrink-0">
                               {doc.avatarUrl ? (
                                 <img
-                                  src={doc.avatarUrl}
+                                  src={getFileUrl(doc.avatarUrl)}
                                   alt={doc.fullName}
                                   className="w-full h-full object-cover"
                                 />
@@ -1361,7 +1362,7 @@ export const ReceptionistDashboard: React.FC = () => {
                           <div className="flex items-center gap-3">
                             <div className="w-12 h-12 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] overflow-hidden flex-shrink-0">
                               {doc.avatarUrl ? (
-                                <img src={doc.avatarUrl} alt={doc.fullName} className="w-full h-full object-cover" />
+                                <img src={getFileUrl(doc.avatarUrl)} alt={doc.fullName} className="w-full h-full object-cover" />
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center font-bold text-sm text-[#0088e8]">
                                   {doc.fullName[0]}
