@@ -21,6 +21,7 @@ import {
   Camera,
   Sparkles,
 } from 'lucide-react';
+import { AvatarCropModal } from '../../components/ui/AvatarCropModal';
 
 export const DoctorProfile: React.FC = () => {
   const { user, updateUser, refreshUser } = useAuth();
@@ -45,24 +46,47 @@ export const DoctorProfile: React.FC = () => {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [cropModalOpen, setCropModalOpen] = useState(false);
+  const [tempImageSrc, setTempImageSrc] = useState<string | null>(null);
+
+  const handleAvatarFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawFile = e.target.files?.[0];
     if (!rawFile) return;
 
+    if (!rawFile.type.startsWith('image/')) {
+      setErrorMsg('Please upload a valid image file (JPEG, PNG, WebP).');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setTempImageSrc(reader.result as string);
+      setCropModalOpen(true);
+    };
+    reader.onerror = () => {
+      setErrorMsg('Could not read the selected image file. Please try another image.');
+    };
+    reader.readAsDataURL(rawFile);
+  };
+
+  const handleCroppedAvatarComplete = async (croppedFile: File) => {
+    setCropModalOpen(false);
+    setTempImageSrc(null);
     setAvatarLoading(true);
-    setAvatarOptimization('Auto-compressing image...');
+    setAvatarOptimization('Auto-compressing framed photo...');
     setErrorMsg(null);
     setSuccessMsg(null);
 
     try {
-      const result = await optimizeAvatarImage(rawFile);
+      const result = await optimizeAvatarImage(croppedFile);
       setAvatarOptimization(
         `Optimized: ${result.formattedOriginalSize} → ${result.formattedOptimizedSize} (-${result.reductionPercentage}%)`
       );
 
       const res = await api.uploadAvatar(result.file);
       updateUser(res.user);
-      setSuccessMsg('Doctor profile photo updated successfully.');
+      await refreshUser();
+      setSuccessMsg('Doctor profile photo adjusted, framed and updated successfully.');
       setTimeout(() => setAvatarOptimization(null), 5000);
     } catch (err: any) {
       setErrorMsg(err.message || 'Failed to update profile photo');
@@ -224,7 +248,7 @@ export const DoctorProfile: React.FC = () => {
                 type="file"
                 accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
                 className="hidden"
-                onChange={handleAvatarChange}
+                onChange={handleAvatarFileSelected}
               />
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
                 <AppleButton
@@ -236,10 +260,10 @@ export const DoctorProfile: React.FC = () => {
                   className="flex items-center gap-1.5 text-xs"
                 >
                   <Camera className="w-3.5 h-3.5" />
-                  {avatarLoading ? 'Optimizing & Uploading...' : 'Upload Headshot'}
+                  {avatarLoading ? 'Optimizing & Uploading...' : 'Upload & Adjust Headshot'}
                 </AppleButton>
                 <span className="text-[11px] text-[#86868b]">
-                  Accepts JPG, PNG, WebP. Auto-compressed to &lt; 60 KB.
+                  Accepts JPG, PNG, WebP. Interactive face-centering tool included.
                 </span>
               </div>
 
@@ -402,6 +426,19 @@ export const DoctorProfile: React.FC = () => {
           </div>
         </form>
       </div>
+
+      <AvatarCropModal
+        isOpen={cropModalOpen}
+        imageSrc={tempImageSrc}
+        onClose={() => {
+          setCropModalOpen(false);
+          setTempImageSrc(null);
+          if (avatarInputRef.current) {
+            avatarInputRef.current.value = '';
+          }
+        }}
+        onCropComplete={handleCroppedAvatarComplete}
+      />
     </DashboardLayout>
   );
 };
