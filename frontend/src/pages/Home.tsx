@@ -427,13 +427,13 @@ export const Home: React.FC = () => {
                   {/* 1. Full-Width Doctor Photo Banner at Top */}
                   <div
                     onClick={() => navigate(getHomeDoctorDetailPath(doctor.id))}
-                    className="relative w-full h-60 sm:h-68 bg-[#f5f5f7] overflow-hidden cursor-pointer"
+                    className="relative w-full h-64 sm:h-72 bg-white border-b border-[#f0f0f2] overflow-hidden cursor-pointer flex items-center justify-center p-3"
                   >
                     {doctor.user?.avatarUrl ? (
                       <img
                         src={getFileUrl(doctor.user.avatarUrl)}
                         alt={doctor.user?.fullName || 'Doctor'}
-                        className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
+                        className="w-full h-full object-contain object-center transition-transform duration-500 group-hover:scale-[1.03]"
                         loading="eager"
                         onError={(e) => {
                           e.currentTarget.style.display = 'none';
@@ -450,7 +450,7 @@ export const Home: React.FC = () => {
 
                     {/* Floating Specialty Badge on Top Right */}
                     <div className="absolute top-3.5 right-3.5 z-20">
-                      <span className="backdrop-blur-md bg-white/90 text-[#0088e8] text-xs font-semibold px-3 py-1 rounded-full border border-white/60 shadow-xs">
+                      <span className="backdrop-blur-md bg-white/95 text-[#0088e8] text-xs font-semibold px-3 py-1 rounded-full border border-black/5 shadow-xs">
                         {doctor.specialty}
                       </span>
                     </div>

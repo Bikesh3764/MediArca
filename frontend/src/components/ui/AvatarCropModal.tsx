@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { ZoomIn, ZoomOut, RotateCcw, X, Check, Move } from 'lucide-react';
+import { ZoomIn, ZoomOut, RotateCcw, X, Check, Move, Maximize2, User } from 'lucide-react';
 import { AppleButton } from './AppleButton';
 
 interface AvatarCropModalProps {
@@ -7,7 +7,7 @@ interface AvatarCropModalProps {
   imageSrc: string | null;
   onClose: () => void;
   onCropComplete: (croppedFile: File) => void;
-  aspectRatio?: number; // width / height, defaults to 4/3 (1.333) matching doctor cards
+  aspectRatio?: number;
 }
 
 export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
@@ -15,17 +15,35 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
   imageSrc,
   onClose,
   onCropComplete,
-  aspectRatio = 4 / 3,
 }) => {
+  const [selectedRatio, setSelectedRatio] = useState<'1:1' | '4:3'>('1:1');
   const [zoom, setZoom] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [imgDimensions, setImgDimensions] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
   const [imageLoaded, setImageLoaded] = useState(false);
   const [processing, setProcessing] = useState(false);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
+
+  // Box dimensions on screen based on selected aspect ratio
+  const boxWidth = selectedRatio === '1:1' ? 320 : 360;
+  const boxHeight = selectedRatio === '1:1' ? 320 : 270;
+
+  // On image load, detect dimensions and choose smart default aspect ratio
+  const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const { naturalWidth, naturalHeight } = e.currentTarget;
+    setImgDimensions({ width: naturalWidth, height: naturalHeight });
+    setImageLoaded(true);
+
+    // If image is square or near square (like avatars, logos, portrait selfies), default to 1:1
+    const diffRatio = Math.abs(naturalWidth - naturalHeight) / Math.max(naturalWidth, naturalHeight);
+    setSelectedRatio(diffRatio < 0.2 ? '1:1' : '4:3');
+    setZoom(1);
+    setOffset({ x: 0, y: 0 });
+  };
 
   // Reset controls when a new image is loaded
   useEffect(() => {
@@ -64,24 +82,31 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
     setIsDragging(false);
   };
 
-  const handleReset = () => {
+  // Fit entire photo shortcut: 100% fit inside frame with zero cutoffs
+  const handleFitEntirePhoto = () => {
     setZoom(1);
     setOffset({ x: 0, y: 0 });
   };
 
-  // Perform offscreen canvas crop
+  // Focus face shortcut
+  const handleFocusFace = () => {
+    setZoom(1.35);
+    setOffset({ x: 0, y: 0 });
+  };
+
+  // Perform mathematically exact offscreen canvas crop
   const handleCropAndSave = useCallback(async () => {
-    if (!imageRef.current || !containerRef.current) return;
+    if (!imageRef.current || imgDimensions.width === 0) return;
     setProcessing(true);
 
     try {
       const img = imageRef.current;
-      const container = containerRef.current;
-      const containerRect = container.getBoundingClientRect();
+      const C_w = boxWidth;
+      const C_h = boxHeight;
 
-      // Desired output resolution (high quality for cards and retina displays)
+      // High-resolution export canvas (800x800 for 1:1 or 800x600 for 4:3)
       const targetWidth = 800;
-      const targetHeight = Math.round(targetWidth / aspectRatio);
+      const targetHeight = selectedRatio === '1:1' ? 800 : 600;
 
       const canvas = document.createElement('canvas');
       canvas.width = targetWidth;
@@ -92,29 +117,31 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
         throw new Error('Could not initialize canvas context');
       }
 
+      // Pure white canvas background for seamless blending
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, targetWidth, targetHeight);
 
-      // Determine scale factor between on-screen container and target canvas
-      const scaleToCanvas = targetWidth / containerRect.width;
+      // Multiplier from on-screen preview box to canvas
+      const multiplier = targetWidth / C_w;
 
-      // Current displayed dimensions of the image inside the container
-      const displayedWidth = img.clientWidth * zoom;
-      const displayedHeight = img.clientHeight * zoom;
+      // Fit scale calculation (matches on-screen display exactly)
+      const fitScale = Math.min(C_w / imgDimensions.width, C_h / imgDimensions.height);
+      const renderedW = imgDimensions.width * fitScale * zoom;
+      const renderedH = imgDimensions.height * fitScale * zoom;
 
-      // Center of container
-      const containerCenterX = containerRect.width / 2;
-      const containerCenterY = containerRect.height / 2;
+      // Center of box
+      const centerX = C_w / 2;
+      const centerY = C_h / 2;
 
-      // Position on the container
-      const drawXOnContainer = containerCenterX - displayedWidth / 2 + offset.x;
-      const drawYOnContainer = containerCenterY - displayedHeight / 2 + offset.y;
+      // Image top-left on screen
+      const imgScreenX = centerX - renderedW / 2 + offset.x;
+      const imgScreenY = centerY - renderedH / 2 + offset.y;
 
-      // Map to target canvas coordinates
-      const drawXOnCanvas = drawXOnContainer * scaleToCanvas;
-      const drawYOnCanvas = drawYOnContainer * scaleToCanvas;
-      const drawWidthOnCanvas = displayedWidth * scaleToCanvas;
-      const drawHeightOnCanvas = displayedHeight * scaleToCanvas;
+      // Map coordinates to target canvas
+      const drawCanvasX = imgScreenX * multiplier;
+      const drawCanvasY = imgScreenY * multiplier;
+      const drawCanvasW = renderedW * multiplier;
+      const drawCanvasH = renderedH * multiplier;
 
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
@@ -123,12 +150,12 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
         img,
         0,
         0,
-        img.naturalWidth,
-        img.naturalHeight,
-        drawXOnCanvas,
-        drawYOnCanvas,
-        drawWidthOnCanvas,
-        drawHeightOnCanvas
+        imgDimensions.width,
+        imgDimensions.height,
+        drawCanvasX,
+        drawCanvasY,
+        drawCanvasW,
+        drawCanvasH
       );
 
       // Convert to blob
@@ -138,7 +165,7 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
             setProcessing(false);
             return;
           }
-          const croppedFile = new File([blob], 'doctor-avatar-cropped.jpg', {
+          const croppedFile = new File([blob], 'doctor-avatar-framed.jpg', {
             type: 'image/jpeg',
             lastModified: Date.now(),
           });
@@ -151,18 +178,25 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
       console.error('Failed to crop image:', err);
       setProcessing(false);
     }
-  }, [aspectRatio, offset, onCropComplete, zoom]);
+  }, [boxHeight, boxWidth, imgDimensions, offset, onCropComplete, selectedRatio, zoom]);
 
   if (!isOpen || !imageSrc) return null;
 
+  // Calculate rendered width and height in the on-screen container
+  const fitScale = imgDimensions.width > 0
+    ? Math.min(boxWidth / imgDimensions.width, boxHeight / imgDimensions.height)
+    : 1;
+  const currentRenderedW = imgDimensions.width * fitScale * zoom;
+  const currentRenderedH = imgDimensions.height * fitScale * zoom;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-md animate-fadeIn">
-      <div className="relative w-full max-w-lg bg-white rounded-[26px] sm:rounded-[30px] border border-[#e5e5ea] shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/60 backdrop-blur-md animate-fadeIn">
+      <div className="relative w-full max-w-lg bg-white rounded-[26px] sm:rounded-[30px] border border-[#e5e5ea] shadow-2xl overflow-hidden flex flex-col max-h-[94vh]">
         {/* Header */}
         <div className="px-6 py-4 border-b border-[#f0f0f2] flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-bold text-[#1d1d1f] tracking-tight">Adjust Profile Headshot</h3>
-            <p className="text-xs text-[#86868b] mt-0.5">Drag to center your face and use the zoom slider</p>
+            <h3 className="text-lg font-bold text-[#1d1d1f] tracking-tight">Adjust & Fit Doctor Photo</h3>
+            <p className="text-xs text-[#86868b] mt-0.5">Scale and position your headshot so it fits the card area</p>
           </div>
           <button
             onClick={onClose}
@@ -174,29 +208,74 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
         </div>
 
         {/* Viewport & Cropping Area */}
-        <div className="p-6 bg-[#fbfbfd] flex flex-col items-center select-none">
+        <div className="p-5 sm:p-6 bg-[#fbfbfd] flex flex-col items-center select-none overflow-y-auto">
+          {/* Aspect Ratio Switcher */}
+          <div className="flex items-center gap-1.5 p-1 bg-[#f0f0f4] rounded-full text-xs font-semibold mb-4">
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedRatio('1:1');
+                setZoom(1);
+                setOffset({ x: 0, y: 0 });
+              }}
+              className={`px-3.5 py-1.5 rounded-full transition-all ${
+                selectedRatio === '1:1'
+                  ? 'bg-white text-[#0088e8] shadow-xs'
+                  : 'text-[#86868b] hover:text-[#1d1d1f]'
+              }`}
+            >
+              1:1 Square (Full Avatar)
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedRatio('4:3');
+                setZoom(1);
+                setOffset({ x: 0, y: 0 });
+              }}
+              className={`px-3.5 py-1.5 rounded-full transition-all ${
+                selectedRatio === '4:3'
+                  ? 'bg-white text-[#0088e8] shadow-xs'
+                  : 'text-[#86868b] hover:text-[#1d1d1f]'
+              }`}
+            >
+              4:3 Card Banner
+            </button>
+          </div>
+
+          {/* Interactive Frame Box */}
           <div
             ref={containerRef}
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
             onPointerCancel={handlePointerUp}
-            style={{ aspectRatio: `${aspectRatio}` }}
-            className="relative w-full max-w-sm rounded-[22px] overflow-hidden bg-black/5 border-2 border-[#0088e8] shadow-inner cursor-grab active:cursor-grabbing touch-none flex items-center justify-center"
+            style={{
+              width: `${boxWidth}px`,
+              height: `${boxHeight}px`,
+              maxWidth: '100%',
+            }}
+            className="relative rounded-[22px] overflow-hidden bg-white border-2 border-[#0088e8] shadow-lg cursor-grab active:cursor-grabbing touch-none flex items-center justify-center mx-auto"
           >
             {/* Guide overlay */}
-            <div className="absolute inset-0 pointer-events-none z-20 flex flex-col justify-between p-3 border border-white/40 rounded-[20px]">
-              <div className="flex justify-between text-[10px] font-mono font-medium text-white/90 bg-black/30 backdrop-blur-xs px-2 py-0.5 rounded-full w-fit">
+            <div className="absolute inset-0 pointer-events-none z-20 flex flex-col justify-between p-3 border border-black/10 rounded-[20px]">
+              <div className="flex justify-between items-center text-[10px] font-mono font-medium text-[#1d1d1f] bg-white/90 backdrop-blur-md px-2.5 py-0.5 rounded-full border border-black/5 shadow-xs w-fit">
                 <span className="flex items-center gap-1">
-                  <Move className="w-3 h-3" /> Drag to frame face
+                  <Move className="w-3 h-3 text-[#0088e8]" /> Drag to center face
                 </span>
               </div>
               <div className="flex justify-center">
-                {/* Oval face placement guide */}
-                <div className="w-36 h-44 rounded-full border border-dashed border-white/50 pointer-events-none" />
+                {/* Subtle circular boundary guide */}
+                <div
+                  style={{
+                    width: selectedRatio === '1:1' ? '260px' : '220px',
+                    height: selectedRatio === '1:1' ? '260px' : '220px',
+                  }}
+                  className="rounded-full border border-dashed border-[#0088e8]/40 pointer-events-none"
+                />
               </div>
-              <div className="text-right text-[10px] text-white/80 bg-black/30 backdrop-blur-xs px-2 py-0.5 rounded-full w-fit self-end">
-                Card Fit
+              <div className="text-[10px] font-mono text-[#86868b] bg-white/90 backdrop-blur-md px-2 py-0.5 rounded-full border border-black/5 shadow-xs w-fit self-end">
+                {selectedRatio === '1:1' ? '1:1 Square' : '4:3 Card'}
               </div>
             </div>
 
@@ -205,23 +284,45 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
               ref={imageRef}
               src={imageSrc}
               alt="Crop Preview"
-              onLoad={() => setImageLoaded(true)}
+              onLoad={handleImageLoad}
               style={{
-                transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`,
-                transition: isDragging ? 'none' : 'transform 0.1s ease-out',
+                width: imgDimensions.width > 0 ? `${currentRenderedW}px` : 'auto',
+                height: imgDimensions.height > 0 ? `${currentRenderedH}px` : 'auto',
+                transform: `translate(${offset.x}px, ${offset.y}px)`,
+                transition: isDragging ? 'none' : 'transform 0.08s ease-out',
               }}
-              className="max-w-none pointer-events-none origin-center"
+              className="max-w-none pointer-events-none select-none origin-center"
               draggable={false}
             />
           </div>
 
-          {/* Micro-controls: Zoom Slider & Reset */}
-          <div className="w-full max-w-sm mt-5 space-y-3">
+          {/* Quick Fit Shortcuts */}
+          <div className="flex items-center gap-2 mt-4">
+            <button
+              type="button"
+              onClick={handleFitEntirePhoto}
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#0088e8]/10 text-[#0088e8] hover:bg-[#0088e8]/20 transition-colors"
+            >
+              <Maximize2 className="w-3.5 h-3.5" />
+              Fit Full Photo (100%)
+            </button>
+            <button
+              type="button"
+              onClick={handleFocusFace}
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#f0f0f4] text-[#1d1d1f] hover:bg-[#e5e5ea] transition-colors"
+            >
+              <User className="w-3.5 h-3.5 text-[#0088e8]" />
+              Focus Face
+            </button>
+          </div>
+
+          {/* Zoom Slider & Reset */}
+          <div className="w-full max-w-sm mt-4 space-y-2.5">
             <div className="flex items-center gap-3">
               <ZoomOut className="w-4 h-4 text-[#86868b] shrink-0" />
               <input
                 type="range"
-                min="0.6"
+                min="0.5"
                 max="3"
                 step="0.05"
                 value={zoom}
@@ -229,46 +330,53 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
                 className="w-full h-1.5 bg-[#e5e5ea] rounded-full appearance-none accent-[#0088e8] cursor-pointer"
               />
               <ZoomIn className="w-4 h-4 text-[#86868b] shrink-0" />
-              <span className="text-xs font-mono font-medium text-[#1d1d1f] w-12 text-right">
+              <span className="text-xs font-mono font-medium text-[#1d1d1f] w-14 text-right">
                 {Math.round(zoom * 100)}%
               </span>
             </div>
 
             <div className="flex items-center justify-between text-xs text-[#86868b]">
-              <span>Center your face within the oval</span>
+              <span>
+                {zoom === 1 ? '✨ Whole photo is fully fitted' : 'Drag image to frame desired face area'}
+              </span>
               <button
                 type="button"
-                onClick={handleReset}
+                onClick={handleFitEntirePhoto}
                 className="inline-flex items-center gap-1 font-medium text-[#0088e8] hover:text-[#0077cc] transition-colors"
               >
                 <RotateCcw className="w-3 h-3" />
-                Reset Frame
+                Reset Fit
               </button>
             </div>
           </div>
         </div>
 
         {/* Footer Actions */}
-        <div className="px-6 py-4 bg-white border-t border-[#f0f0f2] flex items-center justify-end gap-3">
-          <AppleButton
-            variant="secondary"
-            size="sm"
-            disabled={processing}
-            onClick={onClose}
-            className="text-xs px-4"
-          >
-            Cancel
-          </AppleButton>
-          <AppleButton
-            variant="primary"
-            size="sm"
-            disabled={!imageLoaded || processing}
-            onClick={handleCropAndSave}
-            className="text-xs px-5 bg-[#0088e8] hover:bg-[#0077cc] text-white flex items-center gap-1.5"
-          >
-            <Check className="w-3.5 h-3.5 stroke-[2.5]" />
-            <span>{processing ? 'Applying Crop...' : 'Apply & Save Headshot'}</span>
-          </AppleButton>
+        <div className="px-6 py-4 bg-white border-t border-[#f0f0f2] flex items-center justify-between">
+          <span className="text-[11px] text-[#86868b]">
+            Photo will save at 800px retina clarity
+          </span>
+          <div className="flex items-center gap-2.5">
+            <AppleButton
+              variant="secondary"
+              size="sm"
+              disabled={processing}
+              onClick={onClose}
+              className="text-xs px-4"
+            >
+              Cancel
+            </AppleButton>
+            <AppleButton
+              variant="primary"
+              size="sm"
+              disabled={!imageLoaded || processing}
+              onClick={handleCropAndSave}
+              className="text-xs px-5 bg-[#0088e8] hover:bg-[#0077cc] text-white flex items-center gap-1.5 shadow-xs font-semibold"
+            >
+              <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+              <span>{processing ? 'Framing & Saving...' : 'Apply & Save Headshot'}</span>
+            </AppleButton>
+          </div>
         </div>
       </div>
     </div>
