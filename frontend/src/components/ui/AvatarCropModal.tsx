@@ -22,7 +22,6 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [imgDimensions, setImgDimensions] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
-  const [imageLoaded, setImageLoaded] = useState(false);
   const [processing, setProcessing] = useState(false);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -35,25 +34,33 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
   // On image load, detect dimensions and choose smart default aspect ratio
   const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
     const { naturalWidth, naturalHeight } = e.currentTarget;
-    setImgDimensions({ width: naturalWidth, height: naturalHeight });
-    setImageLoaded(true);
-
-    // If image is square or near square (like avatars, logos, portrait selfies), default to 1:1
-    const diffRatio = Math.abs(naturalWidth - naturalHeight) / Math.max(naturalWidth, naturalHeight);
-    setSelectedRatio(diffRatio < 0.2 ? '1:1' : '4:3');
-    setZoom(1);
-    setOffset({ x: 0, y: 0 });
+    if (naturalWidth > 0 && naturalHeight > 0) {
+      setImgDimensions({ width: naturalWidth, height: naturalHeight });
+      const diffRatio = Math.abs(naturalWidth - naturalHeight) / Math.max(naturalWidth, naturalHeight);
+      setSelectedRatio(diffRatio < 0.2 ? '1:1' : '4:3');
+    }
   };
 
-  // Reset controls when a new image is loaded
+  // Pre-load and measure image immediately upon open to guarantee dimensions
   useEffect(() => {
     if (isOpen && imageSrc) {
       queueMicrotask(() => {
-        setZoom(1);
-        setOffset({ x: 0, y: 0 });
-        setImageLoaded(false);
         setProcessing(false);
       });
+      const testImg = new Image();
+      testImg.onload = () => {
+        const w = testImg.naturalWidth || 800;
+        const h = testImg.naturalHeight || 800;
+        setImgDimensions({ width: w, height: h });
+        const diffRatio = Math.abs(w - h) / Math.max(w, h);
+        setSelectedRatio(diffRatio < 0.2 ? '1:1' : '4:3');
+        setZoom(1);
+        setOffset({ x: 0, y: 0 });
+      };
+      testImg.src = imageSrc;
+      if (testImg.complete && testImg.naturalWidth > 0) {
+        testImg.onload(new Event('load') as any);
+      }
     }
   }, [isOpen, imageSrc]);
 
@@ -96,11 +103,26 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
 
   // Perform mathematically exact offscreen canvas crop
   const handleCropAndSave = useCallback(async () => {
-    if (!imageRef.current || imgDimensions.width === 0) return;
+    if (!imageSrc) return;
     setProcessing(true);
 
     try {
-      const img = imageRef.current;
+      let naturalW = imgDimensions.width;
+      let naturalH = imgDimensions.height;
+      let img: HTMLImageElement | null = imageRef.current;
+
+      if (!img || naturalW === 0 || naturalH === 0) {
+        img = new Image();
+        await new Promise<void>((resolve) => {
+          img!.onload = () => resolve();
+          img!.onerror = () => resolve();
+          img!.src = imageSrc;
+          if (img!.complete && img!.naturalWidth > 0) resolve();
+        });
+        naturalW = img.naturalWidth || 800;
+        naturalH = img.naturalHeight || 800;
+      }
+
       const C_w = boxWidth;
       const C_h = boxHeight;
 
@@ -125,9 +147,9 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
       const multiplier = targetWidth / C_w;
 
       // Fit scale calculation (matches on-screen display exactly)
-      const fitScale = Math.min(C_w / imgDimensions.width, C_h / imgDimensions.height);
-      const renderedW = imgDimensions.width * fitScale * zoom;
-      const renderedH = imgDimensions.height * fitScale * zoom;
+      const fitScale = Math.min(C_w / naturalW, C_h / naturalH);
+      const renderedW = naturalW * fitScale * zoom;
+      const renderedH = naturalH * fitScale * zoom;
 
       // Center of box
       const centerX = C_w / 2;
@@ -150,8 +172,8 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
         img,
         0,
         0,
-        imgDimensions.width,
-        imgDimensions.height,
+        naturalW,
+        naturalH,
         drawCanvasX,
         drawCanvasY,
         drawCanvasW,
@@ -178,7 +200,7 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
       console.error('Failed to crop image:', err);
       setProcessing(false);
     }
-  }, [boxHeight, boxWidth, imgDimensions, offset, onCropComplete, selectedRatio, zoom]);
+  }, [boxHeight, boxWidth, imageSrc, imgDimensions, offset, onCropComplete, selectedRatio, zoom]);
 
   if (!isOpen || !imageSrc) return null;
 
@@ -369,9 +391,9 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
             <AppleButton
               variant="primary"
               size="sm"
-              disabled={!imageLoaded || processing}
+              disabled={processing}
               onClick={handleCropAndSave}
-              className="text-xs px-5 bg-[#0088e8] hover:bg-[#0077cc] text-white flex items-center gap-1.5 shadow-xs font-semibold"
+              className="text-xs px-5 bg-[#0088e8] hover:bg-[#0077cc] active:scale-[0.98] text-white flex items-center gap-1.5 shadow-xs font-semibold cursor-pointer transition-all"
             >
               <Check className="w-3.5 h-3.5 stroke-[2.5]" />
               <span>{processing ? 'Framing & Saving...' : 'Apply & Save Headshot'}</span>
