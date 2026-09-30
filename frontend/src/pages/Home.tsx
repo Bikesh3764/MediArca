@@ -427,20 +427,33 @@ export const Home: React.FC = () => {
                   {/* 1. Full-Width Doctor Photo Banner at Top */}
                   <div
                     onClick={() => navigate(getHomeDoctorDetailPath(doctor.id))}
-                    className="relative w-full h-56 sm:h-64 bg-[#f5f5f7] overflow-hidden cursor-pointer"
+                    className="relative w-full h-64 sm:h-72 bg-[#f5f5f7] overflow-hidden cursor-pointer flex items-center justify-center"
                   >
                     {doctor.user?.avatarUrl ? (
-                      <img
-                        src={getFileUrl(doctor.user.avatarUrl)}
-                        alt={doctor.user?.fullName || 'Doctor'}
-                        className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
-                        loading="eager"
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none';
-                          const fallback = e.currentTarget.parentElement?.querySelector('.doc-fallback-banner');
-                          if (fallback) (fallback as HTMLElement).style.display = 'flex';
-                        }}
-                      />
+                      <>
+                        {/* Soft ambient blur backdrop */}
+                        <img
+                          src={getFileUrl(doctor.user.avatarUrl)}
+                          alt=""
+                          aria-hidden="true"
+                          className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-20 scale-125 pointer-events-none select-none"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLElement).style.display = 'none';
+                          }}
+                        />
+                        {/* Full Doctor Photo (Object-Contain so zero cropping) */}
+                        <img
+                          src={getFileUrl(doctor.user.avatarUrl)}
+                          alt={doctor.user?.fullName || 'Doctor'}
+                          className="relative z-10 w-full h-full object-contain p-2.5 sm:p-3.5 transition-transform duration-500 group-hover:scale-[1.03]"
+                          loading="eager"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            const fallback = e.currentTarget.parentElement?.querySelector('.doc-fallback-banner');
+                            if (fallback) (fallback as HTMLElement).style.display = 'flex';
+                          }}
+                        />
+                      </>
                     ) : null}
                     <div
                       className={`doc-fallback-banner w-full h-full ${doctor.user?.avatarUrl ? 'hidden' : 'flex'} items-center justify-center font-bold text-5xl text-white bg-gradient-to-br from-[#0088e8] to-[#0066cc] select-none`}
@@ -448,11 +461,8 @@ export const Home: React.FC = () => {
                       {(doctor.user?.fullName ? doctor.user.fullName.replace(/^Dr\.\s*/i, '').trim()[0] : null) || 'D'}
                     </div>
 
-                    {/* Subtle Gradient Vignette at Bottom of Photo */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent pointer-events-none" />
-
                     {/* Floating Specialty Badge on Top Right */}
-                    <div className="absolute top-3.5 right-3.5">
+                    <div className="absolute top-3.5 right-3.5 z-20">
                       <span className="backdrop-blur-md bg-white/90 text-[#0088e8] text-xs font-semibold px-3 py-1 rounded-full border border-white/60 shadow-xs">
                         {doctor.specialty}
                       </span>
