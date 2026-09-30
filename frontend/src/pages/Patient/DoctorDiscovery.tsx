@@ -204,11 +204,11 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
                 className="w-full bg-white rounded-[22px] sm:rounded-[26px] border border-[#e5e5ea] p-5 sm:p-6 hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] hover:border-[#0088e8]/30 transition-all duration-200 flex flex-col justify-between group"
               >
                 {/* 1. Top Section: Clean Doctor Avatar & Practitioner Info */}
-                <div className="flex items-start gap-3.5 sm:gap-4">
-                  {/* Refined Doctor Avatar (Squircle Apple Style) */}
+                <div className="flex items-center gap-4 sm:gap-5">
+                  {/* Generous, Clear Doctor Avatar (Squircle Apple Style) */}
                   <div
                     onClick={() => navigate(getDoctorDetailPath(doctor.id))}
-                    className="w-16 h-16 sm:w-18 sm:h-18 rounded-[18px] sm:rounded-[20px] bg-[#f5f5f7] border border-black/[0.06] overflow-hidden shrink-0 flex items-center justify-center cursor-pointer transition-transform group-hover:scale-[1.02] shadow-xs"
+                    className="w-24 h-24 sm:w-28 sm:h-28 rounded-[20px] sm:rounded-[24px] bg-[#f5f5f7] border border-black/[0.08] overflow-hidden shrink-0 flex items-center justify-center cursor-pointer transition-transform group-hover:scale-[1.02] shadow-xs"
                   >
                     {doctor.user?.avatarUrl ? (
                       <img
@@ -224,33 +224,33 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
                       />
                     ) : null}
                     <div
-                      className={`doc-fallback w-full h-full ${doctor.user?.avatarUrl ? 'hidden' : 'flex'} items-center justify-center font-semibold text-2xl text-white bg-gradient-to-br from-[#0088e8] to-[#0066cc] select-none`}
+                      className={`doc-fallback w-full h-full ${doctor.user?.avatarUrl ? 'hidden' : 'flex'} items-center justify-center font-bold text-3xl text-white bg-gradient-to-br from-[#0088e8] to-[#0066cc] select-none`}
                     >
                       {(doctor.user?.fullName ? doctor.user.fullName.replace(/^Dr\.\s*/i, '').trim()[0] : null) || 'D'}
                     </div>
                   </div>
 
                   {/* Doctor Info */}
-                  <div className="min-w-0 flex-1 pt-0.5">
-                    <div className="flex items-center gap-1.5">
+                  <div className="min-w-0 flex-1 flex flex-col justify-center py-0.5">
+                    <div className="flex items-center gap-1.5 sm:gap-2">
                       <h3
                         onClick={() => navigate(getDoctorDetailPath(doctor.id))}
-                        className="text-base sm:text-lg font-semibold text-[#1d1d1f] hover:text-[#0088e8] cursor-pointer tracking-tight transition-colors line-clamp-1"
+                        className="text-lg sm:text-xl font-bold text-[#1d1d1f] hover:text-[#0088e8] cursor-pointer tracking-tight transition-colors line-clamp-1"
                         title={doctor.user?.fullName || 'Doctor'}
                       >
                         {doctor.user?.fullName || 'Doctor'}
                       </h3>
-                      <CheckCircle2 className="w-4 h-4 text-[#0088e8] fill-[#0088e8]/10 shrink-0" />
+                      <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-[#0088e8] fill-[#0088e8]/10 shrink-0" />
                     </div>
 
-                    <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs sm:text-sm text-[#86868b]">
-                      <span className="font-medium text-[#0088e8]">{doctor.specialty}</span>
+                    <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs sm:text-sm text-[#86868b]">
+                      <span className="font-semibold text-[#0088e8]">{doctor.specialty}</span>
                       <span className="text-[#d1d1d6]">•</span>
                       <span>{doctor.experienceYears} yrs exp</span>
                     </div>
 
                     {cleanDegrees && (
-                      <div className="mt-0.5 text-xs text-[#86868b] truncate">
+                      <div className="mt-1 text-xs sm:text-sm text-[#48484a] font-normal truncate">
                         {cleanDegrees}
                       </div>
                     )}
