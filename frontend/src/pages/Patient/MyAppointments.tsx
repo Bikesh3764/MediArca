@@ -33,7 +33,9 @@ export const MyAppointments: React.FC = () => {
       navigate('/login');
       return;
     }
-    fetchAppointments();
+    queueMicrotask(() => {
+      fetchAppointments();
+    });
 
     // Auto-refresh queue silently every 15 seconds so patient sees live queue position updates without flickering
     const interval = setInterval(() => fetchAppointments(true), 15000);

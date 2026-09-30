@@ -1,3 +1,5 @@
+import fs from 'fs';
+import crypto from 'crypto';
 import path from 'path';
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
@@ -8,7 +10,7 @@ import { AuthRequest, getJwtSecret } from '../middleware/authMiddleware';
 import { uploadToR2, deleteFromR2, isR2Configured } from '../config/r2';
 import { isValidDobDate, validateDoctorSlots, timeToMinutes, validateDoctorNumericBounds } from '../utils/scheduleUtils';
 import { validateMagicBytes } from '../middleware/uploadMiddleware';
-import { isValidIndianPhone, formatIndianPhone } from '../utils/phoneUtils';
+import { isValidIndianPhone, formatIndianPhone, sanitizeIndianPhone } from '../utils/phoneUtils';
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -177,6 +179,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
               address: profileData.address || profileData.clinicAddress || 'Central Healthcare Clinic',
               city: profileData.city || null,
               phone: formattedPhone,
+              checkinCode: crypto.randomBytes(3).toString('hex').toUpperCase(),
             },
           },
         },
@@ -199,6 +202,39 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         },
         include: { receptionistProfile: true },
       });
+    }
+
+    // Reclaim/reassign past appointments from any synthetic walk-in account with the same phone (BUG-12)
+    if (normalizedRole === 'PATIENT' && formattedPhone) {
+      try {
+        const rawDigits = sanitizeIndianPhone(formattedPhone);
+        const syntheticUsers = await prisma.user.findMany({
+          where: {
+            id: { not: newUser.id },
+            OR: [
+              { phone: formattedPhone },
+              ...(rawDigits ? [{ phone: rawDigits }] : []),
+              ...(rawDigits ? [{ phone: `+91${rawDigits}` }] : []),
+            ],
+            email: { contains: '@mediarca.local' },
+          },
+          include: { patientProfile: true },
+        });
+
+        for (const synUser of syntheticUsers) {
+          const newPatient = (newUser as any)?.patientProfile;
+          if (synUser.patientProfile && newPatient) {
+            await prisma.appointment.updateMany({
+              where: { patientId: synUser.patientProfile.id },
+              data: { patientId: newPatient.id },
+            });
+            await prisma.patientProfile.delete({ where: { id: synUser.patientProfile.id } }).catch(() => {});
+            await prisma.user.delete({ where: { id: synUser.id } }).catch(() => {});
+          }
+        }
+      } catch (migrationErr) {
+        console.error('Failed to migrate synthetic walk-in appointments on register:', migrationErr);
+      }
     }
 
     const token = jwt.sign(
@@ -323,6 +359,23 @@ export const login = async (req: Request, res: Response): Promise<void> => {
           message: 'Your receptionist account application was rejected by clinic administration.',
         });
         return;
+      }
+      const clinic = user.receptionistProfile?.clinic;
+      if (clinic) {
+        if (clinic.verificationStatus === 'SUSPENDED') {
+          res.status(403).json({
+            success: false,
+            message: 'Your affiliated clinic facility has been suspended by administration. Portal access is locked.',
+          });
+          return;
+        }
+        if (clinic.verificationStatus === 'REJECTED') {
+          res.status(403).json({
+            success: false,
+            message: 'Your affiliated clinic facility registration has been rejected by administration.',
+          });
+          return;
+        }
       }
     }
 
@@ -823,9 +876,17 @@ export const uploadAvatar = async (req: AuthRequest, res: Response): Promise<voi
     if (isR2Configured() && file.buffer) {
       avatarUrl = await uploadToR2(file.buffer, key, file.mimetype || 'image/jpeg', false);
     } else if (file.buffer) {
-      avatarUrl = `data:${file.mimetype || 'image/jpeg'};base64,${file.buffer.toString('base64')}`;
+      // Save locally to disk under uploads/avatars/ to prevent multi-megabyte base64 text bloat in PostgreSQL column (BUG-18 & BUG-24)
+      const filename = `${req.user.id}-${Date.now()}${ext}`;
+      const avatarsDir = path.join(__dirname, '../../uploads/avatars');
+      if (!fs.existsSync(avatarsDir)) {
+        fs.mkdirSync(avatarsDir, { recursive: true });
+      }
+      const filepath = path.join(avatarsDir, filename);
+      await fs.promises.writeFile(filepath, file.buffer);
+      avatarUrl = `/uploads/avatars/${filename}`;
     } else {
-      avatarUrl = `/uploads/${(file as any).filename || 'avatar' + ext}`;
+      avatarUrl = `/uploads/avatars/${(file as any).filename || 'avatar' + ext}`;
     }
 
     // Clean up previous avatar if it was on R2

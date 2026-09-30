@@ -858,6 +858,8 @@ export interface Appointment {
     bloodGroup?: string;
     allergies?: string;
     existingConditions?: string;
+    currentMedications?: string;
+    emergencyContact?: string;
     user: { fullName: string; email: string; phone?: string; avatarUrl?: string };
   };
   review?: {
@@ -893,7 +895,7 @@ async function handleResponse<T>(res: Response): Promise<T> {
   if (!res.ok || !data.success) {
     throw new Error(data.message || 'API request failed');
   }
-  return data.data;
+  return data.data !== undefined ? data.data : data;
 }
 
 export const api = {
@@ -1183,12 +1185,7 @@ export const api = {
     return handleResponse(res);
   },
 
-  async checkInWithQR(data: { clinicId: string; code: string; appointmentId?: string }): Promise<{
-    success: boolean;
-    alreadyCheckedIn?: boolean;
-    message: string;
-    data: Appointment;
-  }> {
+  async checkInWithQR(data: { clinicId: string; code: string; appointmentId?: string }): Promise<any> {
     const res = await fetch(`${API_BASE_URL}/appointments/check-in`, {
       method: 'POST',
       headers: getHeaders(),
@@ -1197,15 +1194,23 @@ export const api = {
     return handleResponse(res);
   },
 
-  async checkInAppointmentDirect(appointmentId: string, isCheckedIn?: boolean): Promise<{
-    success: boolean;
-    message: string;
-    data: Appointment;
-  }> {
+  async checkInAppointmentDirect(appointmentId: string, isCheckedIn?: boolean): Promise<any> {
     const res = await fetch(`${API_BASE_URL}/appointments/${appointmentId}/check-in`, {
       method: 'PATCH',
       headers: getHeaders(),
       body: JSON.stringify(isCheckedIn !== undefined ? { isCheckedIn } : {}),
+    });
+    return handleResponse(res);
+  },
+
+  async submitAppointmentReview(
+    appointmentId: string,
+    data: { rating: number; comment?: string }
+  ): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/appointments/${appointmentId}/review`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
     });
     return handleResponse(res);
   },
@@ -1504,7 +1509,22 @@ export const api = {
       headers: getHeaders(),
       body: JSON.stringify(data),
     });
-    return handleResponse(res);
+    const json = await res.json();
+    if (!res.ok || !json.success) {
+      throw new Error(json.message || 'API request failed');
+    }
+    const token = json.token || json.data?.token;
+    if (token) {
+      localStorage.setItem('mediarca_token', token);
+    }
+    const user = json.user || json.data?.user || (json.data && !json.data.token ? json.data : null);
+    return {
+      token,
+      user,
+      data: json.data,
+      message: json.message,
+      success: json.success,
+    };
   },
 
   // Clinic Doctor Affiliation Response
@@ -1615,6 +1635,28 @@ export const api = {
       method: 'PUT',
       headers: getHeaders(),
       body: JSON.stringify({ action, doctorIds }),
+    });
+    return handleResponse(res);
+  },
+
+  // Notifications (BUG-13)
+  async getNotifications(): Promise<{ notifications: any[]; unreadCount: number }> {
+    const res = await fetch(`${API_BASE_URL}/notifications`, { headers: getHeaders() });
+    return handleResponse(res);
+  },
+
+  async markNotificationRead(id: string): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/notifications/${id}/read`, {
+      method: 'PATCH',
+      headers: getHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  async markAllNotificationsRead(): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/notifications/read-all`, {
+      method: 'PATCH',
+      headers: getHeaders(),
     });
     return handleResponse(res);
   },

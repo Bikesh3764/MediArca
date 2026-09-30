@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+import fs from 'fs';
 import authRoutes from './routes/authRoutes';
 import doctorRoutes from './routes/doctorRoutes';
 import appointmentRoutes from './routes/appointmentRoutes';
@@ -12,6 +13,7 @@ import consultationRoutes from './routes/consultationRoutes';
 import adminRoutes from './routes/adminRoutes';
 import clinicRoutes from './routes/clinicRoutes';
 import receptionistRoutes from './routes/receptionistRoutes';
+import notificationRoutes from './routes/notificationRoutes';
 import prisma from './config/database';
 import { authenticate } from './middleware/authMiddleware';
 import { updateProfile } from './controllers/authController';
@@ -390,8 +392,15 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static uploaded public avatars only
-app.use('/uploads/avatars', express.static(path.join(__dirname, '../uploads/avatars')));
+// Ensure avatars upload directory exists on disk (BUG-24)
+const avatarsDir = path.join(__dirname, '../uploads/avatars');
+if (!fs.existsSync(avatarsDir)) {
+  fs.mkdirSync(avatarsDir, { recursive: true });
+}
+
+// Serve static uploaded public avatars
+app.use('/uploads/avatars', express.static(avatarsDir));
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Health Check (Supports Render /healthz and /api/health)
 // Touches PostgreSQL database so Supabase resets 7-day inactivity countdown (Finding L2)
@@ -417,8 +426,22 @@ app.get(['/healthz', '/api/health', '/'], async (_req: Request, res: Response) =
   });
 });
 
-// Lightweight sliding-window rate limiter for sensitive authentication & registration endpoints
+// Lightweight sliding-window rate limiter with periodic cleanup (BUG-10)
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+
+// Periodic pruning of stale rate limit entries to prevent unbounded memory growth (BUG-10)
+const rateLimitPruneTimer = setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of rateLimitMap.entries()) {
+    if (now >= entry.resetTime) {
+      rateLimitMap.delete(key);
+    }
+  }
+}, 60000);
+if (rateLimitPruneTimer.unref) {
+  rateLimitPruneTimer.unref();
+}
+
 const authRateLimiter = (maxRequests = 40, windowSeconds = 60) => {
   return (req: Request, res: Response, next: NextFunction): void => {
     const ip = req.ip || req.headers['x-forwarded-for'] || 'client';
@@ -442,6 +465,14 @@ const authRateLimiter = (maxRequests = 40, windowSeconds = 60) => {
   };
 };
 
+// Prevent aggressive client-side caching of dynamic live queue & medical data (BUG-30)
+app.use('/api', (_req: Request, res: Response, next: NextFunction) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  next();
+});
+
 // Mount Auth Rate Limiting on authentication & registration endpoints
 app.use(
   ['/api/auth/login', '/api/auth/register', '/api/auth/google', '/api/receptionists/apply', '/api/receptionist/apply'],
@@ -463,6 +494,7 @@ app.use('/api/clinics', clinicRoutes);
 app.use('/api/clinic', clinicRoutes);
 app.use('/api/receptionists', receptionistRoutes);
 app.use('/api/receptionist', receptionistRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Global Error Handler (Finding #31)
 app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

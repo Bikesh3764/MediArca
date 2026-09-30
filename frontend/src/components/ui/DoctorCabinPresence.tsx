@@ -89,13 +89,17 @@ export const CabinStatusControl: React.FC<CabinStatusControlProps> = ({
 
   // Sync with prop changes if they happen externally
   React.useEffect(() => {
-    if (currentStatus) {
-      setStatus(currentStatus.toUpperCase() as CabinStatus);
-    }
+    queueMicrotask(() => {
+      if (currentStatus) {
+        setStatus(currentStatus.toUpperCase() as CabinStatus);
+      }
+    });
   }, [currentStatus]);
 
   React.useEffect(() => {
-    setReturnTime(initialReturnTime || null);
+    queueMicrotask(() => {
+      setReturnTime(initialReturnTime || null);
+    });
   }, [initialReturnTime]);
 
   const updateStatus = async (

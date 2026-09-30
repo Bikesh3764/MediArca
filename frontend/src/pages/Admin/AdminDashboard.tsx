@@ -72,12 +72,18 @@ export const AdminDashboard: React.FC = () => {
   };
 
   useEffect(() => {
+    let mounted = true;
     if (loadingAuth) return;
     if (!user || user.role?.toUpperCase() !== 'ADMIN') {
-      navigate('/login');
+      navigate('/admin-login');
       return;
     }
-    fetchData();
+    queueMicrotask(() => {
+      if (mounted) fetchData();
+    });
+    return () => {
+      mounted = false;
+    };
   }, [user, loadingAuth, navigate]);
 
   const getPractitionerStatus = (

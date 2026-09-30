@@ -76,24 +76,26 @@ export const DoctorProfile: React.FC = () => {
   };
 
   useEffect(() => {
-    if (user) {
-      setFullName(user.fullName || '');
-      setPhone(user.phone || '');
-      if (user.doctorProfile) {
-        const currentSpec = user.doctorProfile.specialty || 'General Medicine';
-        const isStandard = ALL_SPECIALTIES.includes(currentSpec) && currentSpec !== 'Other';
-        if (isStandard) {
-          setSpecialty(currentSpec);
-          setCustomSpecialty('');
-        } else {
-          setSpecialty('Other');
-          setCustomSpecialty(currentSpec);
+    queueMicrotask(() => {
+      if (user) {
+        setFullName(user.fullName || '');
+        setPhone(user.phone || '');
+        if (user.doctorProfile) {
+          const currentSpec = user.doctorProfile.specialty || 'General Medicine';
+          const isStandard = ALL_SPECIALTIES.includes(currentSpec) && currentSpec !== 'Other';
+          if (isStandard) {
+            setSpecialty(currentSpec);
+            setCustomSpecialty('');
+          } else {
+            setSpecialty('Other');
+            setCustomSpecialty(currentSpec);
+          }
+          setQualifications(user.doctorProfile.qualifications || 'MBBS');
+          setExperienceYears(user.doctorProfile.experienceYears || 5);
+          setBio(user.doctorProfile.bio || '');
         }
-        setQualifications(user.doctorProfile.qualifications || 'MBBS');
-        setExperienceYears(user.doctorProfile.experienceYears || 5);
-        setBio(user.doctorProfile.bio || '');
       }
-    }
+    });
   }, [user]);
 
   const handleSave = async (e: React.FormEvent) => {

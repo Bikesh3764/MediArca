@@ -18,6 +18,7 @@ import crypto from 'crypto';
 import { canTransition } from '../utils/appointmentStateMachine';
 import { formatIndianPhone, sanitizeIndianPhone, isValidIndianPhone } from '../utils/phoneUtils';
 import { verifyReceptionistDoctorAccess, isDoctorEligibleForClinicalPractice, isClinicActive } from '../utils/authGuards';
+import { createNotification } from '../services/notificationService';
 
 // Helper to calculate estimated time given start time "09:00" and offset minutes (retained for backward compatibility)
 export const calculateEstimatedTime = (startTime24: string, offsetMinutes: number): string => {
@@ -792,92 +793,97 @@ export const getPatientAppointments = async (req: AuthRequest, res: Response): P
       orderBy: [{ appointmentDate: 'desc' }, { queueNumber: 'asc' }],
     });
 
-    // Calculate real-time queue position for active appointments
-    const enrichedAppointments = await Promise.all(
-      appointments.map(async (appt) => {
-        const targetClinicAffiliation = appt.clinicId
-          ? (appt.doctor as any)?.clinics?.find((c: any) => c.clinicId === appt.clinicId)
-          : null;
-        const clinicFee = targetClinicAffiliation?.consultationFee ?? appt.doctor.consultationFee;
+    // Batch active appointments to eliminate N+1 polling query explosion on Supabase (BUG-14)
+    const activeAppts = appointments.filter(
+      (a) => a.status === 'WAITING' || a.status === 'IN_CONSULTATION'
+    );
+    const doctorIds = Array.from(new Set(activeAppts.map((a) => a.doctorId)));
+    const dates = Array.from(new Set(activeAppts.map((a) => a.appointmentDate)));
 
-        if (appt.status === 'WAITING' || appt.status === 'IN_CONSULTATION') {
-          let slots = parseDoctorSlots(appt.doctor);
-          if (targetClinicAffiliation?.slots) {
-            try {
-              const parsed = typeof targetClinicAffiliation.slots === 'string' ? JSON.parse(targetClinicAffiliation.slots) : targetClinicAffiliation.slots;
-              if (Array.isArray(parsed) && parsed.length > 0) slots = parsed;
-            } catch {}
-          }
-          const slot = (appt.slotId && slots.find((s) => s.id === appt.slotId)) || slots[0];
-          const pace = slot?.avgConsultationMinutes || 3.0;
-
-          // Find currently serving queue number for that doctor, date, and matching slot
-          const currentServingAppt = await prisma.appointment.findFirst({
+    const activeBatchAppointments =
+      doctorIds.length > 0 && dates.length > 0
+        ? await prisma.appointment.findMany({
             where: {
-              doctorId: appt.doctorId,
-              appointmentDate: appt.appointmentDate,
-              ...(appt.clinicId ? { clinicId: appt.clinicId } : {}),
-              ...(appt.slotId
-                ? { slotId: appt.slotId }
-                : appt.checkingWindow
-                ? { checkingWindow: appt.checkingWindow }
-                : {}),
-              status: 'IN_CONSULTATION',
-            },
-          });
-
-          let currentServingQueueNumber = 0;
-          if (currentServingAppt) {
-            currentServingQueueNumber = currentServingAppt.queueNumber;
-          }
-
-          // Count how many patients are ahead waiting in this slot
-          const patientsAhead = await prisma.appointment.count({
-            where: {
-              doctorId: appt.doctorId,
-              appointmentDate: appt.appointmentDate,
-              ...(appt.clinicId ? { clinicId: appt.clinicId } : {}),
-              ...(appt.slotId
-                ? { slotId: appt.slotId }
-                : appt.checkingWindow
-                ? { checkingWindow: appt.checkingWindow }
-                : {}),
-              queueNumber: { lt: appt.queueNumber },
+              doctorId: { in: doctorIds },
+              appointmentDate: { in: dates },
               status: { in: ['WAITING', 'IN_CONSULTATION'] },
             },
-          });
+            select: {
+              doctorId: true,
+              appointmentDate: true,
+              clinicId: true,
+              slotId: true,
+              checkingWindow: true,
+              queueNumber: true,
+              status: true,
+            },
+          })
+        : [];
 
-          // Check shift timing for today
-          const slotStartMins = timeToMinutes(slot.startTime);
-          let slotEndMins = timeToMinutes(slot.endTime);
-          if (slotEndMins <= slotStartMins) slotEndMins += 24 * 60;
+    // Calculate real-time queue position for active appointments in-memory
+    const enrichedAppointments = appointments.map((appt) => {
+      const targetClinicAffiliation = appt.clinicId
+        ? (appt.doctor as any)?.clinics?.find((c: any) => c.clinicId === appt.clinicId)
+        : null;
+      const clinicFee = targetClinicAffiliation?.consultationFee ?? appt.doctor.consultationFee;
 
-          const now = new Date();
-          const localYear = now.getFullYear();
-          const localMonth = String(now.getMonth() + 1).padStart(2, '0');
-          const localDay = String(now.getDate()).padStart(2, '0');
-          const localTodayStr = `${localYear}-${localMonth}-${localDay}`;
-          const istTodayStr = getLocalDateString(now);
-          const isToday = appt.appointmentDate === localTodayStr || appt.appointmentDate === istTodayStr;
-          const currentMinutes = getIndianTimeMinutes(now);
+      if (appt.status === 'WAITING' || appt.status === 'IN_CONSULTATION') {
+        let slots = parseDoctorSlots(appt.doctor);
+        if (targetClinicAffiliation?.slots) {
+          try {
+            const parsed = typeof targetClinicAffiliation.slots === 'string' ? JSON.parse(targetClinicAffiliation.slots) : targetClinicAffiliation.slots;
+            if (Array.isArray(parsed) && parsed.length > 0) slots = parsed;
+          } catch {}
+        }
+        const slot = (appt.slotId && slots.find((s) => s.id === appt.slotId)) || slots[0];
+        const pace = slot?.avgConsultationMinutes || 3.0;
 
-          const isShiftPassed = isToday && currentMinutes >= slotEndMins;
-          const isShiftActive = isToday && currentMinutes >= slotStartMins && currentMinutes < slotEndMins;
+        // Find currently serving queue number in memory from batch
+        const currentServingAppt = activeBatchAppointments.find((a) =>
+          a.doctorId === appt.doctorId &&
+          a.appointmentDate === appt.appointmentDate &&
+          (appt.clinicId ? a.clinicId === appt.clinicId : true) &&
+          (appt.slotId ? a.slotId === appt.slotId : appt.checkingWindow ? a.checkingWindow === appt.checkingWindow : true) &&
+          a.status === 'IN_CONSULTATION'
+        );
+        const currentServingQueueNumber = currentServingAppt?.queueNumber || 0;
 
-          const estWaitMinutes = Math.round(patientsAhead * pace);
-          const isYourTurn = appt.status === 'IN_CONSULTATION' || (isShiftActive && patientsAhead === 0);
+        // Count patients ahead waiting in this slot in memory from batch
+        const patientsAhead = activeBatchAppointments.filter((a) =>
+          a.doctorId === appt.doctorId &&
+          a.appointmentDate === appt.appointmentDate &&
+          (appt.clinicId ? a.clinicId === appt.clinicId : true) &&
+          (appt.slotId ? a.slotId === appt.slotId : appt.checkingWindow ? a.checkingWindow === appt.checkingWindow : true) &&
+          a.queueNumber < appt.queueNumber
+        ).length;
 
-          let liveEstimatedTime = appt.estimatedTime;
-          if (isToday) {
-            if (isShiftPassed) {
-              liveEstimatedTime = 'Shift Ended';
-            } else if (isShiftActive) {
-              liveEstimatedTime = minutesTo12Hour(currentMinutes + estWaitMinutes);
-            }
+        // Check shift timing for today strictly using IST timezone (BUG-23)
+        const slotStartMins = timeToMinutes(slot.startTime);
+        let slotEndMins = timeToMinutes(slot.endTime);
+        if (slotEndMins <= slotStartMins) slotEndMins += 24 * 60;
+
+        const now = new Date();
+        const istTodayStr = getLocalDateString(now);
+        const isToday = appt.appointmentDate === istTodayStr;
+        const currentMinutes = getIndianTimeMinutes(now);
+
+        const isShiftPassed = isToday && currentMinutes >= slotEndMins;
+        const isShiftActive = isToday && currentMinutes >= slotStartMins && currentMinutes < slotEndMins;
+
+        const estWaitMinutes = Math.round(patientsAhead * pace);
+        const isYourTurn = appt.status === 'IN_CONSULTATION' || (isShiftActive && patientsAhead === 0);
+
+        let liveEstimatedTime = appt.estimatedTime;
+        if (isToday) {
+          if (isShiftPassed) {
+            liveEstimatedTime = 'Shift Ended';
+          } else if (isShiftActive) {
+            liveEstimatedTime = minutesTo12Hour(currentMinutes + estWaitMinutes);
           }
+        }
 
-          return {
-            ...appt,
+        return {
+          ...appt,
             fee: clinicFee,
             liveQueue: {
               currentServingQueueNumber: currentServingQueueNumber || (isShiftActive ? 1 : 0),
@@ -894,8 +900,7 @@ export const getPatientAppointments = async (req: AuthRequest, res: Response): P
           ...appt,
           fee: clinicFee,
         };
-      })
-    );
+      });
 
     res.json({ success: true, count: enrichedAppointments.length, data: enrichedAppointments });
   } catch (error: any) {
@@ -1210,3 +1215,101 @@ export const checkInAppointmentDirect = async (req: AuthRequest, res: Response):
     });
   }
 };
+
+/**
+ * Submit verified patient review and rating for completed consultation (BUG-08)
+ */
+export const submitAppointmentReview = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user || req.user.role !== 'PATIENT') {
+      res.status(403).json({ success: false, message: 'Only patients can submit reviews' });
+      return;
+    }
+
+    const { id } = req.params;
+    const appointmentId = typeof id === 'string' ? id : Array.isArray(id) ? id[0] : '';
+    const { rating, comment } = req.body;
+
+    const numRating = Math.round(Number(rating));
+    if (isNaN(numRating) || numRating < 1 || numRating > 5) {
+      res.status(400).json({ success: false, message: 'Rating must be an integer between 1 and 5 stars' });
+      return;
+    }
+
+    const patient = await prisma.patientProfile.findUnique({
+      where: { userId: req.user.id },
+    });
+
+    if (!patient) {
+      res.status(404).json({ success: false, message: 'Patient profile not found' });
+      return;
+    }
+
+    const appointment = await prisma.appointment.findUnique({
+      where: { id: appointmentId },
+      include: { review: true, doctor: true },
+    });
+
+    if (!appointment || appointment.patientId !== patient.id) {
+      res.status(404).json({ success: false, message: 'Appointment not found or unauthorized' });
+      return;
+    }
+
+    if (appointment.status !== 'COMPLETED') {
+      res.status(400).json({ success: false, message: 'Reviews can only be submitted for completed consultations' });
+      return;
+    }
+
+    if (appointment.review) {
+      res.status(409).json({ success: false, message: 'Review has already been submitted for this consultation' });
+      return;
+    }
+
+    const review = await prisma.review.create({
+      data: {
+        appointmentId: appointment.id,
+        doctorId: appointment.doctorId,
+        patientId: req.user.id,
+        rating: numRating,
+        comment: comment ? String(comment).trim() : null,
+      },
+    });
+
+    // Recompute doctor's average rating and totalReviews
+    const allReviews = await prisma.review.findMany({
+      where: { doctorId: appointment.doctorId },
+      select: { rating: true },
+    });
+
+    const totalReviews = allReviews.length;
+    const avgRating = totalReviews > 0
+      ? Number((allReviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews).toFixed(1))
+      : 5.0;
+
+    await prisma.doctorProfile.update({
+      where: { id: appointment.doctorId },
+      data: {
+        rating: avgRating,
+        totalReviews,
+      },
+    });
+
+    // Notify doctor
+    createNotification(
+      appointment.doctor.userId,
+      'New Consultation Review',
+      `A patient rated your consultation ${numRating}/5 stars.`,
+      'CLINICAL'
+    ).catch(() => {});
+
+    res.status(201).json({
+      success: true,
+      message: 'Review submitted successfully. Thank you for your feedback!',
+      data: review,
+    });
+  } catch (error: any) {
+    console.error('submitAppointmentReview error:', error);
+    res.status(500).json({ success: false, message: 'Failed to submit review' });
+  }
+};
+

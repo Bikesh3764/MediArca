@@ -4,6 +4,7 @@ import { AuthRequest } from '../middleware/authMiddleware';
 import { getLocalDateString } from '../utils/scheduleUtils';
 import { canTransition } from '../utils/appointmentStateMachine';
 import { isDoctorEligibleForClinicalPractice } from '../utils/authGuards';
+import { createNotification } from '../services/notificationService';
 
 export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -35,6 +36,7 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
 
     const whereClause: any = {
       doctorId: doctor.id,
+      queueNumber: { gt: 0 },
     };
 
     if (scope === 'all-upcoming') {
@@ -185,11 +187,21 @@ export const callPatient = async (req: AuthRequest, res: Response): Promise<void
       include: {
         patient: {
           include: {
-            user: { select: { fullName: true, email: true, phone: true } },
+            user: { select: { id: true, fullName: true, email: true, phone: true } },
           },
         },
       },
     });
+
+    if (updated?.patient?.user) {
+      const doctorName = (doctor as any)?.user?.fullName || req.user.fullName || 'Practitioner';
+      createNotification(
+        updated.patient.user.id || (updated.patient as any).userId,
+        'Called to Consultation Cabin',
+        `It is your turn! Dr. ${doctorName} has called Queue #${updated.queueNumber} into the cabin.`,
+        'QUEUE'
+      ).catch(() => {});
+    }
 
     res.json({
       success: true,
@@ -336,6 +348,22 @@ export const completeConsultation = async (req: AuthRequest, res: Response): Pro
     if (clinicalNotes && clinicalNotes.trim()) {
       notesParts.push(clinicalNotes.trim());
     }
+    if (Array.isArray(medicines) && medicines.length > 0) {
+      const medLines = medicines.map((m: any, idx: number) => {
+        if (typeof m === 'string') return `${idx + 1}. ${m}`;
+        const name = m.name || m.medicineName || '';
+        const dosage = m.dosage ? ` - ${m.dosage}` : '';
+        const freq = m.frequency ? ` (${m.frequency})` : '';
+        const dur = m.duration ? ` for ${m.duration}` : '';
+        const inst = m.instructions ? ` [${m.instructions}]` : '';
+        return `${idx + 1}. ${name}${dosage}${freq}${dur}${inst}`.trim();
+      }).filter(Boolean);
+      if (medLines.length > 0) {
+        notesParts.push(`Prescribed Medications:\n${medLines.join('\n')}`);
+      }
+    } else if (typeof medicines === 'string' && medicines.trim()) {
+      notesParts.push(`Prescribed Medications:\n${medicines.trim()}`);
+    }
     if (advice && advice.trim()) {
       notesParts.push(`Advice: ${advice.trim()}`);
     }
@@ -354,6 +382,20 @@ export const completeConsultation = async (req: AuthRequest, res: Response): Pro
         ...(vitals && { vitals: typeof vitals === 'object' ? JSON.stringify(vitals) : vitals }),
       },
     });
+
+    const patProfile = await prisma.patientProfile.findUnique({
+      where: { id: targetAppointment.patientId },
+      select: { userId: true },
+    });
+    if (patProfile?.userId) {
+      const docName = (doctor as any)?.user?.fullName || req.user.fullName || 'Practitioner';
+      createNotification(
+        patProfile.userId,
+        'Consultation Completed',
+        `Your consultation with Dr. ${docName} has concluded. Prescribed advice and medicines are available on your pass.`,
+        'CLINICAL'
+      ).catch(() => {});
+    }
 
     res.json({
       success: true,

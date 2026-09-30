@@ -11,7 +11,9 @@ export const GlobalNav: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    setMobileMenuOpen(false);
+    queueMicrotask(() => {
+      setMobileMenuOpen(false);
+    });
   }, [location.pathname]);
 
   const handleLogout = () => {

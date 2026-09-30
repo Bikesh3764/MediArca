@@ -120,18 +120,28 @@ export const ReceptionistAuth: React.FC = () => {
   };
 
   useEffect(() => {
+    let mounted = true;
     if (authMode === 'apply' && clinics.length === 0) {
-      setClinicsLoading(true);
-      api.getPublicClinics()
-        .then((res) => {
-          setClinics(res);
-          if (res.length > 0 && !applyClinicId) {
-            setApplyClinicId(res[0].id);
-          }
-        })
-        .catch((err) => console.error('Failed to load clinics:', err))
-        .finally(() => setClinicsLoading(false));
+      queueMicrotask(() => {
+        if (!mounted) return;
+        setClinicsLoading(true);
+        api.getPublicClinics()
+          .then((res) => {
+            if (!mounted) return;
+            setClinics(res);
+            if (res.length > 0 && !applyClinicId) {
+              setApplyClinicId(res[0].id);
+            }
+          })
+          .catch((err) => console.error('Failed to load clinics:', err))
+          .finally(() => {
+            if (mounted) setClinicsLoading(false);
+          });
+      });
     }
+    return () => {
+      mounted = false;
+    };
   }, [authMode, clinics.length, applyClinicId]);
 
   const handleApplySubmit = async (e: React.FormEvent) => {

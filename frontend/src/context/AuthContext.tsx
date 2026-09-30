@@ -48,7 +48,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
-    refreshUser();
+    queueMicrotask(() => {
+      refreshUser();
+    });
   }, []);
 
   const login = async (credentials: { email: string; password: string }): Promise<User> => {
@@ -101,6 +103,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 };
 
+// oxlint-disable-next-line react/only-export-components
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {

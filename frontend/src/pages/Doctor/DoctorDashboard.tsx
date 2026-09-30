@@ -127,23 +127,37 @@ export const DoctorDashboard: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    let mounted = true;
     if (loadingAuth) return;
     if (!user || user.role?.toUpperCase() !== 'DOCTOR') {
       navigate('/login');
       return;
     }
-    fetchQueue(false);
-    fetchAffiliations(false);
+    queueMicrotask(() => {
+      if (mounted) {
+        fetchQueue(false);
+        fetchAffiliations(false);
+      }
+    });
 
     // Auto refresh every 10 seconds for real-time clinic updates
     const interval = setInterval(() => fetchQueue(false), 10000);
-    return () => clearInterval(interval);
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
   }, [fetchQueue, fetchAffiliations, user, loadingAuth, navigate]);
 
   useEffect(() => {
+    let mounted = true;
     if (activeTab === 'affiliations') {
-      fetchAffiliations(false);
+      queueMicrotask(() => {
+        if (mounted) fetchAffiliations(false);
+      });
     }
+    return () => {
+      mounted = false;
+    };
   }, [activeTab, fetchAffiliations]);
 
   // Modals for Walk-in QR and Add Appointment (media_1789192783321.jpg)

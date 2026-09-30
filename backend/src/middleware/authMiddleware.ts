@@ -118,6 +118,7 @@ export const requireActiveReceptionist = async (
   try {
     const receptionist = await prisma.receptionistProfile.findUnique({
       where: { userId: req.user.id },
+      include: { clinic: true },
     });
 
     if (!receptionist) {
@@ -134,6 +135,23 @@ export const requireActiveReceptionist = async (
             : 'Your receptionist application is pending approval by clinic administration.',
       });
       return;
+    }
+
+    if (receptionist.clinic) {
+      if (receptionist.clinic.verificationStatus === 'SUSPENDED') {
+        res.status(403).json({
+          success: false,
+          message: 'The affiliated clinic facility has been suspended by administration. Desk operations are locked.',
+        });
+        return;
+      }
+      if (receptionist.clinic.verificationStatus === 'REJECTED') {
+        res.status(403).json({
+          success: false,
+          message: 'The affiliated clinic facility registration has been rejected. Desk operations are unavailable.',
+        });
+        return;
+      }
     }
 
     next();

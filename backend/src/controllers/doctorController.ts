@@ -33,18 +33,22 @@ export const formatDoctorClinics = (doc: any) => {
 
 export const getDoctors = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { search, specialty, minExp, maxFee, sortBy } = req.query;
+    const { search, specialty, minExp, maxFee, sortBy, clinicOnly, clinicId } = req.query;
 
     const whereClause: any = {
       isVerified: true,
       verificationStatus: 'VERIFIED',
-      clinics: {
+    };
+
+    if (clinicOnly === 'true' || clinicId) {
+      whereClause.clinics = {
         some: {
+          ...(clinicId ? { clinicId: String(clinicId) } : {}),
           status: { in: ['ACTIVE', 'ACCEPTED'] },
           clinic: { isVerified: true, verificationStatus: 'VERIFIED' },
         },
-      },
-    };
+      };
+    }
 
     if (specialty && typeof specialty === 'string' && specialty !== 'All') {
       whereClause.specialty = { equals: specialty, mode: 'insensitive' };
@@ -64,6 +68,15 @@ export const getDoctors = async (req: Request, res: Response): Promise<void> => 
         { specialty: { contains: search, mode: 'insensitive' } },
         { clinicAddress: { contains: search, mode: 'insensitive' } },
         { bio: { contains: search, mode: 'insensitive' } },
+        {
+          clinics: {
+            some: {
+              clinic: {
+                clinicName: { contains: search, mode: 'insensitive' },
+              },
+            },
+          },
+        },
       ];
     }
 
@@ -438,7 +451,10 @@ export const getDoctorAffiliations = async (req: AuthRequest, res: Response): Pr
 
         // Finding F2: Count revenue only on completed consultations or paid transactions
         const paidOrCompleted = appointmentsAtClinic.filter(
-          (a) => a.paymentStatus === 'PAID' || a.status === 'COMPLETED'
+          (a) =>
+            (a.paymentStatus === 'PAID' || a.status === 'COMPLETED') &&
+            a.status !== 'CANCELLED' &&
+            a.status !== 'REJECTED'
         );
         const clinicFee = (cd as any).consultationFee ?? doctor.consultationFee;
         const revenue = paidOrCompleted.length * clinicFee;

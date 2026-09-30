@@ -19,6 +19,7 @@ import {
   isDoctorEligibleForClinicalPractice,
   isClinicActive,
 } from '../utils/authGuards';
+import { createNotification } from '../services/notificationService';
 
 /**
  * Get profile and linked doctors for logged-in receptionist
@@ -428,12 +429,16 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
     }
     const normalizedPhone = formatIndianPhone(cleanPhone);
     const rawDigits = sanitizeIndianPhone(cleanPhone);
+    const unspacedE164 = rawDigits ? `+91${rawDigits}` : '';
+    const spacedSeedFormat = rawDigits ? `+91 ${rawDigits.slice(0, 5)} ${rawDigits.slice(5)}` : '';
 
     let patientUser = await prisma.user.findFirst({
       where: {
         OR: [
           ...(normalizedPhone ? [{ phone: normalizedPhone }] : []),
           ...(rawDigits ? [{ phone: rawDigits }] : []),
+          ...(unspacedE164 ? [{ phone: unspacedE164 }] : []),
+          ...(spacedSeedFormat ? [{ phone: spacedSeedFormat }] : []),
           { phone: cleanPhone },
         ],
       },
@@ -643,6 +648,15 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
       }
     }
 
+    if (newAppointment?.patient?.user) {
+      createNotification(
+        newAppointment.patient.userId || (newAppointment.patient as any).user?.id,
+        'Walk-in Token Booked',
+        `Queue Token #${newAppointment.queueNumber} assigned for ${newAppointment.doctor?.user?.fullName || 'Practitioner'} on ${appointmentDate}.`,
+        'QUEUE'
+      ).catch(() => {});
+    }
+
     res.status(201).json({
       success: true,
       message: `Token #${newAppointment.queueNumber} created successfully for ${patientName}`,
@@ -829,7 +843,7 @@ export const changeReceptionistPassword = async (req: AuthRequest, res: Response
       success: true,
       message: 'Password updated successfully. Desk access unlocked.',
       token,
-      data: safeUser,
+      data: { ...safeUser, token, user: safeUser },
       user: safeUser,
     });
   } catch (error: any) {
@@ -1016,10 +1030,9 @@ export const approveAppointment = async (req: AuthRequest, res: Response): Promi
     while (attempts < maxAttempts) {
       try {
         updated = await prisma.$transaction(async (tx) => {
-          // Pessimistic concurrency control: lock practitioner row for this approval
-          try {
-            await tx.$executeRaw`SELECT id FROM "DoctorProfile" WHERE id = ${appointment.doctorId} FOR UPDATE;`;
-          } catch {}
+          // Concurrency control: lock practitioner row for this approval without swallowing errors
+          await tx.$executeRaw`SELECT id FROM "DoctorProfile" WHERE id = ${appointment.doctorId} FOR UPDATE;`;
+
           // Find max positive queue number on this date
           const maxQueueAppt = await tx.appointment.findFirst({
             where: {
@@ -1096,11 +1109,23 @@ export const approveAppointment = async (req: AuthRequest, res: Response): Promi
         break;
       } catch (err: any) {
         attempts++;
-        if (err.code === 'P2002' && attempts < maxAttempts) {
+        if (
+          (err.code === 'P2002' || err.code === 'P2034' || err.code === '40P01' || err.message?.includes('deadlock')) &&
+          attempts < maxAttempts
+        ) {
           continue;
         }
         throw err;
       }
+    }
+
+    if (appointment?.patient?.userId) {
+      createNotification(
+        appointment.patient.userId,
+        'Appointment Approved & Token Assigned',
+        `Your appointment with Dr. ${appointment.doctor?.user?.fullName || 'Practitioner'} has been approved. Queue Token #${updated.queueNumber}.`,
+        'QUEUE'
+      ).catch(() => {});
     }
 
     res.json({

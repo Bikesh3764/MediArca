@@ -90,8 +90,15 @@ export const ClinicDashboard: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    fetchClinicData(false);
-    fetchAvailableDoctors();
+    let mounted = true;
+    queueMicrotask(() => {
+      if (!mounted) return;
+      fetchClinicData(false);
+      fetchAvailableDoctors();
+    });
+    return () => {
+      mounted = false;
+    };
   }, [fetchClinicData, fetchAvailableDoctors]);
 
   const handleAddDoctor = async (e: React.FormEvent) => {
@@ -242,7 +249,7 @@ export const ClinicDashboard: React.FC = () => {
     setSuccessMsg(null);
     try {
       const res = await api.updateClinicReceptionistDoctors(editingRec.id, editDoctorIds);
-      setSuccessMsg(res.message || 'Assigned doctor permissions updated successfully.');
+      setSuccessMsg(res?.message || 'Assigned doctor permissions updated successfully.');
       setEditingRec(null);
       setEditDoctorIds([]);
       fetchClinicData();

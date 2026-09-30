@@ -130,7 +130,13 @@ export const ReceptionistDashboard: React.FC = () => {
   }, [fetchPendingAppointments]);
 
   useEffect(() => {
-    fetchDeskData();
+    let mounted = true;
+    queueMicrotask(() => {
+      if (mounted) fetchDeskData();
+    });
+    return () => {
+      mounted = false;
+    };
   }, [fetchDeskData]);
 
   // Fetch queue when queueDoctorId or queueDate changes
@@ -169,12 +175,19 @@ export const ReceptionistDashboard: React.FC = () => {
   }, [queueDoctorId, queueDate]);
 
   useEffect(() => {
-    if (activeTab === 'queue' && queueDoctorId) {
-      fetchQueue();
-    }
-    if (activeTab === 'pending') {
-      fetchPendingAppointments();
-    }
+    let mounted = true;
+    queueMicrotask(() => {
+      if (!mounted) return;
+      if (activeTab === 'queue' && queueDoctorId) {
+        fetchQueue();
+      }
+      if (activeTab === 'pending') {
+        fetchPendingAppointments();
+      }
+    });
+    return () => {
+      mounted = false;
+    };
   }, [activeTab, queueDoctorId, queueDate, fetchQueue, fetchPendingAppointments]);
 
   const handleApprovePendingAppointment = async (apptId: string) => {
@@ -239,8 +252,12 @@ export const ReceptionistDashboard: React.FC = () => {
         currentPassword,
         newPassword,
       });
-      if (res?.data && updateUser) {
-        updateUser(res.data);
+      if (res?.token) {
+        localStorage.setItem('mediarca_token', res.token);
+      }
+      const updatedUser = res?.user || res?.data;
+      if (updatedUser && updateUser) {
+        updateUser({ ...updatedUser, mustChangePassword: false });
       }
       await refreshUser();
       setSuccessMsg('Temporary password changed successfully. Receptionist desk unlocked.');
@@ -295,11 +312,14 @@ export const ReceptionistDashboard: React.FC = () => {
       const queuedDoctor = linkedDoctors.find((d) => d.doctorId === selectedDoctorId);
       const savedPatientName = patientName.trim();
       const savedPatientPhone = formattedPhone;
+      const queueNum = res?.queueNumber ?? res?.data?.queueNumber;
+      const estTime = res?.estimatedTime ?? res?.data?.estimatedTime ?? 'Active';
+      const chkWindow = res?.checkingWindow ?? res?.data?.checkingWindow ?? 'General Hours';
 
       setBookedPass({
-        queueNumber: res.data.queueNumber,
-        estimatedTime: res.data.estimatedTime || 'Active',
-        checkingWindow: res.data.checkingWindow || 'General Hours',
+        queueNumber: queueNum,
+        estimatedTime: estTime,
+        checkingWindow: chkWindow,
         appointmentDate,
         patientName: savedPatientName,
         patientPhone: savedPatientPhone,
@@ -308,7 +328,7 @@ export const ReceptionistDashboard: React.FC = () => {
         clinicName: data?.clinic?.clinicName,
         clinicAddress: data?.clinic?.address,
       });
-      setSuccessMsg(`Token #${res.data.queueNumber} assigned to ${savedPatientName}`);
+      setSuccessMsg(`Token #${queueNum} assigned to ${savedPatientName}`);
 
       // Reset form
       setPatientName('');
@@ -342,7 +362,7 @@ export const ReceptionistDashboard: React.FC = () => {
     try {
       const nextStatus = !currentStatus;
       const res = await api.checkInAppointmentDirect(appointmentId, nextStatus);
-      if (res.success) {
+      if (res && (res.id || res.success)) {
         setQueueAppointments((prev) =>
           prev.map((item) =>
             item.id === appointmentId
@@ -1260,12 +1280,9 @@ export const ReceptionistDashboard: React.FC = () => {
                                   </button>
                                 )}
                                 {appt.status === 'IN_CONSULTATION' && (
-                                  <button
-                                    onClick={() => handleStatusChange(appt.id, 'COMPLETED')}
-                                    className="px-3.5 py-1.5 rounded-full bg-[#1d1d1f] hover:bg-black text-white text-[11px] font-semibold shadow-xs transition-all active:scale-[0.98] cursor-pointer"
-                                  >
-                                    Complete
-                                  </button>
+                                  <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-[11px] font-medium border border-emerald-200">
+                                    In Cabin
+                                  </span>
                                 )}
                                 {appt.status !== 'CANCELLED' && appt.status !== 'COMPLETED' && (
                                   <button

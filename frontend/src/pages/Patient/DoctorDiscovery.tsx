@@ -91,10 +91,12 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
 
   // Synchronize specialty filter when query param changes
   useEffect(() => {
-    const paramSpec = searchParams.get('specialty') || 'All';
-    if (paramSpec !== selectedSpecialty) {
-      setSelectedSpecialty(paramSpec);
-    }
+    queueMicrotask(() => {
+      const paramSpec = searchParams.get('specialty') || 'All';
+      if (paramSpec !== selectedSpecialty) {
+        setSelectedSpecialty(paramSpec);
+      }
+    });
   }, [searchParams, selectedSpecialty]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {

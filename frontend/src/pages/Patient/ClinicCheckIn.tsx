@@ -29,40 +29,49 @@ export const ClinicCheckIn: React.FC = () => {
 
   // Auto-attempt check-in once user is loaded
   useEffect(() => {
+    let mounted = true;
     if (loadingAuth || autoAttempted) return;
     if (!user) return; // Will prompt login
 
-    if (!clinicId || !code) {
-      setErrorMessage('Invalid QR check-in link. Please scan the official physical QR poster located at the clinic desk.');
-      return;
-    }
+    queueMicrotask(async () => {
+      if (!mounted) return;
+      if (!clinicId || !code) {
+        setErrorMessage('Invalid QR check-in link. Please scan the official physical QR poster located at the clinic desk.');
+        return;
+      }
 
-    const performCheckIn = async () => {
       setCheckingIn(true);
       setErrorMessage(null);
       try {
-        const res = await api.checkInWithQR({
+        const res: any = await api.checkInWithQR({
           clinicId,
           code,
           appointmentId,
         });
 
-        if (res.success && res.data) {
-          setSuccessData(res.data);
-          setSuccessMessage(res.message);
+        if (!mounted) return;
+        const apptData = res?.id ? res : (res?.data || null);
+        if (apptData) {
+          setSuccessData(apptData);
+          setSuccessMessage(res?.message || 'Arrival confirmed! You are checked in at the clinic desk.');
         } else {
-          setErrorMessage(res.message || 'Failed to check in.');
+          setErrorMessage(res?.message || 'Failed to check in.');
         }
       } catch (err: any) {
+        if (!mounted) return;
         console.error('Check-in error:', err);
         setErrorMessage(err.message || 'Unable to verify arrival. Please ask reception desk to check you in.');
       } finally {
-        setCheckingIn(false);
-        setAutoAttempted(true);
+        if (mounted) {
+          setCheckingIn(false);
+          setAutoAttempted(true);
+        }
       }
-    };
+    });
 
-    performCheckIn();
+    return () => {
+      mounted = false;
+    };
   }, [user, loadingAuth, clinicId, code, appointmentId, autoAttempted]);
 
   const handleManualCheckIn = async () => {
@@ -70,17 +79,18 @@ export const ClinicCheckIn: React.FC = () => {
     setCheckingIn(true);
     setErrorMessage(null);
     try {
-      const res = await api.checkInWithQR({
+      const res: any = await api.checkInWithQR({
         clinicId,
         code,
         appointmentId,
       });
 
-      if (res.success && res.data) {
-        setSuccessData(res.data);
-        setSuccessMessage(res.message);
+      const apptData = res?.id ? res : (res?.data || null);
+      if (apptData) {
+        setSuccessData(apptData);
+        setSuccessMessage(res?.message || 'Arrival confirmed! You are checked in at the clinic desk.');
       } else {
-        setErrorMessage(res.message || 'Failed to check in.');
+        setErrorMessage(res?.message || 'Failed to check in.');
       }
     } catch (err: any) {
       console.error('Check-in error:', err);

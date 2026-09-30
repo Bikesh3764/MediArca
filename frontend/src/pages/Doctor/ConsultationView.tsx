@@ -171,12 +171,23 @@ export const ConsultationView: React.FC = () => {
     );
   }
 
+const calculatePreciseAge = (dobString: string): number => {
+  const birth = new Date(dobString);
+  const now = new Date();
+  let age = now.getFullYear() - birth.getFullYear();
+  const m = now.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) {
+    age--;
+  }
+  return Math.max(0, age);
+};
+
   const patientUser = appointment.patient?.user;
   const isForOther = Boolean(appointment.isForOther);
   const actualPatientName = appointment.patientName?.trim() || patientUser?.fullName || 'Walk-in Patient';
   const patientAgeDisplay = appointment.patientAge
     ? (appointment.patientAge.toLowerCase().includes('yr') ? appointment.patientAge : `${appointment.patientAge} yrs`)
-    : (appointment.patient?.dateOfBirth ? `${new Date().getFullYear() - new Date(appointment.patient.dateOfBirth).getFullYear()} yrs` : undefined);
+    : (appointment.patient?.dateOfBirth ? `${calculatePreciseAge(appointment.patient.dateOfBirth)} yrs` : undefined);
   const patientGenderDisplay = appointment.patientGender || appointment.patient?.gender || 'Not specified';
 
   return (
@@ -315,6 +326,54 @@ export const ConsultationView: React.FC = () => {
                     className="w-full h-9 px-3 rounded-xl border border-[#e5e5ea] bg-white focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] transition-all"
                   />
                 </div>
+              </div>
+            </UtilityCard>
+
+            {/* Patient Clinical History & Allergies Card (BUG-22) */}
+            <UtilityCard>
+              <div className="flex items-center gap-2 mb-3 pb-2 border-b border-[#f0f0f0]">
+                <AlertCircle className="w-4 h-4 text-amber-500" />
+                <h4 className="text-xs font-semibold uppercase tracking-wider text-[#1d1d1f]">
+                  Clinical History & Known Allergies
+                </h4>
+              </div>
+
+              <div className="space-y-3 text-xs">
+                <div>
+                  <span className="text-[#86868b] block mb-1">Known Allergies</span>
+                  {appointment.patient?.allergies ? (
+                    <span className="inline-block px-2.5 py-1 rounded-lg bg-rose-50 text-rose-800 border border-rose-200 font-medium">
+                      ⚠️ {appointment.patient.allergies}
+                    </span>
+                  ) : (
+                    <span className="text-emerald-700 font-medium bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                      No known allergies recorded
+                    </span>
+                  )}
+                </div>
+
+                <div>
+                  <span className="text-[#86868b] block mb-0.5">Existing Conditions</span>
+                  <p className="font-medium text-[#1d1d1f]">
+                    {appointment.patient?.existingConditions || 'None reported'}
+                  </p>
+                </div>
+
+                <div>
+                  <span className="text-[#86868b] block mb-0.5">Current Medications</span>
+                  <p className="font-medium text-[#1d1d1f]">
+                    {appointment.patient?.currentMedications || 'None reported'}
+                  </p>
+                </div>
+
+                {appointment.patient?.emergencyContact && (
+                  <div className="pt-2 border-t border-[#f0f0f0]">
+                    <span className="text-[#86868b] block mb-0.5">Emergency Contact</span>
+                    <p className="font-medium text-[#1d1d1f]">
+                      {appointment.patient.emergencyContact}
+                    </p>
+                  </div>
+                )}
               </div>
             </UtilityCard>
           </div>

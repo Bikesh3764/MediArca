@@ -1,6 +1,6 @@
-import React from 'react';
-import { Appointment, getLocalDateString } from '../../services/api';
-import { Clock, Calendar, MapPin, CheckCircle2, Building2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { api, Appointment, getLocalDateString } from '../../services/api';
+import { Clock, Calendar, MapPin, CheckCircle2, Building2, Star } from 'lucide-react';
 import { AppleButton } from '../ui/AppleButton';
 import { CabinStatusBadge } from '../ui/DoctorCabinPresence';
 
@@ -15,6 +15,28 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
 }) => {
   const { doctor, queueNumber, status, appointmentDate, checkingWindow, estimatedTime, liveQueue } =
     appointment;
+
+  const [rating, setRating] = useState<number>(5);
+  const [comment, setComment] = useState<string>('');
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [reviewError, setReviewError] = useState<string | null>(null);
+  const [submittedReview, setSubmittedReview] = useState(appointment.review);
+
+  const handleSubmitReview = async () => {
+    setSubmittingReview(true);
+    setReviewError(null);
+    try {
+      const res = await api.submitAppointmentReview(appointment.id, {
+        rating,
+        comment: comment.trim() || undefined,
+      });
+      setSubmittedReview(res?.data || { rating, comment });
+    } catch (err: any) {
+      setReviewError(err.message || 'Failed to submit review');
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
 
   const isToday = appointmentDate === getLocalDateString();
 
@@ -320,6 +342,95 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
             <p className="text-[13px] font-medium truncate">{appointment.reasonForVisit || 'General Consultation'}</p>
           </div>
         </div>
+
+        {/* Doctor Summary & Review Card for Completed Consultations (BUG-08, BUG-28, BUG-32) */}
+        {status === 'COMPLETED' && (
+          <div className="mt-5 p-4 rounded-2xl bg-[#fafafc] border border-[#e5e5ea] space-y-3">
+            {appointment.clinicalNotes && (
+              <div>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-[#0088e8] block mb-1">
+                  Doctor's Summary & Instructions
+                </span>
+                <div className="text-xs text-[#1d1d1f] whitespace-pre-wrap break-words leading-relaxed font-normal bg-white p-3 rounded-xl border border-[#e5e5ea]">
+                  {appointment.clinicalNotes}
+                </div>
+              </div>
+            )}
+
+            {/* Patient Review Widget */}
+            {submittedReview ? (
+              <div className="pt-2 border-t border-[#f0f0f0] text-xs">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span className="text-[#86868b] font-medium">Your Feedback:</span>
+                  <div className="flex text-amber-400">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star
+                        key={star}
+                        className={`w-3.5 h-3.5 ${
+                          star <= (submittedReview.rating || 5)
+                            ? 'fill-amber-400 text-amber-400'
+                            : 'text-gray-300'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <span className="text-xs font-semibold text-[#1d1d1f] ml-1">
+                    {submittedReview.rating}/5
+                  </span>
+                </div>
+                {submittedReview.comment && (
+                  <p className="text-[#86868b] italic">"{submittedReview.comment}"</p>
+                )}
+              </div>
+            ) : (
+              <div className="pt-2 border-t border-[#f0f0f0]">
+                <span className="text-[11px] font-semibold text-[#1d1d1f] block mb-1.5">
+                  How was your consultation experience?
+                </span>
+                <div className="flex items-center gap-1 mb-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => setRating(star)}
+                      className="p-1 hover:scale-110 transition-transform cursor-pointer"
+                    >
+                      <Star
+                        className={`w-4 h-4 ${
+                          star <= rating
+                            ? 'fill-amber-400 text-amber-400'
+                            : 'text-gray-300 hover:text-amber-300'
+                        }`}
+                      />
+                    </button>
+                  ))}
+                  <span className="text-xs font-semibold text-[#1d1d1f] ml-1.5">{rating} / 5</span>
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                    placeholder="Optional feedback for the doctor..."
+                    className="flex-1 h-8 px-3 rounded-lg border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] focus:outline-none focus:ring-1 focus:ring-[#0088e8]"
+                  />
+                  <AppleButton
+                    variant="primary"
+                    size="sm"
+                    disabled={submittingReview}
+                    onClick={handleSubmitReview}
+                    className="text-xs px-3 py-1 rounded-lg"
+                  >
+                    {submittingReview ? 'Submitting...' : 'Submit Review'}
+                  </AppleButton>
+                </div>
+                {reviewError && (
+                  <p className="text-[11px] text-rose-600 mt-1">{reviewError}</p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Action Footer */}
         <div className="mt-6 pt-4 border-t border-[#f0f0f0] flex items-center justify-between">

@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { Response } from 'express';
 import bcrypt from 'bcryptjs';
 import prisma from '../config/database';
@@ -51,6 +52,16 @@ export const getMyClinic = async (req: AuthRequest, res: Response): Promise<void
     if (!clinic) {
       res.status(404).json({ success: false, message: 'Clinic profile not found' });
       return;
+    }
+
+    // Auto-generate checkinCode if missing (BUG-03)
+    if (!clinic.checkinCode) {
+      const generatedCode = crypto.randomBytes(3).toString('hex').toUpperCase();
+      await prisma.clinicProfile.update({
+        where: { id: clinic.id },
+        data: { checkinCode: generatedCode },
+      });
+      clinic.checkinCode = generatedCode;
     }
 
     // Gate operational and patient data if clinic is suspended or rejected (Finding M2)
@@ -119,7 +130,10 @@ export const getMyClinic = async (req: AuthRequest, res: Response): Promise<void
       const docAppointments = clinicAppointments.filter((a) => a.doctorId === cd.doctorId);
       // Finding F1: Count revenue only on completed consultations or paid transactions
       const paidOrCompleted = docAppointments.filter(
-        (a) => a.paymentStatus === 'PAID' || a.status === 'COMPLETED'
+        (a) =>
+          (a.paymentStatus === 'PAID' || a.status === 'COMPLETED') &&
+          a.status !== 'CANCELLED' &&
+          a.status !== 'REJECTED'
       );
       const bookingCount = docAppointments.length;
       const completedCount = docAppointments.filter((a) => a.status === 'COMPLETED').length;
@@ -906,6 +920,7 @@ export const updateClinicReceptionistDoctors = async (req: AuthRequest, res: Res
     res.json({
       success: true,
       message: 'Receptionist doctor assignments updated successfully',
+      data: { success: true, message: 'Receptionist doctor assignments updated successfully' },
     });
   } catch (error: any) {
     console.error('updateClinicReceptionistDoctors error:', error);

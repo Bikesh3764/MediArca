@@ -120,6 +120,9 @@ export const ManageSchedule: React.FC = () => {
 
       if (currentClinic) {
         syncClinicData(currentClinic);
+      } else if (user?.doctorProfile) {
+        setSlots(parseDoctorSlots(user.doctorProfile));
+        setConsultationFee(user.doctorProfile.consultationFee ?? 500);
       }
     } catch (err: any) {
       console.error('Failed to load doctor clinics for schedule:', err);
@@ -127,15 +130,21 @@ export const ManageSchedule: React.FC = () => {
     } finally {
       setLoadingClinics(false);
     }
-  }, [searchParams, setSearchParams, syncClinicData]);
+  }, [searchParams, setSearchParams, syncClinicData, user]);
 
   useEffect(() => {
+    let mounted = true;
     if (loadingAuth) return;
     if (!user || user.role?.toUpperCase() !== 'DOCTOR') {
       navigate('/login');
       return;
     }
-    fetchAffiliations();
+    queueMicrotask(() => {
+      if (mounted) fetchAffiliations();
+    });
+    return () => {
+      mounted = false;
+    };
   }, [fetchAffiliations, user, loadingAuth, navigate]);
 
   const selectedClinic = clinics.find((c) => c.clinicId === selectedClinicId);
@@ -259,7 +268,7 @@ export const ManageSchedule: React.FC = () => {
 
     try {
       await api.updateDoctorSchedule({
-        clinicId: selectedClinic.clinicId,
+        ...(selectedClinic ? { clinicId: selectedClinic.clinicId } : {}),
         slots: slots.map((s) => ({
           ...s,
           maxPatients: Number(s.maxPatients),
@@ -269,17 +278,22 @@ export const ManageSchedule: React.FC = () => {
       });
 
       await refreshUser();
-      setSuccessMsg(`Practice schedule & consultation fee for ${selectedClinic.clinicName} updated successfully!`);
-      // Refresh local clinics state
-      setClinics((prev) =>
-        prev.map((c) =>
-          c.clinicId === selectedClinic.clinicId
-            ? { ...c, slots, consultationFee: Number(consultationFee) }
-            : c
-        )
+      setSuccessMsg(
+        selectedClinic
+          ? `Practice schedule & consultation fee for ${selectedClinic.clinicName} updated successfully!`
+          : 'Independent practice schedule & consultation fee updated successfully!'
       );
+      if (selectedClinic) {
+        setClinics((prev) =>
+          prev.map((c) =>
+            c.clinicId === selectedClinic.clinicId
+              ? { ...c, slots, consultationFee: Number(consultationFee) }
+              : c
+          )
+        );
+      }
     } catch (err: any) {
-      setError(err.message || 'Failed to update schedule for this clinic');
+      setError(err.message || 'Failed to update schedule');
     } finally {
       setSaving(false);
     }
@@ -311,82 +325,100 @@ export const ManageSchedule: React.FC = () => {
       <div className="max-w-4xl space-y-6">
         {loadingClinics ? (
           <div className="h-64 rounded-3xl bg-white border border-[#e5e5ea] animate-pulse p-8" />
-        ) : clinics.length === 0 ? (
-          /* Empty State: Doctor has no affiliated clinics yet */
-          <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-10 text-center shadow-sm">
-            <div className="w-16 h-16 rounded-3xl bg-[#0088e8]/10 text-[#0088e8] flex items-center justify-center mx-auto mb-4">
-              <Building2 className="w-8 h-8" />
-            </div>
-            <h3 className="text-xl font-bold text-[#1d1d1f] tracking-tight mb-2">
-              No Affiliated Clinics Yet
-            </h3>
-            <p className="text-sm text-[#86868b] max-w-md mx-auto mb-6 leading-relaxed">
-              In MediArca, doctor checking shifts, timings, consultation duration, and consultation fees are configured individually for each practicing clinic. Please join or affiliate with a clinic to set up your schedule.
-            </p>
-            <AppleButton
-              variant="primary"
-              size="md"
-              onClick={() => navigate('/doctor/dashboard?tab=affiliations')}
-              className="px-6 py-2.5 rounded-full"
-            >
-              Affiliate with a Clinic
-            </AppleButton>
-          </div>
         ) : (
-          <UtilityCard className="p-6 sm:p-8 space-y-6">
-            {successMsg && (
-              <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2.5 animate-fadeIn">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                <span className="font-medium">{successMsg}</span>
+          <>
+            {clinics.length === 0 && (
+              <div className="p-5 rounded-2xl bg-sky-50 border border-sky-200 text-sky-900 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+                <div>
+                  <p className="font-semibold text-[13px] flex items-center gap-1.5 text-sky-900">
+                    <Sparkles className="w-4 h-4 text-[#0088e8]" />
+                    Independent Practice & Telehealth Schedule
+                  </p>
+                  <p className="text-[#86868b] mt-0.5">
+                    You are not currently linked to a clinic facility. You can configure your direct consultation shifts and fees below, or affiliate with a clinic anytime.
+                  </p>
+                </div>
+                <AppleButton
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate('/doctor/dashboard?tab=affiliations')}
+                  className="whitespace-nowrap border border-sky-300 text-sky-800 hover:bg-sky-100 self-start sm:self-auto"
+                >
+                  Affiliate with Clinic
+                </AppleButton>
               </div>
             )}
 
-            {error && (
-              <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2.5 animate-fadeIn">
-                <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                <span className="font-medium">{error}</span>
-              </div>
-            )}
-
-            {/* Clinic Selector & Verified Location Banner */}
-            <div className="p-5 rounded-[22px] bg-[#fafafc] border border-[#e5e5ea] space-y-3">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <label className="text-xs font-bold text-[#1d1d1f] flex items-center gap-2">
-                  <Building2 className="w-4 h-4 text-[#0088e8]" />
-                  <span>Practicing Clinic Facility</span>
-                </label>
-                {clinics.length > 1 && (
-                  <select
-                    value={selectedClinicId}
-                    onChange={(e) => handleClinicChange(e.target.value)}
-                    className="h-10 px-4 rounded-full border border-[#e5e5ea] text-xs font-semibold text-[#1d1d1f] bg-white focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] cursor-pointer transition-all hover:bg-[#fafafc] shadow-2xs"
-                  >
-                    {clinics.map((c) => (
-                      <option key={c.clinicId} value={c.clinicId}>
-                        {c.clinicName} {c.city ? `(${c.city})` : ''}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </div>
-
-              {selectedClinic && (
-                <div className="pt-3 border-t border-[#f0f0f0] flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-[#86868b]">
-                  <div className="flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5 text-[#0088e8] flex-shrink-0" />
-                    <span className="text-[#1d1d1f] font-medium">
-                      {selectedClinic.address}{selectedClinic.city ? `, ${selectedClinic.city}` : ''}
-                    </span>
-                  </div>
-                  {selectedClinic.phone && (
-                    <div className="flex items-center gap-1.5 font-medium">
-                      <Phone className="w-3 h-3 text-[#86868b]" />
-                      <span>{selectedClinic.phone}</span>
-                    </div>
-                  )}
+            <UtilityCard className="p-6 sm:p-8 space-y-6">
+              {successMsg && (
+                <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2.5 animate-fadeIn">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                  <span className="font-medium">{successMsg}</span>
                 </div>
               )}
-            </div>
+
+              {error && (
+                <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2.5 animate-fadeIn">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  <span className="font-medium">{error}</span>
+                </div>
+              )}
+
+              {/* Clinic Selector & Verified Location Banner */}
+              <div className="p-5 rounded-[22px] bg-[#fafafc] border border-[#e5e5ea] space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <label className="text-xs font-bold text-[#1d1d1f] flex items-center gap-2">
+                    <Building2 className="w-4 h-4 text-[#0088e8]" />
+                    <span>Practicing Facility</span>
+                  </label>
+                  {clinics.length > 1 ? (
+                    <select
+                      value={selectedClinicId}
+                      onChange={(e) => handleClinicChange(e.target.value)}
+                      className="h-10 px-4 rounded-full border border-[#e5e5ea] text-xs font-semibold text-[#1d1d1f] bg-white focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] cursor-pointer transition-all hover:bg-[#fafafc] shadow-2xs"
+                    >
+                      {clinics.map((c) => (
+                        <option key={c.clinicId} value={c.clinicId}>
+                          {c.clinicName} {c.city ? `(${c.city})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <span className="text-xs font-medium text-[#86868b] bg-white px-3 py-1.5 rounded-full border border-[#e5e5ea]">
+                      {selectedClinic ? selectedClinic.clinicName : 'Independent Practice / Direct Consultations'}
+                    </span>
+                  )}
+                </div>
+
+                {selectedClinic ? (
+                  <div className="pt-3 border-t border-[#f0f0f0] flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-[#86868b]">
+                    <div className="flex items-center gap-1.5">
+                      <MapPin className="w-3.5 h-3.5 text-[#0088e8] flex-shrink-0" />
+                      <span className="text-[#1d1d1f] font-medium">
+                        {selectedClinic.address}{selectedClinic.city ? `, ${selectedClinic.city}` : ''}
+                      </span>
+                    </div>
+                    {selectedClinic.phone && (
+                      <div className="flex items-center gap-1.5 font-medium">
+                        <Phone className="w-3 h-3 text-[#86868b]" />
+                        <span>{selectedClinic.phone}</span>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="pt-3 border-t border-[#f0f0f0] flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-[#86868b]">
+                    <div className="flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-[#0088e8] flex-shrink-0" />
+                      <span className="text-[#1d1d1f] font-medium">
+                        Direct Consultations & Telehealth Practice
+                      </span>
+                    </div>
+                    <span className="text-[11px] text-[#86868b]">
+                      Configures schedule across direct and non-clinic appointments
+                    </span>
+                  </div>
+                )}
+              </div>
 
             <form onSubmit={handleSubmit} className="space-y-8">
               {/* Header & Capacity Summary Card */}
@@ -668,7 +700,7 @@ export const ManageSchedule: React.FC = () => {
                     />
                   </div>
                   <p className="text-[11px] text-[#86868b] mt-1.5 leading-relaxed">
-                    Patients will see ₹{consultationFee || 0} when booking an appointment token for your desk at {selectedClinic?.clinicName}.
+                    Patients will see ₹{consultationFee || 0} when booking an appointment token for your desk{selectedClinic ? ` at ${selectedClinic.clinicName}` : ''}.
                   </p>
                 </div>
               </div>
@@ -687,11 +719,14 @@ export const ManageSchedule: React.FC = () => {
                 >
                   {saving
                     ? 'Saving Schedule...'
-                    : `Save Schedule for ${selectedClinic?.clinicName || 'Clinic'} (₹${consultationFee || 0})`}
+                    : selectedClinic
+                    ? `Save Schedule for ${selectedClinic.clinicName} (₹${consultationFee || 0})`
+                    : `Save Independent Schedule (₹${consultationFee || 0})`}
                 </AppleButton>
               </div>
             </form>
           </UtilityCard>
+          </>
         )}
       </div>
     </DashboardLayout>
