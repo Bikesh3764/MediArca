@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import { api, Appointment } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { AppleButton } from '../../components/ui/AppleButton';
@@ -15,6 +15,7 @@ import {
 export const ClinicCheckIn: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, loading: loadingAuth } = useAuth();
 
   const clinicId = searchParams.get('clinicId') || '';
@@ -149,13 +150,10 @@ export const ClinicCheckIn: React.FC = () => {
               <div className="mt-6 space-y-3">
                 <AppleButton
                   variant="primary"
-                  onClick={() =>
-                    navigate(
-                      `/login?redirect=${encodeURIComponent(
-                        window.location.hash.replace(/^#/, '')
-                      )}`
-                    )
-                  }
+                  onClick={() => {
+                    const currentTarget = `${location.pathname}${location.search}`;
+                    navigate(`/login?redirect=${encodeURIComponent(currentTarget)}`);
+                  }}
                   className="w-full flex items-center justify-center gap-2"
                 >
                   <span>Sign In & Verify Check-In</span>

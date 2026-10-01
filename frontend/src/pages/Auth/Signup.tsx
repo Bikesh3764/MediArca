@@ -39,6 +39,11 @@ export const Signup: React.FC = () => {
   };
 
   const getTargetDestination = (targetRole: string) => {
+    const params = new URLSearchParams(location.search);
+    const redirectParam = params.get('redirect');
+    if (redirectParam && redirectParam.startsWith('/') && !redirectParam.startsWith('//')) {
+      return redirectParam;
+    }
     const fromPath = (location.state as any)?.from?.pathname;
     const search = (location.state as any)?.from?.search || '';
     if (fromPath && fromPath !== '/login' && fromPath !== '/signup') {
@@ -134,7 +139,7 @@ export const Signup: React.FC = () => {
         </h2>
         <p className="mt-2 text-sm text-[#86868b]">
           Already have an account?{' '}
-          <Link to="/login" className="text-[#0088e8] font-medium hover:underline">
+          <Link to={{ pathname: '/login', search: location.search }} state={location.state} className="text-[#0088e8] font-medium hover:underline">
             Sign in
           </Link>
         </p>

@@ -62,6 +62,30 @@ export const migrateSyntheticWalkinAppointments = async (userId: string, formatt
   }
 };
 
+export const sanitizeClinicalHistoryList = (val: unknown): string | null => {
+  if (val === undefined || val === null) return null;
+  if (Array.isArray(val)) {
+    const cleaned = val
+      .map((item) => {
+        if (typeof item === 'string') return item.trim();
+        if (typeof item === 'number' || typeof item === 'boolean') return String(item).trim();
+        if (typeof item === 'object' && item !== null) {
+          const obj = item as Record<string, any>;
+          return String(obj.name || obj.title || obj.condition || obj.allergy || obj.surgery || obj.label || '').trim();
+        }
+        return '';
+      })
+      .filter((s) => s.length > 0 && s !== 'null' && s !== 'undefined');
+    return cleaned.length > 0 ? cleaned.join(', ') : null;
+  }
+  if (typeof val === 'string') {
+    const trimmed = val.trim();
+    if (!trimmed || trimmed === 'null' || trimmed === 'undefined') return null;
+    return trimmed;
+  }
+  return null;
+};
+
 export const register = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, password, fullName, phone, role = 'PATIENT', ...profileData } = req.body;
@@ -150,8 +174,8 @@ export const register = async (req: Request, res: Response): Promise<void> => {
               dateOfBirth: formattedDob,
               gender: profileData.gender || null,
               bloodGroup: profileData.bloodGroup || null,
-              allergies: profileData.allergies || null,
-              existingConditions: profileData.existingConditions || null,
+              allergies: sanitizeClinicalHistoryList(profileData.allergies),
+              existingConditions: sanitizeClinicalHistoryList(profileData.existingConditions ?? profileData.chronicConditions),
             },
           },
         },
@@ -544,6 +568,8 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
         bloodGroup,
         allergies,
         existingConditions,
+        chronicConditions,
+        pastSurgeries,
         currentMedications,
         emergencyContact,
       } = roleSpecificData;
@@ -566,9 +592,21 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
       }
       if (gender !== undefined) safePatientData.gender = gender ? String(gender).trim() : null;
       if (bloodGroup !== undefined) safePatientData.bloodGroup = bloodGroup ? String(bloodGroup).trim() : null;
-      if (allergies !== undefined) safePatientData.allergies = allergies ? String(allergies).trim() : null;
-      if (existingConditions !== undefined) safePatientData.existingConditions = existingConditions ? String(existingConditions).trim() : null;
-      if (currentMedications !== undefined) safePatientData.currentMedications = currentMedications ? String(currentMedications).trim() : null;
+      if (allergies !== undefined) safePatientData.allergies = sanitizeClinicalHistoryList(allergies);
+
+      if (existingConditions !== undefined || chronicConditions !== undefined || pastSurgeries !== undefined) {
+        const conditions = sanitizeClinicalHistoryList(existingConditions ?? chronicConditions);
+        const surgeries = sanitizeClinicalHistoryList(pastSurgeries);
+        let combinedConditions = conditions;
+        if (surgeries) {
+          combinedConditions = combinedConditions
+            ? `${combinedConditions} | Past Surgeries: ${surgeries}`
+            : `Past Surgeries: ${surgeries}`;
+        }
+        safePatientData.existingConditions = combinedConditions;
+      }
+
+      if (currentMedications !== undefined) safePatientData.currentMedications = sanitizeClinicalHistoryList(currentMedications);
       if (emergencyContact !== undefined) safePatientData.emergencyContact = emergencyContact ? String(emergencyContact).trim() : null;
 
       await prisma.patientProfile.upsert({

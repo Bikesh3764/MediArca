@@ -14,7 +14,19 @@ import {
   Save,
   Check,
   Stethoscope,
+  Plus,
+  Trash2,
+  Pill,
 } from 'lucide-react';
+
+export interface MedicineItem {
+  id: string;
+  name: string;
+  dosage: string;
+  frequency: string;
+  duration: string;
+  instructions: string;
+}
 
 export const ConsultationView: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -39,6 +51,14 @@ export const ConsultationView: React.FC = () => {
   const [diagnosis, setDiagnosis] = useState('');
   const [advice, setAdvice] = useState('');
   const [followUpDate, setFollowUpDate] = useState('');
+
+  // Prescription Medicines State
+  const [medicines, setMedicines] = useState<MedicineItem[]>([]);
+  const [medName, setMedName] = useState('');
+  const [medDosage, setMedDosage] = useState('');
+  const [medFrequency, setMedFrequency] = useState('1-0-1');
+  const [medDuration, setMedDuration] = useState('5 days');
+  const [medInstructions, setMedInstructions] = useState('After meals');
 
   useEffect(() => {
     if (loadingAuth) return;
@@ -65,6 +85,18 @@ export const ConsultationView: React.FC = () => {
               if (parsed.weight) setWeight(parsed.weight);
             } catch {}
           }
+          if ((found as any).prescription?.items) {
+            setMedicines(
+              (found as any).prescription.items.map((item: any) => ({
+                id: item.id || `med_${Math.random().toString(36).substring(2, 7)}`,
+                name: item.medicineName || item.name || '',
+                dosage: item.dosage || '',
+                frequency: item.frequency || '',
+                duration: item.duration || '',
+                instructions: item.instructions || '',
+              }))
+            );
+          }
         }
       } catch (err: any) {
         console.error('Failed to load consultation appointment:', err);
@@ -76,6 +108,28 @@ export const ConsultationView: React.FC = () => {
 
     fetchAppointmentData();
   }, [id, user, loadingAuth, navigate]);
+
+  const handleAddMedicine = (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+    if (!medName.trim()) return;
+    setMedicines((prev) => [
+      ...prev,
+      {
+        id: `med_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+        name: medName.trim(),
+        dosage: medDosage.trim() || '1 Tab',
+        frequency: medFrequency.trim() || '1-0-1',
+        duration: medDuration.trim() || '5 days',
+        instructions: medInstructions.trim(),
+      },
+    ]);
+    setMedName('');
+    setMedDosage('');
+  };
+
+  const handleRemoveMedicine = (idToRemove: string) => {
+    setMedicines((prev) => prev.filter((m) => m.id !== idToRemove));
+  };
 
   const handleSaveDraft = async () => {
     if (!appointment) return;
@@ -104,9 +158,10 @@ export const ConsultationView: React.FC = () => {
         appointmentId: appointment.id,
         clinicalNotes: combinedNotes,
         vitals: vitalsObj,
-      });
+        ...(medicines.length > 0 ? { medicines } : {}),
+      } as any);
 
-      setDraftSavedMsg('Consultation notes & vitals saved as draft.');
+      setDraftSavedMsg('Consultation notes, medicines & vitals saved as draft.');
       setTimeout(() => setDraftSavedMsg(null), 4000);
     } catch (err: any) {
       setError(err.message || 'Failed to save draft notes');
@@ -137,6 +192,13 @@ export const ConsultationView: React.FC = () => {
         followUpDate: followUpDate || undefined,
         clinicalNotes: clinicalNotes.trim() || undefined,
         vitals: vitalsObj,
+        medicines: medicines.filter((m) => m.name.trim()).map((m) => ({
+          name: m.name.trim(),
+          dosage: m.dosage.trim(),
+          frequency: m.frequency.trim(),
+          duration: m.duration.trim(),
+          instructions: m.instructions.trim(),
+        })),
       });
 
       navigate('/doctor/dashboard');
@@ -383,54 +445,6 @@ const calculatePreciseAge = (dobString: string): number => {
                 </div>
               </div>
             </UtilityCard>
-
-            {/* Patient Clinical History & Allergies Card (BUG-22) */}
-            <UtilityCard>
-              <div className="flex items-center gap-2 mb-3 pb-2 border-b border-[#f0f0f0]">
-                <AlertCircle className="w-4 h-4 text-amber-500" />
-                <h4 className="text-xs font-semibold uppercase tracking-wider text-[#1d1d1f]">
-                  Clinical History & Known Allergies
-                </h4>
-              </div>
-
-              <div className="space-y-3 text-xs">
-                <div>
-                  <span className="text-[#86868b] block mb-1">Known Allergies</span>
-                  {appointment.patient?.allergies ? (
-                    <span className="inline-block px-2.5 py-1 rounded-lg bg-rose-50 text-rose-800 border border-rose-200 font-medium">
-                      ⚠️ {appointment.patient.allergies}
-                    </span>
-                  ) : (
-                    <span className="text-emerald-700 font-medium bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                      No known allergies recorded
-                    </span>
-                  )}
-                </div>
-
-                <div>
-                  <span className="text-[#86868b] block mb-0.5">Existing Conditions</span>
-                  <p className="font-medium text-[#1d1d1f]">
-                    {appointment.patient?.existingConditions || 'None reported'}
-                  </p>
-                </div>
-
-                <div>
-                  <span className="text-[#86868b] block mb-0.5">Current Medications</span>
-                  <p className="font-medium text-[#1d1d1f]">
-                    {appointment.patient?.currentMedications || 'None reported'}
-                  </p>
-                </div>
-
-                {appointment.patient?.emergencyContact && (
-                  <div className="pt-2 border-t border-[#f0f0f0]">
-                    <span className="text-[#86868b] block mb-0.5">Emergency Contact</span>
-                    <p className="font-medium text-[#1d1d1f]">
-                      {appointment.patient.emergencyContact}
-                    </p>
-                  </div>
-                )}
-              </div>
-            </UtilityCard>
           </div>
 
           {/* Right Column: Diagnosis, Clinical Notes, Advice, Follow-Up */}
@@ -524,39 +538,201 @@ const calculatePreciseAge = (dobString: string): number => {
               </div>
             </UtilityCard>
 
-            {/* Bottom Actions Card */}
+            {/* Prescription & Medications Builder Card (Rx) */}
             <UtilityCard>
-              <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
-                <AppleButton
-                  variant="ghost"
-                  size="md"
-                  type="button"
-                  disabled={savingDraft}
-                  onClick={handleSaveDraft}
-                  className="flex items-center gap-1.5 w-full sm:w-auto justify-center"
-                >
-                  <Save className="w-4 h-4 text-[#0088e8]" />
-                  <span>{savingDraft ? 'Saving Draft...' : 'Save Draft'}</span>
-                </AppleButton>
-
-                <AppleButton
-                  variant="primary"
-                  size="lg"
-                  type="submit"
-                  disabled={submitting}
-                  className="w-full sm:w-auto flex items-center justify-center gap-2"
-                >
-                  <Check className="w-4 h-4" />
-                  <span>
-                    {submitting
-                      ? 'Finalizing...'
-                      : appointment.status === 'COMPLETED'
-                      ? 'Update Consultation'
-                      : 'Complete Consultation'}
-                  </span>
-                </AppleButton>
+              <div className="flex items-center justify-between mb-4 pb-2 border-b border-[#f0f0f0]">
+                <div className="flex items-center gap-2">
+                  <Pill className="w-5 h-5 text-[#0088e8]" />
+                  <h3 className="text-base font-semibold text-[#1d1d1f] tracking-tight">
+                    Prescription & Medications (Rx)
+                  </h3>
+                </div>
+                <span className="text-[11px] font-semibold text-[#0088e8] bg-[#0088e8]/10 px-2.5 py-0.5 rounded-full">
+                  {medicines.length} Medication{medicines.length === 1 ? '' : 's'} Added
+                </span>
               </div>
+
+              {appointment.status !== 'COMPLETED' && (
+                <div className="p-3.5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] mb-4 space-y-3">
+                  <span className="text-[11px] font-semibold text-[#1d1d1f] uppercase tracking-wider block">
+                    Add Medicine / Rx Item
+                  </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 text-xs">
+                    <div className="sm:col-span-2 lg:col-span-1">
+                      <label className="block text-[#86868b] mb-1 font-medium">Medicine Name & Strength</label>
+                      <input
+                        type="text"
+                        value={medName}
+                        onChange={(e) => setMedName(e.target.value)}
+                        placeholder="e.g. Paracetamol 650mg"
+                        className="w-full h-9 px-3 rounded-xl border border-[#e5e5ea] bg-white text-xs text-[#1d1d1f] focus:outline-none focus:ring-1 focus:ring-[#0088e8]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[#86868b] mb-1 font-medium">Dosage</label>
+                      <input
+                        type="text"
+                        value={medDosage}
+                        onChange={(e) => setMedDosage(e.target.value)}
+                        placeholder="e.g. 1 Tablet / 5ml"
+                        className="w-full h-9 px-3 rounded-xl border border-[#e5e5ea] bg-white text-xs text-[#1d1d1f] focus:outline-none focus:ring-1 focus:ring-[#0088e8]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[#86868b] mb-1 font-medium">Frequency</label>
+                      <select
+                        value={medFrequency}
+                        onChange={(e) => setMedFrequency(e.target.value)}
+                        className="w-full h-9 px-3 rounded-xl border border-[#e5e5ea] bg-white text-xs text-[#1d1d1f] focus:outline-none focus:ring-1 focus:ring-[#0088e8]"
+                      >
+                        <option value="1-0-1">1-0-1 (Morning & Night)</option>
+                        <option value="1-1-1">1-1-1 (TDS - Thrice daily)</option>
+                        <option value="1-0-0">1-0-0 (Morning only)</option>
+                        <option value="0-0-1">0-0-1 (Night only)</option>
+                        <option value="0-1-0">0-1-0 (Afternoon only)</option>
+                        <option value="SOS">SOS (As needed)</option>
+                        <option value="Once daily">Once daily</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[#86868b] mb-1 font-medium">Duration</label>
+                      <input
+                        type="text"
+                        value={medDuration}
+                        onChange={(e) => setMedDuration(e.target.value)}
+                        placeholder="e.g. 5 days, 1 week"
+                        className="w-full h-9 px-3 rounded-xl border border-[#e5e5ea] bg-white text-xs text-[#1d1d1f] focus:outline-none focus:ring-1 focus:ring-[#0088e8]"
+                      />
+                    </div>
+                    <div className="sm:col-span-2 lg:col-span-1">
+                      <label className="block text-[#86868b] mb-1 font-medium">Instructions / Timing</label>
+                      <input
+                        type="text"
+                        value={medInstructions}
+                        onChange={(e) => setMedInstructions(e.target.value)}
+                        placeholder="e.g. After meals with water"
+                        className="w-full h-9 px-3 rounded-xl border border-[#e5e5ea] bg-white text-xs text-[#1d1d1f] focus:outline-none focus:ring-1 focus:ring-[#0088e8]"
+                      />
+                    </div>
+                    <div className="flex items-end">
+                      <AppleButton
+                        variant="primary"
+                        size="sm"
+                        type="button"
+                        onClick={handleAddMedicine}
+                        disabled={!medName.trim()}
+                        className="w-full h-9 flex items-center justify-center gap-1.5 text-xs font-semibold"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Add Rx Item</span>
+                      </AppleButton>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {medicines.length === 0 ? (
+                <div className="p-6 text-center rounded-xl border border-dashed border-[#e5e5ea] text-[#86868b] text-xs">
+                  <Pill className="w-6 h-6 mx-auto mb-1 text-[#d2d2d7]" />
+                  <p className="font-medium text-[#1d1d1f]">No prescription medications added</p>
+                  <p className="mt-0.5 text-[11px]">Add medications above to generate a digital prescription slip for the patient.</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto rounded-xl border border-[#e5e5ea]">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-[#f5f5f7] border-b border-[#e5e5ea] text-[#86868b] font-medium">
+                      <tr>
+                        <th className="py-2.5 px-3">Medicine</th>
+                        <th className="py-2.5 px-3">Dosage</th>
+                        <th className="py-2.5 px-3">Frequency</th>
+                        <th className="py-2.5 px-3">Duration</th>
+                        <th className="py-2.5 px-3">Instructions</th>
+                        {appointment.status !== 'COMPLETED' && (
+                          <th className="py-2.5 px-3 text-right">Action</th>
+                        )}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#f5f5f7] bg-white">
+                      {medicines.map((m) => (
+                        <tr key={m.id} className="hover:bg-[#fafafc]">
+                          <td className="py-2.5 px-3 font-semibold text-[#1d1d1f]">{m.name}</td>
+                          <td className="py-2.5 px-3 text-[#1d1d1f]">{m.dosage}</td>
+                          <td className="py-2.5 px-3">
+                            <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-800 font-medium text-[11px] border border-blue-200">
+                              {m.frequency}
+                            </span>
+                          </td>
+                          <td className="py-2.5 px-3 text-[#1d1d1f]">{m.duration}</td>
+                          <td className="py-2.5 px-3 text-[#86868b]">{m.instructions || '—'}</td>
+                          {appointment.status !== 'COMPLETED' && (
+                            <td className="py-2.5 px-3 text-right">
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveMedicine(m.id)}
+                                className="p-1 rounded-lg text-rose-500 hover:text-rose-700 hover:bg-rose-50 transition-colors cursor-pointer"
+                                title="Remove medication"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </td>
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </UtilityCard>
+
+            {/* Bottom Actions Card */}
+            {appointment.status === 'COMPLETED' ? (
+              <UtilityCard className="bg-emerald-50/50 border-emerald-200">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-emerald-900">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+                    <div>
+                      <h4 className="text-sm font-semibold">Consultation Finalized & Completed</h4>
+                      <p className="text-xs text-emerald-700">This clinical record is finalized. Digital prescription and consultation summary have been issued.</p>
+                    </div>
+                  </div>
+                  <AppleButton
+                    variant="ghost"
+                    size="sm"
+                    type="button"
+                    onClick={() => navigate('/doctor/dashboard')}
+                  >
+                    Back to Console
+                  </AppleButton>
+                </div>
+              </UtilityCard>
+            ) : (
+              <UtilityCard>
+                <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
+                  <AppleButton
+                    variant="ghost"
+                    size="md"
+                    type="button"
+                    disabled={savingDraft}
+                    onClick={handleSaveDraft}
+                    className="flex items-center gap-1.5 w-full sm:w-auto justify-center"
+                  >
+                    <Save className="w-4 h-4 text-[#0088e8]" />
+                    <span>{savingDraft ? 'Saving Draft...' : 'Save Draft'}</span>
+                  </AppleButton>
+
+                  <AppleButton
+                    variant="primary"
+                    size="lg"
+                    type="submit"
+                    disabled={submitting}
+                    className="w-full sm:w-auto flex items-center justify-center gap-2"
+                  >
+                    <Check className="w-4 h-4" />
+                    <span>{submitting ? 'Finalizing...' : 'Complete Consultation'}</span>
+                  </AppleButton>
+                </div>
+              </UtilityCard>
+            )}
           </div>
         </form>
       </div>

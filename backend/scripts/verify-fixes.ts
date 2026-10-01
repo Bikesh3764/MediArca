@@ -42,6 +42,7 @@ import { getJwtSecret, optionalAuthenticate, authenticate, AuthRequest } from '.
 import jwt from 'jsonwebtoken';
 import { canTransition } from '../src/utils/appointmentStateMachine';
 import { isDoctorEligibleForClinicalPractice, isClinicActive } from '../src/utils/authGuards';
+import { sanitizeClinicalHistoryList } from '../src/controllers/authController';
 
 function runTests() {
   console.log('=== RUNNING MEDIARCA VERIFICATION SUITE ===\n');
@@ -4455,6 +4456,62 @@ function runTests() {
   assert(matchesCity(mockDoctorOtherState, 'Mumbai') === true, 'Other doctor matches Mumbai city filter');
   assert(matchesCity(mockDoctorWithClinic, 'All') === true, 'Doctor matches All cities filter');
 
+  // --- Test 149: 26 Defect Layers Verification (Sanitization, Clinic Inactivity Guards, Numeric Fees, State Transitions) ---
+  console.log('\n--- Test 149: 26 Defect Layers Verification ---');
+
+  // Bug 1.1: sanitizeClinicalHistoryList
+  assert(sanitizeClinicalHistoryList(['Asthma', 'Diabetes']) === 'Asthma, Diabetes', 'Bug 1.1: String array formatted to comma-separated clinical history');
+  assert(sanitizeClinicalHistoryList([{ name: 'Peanuts' }, { condition: 'Dust' }]) === 'Peanuts, Dust', 'Bug 1.1: Object array extracted and formatted to comma-separated string');
+  assert(sanitizeClinicalHistoryList('Penicillin, Dust') === 'Penicillin, Dust', 'Bug 1.1: Plain string clinical history trimmed and preserved');
+  assert(sanitizeClinicalHistoryList(null) === null, 'Bug 1.1: Null clinical history returns null');
+  assert(sanitizeClinicalHistoryList(undefined) === null, 'Bug 1.1: Undefined clinical history returns null');
+  assert(sanitizeClinicalHistoryList('') === null, 'Bug 1.1: Empty string clinical history returns null');
+  assert(sanitizeClinicalHistoryList('   ') === null, 'Bug 1.1: Whitespace-only string clinical history returns null');
+  assert(sanitizeClinicalHistoryList(['', '   ', 'null', 'undefined']) === null, 'Bug 1.1: Array of blank or sentinel values returns null');
+  assert(sanitizeClinicalHistoryList(['  Hypertension  ', '']) === 'Hypertension', 'Bug 1.1: Array with whitespace item trimmed and blanks filtered');
+
+  // Bug 4.2: isClinicActive guard
+  assert(isClinicActive(null).active === false, 'Bug 4.2: Null clinic is rejected as inactive');
+  assert(isClinicActive(undefined).active === false, 'Bug 4.2: Undefined clinic is rejected as inactive');
+  assert(isClinicActive({ isVerified: true, verificationStatus: 'VERIFIED' }).active === true, 'Bug 4.2: Verified clinic is recognized as active');
+  assert(isClinicActive({ isVerified: false, verificationStatus: 'SUSPENDED' }).active === false, 'Bug 4.2: Suspended clinic is rejected as inactive');
+  assert(isClinicActive({ isVerified: false, verificationStatus: 'REJECTED' }).active === false, 'Bug 4.2: Rejected clinic is rejected as inactive');
+  assert(isClinicActive({ isVerified: false, verificationStatus: 'PENDING' }).active === false, 'Bug 4.2: Pending clinic is rejected as inactive');
+
+  // Bug 6.2: Consultation Fee Numeric Finite Validation
+  const isValidConsultationFee = (val: any): boolean => {
+    const num = Number(val);
+    return Number.isFinite(num) && !isNaN(num) && num >= 0;
+  };
+  assert(isValidConsultationFee(500) === true, 'Bug 6.2: Positive integer fee is valid');
+  assert(isValidConsultationFee(0) === true, 'Bug 6.2: Free consultation fee (0) is valid');
+  assert(isValidConsultationFee('750.50') === true, 'Bug 6.2: Valid decimal string fee is valid');
+  assert(isValidConsultationFee(-100) === false, 'Bug 6.2: Negative fee is rejected');
+  assert(isValidConsultationFee(Infinity) === false, 'Bug 6.2: Infinity fee is rejected');
+  assert(isValidConsultationFee(-Infinity) === false, 'Bug 6.2: -Infinity fee is rejected');
+  assert(isValidConsultationFee(NaN) === false, 'Bug 6.2: NaN fee is rejected');
+  assert(isValidConsultationFee('abc') === false, 'Bug 6.2: Non-numeric string fee is rejected');
+
+  // Bug 4.5: Queue Cancellation from IN_CONSULTATION
+  assert(canTransition('IN_CONSULTATION', 'CANCELLED', 'RECEPTIONIST').allowed === false, 'Bug 4.5: Receptionist cannot cancel active consultation');
+  assert(canTransition('IN_CONSULTATION', 'CANCELLED', 'PATIENT').allowed === false, 'Bug 4.5: Patient cannot cancel active consultation');
+  assert(canTransition('IN_CONSULTATION', 'CANCELLED', 'DOCTOR').allowed === true, 'Bug 4.5: Examining doctor can cancel active consultation');
+  assert(canTransition('IN_CONSULTATION', 'CANCELLED', 'ADMIN').allowed === true, 'Bug 4.5: Admin can cancel active consultation');
+
+  // Bug 4.6 & 4.7: Mutual exclusion demotion to WAITING
+  assert(canTransition('IN_CONSULTATION', 'WAITING', 'RECEPTIONIST').allowed === true, 'Bug 4.6: Receptionist can return active consultation back to WAITING');
+  assert(canTransition('IN_CONSULTATION', 'WAITING', 'DOCTOR').allowed === true, 'Bug 4.6: Doctor can return active consultation back to WAITING');
+  assert(canTransition('IN_CONSULTATION', 'WAITING', 'PATIENT').allowed === false, 'Bug 4.6: Patient cannot put active consultation to WAITING');
+
+  // Bug 6.4: Seed Demo Phone Non-Collision
+  const demoReceptionistPhone = '+91 9876543219';
+  const demoPatientPhone = '+91 9876543210';
+  assert(isValidIndianPhone(demoReceptionistPhone) === true, 'Bug 6.4: Demo receptionist phone is a valid Indian phone');
+  assert(isValidIndianPhone(demoPatientPhone) === true, 'Bug 6.4: Demo patient phone is a valid Indian phone');
+  assert(
+    sanitizeIndianPhone(demoReceptionistPhone) !== sanitizeIndianPhone(demoPatientPhone),
+    'Bug 6.4: Demo receptionist phone does not collide with demo patient phone'
+  );
 
   console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);

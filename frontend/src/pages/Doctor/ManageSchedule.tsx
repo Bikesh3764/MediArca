@@ -19,6 +19,7 @@ import {
   CheckCircle2,
   ChevronLeft,
   AlertCircle,
+  AlertTriangle,
   Plus,
   Trash2,
   Calendar,
@@ -328,23 +329,23 @@ export const ManageSchedule: React.FC = () => {
         ) : (
           <>
             {clinics.length === 0 && (
-              <div className="p-5 rounded-2xl bg-sky-50 border border-sky-200 text-sky-900 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+              <div className="p-5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
                 <div>
-                  <p className="font-semibold text-[13px] flex items-center gap-1.5 text-sky-900">
-                    <Sparkles className="w-4 h-4 text-[#0088e8]" />
-                    Independent Practice & Telehealth Schedule
+                  <p className="font-semibold text-[13px] flex items-center gap-1.5 text-amber-950">
+                    <AlertTriangle className="w-4 h-4 text-amber-600" />
+                    Clinic Affiliation Required for Online Bookings
                   </p>
-                  <p className="text-[#86868b] mt-0.5">
-                    You are not currently linked to a clinic facility. You can configure your direct consultation shifts and fees below, or affiliate with a clinic anytime.
+                  <p className="text-amber-800/90 mt-0.5">
+                    You are not currently linked to an active clinic facility. While you can set your base shifts and fees below, online patient bookings and live queue tokens require affiliation with at least one verified clinic partner.
                   </p>
                 </div>
                 <AppleButton
-                  variant="ghost"
+                  variant="primary"
                   size="sm"
                   onClick={() => navigate('/doctor/dashboard?tab=affiliations')}
-                  className="whitespace-nowrap border border-sky-300 text-sky-800 hover:bg-sky-100 self-start sm:self-auto"
+                  className="whitespace-nowrap self-start sm:self-auto bg-amber-600 hover:bg-amber-700 text-white"
                 >
-                  Affiliate with Clinic
+                  Affiliate with a Clinic
                 </AppleButton>
               </div>
             )}

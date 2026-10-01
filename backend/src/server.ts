@@ -19,54 +19,43 @@ import { authenticate } from './middleware/authMiddleware';
 import { updateProfile } from './controllers/authController';
 
 // Non-blocking automatic schema sync for multi-slot, clinic, and receptionist support
-async function ensureSchema() {
+async function safeExecute(primarySql: string, fallbackSql?: string) {
   try {
-    await prisma.$executeRawUnsafe(`ALTER TABLE "DoctorProfile" ADD COLUMN IF NOT EXISTS "slots" TEXT;`);
+    await prisma.$executeRawUnsafe(primarySql);
   } catch {
-    try {
-      await prisma.$executeRawUnsafe(`ALTER TABLE "DoctorProfile" ADD COLUMN "slots" TEXT;`);
-    } catch {}
+    if (fallbackSql) {
+      try {
+        await prisma.$executeRawUnsafe(fallbackSql);
+      } catch {}
+    }
   }
-  try {
-    await prisma.$executeRawUnsafe(`ALTER TABLE "DoctorProfile" ADD COLUMN IF NOT EXISTS "cabinStatus" TEXT NOT NULL DEFAULT 'IN_CABIN';`);
-  } catch {
-    try {
-      await prisma.$executeRawUnsafe(`ALTER TABLE "DoctorProfile" ADD COLUMN "cabinStatus" TEXT DEFAULT 'IN_CABIN';`);
-    } catch {}
-  }
-  try {
-    await prisma.$executeRawUnsafe(`ALTER TABLE "DoctorProfile" ADD COLUMN IF NOT EXISTS "expectedReturnTime" TEXT;`);
-  } catch {
-    try {
-      await prisma.$executeRawUnsafe(`ALTER TABLE "DoctorProfile" ADD COLUMN "expectedReturnTime" TEXT;`);
-    } catch {}
-  }
-  try {
-    await prisma.$executeRawUnsafe(`ALTER TABLE "DoctorProfile" ADD COLUMN IF NOT EXISTS "cabinStatusUpdatedAt" TIMESTAMP(3);`);
-  } catch {
-    try {
-      await prisma.$executeRawUnsafe(`ALTER TABLE "DoctorProfile" ADD COLUMN "cabinStatusUpdatedAt" DATETIME;`);
-    } catch {}
-  }
-  try {
-    await prisma.$executeRawUnsafe(`ALTER TABLE "Appointment" ADD COLUMN IF NOT EXISTS "slotId" TEXT;`);
-  } catch {
-    try {
-      await prisma.$executeRawUnsafe(`ALTER TABLE "Appointment" ADD COLUMN "slotId" TEXT;`);
-    } catch {}
-  }
-  try {
-    await prisma.$executeRawUnsafe(`ALTER TABLE "Appointment" ADD COLUMN IF NOT EXISTS "clinicId" TEXT;`);
-  } catch {
-    try {
-      await prisma.$executeRawUnsafe(`ALTER TABLE "Appointment" ADD COLUMN "clinicId" TEXT;`);
-    } catch {}
-  }
+}
 
-  // Ensure ClinicProfile
-  try {
-    await prisma.$executeRawUnsafe(`
-      CREATE TABLE IF NOT EXISTS "ClinicProfile" (
+async function ensureSchema() {
+  const migrations: [string, string?][] = [
+    // DoctorProfile columns
+    [`ALTER TABLE "DoctorProfile" ADD COLUMN IF NOT EXISTS "slots" TEXT;`, `ALTER TABLE "DoctorProfile" ADD COLUMN "slots" TEXT;`],
+    [`ALTER TABLE "DoctorProfile" ADD COLUMN IF NOT EXISTS "cabinStatus" TEXT NOT NULL DEFAULT 'IN_CABIN';`, `ALTER TABLE "DoctorProfile" ADD COLUMN "cabinStatus" TEXT DEFAULT 'IN_CABIN';`],
+    [`ALTER TABLE "DoctorProfile" ADD COLUMN IF NOT EXISTS "expectedReturnTime" TEXT;`, `ALTER TABLE "DoctorProfile" ADD COLUMN "expectedReturnTime" TEXT;`],
+    [`ALTER TABLE "DoctorProfile" ADD COLUMN IF NOT EXISTS "cabinStatusUpdatedAt" TIMESTAMP(3);`, `ALTER TABLE "DoctorProfile" ADD COLUMN "cabinStatusUpdatedAt" DATETIME;`],
+    [`ALTER TABLE "DoctorProfile" ADD COLUMN IF NOT EXISTS "verificationStatus" TEXT NOT NULL DEFAULT 'PENDING';`, `ALTER TABLE "DoctorProfile" ADD COLUMN "verificationStatus" TEXT NOT NULL DEFAULT 'PENDING';`],
+
+    // Appointment columns
+    [`ALTER TABLE "Appointment" ADD COLUMN IF NOT EXISTS "slotId" TEXT;`, `ALTER TABLE "Appointment" ADD COLUMN "slotId" TEXT;`],
+    [`ALTER TABLE "Appointment" ADD COLUMN IF NOT EXISTS "clinicId" TEXT;`, `ALTER TABLE "Appointment" ADD COLUMN "clinicId" TEXT;`],
+    [`ALTER TABLE "Appointment" ADD COLUMN IF NOT EXISTS "isForOther" BOOLEAN NOT NULL DEFAULT FALSE;`, `ALTER TABLE "Appointment" ADD COLUMN "isForOther" BOOLEAN NOT NULL DEFAULT 0;`],
+    [`ALTER TABLE "Appointment" ADD COLUMN IF NOT EXISTS "patientName" TEXT;`, `ALTER TABLE "Appointment" ADD COLUMN "patientName" TEXT;`],
+    [`ALTER TABLE "Appointment" ADD COLUMN IF NOT EXISTS "patientAge" TEXT;`, `ALTER TABLE "Appointment" ADD COLUMN "patientAge" TEXT;`],
+    [`ALTER TABLE "Appointment" ADD COLUMN IF NOT EXISTS "patientGender" TEXT;`, `ALTER TABLE "Appointment" ADD COLUMN "patientGender" TEXT;`],
+    [`ALTER TABLE "Appointment" ADD COLUMN IF NOT EXISTS "paymentStatus" TEXT NOT NULL DEFAULT 'PENDING';`, `ALTER TABLE "Appointment" ADD COLUMN "paymentStatus" TEXT NOT NULL DEFAULT 'PENDING';`],
+    [`ALTER TABLE "Appointment" ADD COLUMN IF NOT EXISTS "approvedBy" TEXT;`, `ALTER TABLE "Appointment" ADD COLUMN "approvedBy" TEXT;`],
+    [`ALTER TABLE "Appointment" ADD COLUMN IF NOT EXISTS "approvedAt" TIMESTAMP(3);`, `ALTER TABLE "Appointment" ADD COLUMN "approvedAt" DATETIME;`],
+    [`ALTER TABLE "Appointment" ADD COLUMN IF NOT EXISTS "isCheckedIn" BOOLEAN NOT NULL DEFAULT FALSE;`, `ALTER TABLE "Appointment" ADD COLUMN "isCheckedIn" BOOLEAN NOT NULL DEFAULT 0;`],
+    [`ALTER TABLE "Appointment" ADD COLUMN IF NOT EXISTS "checkedInAt" TIMESTAMP(3);`, `ALTER TABLE "Appointment" ADD COLUMN "checkedInAt" DATETIME;`],
+
+    // ClinicProfile table & columns
+    [
+      `CREATE TABLE IF NOT EXISTS "ClinicProfile" (
         "id" TEXT PRIMARY KEY,
         "userId" TEXT UNIQUE NOT NULL,
         "clinicName" TEXT NOT NULL,
@@ -76,267 +65,98 @@ async function ensureSchema() {
         "isVerified" BOOLEAN NOT NULL DEFAULT FALSE,
         "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
         "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-  } catch {
-    try {
-      await prisma.$executeRawUnsafe(`
-        CREATE TABLE IF NOT EXISTS "ClinicProfile" (
-          "id" TEXT PRIMARY KEY,
-          "userId" TEXT UNIQUE NOT NULL,
-          "clinicName" TEXT NOT NULL,
-          "address" TEXT NOT NULL,
-          "city" TEXT,
-          "phone" TEXT,
-          "isVerified" BOOLEAN NOT NULL DEFAULT 0,
-          "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-          "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-        );
-      `);
-    } catch {}
-  }
+      );`,
+      `CREATE TABLE IF NOT EXISTS "ClinicProfile" (
+        "id" TEXT PRIMARY KEY,
+        "userId" TEXT UNIQUE NOT NULL,
+        "clinicName" TEXT NOT NULL,
+        "address" TEXT NOT NULL,
+        "city" TEXT,
+        "phone" TEXT,
+        "isVerified" BOOLEAN NOT NULL DEFAULT 0,
+        "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );`
+    ],
+    [`ALTER TABLE "ClinicProfile" ADD COLUMN IF NOT EXISTS "isVerified" BOOLEAN NOT NULL DEFAULT FALSE;`, `ALTER TABLE "ClinicProfile" ADD COLUMN "isVerified" BOOLEAN NOT NULL DEFAULT 0;`],
+    [`ALTER TABLE "ClinicProfile" ADD COLUMN IF NOT EXISTS "verificationStatus" TEXT NOT NULL DEFAULT 'PENDING';`, `ALTER TABLE "ClinicProfile" ADD COLUMN "verificationStatus" TEXT NOT NULL DEFAULT 'PENDING';`],
+    [`ALTER TABLE "ClinicProfile" ADD COLUMN IF NOT EXISTS "checkinCode" TEXT;`, `ALTER TABLE "ClinicProfile" ADD COLUMN "checkinCode" TEXT;`],
 
-  try {
-    await prisma.$executeRawUnsafe(`ALTER TABLE "ClinicProfile" ADD COLUMN IF NOT EXISTS "isVerified" BOOLEAN NOT NULL DEFAULT FALSE;`);
-  } catch {
-    try {
-      await prisma.$executeRawUnsafe(`ALTER TABLE "ClinicProfile" ADD COLUMN "isVerified" BOOLEAN NOT NULL DEFAULT 0;`);
-    } catch {}
-  }
+    // Sync verified flags
+    [`UPDATE "DoctorProfile" SET "verificationStatus" = 'VERIFIED' WHERE "isVerified" = TRUE AND ("verificationStatus" IS NULL OR "verificationStatus" = 'PENDING');`, `UPDATE "DoctorProfile" SET "verificationStatus" = 'VERIFIED' WHERE "isVerified" = 1 AND ("verificationStatus" IS NULL OR "verificationStatus" = 'PENDING');`],
+    [`UPDATE "ClinicProfile" SET "verificationStatus" = 'VERIFIED' WHERE "isVerified" = TRUE AND ("verificationStatus" IS NULL OR "verificationStatus" = 'PENDING');`, `UPDATE "ClinicProfile" SET "verificationStatus" = 'VERIFIED' WHERE "isVerified" = 1 AND ("verificationStatus" IS NULL OR "verificationStatus" = 'PENDING');`],
 
-  // Ensure verificationStatus on DoctorProfile
-  try {
-    await prisma.$executeRawUnsafe(`ALTER TABLE "DoctorProfile" ADD COLUMN IF NOT EXISTS "verificationStatus" TEXT NOT NULL DEFAULT 'PENDING';`);
-  } catch {
-    try {
-      await prisma.$executeRawUnsafe(`ALTER TABLE "DoctorProfile" ADD COLUMN "verificationStatus" TEXT NOT NULL DEFAULT 'PENDING';`);
-    } catch {}
-  }
-
-  // Ensure verificationStatus on ClinicProfile
-  try {
-    await prisma.$executeRawUnsafe(`ALTER TABLE "ClinicProfile" ADD COLUMN IF NOT EXISTS "verificationStatus" TEXT NOT NULL DEFAULT 'PENDING';`);
-  } catch {
-    try {
-      await prisma.$executeRawUnsafe(`ALTER TABLE "ClinicProfile" ADD COLUMN "verificationStatus" TEXT NOT NULL DEFAULT 'PENDING';`);
-    } catch {}
-  }
-
-  // Sync existing verified records so isVerified: true matches verificationStatus: 'VERIFIED'
-  try {
-    await prisma.$executeRawUnsafe(`UPDATE "DoctorProfile" SET "verificationStatus" = 'VERIFIED' WHERE "isVerified" = TRUE AND ("verificationStatus" IS NULL OR "verificationStatus" = 'PENDING');`);
-    await prisma.$executeRawUnsafe(`UPDATE "ClinicProfile" SET "verificationStatus" = 'VERIFIED' WHERE "isVerified" = TRUE AND ("verificationStatus" IS NULL OR "verificationStatus" = 'PENDING');`);
-  } catch {}
-
-  // Ensure ReceptionistProfile
-  try {
-    await prisma.$executeRawUnsafe(`
-      CREATE TABLE IF NOT EXISTS "ReceptionistProfile" (
+    // ReceptionistProfile table & columns
+    [
+      `CREATE TABLE IF NOT EXISTS "ReceptionistProfile" (
         "id" TEXT PRIMARY KEY,
         "userId" TEXT UNIQUE NOT NULL,
         "clinicId" TEXT,
         "phone" TEXT,
         "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
         "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-  } catch {
-    try {
-      await prisma.$executeRawUnsafe(`
-        CREATE TABLE IF NOT EXISTS "ReceptionistProfile" (
-          "id" TEXT PRIMARY KEY,
-          "userId" TEXT UNIQUE NOT NULL,
-          "clinicId" TEXT,
-          "phone" TEXT,
-          "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-          "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-        );
-      `);
-    } catch {}
-  }
+      );`,
+      `CREATE TABLE IF NOT EXISTS "ReceptionistProfile" (
+        "id" TEXT PRIMARY KEY,
+        "userId" TEXT UNIQUE NOT NULL,
+        "clinicId" TEXT,
+        "phone" TEXT,
+        "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );`
+    ],
+    [`ALTER TABLE "ReceptionistProfile" ADD COLUMN IF NOT EXISTS "clinicId" TEXT;`, `ALTER TABLE "ReceptionistProfile" ADD COLUMN "clinicId" TEXT;`],
+    [`ALTER TABLE "ReceptionistProfile" ADD COLUMN IF NOT EXISTS "status" TEXT NOT NULL DEFAULT 'ACTIVE';`, `ALTER TABLE "ReceptionistProfile" ADD COLUMN "status" TEXT NOT NULL DEFAULT 'ACTIVE';`],
 
-  try {
-    await prisma.$executeRawUnsafe(`ALTER TABLE "ReceptionistProfile" ADD COLUMN IF NOT EXISTS "clinicId" TEXT;`);
-  } catch {
-    try {
-      await prisma.$executeRawUnsafe(`ALTER TABLE "ReceptionistProfile" ADD COLUMN "clinicId" TEXT;`);
-    } catch {}
-  }
-
-  // Ensure ClinicDoctor
-  try {
-    await prisma.$executeRawUnsafe(`
-      CREATE TABLE IF NOT EXISTS "ClinicDoctor" (
+    // ClinicDoctor table & columns
+    [
+      `CREATE TABLE IF NOT EXISTS "ClinicDoctor" (
         "id" TEXT PRIMARY KEY,
         "clinicId" TEXT NOT NULL,
         "doctorId" TEXT NOT NULL,
         "status" TEXT NOT NULL DEFAULT 'ACTIVE',
         "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
         CONSTRAINT "ClinicDoctor_clinicId_doctorId_key" UNIQUE ("clinicId", "doctorId")
-      );
-    `);
-  } catch {
-    try {
-      await prisma.$executeRawUnsafe(`
-        CREATE TABLE IF NOT EXISTS "ClinicDoctor" (
-          "id" TEXT PRIMARY KEY,
-          "clinicId" TEXT NOT NULL,
-          "doctorId" TEXT NOT NULL,
-          "status" TEXT NOT NULL DEFAULT 'ACTIVE',
-          "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-          UNIQUE ("clinicId", "doctorId")
-        );
-      `);
-    } catch {}
-  }
+      );`,
+      `CREATE TABLE IF NOT EXISTS "ClinicDoctor" (
+        "id" TEXT PRIMARY KEY,
+        "clinicId" TEXT NOT NULL,
+        "doctorId" TEXT NOT NULL,
+        "status" TEXT NOT NULL DEFAULT 'ACTIVE',
+        "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE ("clinicId", "doctorId")
+      );`
+    ],
+    [`ALTER TABLE "ClinicDoctor" ADD COLUMN IF NOT EXISTS "consultationFee" DOUBLE PRECISION;`, `ALTER TABLE "ClinicDoctor" ADD COLUMN "consultationFee" REAL;`],
+    [`ALTER TABLE "ClinicDoctor" ADD COLUMN IF NOT EXISTS "slots" TEXT;`, `ALTER TABLE "ClinicDoctor" ADD COLUMN "slots" TEXT;`],
+    [`ALTER TABLE "ClinicDoctor" ADD COLUMN IF NOT EXISTS "requestedBy" TEXT NOT NULL DEFAULT 'CLINIC';`, `ALTER TABLE "ClinicDoctor" ADD COLUMN "requestedBy" TEXT NOT NULL DEFAULT 'CLINIC';`],
 
-  // Ensure consultationFee and slots on ClinicDoctor
-  try {
-    await prisma.$executeRawUnsafe(`ALTER TABLE "ClinicDoctor" ADD COLUMN IF NOT EXISTS "consultationFee" DOUBLE PRECISION;`);
-  } catch {
-    try {
-      await prisma.$executeRawUnsafe(`ALTER TABLE "ClinicDoctor" ADD COLUMN "consultationFee" REAL;`);
-    } catch {}
-  }
-
-  try {
-    await prisma.$executeRawUnsafe(`ALTER TABLE "ClinicDoctor" ADD COLUMN IF NOT EXISTS "slots" TEXT;`);
-  } catch {
-    try {
-      await prisma.$executeRawUnsafe(`ALTER TABLE "ClinicDoctor" ADD COLUMN "slots" TEXT;`);
-    } catch {}
-  }
-
-  // Ensure DoctorReceptionist
-  try {
-    await prisma.$executeRawUnsafe(`
-      CREATE TABLE IF NOT EXISTS "DoctorReceptionist" (
+    // DoctorReceptionist table
+    [
+      `CREATE TABLE IF NOT EXISTS "DoctorReceptionist" (
         "id" TEXT PRIMARY KEY,
         "doctorId" TEXT NOT NULL,
         "receptionistId" TEXT NOT NULL,
         "status" TEXT NOT NULL DEFAULT 'ACTIVE',
         "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
         CONSTRAINT "DoctorReceptionist_doctorId_receptionistId_key" UNIQUE ("doctorId", "receptionistId")
-      );
-    `);
-  } catch {
-    try {
-      await prisma.$executeRawUnsafe(`
-        CREATE TABLE IF NOT EXISTS "DoctorReceptionist" (
-          "id" TEXT PRIMARY KEY,
-          "doctorId" TEXT NOT NULL,
-          "receptionistId" TEXT NOT NULL,
-          "status" TEXT NOT NULL DEFAULT 'ACTIVE',
-          "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-          UNIQUE ("doctorId", "receptionistId")
-        );
-      `);
-    } catch {}
-  }
+      );`,
+      `CREATE TABLE IF NOT EXISTS "DoctorReceptionist" (
+        "id" TEXT PRIMARY KEY,
+        "doctorId" TEXT NOT NULL,
+        "receptionistId" TEXT NOT NULL,
+        "status" TEXT NOT NULL DEFAULT 'ACTIVE',
+        "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE ("doctorId", "receptionistId")
+      );`
+    ],
 
-  // Ensure User.mustChangePassword
-  try {
-    await prisma.$executeRawUnsafe(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "mustChangePassword" BOOLEAN NOT NULL DEFAULT FALSE;`);
-  } catch {
-    try {
-      await prisma.$executeRawUnsafe(`ALTER TABLE "User" ADD COLUMN "mustChangePassword" BOOLEAN NOT NULL DEFAULT 0;`);
-    } catch {}
-  }
+    // User table columns
+    [`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "mustChangePassword" BOOLEAN NOT NULL DEFAULT FALSE;`, `ALTER TABLE "User" ADD COLUMN "mustChangePassword" BOOLEAN NOT NULL DEFAULT 0;`]
+  ];
 
-  // Ensure Appointment columns for booking for other
-  try {
-    await prisma.$executeRawUnsafe(`ALTER TABLE "Appointment" ADD COLUMN IF NOT EXISTS "isForOther" BOOLEAN NOT NULL DEFAULT FALSE;`);
-  } catch {
-    try {
-      await prisma.$executeRawUnsafe(`ALTER TABLE "Appointment" ADD COLUMN "isForOther" BOOLEAN NOT NULL DEFAULT 0;`);
-    } catch {}
-  }
-  try {
-    await prisma.$executeRawUnsafe(`ALTER TABLE "Appointment" ADD COLUMN IF NOT EXISTS "patientName" TEXT;`);
-  } catch {
-    try {
-      await prisma.$executeRawUnsafe(`ALTER TABLE "Appointment" ADD COLUMN "patientName" TEXT;`);
-    } catch {}
-  }
-  try {
-    await prisma.$executeRawUnsafe(`ALTER TABLE "Appointment" ADD COLUMN IF NOT EXISTS "patientAge" TEXT;`);
-  } catch {
-    try {
-      await prisma.$executeRawUnsafe(`ALTER TABLE "Appointment" ADD COLUMN "patientAge" TEXT;`);
-    } catch {}
-  }
-  try {
-    await prisma.$executeRawUnsafe(`ALTER TABLE "Appointment" ADD COLUMN IF NOT EXISTS "patientGender" TEXT;`);
-  } catch {
-    try {
-      await prisma.$executeRawUnsafe(`ALTER TABLE "Appointment" ADD COLUMN "patientGender" TEXT;`);
-    } catch {}
-  }
-
-  // Ensure ClinicDoctor.requestedBy
-  try {
-    await prisma.$executeRawUnsafe(`ALTER TABLE "ClinicDoctor" ADD COLUMN IF NOT EXISTS "requestedBy" TEXT NOT NULL DEFAULT 'CLINIC';`);
-  } catch {
-    try {
-      await prisma.$executeRawUnsafe(`ALTER TABLE "ClinicDoctor" ADD COLUMN "requestedBy" TEXT NOT NULL DEFAULT 'CLINIC';`);
-    } catch {}
-  }
-
-  // Ensure Appointment paymentStatus, approvedBy, approvedAt
-  try {
-    await prisma.$executeRawUnsafe(`ALTER TABLE "Appointment" ADD COLUMN IF NOT EXISTS "paymentStatus" TEXT NOT NULL DEFAULT 'PENDING';`);
-  } catch {
-    try {
-      await prisma.$executeRawUnsafe(`ALTER TABLE "Appointment" ADD COLUMN "paymentStatus" TEXT NOT NULL DEFAULT 'PENDING';`);
-    } catch {}
-  }
-  try {
-    await prisma.$executeRawUnsafe(`ALTER TABLE "Appointment" ADD COLUMN IF NOT EXISTS "approvedBy" TEXT;`);
-  } catch {
-    try {
-      await prisma.$executeRawUnsafe(`ALTER TABLE "Appointment" ADD COLUMN "approvedBy" TEXT;`);
-    } catch {}
-  }
-  try {
-    await prisma.$executeRawUnsafe(`ALTER TABLE "Appointment" ADD COLUMN IF NOT EXISTS "approvedAt" TIMESTAMP(3);`);
-  } catch {
-    try {
-      await prisma.$executeRawUnsafe(`ALTER TABLE "Appointment" ADD COLUMN "approvedAt" DATETIME;`);
-    } catch {}
-  }
-
-  // Ensure ReceptionistProfile.status
-  try {
-    await prisma.$executeRawUnsafe(`ALTER TABLE "ReceptionistProfile" ADD COLUMN IF NOT EXISTS "status" TEXT NOT NULL DEFAULT 'ACTIVE';`);
-  } catch {
-    try {
-      await prisma.$executeRawUnsafe(`ALTER TABLE "ReceptionistProfile" ADD COLUMN "status" TEXT NOT NULL DEFAULT 'ACTIVE';`);
-    } catch {}
-  }
-
-  // Ensure Appointment.isCheckedIn & checkedInAt
-  try {
-    await prisma.$executeRawUnsafe(`ALTER TABLE "Appointment" ADD COLUMN IF NOT EXISTS "isCheckedIn" BOOLEAN NOT NULL DEFAULT FALSE;`);
-  } catch {
-    try {
-      await prisma.$executeRawUnsafe(`ALTER TABLE "Appointment" ADD COLUMN "isCheckedIn" BOOLEAN NOT NULL DEFAULT 0;`);
-    } catch {}
-  }
-  try {
-    await prisma.$executeRawUnsafe(`ALTER TABLE "Appointment" ADD COLUMN IF NOT EXISTS "checkedInAt" TIMESTAMP(3);`);
-  } catch {
-    try {
-      await prisma.$executeRawUnsafe(`ALTER TABLE "Appointment" ADD COLUMN "checkedInAt" DATETIME;`);
-    } catch {}
-  }
-
-  // Ensure ClinicProfile.checkinCode
-  try {
-    await prisma.$executeRawUnsafe(`ALTER TABLE "ClinicProfile" ADD COLUMN IF NOT EXISTS "checkinCode" TEXT;`);
-  } catch {
-    try {
-      await prisma.$executeRawUnsafe(`ALTER TABLE "ClinicProfile" ADD COLUMN "checkinCode" TEXT;`);
-    } catch {}
+  for (const [primary, fallback] of migrations) {
+    await safeExecute(primary, fallback);
   }
 }
 

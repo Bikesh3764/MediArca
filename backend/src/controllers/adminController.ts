@@ -2,6 +2,7 @@ import { Response } from 'express';
 import prisma from '../config/database';
 import { AuthRequest } from '../middleware/authMiddleware';
 import { getLocalDateString } from '../utils/scheduleUtils';
+import { createNotification } from '../services/notificationService';
 
 export const getStats = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -132,6 +133,22 @@ export const verifyDoctor = async (req: AuthRequest, res: Response): Promise<voi
       },
     });
 
+    if (doctor?.user?.id) {
+      let notifTitle = 'Practitioner Status Updated';
+      let notifMessage = `Your practitioner account status is now ${targetStatus}.`;
+      if (targetStatus === 'VERIFIED') {
+        notifTitle = 'Practitioner Profile Approved';
+        notifMessage = 'Congratulations! Your practitioner profile has been approved and verified by MediArca administration.';
+      } else if (targetStatus === 'SUSPENDED') {
+        notifTitle = 'Practitioner Profile Suspended';
+        notifMessage = 'Your practitioner account has been suspended by administration. Practice shifts and online bookings are temporarily disabled.';
+      } else if (targetStatus === 'REJECTED') {
+        notifTitle = 'Practitioner Application Declined';
+        notifMessage = 'Your practitioner verification request has been declined by MediArca administration.';
+      }
+      createNotification(doctor.user.id, notifTitle, notifMessage, 'SYSTEM').catch(() => {});
+    }
+
     res.json({
       success: true,
       message: `Doctor ${doctor.user.fullName} is now ${targetStatus}`,
@@ -245,6 +262,22 @@ export const verifyClinic = async (req: AuthRequest, res: Response): Promise<voi
         },
       },
     });
+
+    if (clinic?.user?.id) {
+      let notifTitle = 'Clinic Facility Status Updated';
+      let notifMessage = `Your clinic profile status is now ${targetStatus}.`;
+      if (targetStatus === 'VERIFIED') {
+        notifTitle = 'Clinic Facility Approved';
+        notifMessage = `Congratulations! ${clinic.clinicName} has been approved and verified by MediArca administration.`;
+      } else if (targetStatus === 'SUSPENDED') {
+        notifTitle = 'Clinic Facility Suspended';
+        notifMessage = `${clinic.clinicName} has been suspended by administration. Reception desk operations are temporarily locked.`;
+      } else if (targetStatus === 'REJECTED') {
+        notifTitle = 'Clinic Registration Declined';
+        notifMessage = `The registration request for ${clinic.clinicName} has been declined by MediArca administration.`;
+      }
+      createNotification(clinic.user.id, notifTitle, notifMessage, 'SYSTEM').catch(() => {});
+    }
 
     res.json({
       success: true,

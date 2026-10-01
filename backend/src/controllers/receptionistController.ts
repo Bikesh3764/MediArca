@@ -748,14 +748,48 @@ export const updateAppointmentStatus = async (req: AuthRequest, res: Response): 
       return;
     }
 
+    if (status === 'IN_CONSULTATION') {
+      await prisma.appointment.updateMany({
+        where: {
+          doctorId: targetAppointment.doctorId,
+          appointmentDate: targetAppointment.appointmentDate,
+          clinicId: targetAppointment.clinicId ?? null,
+          status: 'IN_CONSULTATION',
+          id: { not: appointmentId },
+        },
+        data: { status: 'WAITING' },
+      });
+    }
+
     const updated = await prisma.appointment.update({
       where: { id: appointmentId },
       data: { status },
       include: {
         doctor: { include: { user: { select: { fullName: true } } } },
-        patient: { include: { user: { select: { fullName: true, phone: true } } } },
+        patient: { include: { user: { select: { id: true, fullName: true, phone: true } } } },
       },
     });
+
+    if (updated?.patient) {
+      const patientUserId = (updated.patient as any).userId || (updated.patient.user as any)?.id;
+      const docName = updated.doctor?.user?.fullName || 'Practitioner';
+
+      if (status === 'CANCELLED' && patientUserId) {
+        createNotification(
+          patientUserId,
+          'Appointment Cancelled by Reception',
+          `Your appointment with Dr. ${docName} (Token #${updated.queueNumber}) was cancelled by the clinic reception desk.`,
+          'APPOINTMENT'
+        ).catch(() => {});
+      } else if (status === 'IN_CONSULTATION' && patientUserId) {
+        createNotification(
+          patientUserId,
+          'Called to Consultation Cabin',
+          `It is your turn! Queue #${updated.queueNumber} has been called into Dr. ${docName}'s cabin.`,
+          'QUEUE'
+        ).catch(() => {});
+      }
+    }
 
     res.json({
       success: true,
@@ -1132,6 +1166,11 @@ export const approveAppointment = async (req: AuthRequest, res: Response): Promi
     });
   } catch (error: any) {
     console.error('approveAppointment error:', error);
+    const msg = error?.message || '';
+    if (msg.includes('maximum capacity') || msg.includes('Cannot approve:')) {
+      res.status(400).json({ success: false, message: msg });
+      return;
+    }
     res.status(500).json({
       success: false,
       message: 'Failed to approve appointment',
@@ -1155,6 +1194,14 @@ export const rejectAppointment = async (req: AuthRequest, res: Response): Promis
 
     const appointment = await prisma.appointment.findUnique({
       where: { id: appointmentId },
+      include: {
+        patient: true,
+        doctor: {
+          include: {
+            user: { select: { fullName: true } },
+          },
+        },
+      },
     });
 
     if (!appointment) {
@@ -1185,6 +1232,17 @@ export const rejectAppointment = async (req: AuthRequest, res: Response): Promis
         clinicalNotes: reason ? `Declined by reception: ${reason}` : 'Declined by reception',
       },
     });
+
+    if (appointment?.patient?.userId) {
+      const docName = appointment.doctor?.user?.fullName || 'Practitioner';
+      const declineMsg = reason ? `Reason: ${reason}` : 'Please contact the clinic reception for more details.';
+      createNotification(
+        appointment.patient.userId,
+        'Appointment Request Declined',
+        `Your appointment booking request with Dr. ${docName} was declined by clinic reception. ${declineMsg}`,
+        'APPOINTMENT'
+      ).catch(() => {});
+    }
 
     res.json({
       success: true,

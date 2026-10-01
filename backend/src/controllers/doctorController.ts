@@ -178,30 +178,39 @@ export const getDoctorById = async (req: Request, res: Response): Promise<void> 
   try {
     const id = String(req.params.id);
 
-    const doctor = await prisma.doctorProfile.findUnique({
-      where: { id },
-      include: {
-        user: {
-          select: {
-            id: true,
-            fullName: true,
-            avatarUrl: true,
-          },
-        },
-        clinics: {
-          where: { clinic: { isVerified: true, verificationStatus: 'VERIFIED' }, status: { in: ['ACTIVE', 'ACCEPTED'] } },
-          include: {
-            clinic: true,
-          },
-        },
-        reviews: {
-          orderBy: { createdAt: 'desc' },
-          include: {
-            patientUser: { select: { fullName: true, avatarUrl: true } },
-          },
+    const doctorInclude = {
+      user: {
+        select: {
+          id: true,
+          fullName: true,
+          avatarUrl: true,
         },
       },
+      clinics: {
+        where: { clinic: { isVerified: true, verificationStatus: 'VERIFIED' }, status: { in: ['ACTIVE', 'ACCEPTED'] } },
+        include: {
+          clinic: true,
+        },
+      },
+      reviews: {
+        orderBy: { createdAt: 'desc' as const },
+        include: {
+          patientUser: { select: { fullName: true, avatarUrl: true } },
+        },
+      },
+    };
+
+    let doctor = await prisma.doctorProfile.findUnique({
+      where: { id },
+      include: doctorInclude,
     });
+
+    if (!doctor) {
+      doctor = await prisma.doctorProfile.findUnique({
+        where: { userId: id },
+        include: doctorInclude,
+      });
+    }
 
     if (!doctor) {
       res.status(404).json({ success: false, message: 'Doctor not found' });
@@ -282,8 +291,8 @@ export const updateSchedule = async (req: AuthRequest, res: Response): Promise<v
 
     if (consultationFee !== undefined) {
       const numFee = Number(consultationFee);
-      if (isNaN(numFee) || numFee < 0) {
-        res.status(400).json({ success: false, message: 'Consultation fee must be a non-negative number.' });
+      if (!Number.isFinite(numFee) || isNaN(numFee) || numFee < 0) {
+        res.status(400).json({ success: false, message: 'Consultation fee must be a valid, finite non-negative number.' });
         return;
       }
     }
@@ -348,7 +357,7 @@ export const updateSchedule = async (req: AuthRequest, res: Response): Promise<v
       if (formattedSlots.length > 0) {
         clinicUpdateData.slots = JSON.stringify(formattedSlots);
       }
-      if (consultationFee !== undefined && !isNaN(Number(consultationFee))) {
+      if (consultationFee !== undefined && Number.isFinite(Number(consultationFee)) && Number(consultationFee) >= 0) {
         clinicUpdateData.consultationFee = Number(consultationFee);
       }
 
@@ -379,7 +388,7 @@ export const updateSchedule = async (req: AuthRequest, res: Response): Promise<v
       ...(derivedMaxPatients !== undefined && !isNaN(Number(derivedMaxPatients)) && {
         maxDailyPatients: Math.max(1, Number(derivedMaxPatients)),
       }),
-      ...(consultationFee !== undefined && !isNaN(Number(consultationFee)) && {
+      ...(consultationFee !== undefined && Number.isFinite(Number(consultationFee)) && Number(consultationFee) >= 0 && {
         consultationFee: Number(consultationFee),
       }),
       ...(clinicAddress !== undefined && { clinicAddress }),

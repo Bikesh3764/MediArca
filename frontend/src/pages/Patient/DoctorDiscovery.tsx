@@ -51,6 +51,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
   );
 
   const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [allCatalogDoctors, setAllCatalogDoctors] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [locationQuery, setLocationQuery] = useState('');
@@ -67,13 +68,14 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
       return getCitiesForState(selectedState);
     }
     const citiesFromDocs = new Set<string>();
-    doctors.forEach((d) => {
+    const source = allCatalogDoctors.length > 0 ? allCatalogDoctors : doctors;
+    source.forEach((d) => {
       d.clinics?.forEach((c) => {
         if (c.clinic?.city) citiesFromDocs.add(c.clinic.city.trim());
       });
     });
     return Array.from(citiesFromDocs).sort((a, b) => a.localeCompare(b));
-  }, [selectedState, doctors]);
+  }, [selectedState, allCatalogDoctors, doctors]);
 
   const handleStateChange = (newState: string) => {
     setSelectedState(newState);
@@ -124,12 +126,22 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
         city: cityFilter !== 'All' ? cityFilter : undefined,
       });
       setDoctors(data);
+      if (specialtyFilter === 'All' && !queryText.trim() && expFilter === 0 && feeCap >= 3000 && stateFilter === 'All' && cityFilter === 'All') {
+        setAllCatalogDoctors(data);
+      }
     } catch (err) {
       console.error('Failed to load doctors:', err);
     } finally {
       setLoading(false);
     }
   };
+
+  // Load full catalog once for persistent global specialty counts
+  useEffect(() => {
+    api.getDoctors({}).then((data) => {
+      setAllCatalogDoctors(data);
+    }).catch(() => {});
+  }, []);
 
   // Instant debounced search & filter sync
   useEffect(() => {
@@ -139,14 +151,15 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
     return () => clearTimeout(timer);
   }, [search, selectedSpecialty, sortBy, minExp, maxFee, selectedState, selectedCity]);
 
-  // Specialty counts
+  // Specialty counts computed against unfiltered doctors catalog
   const specialtyCounts = useMemo(() => {
-    const counts: Record<string, number> = { All: doctors.length };
+    const source = allCatalogDoctors.length > 0 ? allCatalogDoctors : doctors;
+    const counts: Record<string, number> = { All: source.length };
     ALL_SPECIALTIES.forEach((s) => {
-      counts[s] = doctors.filter((d) => d.specialty.toLowerCase() === s.toLowerCase()).length;
+      counts[s] = source.filter((d) => d.specialty.toLowerCase() === s.toLowerCase()).length;
     });
     return counts;
-  }, [doctors]);
+  }, [allCatalogDoctors, doctors]);
 
   // Client-side location filtering, state filtering, and fee guard
   const filteredDoctors = useMemo(() => {

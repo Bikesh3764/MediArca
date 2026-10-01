@@ -188,7 +188,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
           </div>
         )}
 
-        {/* Pending Receptionist & Payment Verification Callout */}
+        {/* Pending Receptionist Verification Callout (Zero Upfront Fee Policy) */}
         {status === 'PENDING_APPROVAL' && (
           <div className="my-5 p-4 sm:p-5 rounded-2xl bg-amber-50/90 border border-amber-200/90 text-amber-950">
             <div className="flex items-start gap-3.5">
@@ -198,25 +198,25 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
               <div className="flex-1 min-w-0">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <h4 className="text-sm font-bold text-amber-950">
-                    Action Required: Verify Booking with Receptionist
+                    Awaiting Reception Desk Confirmation
                   </h4>
                   <span className="text-xs font-bold text-amber-900 bg-white px-3 py-1 rounded-full border border-amber-300 shadow-2xs">
-                    Consultation Fee: ₹{appointment.fee || (appointment as any).consultationFee || doctor.consultationFee || 0}
+                    Pay at Clinic: ₹{appointment.fee || (appointment as any).consultationFee || doctor.consultationFee || 0}
                   </span>
                 </div>
                 <p className="text-xs text-amber-800/90 mt-1.5 leading-relaxed">
-                  To confirm your official queue token and appointment time, please call the clinic receptionist and complete your consultation payment (UPI / Cash / Card). The receptionist will activate your token immediately.
+                  Your appointment request has been submitted to the clinic front desk. MediArca operates on a strict zero upfront fee policy — your consultation fee is payable directly at the clinic reception desk when you arrive (Cash / UPI / Card).
                 </p>
                 {appointment.clinic?.phone && (
                   <div className="mt-3.5 flex flex-wrap items-center gap-3">
                     <a
                       href={`tel:${appointment.clinic.phone}`}
-                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#1d1d1f] text-white text-xs font-semibold hover:bg-black transition-all active:scale-[0.98] shadow-xs"
+                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#1d1d1f] text-white text-xs font-semibold hover:bg-black transition-all active:scale-[0.98] shadow-xs"
                     >
-                      <span>📞 Call Receptionist: {appointment.clinic.phone}</span>
+                      <span>Clinic Front Desk: {appointment.clinic.phone}</span>
                     </a>
                     <span className="text-[11px] text-amber-800">
-                      Clinic: {appointment.clinic.clinicName}
+                      {appointment.clinic.clinicName}
                     </span>
                   </div>
                 )}
@@ -456,14 +456,14 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
               </span>
             ) : null}
 
-            {status === 'WAITING' && onCancel && (
+            {(status === 'WAITING' || status === 'PENDING_APPROVAL') && onCancel && (
               <AppleButton
                 variant="ghost"
                 size="sm"
                 onClick={() => onCancel(appointment.id)}
                 className="text-rose-600 hover:text-rose-700 hover:border-rose-300"
               >
-                Cancel Token
+                {status === 'PENDING_APPROVAL' ? 'Withdraw Request' : 'Cancel Token'}
               </AppleButton>
             )}
           </div>

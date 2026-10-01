@@ -934,7 +934,14 @@ export const cancelAppointment = async (req: AuthRequest, res: Response): Promis
 
     const appointment: any = await prisma.appointment.findUnique({
       where: { id },
-      include: { patient: true, doctor: true },
+      include: {
+        patient: true,
+        doctor: {
+          include: {
+            user: { select: { fullName: true } },
+          },
+        },
+      },
     });
 
     if (!appointment) {

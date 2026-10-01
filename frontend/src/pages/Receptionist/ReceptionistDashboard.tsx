@@ -238,8 +238,8 @@ export const ReceptionistDashboard: React.FC = () => {
       setPasswordError('Please enter your current temporary password');
       return;
     }
-    if (newPassword.length < 6) {
-      setPasswordError('New password must be at least 6 characters long');
+    if (newPassword.length < 8) {
+      setPasswordError('New password must be at least 8 characters long');
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -1285,7 +1285,7 @@ export const ReceptionistDashboard: React.FC = () => {
                                     In Cabin
                                   </span>
                                 )}
-                                {appt.status !== 'CANCELLED' && appt.status !== 'COMPLETED' && (
+                                {appt.status !== 'CANCELLED' && appt.status !== 'COMPLETED' && appt.status !== 'IN_CONSULTATION' && (
                                   <button
                                     onClick={() => handleStatusChange(appt.id, 'CANCELLED')}
                                     className="px-2.5 py-1 rounded-full text-[#86868b] hover:text-rose-600 hover:bg-rose-50 text-[11px] font-medium border border-[#e5e5ea] transition-all"
@@ -1609,15 +1609,16 @@ export const ReceptionistDashboard: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
-                  New Permanent Password (min. 6 characters)
+                  New Permanent Password (min. 8 characters)
                 </label>
                 <div className="relative">
                   <input
                     type="password"
                     required
+                    minLength={8}
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Enter new password"
+                    placeholder="Enter new password (min. 8 characters)"
                     className="w-full h-11 px-3.5 pl-9 rounded-xl border border-[#e5e5ea] text-sm focus:outline-none focus:border-[#0088e8]"
                   />
                   <Lock className="w-4 h-4 text-[#86868b] absolute left-3 top-3.5" />

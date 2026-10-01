@@ -301,12 +301,12 @@ async function main() {
       email: 'receptionist@mediarca.com',
       passwordHash: receptionistPassword,
       fullName: 'Clara Oswald (Front Desk)',
-      phone: '+91 9876543210',
+      phone: '+91 9876543219',
       role: 'RECEPTIONIST',
       mustChangePassword: false,
       receptionistProfile: {
         create: {
-          phone: '+91 9876543210',
+          phone: '+91 9876543219',
           clinicId: clinicUser.clinicProfile!.id,
           status: 'ACTIVE',
         },

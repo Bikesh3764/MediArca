@@ -3,7 +3,7 @@ import { Response } from 'express';
 import bcrypt from 'bcryptjs';
 import prisma from '../config/database';
 import { AuthRequest } from '../middleware/authMiddleware';
-import { isValidIndianPhone, formatIndianPhone } from '../utils/phoneUtils';
+import { isValidIndianPhone, formatIndianPhone, sanitizeIndianPhone } from '../utils/phoneUtils';
 import { createNotification } from '../services/notificationService';
 
 /**
@@ -130,6 +130,8 @@ export const getMyClinic = async (req: AuthRequest, res: Response): Promise<void
     // Compute stats per doctor specifically for THIS clinic (active doctors only)
     const doctorStats = activeDoctorAffiliations.map((cd) => {
       const docAppointments = clinicAppointments.filter((a) => a.doctorId === cd.doctorId);
+      const bookingCount = docAppointments.length;
+      const completedCount = docAppointments.filter((a) => a.status === 'COMPLETED').length;
       // Finding F1: Count revenue only on completed consultations or paid transactions
       const paidOrCompleted = docAppointments.filter(
         (a) =>
@@ -137,10 +139,15 @@ export const getMyClinic = async (req: AuthRequest, res: Response): Promise<void
           a.status !== 'CANCELLED' &&
           a.status !== 'REJECTED'
       );
-      const bookingCount = docAppointments.length;
-      const completedCount = docAppointments.filter((a) => a.status === 'COMPLETED').length;
-      const effectiveFee = cd.consultationFee ?? cd.doctor.consultationFee ?? 0;
-      const revenue = paidOrCompleted.length * effectiveFee;
+      const effectiveFee = typeof cd.consultationFee === 'number' && Number.isFinite(cd.consultationFee)
+        ? cd.consultationFee
+        : (typeof cd.doctor.consultationFee === 'number' && Number.isFinite(cd.doctor.consultationFee) ? cd.doctor.consultationFee : 0);
+      const revenue = paidOrCompleted.reduce((acc: number, appt: any) => {
+        const apptFee = typeof appt.consultationFee === 'number' && Number.isFinite(appt.consultationFee)
+          ? appt.consultationFee
+          : (typeof appt.fee === 'number' && Number.isFinite(appt.fee) ? appt.fee : effectiveFee);
+        return acc + apptFee;
+      }, 0);
 
       return {
         affiliationId: cd.id,
@@ -766,7 +773,8 @@ export const addClinicReceptionist = async (req: AuthRequest, res: Response): Pr
     let formattedPhone: string | null = null;
     if (phone !== undefined && phone !== null && String(phone).trim() !== '') {
       const trimmedPhone = String(phone).trim();
-      if (!isValidIndianPhone(trimmedPhone)) {
+      const sanitizedDigits = sanitizeIndianPhone(trimmedPhone);
+      if (!isValidIndianPhone(trimmedPhone) && (!sanitizedDigits || sanitizedDigits.length !== 10 || !/^[6-9]/.test(sanitizedDigits))) {
         res.status(400).json({
           success: false,
           message: 'Invalid Indian phone number. Please enter a valid 10-digit mobile number (+91).',

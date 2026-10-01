@@ -199,6 +199,10 @@ export const ClinicDashboard: React.FC = () => {
       setError('Please provide full name, email and password for the receptionist.');
       return;
     }
+    if (recPassword.trim().length < 8) {
+      setError('Receptionist password must be at least 8 characters long.');
+      return;
+    }
 
     setProvisioning(true);
     setError(null);
@@ -1151,7 +1155,8 @@ export const ClinicDashboard: React.FC = () => {
                     disabled={provisioning}
                     value={recPassword}
                     onChange={(e) => setRecPassword(e.target.value)}
-                    placeholder="Min. 6 characters"
+                    placeholder="Min. 8 characters"
+                    minLength={8}
                     className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] font-mono"
                   />
                 </div>

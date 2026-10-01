@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import prisma from '../config/database';
+import { isClinicActive } from '../utils/authGuards';
 
 export interface AuthenticatedUser {
   id: string;
@@ -138,17 +139,13 @@ export const requireActiveReceptionist = async (
     }
 
     if (receptionist.clinic) {
-      if (receptionist.clinic.verificationStatus === 'SUSPENDED') {
+      const clinicCheck = isClinicActive(receptionist.clinic);
+      if (!clinicCheck.active) {
         res.status(403).json({
           success: false,
-          message: 'The affiliated clinic facility has been suspended by administration. Desk operations are locked.',
-        });
-        return;
-      }
-      if (receptionist.clinic.verificationStatus === 'REJECTED') {
-        res.status(403).json({
-          success: false,
-          message: 'The affiliated clinic facility registration has been rejected. Desk operations are unavailable.',
+          message:
+            clinicCheck.reason ||
+            'The affiliated clinic facility is pending verification or is suspended. Desk operations are locked.',
         });
         return;
       }

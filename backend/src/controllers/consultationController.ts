@@ -225,7 +225,7 @@ export const updateNotesAndVitals = async (req: AuthRequest, res: Response): Pro
       return;
     }
 
-    const { appointmentId, vitals, clinicalNotes } = req.body;
+    const { appointmentId, vitals, clinicalNotes, diagnosis, medicines, advice, followUpDate } = req.body;
 
     if (!appointmentId) {
       res.status(400).json({ success: false, message: 'appointmentId is required' });
@@ -265,11 +265,47 @@ export const updateNotesAndVitals = async (req: AuthRequest, res: Response): Pro
       return;
     }
 
+    let finalNotes = clinicalNotes;
+    if (diagnosis || advice || followUpDate || (Array.isArray(medicines) && medicines.length > 0) || (typeof medicines === 'string' && medicines.trim())) {
+      const notesParts: string[] = [];
+      if (diagnosis && diagnosis.trim()) {
+        notesParts.push(`Diagnosis: ${diagnosis.trim()}`);
+      }
+      if (clinicalNotes && clinicalNotes.trim()) {
+        notesParts.push(clinicalNotes.trim());
+      }
+      if (Array.isArray(medicines) && medicines.length > 0) {
+        const medLines = medicines.map((m: any, idx: number) => {
+          if (typeof m === 'string') return `${idx + 1}. ${m}`;
+          const name = m.name || m.medicineName || '';
+          const dosage = m.dosage ? ` - ${m.dosage}` : '';
+          const freq = m.frequency ? ` (${m.frequency})` : '';
+          const dur = m.duration ? ` for ${m.duration}` : '';
+          const inst = m.instructions ? ` [${m.instructions}]` : '';
+          return `${idx + 1}. ${name}${dosage}${freq}${dur}${inst}`.trim();
+        }).filter(Boolean);
+        if (medLines.length > 0) {
+          notesParts.push(`Prescribed Medications:\n${medLines.join('\n')}`);
+        }
+      } else if (typeof medicines === 'string' && medicines.trim()) {
+        notesParts.push(`Prescribed Medications:\n${medicines.trim()}`);
+      }
+      if (advice && advice.trim()) {
+        notesParts.push(`Advice: ${advice.trim()}`);
+      }
+      if (followUpDate && followUpDate.trim()) {
+        notesParts.push(`Follow-up Date: ${followUpDate.trim()}`);
+      }
+      if (notesParts.length > 0) {
+        finalNotes = notesParts.join('\n\n');
+      }
+    }
+
     const updated = await prisma.appointment.update({
       where: { id: appointmentId },
       data: {
         ...(vitals && { vitals: typeof vitals === 'object' ? JSON.stringify(vitals) : vitals }),
-        ...(clinicalNotes !== undefined && { clinicalNotes }),
+        ...(finalNotes !== undefined && { clinicalNotes: finalNotes }),
       },
     });
 
