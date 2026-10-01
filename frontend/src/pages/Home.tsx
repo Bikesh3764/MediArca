@@ -43,10 +43,24 @@ export const Home: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [locationQuery, setLocationQuery] = useState('');
   const [selectedSpecialty, setSelectedSpecialty] = useState('All');
+  const [selectedCity, setSelectedCity] = useState('All');
+  const [maxFee, setMaxFee] = useState<number>(3000);
   const [sortBy, setSortBy] = useState<'rating' | 'experience' | 'fee_low' | 'fee_high'>('rating');
   const [minExperience, setMinExperience] = useState<number>(0);
   const [availabilityFilter, setAvailabilityFilter] = useState<'ALL' | 'ACTIVE_NOW'>('ALL');
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+
+  const quickCategories = useMemo(() => [
+    'All',
+    'Cardiology',
+    'Dermatology',
+    'Pediatrics',
+    'Orthopedics',
+    'General Medicine',
+    'Neurology',
+    'Dentistry',
+    'Gynecology',
+  ], []);
 
   useEffect(() => {
     const fetchDoctors = async () => {
@@ -128,6 +142,20 @@ export const Home: React.FC = () => {
           return false;
         }
 
+        // City Filter
+        if (selectedCity !== 'All') {
+          const cLower = selectedCity.toLowerCase();
+          const matchesCity =
+            doc.clinics?.some((c) => c.clinic?.city?.toLowerCase() === cLower) ||
+            doc.clinicAddress?.toLowerCase().includes(cLower);
+          if (!matchesCity) return false;
+        }
+
+        // Max Fee Filter
+        if (maxFee < 3000 && doc.consultationFee > maxFee) {
+          return false;
+        }
+
         // Active Now Filter
         if (availabilityFilter === 'ACTIVE_NOW') {
           const slots = parseDoctorSlots(doc);
@@ -146,12 +174,14 @@ export const Home: React.FC = () => {
         if (sortBy === 'experience') return b.experienceYears - a.experienceYears;
         return (b.rating || 5) - (a.rating || 5);
       });
-  }, [doctors, selectedSpecialty, searchQuery, locationQuery, minExperience, availabilityFilter, sortBy]);
+  }, [doctors, selectedSpecialty, selectedCity, maxFee, searchQuery, locationQuery, minExperience, availabilityFilter, sortBy]);
 
   const resetFilters = () => {
     setSearchQuery('');
     setLocationQuery('');
     setSelectedSpecialty('All');
+    setSelectedCity('All');
+    setMaxFee(3000);
     setMinExperience(0);
     setAvailabilityFilter('ALL');
     setSortBy('rating');
@@ -159,6 +189,8 @@ export const Home: React.FC = () => {
 
   const hasActiveFilters = Boolean(
     selectedSpecialty !== 'All' ||
+    selectedCity !== 'All' ||
+    maxFee < 3000 ||
     searchQuery.trim() ||
     locationQuery.trim() ||
     minExperience > 0 ||
@@ -168,12 +200,14 @@ export const Home: React.FC = () => {
   const activeFilterCount = useMemo(() => {
     let count = 0;
     if (selectedSpecialty !== 'All') count++;
+    if (selectedCity !== 'All') count++;
+    if (maxFee < 3000) count++;
     if (searchQuery.trim()) count++;
     if (locationQuery.trim()) count++;
     if (minExperience > 0) count++;
     if (sortBy !== 'rating') count++;
     return count;
-  }, [selectedSpecialty, searchQuery, locationQuery, minExperience, sortBy]);
+  }, [selectedSpecialty, selectedCity, maxFee, searchQuery, locationQuery, minExperience, sortBy]);
 
   const handleHeroSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -295,8 +329,33 @@ export const Home: React.FC = () => {
         </div>
       </section>
 
+      {/* Top Horizontal Category Filter Pills (Hoardspace style) */}
+      <div className="border-y border-[#e5e5ea] bg-white sticky top-16 z-20 shadow-2xs">
+        <div className="max-w-[1560px] mx-auto px-4 sm:px-6 lg:px-8 py-3">
+          <div className="flex items-center gap-2 overflow-x-auto scrollbar-none py-0.5">
+            {quickCategories.map((cat) => {
+              const isActive = selectedSpecialty.toLowerCase() === cat.toLowerCase();
+              return (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setSelectedSpecialty(cat)}
+                  className={`px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer shrink-0 ${
+                    isActive
+                      ? 'bg-[#0088e8] text-white shadow-xs'
+                      : 'bg-[#f5f5f7] text-[#48484a] hover:bg-[#e5e5ea] hover:text-[#1d1d1f] border border-[#e5e5ea]'
+                  }`}
+                >
+                  {cat === 'All' ? 'All Specialists' : cat}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
       {/* Explore Doctors Catalog - Responsive Layout with Left Filter Sidebar on Desktop */}
-      <section id="doctors-catalog" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 flex-1 w-full">
+      <section id="doctors-catalog" className="max-w-[1560px] mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 flex-1 w-full">
         {/* Mobile Filter Toggle Drawer */}
         <div className="lg:hidden mb-6">
           <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-3.5 shadow-xs">
@@ -375,6 +434,23 @@ export const Home: React.FC = () => {
                   />
                 </div>
 
+                {/* Max Consultation Fee Slider */}
+                <div>
+                  <div className="flex items-center justify-between text-xs font-semibold text-[#48484a] mb-1">
+                    <span>Max Fee</span>
+                    <span className="text-[#0088e8]">Up to ₹{maxFee}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="300"
+                    max="3000"
+                    step="100"
+                    value={maxFee}
+                    onChange={(e) => setMaxFee(Number(e.target.value))}
+                    className="w-full accent-[#0088e8] cursor-pointer"
+                  />
+                </div>
+
                 {/* Experience & Sort Grid */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
@@ -410,6 +486,37 @@ export const Home: React.FC = () => {
                   </div>
                 </div>
 
+                {/* Availability Toggle */}
+                <div>
+                  <label className="block text-xs font-semibold text-[#48484a] mb-1">
+                    Availability
+                  </label>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setAvailabilityFilter('ALL')}
+                      className={`py-1.5 px-2 rounded-xl text-xs font-medium border text-center transition-all cursor-pointer ${
+                        availabilityFilter === 'ALL'
+                          ? 'bg-[#0088e8] text-white border-[#0088e8] shadow-xs'
+                          : 'bg-[#f5f5f7] text-[#48484a] border-[#e5e5ea] hover:bg-[#ebebee]'
+                      }`}
+                    >
+                      All Doctors
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAvailabilityFilter('ACTIVE_NOW')}
+                      className={`py-1.5 px-2 rounded-xl text-xs font-medium border text-center transition-all cursor-pointer ${
+                        availabilityFilter === 'ACTIVE_NOW'
+                          ? 'bg-[#0088e8] text-white border-[#0088e8] shadow-xs'
+                          : 'bg-[#f5f5f7] text-[#48484a] border-[#e5e5ea] hover:bg-[#ebebee]'
+                      }`}
+                    >
+                      Active Now
+                    </button>
+                  </div>
+                </div>
+
                 {hasActiveFilters && (
                   <div className="pt-2">
                     <button
@@ -430,10 +537,10 @@ export const Home: React.FC = () => {
         {/* Main Desktop Layout: Left Sidebar + Right Results Grid */}
         <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start w-full">
           {/* LEFT SIDEBAR: Sticky Filters on Desktop */}
-          <aside className="hidden lg:block w-72 xl:w-80 flex-shrink-0 lg:sticky lg:top-24 space-y-4">
-            <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-5 sm:p-6 shadow-xs space-y-5">
+          <aside className="hidden lg:block w-64 xl:w-72 flex-shrink-0 lg:sticky lg:top-32 space-y-4">
+            <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-5 shadow-xs space-y-5">
               {/* Header */}
-              <div className="flex items-center justify-between pb-4 border-b border-[#f0f0f2]">
+              <div className="flex items-center justify-between pb-3.5 border-b border-[#f0f0f2]">
                 <div className="flex items-center gap-2">
                   <SlidersHorizontal className="w-4 h-4 text-[#0088e8]" />
                   <h3 className="text-sm font-semibold text-[#1d1d1f] tracking-tight">Filters & Refine</h3>
@@ -510,6 +617,27 @@ export const Home: React.FC = () => {
                 />
               </div>
 
+              {/* Max Consultation Fee Slider */}
+              <div>
+                <div className="flex items-center justify-between text-xs font-semibold text-[#48484a] mb-1.5">
+                  <span>Max Fee</span>
+                  <span className="text-[#0088e8] font-bold">Up to ₹{maxFee}</span>
+                </div>
+                <input
+                  type="range"
+                  min="300"
+                  max="3000"
+                  step="100"
+                  value={maxFee}
+                  onChange={(e) => setMaxFee(Number(e.target.value))}
+                  className="w-full accent-[#0088e8] cursor-pointer"
+                />
+                <div className="flex justify-between text-[10px] text-[#86868b] mt-0.5">
+                  <span>₹300</span>
+                  <span>₹3000</span>
+                </div>
+              </div>
+
               {/* Experience Buttons */}
               <div>
                 <label className="block text-xs font-semibold text-[#48484a] mb-1.5">
@@ -538,6 +666,37 @@ export const Home: React.FC = () => {
                 </div>
               </div>
 
+              {/* Availability Toggle */}
+              <div>
+                <label className="block text-xs font-semibold text-[#48484a] mb-1.5">
+                  Availability
+                </label>
+                <div className="grid grid-cols-2 gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setAvailabilityFilter('ALL')}
+                    className={`py-1.5 px-2 rounded-xl text-xs font-medium border text-center transition-all cursor-pointer ${
+                      availabilityFilter === 'ALL'
+                        ? 'bg-[#0088e8] text-white border-[#0088e8] shadow-xs'
+                        : 'bg-[#f5f5f7] text-[#48484a] border-[#e5e5ea] hover:bg-[#ebebee]'
+                    }`}
+                  >
+                    All
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAvailabilityFilter('ACTIVE_NOW')}
+                    className={`py-1.5 px-2 rounded-xl text-xs font-medium border text-center transition-all cursor-pointer ${
+                      availabilityFilter === 'ACTIVE_NOW'
+                        ? 'bg-[#0088e8] text-white border-[#0088e8] shadow-xs'
+                        : 'bg-[#f5f5f7] text-[#48484a] border-[#e5e5ea] hover:bg-[#ebebee]'
+                    }`}
+                  >
+                    Active Now
+                  </button>
+                </div>
+              </div>
+
               {/* Sort By */}
               <div>
                 <label className="block text-xs font-semibold text-[#48484a] mb-1.5">
@@ -557,57 +716,82 @@ export const Home: React.FC = () => {
             </div>
           </aside>
 
-          {/* RIGHT MAIN AREA: Results Header + Doctor Cards Grid */}
+          {/* RIGHT MAIN AREA: Results Header + 4-Column Doctor Cards Grid */}
           <div className="flex-1 w-full min-w-0">
             {/* Results Status Header */}
             <div className="bg-white rounded-[20px] sm:rounded-[24px] border border-[#e5e5ea] p-4 sm:p-5 mb-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <h2 className="text-lg sm:text-xl font-semibold text-[#1d1d1f] tracking-tight">
+                <h2 className="text-lg sm:text-xl font-bold text-[#1d1d1f] tracking-tight">
                   {selectedSpecialty === 'All' ? 'Verified Specialists' : `${selectedSpecialty} Specialists`}
                 </h2>
                 <p className="text-xs text-[#86868b] mt-0.5">
-                  Showing {filteredDoctors.length} available medical practitioner{filteredDoctors.length === 1 ? '' : 's'}
+                  Showing 1–{filteredDoctors.length} of {doctors.length} verified practitioners
                 </p>
               </div>
 
-              {/* Active Filter Chips */}
-              {hasActiveFilters && (
-                <div className="flex flex-wrap items-center gap-1.5">
-                  {selectedSpecialty !== 'All' && (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#0088e8]/10 text-[#0088e8] text-xs font-medium border border-[#0088e8]/20">
-                      {selectedSpecialty}
-                      <button type="button" onClick={() => setSelectedSpecialty('All')} className="hover:opacity-75 cursor-pointer">
-                        <X className="w-3 h-3" />
-                      </button>
-                    </span>
-                  )}
-                  {minExperience > 0 && (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#0088e8]/10 text-[#0088e8] text-xs font-medium border border-[#0088e8]/20">
-                      {minExperience}+ Yrs
-                      <button type="button" onClick={() => setMinExperience(0)} className="hover:opacity-75 cursor-pointer">
-                        <X className="w-3 h-3" />
-                      </button>
-                    </span>
-                  )}
-                  {locationQuery && (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#0088e8]/10 text-[#0088e8] text-xs font-medium border border-[#0088e8]/20">
-                      {locationQuery}
-                      <button type="button" onClick={() => setLocationQuery('')} className="hover:opacity-75 cursor-pointer">
-                        <X className="w-3 h-3" />
-                      </button>
-                    </span>
-                  )}
+              <div className="flex items-center gap-3">
+                {/* Active Filter Chips */}
+                {hasActiveFilters && (
+                  <div className="hidden sm:flex flex-wrap items-center gap-1.5">
+                    {selectedSpecialty !== 'All' && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#0088e8]/10 text-[#0088e8] text-xs font-medium border border-[#0088e8]/20">
+                        {selectedSpecialty}
+                        <button type="button" onClick={() => setSelectedSpecialty('All')} className="hover:opacity-75 cursor-pointer">
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    )}
+                    {maxFee < 3000 && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#0088e8]/10 text-[#0088e8] text-xs font-medium border border-[#0088e8]/20">
+                        ≤ ₹{maxFee}
+                        <button type="button" onClick={() => setMaxFee(3000)} className="hover:opacity-75 cursor-pointer">
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    )}
+                    {minExperience > 0 && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#0088e8]/10 text-[#0088e8] text-xs font-medium border border-[#0088e8]/20">
+                        {minExperience}+ Yrs
+                        <button type="button" onClick={() => setMinExperience(0)} className="hover:opacity-75 cursor-pointer">
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    )}
+                    {locationQuery && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#0088e8]/10 text-[#0088e8] text-xs font-medium border border-[#0088e8]/20">
+                        {locationQuery}
+                        <button type="button" onClick={() => setLocationQuery('')} className="hover:opacity-75 cursor-pointer">
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {/* Desktop Sort Dropdown */}
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className="text-xs text-[#86868b] font-medium hidden md:inline">Sort:</span>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as any)}
+                    className="py-1.5 px-3 rounded-xl border border-[#e5e5ea] bg-[#f5f5f7] text-xs font-medium text-[#1d1d1f] focus:outline-none focus:border-[#0088e8] cursor-pointer"
+                  >
+                    <option value="rating">Recommended</option>
+                    <option value="experience">Most Experienced</option>
+                    <option value="fee_low">Price: Low to High</option>
+                    <option value="fee_high">Price: High to Low</option>
+                  </select>
                 </div>
-              )}
+              </div>
             </div>
 
-            {/* Doctor Cards Grid */}
+            {/* Doctor Cards 4-Column Grid (Hoardspace style) */}
             {loading ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-5 sm:gap-6 w-full">
-                {[1, 2, 3, 4].map((i) => (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 w-full">
+                {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
                   <div
                     key={i}
-                    className="h-72 rounded-[28px] bg-white border border-[#e5e5ea] animate-pulse p-7"
+                    className="h-80 rounded-[22px] bg-white border border-[#e5e5ea] animate-pulse p-4"
                   ></div>
                 ))}
               </div>
@@ -627,169 +811,181 @@ export const Home: React.FC = () => {
                 </AppleButton>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-5 sm:gap-6 w-full">
-            {filteredDoctors.map((doctor) => {
-              const slots = parseDoctorSlots(doctor);
-              const getHomeDoctorDetailPath = (docId: string) =>
-                user?.role === 'PATIENT' ? `/patient/doctor/${docId}` : `/doctor/${docId}`;
-              const getHomeDoctorBookPath = (docId: string) =>
-                user?.role === 'PATIENT' ? `/patient/book/${docId}` : `/book/${docId}`;
-              const cleanDegrees = formatDoctorDegrees(doctor.qualifications);
-              const primaryClinic = doctor.clinics?.find((c) => c?.clinic)?.clinic || null;
-              const hasClinics = Boolean(primaryClinic);
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 w-full">
+                {filteredDoctors.map((doctor) => {
+                  const slots = parseDoctorSlots(doctor);
+                  const getHomeDoctorDetailPath = (docId: string) =>
+                    user?.role === 'PATIENT' ? `/patient/doctor/${docId}` : `/doctor/${docId}`;
+                  const getHomeDoctorBookPath = (docId: string) =>
+                    user?.role === 'PATIENT' ? `/patient/book/${docId}` : `/book/${docId}`;
+                  const cleanDegrees = formatDoctorDegrees(doctor.qualifications);
+                  const primaryClinic = doctor.clinics?.find((c) => c?.clinic)?.clinic || null;
+                  const hasClinics = Boolean(primaryClinic);
+                  const clinicCity = primaryClinic?.city || doctor.clinicAddress?.split(',').pop()?.trim() || '';
 
-              return (
-                <div
-                  key={doctor.id}
-                  className="w-full bg-white rounded-[26px] sm:rounded-[28px] border border-[#e5e5ea] overflow-hidden hover:shadow-[0_16px_44px_rgba(0,0,0,0.08)] hover:border-[#0088e8]/30 transition-all duration-300 flex flex-col justify-between group"
-                >
-                  {/* 1. Full-Width Doctor Photo Banner at Top */}
-                  <div
-                    onClick={() => navigate(getHomeDoctorDetailPath(doctor.id))}
-                    className="relative w-full h-56 sm:h-64 bg-white border-b border-[#f0f0f2] overflow-hidden cursor-pointer flex items-center justify-center p-2.5 sm:p-3"
-                  >
-                    {doctor.user?.avatarUrl ? (
-                      <img
-                        src={getFileUrl(doctor.user.avatarUrl)}
-                        alt={doctor.user?.fullName || 'Doctor'}
-                        className="w-full h-full object-contain object-center transition-transform duration-500 group-hover:scale-[1.03]"
-                        loading="eager"
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none';
-                          const fallback = e.currentTarget.parentElement?.querySelector('.doc-fallback-banner');
-                          if (fallback) (fallback as HTMLElement).style.display = 'flex';
-                        }}
-                      />
-                    ) : null}
+                  return (
                     <div
-                      className={`doc-fallback-banner w-full h-full ${doctor.user?.avatarUrl ? 'hidden' : 'flex'} items-center justify-center font-bold text-5xl text-white bg-gradient-to-br from-[#0088e8] to-[#0066cc] select-none`}
+                      key={doctor.id}
+                      className="w-full bg-white rounded-[20px] sm:rounded-[22px] border border-[#e5e5ea] overflow-hidden hover:shadow-[0_12px_32px_rgba(0,0,0,0.08)] hover:border-[#0088e8]/35 transition-all duration-300 flex flex-col justify-between group"
                     >
-                      {(doctor.user?.fullName ? doctor.user.fullName.replace(/^Dr\.\s*/i, '').trim()[0] : null) || 'D'}
-                    </div>
-
-                    {/* Floating Specialty Badge on Top Right */}
-                    <div className="absolute top-3.5 right-3.5 z-20">
-                      <span className="backdrop-blur-md bg-white/95 text-[#0088e8] text-xs font-semibold px-3 py-1 rounded-full border border-black/5 shadow-xs">
-                        {doctor.specialty}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* 2. Doctor Details Flowing Down Lengthwise */}
-                  <div className="p-5 sm:p-6 flex-1 flex flex-col justify-between">
-                    {/* Doctor Name, Qualifications & Experience */}
-                    <div>
-                      <div className="flex items-center gap-1.5 sm:gap-2">
-                        <h3
-                          onClick={() => navigate(getHomeDoctorDetailPath(doctor.id))}
-                          className="text-lg sm:text-xl font-bold text-[#1d1d1f] hover:text-[#0088e8] cursor-pointer tracking-tight transition-colors line-clamp-1"
-                          title={doctor.user?.fullName || 'Doctor'}
+                      {/* 1. Full-Width Doctor Photo Banner with Floating Badges (Hoardspace Pattern) */}
+                      <div
+                        onClick={() => navigate(getHomeDoctorDetailPath(doctor.id))}
+                        className="relative w-full aspect-[16/10] bg-[#f5f5f7] border-b border-[#f0f0f2] overflow-hidden cursor-pointer flex items-center justify-center"
+                      >
+                        {doctor.user?.avatarUrl ? (
+                          <img
+                            src={getFileUrl(doctor.user.avatarUrl)}
+                            alt={doctor.user?.fullName || 'Doctor'}
+                            className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
+                            loading="eager"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                              const fallback = e.currentTarget.parentElement?.querySelector('.doc-fallback-banner');
+                              if (fallback) (fallback as HTMLElement).style.display = 'flex';
+                            }}
+                          />
+                        ) : null}
+                        <div
+                          className={`doc-fallback-banner w-full h-full ${doctor.user?.avatarUrl ? 'hidden' : 'flex'} items-center justify-center font-bold text-4xl text-white bg-gradient-to-br from-[#0088e8] to-[#0066cc] select-none`}
                         >
-                          {doctor.user?.fullName || 'Doctor'}
-                        </h3>
-                        <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-[#0088e8] fill-[#0088e8]/10 shrink-0" />
-                      </div>
+                          {(doctor.user?.fullName ? doctor.user.fullName.replace(/^Dr\.\s*/i, '').trim()[0] : null) || 'D'}
+                        </div>
 
-                      <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs sm:text-sm text-[#86868b]">
-                        <span>{doctor.experienceYears} yrs experience</span>
-                        {cleanDegrees && (
-                          <>
-                            <span className="text-[#d1d1d6]">•</span>
-                            <span className="text-[#48484a] font-normal truncate">{cleanDegrees}</span>
-                          </>
+                        {/* Floating Specialty Badge on Bottom Left */}
+                        <div className="absolute bottom-2.5 left-2.5 z-10">
+                          <span className="backdrop-blur-md bg-black/65 text-white text-[11px] font-medium px-2.5 py-0.5 rounded-full shadow-xs">
+                            {doctor.specialty}
+                          </span>
+                        </div>
+
+                        {/* Floating Clinic / City Badge on Bottom Right */}
+                        {clinicCity && (
+                          <div className="absolute bottom-2.5 right-2.5 z-10">
+                            <span className="backdrop-blur-md bg-black/65 text-white text-[11px] font-medium px-2 py-0.5 rounded-full shadow-xs flex items-center gap-1">
+                              <MapPin className="w-2.5 h-2.5 text-[#0088e8]" />
+                              <span>{clinicCity}</span>
+                            </span>
+                          </div>
                         )}
                       </div>
-                    </div>
 
-                    {/* Practice Venue & Shift Timing */}
-                    <div className="mt-4 pt-3.5 border-t border-[#f0f0f2] flex flex-col gap-2 text-xs sm:text-sm">
-                      {/* Practice Venue */}
-                      <div className="flex items-center gap-2 text-[#48484a] min-w-0">
-                        <Building2 className="w-4 h-4 text-[#86868b] shrink-0" />
-                        {hasClinics && primaryClinic ? (
-                          <span
-                            className="font-medium text-[#1d1d1f] truncate"
-                            title={`${primaryClinic.clinicName}${primaryClinic.city ? ` • ${primaryClinic.city}` : ''}`}
-                          >
-                            {primaryClinic.clinicName}
-                            {primaryClinic.city ? ` • ${primaryClinic.city}` : ''}
-                            {(doctor.clinics?.length ?? 0) > 1 && (
-                              <span className="text-[#0088e8] font-normal ml-1">
-                                (+{(doctor.clinics?.length ?? 0) - 1} more)
+                      {/* 2. Doctor Details Flowing Down Lengthwise */}
+                      <div className="p-4 flex-1 flex flex-col justify-between">
+                        {/* Doctor Name, Qualifications & Experience */}
+                        <div>
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <h3
+                              onClick={() => navigate(getHomeDoctorDetailPath(doctor.id))}
+                              className="text-base font-bold text-[#1d1d1f] hover:text-[#0088e8] cursor-pointer tracking-tight transition-colors truncate"
+                              title={doctor.user?.fullName || 'Doctor'}
+                            >
+                              {doctor.user?.fullName || 'Doctor'}
+                            </h3>
+                            <CheckCircle2 className="w-4 h-4 text-[#0088e8] fill-[#0088e8]/10 shrink-0" />
+                          </div>
+
+                          <div className="mt-1 flex items-center gap-1.5 text-xs text-[#86868b] truncate">
+                            <span>{doctor.experienceYears} yrs exp</span>
+                            {cleanDegrees && (
+                              <>
+                                <span className="text-[#d1d1d6]">•</span>
+                                <span className="text-[#48484a] font-normal truncate" title={cleanDegrees}>
+                                  {cleanDegrees}
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Practice Venue & Shift Timing */}
+                        <div className="mt-3 pt-2.5 border-t border-[#f0f0f2] space-y-1.5 text-xs">
+                          {/* Practice Venue */}
+                          <div className="flex items-center gap-1.5 text-[#48484a] min-w-0">
+                            <Building2 className="w-3.5 h-3.5 text-[#86868b] shrink-0" />
+                            {hasClinics && primaryClinic ? (
+                              <span
+                                className="font-medium text-[#1d1d1f] truncate"
+                                title={`${primaryClinic.clinicName}${primaryClinic.city ? ` • ${primaryClinic.city}` : ''}`}
+                              >
+                                {primaryClinic.clinicName}
+                                {(doctor.clinics?.length ?? 0) > 1 && (
+                                  <span className="text-[#0088e8] font-normal ml-1">
+                                    (+{(doctor.clinics?.length ?? 0) - 1})
+                                  </span>
+                                )}
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-xs text-amber-600 font-medium">
+                                <AlertCircle className="w-3 h-3 text-amber-500 shrink-0" />
+                                Direct Practice
                               </span>
                             )}
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1.5 text-xs text-amber-600 font-medium">
-                            <AlertCircle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                            No Clinic Associated
-                          </span>
-                        )}
-                      </div>
+                          </div>
 
-                      {/* Shift Timing */}
-                      <div className="flex items-center gap-2 text-[#86868b] min-w-0">
-                        <Clock className="w-4 h-4 text-[#86868b] shrink-0" />
-                        <span className="font-normal truncate">
-                          {slots.length > 0
-                            ? `${format12Hour(slots[0].startTime)} – ${format12Hour(slots[0].endTime)}`
-                            : doctor.checkingStartTime
-                            ? `${format12Hour(doctor.checkingStartTime)} – ${format12Hour(doctor.checkingEndTime)}`
-                            : 'Outpatient Shift'}
-                          {slots.length > 1 && (
-                            <span className="text-[#86868b] font-normal ml-1">
-                              ({slots.length} shifts)
+                          {/* Shift Timing */}
+                          <div className="flex items-center gap-1.5 text-[#86868b] min-w-0">
+                            <Clock className="w-3.5 h-3.5 text-[#86868b] shrink-0" />
+                            <span className="font-normal truncate">
+                              {slots.length > 0
+                                ? `${format12Hour(slots[0].startTime)} – ${format12Hour(slots[0].endTime)}`
+                                : doctor.checkingStartTime
+                                ? `${format12Hour(doctor.checkingStartTime)} – ${format12Hour(doctor.checkingEndTime)}`
+                                : 'Outpatient Shift'}
+                              {slots.length > 1 && (
+                                <span className="text-[#86868b] font-normal ml-1">
+                                  (+{slots.length - 1})
+                                </span>
+                              )}
                             </span>
-                          )}
-                        </span>
+                          </div>
+                        </div>
+
+                        {/* 3. Bottom Section: Consultation Fee & Action CTA */}
+                        <div className="mt-3.5 pt-2.5 border-t border-[#f0f0f2] flex items-center justify-between gap-3">
+                          <div className="flex flex-col">
+                            <span className="text-[10px] font-semibold uppercase tracking-wider text-[#86868b]">Fee</span>
+                            <span className="text-base sm:text-lg font-bold text-[#1d1d1f] tracking-tight">
+                              ₹{doctor.consultationFee.toFixed(0)} <span className="text-[10px] font-normal text-[#86868b]">/ visit</span>
+                            </span>
+                          </div>
+
+                          <div>
+                            {hasClinics ? (
+                              <AppleButton
+                                variant="primary"
+                                size="sm"
+                                onClick={() => navigate(getHomeDoctorBookPath(doctor.id))}
+                                className="text-xs px-3.5 py-1.5 rounded-full flex items-center gap-1 font-semibold shadow-xs hover:shadow-apple-button active:scale-[0.98] transition-all bg-[#0088e8] hover:bg-[#0077cc] text-white"
+                              >
+                                <span>Book Token</span>
+                                <ChevronRight className="w-3 h-3 stroke-[2.5]" />
+                              </AppleButton>
+                            ) : (
+                              <AppleButton
+                                variant="secondary"
+                                size="sm"
+                                disabled
+                                className="text-xs px-3 py-1.5 rounded-full opacity-60 cursor-not-allowed bg-[#f5f5f7] border border-[#e5e5ea] text-[#86868b] font-medium"
+                              >
+                                <span>Unavailable</span>
+                              </AppleButton>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </div>
-
-                    {/* 3. Bottom Section: Consultation Fee & Action CTA */}
-                    <div className="mt-5 pt-3.5 border-t border-[#f0f0f2] flex items-center justify-between gap-4">
-                      <div className="flex flex-col">
-                        <span className="text-[10px] font-medium uppercase tracking-wider text-[#86868b]">Consultation</span>
-                        <span className="text-xl sm:text-2xl font-bold text-[#1d1d1f] tracking-tight">
-                          ₹{doctor.consultationFee.toFixed(0)}
-                        </span>
-                      </div>
-
-                      <div>
-                        {hasClinics ? (
-                          <AppleButton
-                            variant="primary"
-                            size="sm"
-                            onClick={() => navigate(getHomeDoctorBookPath(doctor.id))}
-                            className="text-xs sm:text-sm px-5 py-2.5 rounded-full flex items-center gap-1.5 font-semibold shadow-xs hover:shadow-apple-button active:scale-[0.98] transition-all bg-[#0088e8] hover:bg-[#0077cc] text-white"
-                          >
-                            <span>Book Token</span>
-                            <ChevronRight className="w-3.5 h-3.5 stroke-[2.5]" />
-                          </AppleButton>
-                        ) : (
-                          <AppleButton
-                            variant="secondary"
-                            size="sm"
-                            disabled
-                            className="text-xs sm:text-sm px-4 py-2.5 rounded-full opacity-60 cursor-not-allowed bg-[#f5f5f7] border border-[#e5e5ea] text-[#86868b] font-medium"
-                          >
-                            <span>Unavailable</span>
-                          </AppleButton>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       </section>
 
       {/* 4. Operational Portals */}
       <section className="bg-white border-t border-[#e5e5ea] py-10 px-4 sm:px-6 mt-10">
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-[1560px] mx-auto">
           <div className="text-center max-w-xl mx-auto mb-6">
             <h3 className="text-xl font-semibold text-[#1d1d1f] tracking-tight">
               Operational Portals
