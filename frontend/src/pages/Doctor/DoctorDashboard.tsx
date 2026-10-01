@@ -14,7 +14,6 @@ import { sanitizeIndianPhone, formatIndianPhone, isValidIndianPhone } from '../.
 import { useAuth } from '../../context/AuthContext';
 import { DashboardLayout, DashboardNavItem } from '../../components/layout/DashboardLayout';
 import { AppleButton } from '../../components/ui/AppleButton';
-import { UtilityCard } from '../../components/ui/UtilityCard';
 import { CabinStatusControl } from '../../components/ui/DoctorCabinPresence';
 import {
   Stethoscope,
