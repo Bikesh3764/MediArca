@@ -210,12 +210,12 @@ export const Home: React.FC = () => {
     <div className="flex flex-col min-h-screen bg-[#f5f5f7]">
       {/* 1. Hero Section - Search-Driven Apple Aesthetic with Modern Hospital Campus Background */}
       <section className="relative overflow-hidden border-b border-[#e5e5ea] py-20 sm:py-28 md:py-32 lg:py-36 px-4 sm:px-6 min-h-[500px] sm:min-h-[560px] flex items-center justify-center">
-        {/* Modern Hospital Campus Background - 100% Crystal Clear & Vivid (Zero Fog / Zero Haze) */}
+        {/* Modern MediArca Hospital Reception Background - 100% Crystal Clear & Vivid */}
         <div className="absolute inset-0 pointer-events-none select-none overflow-hidden">
           <img
             src={healthcareHeroBg}
-            alt="Modern Hospital Campus Entrance"
-            className="w-full h-full object-cover object-[center_35%]"
+            alt="Modern MediArca Hospital Reception"
+            className="w-full h-full object-cover object-center"
           />
         </div>
 
