@@ -747,18 +747,22 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
                         {(doctor.user?.fullName ? doctor.user.fullName.replace(/^Dr\.\s*/i, '').trim()[0] : null) || 'D'}
                       </div>
 
+                      {/* Subtle bottom gradient scrim so badges always pop with high contrast */}
+                      <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/50 via-black/20 to-transparent pointer-events-none" />
+
                       {/* Floating Specialty Badge on Bottom Left */}
-                      <div className="absolute bottom-2.5 left-2.5 z-10">
-                        <span className="backdrop-blur-md bg-white/95 text-[#1d1d1f] text-[11px] font-semibold px-2.5 py-1 rounded-full shadow-xs border border-white/80">
-                          {doctor.specialty}
+                      <div className="absolute bottom-3 left-3 z-10">
+                        <span className="backdrop-blur-xl bg-white/95 text-[#1d1d1f] text-[11px] font-semibold px-3 py-1.5 rounded-full shadow-[0_2px_10px_rgba(0,0,0,0.18)] border border-white/80 flex items-center gap-1.5 tracking-tight">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#0088e8] shrink-0" />
+                          <span>{doctor.specialty}</span>
                         </span>
                       </div>
 
                       {/* Floating Clinic / City Badge on Bottom Right */}
                       {clinicLocationLabel && (
-                        <div className="absolute bottom-2.5 right-2.5 z-10" title={allCitiesTooltip}>
-                          <span className="backdrop-blur-md bg-white/95 text-[#1d1d1f] text-[11px] font-semibold px-2.5 py-1 rounded-full shadow-xs border border-white/80 flex items-center gap-1 cursor-default">
-                            <MapPin className="w-2.5 h-2.5 text-[#0088e8]" />
+                        <div className="absolute bottom-3 right-3 z-10" title={allCitiesTooltip}>
+                          <span className="backdrop-blur-xl bg-white/95 text-[#1d1d1f] text-[11px] font-semibold px-3 py-1.5 rounded-full shadow-[0_2px_10px_rgba(0,0,0,0.18)] border border-white/80 flex items-center gap-1.5 tracking-tight cursor-default">
+                            <MapPin className="w-3 h-3 text-[#0088e8] stroke-[2.2] shrink-0" />
                             <span>{clinicLocationLabel}</span>
                           </span>
                         </div>
@@ -769,77 +773,92 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
                     <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between">
                       <div>
                         {/* Doctor Name, Qualifications & Experience */}
-                        <div className="flex items-center gap-1.5 min-w-0">
-                          <h3
-                            onClick={() => navigate(getDoctorDetailPath(doctor.id))}
-                            className="text-base sm:text-[17px] font-bold text-[#1d1d1f] hover:text-[#0088e8] cursor-pointer tracking-tight transition-colors truncate"
-                            title={doctor.user?.fullName || 'Doctor'}
-                          >
-                            {doctor.user?.fullName || 'Doctor'}
-                          </h3>
-                          <CheckCircle2 className="w-4 h-4 text-[#0088e8] shrink-0" />
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <h3
+                              onClick={() => navigate(getDoctorDetailPath(doctor.id))}
+                              className="text-base sm:text-[17px] font-bold text-[#1d1d1f] hover:text-[#0088e8] cursor-pointer tracking-tight transition-colors truncate"
+                              title={doctor.user?.fullName || 'Doctor'}
+                            >
+                              {doctor.user?.fullName || 'Doctor'}
+                            </h3>
+                            <CheckCircle2 className="w-4 h-4 text-[#0088e8] shrink-0" />
+                          </div>
+
+                          <div className="mt-1 flex items-center gap-2 text-xs text-[#86868b] truncate font-medium">
+                            <span className="text-[#0088e8] font-semibold">{doctor.experienceYears} yrs exp</span>
+                            {cleanDegrees && (
+                              <>
+                                <span className="text-[#d1d1d6]">•</span>
+                                <span className="text-[#636366] truncate font-medium" title={cleanDegrees}>
+                                  {cleanDegrees}
+                                </span>
+                              </>
+                            )}
+                          </div>
                         </div>
 
-                        <div className="mt-1 flex items-center gap-1.5 text-xs text-[#86868b] truncate">
-                          <span className="font-semibold text-[#48484a]">{doctor.experienceYears} yrs exp</span>
-                          {cleanDegrees && (
-                            <>
-                              <span className="text-[#d1d1d6]">•</span>
-                              <span className="truncate" title={cleanDegrees}>
-                                {cleanDegrees}
-                              </span>
-                            </>
-                          )}
-                        </div>
-
-                        {/* Clinical Venue & Shifts Details */}
-                        <div className="mt-3.5 pt-3 border-t border-[#f5f5f7] space-y-2 text-xs">
+                        {/* Clinical Venue & Shifts Details in rounded panel */}
+                        <div className="mt-3.5 p-3 rounded-2xl bg-[#f5f5f7]/80 border border-[#e5e5ea]/60 space-y-2 text-xs">
                           {/* Primary Clinic */}
-                          <div className="flex items-center gap-2 text-[#1d1d1f] min-w-0">
-                            <Building2 className="w-3.5 h-3.5 text-[#86868b] shrink-0" />
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="w-6 h-6 rounded-lg bg-white shadow-2xs border border-[#e5e5ea]/50 flex items-center justify-center shrink-0 text-[#0088e8]">
+                              <Building2 className="w-3.5 h-3.5" />
+                            </div>
                             {hasClinics && primaryClinic ? (
-                              <span
-                                className="font-medium truncate"
-                                title={`${primaryClinic.clinicName}${primaryClinic.city ? ` • ${primaryClinic.city}` : ''}`}
-                              >
-                                {primaryClinic.clinicName}
+                              <div className="min-w-0 flex-1 flex items-center gap-1.5 truncate">
+                                <span
+                                  className="font-semibold text-[#1d1d1f] truncate"
+                                  title={`${primaryClinic.clinicName}${primaryClinic.city ? ` • ${primaryClinic.city}` : ''}`}
+                                >
+                                  {primaryClinic.clinicName}
+                                </span>
                                 {(doctor.clinics?.length ?? 0) > 1 && (
-                                  <span className="text-[#0088e8] font-normal ml-1">
-                                    (+{(doctor.clinics?.length ?? 0) - 1} clinics)
+                                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-[#0088e8]/10 text-[#0088e8] shrink-0">
+                                    +{(doctor.clinics?.length ?? 0) - 1} clinics
                                   </span>
                                 )}
-                              </span>
+                              </div>
                             ) : (
-                              <span className="text-[#86868b]">Direct Practice</span>
+                              <span className="text-xs font-medium text-[#86868b]">Direct Practice</span>
                             )}
                           </div>
 
                           {/* Practice Hours / Shift */}
-                          <div className="flex items-center gap-2 text-[#86868b] min-w-0">
-                            <Clock className="w-3.5 h-3.5 text-[#86868b] shrink-0" />
-                            <span className="truncate">
-                              {slots.length > 0
-                                ? `${format12Hour(slots[0].startTime)} – ${format12Hour(slots[0].endTime)}`
-                                : doctor.checkingStartTime
-                                ? `${format12Hour(doctor.checkingStartTime)} – ${format12Hour(doctor.checkingEndTime)}`
-                                : 'Outpatient Shift'}
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="w-6 h-6 rounded-lg bg-white shadow-2xs border border-[#e5e5ea]/50 flex items-center justify-center shrink-0 text-[#86868b]">
+                              <Clock className="w-3.5 h-3.5" />
+                            </div>
+                            <div className="min-w-0 flex-1 flex items-center gap-1.5 truncate text-[#48484a] font-medium">
+                              <span className="truncate">
+                                {slots.length > 0
+                                  ? `${format12Hour(slots[0].startTime)} – ${format12Hour(slots[0].endTime)}`
+                                  : doctor.checkingStartTime
+                                  ? `${format12Hour(doctor.checkingStartTime)} – ${format12Hour(doctor.checkingEndTime)}`
+                                  : 'Outpatient Shift'}
+                              </span>
                               {slots.length > 1 && (
-                                <span className="text-[#86868b] ml-1">
-                                  (+{slots.length - 1} shifts)
+                                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-[#e5e5ea] text-[#636366] shrink-0">
+                                  +{slots.length - 1} shifts
                                 </span>
                               )}
-                            </span>
+                            </div>
                           </div>
                         </div>
                       </div>
 
                       {/* Footer: Fee & Booking CTA */}
-                      <div className="mt-4 pt-3 border-t border-[#f5f5f7] flex items-center justify-between gap-3">
+                      <div className="mt-4 pt-3.5 border-t border-[#f0f0f2] flex items-center justify-between gap-3">
                         <div>
-                          <span className="text-base font-bold text-[#1d1d1f]">
-                            ₹{doctor.consultationFee.toFixed(0)}
+                          <span className="block text-[10px] font-bold uppercase tracking-wider text-[#86868b]">
+                            Consultation Fee
                           </span>
-                          <span className="text-xs text-[#86868b] ml-1">/ visit</span>
+                          <div className="flex items-baseline gap-1 mt-0.5">
+                            <span className="text-lg sm:text-xl font-extrabold text-[#1d1d1f] tracking-tight">
+                              ₹{doctor.consultationFee.toFixed(0)}
+                            </span>
+                            <span className="text-xs text-[#86868b] font-normal">/ visit</span>
+                          </div>
                         </div>
 
                         <div>
@@ -847,16 +866,16 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
                             <button
                               type="button"
                               onClick={() => navigate(getBookPath(doctor.id))}
-                              className="h-9 px-4 rounded-full bg-[#0088e8] hover:bg-[#0077cc] text-white text-xs font-semibold flex items-center gap-1 transition-all active:scale-[0.98] shadow-xs cursor-pointer"
+                              className="group/btn h-10 px-5 rounded-full bg-gradient-to-r from-[#0088e8] to-[#0077cc] hover:from-[#0077cc] hover:to-[#0066b3] text-white text-xs font-semibold flex items-center gap-1.5 transition-all shadow-[0_2px_8px_rgba(0,136,232,0.25)] hover:shadow-[0_4px_16px_rgba(0,136,232,0.35)] active:scale-[0.98] cursor-pointer"
                             >
                               <span>Book Token</span>
-                              <ChevronRight className="w-3.5 h-3.5" />
+                              <ChevronRight className="w-3.5 h-3.5 stroke-[2.5] transition-transform duration-200 group-hover/btn:translate-x-0.5" />
                             </button>
                           ) : (
                             <button
                               type="button"
                               disabled
-                              className="h-9 px-4 rounded-full bg-[#f5f5f7] text-[#86868b] text-xs font-medium border border-[#e5e5ea] cursor-not-allowed"
+                              className="h-10 px-4 rounded-full bg-[#f5f5f7] text-[#86868b] text-xs font-medium border border-[#e5e5ea] cursor-not-allowed"
                             >
                               Unavailable
                             </button>
