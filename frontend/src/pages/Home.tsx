@@ -29,6 +29,7 @@ import {
   X,
   AlertCircle,
   CheckCircle2,
+  SlidersHorizontal,
 } from 'lucide-react';
 
 export const Home: React.FC = () => {
@@ -45,6 +46,7 @@ export const Home: React.FC = () => {
   const [sortBy, setSortBy] = useState<'rating' | 'experience' | 'fee_low' | 'fee_high'>('rating');
   const [minExperience, setMinExperience] = useState<number>(0);
   const [availabilityFilter, setAvailabilityFilter] = useState<'ALL' | 'ACTIVE_NOW'>('ALL');
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   useEffect(() => {
     const fetchDoctors = async () => {
@@ -154,6 +156,24 @@ export const Home: React.FC = () => {
     setAvailabilityFilter('ALL');
     setSortBy('rating');
   };
+
+  const hasActiveFilters = Boolean(
+    selectedSpecialty !== 'All' ||
+    searchQuery.trim() ||
+    locationQuery.trim() ||
+    minExperience > 0 ||
+    sortBy !== 'rating'
+  );
+
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (selectedSpecialty !== 'All') count++;
+    if (searchQuery.trim()) count++;
+    if (locationQuery.trim()) count++;
+    if (minExperience > 0) count++;
+    if (sortBy !== 'rating') count++;
+    return count;
+  }, [selectedSpecialty, searchQuery, locationQuery, minExperience, sortBy]);
 
   const handleHeroSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -275,138 +295,339 @@ export const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* Explore Doctors Catalog - Refined Proportional Apple Grid */}
-      <section id="doctors-catalog" className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-10 flex-1 w-full">
-        {/* Section Header & Inline Refine Toolbar */}
-        <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-5 sm:p-6 mb-8 shadow-xs">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-[#f0f0f0]">
-            <div>
-              <h2 className="text-xl sm:text-2xl font-semibold text-[#1d1d1f] tracking-tight">
-                {selectedSpecialty === 'All' ? 'Verified Specialists' : `${selectedSpecialty} Specialists`}
-              </h2>
-              <p className="text-xs text-[#86868b] mt-0.5">
-                Showing {filteredDoctors.length} available medical practitioner{filteredDoctors.length === 1 ? '' : 's'}
-              </p>
-            </div>
+      {/* Explore Doctors Catalog - Responsive Layout with Left Filter Sidebar on Desktop */}
+      <section id="doctors-catalog" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 flex-1 w-full">
+        {/* Mobile Filter Toggle Drawer */}
+        <div className="lg:hidden mb-6">
+          <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-3.5 shadow-xs">
+            <div className="flex items-center gap-2">
+              <div className="flex-1 flex items-center gap-2 px-3 py-2 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] focus-within:border-[#0088e8] focus-within:bg-white transition-all">
+                <Search className="w-4 h-4 text-[#86868b] flex-shrink-0" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Quick search doctor, clinic..."
+                  className="w-full bg-transparent text-xs text-[#1d1d1f] placeholder-[#86868b] focus:outline-none"
+                />
+                {searchQuery && (
+                  <button type="button" onClick={() => setSearchQuery('')} className="text-[#86868b] hover:text-[#1d1d1f]">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
 
-            {/* Quick Filter & Sort Pills */}
-            <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
-              {/* Integrated Searchable Specialty Filter Dropdown */}
-              <SearchableSpecialtySelect
-                value={selectedSpecialty}
-                onChange={setSelectedSpecialty}
-                variant="pill"
-                includeAll={true}
-                counts={specialtyCounts}
-              />
-
-              <select
-                value={minExperience}
-                onChange={(e) => setMinExperience(Number(e.target.value))}
-                className="h-8 px-3 rounded-full border border-[#e5e5ea] bg-[#f5f5f7] text-xs text-[#48484a] font-medium focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20 cursor-pointer hover:bg-[#ebebee] transition-all"
+              <button
+                type="button"
+                onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
+                className={`px-3.5 py-2 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+                  hasActiveFilters || mobileFiltersOpen
+                    ? 'bg-[#0088e8] text-white border-[#0088e8] shadow-xs'
+                    : 'bg-[#f5f5f7] text-[#1d1d1f] border-[#e5e5ea] hover:bg-[#ebebee]'
+                }`}
               >
-                <option value={0}>All Experience</option>
-                <option value={5}>5+ Years</option>
-                <option value={10}>10+ Years</option>
-                <option value={15}>15+ Years</option>
-              </select>
-
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as any)}
-                className="h-8 px-3 rounded-full border border-[#e5e5ea] bg-[#f5f5f7] text-xs text-[#48484a] font-medium focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20 cursor-pointer hover:bg-[#ebebee] transition-all"
-              >
-                <option value="rating">Recommended</option>
-                <option value="experience">Most Experienced</option>
-                <option value="fee_low">Fee: Low to High</option>
-                <option value="fee_high">Fee: High to Low</option>
-              </select>
-
-              {(selectedSpecialty !== 'All' || searchQuery || locationQuery || minExperience > 0 || availabilityFilter !== 'ALL' || sortBy !== 'rating') && (
-                <button
-                  type="button"
-                  onClick={resetFilters}
-                  className="px-3 py-1.5 rounded-full text-xs font-medium text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-all flex items-center gap-1 cursor-pointer active:scale-[0.98]"
-                  title="Reset all filters"
-                >
-                  <RotateCcw className="w-3 h-3" />
-                  <span>Reset</span>
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Quick Search & Location Inputs */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4">
-            <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] focus-within:border-[#0088e8] focus-within:ring-2 focus-within:ring-[#0088e8]/20 focus-within:bg-white transition-all">
-              <Search className="w-4 h-4 text-[#86868b] flex-shrink-0" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Filter by doctor name, condition, or clinic..."
-                className="w-full bg-transparent text-xs text-[#1d1d1f] placeholder-[#86868b] focus:outline-none"
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery('')}
-                  className="text-[#86868b] hover:text-[#1d1d1f] p-0.5 cursor-pointer active:scale-90"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
+                <SlidersHorizontal className="w-3.5 h-3.5" />
+                <span>Filters</span>
+                {activeFilterCount > 0 && (
+                  <span className="w-4 h-4 rounded-full bg-white text-[#0088e8] text-[10px] font-bold flex items-center justify-center">
+                    {activeFilterCount}
+                  </span>
+                )}
+              </button>
             </div>
 
-            <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] focus-within:border-[#0088e8] focus-within:ring-2 focus-within:ring-[#0088e8]/20 focus-within:bg-white transition-all">
-              <MapPin className="w-4 h-4 text-[#86868b] flex-shrink-0" />
-              <input
-                type="text"
-                value={locationQuery}
-                onChange={(e) => setLocationQuery(e.target.value)}
-                placeholder="Filter by city, state, or address..."
-                className="w-full bg-transparent text-xs text-[#1d1d1f] placeholder-[#86868b] focus:outline-none"
-              />
-              {locationQuery && (
-                <button
-                  type="button"
-                  onClick={() => setLocationQuery('')}
-                  className="text-[#86868b] hover:text-[#1d1d1f] p-0.5 cursor-pointer active:scale-90"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
+            {/* Mobile Expandable Filter Options */}
+            {mobileFiltersOpen && (
+              <div className="pt-4 mt-3 border-t border-[#f0f0f2] space-y-4">
+                {/* Location Input */}
+                <div>
+                  <label className="block text-xs font-semibold text-[#48484a] mb-1">
+                    City or Location
+                  </label>
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] focus-within:border-[#0088e8] focus-within:bg-white transition-all">
+                    <MapPin className="w-4 h-4 text-[#86868b] flex-shrink-0" />
+                    <input
+                      type="text"
+                      value={locationQuery}
+                      onChange={(e) => setLocationQuery(e.target.value)}
+                      placeholder="Filter by city or address..."
+                      className="w-full bg-transparent text-xs text-[#1d1d1f] placeholder-[#86868b] focus:outline-none"
+                    />
+                    {locationQuery && (
+                      <button type="button" onClick={() => setLocationQuery('')} className="text-[#86868b] hover:text-[#1d1d1f]">
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Specialty Select */}
+                <div>
+                  <label className="block text-xs font-semibold text-[#48484a] mb-1">
+                    Medical Specialty
+                  </label>
+                  <SearchableSpecialtySelect
+                    value={selectedSpecialty}
+                    onChange={setSelectedSpecialty}
+                    variant="form"
+                    includeAll={true}
+                    counts={specialtyCounts}
+                  />
+                </div>
+
+                {/* Experience & Sort Grid */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-[#48484a] mb-1">
+                      Min Experience
+                    </label>
+                    <select
+                      value={minExperience}
+                      onChange={(e) => setMinExperience(Number(e.target.value))}
+                      className="w-full py-2 px-3 rounded-xl border border-[#e5e5ea] bg-[#f5f5f7] text-xs font-medium text-[#1d1d1f] focus:outline-none focus:border-[#0088e8] cursor-pointer"
+                    >
+                      <option value={0}>All Experience</option>
+                      <option value={5}>5+ Years</option>
+                      <option value={10}>10+ Years</option>
+                      <option value={15}>15+ Years</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-[#48484a] mb-1">
+                      Sort By
+                    </label>
+                    <select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value as any)}
+                      className="w-full py-2 px-3 rounded-xl border border-[#e5e5ea] bg-[#f5f5f7] text-xs font-medium text-[#1d1d1f] focus:outline-none focus:border-[#0088e8] cursor-pointer"
+                    >
+                      <option value="rating">Recommended</option>
+                      <option value="experience">Most Experienced</option>
+                      <option value="fee_low">Fee: Low to High</option>
+                      <option value="fee_high">Fee: High to Low</option>
+                    </select>
+                  </div>
+                </div>
+
+                {hasActiveFilters && (
+                  <div className="pt-2">
+                    <button
+                      type="button"
+                      onClick={resetFilters}
+                      className="w-full py-2 rounded-xl text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>Reset All Filters</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Doctor Cards Grid */}
-        {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6 w-full">
-            {[1, 2, 3, 4].map((i) => (
-              <div
-                key={i}
-                className="h-72 rounded-[28px] bg-white border border-[#e5e5ea] animate-pulse p-7"
-              ></div>
-            ))}
-          </div>
-        ) : filteredDoctors.length === 0 ? (
-          <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-12 text-center shadow-xs max-w-lg mx-auto">
-            <div className="w-12 h-12 rounded-full bg-[#f5f5f7] text-[#86868b] flex items-center justify-center mx-auto mb-4">
-              <Search className="w-6 h-6 text-[#86868b]" />
+        {/* Main Desktop Layout: Left Sidebar + Right Results Grid */}
+        <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start w-full">
+          {/* LEFT SIDEBAR: Sticky Filters on Desktop */}
+          <aside className="hidden lg:block w-72 xl:w-80 flex-shrink-0 lg:sticky lg:top-24 space-y-4">
+            <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-5 sm:p-6 shadow-xs space-y-5">
+              {/* Header */}
+              <div className="flex items-center justify-between pb-4 border-b border-[#f0f0f2]">
+                <div className="flex items-center gap-2">
+                  <SlidersHorizontal className="w-4 h-4 text-[#0088e8]" />
+                  <h3 className="text-sm font-semibold text-[#1d1d1f] tracking-tight">Filters & Refine</h3>
+                </div>
+                {hasActiveFilters && (
+                  <button
+                    type="button"
+                    onClick={resetFilters}
+                    className="text-xs font-semibold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 px-2.5 py-1 rounded-full border border-rose-200/70 transition-all flex items-center gap-1 cursor-pointer active:scale-95"
+                    title="Reset all filters"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    <span>Reset</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Search Doctor or Keyword */}
+              <div>
+                <label className="block text-xs font-semibold text-[#48484a] mb-1.5">
+                  Doctor or Keyword
+                </label>
+                <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] focus-within:border-[#0088e8] focus-within:ring-2 focus-within:ring-[#0088e8]/20 focus-within:bg-white transition-all">
+                  <Search className="w-4 h-4 text-[#86868b] flex-shrink-0" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search doctor or clinic..."
+                    className="w-full bg-transparent text-xs text-[#1d1d1f] placeholder-[#86868b] focus:outline-none"
+                  />
+                  {searchQuery && (
+                    <button type="button" onClick={() => setSearchQuery('')} className="text-[#86868b] hover:text-[#1d1d1f]">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Location Input */}
+              <div>
+                <label className="block text-xs font-semibold text-[#48484a] mb-1.5">
+                  City or Location
+                </label>
+                <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] focus-within:border-[#0088e8] focus-within:ring-2 focus-within:ring-[#0088e8]/20 focus-within:bg-white transition-all">
+                  <MapPin className="w-4 h-4 text-[#86868b] flex-shrink-0" />
+                  <input
+                    type="text"
+                    value={locationQuery}
+                    onChange={(e) => setLocationQuery(e.target.value)}
+                    placeholder="Filter by city or address..."
+                    className="w-full bg-transparent text-xs text-[#1d1d1f] placeholder-[#86868b] focus:outline-none"
+                  />
+                  {locationQuery && (
+                    <button type="button" onClick={() => setLocationQuery('')} className="text-[#86868b] hover:text-[#1d1d1f]">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Specialty Select */}
+              <div>
+                <label className="block text-xs font-semibold text-[#48484a] mb-1.5">
+                  Medical Specialty
+                </label>
+                <SearchableSpecialtySelect
+                  value={selectedSpecialty}
+                  onChange={setSelectedSpecialty}
+                  variant="form"
+                  includeAll={true}
+                  counts={specialtyCounts}
+                  placeholder="Select specialty..."
+                />
+              </div>
+
+              {/* Experience Buttons */}
+              <div>
+                <label className="block text-xs font-semibold text-[#48484a] mb-1.5">
+                  Experience
+                </label>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {[
+                    { label: 'All', value: 0 },
+                    { label: '5+ Yrs', value: 5 },
+                    { label: '10+ Yrs', value: 10 },
+                    { label: '15+ Yrs', value: 15 },
+                  ].map((item) => (
+                    <button
+                      key={item.value}
+                      type="button"
+                      onClick={() => setMinExperience(item.value)}
+                      className={`py-1.5 px-2 rounded-xl text-xs font-medium border text-center transition-all cursor-pointer ${
+                        minExperience === item.value
+                          ? 'bg-[#0088e8] text-white border-[#0088e8] shadow-xs'
+                          : 'bg-[#f5f5f7] text-[#48484a] border-[#e5e5ea] hover:bg-[#ebebee]'
+                      }`}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Sort By */}
+              <div>
+                <label className="block text-xs font-semibold text-[#48484a] mb-1.5">
+                  Sort By
+                </label>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as any)}
+                  className="w-full py-2 px-3 rounded-xl border border-[#e5e5ea] bg-[#f5f5f7] text-xs font-medium text-[#1d1d1f] focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20 cursor-pointer"
+                >
+                  <option value="rating">Recommended</option>
+                  <option value="experience">Most Experienced</option>
+                  <option value="fee_low">Fee: Low to High</option>
+                  <option value="fee_high">Fee: High to Low</option>
+                </select>
+              </div>
             </div>
-            <h3 className="text-base font-semibold text-[#1d1d1f] mb-1">
-              No specialists matched your criteria
-            </h3>
-            <p className="text-xs text-[#86868b] max-w-sm mx-auto mb-5">
-              Try clearing your filters or searching with different keywords to explore available doctors.
-            </p>
-            <AppleButton variant="secondary" size="sm" onClick={resetFilters}>
-              Clear All Filters
-            </AppleButton>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6 w-full">
+          </aside>
+
+          {/* RIGHT MAIN AREA: Results Header + Doctor Cards Grid */}
+          <div className="flex-1 w-full min-w-0">
+            {/* Results Status Header */}
+            <div className="bg-white rounded-[20px] sm:rounded-[24px] border border-[#e5e5ea] p-4 sm:p-5 mb-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h2 className="text-lg sm:text-xl font-semibold text-[#1d1d1f] tracking-tight">
+                  {selectedSpecialty === 'All' ? 'Verified Specialists' : `${selectedSpecialty} Specialists`}
+                </h2>
+                <p className="text-xs text-[#86868b] mt-0.5">
+                  Showing {filteredDoctors.length} available medical practitioner{filteredDoctors.length === 1 ? '' : 's'}
+                </p>
+              </div>
+
+              {/* Active Filter Chips */}
+              {hasActiveFilters && (
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {selectedSpecialty !== 'All' && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#0088e8]/10 text-[#0088e8] text-xs font-medium border border-[#0088e8]/20">
+                      {selectedSpecialty}
+                      <button type="button" onClick={() => setSelectedSpecialty('All')} className="hover:opacity-75 cursor-pointer">
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  )}
+                  {minExperience > 0 && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#0088e8]/10 text-[#0088e8] text-xs font-medium border border-[#0088e8]/20">
+                      {minExperience}+ Yrs
+                      <button type="button" onClick={() => setMinExperience(0)} className="hover:opacity-75 cursor-pointer">
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  )}
+                  {locationQuery && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#0088e8]/10 text-[#0088e8] text-xs font-medium border border-[#0088e8]/20">
+                      {locationQuery}
+                      <button type="button" onClick={() => setLocationQuery('')} className="hover:opacity-75 cursor-pointer">
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Doctor Cards Grid */}
+            {loading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-5 sm:gap-6 w-full">
+                {[1, 2, 3, 4].map((i) => (
+                  <div
+                    key={i}
+                    className="h-72 rounded-[28px] bg-white border border-[#e5e5ea] animate-pulse p-7"
+                  ></div>
+                ))}
+              </div>
+            ) : filteredDoctors.length === 0 ? (
+              <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-12 text-center shadow-xs max-w-lg mx-auto">
+                <div className="w-12 h-12 rounded-full bg-[#f5f5f7] text-[#86868b] flex items-center justify-center mx-auto mb-4">
+                  <Search className="w-6 h-6 text-[#86868b]" />
+                </div>
+                <h3 className="text-base font-semibold text-[#1d1d1f] mb-1">
+                  No specialists matched your criteria
+                </h3>
+                <p className="text-xs text-[#86868b] max-w-sm mx-auto mb-5">
+                  Try clearing your filters or searching with different keywords to explore available doctors.
+                </p>
+                <AppleButton variant="secondary" size="sm" onClick={resetFilters}>
+                  Clear All Filters
+                </AppleButton>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-5 sm:gap-6 w-full">
             {filteredDoctors.map((doctor) => {
               const slots = parseDoctorSlots(doctor);
               const getHomeDoctorDetailPath = (docId: string) =>
@@ -562,6 +783,8 @@ export const Home: React.FC = () => {
             })}
           </div>
         )}
+          </div>
+        </div>
       </section>
 
       {/* 4. Operational Portals */}
