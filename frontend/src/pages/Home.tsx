@@ -15,7 +15,7 @@ import { useAuth } from '../context/AuthContext';
 import { AppleButton } from '../components/ui/AppleButton';
 import { SearchableSpecialtySelect } from '../components/ui/SearchableSpecialtySelect';
 import healthcareHeroBg from '../assets/healthcare-hero-bg.png';
-import { INDIAN_STATES } from '../utils/indiaStates';
+import { INDIAN_STATES, getCitiesForState } from '../utils/indiaStates';
 import {
   Search,
   MapPin,
@@ -50,6 +50,24 @@ export const Home: React.FC = () => {
   const [minExperience, setMinExperience] = useState<number>(0);
   const [availabilityFilter, setAvailabilityFilter] = useState<'ALL' | 'ACTIVE_NOW'>('ALL');
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+
+  const availableCities = useMemo(() => {
+    if (selectedState !== 'All') {
+      return getCitiesForState(selectedState);
+    }
+    const citiesFromDocs = new Set<string>();
+    doctors.forEach((d) => {
+      d.clinics?.forEach((c) => {
+        if (c.clinic?.city) citiesFromDocs.add(c.clinic.city.trim());
+      });
+    });
+    return Array.from(citiesFromDocs).sort((a, b) => a.localeCompare(b));
+  }, [selectedState, doctors]);
+
+  const handleStateChange = (newState: string) => {
+    setSelectedState(newState);
+    setSelectedCity('All');
+  };
 
 
   useEffect(() => {
@@ -386,13 +404,34 @@ export const Home: React.FC = () => {
                   </label>
                   <select
                     value={selectedState}
-                    onChange={(e) => setSelectedState(e.target.value)}
+                    onChange={(e) => handleStateChange(e.target.value)}
                     className="w-full py-2 px-3 rounded-xl border border-[#e5e5ea] bg-[#f5f5f7] text-xs font-medium text-[#1d1d1f] focus:outline-none focus:border-[#0088e8] cursor-pointer"
                   >
                     <option value="All">All States</option>
                     {INDIAN_STATES.map((st) => (
                       <option key={st} value={st}>
                         {st}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* City Filter */}
+                <div>
+                  <label className="block text-xs font-semibold text-[#48484a] mb-1">
+                    City
+                  </label>
+                  <select
+                    value={selectedCity}
+                    onChange={(e) => setSelectedCity(e.target.value)}
+                    className="w-full py-2 px-3 rounded-xl border border-[#e5e5ea] bg-[#f5f5f7] text-xs font-medium text-[#1d1d1f] focus:outline-none focus:border-[#0088e8] cursor-pointer"
+                  >
+                    <option value="All">
+                      {selectedState !== 'All' ? `All Cities in ${selectedState}` : 'All Cities'}
+                    </option>
+                    {availableCities.map((ct) => (
+                      <option key={ct} value={ct}>
+                        {ct}
                       </option>
                     ))}
                   </select>
@@ -589,13 +628,34 @@ export const Home: React.FC = () => {
                 </label>
                 <select
                   value={selectedState}
-                  onChange={(e) => setSelectedState(e.target.value)}
+                  onChange={(e) => handleStateChange(e.target.value)}
                   className="w-full py-2 px-3 rounded-xl border border-[#e5e5ea] bg-[#f5f5f7]/80 text-xs font-semibold text-[#1d1d1f] focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20 cursor-pointer shadow-xs"
                 >
                   <option value="All">All States</option>
                   {INDIAN_STATES.map((st) => (
                     <option key={st} value={st}>
                       {st}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* City Filter */}
+              <div>
+                <label className="block text-xs font-semibold text-[#48484a] mb-1.5">
+                  City
+                </label>
+                <select
+                  value={selectedCity}
+                  onChange={(e) => setSelectedCity(e.target.value)}
+                  className="w-full py-2 px-3 rounded-xl border border-[#e5e5ea] bg-[#f5f5f7]/80 text-xs font-semibold text-[#1d1d1f] focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20 cursor-pointer shadow-xs"
+                >
+                  <option value="All">
+                    {selectedState !== 'All' ? `All Cities in ${selectedState}` : 'All Cities'}
+                  </option>
+                  {availableCities.map((ct) => (
+                    <option key={ct} value={ct}>
+                      {ct}
                     </option>
                   ))}
                 </select>
@@ -743,7 +803,15 @@ export const Home: React.FC = () => {
                     {selectedState !== 'All' && (
                       <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#0088e8]/10 text-[#0088e8] text-xs font-medium border border-[#0088e8]/20">
                         {selectedState}
-                        <button type="button" onClick={() => setSelectedState('All')} className="hover:opacity-75 cursor-pointer">
+                        <button type="button" onClick={() => handleStateChange('All')} className="hover:opacity-75 cursor-pointer">
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    )}
+                    {selectedCity !== 'All' && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#0088e8]/10 text-[#0088e8] text-xs font-medium border border-[#0088e8]/20">
+                        {selectedCity}
+                        <button type="button" onClick={() => setSelectedCity('All')} className="hover:opacity-75 cursor-pointer">
                           <X className="w-3 h-3" />
                         </button>
                       </span>

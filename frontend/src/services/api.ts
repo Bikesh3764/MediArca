@@ -1009,6 +1009,7 @@ export const api = {
     clinicOnly?: boolean;
     clinicId?: string;
     state?: string;
+    city?: string;
   }): Promise<Doctor[]> {
     try {
       const query = new URLSearchParams();
@@ -1020,6 +1021,7 @@ export const api = {
       if (params?.clinicOnly !== undefined) query.append('clinicOnly', String(params.clinicOnly));
       if (params?.clinicId) query.append('clinicId', params.clinicId);
       if (params?.state && params.state !== 'All') query.append('state', params.state);
+      if (params?.city && params.city !== 'All') query.append('city', params.city);
 
       const res = await fetch(`${API_BASE_URL}/doctors?${query.toString()}`);
       return await handleResponse(res);
@@ -1035,6 +1037,13 @@ export const api = {
           list = list.filter(d =>
             d.clinics?.some(c => c.clinic.state?.toLowerCase() === st) ||
             d.clinicAddress?.toLowerCase().includes(st)
+          );
+        }
+        if (params?.city && params.city !== 'All') {
+          const ct = params.city.toLowerCase();
+          list = list.filter(d =>
+            d.clinics?.some(c => c.clinic.city?.toLowerCase() === ct) ||
+            d.clinicAddress?.toLowerCase().includes(ct)
           );
         }
         if (params?.search) {

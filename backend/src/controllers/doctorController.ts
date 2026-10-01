@@ -33,7 +33,7 @@ export const formatDoctorClinics = (doc: any) => {
 
 export const getDoctors = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { search, specialty, minExp, maxFee, sortBy, clinicOnly, clinicId, state } = req.query;
+    const { search, specialty, minExp, maxFee, sortBy, clinicOnly, clinicId, state, city } = req.query;
 
     const whereClause: any = {
       isVerified: true,
@@ -61,6 +61,22 @@ export const getDoctors = async (req: Request, res: Response): Promise<void> => 
             isVerified: true,
             verificationStatus: 'VERIFIED',
             state: { equals: stateTrimmed, mode: 'insensitive' },
+          },
+        },
+      };
+    }
+
+    if (city && typeof city === 'string' && city.trim() && city !== 'All') {
+      const cityTrimmed = city.trim();
+      whereClause.clinics = {
+        some: {
+          ...(whereClause.clinics?.some || {}),
+          status: { in: ['ACTIVE', 'ACCEPTED'] },
+          clinic: {
+            ...(whereClause.clinics?.some?.clinic || {}),
+            isVerified: true,
+            verificationStatus: 'VERIFIED',
+            city: { equals: cityTrimmed, mode: 'insensitive' },
           },
         },
       };

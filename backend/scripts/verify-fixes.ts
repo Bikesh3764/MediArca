@@ -4382,6 +4382,79 @@ function runTests() {
   assert(matchesState(mockDoctorOtherState, 'Odisha') === false, 'Doctor with Maharashtra clinic does not match Odisha filter');
   assert(matchesState(mockDoctorWithClinic, 'All') === true, 'Doctor matches All states filter');
 
+  // --- Test 148: Comprehensive Indian Cities By State ---
+  console.log('\n--- Test 148: Comprehensive Indian Cities By State ---');
+  const {
+    INDIAN_CITIES_BY_STATE,
+    getCitiesForState,
+    getAllIndianCities,
+    searchIndianCities,
+    isValidIndianCity,
+  } = require('../src/utils/indiaStates');
+
+  // Verify all 36 states have city entries
+  assert(Object.keys(INDIAN_CITIES_BY_STATE).length === 36, 'All 36 states and UTs have city entries');
+  for (const st of INDIAN_STATES) {
+    const cities = INDIAN_CITIES_BY_STATE[st];
+    assert(Array.isArray(cities) && cities.length > 0, `State "${st}" has non-empty cities array`);
+    const sorted = [...cities].sort((a, b) => a.localeCompare(b));
+    assert(JSON.stringify(cities) === JSON.stringify(sorted), `Cities in "${st}" are strictly sorted A-Z`);
+  }
+
+  // Verify specific states and cities
+  const odishaCities = getCitiesForState('Odisha');
+  assert(odishaCities.includes('Bhubaneswar'), 'Odisha includes Bhubaneswar');
+  assert(odishaCities.includes('Cuttack'), 'Odisha includes Cuttack');
+  assert(odishaCities.includes('Rourkela'), 'Odisha includes Rourkela');
+
+  const mhCities = getCitiesForState('Maharashtra');
+  assert(mhCities.includes('Mumbai'), 'Maharashtra includes Mumbai');
+  assert(mhCities.includes('Pune'), 'Maharashtra includes Pune');
+  assert(mhCities.includes('Nagpur'), 'Maharashtra includes Nagpur');
+
+  const delhiCities = getCitiesForState('Delhi');
+  assert(delhiCities.includes('New Delhi'), 'Delhi includes New Delhi');
+  assert(delhiCities.includes('Dwarka'), 'Delhi includes Dwarka');
+
+  // Alias lookup
+  const ncrCities = getCitiesForState('Delhi NCR');
+  assert(ncrCities.includes('New Delhi'), 'getCitiesForState("Delhi NCR") normalizes to Delhi');
+
+  const orissaCities = getCitiesForState('Orissa');
+  assert(orissaCities.includes('Bhubaneswar'), 'getCitiesForState("Orissa") normalizes to Odisha');
+
+  // Total cities
+  const allCities = getAllIndianCities();
+  assert(allCities.length > 500, `Rich national catalog: total ${allCities.length} unique cities (>500)`);
+
+  // Search cities
+  const searchedRourkela = searchIndianCities('rourk');
+  assert(searchedRourkela.includes('Rourkela'), 'searchIndianCities finds Rourkela');
+
+  const searchedPuneInMH = searchIndianCities('pune', 'Maharashtra');
+  assert(searchedPuneInMH.includes('Pune'), 'searchIndianCities finds Pune in Maharashtra');
+
+  const searchedPuneInOdisha = searchIndianCities('pune', 'Odisha');
+  assert(searchedPuneInOdisha.length === 0, 'Pune is not found in Odisha');
+
+  // Validation
+  assert(isValidIndianCity('Rourkela', 'Odisha') === true, 'Rourkela is valid city for Odisha');
+  assert(isValidIndianCity('Mumbai', 'Odisha') === false, 'Mumbai is not a city in Odisha');
+  assert(isValidIndianCity('Mumbai') === true, 'Mumbai is valid city in India');
+  assert(isValidIndianCity('London') === false, 'London is rejected as Indian city');
+
+  // Verify doctor city filter matching logic
+  const matchesCity = (doc: any, cityTarget: string) => {
+    if (cityTarget === 'All') return true;
+    const cLower = cityTarget.toLowerCase();
+    return doc.clinics?.some((c: any) => c.clinic?.city?.toLowerCase() === cLower);
+  };
+
+  assert(matchesCity(mockDoctorWithClinic, 'Rourkela') === true, 'Doctor matches Rourkela city filter');
+  assert(matchesCity(mockDoctorWithClinic, 'Mumbai') === false, 'Doctor does not match Mumbai city filter');
+  assert(matchesCity(mockDoctorOtherState, 'Mumbai') === true, 'Other doctor matches Mumbai city filter');
+  assert(matchesCity(mockDoctorWithClinic, 'All') === true, 'Doctor matches All cities filter');
+
 
   console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);

@@ -5,7 +5,7 @@ import { AppleButton } from '../../components/ui/AppleButton';
 import { BrandLogo } from '../../components/ui/BrandLogo';
 import { Building2, AlertCircle, Sparkles, MapPin, Mail, Lock } from 'lucide-react';
 import { sanitizeIndianPhone, formatIndianPhone, isValidIndianPhone } from '../../utils/phoneUtils';
-import { INDIAN_STATES } from '../../utils/indiaStates';
+import { INDIAN_STATES, getCitiesForState } from '../../utils/indiaStates';
 
 export const ClinicAuth: React.FC = () => {
   const location = useLocation();
@@ -20,9 +20,30 @@ export const ClinicAuth: React.FC = () => {
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
   const [state, setState] = useState('');
+  const [isCustomCity, setIsCustomCity] = useState(false);
+  const [customCity, setCustomCity] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
+  const stateCities = state ? getCitiesForState(state) : [];
+
+  const handleStateChange = (newState: string) => {
+    setState(newState);
+    setCity('');
+    setIsCustomCity(false);
+    setCustomCity('');
+  };
+
+  const handleCitySelect = (val: string) => {
+    if (val === '__custom__') {
+      setIsCustomCity(true);
+      setCity(customCity);
+    } else {
+      setIsCustomCity(false);
+      setCity(val);
+    }
+  };
 
   const { login, register } = useAuth();
   const navigate = useNavigate();
@@ -258,14 +279,14 @@ export const ClinicAuth: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-[#1d1d1f] mb-1">State / UT</label>
+                  <label className="block text-xs font-medium text-[#1d1d1f] mb-1">State</label>
                   <select
                     required
                     value={state}
-                    onChange={(e) => setState(e.target.value)}
+                    onChange={(e) => handleStateChange(e.target.value)}
                     className="w-full h-10 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] cursor-pointer"
                   >
-                    <option value="">Select State / UT</option>
+                    <option value="">Select State</option>
                     {INDIAN_STATES.map((st) => (
                       <option key={st} value={st}>
                         {st}
@@ -275,14 +296,47 @@ export const ClinicAuth: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-[#1d1d1f] mb-1">City</label>
-                  <input
-                    type="text"
-                    required
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                    placeholder="e.g. Rourkela"
-                    className="w-full h-10 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
-                  />
+                  {!isCustomCity ? (
+                    <select
+                      required
+                      disabled={!state}
+                      value={city}
+                      onChange={(e) => handleCitySelect(e.target.value)}
+                      className="w-full h-10 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <option value="">{state ? 'Select City' : 'Select State First'}</option>
+                      {stateCities.map((c) => (
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
+                      ))}
+                      {state && <option value="__custom__">Other City / Town (Write-in)</option>}
+                    </select>
+                  ) : (
+                    <div className="space-y-1">
+                      <input
+                        type="text"
+                        required
+                        value={customCity}
+                        onChange={(e) => {
+                          setCustomCity(e.target.value);
+                          setCity(e.target.value);
+                        }}
+                        placeholder="Type city/town name"
+                        className="w-full h-10 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsCustomCity(false);
+                          setCity('');
+                        }}
+                        className="text-[11px] text-[#0088e8] hover:underline cursor-pointer"
+                      >
+                        ← Choose from list
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
 
