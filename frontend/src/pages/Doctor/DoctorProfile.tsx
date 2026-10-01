@@ -268,8 +268,8 @@ export const DoctorProfile: React.FC = () => {
               </div>
 
               {avatarOptimization && (
-                <div className="inline-flex items-center gap-1.5 text-[11px] font-mono font-medium text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200 animate-fadeIn">
-                  <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                <div className="inline-flex items-center gap-1.5 text-[11px] font-medium text-[#0088e8] bg-[#0088e8]/8 px-2.5 py-1 rounded-full border border-[#0088e8]/20 animate-fadeIn">
+                  <Sparkles className="w-3.5 h-3.5 text-[#0088e8]" />
                   <span>{avatarOptimization}</span>
                 </div>
               )}

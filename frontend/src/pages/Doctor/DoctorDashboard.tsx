@@ -42,6 +42,7 @@ import {
   Printer,
   Copy,
   ChevronRight,
+  Phone,
 } from 'lucide-react';
 
 export const DoctorDashboard: React.FC = () => {
@@ -481,7 +482,7 @@ export const DoctorDashboard: React.FC = () => {
                     {affiliations?.receptionists.length || 0}
                   </h3>
                 </div>
-                <div className="w-11 h-11 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center">
+                <div className="w-11 h-11 rounded-2xl bg-[#0088e8]/10 text-[#0088e8] flex items-center justify-center">
                   <Users className="w-5 h-5" />
                 </div>
               </div>
@@ -670,13 +671,12 @@ export const DoctorDashboard: React.FC = () => {
                               <Building2 className="w-5 h-5" />
                             </div>
                             <div className="min-w-0">
-                              <div className="flex items-center gap-2 flex-wrap">
+                              <div className="flex items-center gap-1.5 flex-wrap">
                                 <h4 className="font-semibold text-base text-[#1d1d1f] tracking-tight truncate">
                                   {clinic.clinicName}
                                 </h4>
-                                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 inline-flex items-center gap-1">
-                                  <Check className="w-3 h-3" />
-                                  Verified
+                                <span title="Verified Clinic" className="inline-flex">
+                                  <CheckCircle2 className="w-4 h-4 text-[#0088e8] shrink-0" />
                                 </span>
                               </div>
                               <p className="text-xs text-[#86868b] flex items-center gap-1 mt-1 truncate">
@@ -784,42 +784,49 @@ export const DoctorDashboard: React.FC = () => {
                   {affiliations?.receptionists.map((rec) => (
                     <div
                       key={rec.receptionistId}
-                      className="rounded-2xl border border-[#e5e5ea] p-4.5 hover:border-[#0088e8]/40 transition-all flex items-center justify-between gap-4 bg-white shadow-sm"
+                      className="rounded-[20px] border border-[#e5e5ea] p-4.5 hover:border-[#0088e8]/30 hover:shadow-md transition-all duration-200 flex items-center justify-between gap-4 bg-white shadow-xs"
                     >
-                      <div className="flex items-center gap-3.5 min-w-0">
-                        <div className="w-10 h-10 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold flex-shrink-0">
-                          <Users className="w-5 h-5" />
+                      <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                        <div className="w-11 h-11 rounded-2xl bg-[#0088e8]/8 text-[#0088e8] border border-[#0088e8]/15 flex items-center justify-center flex-shrink-0 shadow-2xs">
+                          <Users className="w-5 h-5 text-[#0088e8]" />
                         </div>
-                        <div className="min-w-0">
+                        <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <h4 className="font-semibold text-sm text-[#1d1d1f] truncate">
+                            <h4 className="font-semibold text-sm text-[#1d1d1f] tracking-tight truncate">
                               {rec.fullName}
                             </h4>
-                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                              Active Desk
-                            </span>
                             {rec.clinicName && (
-                              <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 truncate max-w-[140px]">
-                                {rec.clinicName}
+                              <span className="text-[11px] font-medium px-2.5 py-0.5 rounded-full bg-[#f5f5f7] text-[#48484a] border border-[#e5e5ea] flex items-center gap-1.5 truncate max-w-[180px]">
+                                <Building2 className="w-3 h-3 text-[#0088e8] shrink-0" />
+                                <span className="truncate">{rec.clinicName}</span>
                               </span>
                             )}
                           </div>
-                          <p className="text-xs text-[#86868b] truncate mt-0.5">{rec.email}</p>
-                          <div className="flex items-center gap-3 text-[11px] text-[#86868b] mt-1">
-                            {rec.phone && <span>Phone: {rec.phone}</span>}
-                            <span>Linked: {new Date(rec.joinedAt).toLocaleDateString()}</span>
+                          <p className="text-xs text-[#86868b] truncate mt-0.5 font-normal">{rec.email}</p>
+                          <div className="flex items-center gap-2 text-[11px] text-[#86868b] mt-1.5 flex-wrap">
+                            {rec.phone && (
+                              <span className="flex items-center gap-1">
+                                <Phone className="w-3 h-3 text-[#86868b]" />
+                                <span>{rec.phone}</span>
+                              </span>
+                            )}
+                            {rec.phone && <span className="text-[#d1d1d6]">•</span>}
+                            <span className="flex items-center gap-1">
+                              <Calendar className="w-3 h-3 text-[#86868b]" />
+                              <span>Linked {new Date(rec.joinedAt).toLocaleDateString()}</span>
+                            </span>
                           </div>
                         </div>
                       </div>
-                      <AppleButton
-                        size="sm"
-                        variant="ghost"
+                      <button
+                        type="button"
                         onClick={() => handleRemoveReceptionist(rec.receptionistId, rec.fullName)}
-                        className="text-rose-600 hover:bg-rose-50 p-2 h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0"
+                        className="h-8 px-3 rounded-full text-xs font-medium text-[#86868b] hover:text-rose-600 hover:bg-rose-50 border border-[#e5e5ea] hover:border-rose-200 transition-all flex items-center gap-1.5 cursor-pointer flex-shrink-0"
                         title="Unlink Receptionist"
                       >
-                        <Trash2 className="w-4 h-4" />
-                      </AppleButton>
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Unlink</span>
+                      </button>
                     </div>
                   ))}
                 </div>
@@ -961,7 +968,7 @@ export const DoctorDashboard: React.FC = () => {
                     <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
                       queueScope === 'all-upcoming'
                         ? 'bg-white/20 text-white'
-                        : 'bg-purple-600 text-white'
+                        : 'bg-[#0088e8] text-white'
                     }`}>
                       {queueData.upcomingSummary.totalUpcomingCount}
                     </span>
