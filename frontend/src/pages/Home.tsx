@@ -215,7 +215,7 @@ export const Home: React.FC = () => {
           <img
             src={healthcareHeroBg}
             alt="Healthcare clinical setting"
-            className="w-full h-full object-cover object-center"
+            className="w-full h-full object-cover object-[80%_center] lg:object-center"
           />
         </div>
 
