@@ -167,19 +167,17 @@ export const Home: React.FC = () => {
     <div className="flex flex-col min-h-screen bg-[#f5f5f7]">
       {/* 1. Hero Section - Search-Driven Apple Aesthetic with Healthcare Background */}
       <section className="relative overflow-hidden border-b border-[#e5e5ea] py-20 sm:py-28 md:py-32 lg:py-36 px-4 sm:px-6 min-h-[500px] sm:min-h-[560px] flex items-center justify-center">
-        {/* Apple Healthcare Themed Hero Background - Vibrant & Clearly Visible */}
+        {/* Apple Healthcare Themed Hero Background - Crystal Clear & Crisp (No Milky Fog) */}
         <div className="absolute inset-0 pointer-events-none select-none overflow-hidden">
           <img
             src={healthcareHeroBg}
             alt="Healthcare clinical setting"
-            className="w-full h-full object-cover object-center filter saturate-[1.12] contrast-[1.02]"
+            className="w-full h-full object-cover object-center filter saturate-[1.06] contrast-[1.06]"
           />
-          {/* Subtle light wash - preserves full photo visibility */}
-          <div className="absolute inset-0 bg-white/20" />
-          {/* Soft center vignette for headline legibility without washing out the sides */}
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.72)_0%,rgba(255,255,255,0.25)_55%,transparent_100%)]" />
-          {/* Smooth bottom transition into canvas */}
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#f5f5f7]/95" />
+          {/* Subtle soft center backlight behind text to preserve razor-sharp photo visibility */}
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.28)_0%,transparent_65%)]" />
+          {/* Subtle bottom edge blend into canvas */}
+          <div className="absolute bottom-0 inset-x-0 h-16 sm:h-20 bg-gradient-to-t from-[#f5f5f7] to-transparent" />
         </div>
 
         <div className="relative z-10 max-w-4xl mx-auto text-center w-full">
@@ -207,11 +205,11 @@ export const Home: React.FC = () => {
             </div>
           )}
 
-          <h1 className="text-3xl sm:text-5xl md:text-6xl font-bold text-[#1d1d1f] tracking-tight leading-[1.1] mb-3 drop-shadow-[0_1px_1px_rgba(255,255,255,0.9)]">
+          <h1 className="text-3xl sm:text-5xl md:text-6xl font-bold text-[#1d1d1f] tracking-tight leading-[1.1] mb-3 drop-shadow-[0_2px_12px_rgba(255,255,255,0.95)]">
             Find doctors. <span className="text-[#0088e8]">Book queue tokens.</span>
           </h1>
 
-          <p className="text-sm sm:text-base text-[#1d1d1f]/85 max-w-xl mx-auto mb-8 font-medium leading-relaxed drop-shadow-[0_1px_1px_rgba(255,255,255,0.9)]">
+          <p className="text-sm sm:text-base text-[#1d1d1f] max-w-xl mx-auto mb-8 font-medium leading-relaxed drop-shadow-[0_1px_8px_rgba(255,255,255,0.95)]">
             Book live token passes, verify queue status in real-time, and skip clinic waiting rooms.
           </p>
 
