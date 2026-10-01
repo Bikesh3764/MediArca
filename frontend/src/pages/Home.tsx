@@ -931,137 +931,147 @@ export const Home: React.FC = () => {
                   return (
                     <div
                       key={doctor.id}
-                      className="w-full bg-white rounded-[20px] border border-[#e5e5ea] p-5 shadow-xs hover:shadow-md hover:border-[#0088e8]/30 transition-all duration-200 flex flex-col justify-between group"
+                      className="w-full bg-white rounded-[20px] border border-[#e5e5ea] overflow-hidden shadow-xs hover:shadow-md hover:border-[#0088e8]/30 transition-all duration-200 flex flex-col justify-between group"
                     >
-                      <div>
-                        {/* Doctor Profile Header: Avatar + Info */}
-                        <div className="flex items-start gap-3.5">
-                          {/* Avatar Squircle */}
-                          <div
-                            onClick={() => navigate(getHomeDoctorDetailPath(doctor.id))}
-                            className="w-16 h-16 rounded-2xl bg-[#0088e8]/10 text-[#0088e8] border border-[#e5e5ea] overflow-hidden flex-shrink-0 flex items-center justify-center cursor-pointer hover:opacity-90 transition-opacity"
-                          >
-                            {doctor.user?.avatarUrl ? (
-                              <img
-                                src={getFileUrl(doctor.user.avatarUrl)}
-                                alt={doctor.user?.fullName || 'Doctor'}
-                                className="w-full h-full object-cover"
-                                onError={(e) => {
-                                  e.currentTarget.style.display = 'none';
-                                  const fallback = e.currentTarget.parentElement?.querySelector('.doc-home-fallback');
-                                  if (fallback) (fallback as HTMLElement).style.display = 'flex';
-                                }}
-                              />
-                            ) : null}
-                            <div
-                              className={`doc-home-fallback w-full h-full ${doctor.user?.avatarUrl ? 'hidden' : 'flex'} items-center justify-center font-bold text-xl text-[#0088e8] select-none`}
-                            >
-                              {(doctor.user?.fullName ? doctor.user.fullName.replace(/^Dr\.\s*/i, '').trim()[0] : null) || 'D'}
-                            </div>
-                          </div>
-
-                          {/* Name, Specialty, Experience */}
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-1.5">
-                              <h3
-                                onClick={() => navigate(getHomeDoctorDetailPath(doctor.id))}
-                                className="text-base font-semibold text-[#1d1d1f] hover:text-[#0088e8] cursor-pointer tracking-tight transition-colors truncate"
-                                title={doctor.user?.fullName || 'Doctor'}
-                              >
-                                {doctor.user?.fullName || 'Doctor'}
-                              </h3>
-                              <CheckCircle2 className="w-4 h-4 text-[#0088e8] shrink-0" />
-                            </div>
-
-                            <div className="mt-1 flex items-center gap-2 flex-wrap">
-                              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#0088e8]/8 text-[#0088e8]">
-                                {doctor.specialty}
-                              </span>
-                              {displayCity && (
-                                <span className="text-xs text-[#86868b] flex items-center gap-1 cursor-default" title={allCitiesTooltip}>
-                                  <MapPin className="w-3 h-3 text-[#86868b]" />
-                                  <span>{clinicLocationLabel}</span>
-                                </span>
-                              )}
-                            </div>
-
-                            <p className="mt-1 text-xs text-[#86868b] truncate">
-                              {doctor.experienceYears} yrs exp {cleanDegrees ? `• ${cleanDegrees}` : ''}
-                            </p>
-                          </div>
+                      {/* 1. Doctor Top Photo Banner */}
+                      <div
+                        onClick={() => navigate(getHomeDoctorDetailPath(doctor.id))}
+                        className="relative w-full aspect-[16/10] bg-gradient-to-b from-[#f5f5f7] to-[#e5e5ea] border-b border-[#e5e5ea] overflow-hidden cursor-pointer flex items-center justify-center"
+                      >
+                        {doctor.user?.avatarUrl ? (
+                          <img
+                            src={getFileUrl(doctor.user.avatarUrl)}
+                            alt={doctor.user?.fullName || 'Doctor'}
+                            className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
+                            loading="eager"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                              const fallback = e.currentTarget.parentElement?.querySelector('.doc-fallback-banner');
+                              if (fallback) (fallback as HTMLElement).style.display = 'flex';
+                            }}
+                          />
+                        ) : null}
+                        <div
+                          className={`doc-fallback-banner w-full h-full ${doctor.user?.avatarUrl ? 'hidden' : 'flex'} items-center justify-center font-bold text-4xl text-white bg-gradient-to-br from-[#0088e8] to-[#0066cc] select-none`}
+                        >
+                          {(doctor.user?.fullName ? doctor.user.fullName.replace(/^Dr\.\s*/i, '').trim()[0] : null) || 'D'}
                         </div>
 
+                        {/* Floating Specialty Badge on Bottom Left */}
+                        <div className="absolute bottom-2.5 left-2.5 z-10">
+                          <span className="backdrop-blur-md bg-white/95 text-[#1d1d1f] text-[11px] font-semibold px-2.5 py-1 rounded-full shadow-xs border border-white/80">
+                            {doctor.specialty}
+                          </span>
+                        </div>
 
+                        {/* Floating Clinic / City Badge on Bottom Right */}
+                        {clinicLocationLabel && (
+                          <div className="absolute bottom-2.5 right-2.5 z-10" title={allCitiesTooltip}>
+                            <span className="backdrop-blur-md bg-white/95 text-[#1d1d1f] text-[11px] font-semibold px-2.5 py-1 rounded-full shadow-xs border border-white/80 flex items-center gap-1 cursor-default">
+                              <MapPin className="w-2.5 h-2.5 text-[#0088e8]" />
+                              <span>{clinicLocationLabel}</span>
+                            </span>
+                          </div>
+                        )}
+                      </div>
 
-                        {/* Clinical Venue & Shifts Details */}
-                        <div className="mt-4 pt-3 border-t border-[#f5f5f7] space-y-2 text-xs">
-                          {/* Primary Clinic */}
-                          <div className="flex items-center gap-2 text-[#1d1d1f] min-w-0">
-                            <Building2 className="w-3.5 h-3.5 text-[#86868b] shrink-0" />
-                            {hasClinics && primaryClinic ? (
-                              <span
-                                className="font-medium truncate"
-                                title={`${primaryClinic.clinicName}${primaryClinic.city ? ` • ${primaryClinic.city}` : ''}`}
-                              >
-                                {primaryClinic.clinicName}
-                                {(doctor.clinics?.length ?? 0) > 1 && (
-                                  <span className="text-[#0088e8] font-normal ml-1">
-                                    (+{(doctor.clinics?.length ?? 0) - 1} clinics)
-                                  </span>
-                                )}
-                              </span>
-                            ) : (
-                              <span className="text-[#86868b]">Direct Practice</span>
+                      {/* 2. Doctor Details Flowing Down Lengthwise */}
+                      <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between">
+                        <div>
+                          {/* Doctor Name, Qualifications & Experience */}
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <h3
+                              onClick={() => navigate(getHomeDoctorDetailPath(doctor.id))}
+                              className="text-base sm:text-[17px] font-bold text-[#1d1d1f] hover:text-[#0088e8] cursor-pointer tracking-tight transition-colors truncate"
+                              title={doctor.user?.fullName || 'Doctor'}
+                            >
+                              {doctor.user?.fullName || 'Doctor'}
+                            </h3>
+                            <CheckCircle2 className="w-4 h-4 text-[#0088e8] shrink-0" />
+                          </div>
+
+                          <div className="mt-1 flex items-center gap-1.5 text-xs text-[#86868b] truncate">
+                            <span className="font-semibold text-[#48484a]">{doctor.experienceYears} yrs exp</span>
+                            {cleanDegrees && (
+                              <>
+                                <span className="text-[#d1d1d6]">•</span>
+                                <span className="truncate" title={cleanDegrees}>
+                                  {cleanDegrees}
+                                </span>
+                              </>
                             )}
                           </div>
 
-                          {/* Practice Hours / Shift */}
-                          <div className="flex items-center gap-2 text-[#86868b] min-w-0">
-                            <Clock className="w-3.5 h-3.5 text-[#86868b] shrink-0" />
-                            <span className="truncate">
-                              {slots.length > 0
-                                ? `${format12Hour(slots[0].startTime)} – ${format12Hour(slots[0].endTime)}`
-                                : doctor.checkingStartTime
-                                ? `${format12Hour(doctor.checkingStartTime)} – ${format12Hour(doctor.checkingEndTime)}`
-                                : 'Outpatient Shift'}
-                              {slots.length > 1 && (
-                                <span className="text-[#86868b] ml-1">
-                                  (+{slots.length - 1} shifts)
+                          {/* Clinical Venue & Shifts Details */}
+                          <div className="mt-3.5 pt-3 border-t border-[#f5f5f7] space-y-2 text-xs">
+                            {/* Primary Clinic */}
+                            <div className="flex items-center gap-2 text-[#1d1d1f] min-w-0">
+                              <Building2 className="w-3.5 h-3.5 text-[#86868b] shrink-0" />
+                              {hasClinics && primaryClinic ? (
+                                <span
+                                  className="font-medium truncate"
+                                  title={`${primaryClinic.clinicName}${primaryClinic.city ? ` • ${primaryClinic.city}` : ''}`}
+                                >
+                                  {primaryClinic.clinicName}
+                                  {(doctor.clinics?.length ?? 0) > 1 && (
+                                    <span className="text-[#0088e8] font-normal ml-1">
+                                      (+{(doctor.clinics?.length ?? 0) - 1} clinics)
+                                    </span>
+                                  )}
                                 </span>
+                              ) : (
+                                <span className="text-[#86868b]">Direct Practice</span>
                               )}
-                            </span>
+                            </div>
+
+                            {/* Practice Hours / Shift */}
+                            <div className="flex items-center gap-2 text-[#86868b] min-w-0">
+                              <Clock className="w-3.5 h-3.5 text-[#86868b] shrink-0" />
+                              <span className="truncate">
+                                {slots.length > 0
+                                  ? `${format12Hour(slots[0].startTime)} – ${format12Hour(slots[0].endTime)}`
+                                  : doctor.checkingStartTime
+                                  ? `${format12Hour(doctor.checkingStartTime)} – ${format12Hour(doctor.checkingEndTime)}`
+                                  : 'Outpatient Shift'}
+                                {slots.length > 1 && (
+                                  <span className="text-[#86868b] ml-1">
+                                    (+{slots.length - 1} shifts)
+                                  </span>
+                                )}
+                              </span>
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      {/* Footer: Fee & Booking CTA */}
-                      <div className="mt-4 pt-3 border-t border-[#f5f5f7] flex items-center justify-between gap-3">
-                        <div>
-                          <span className="text-base font-bold text-[#1d1d1f]">
-                            ₹{doctor.consultationFee.toFixed(0)}
-                          </span>
-                          <span className="text-xs text-[#86868b] ml-1">/ visit</span>
-                        </div>
+                        {/* Footer: Fee & Booking CTA */}
+                        <div className="mt-4 pt-3 border-t border-[#f5f5f7] flex items-center justify-between gap-3">
+                          <div>
+                            <span className="text-base font-bold text-[#1d1d1f]">
+                              ₹{doctor.consultationFee.toFixed(0)}
+                            </span>
+                            <span className="text-xs text-[#86868b] ml-1">/ visit</span>
+                          </div>
 
-                        <div>
-                          {hasClinics ? (
-                            <button
-                              type="button"
-                              onClick={() => navigate(getHomeDoctorBookPath(doctor.id))}
-                              className="h-9 px-4 rounded-full bg-[#0088e8] hover:bg-[#0077cc] text-white text-xs font-semibold flex items-center gap-1 transition-all active:scale-[0.98] shadow-xs cursor-pointer"
-                            >
-                              <span>Book Token</span>
-                              <ChevronRight className="w-3.5 h-3.5" />
-                            </button>
-                          ) : (
-                            <button
-                              type="button"
-                              disabled
-                              className="h-9 px-4 rounded-full bg-[#f5f5f7] text-[#86868b] text-xs font-medium border border-[#e5e5ea] cursor-not-allowed"
-                            >
-                              Unavailable
-                            </button>
-                          )}
+                          <div>
+                            {hasClinics ? (
+                              <button
+                                type="button"
+                                onClick={() => navigate(getHomeDoctorBookPath(doctor.id))}
+                                className="h-9 px-4 rounded-full bg-[#0088e8] hover:bg-[#0077cc] text-white text-xs font-semibold flex items-center gap-1 transition-all active:scale-[0.98] shadow-xs cursor-pointer"
+                              >
+                                <span>Book Token</span>
+                                <ChevronRight className="w-3.5 h-3.5" />
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                disabled
+                                className="h-9 px-4 rounded-full bg-[#f5f5f7] text-[#86868b] text-xs font-medium border border-[#e5e5ea] cursor-not-allowed"
+                              >
+                                Unavailable
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
