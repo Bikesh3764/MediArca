@@ -162,6 +162,14 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         formattedDob = candidateDob;
       }
 
+      let combinedConditions = sanitizeClinicalHistoryList(profileData.existingConditions ?? profileData.chronicConditions);
+      const surgeries = sanitizeClinicalHistoryList(profileData.pastSurgeries);
+      if (surgeries) {
+        combinedConditions = combinedConditions
+          ? `${combinedConditions} | Past Surgeries: ${surgeries}`
+          : `Past Surgeries: ${surgeries}`;
+      }
+
       newUser = await prisma.user.create({
         data: {
           email: email.toLowerCase().trim(),
@@ -175,7 +183,9 @@ export const register = async (req: Request, res: Response): Promise<void> => {
               gender: profileData.gender || null,
               bloodGroup: profileData.bloodGroup || null,
               allergies: sanitizeClinicalHistoryList(profileData.allergies),
-              existingConditions: sanitizeClinicalHistoryList(profileData.existingConditions ?? profileData.chronicConditions),
+              existingConditions: combinedConditions,
+              currentMedications: sanitizeClinicalHistoryList(profileData.currentMedications),
+              emergencyContact: profileData.emergencyContact ? String(profileData.emergencyContact).trim() : null,
             },
           },
         },

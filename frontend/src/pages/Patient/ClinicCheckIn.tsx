@@ -147,7 +147,7 @@ export const ClinicCheckIn: React.FC = () => {
               <p className="text-xs text-[#86868b] mt-2 leading-relaxed">
                 Please sign in with the phone number or account used to book your queue token so we can match your appointment.
               </p>
-              <div className="mt-6 space-y-3">
+              <div className="mt-6 space-y-2.5">
                 <AppleButton
                   variant="primary"
                   onClick={() => {
@@ -158,6 +158,16 @@ export const ClinicCheckIn: React.FC = () => {
                 >
                   <span>Sign In & Verify Check-In</span>
                   <ArrowRight className="w-4 h-4" />
+                </AppleButton>
+                <AppleButton
+                  variant="secondary"
+                  onClick={() => {
+                    const currentTarget = `${location.pathname}${location.search}`;
+                    navigate(`/signup?redirect=${encodeURIComponent(currentTarget)}`);
+                  }}
+                  className="w-full flex items-center justify-center gap-2"
+                >
+                  <span>New Patient? Create Account</span>
                 </AppleButton>
               </div>
             </div>

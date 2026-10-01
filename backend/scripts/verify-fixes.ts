@@ -4513,6 +4513,88 @@ function runTests() {
     'Bug 6.4: Demo receptionist phone does not collide with demo patient phone'
   );
 
+  // Bug 1.1: Past Surgeries combined with existing conditions
+  const combineConditionsAndSurgeries = (conditions: any, surgeries: any): string | null => {
+    const c = sanitizeClinicalHistoryList(conditions);
+    const s = sanitizeClinicalHistoryList(surgeries);
+    if (!c && !s) return null;
+    if (c && s) return `${c} | Past Surgeries: ${s}`;
+    if (s) return `Past Surgeries: ${s}`;
+    return c;
+  };
+  assert(
+    combineConditionsAndSurgeries(['Hypertension'], ['Appendectomy (2018)']) === 'Hypertension | Past Surgeries: Appendectomy (2018)',
+    'Bug 1.1: Conditions and surgeries combined with separator'
+  );
+  assert(
+    combineConditionsAndSurgeries(null, ['Tonsillectomy']) === 'Past Surgeries: Tonsillectomy',
+    'Bug 1.1: Surgeries only returns past surgeries note'
+  );
+  assert(
+    combineConditionsAndSurgeries(['Asthma'], null) === 'Asthma',
+    'Bug 1.1: Conditions only returns conditions note'
+  );
+  assert(
+    combineConditionsAndSurgeries(null, null) === null,
+    'Bug 1.1: Empty conditions and surgeries return null'
+  );
+
+  // Bug 2.2: Clinical Notes Deserializer Parsing
+  const parseClinicalNotesContent = (raw: string) => {
+    let diag = '';
+    let adv = '';
+    let follow = '';
+    const meds: any[] = [];
+    let text = raw;
+
+    const diagMatch = text.match(/^Diagnosis:\s*([^\n]+)/m);
+    if (diagMatch) {
+      diag = diagMatch[1].trim();
+      text = text.replace(diagMatch[0], '');
+    }
+    const advMatch = text.match(/^Advice:\s*([^\n]+)/m);
+    if (advMatch) {
+      adv = advMatch[1].trim();
+      text = text.replace(advMatch[0], '');
+    }
+    const followMatch = text.match(/^Follow-up Date:\s*([^\n]+)/m);
+    if (followMatch) {
+      follow = followMatch[1].trim();
+      text = text.replace(followMatch[0], '');
+    }
+    const medsMatch = text.match(/Prescribed Medications:\s*\n((?:\s*\d+\..*(?:\n|$))*)/);
+    if (medsMatch) {
+      const medBlock = medsMatch[1];
+      text = text.replace(medsMatch[0], '');
+      const lines = medBlock.split('\n').map((l) => l.trim()).filter(Boolean);
+      lines.forEach((l) => {
+        const clean = l.replace(/^\d+\.\s*/, '').trim();
+        if (clean) meds.push(clean);
+      });
+    }
+    return { diagnosis: diag, advice: adv, followUpDate: follow, medicines: meds, remarks: text.trim() };
+  };
+
+  const sampleRawNotes = `Diagnosis: Acute Bronchitis
+
+Patient shows bilateral wheezing and mild throat congestion.
+
+Prescribed Medications:
+1. Azithromycin 500mg - 1 Tab (Once daily) for 3 days [After lunch]
+2. Paracetamol 650mg - 1 Tab (SOS) for 5 days [After meals]
+
+Advice: Bed rest and warm fluids
+
+Follow-up Date: 2026-10-15`;
+
+  const parsedNotes = parseClinicalNotesContent(sampleRawNotes);
+  assert(parsedNotes.diagnosis === 'Acute Bronchitis', 'Bug 2.2: Parser extracts diagnosis');
+  assert(parsedNotes.advice === 'Bed rest and warm fluids', 'Bug 2.2: Parser extracts advice');
+  assert(parsedNotes.followUpDate === '2026-10-15', 'Bug 2.2: Parser extracts follow-up date');
+  assert(parsedNotes.medicines.length === 2, 'Bug 2.2: Parser extracts all medicine lines');
+  assert(parsedNotes.medicines[0].includes('Azithromycin 500mg'), 'Bug 2.2: Parser medicine contains name');
+  assert(parsedNotes.remarks === 'Patient shows bilateral wheezing and mild throat congestion.', 'Bug 2.2: Parser extracts pure remarks without headers');
+
   console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);

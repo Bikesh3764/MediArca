@@ -1305,7 +1305,15 @@ export const api = {
     return handleResponse(res);
   },
 
-  async updateNotes(body: { appointmentId: string; vitals?: any; clinicalNotes?: string }): Promise<Appointment> {
+  async updateNotes(body: {
+    appointmentId: string;
+    vitals?: any;
+    clinicalNotes?: string;
+    diagnosis?: string;
+    medicines?: any[];
+    advice?: string;
+    followUpDate?: string;
+  }): Promise<Appointment> {
     const res = await fetch(`${API_BASE_URL}/consultations/notes`, {
       method: 'PUT',
       headers: getHeaders(),
@@ -1314,7 +1322,15 @@ export const api = {
     return handleResponse(res);
   },
 
-  async saveConsultationNotes(body: { appointmentId: string; vitals?: any; clinicalNotes?: string }): Promise<Appointment> {
+  async saveConsultationNotes(body: {
+    appointmentId: string;
+    vitals?: any;
+    clinicalNotes?: string;
+    diagnosis?: string;
+    medicines?: any[];
+    advice?: string;
+    followUpDate?: string;
+  }): Promise<Appointment> {
     return this.updateNotes(body);
   },
 

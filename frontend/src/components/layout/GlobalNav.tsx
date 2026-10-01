@@ -145,10 +145,10 @@ export const GlobalNav: React.FC = () => {
         onClick={() => setNotificationsOpen(false)}
       />
       <div
-        className={`absolute right-0 ${
+        className={`${
           isMobile
-            ? 'top-10 w-[calc(100vw-2rem)] max-w-sm sm:max-w-md'
-            : 'top-11 w-80 sm:w-96'
+            ? 'fixed left-4 right-4 top-14 max-w-sm sm:max-w-md mx-auto'
+            : 'absolute right-0 top-11 w-80 sm:w-96'
         } bg-white/95 backdrop-blur-2xl border border-[#e5e5ea] rounded-2xl shadow-2xl z-50 overflow-hidden animate-fadeIn text-left`}
       >
         <div className="px-4 py-3 border-b border-[#f0f0f0] flex items-center justify-between">

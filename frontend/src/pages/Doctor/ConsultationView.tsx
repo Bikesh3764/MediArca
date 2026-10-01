@@ -74,7 +74,74 @@ export const ConsultationView: React.FC = () => {
         if (found) {
           setAppointment(found);
           if (found.clinicalNotes) {
-            setClinicalNotes(found.clinicalNotes);
+            let raw = found.clinicalNotes;
+            const diagMatch = raw.match(/^Diagnosis:\s*([^\n]+)/m);
+            if (diagMatch) {
+              setDiagnosis(diagMatch[1].trim());
+              raw = raw.replace(diagMatch[0], '');
+            }
+
+            const adviceMatch = raw.match(/^Advice:\s*([^\n]+)/m);
+            if (adviceMatch) {
+              setAdvice(adviceMatch[1].trim());
+              raw = raw.replace(adviceMatch[0], '');
+            }
+
+            const followMatch = raw.match(/^Follow-up Date:\s*([^\n]+)/m);
+            if (followMatch) {
+              setFollowUpDate(followMatch[1].trim());
+              raw = raw.replace(followMatch[0], '');
+            }
+
+            const medsMatch = raw.match(/Prescribed Medications:\s*\n((?:\s*\d+\..*(?:\n|$))*)/);
+            if (medsMatch) {
+              const medBlock = medsMatch[1];
+              raw = raw.replace(medsMatch[0], '');
+              const lines = medBlock.split('\n').map((l) => l.trim()).filter(Boolean);
+              const parsedMeds: MedicineItem[] = lines.map((line, idx) => {
+                const cleanLine = line.replace(/^\d+\.\s*/, '').trim();
+                let name = cleanLine;
+                let dosage = '1 Tab';
+                let frequency = '1-0-1';
+                let duration = '5 days';
+                let instructions = '';
+
+                const instMatch = name.match(/\[(.*?)\]/);
+                if (instMatch) {
+                  instructions = instMatch[1];
+                  name = name.replace(instMatch[0], '').trim();
+                }
+                const durMatch = name.match(/for\s+(.*?)(?=\s*\(|$)/i);
+                if (durMatch) {
+                  duration = durMatch[1].trim();
+                  name = name.replace(durMatch[0], '').trim();
+                }
+                const freqMatch = name.match(/\((.*?)\)/);
+                if (freqMatch) {
+                  frequency = freqMatch[1].trim();
+                  name = name.replace(freqMatch[0], '').trim();
+                }
+                const dosageMatch = name.match(/-\s*(.*?)$/);
+                if (dosageMatch) {
+                  dosage = dosageMatch[1].trim();
+                  name = name.replace(/-\s*.*?$/, '').trim();
+                }
+
+                return {
+                  id: `med_parsed_${idx}_${Date.now()}`,
+                  name: name || cleanLine,
+                  dosage,
+                  frequency,
+                  duration,
+                  instructions,
+                };
+              });
+              if (parsedMeds.length > 0) {
+                setMedicines(parsedMeds);
+              }
+            }
+
+            setClinicalNotes(raw.trim());
           }
           if (found.vitals) {
             try {
@@ -132,7 +199,7 @@ export const ConsultationView: React.FC = () => {
   };
 
   const handleSaveDraft = async () => {
-    if (!appointment) return;
+    if (!appointment || appointment.status === 'COMPLETED') return;
     setSavingDraft(true);
     setDraftSavedMsg(null);
     setError(null);
@@ -144,22 +211,22 @@ export const ConsultationView: React.FC = () => {
       weight: weight.trim() || undefined,
     };
 
-    const combinedNotes = [
-      diagnosis.trim() ? `Diagnosis: ${diagnosis.trim()}` : '',
-      clinicalNotes.trim(),
-      advice.trim() ? `Advice: ${advice.trim()}` : '',
-      followUpDate ? `Follow-up Date: ${followUpDate}` : '',
-    ]
-      .filter(Boolean)
-      .join('\n\n');
-
     try {
       await api.updateNotes({
         appointmentId: appointment.id,
-        clinicalNotes: combinedNotes,
+        clinicalNotes: clinicalNotes.trim() || undefined,
+        diagnosis: diagnosis.trim() || undefined,
+        advice: advice.trim() || undefined,
+        followUpDate: followUpDate || undefined,
         vitals: vitalsObj,
-        ...(medicines.length > 0 ? { medicines } : {}),
-      } as any);
+        medicines: medicines.filter((m) => m.name.trim()).map((m) => ({
+          name: m.name.trim(),
+          dosage: m.dosage.trim(),
+          frequency: m.frequency.trim(),
+          duration: m.duration.trim(),
+          instructions: m.instructions.trim(),
+        })),
+      });
 
       setDraftSavedMsg('Consultation notes, medicines & vitals saved as draft.');
       setTimeout(() => setDraftSavedMsg(null), 4000);
@@ -266,10 +333,12 @@ const calculatePreciseAge = (dobString: string): number => {
             <ChevronLeft className="w-4 h-4" />
             Queue
           </AppleButton>
-          <AppleButton variant="ghost" size="sm" onClick={handleSaveDraft} disabled={savingDraft} className="flex items-center gap-1">
-            <Save className="w-3.5 h-3.5 text-[#0088e8]" />
-            <span>{savingDraft ? 'Saving...' : 'Save Draft'}</span>
-          </AppleButton>
+          {appointment.status !== 'COMPLETED' && (
+            <AppleButton variant="ghost" size="sm" onClick={handleSaveDraft} disabled={savingDraft} className="flex items-center gap-1">
+              <Save className="w-3.5 h-3.5 text-[#0088e8]" />
+              <span>{savingDraft ? 'Saving...' : 'Save Draft'}</span>
+            </AppleButton>
+          )}
         </div>
       </SubNav>
 
@@ -407,40 +476,44 @@ const calculatePreciseAge = (dobString: string): number => {
                   <label className="block text-[#86868b] mb-1">Blood Pressure</label>
                   <input
                     type="text"
+                    disabled={appointment.status === 'COMPLETED'}
                     value={bp}
                     onChange={(e) => setBp(e.target.value)}
                     placeholder="120/80 mmHg"
-                    className="w-full h-9 px-3 rounded-xl border border-[#e5e5ea] bg-white focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] transition-all"
+                    className="w-full h-9 px-3 rounded-xl border border-[#e5e5ea] bg-white focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] transition-all disabled:bg-[#f5f5f7] disabled:text-[#86868b]"
                   />
                 </div>
                 <div>
                   <label className="block text-[#86868b] mb-1">Pulse Rate</label>
                   <input
                     type="text"
+                    disabled={appointment.status === 'COMPLETED'}
                     value={pulse}
                     onChange={(e) => setPulse(e.target.value)}
                     placeholder="72 bpm"
-                    className="w-full h-9 px-3 rounded-xl border border-[#e5e5ea] bg-white focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] transition-all"
+                    className="w-full h-9 px-3 rounded-xl border border-[#e5e5ea] bg-white focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] transition-all disabled:bg-[#f5f5f7] disabled:text-[#86868b]"
                   />
                 </div>
                 <div>
                   <label className="block text-[#86868b] mb-1">Temperature</label>
                   <input
                     type="text"
+                    disabled={appointment.status === 'COMPLETED'}
                     value={temp}
                     onChange={(e) => setTemp(e.target.value)}
                     placeholder="98.6 °F"
-                    className="w-full h-9 px-3 rounded-xl border border-[#e5e5ea] bg-white focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] transition-all"
+                    className="w-full h-9 px-3 rounded-xl border border-[#e5e5ea] bg-white focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] transition-all disabled:bg-[#f5f5f7] disabled:text-[#86868b]"
                   />
                 </div>
                 <div>
                   <label className="block text-[#86868b] mb-1">Weight</label>
                   <input
                     type="text"
+                    disabled={appointment.status === 'COMPLETED'}
                     value={weight}
                     onChange={(e) => setWeight(e.target.value)}
                     placeholder="70 kg"
-                    className="w-full h-9 px-3 rounded-xl border border-[#e5e5ea] bg-white focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] transition-all"
+                    className="w-full h-9 px-3 rounded-xl border border-[#e5e5ea] bg-white focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] transition-all disabled:bg-[#f5f5f7] disabled:text-[#86868b]"
                   />
                 </div>
               </div>
@@ -477,12 +550,13 @@ const calculatePreciseAge = (dobString: string): number => {
                       <button
                         key={diag}
                         type="button"
+                        disabled={appointment.status === 'COMPLETED'}
                         onClick={() => setDiagnosis(diag)}
                         className={`px-3 py-1 rounded-full text-[11px] transition-colors ${
                           diagnosis === diag
                             ? 'bg-[#0088e8] text-white font-medium shadow-2xs'
                             : 'bg-[#f5f5f7] text-[#1d1d1f] hover:bg-[#e8e8ed]'
-                        }`}
+                        } ${appointment.status === 'COMPLETED' ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
                         {diag}
                       </button>
@@ -490,10 +564,11 @@ const calculatePreciseAge = (dobString: string): number => {
                   </div>
                   <input
                     type="text"
+                    disabled={appointment.status === 'COMPLETED'}
                     value={diagnosis}
                     onChange={(e) => setDiagnosis(e.target.value)}
                     placeholder="e.g. Acute Bronchitis, Essential Hypertension"
-                    className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[14px] bg-white focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] transition-all"
+                    className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[14px] bg-white focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] transition-all disabled:bg-[#f5f5f7] disabled:text-[#86868b]"
                   />
                 </div>
 
@@ -503,10 +578,11 @@ const calculatePreciseAge = (dobString: string): number => {
                   </label>
                   <textarea
                     rows={4}
+                    disabled={appointment.status === 'COMPLETED'}
                     value={clinicalNotes}
                     onChange={(e) => setClinicalNotes(e.target.value)}
                     placeholder="Enter physical observations, clinical examination notes, and doctor remarks..."
-                    className="w-full p-3 rounded-xl border border-[#e5e5ea] text-[14px] bg-white focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] transition-all"
+                    className="w-full p-3 rounded-xl border border-[#e5e5ea] text-[14px] bg-white focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] transition-all disabled:bg-[#f5f5f7] disabled:text-[#86868b]"
                   ></textarea>
                 </div>
 
@@ -517,10 +593,11 @@ const calculatePreciseAge = (dobString: string): number => {
                     </label>
                     <input
                       type="text"
+                      disabled={appointment.status === 'COMPLETED'}
                       value={advice}
                       onChange={(e) => setAdvice(e.target.value)}
                       placeholder="e.g. Bed rest, warm fluids, hydration"
-                      className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[14px] text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
+                      className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[14px] text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] disabled:bg-[#f5f5f7] disabled:text-[#86868b]"
                     />
                   </div>
                   <div>
@@ -529,9 +606,10 @@ const calculatePreciseAge = (dobString: string): number => {
                     </label>
                     <input
                       type="date"
+                      disabled={appointment.status === 'COMPLETED'}
                       value={followUpDate}
                       onChange={(e) => setFollowUpDate(e.target.value)}
-                      className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[14px] text-[#1d1d1f] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
+                      className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[14px] text-[#1d1d1f] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] disabled:bg-[#f5f5f7] disabled:text-[#86868b]"
                     />
                   </div>
                 </div>

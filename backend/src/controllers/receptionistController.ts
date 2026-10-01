@@ -753,7 +753,6 @@ export const updateAppointmentStatus = async (req: AuthRequest, res: Response): 
         where: {
           doctorId: targetAppointment.doctorId,
           appointmentDate: targetAppointment.appointmentDate,
-          clinicId: targetAppointment.clinicId ?? null,
           status: 'IN_CONSULTATION',
           id: { not: appointmentId },
         },
