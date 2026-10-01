@@ -766,7 +766,33 @@ export const Home: React.FC = () => {
                   const cleanDegrees = formatDoctorDegrees(doctor.qualifications);
                   const primaryClinic = doctor.clinics?.find((c) => c?.clinic)?.clinic || null;
                   const hasClinics = Boolean(primaryClinic);
-                  const clinicCity = primaryClinic?.city || doctor.clinicAddress?.split(',').pop()?.trim() || '';
+
+                  // Extract all unique clinic cities for this doctor
+                  const affiliatedClinics = doctor.clinics?.map((c) => c?.clinic).filter(Boolean) || [];
+                  const uniqueCities = Array.from(
+                    new Set(
+                      affiliatedClinics
+                        .map((c) => c?.city?.trim())
+                        .filter((city): city is string => Boolean(city && city.length > 0))
+                    )
+                  );
+                  if (uniqueCities.length === 0 && doctor.clinicAddress) {
+                    const fallbackCity = doctor.clinicAddress.split(',').pop()?.trim();
+                    if (fallbackCity) uniqueCities.push(fallbackCity);
+                  }
+                  const matchedCity = locationQuery?.trim()
+                    ? uniqueCities.find((c) => c.toLowerCase().includes(locationQuery.trim().toLowerCase()))
+                    : null;
+                  const displayCity = matchedCity || uniqueCities[0] || '';
+                  const extraCitiesCount = uniqueCities.length > 1 ? uniqueCities.length - 1 : 0;
+                  const clinicLocationLabel = displayCity
+                    ? extraCitiesCount > 0
+                      ? `${displayCity} (+${extraCitiesCount})`
+                      : displayCity
+                    : '';
+                  const allCitiesTooltip = uniqueCities.length > 0
+                    ? `Practicing in: ${uniqueCities.join(', ')}`
+                    : 'Clinic practice';
 
                   return (
                     <div
@@ -805,11 +831,11 @@ export const Home: React.FC = () => {
                         </div>
 
                         {/* Floating Clinic / City Badge on Bottom Right */}
-                        {clinicCity && (
-                          <div className="absolute bottom-2.5 right-2.5 z-10">
-                            <span className="backdrop-blur-md bg-white/95 text-[#1d1d1f] text-[11px] font-semibold px-2.5 py-1 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.12)] border border-white/80 flex items-center gap-1">
+                        {clinicLocationLabel && (
+                          <div className="absolute bottom-2.5 right-2.5 z-10" title={allCitiesTooltip}>
+                            <span className="backdrop-blur-md bg-white/95 text-[#1d1d1f] text-[11px] font-semibold px-2.5 py-1 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.12)] border border-white/80 flex items-center gap-1 cursor-default">
                               <MapPin className="w-2.5 h-2.5 text-[#0088e8]" />
-                              <span>{clinicCity}</span>
+                              <span>{clinicLocationLabel}</span>
                             </span>
                           </div>
                         )}

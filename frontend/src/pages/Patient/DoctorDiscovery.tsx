@@ -588,17 +588,43 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
                 const cleanDegrees = formatDoctorDegrees(doctor.qualifications);
                 const primaryClinic = doctor.clinics?.find((c) => c?.clinic)?.clinic || null;
                 const hasClinics = Boolean(primaryClinic);
-                const clinicCity = primaryClinic?.city || doctor.clinicAddress?.split(',').pop()?.trim() || '';
+
+                // Extract all unique clinic cities for this doctor
+                const affiliatedClinics = doctor.clinics?.map((c) => c?.clinic).filter(Boolean) || [];
+                const uniqueCities = Array.from(
+                  new Set(
+                    affiliatedClinics
+                      .map((c) => c?.city?.trim())
+                      .filter((city): city is string => Boolean(city && city.length > 0))
+                  )
+                );
+                if (uniqueCities.length === 0 && doctor.clinicAddress) {
+                  const fallbackCity = doctor.clinicAddress.split(',').pop()?.trim();
+                  if (fallbackCity) uniqueCities.push(fallbackCity);
+                }
+                const matchedCity = locationQuery?.trim()
+                  ? uniqueCities.find((c) => c.toLowerCase().includes(locationQuery.trim().toLowerCase()))
+                  : null;
+                const displayCity = matchedCity || uniqueCities[0] || '';
+                const extraCitiesCount = uniqueCities.length > 1 ? uniqueCities.length - 1 : 0;
+                const clinicLocationLabel = displayCity
+                  ? extraCitiesCount > 0
+                    ? `${displayCity} (+${extraCitiesCount})`
+                    : displayCity
+                  : '';
+                const allCitiesTooltip = uniqueCities.length > 0
+                  ? `Practicing in: ${uniqueCities.join(', ')}`
+                  : 'Clinic practice';
 
                 return (
                   <div
                     key={doctor.id}
-                    className="w-full bg-white rounded-[20px] sm:rounded-[22px] border border-[#e5e5ea] overflow-hidden hover:shadow-[0_12px_32px_rgba(0,0,0,0.08)] hover:border-[#0088e8]/35 transition-all duration-300 flex flex-col justify-between group"
+                    className="w-full bg-white rounded-[22px] sm:rounded-[24px] border border-[#e5e5ea]/80 overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.03)] hover:shadow-[0_16px_36px_rgba(0,0,0,0.08)] hover:border-[#0088e8]/35 transition-all duration-300 flex flex-col justify-between group"
                   >
                     {/* 1. Full-Width Doctor Photo Banner with Floating Badges (Hoardspace Pattern) */}
                     <div
                       onClick={() => navigate(getDoctorDetailPath(doctor.id))}
-                      className="relative w-full aspect-[16/10] bg-[#f5f5f7] border-b border-[#f0f0f2] overflow-hidden cursor-pointer flex items-center justify-center"
+                      className="relative w-full aspect-[16/10] bg-gradient-to-b from-[#f5f5f7] to-[#ebebee] border-b border-[#f0f0f2] overflow-hidden cursor-pointer flex items-center justify-center"
                     >
                       {doctor.user?.avatarUrl ? (
                         <img
@@ -621,17 +647,17 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
 
                       {/* Floating Specialty Badge on Bottom Left */}
                       <div className="absolute bottom-2.5 left-2.5 z-10">
-                        <span className="backdrop-blur-md bg-black/65 text-white text-[11px] font-medium px-2.5 py-0.5 rounded-full shadow-xs">
+                        <span className="backdrop-blur-md bg-white/95 text-[#1d1d1f] text-[11px] font-semibold px-2.5 py-1 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.12)] border border-white/80">
                           {doctor.specialty}
                         </span>
                       </div>
 
                       {/* Floating Clinic / City Badge on Bottom Right */}
-                      {clinicCity && (
-                        <div className="absolute bottom-2.5 right-2.5 z-10">
-                          <span className="backdrop-blur-md bg-black/65 text-white text-[11px] font-medium px-2 py-0.5 rounded-full shadow-xs flex items-center gap-1">
+                      {clinicLocationLabel && (
+                        <div className="absolute bottom-2.5 right-2.5 z-10" title={allCitiesTooltip}>
+                          <span className="backdrop-blur-md bg-white/95 text-[#1d1d1f] text-[11px] font-semibold px-2.5 py-1 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.12)] border border-white/80 flex items-center gap-1 cursor-default">
                             <MapPin className="w-2.5 h-2.5 text-[#0088e8]" />
-                            <span>{clinicCity}</span>
+                            <span>{clinicLocationLabel}</span>
                           </span>
                         </div>
                       )}
