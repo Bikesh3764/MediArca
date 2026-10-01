@@ -950,25 +950,11 @@ export const DoctorDashboard: React.FC = () => {
 
             {/* Top Shift & Date Selector Header */}
             <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-6 mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm">
-              <div>
-                <div className="flex items-center gap-2">
-                  <h2 className="text-xl font-semibold text-[#1d1d1f] tracking-tight">{user?.fullName}</h2>
-                  <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#0088e8]/10 text-[#0088e8]">
-                    {user?.doctorProfile?.specialty || 'Doctor'}
-                  </span>
-                </div>
-                <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-[#86868b]">
-                  <Clock className="w-3.5 h-3.5 text-[#0088e8]" />
-                  <span>Practice Shifts:</span>
-                  {parseDoctorSlots(user?.doctorProfile).map((slot, i) => (
-                    <span
-                      key={slot.id || i}
-                      className="font-semibold px-2.5 py-0.5 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f]"
-                    >
-                      {slot.name} ({format12Hour(slot.startTime)}–{format12Hour(slot.endTime)} • {slot.maxPatients} cap)
-                    </span>
-                  ))}
-                </div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-xl font-semibold text-[#1d1d1f] tracking-tight">{user?.fullName}</h2>
+                <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#0088e8]/10 text-[#0088e8]">
+                  {user?.doctorProfile?.specialty || 'Doctor'}
+                </span>
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
