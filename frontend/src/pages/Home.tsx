@@ -13,7 +13,6 @@ import {
 } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { AppleButton } from '../components/ui/AppleButton';
-import { BrandLogo } from '../components/ui/BrandLogo';
 import { SearchableSpecialtySelect } from '../components/ui/SearchableSpecialtySelect';
 import healthcareHeroBg from '../assets/healthcare-hero-bg.png';
 import {
@@ -64,12 +63,6 @@ export const Home: React.FC = () => {
     };
     fetchDoctors();
   }, []);
-
-  const role = user?.role?.toUpperCase();
-  const isDoctor = role === 'DOCTOR';
-  const isClinic = role === 'CLINIC';
-  const isReceptionist = role === 'RECEPTIONIST';
-  const isAdmin = role === 'ADMIN';
 
   // Compute specialty counts
   const specialtyCounts = useMemo(() => {
@@ -220,37 +213,9 @@ export const Home: React.FC = () => {
         </div>
 
         <div className="relative z-10 max-w-4xl mx-auto text-center w-full">
-          {/* Role Aware Status Bar */}
-          {user ? (
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full backdrop-blur-md bg-white/95 border border-white/80 shadow-[0_2px_12px_rgba(0,0,0,0.06)] text-xs font-semibold text-[#1d1d1f] mb-6">
-              <BrandLogo variant="icon" size="xs" />
-              <span>
-                {user.fullName?.split(' ')[0] || user.fullName} •{' '}
-                {isDoctor
-                  ? 'Doctor Console'
-                  : isClinic
-                  ? 'Clinic Portal'
-                  : isReceptionist
-                  ? 'Reception Desk'
-                  : isAdmin
-                  ? 'Admin Portal'
-                  : 'Patient Portal'}
-              </span>
-            </div>
-          ) : (
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full backdrop-blur-md bg-white/95 border border-white/80 shadow-[0_2px_12px_rgba(0,0,0,0.06)] text-xs font-semibold text-[#1d1d1f] mb-6">
-              <BrandLogo variant="icon" size="xs" />
-              <span>Live Queue & Instant Booking</span>
-            </div>
-          )}
-
-          <h1 className="text-3xl sm:text-5xl md:text-6xl font-extrabold text-[#1d1d1f] tracking-tight leading-[1.15] mb-4 drop-shadow-[0_2px_10px_rgba(255,255,255,0.9)]">
+          <h1 className="text-3xl sm:text-5xl md:text-6xl font-extrabold text-[#1d1d1f] tracking-tight leading-[1.15] mb-6 drop-shadow-[0_2px_10px_rgba(255,255,255,0.9)]">
             Book <span className="text-[#0088e8]">doctor appointments</span> all across India.
           </h1>
-
-          <p className="text-sm sm:text-base text-[#1d1d1f]/85 max-w-xl mx-auto mb-7 font-medium leading-relaxed drop-shadow-[0_1px_6px_rgba(255,255,255,0.9)]">
-            Instant live token passes, verify queue status in real-time, and skip clinic waiting rooms.
-          </p>
 
           {/* Central Integrated Search Bar (Hoardspace Pattern) */}
           <form
