@@ -905,8 +905,8 @@ export const AdminDashboard: React.FC = () => {
                   <p className="font-medium mt-0.5">{selectedClinic.address}</p>
                 </div>
                 <div>
-                  <span className="text-[10px] text-[#86868b] uppercase font-semibold block">City & Region</span>
-                  <p className="font-medium mt-0.5">{selectedClinic.city || 'Not Specified'}</p>
+                  <span className="text-[10px] text-[#86868b] uppercase font-semibold block">City & State</span>
+                  <p className="font-medium mt-0.5">{selectedClinic.city || 'Not Specified'}{selectedClinic.state ? `, ${selectedClinic.state}` : ''}</p>
                 </div>
               </div>
 

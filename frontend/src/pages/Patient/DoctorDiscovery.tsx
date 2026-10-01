@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 
 import { SearchableSpecialtySelect } from '../../components/ui/SearchableSpecialtySelect';
+import { INDIAN_STATES } from '../../utils/indiaStates';
 
 interface DoctorDiscoveryProps {
   isPortalView?: boolean;
@@ -54,6 +55,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
   const [search, setSearch] = useState('');
   const [locationQuery, setLocationQuery] = useState('');
   const [selectedSpecialty, setSelectedSpecialty] = useState(initialSpecialty);
+  const [selectedState, setSelectedState] = useState('All');
   const [maxFee, setMaxFee] = useState<number>(3000);
   const [sortBy, setSortBy] = useState('rating');
   const [minExp, setMinExp] = useState<number>(0);
@@ -82,7 +84,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
     },
   ];
 
-  const loadDoctors = async (queryText: string, specialtyFilter: string, sortOrder: string, expFilter = minExp, feeCap = maxFee) => {
+  const loadDoctors = async (queryText: string, specialtyFilter: string, sortOrder: string, expFilter = minExp, feeCap = maxFee, stateFilter = selectedState) => {
     setLoading(true);
     try {
       const data = await api.getDoctors({
@@ -91,6 +93,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
         minExp: expFilter > 0 ? expFilter : undefined,
         maxFee: feeCap < 3000 ? feeCap : undefined,
         sortBy: sortOrder,
+        state: stateFilter !== 'All' ? stateFilter : undefined,
       });
       setDoctors(data);
     } catch (err) {
@@ -103,10 +106,10 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
   // Instant debounced search & filter sync
   useEffect(() => {
     const timer = setTimeout(() => {
-      loadDoctors(search, selectedSpecialty, sortBy, minExp, maxFee);
+      loadDoctors(search, selectedSpecialty, sortBy, minExp, maxFee, selectedState);
     }, 250);
     return () => clearTimeout(timer);
-  }, [search, selectedSpecialty, sortBy, minExp, maxFee]);
+  }, [search, selectedSpecialty, sortBy, minExp, maxFee, selectedState]);
 
   // Specialty counts
   const specialtyCounts = useMemo(() => {
@@ -117,7 +120,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
     return counts;
   }, [doctors]);
 
-  // Client-side location filtering and fee guard
+  // Client-side location filtering, state filtering, and fee guard
   const filteredDoctors = useMemo(() => {
     return doctors.filter((doc) => {
       if (locationQuery.trim()) {
@@ -126,19 +129,28 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
         const matchesAffiliated = doc.clinics?.some((c) =>
           c.clinic.address.toLowerCase().includes(lq) ||
           c.clinic.city?.toLowerCase().includes(lq) ||
+          c.clinic.state?.toLowerCase().includes(lq) ||
           c.clinic.clinicName.toLowerCase().includes(lq)
         );
         if (!matchesClinic && !matchesAffiliated) return false;
       }
+      if (selectedState !== 'All') {
+        const sLower = selectedState.toLowerCase();
+        const matchesState =
+          doc.clinics?.some((c) => c.clinic?.state?.toLowerCase() === sLower) ||
+          doc.clinicAddress?.toLowerCase().includes(sLower);
+        if (!matchesState) return false;
+      }
       if (maxFee < 3000 && doc.consultationFee > maxFee) return false;
       return true;
     });
-  }, [doctors, locationQuery, maxFee]);
+  }, [doctors, locationQuery, maxFee, selectedState]);
 
   const resetFilters = () => {
     setSearch('');
     setLocationQuery('');
     setSelectedSpecialty('All');
+    setSelectedState('All');
     setMaxFee(3000);
     setMinExp(0);
     setSortBy('rating');
@@ -147,6 +159,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
 
   const hasActiveFilters = Boolean(
     selectedSpecialty !== 'All' ||
+    selectedState !== 'All' ||
     search.trim() ||
     locationQuery.trim() ||
     maxFee < 3000 ||
@@ -156,6 +169,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
 
   const activeFilterCount =
     (selectedSpecialty !== 'All' ? 1 : 0) +
+    (selectedState !== 'All' ? 1 : 0) +
     (search.trim() ? 1 : 0) +
     (locationQuery.trim() ? 1 : 0) +
     (maxFee < 3000 ? 1 : 0) +
@@ -223,6 +237,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
           {mobileFiltersOpen && (
             <div className="pt-4 mt-3 border-t border-[#f0f0f2] space-y-4">
               {/* Location Input */}
+              {/* Location Input */}
               <div>
                 <label className="block text-xs font-semibold text-[#48484a] mb-1">
                   City or Location
@@ -242,6 +257,25 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
                     </button>
                   )}
                 </div>
+              </div>
+
+              {/* State Filter */}
+              <div>
+                <label className="block text-xs font-semibold text-[#48484a] mb-1">
+                  State / Territory
+                </label>
+                <select
+                  value={selectedState}
+                  onChange={(e) => setSelectedState(e.target.value)}
+                  className="w-full py-2 px-3 rounded-xl border border-[#e5e5ea] bg-[#f5f5f7] text-xs font-medium text-[#1d1d1f] focus:outline-none focus:border-[#0088e8] cursor-pointer"
+                >
+                  <option value="All">All States & UTs</option>
+                  {INDIAN_STATES.map((st) => (
+                    <option key={st} value={st}>
+                      {st}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               {/* Specialty Select */}
@@ -397,6 +431,25 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
               </div>
             </div>
 
+            {/* State Filter */}
+            <div>
+              <label className="block text-xs font-semibold text-[#48484a] mb-1.5">
+                State / Territory
+              </label>
+              <select
+                value={selectedState}
+                onChange={(e) => setSelectedState(e.target.value)}
+                className="w-full py-2 px-3 rounded-xl border border-[#e5e5ea] bg-[#f5f5f7] text-xs font-medium text-[#1d1d1f] focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20 cursor-pointer"
+              >
+                <option value="All">All States & UTs</option>
+                {INDIAN_STATES.map((st) => (
+                  <option key={st} value={st}>
+                    {st}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             {/* Specialty Select */}
             <div>
               <label className="block text-xs font-semibold text-[#48484a] mb-1.5">
@@ -514,6 +567,18 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
                       </button>
                     </span>
                   )}
+                  {selectedState !== 'All' && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#0088e8]/10 text-[#0088e8] text-xs font-medium border border-[#0088e8]/20">
+                      {selectedState}
+                      <button
+                        type="button"
+                        onClick={() => setSelectedState('All')}
+                        className="hover:opacity-75 cursor-pointer"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  )}
                   {maxFee < 3000 && (
                     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#0088e8]/10 text-[#0088e8] text-xs font-medium border border-[#0088e8]/20">
                       ≤ ₹{maxFee}
@@ -612,7 +677,12 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
                     ? `${displayCity} (+${extraCitiesCount})`
                     : displayCity
                   : '';
-                const allCitiesTooltip = uniqueCities.length > 0
+                const locationStrings = affiliatedClinics
+                  .map((c) => [c?.city?.trim(), c?.state?.trim()].filter(Boolean).join(', '))
+                  .filter((s) => s.length > 0);
+                const allCitiesTooltip = locationStrings.length > 0
+                  ? `Practicing in: ${Array.from(new Set(locationStrings)).join(' • ')}`
+                  : uniqueCities.length > 0
                   ? `Practicing in: ${uniqueCities.join(', ')}`
                   : 'Clinic practice';
 

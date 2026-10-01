@@ -226,6 +226,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
               clinicName: profileData.clinicName || fullName,
               address: profileData.address || profileData.clinicAddress || 'Central Healthcare Clinic',
               city: profileData.city || null,
+              state: profileData.state || null,
               phone: formattedPhone,
               checkinCode: crypto.randomBytes(3).toString('hex').toUpperCase(),
             },

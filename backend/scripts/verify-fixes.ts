@@ -4333,6 +4333,45 @@ function runTests() {
   assert(canSubmitSchedule(2, null) === false, 'BUG-11: Doctor with clinics must select a clinic');
   assert(canSubmitSchedule(2, 'clinic_1') === true, 'BUG-11: Doctor with clinics can submit when clinic is selected');
 
+  // --- Test 147: Indian States & Geographic Filtering ---
+  console.log('\n--- Test 147: Indian States & Clinic Location Filtering ---');
+  const { INDIAN_STATES, isValidIndianState } = require('../src/utils/indiaStates');
+
+  assert(INDIAN_STATES.length === 36, 'All 36 Indian States and Union Territories are registered');
+  assert(INDIAN_STATES.includes('Odisha' as any), 'Odisha is in states list');
+  assert(INDIAN_STATES.includes('Maharashtra' as any), 'Maharashtra is in states list');
+  assert(INDIAN_STATES.includes('Delhi' as any), 'Delhi is in states list');
+  assert(INDIAN_STATES.includes('Karnataka' as any), 'Karnataka is in states list');
+  assert(isValidIndianState('Odisha') === true, 'Valid Indian state Odisha recognized');
+  assert(isValidIndianState('odisha') === true, 'Case-insensitive state matching works');
+  assert(isValidIndianState('Delhi') === true, 'Delhi recognized');
+  assert(isValidIndianState('New York') === false, 'Foreign state New York rejected');
+  assert(isValidIndianState('') === false, 'Empty state rejected');
+
+  // Verify doctor state filter matching logic
+  const mockDoctorWithClinic = {
+    id: 'doc-odisha',
+    clinics: [
+      { clinic: { id: 'c1', clinicName: 'Rourkela Care', city: 'Rourkela', state: 'Odisha' } }
+    ],
+  };
+  const mockDoctorOtherState = {
+    id: 'doc-mh',
+    clinics: [
+      { clinic: { id: 'c2', clinicName: 'Mumbai Heart', city: 'Mumbai', state: 'Maharashtra' } }
+    ],
+  };
+
+  const matchesState = (doc: any, stateTarget: string) => {
+    if (stateTarget === 'All') return true;
+    const sLower = stateTarget.toLowerCase();
+    return doc.clinics?.some((c: any) => c.clinic?.state?.toLowerCase() === sLower);
+  };
+
+  assert(matchesState(mockDoctorWithClinic, 'Odisha') === true, 'Doctor with Odisha clinic matches Odisha filter');
+  assert(matchesState(mockDoctorOtherState, 'Odisha') === false, 'Doctor with Maharashtra clinic does not match Odisha filter');
+  assert(matchesState(mockDoctorWithClinic, 'All') === true, 'Doctor matches All states filter');
+
 
   console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);

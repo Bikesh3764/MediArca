@@ -556,6 +556,7 @@ export interface ClinicProfile {
   clinicName: string;
   address: string;
   city?: string;
+  state?: string;
   phone?: string;
   isVerified?: boolean;
   verificationStatus?: 'PENDING' | 'VERIFIED' | 'SUSPENDED' | 'REJECTED' | string;
@@ -698,6 +699,7 @@ export interface DoctorAffiliationClinic {
   clinicName: string;
   address: string;
   city?: string;
+  state?: string;
   phone?: string;
   email?: string;
   bookingCount?: number;
@@ -1006,6 +1008,7 @@ export const api = {
     sortBy?: string;
     clinicOnly?: boolean;
     clinicId?: string;
+    state?: string;
   }): Promise<Doctor[]> {
     try {
       const query = new URLSearchParams();
@@ -1016,6 +1019,7 @@ export const api = {
       if (params?.sortBy) query.append('sortBy', params.sortBy);
       if (params?.clinicOnly !== undefined) query.append('clinicOnly', String(params.clinicOnly));
       if (params?.clinicId) query.append('clinicId', params.clinicId);
+      if (params?.state && params.state !== 'All') query.append('state', params.state);
 
       const res = await fetch(`${API_BASE_URL}/doctors?${query.toString()}`);
       return await handleResponse(res);
@@ -1025,6 +1029,13 @@ export const api = {
         let list = [...DEMO_DOCTORS];
         if (params?.specialty && params.specialty !== 'All') {
           list = list.filter(d => d.specialty.toLowerCase() === params.specialty?.toLowerCase());
+        }
+        if (params?.state && params.state !== 'All') {
+          const st = params.state.toLowerCase();
+          list = list.filter(d =>
+            d.clinics?.some(c => c.clinic.state?.toLowerCase() === st) ||
+            d.clinicAddress?.toLowerCase().includes(st)
+          );
         }
         if (params?.search) {
           const s = params.search.toLowerCase();

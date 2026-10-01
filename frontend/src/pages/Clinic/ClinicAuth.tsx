@@ -5,6 +5,7 @@ import { AppleButton } from '../../components/ui/AppleButton';
 import { BrandLogo } from '../../components/ui/BrandLogo';
 import { Building2, AlertCircle, Sparkles, MapPin, Mail, Lock } from 'lucide-react';
 import { sanitizeIndianPhone, formatIndianPhone, isValidIndianPhone } from '../../utils/phoneUtils';
+import { INDIAN_STATES } from '../../utils/indiaStates';
 
 export const ClinicAuth: React.FC = () => {
   const location = useLocation();
@@ -18,6 +19,7 @@ export const ClinicAuth: React.FC = () => {
   const [clinicName, setClinicName] = useState('');
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
+  const [state, setState] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -46,6 +48,10 @@ export const ClinicAuth: React.FC = () => {
 
   const handleSignupSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!state) {
+      setError('Please select the state or union territory where your clinic is located');
+      return;
+    }
     if (!isValidIndianPhone(phone)) {
       setError('Please enter a valid 10-digit Indian phone number');
       return;
@@ -59,6 +65,7 @@ export const ClinicAuth: React.FC = () => {
         clinicName,
         address,
         city: city || undefined,
+        state: state || undefined,
         phone: formatIndianPhone(phone),
         email: email.trim(),
         password,
@@ -251,35 +258,53 @@ export const ClinicAuth: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
+                  <label className="block text-xs font-medium text-[#1d1d1f] mb-1">State / UT</label>
+                  <select
+                    required
+                    value={state}
+                    onChange={(e) => setState(e.target.value)}
+                    className="w-full h-10 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] cursor-pointer"
+                  >
+                    <option value="">Select State / UT</option>
+                    {INDIAN_STATES.map((st) => (
+                      <option key={st} value={st}>
+                        {st}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
                   <label className="block text-xs font-medium text-[#1d1d1f] mb-1">City</label>
                   <input
                     type="text"
+                    required
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
-                    placeholder="e.g. New York"
+                    placeholder="e.g. Rourkela"
                     className="w-full h-10 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
                   />
                 </div>
-                <div>
-                  <label className="block text-xs font-medium text-[#1d1d1f] mb-1">Phone</label>
-                  <div className="flex rounded-xl border border-[#e5e5ea] overflow-hidden focus-within:ring-2 focus-within:ring-[#0088e8]/20 focus-within:border-[#0088e8] bg-[#f5f5f7] focus-within:bg-white transition-all">
-                    <span className="inline-flex items-center gap-1 px-2.5 bg-[#e5e5ea]/50 border-r border-[#e5e5ea] text-[#1d1d1f] font-semibold text-xs select-none">
-                      <span>🇮🇳</span>
-                      <span>+91</span>
-                    </span>
-                    <input
-                      type="tel"
-                      required
-                      value={sanitizeIndianPhone(phone)}
-                      onChange={(e) => {
-                        const digits = sanitizeIndianPhone(e.target.value);
-                        setPhone(digits ? `+91 ${digits}` : '');
-                      }}
-                      placeholder="98765 43210"
-                      maxLength={10}
-                      className="w-full h-10 px-3 text-xs bg-transparent focus:outline-none tracking-wider font-mono text-[#1d1d1f] placeholder:text-[#86868b]"
-                    />
-                  </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-[#1d1d1f] mb-1">Official Contact Phone</label>
+                <div className="flex rounded-xl border border-[#e5e5ea] overflow-hidden focus-within:ring-2 focus-within:ring-[#0088e8]/20 focus-within:border-[#0088e8] bg-[#f5f5f7] focus-within:bg-white transition-all">
+                  <span className="inline-flex items-center gap-1 px-2.5 bg-[#e5e5ea]/50 border-r border-[#e5e5ea] text-[#1d1d1f] font-semibold text-xs select-none">
+                    <span>🇮🇳</span>
+                    <span>+91</span>
+                  </span>
+                  <input
+                    type="tel"
+                    required
+                    value={sanitizeIndianPhone(phone)}
+                    onChange={(e) => {
+                      const digits = sanitizeIndianPhone(e.target.value);
+                      setPhone(digits ? `+91 ${digits}` : '');
+                    }}
+                    placeholder="98765 43210"
+                    maxLength={10}
+                    className="w-full h-10 px-3 text-xs bg-transparent focus:outline-none tracking-wider font-mono text-[#1d1d1f] placeholder:text-[#86868b]"
+                  />
                 </div>
               </div>
 

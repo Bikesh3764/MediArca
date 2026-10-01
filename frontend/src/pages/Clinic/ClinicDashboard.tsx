@@ -355,9 +355,9 @@ export const ClinicDashboard: React.FC = () => {
       portalSubtitle="CLINIC PORTAL"
       navItems={navItems}
       title={clinic?.clinicName || user?.fullName || 'Clinic Partner Portal'}
-      subtitle={`${clinic?.address || 'Clinical Operations Dashboard'} ${
-        clinic?.city ? `• ${clinic.city}` : ''
-      }`}
+      subtitle={`${clinic?.address || 'Clinical Operations Dashboard'}${
+        clinic?.city ? ` • ${clinic.city}` : ''
+      }${clinic?.state ? `, ${clinic.state}` : ''}`}
       headerAction={
         <div className="flex items-center gap-2.5">
           <AppleButton

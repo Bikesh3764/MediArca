@@ -15,6 +15,7 @@ import { useAuth } from '../context/AuthContext';
 import { AppleButton } from '../components/ui/AppleButton';
 import { SearchableSpecialtySelect } from '../components/ui/SearchableSpecialtySelect';
 import healthcareHeroBg from '../assets/healthcare-hero-bg.png';
+import { INDIAN_STATES } from '../utils/indiaStates';
 import {
   Search,
   MapPin,
@@ -43,6 +44,7 @@ export const Home: React.FC = () => {
   const [locationQuery, setLocationQuery] = useState('');
   const [selectedSpecialty, setSelectedSpecialty] = useState('All');
   const [selectedCity, setSelectedCity] = useState('All');
+  const [selectedState, setSelectedState] = useState('All');
   const [maxFee, setMaxFee] = useState<number>(3000);
   const [sortBy, setSortBy] = useState<'rating' | 'experience' | 'fee_low' | 'fee_high'>('rating');
   const [minExperience, setMinExperience] = useState<number>(0);
@@ -98,7 +100,8 @@ export const Home: React.FC = () => {
           const matchesAffiliated = doc.clinics?.some((c) =>
             c.clinic.clinicName.toLowerCase().includes(q) ||
             c.clinic.address.toLowerCase().includes(q) ||
-            c.clinic.city?.toLowerCase().includes(q)
+            c.clinic.city?.toLowerCase().includes(q) ||
+            c.clinic.state?.toLowerCase().includes(q)
           );
           if (!matchesName && !matchesSpec && !matchesQual && !matchesClinic && !matchesAffiliated) {
             return false;
@@ -112,6 +115,7 @@ export const Home: React.FC = () => {
           const matchesAffiliated = doc.clinics?.some((c) =>
             c.clinic.address.toLowerCase().includes(lq) ||
             c.clinic.city?.toLowerCase().includes(lq) ||
+            c.clinic.state?.toLowerCase().includes(lq) ||
             c.clinic.clinicName.toLowerCase().includes(lq)
           );
           if (!matchesClinic && !matchesAffiliated) {
@@ -122,6 +126,15 @@ export const Home: React.FC = () => {
         // Experience Filter
         if (minExperience > 0 && doc.experienceYears < minExperience) {
           return false;
+        }
+
+        // State Filter
+        if (selectedState !== 'All') {
+          const sLower = selectedState.toLowerCase();
+          const matchesState =
+            doc.clinics?.some((c) => c.clinic?.state?.toLowerCase() === sLower) ||
+            doc.clinicAddress?.toLowerCase().includes(sLower);
+          if (!matchesState) return false;
         }
 
         // City Filter
@@ -156,12 +169,13 @@ export const Home: React.FC = () => {
         if (sortBy === 'experience') return b.experienceYears - a.experienceYears;
         return (b.rating || 5) - (a.rating || 5);
       });
-  }, [doctors, selectedSpecialty, selectedCity, maxFee, searchQuery, locationQuery, minExperience, availabilityFilter, sortBy]);
+  }, [doctors, selectedSpecialty, selectedState, selectedCity, maxFee, searchQuery, locationQuery, minExperience, availabilityFilter, sortBy]);
 
   const resetFilters = () => {
     setSearchQuery('');
     setLocationQuery('');
     setSelectedSpecialty('All');
+    setSelectedState('All');
     setSelectedCity('All');
     setMaxFee(3000);
     setMinExperience(0);
@@ -171,6 +185,7 @@ export const Home: React.FC = () => {
 
   const hasActiveFilters = Boolean(
     selectedSpecialty !== 'All' ||
+    selectedState !== 'All' ||
     selectedCity !== 'All' ||
     maxFee < 3000 ||
     searchQuery.trim() ||
@@ -182,6 +197,7 @@ export const Home: React.FC = () => {
   const activeFilterCount = useMemo(() => {
     let count = 0;
     if (selectedSpecialty !== 'All') count++;
+    if (selectedState !== 'All') count++;
     if (selectedCity !== 'All') count++;
     if (maxFee < 3000) count++;
     if (searchQuery.trim()) count++;
@@ -189,7 +205,7 @@ export const Home: React.FC = () => {
     if (minExperience > 0) count++;
     if (sortBy !== 'rating') count++;
     return count;
-  }, [selectedSpecialty, selectedCity, maxFee, searchQuery, locationQuery, minExperience, sortBy]);
+  }, [selectedSpecialty, selectedState, selectedCity, maxFee, searchQuery, locationQuery, minExperience, sortBy]);
 
   const handleHeroSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -361,6 +377,25 @@ export const Home: React.FC = () => {
                       </button>
                     )}
                   </div>
+                </div>
+
+                {/* State Filter */}
+                <div>
+                  <label className="block text-xs font-semibold text-[#48484a] mb-1">
+                    State / Territory
+                  </label>
+                  <select
+                    value={selectedState}
+                    onChange={(e) => setSelectedState(e.target.value)}
+                    className="w-full py-2 px-3 rounded-xl border border-[#e5e5ea] bg-[#f5f5f7] text-xs font-medium text-[#1d1d1f] focus:outline-none focus:border-[#0088e8] cursor-pointer"
+                  >
+                    <option value="All">All States & UTs</option>
+                    {INDIAN_STATES.map((st) => (
+                      <option key={st} value={st}>
+                        {st}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 {/* Specialty Select */}
@@ -547,6 +582,25 @@ export const Home: React.FC = () => {
                 </div>
               </div>
 
+              {/* State Filter */}
+              <div>
+                <label className="block text-xs font-semibold text-[#48484a] mb-1.5">
+                  State / Territory
+                </label>
+                <select
+                  value={selectedState}
+                  onChange={(e) => setSelectedState(e.target.value)}
+                  className="w-full py-2 px-3 rounded-xl border border-[#e5e5ea] bg-[#f5f5f7]/80 text-xs font-semibold text-[#1d1d1f] focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20 cursor-pointer shadow-xs"
+                >
+                  <option value="All">All States & UTs</option>
+                  {INDIAN_STATES.map((st) => (
+                    <option key={st} value={st}>
+                      {st}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               {/* Specialty Select */}
               <div>
                 <label className="block text-xs font-semibold text-[#48484a] mb-1.5">
@@ -686,6 +740,14 @@ export const Home: React.FC = () => {
                         </button>
                       </span>
                     )}
+                    {selectedState !== 'All' && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#0088e8]/10 text-[#0088e8] text-xs font-medium border border-[#0088e8]/20">
+                        {selectedState}
+                        <button type="button" onClick={() => setSelectedState('All')} className="hover:opacity-75 cursor-pointer">
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    )}
                     {maxFee < 3000 && (
                       <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#0088e8]/10 text-[#0088e8] text-xs font-medium border border-[#0088e8]/20">
                         ≤ ₹{maxFee}
@@ -790,7 +852,12 @@ export const Home: React.FC = () => {
                       ? `${displayCity} (+${extraCitiesCount})`
                       : displayCity
                     : '';
-                  const allCitiesTooltip = uniqueCities.length > 0
+                  const locationStrings = affiliatedClinics
+                    .map((c) => [c?.city?.trim(), c?.state?.trim()].filter(Boolean).join(', '))
+                    .filter((s) => s.length > 0);
+                  const allCitiesTooltip = locationStrings.length > 0
+                    ? `Practicing in: ${Array.from(new Set(locationStrings)).join(' • ')}`
+                    : uniqueCities.length > 0
                     ? `Practicing in: ${uniqueCities.join(', ')}`
                     : 'Clinic practice';
 

@@ -332,7 +332,7 @@ export const DoctorDetail: React.FC = () => {
                               </div>
                               <p className="text-xs text-[#86868b] mt-0.5 flex items-center gap-1">
                                 <MapPin className="w-3 h-3 text-[#86868b] flex-shrink-0" />
-                                <span>{cd.clinic.address}{cd.clinic.city ? `, ${cd.clinic.city}` : ''}</span>
+                                <span>{cd.clinic.address}{cd.clinic.city ? `, ${cd.clinic.city}` : ''}{cd.clinic.state ? `, ${cd.clinic.state}` : ''}</span>
                               </p>
                               {cd.clinic.phone && (
                                 <span className="text-[11px] text-[#0088e8] block mt-1.5 font-medium">
@@ -455,7 +455,7 @@ export const DoctorDetail: React.FC = () => {
                           <div className="min-w-0 flex-1">
                             <span className="font-semibold block truncate">{cd.clinic.clinicName}</span>
                             <span className="text-[11px] text-[#86868b] block truncate">
-                              {cd.clinic.address}{cd.clinic.city ? `, ${cd.clinic.city}` : ''}
+                              {cd.clinic.address}{cd.clinic.city ? `, ${cd.clinic.city}` : ''}{cd.clinic.state ? `, ${cd.clinic.state}` : ''}
                             </span>
                           </div>
                           {isSelected ? (

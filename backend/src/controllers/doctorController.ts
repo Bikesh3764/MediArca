@@ -33,7 +33,7 @@ export const formatDoctorClinics = (doc: any) => {
 
 export const getDoctors = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { search, specialty, minExp, maxFee, sortBy, clinicOnly, clinicId } = req.query;
+    const { search, specialty, minExp, maxFee, sortBy, clinicOnly, clinicId, state } = req.query;
 
     const whereClause: any = {
       isVerified: true,
@@ -46,6 +46,22 @@ export const getDoctors = async (req: Request, res: Response): Promise<void> => 
           ...(clinicId ? { clinicId: String(clinicId) } : {}),
           status: { in: ['ACTIVE', 'ACCEPTED'] },
           clinic: { isVerified: true, verificationStatus: 'VERIFIED' },
+        },
+      };
+    }
+
+    if (state && typeof state === 'string' && state.trim() && state !== 'All') {
+      const stateTrimmed = state.trim();
+      whereClause.clinics = {
+        some: {
+          ...(whereClause.clinics?.some || {}),
+          status: { in: ['ACTIVE', 'ACCEPTED'] },
+          clinic: {
+            ...(whereClause.clinics?.some?.clinic || {}),
+            isVerified: true,
+            verificationStatus: 'VERIFIED',
+            state: { equals: stateTrimmed, mode: 'insensitive' },
+          },
         },
       };
     }
@@ -76,6 +92,7 @@ export const getDoctors = async (req: Request, res: Response): Promise<void> => 
                   { clinicName: { contains: search, mode: 'insensitive' } },
                   { address: { contains: search, mode: 'insensitive' } },
                   { city: { contains: search, mode: 'insensitive' } },
+                  { state: { contains: search, mode: 'insensitive' } },
                 ],
               },
             },

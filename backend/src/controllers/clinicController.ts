@@ -78,6 +78,7 @@ export const getMyClinic = async (req: AuthRequest, res: Response): Promise<void
             clinicName: clinic.clinicName,
             address: clinic.address,
             city: clinic.city,
+            state: clinic.state,
             phone: clinic.phone,
             isVerified: clinic.isVerified,
             verificationStatus: clinic.verificationStatus,
@@ -189,6 +190,7 @@ export const getMyClinic = async (req: AuthRequest, res: Response): Promise<void
           clinicName: clinic.clinicName,
           address: clinic.address,
           city: clinic.city,
+          state: clinic.state,
           phone: clinic.phone,
           isVerified: clinic.isVerified,
           verificationStatus: clinic.verificationStatus,
@@ -646,7 +648,7 @@ export const removeDoctorFromClinic = async (req: AuthRequest, res: Response): P
  */
 export const getPublicClinics = async (req: any, res: Response): Promise<void> => {
   try {
-    const { search, city } = req.query || {};
+    const { search, city, state } = req.query || {};
     const whereClause: any = {
       isVerified: true,
       verificationStatus: 'VERIFIED',
@@ -656,11 +658,16 @@ export const getPublicClinics = async (req: any, res: Response): Promise<void> =
       whereClause.city = { contains: city.trim(), mode: 'insensitive' };
     }
 
+    if (state && typeof state === 'string' && state.trim() && state !== 'All') {
+      whereClause.state = { contains: state.trim(), mode: 'insensitive' };
+    }
+
     if (search && typeof search === 'string' && search.trim()) {
       whereClause.OR = [
         { clinicName: { contains: search.trim(), mode: 'insensitive' } },
         { address: { contains: search.trim(), mode: 'insensitive' } },
         { city: { contains: search.trim(), mode: 'insensitive' } },
+        { state: { contains: search.trim(), mode: 'insensitive' } },
       ];
     }
 
@@ -671,6 +678,7 @@ export const getPublicClinics = async (req: any, res: Response): Promise<void> =
         clinicName: true,
         address: true,
         city: true,
+        state: true,
         phone: true,
         isVerified: true,
         _count: {
