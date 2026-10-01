@@ -462,35 +462,35 @@ export const DoctorDashboard: React.FC = () => {
             )}
 
             {/* Metrics Overview */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-              <UtilityCard className="flex items-center justify-between">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+              <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-5 flex items-center justify-between shadow-sm">
                 <div>
-                  <span className="text-xs text-[#86868b] uppercase font-semibold">Affiliated Clinics</span>
-                  <h3 className="text-3xl font-bold text-[#1d1d1f] mt-1 tracking-tight">
+                  <span className="text-xs text-[#86868b] font-medium">Affiliated Clinics</span>
+                  <h3 className="text-2xl sm:text-3xl font-bold text-[#1d1d1f] mt-1 tracking-tight">
                     {affiliations?.clinics.length || 0}
                   </h3>
                 </div>
-                <div className="w-12 h-12 rounded-2xl bg-[#0088e8]/10 text-[#0088e8] flex items-center justify-center">
-                  <Building2 className="w-6 h-6" />
+                <div className="w-11 h-11 rounded-2xl bg-[#0088e8]/10 text-[#0088e8] flex items-center justify-center">
+                  <Building2 className="w-5 h-5" />
                 </div>
-              </UtilityCard>
+              </div>
 
-              <UtilityCard className="flex items-center justify-between">
+              <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-5 flex items-center justify-between shadow-sm">
                 <div>
-                  <span className="text-xs text-[#86868b] uppercase font-semibold">Linked Receptionists</span>
-                  <h3 className="text-3xl font-bold text-purple-600 mt-1 tracking-tight">
+                  <span className="text-xs text-[#86868b] font-medium">Linked Receptionists</span>
+                  <h3 className="text-2xl sm:text-3xl font-bold text-[#1d1d1f] mt-1 tracking-tight">
                     {affiliations?.receptionists.length || 0}
                   </h3>
                 </div>
-                <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center">
-                  <Users className="w-6 h-6" />
+                <div className="w-11 h-11 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center">
+                  <Users className="w-5 h-5" />
                 </div>
-              </UtilityCard>
+              </div>
 
-              <UtilityCard className="flex items-center justify-between">
+              <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-5 flex items-center justify-between shadow-sm">
                 <div>
-                  <span className="text-xs text-[#86868b] uppercase font-semibold">Clinic Attributed Revenue</span>
-                  <h3 className="text-3xl font-bold text-emerald-600 mt-1 tracking-tight">
+                  <span className="text-xs text-[#86868b] font-medium">Clinic Attributed Revenue</span>
+                  <h3 className="text-2xl sm:text-3xl font-bold text-emerald-600 mt-1 tracking-tight">
                     ₹{(
                       affiliations?.clinics.reduce(
                         (sum: number, c) => sum + (c.revenue || 0),
@@ -499,28 +499,26 @@ export const DoctorDashboard: React.FC = () => {
                     ).toLocaleString('en-IN')}
                   </h3>
                 </div>
-                <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                  <IndianRupee className="w-6 h-6" />
+                <div className="w-11 h-11 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                  <IndianRupee className="w-5 h-5" />
                 </div>
-              </UtilityCard>
+              </div>
             </div>
 
             {/* Incoming Clinic Affiliation Invitations */}
             {affiliations?.incomingRequests && affiliations.incomingRequests.length > 0 && (
-              <div className="bg-white rounded-[20px] border-2 border-[#0088e8]/30 p-6 shadow-sm">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-xl bg-[#0088e8]/10 text-[#0088e8] flex items-center justify-center">
-                      <Building2 className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h3 className="text-base font-semibold text-[#1d1d1f]">
-                        Incoming Clinic Invitations ({affiliations.incomingRequests.length})
-                      </h3>
-                      <p className="text-xs text-[#86868b]">
-                        These verified facilities have invited you to practice. Accept to enable clinic walk-ins and patient bookings.
-                      </p>
-                    </div>
+              <div className="bg-white rounded-[20px] border border-[#0088e8]/30 p-6 shadow-sm">
+                <div className="flex items-center gap-2.5 mb-4">
+                  <div className="w-9 h-9 rounded-xl bg-[#0088e8]/10 text-[#0088e8] flex items-center justify-center">
+                    <Building2 className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-semibold text-[#1d1d1f]">
+                      Incoming Clinic Invitations ({affiliations.incomingRequests.length})
+                    </h3>
+                    <p className="text-xs text-[#86868b]">
+                      Verified clinics that invited you to practice.
+                    </p>
                   </div>
                 </div>
 
@@ -533,11 +531,11 @@ export const DoctorDashboard: React.FC = () => {
                       <div>
                         <h4 className="font-semibold text-sm text-[#1d1d1f]">{req.clinicName}</h4>
                         <p className="text-xs text-[#86868b] flex items-center gap-1 mt-1">
-                          <MapPin className="w-3 h-3 text-[#86868b]" />
+                          <MapPin className="w-3.5 h-3.5 text-[#86868b]" />
                           {req.address}{req.city ? `, ${req.city}` : ''}
                         </p>
                         {req.phone && (
-                          <p className="text-[11px] text-[#86868b] mt-0.5">Phone: {req.phone}</p>
+                          <p className="text-xs text-[#86868b] mt-0.5">Phone: {req.phone}</p>
                         )}
                       </div>
                       <div className="flex items-center gap-2 mt-4 pt-3 border-t border-[#e5e5ea]">
@@ -548,7 +546,7 @@ export const DoctorDashboard: React.FC = () => {
                           className="flex-1 flex items-center justify-center gap-1.5"
                         >
                           <Check className="w-3.5 h-3.5" />
-                          Accept Invitation
+                          Accept
                         </AppleButton>
                         <AppleButton
                           size="sm"
@@ -597,18 +595,13 @@ export const DoctorDashboard: React.FC = () => {
             {/* Section 1: Affiliated Clinics */}
             <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-6 shadow-sm">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-lg font-semibold text-[#1d1d1f] tracking-tight">
-                      Affiliated Clinics & Hospitals
-                    </h3>
-                    <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f]">
-                      {affiliations?.clinics.length || 0}
-                    </span>
-                  </div>
-                  <p className="text-xs text-[#86868b] mt-0.5">
-                    Clinics where you practice. You receive direct patient bookings and live queue tokens from these facilities.
-                  </p>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-lg font-semibold text-[#1d1d1f] tracking-tight">
+                    Affiliated Clinics & Hospitals
+                  </h3>
+                  <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f]">
+                    {affiliations?.clinics.length || 0}
+                  </span>
                 </div>
 
                 {/* Quick Add Clinic Dropdown */}
@@ -621,7 +614,7 @@ export const DoctorDashboard: React.FC = () => {
                       <select
                         value={selectedClinicId}
                         onChange={(e) => setSelectedClinicId(e.target.value)}
-                        className="h-10 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:border-[#0088e8] w-full sm:w-64"
+                        className="h-9 px-3 rounded-full border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] focus:outline-none focus:border-[#0088e8] w-full sm:w-64"
                       >
                         <option value="">Select Verified Clinic to Affiliate...</option>
                         {unaffiliatedClinics.map((c: ClinicProfile) => (
@@ -630,9 +623,8 @@ export const DoctorDashboard: React.FC = () => {
                           </option>
                         ))}
                       </select>
-                      <AppleButton
-                        size="sm"
-                        variant="primary"
+                      <button
+                        type="button"
                         disabled={!selectedClinicId}
                         onClick={() => {
                           if (selectedClinicId) {
@@ -640,19 +632,13 @@ export const DoctorDashboard: React.FC = () => {
                             setSelectedClinicId('');
                           }
                         }}
-                        className="flex items-center gap-1.5 whitespace-nowrap shadow-sm"
+                        className="h-9 px-4 rounded-full bg-[#0088e8] hover:bg-[#0077cc] disabled:opacity-40 disabled:hover:bg-[#0088e8] text-white text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all active:scale-[0.98] shadow-xs"
                       >
                         <Plus className="w-3.5 h-3.5" />
                         Affiliate
-                      </AppleButton>
+                      </button>
                     </div>
-                  ) : (
-                    <span className="text-xs text-[#86868b] italic">
-                      {publicClinics.length === 0
-                        ? 'No verified clinics currently available'
-                        : 'Affiliated with all verified clinics'}
-                    </span>
-                  );
+                  ) : null;
                 })()}
               </div>
 
@@ -667,117 +653,87 @@ export const DoctorDashboard: React.FC = () => {
                   <Building2 className="w-10 h-10 text-[#86868b] mx-auto mb-2 opacity-60" />
                   <h4 className="text-sm font-semibold text-[#1d1d1f]">No Clinics Affiliated</h4>
                   <p className="text-xs text-[#86868b] mt-1 max-w-md mx-auto">
-                    Select a clinic from the dropdown above to affiliate your practice, enable clinic walk-ins, and track isolated facility revenue.
+                    Select a clinic from the dropdown above to affiliate your practice and receive patient bookings.
                   </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   {affiliations?.clinics.map((clinic) => (
                     <div
                       key={clinic.clinicId}
-                      className="rounded-2xl border border-[#e5e5ea] p-5 hover:border-[#0088e8]/40 transition-all flex flex-col justify-between bg-white shadow-sm"
+                      className="rounded-[20px] border border-[#e5e5ea] p-5 hover:border-[#0088e8]/30 transition-all duration-200 flex flex-col justify-between bg-white shadow-sm hover:shadow-md"
                     >
                       <div>
+                        {/* Header: Icon, Name, Verified, Location, Detach */}
                         <div className="flex items-start justify-between gap-3">
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-start gap-3.5 min-w-0">
                             <div className="w-10 h-10 rounded-2xl bg-[#0088e8]/10 text-[#0088e8] flex items-center justify-center font-bold flex-shrink-0">
                               <Building2 className="w-5 h-5" />
                             </div>
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <h4 className="font-semibold text-base text-[#1d1d1f] tracking-tight">
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <h4 className="font-semibold text-base text-[#1d1d1f] tracking-tight truncate">
                                   {clinic.clinicName}
                                 </h4>
-                                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 inline-flex items-center gap-1">
+                                  <Check className="w-3 h-3" />
                                   Verified
                                 </span>
                               </div>
-                              <p className="text-xs text-[#86868b] flex items-center gap-1 mt-0.5">
-                                <MapPin className="w-3 h-3 text-[#86868b]" />
-                                {clinic.address}{clinic.city ? `, ${clinic.city}` : ''}
+                              <p className="text-xs text-[#86868b] flex items-center gap-1 mt-1 truncate">
+                                <MapPin className="w-3.5 h-3.5 text-[#86868b] flex-shrink-0" />
+                                <span className="truncate">{clinic.address}{clinic.city ? `, ${clinic.city}` : ''}</span>
                               </p>
                             </div>
                           </div>
-                          <AppleButton
-                            size="sm"
-                            variant="ghost"
+                          <button
+                            type="button"
                             onClick={() => handleRemoveClinic(clinic.clinicId, clinic.clinicName)}
-                            className="text-rose-600 hover:bg-rose-50 p-2 h-8 w-8 rounded-full flex items-center justify-center"
+                            className="text-[#86868b] hover:text-rose-600 hover:bg-rose-50 p-2 rounded-full transition-all flex-shrink-0"
                             title="Detach from Clinic"
                           >
                             <Trash2 className="w-4 h-4" />
-                          </AppleButton>
+                          </button>
                         </div>
 
-                        {/* Clinic Shifts & Fee summary */}
-                        <div className="mt-4 p-3 rounded-xl bg-[#fafafc] border border-[#e5e5ea]/80 space-y-2">
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-[#86868b] flex items-center gap-1.5 font-medium">
-                              <IndianRupee className="w-3.5 h-3.5 text-emerald-600" />
-                              Facility Consultation Fee:
-                            </span>
-                            <span className="font-bold text-[#1d1d1f]">
+                        {/* Clean Stats Row */}
+                        <div className="grid grid-cols-3 gap-2 mt-4 p-3 rounded-xl bg-[#fafafc] border border-[#e5e5ea]/80 text-center">
+                          <div>
+                            <span className="text-[11px] font-medium text-[#86868b] block">Consultation Fee</span>
+                            <span className="text-sm font-bold text-[#1d1d1f] mt-0.5 block">
                               ₹{clinic.consultationFee ?? user?.doctorProfile?.consultationFee ?? 500}
                             </span>
                           </div>
-
-                          <div className="flex flex-col gap-1.5 text-xs pt-2 border-t border-[#e5e5ea]/60">
-                            <div className="flex items-center justify-between">
-                              <span className="text-[#86868b] flex items-center gap-1.5 font-medium">
-                                <Clock className="w-3.5 h-3.5 text-[#0088e8]" />
-                                Practice Shifts:
-                              </span>
-                              <span className="font-semibold text-[#1d1d1f]">
-                                {clinic.slots && clinic.slots.length > 0
-                                  ? `${clinic.slots.length} ${clinic.slots.length === 1 ? 'Shift' : 'Shifts'}`
-                                  : 'Default shift'}
-                              </span>
-                            </div>
-                            {clinic.slots && clinic.slots.length > 0 ? (
-                              <div className="space-y-1 mt-1">
-                                {clinic.slots.map((s, sIdx) => (
-                                  <div
-                                    key={s.id || sIdx}
-                                    className="p-1.5 rounded-lg bg-white border border-[#e5e5ea] flex items-center justify-between text-[11px]"
-                                  >
-                                    <span className="font-medium text-[#1d1d1f] truncate max-w-[140px]">
-                                      {s.name || `Shift ${sIdx + 1}`}
-                                    </span>
-                                    <span className="text-[#0088e8] font-semibold">
-                                      {format12Hour(s.startTime)} – {format12Hour(s.endTime)} ({s.maxPatients} pts • ~{s.avgConsultationMinutes || 15}m pace)
-                                    </span>
-                                  </div>
-                                ))}
-                              </div>
-                            ) : (
-                              <p className="text-[#86868b] text-[11px] italic">
-                                Using default doctor schedule. Click below to customize shifts for this venue.
-                              </p>
-                            )}
+                          <div className="border-x border-[#e5e5ea]/80">
+                            <span className="text-[11px] font-medium text-[#86868b] block">Bookings</span>
+                            <span className="text-sm font-bold text-[#1d1d1f] mt-0.5 block">
+                              {clinic.bookingCount || 0}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-[11px] font-medium text-[#86868b] block">Revenue</span>
+                            <span className="text-sm font-bold text-emerald-600 mt-0.5 block">
+                              ₹{(clinic.revenue ?? 0).toLocaleString('en-IN')}
+                            </span>
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-[#f5f5f7]">
-                          <div className="bg-[#f5f5f7] rounded-xl p-2.5 text-center">
-                            <span className="text-[10px] uppercase font-semibold text-[#86868b]">
-                              Clinic Bookings
-                            </span>
-                            <p className="text-base font-bold text-[#1d1d1f] mt-0.5">
-                              {clinic.bookingCount || 0}
-                            </p>
-                          </div>
-                          <div className="bg-emerald-50 rounded-xl p-2.5 text-center border border-emerald-100">
-                            <span className="text-[10px] uppercase font-semibold text-emerald-700">
-                              Attributed Revenue
-                            </span>
-                            <p className="text-base font-bold text-emerald-700 mt-0.5">
-                              ₹{(clinic.revenue ?? 0).toLocaleString('en-IN')}
-                            </p>
-                          </div>
+                        {/* Shifts Status */}
+                        <div className="mt-3 flex items-center justify-between text-xs px-1 text-[#86868b]">
+                          <span className="flex items-center gap-1.5 font-medium">
+                            <Clock className="w-3.5 h-3.5 text-[#0088e8]" />
+                            Practice Shifts:
+                          </span>
+                          <span className="font-semibold text-[#1d1d1f] truncate max-w-[220px]">
+                            {clinic.slots && clinic.slots.length > 0
+                              ? `${clinic.slots.length} ${clinic.slots.length === 1 ? 'Shift' : 'Shifts'} (${format12Hour(clinic.slots[0].startTime)} – ${format12Hour(clinic.slots[0].endTime)})`
+                              : 'Default schedule'}
+                          </span>
                         </div>
                       </div>
 
-                      <div className="mt-4 space-y-3">
+                      {/* Actions & Footer */}
+                      <div className="mt-4 pt-3 border-t border-[#f5f5f7] space-y-2.5">
                         <AppleButton
                           size="sm"
                           variant="secondary"
@@ -788,7 +744,7 @@ export const DoctorDashboard: React.FC = () => {
                           Edit Shifts & Fee for this Clinic
                         </AppleButton>
 
-                        <div className="text-[11px] text-[#86868b] flex items-center justify-between pt-2 border-t border-[#f5f5f7]">
+                        <div className="text-[11px] text-[#86868b] flex items-center justify-between px-1">
                           <span>Phone: {clinic.phone || 'N/A'}</span>
                           <span>Affiliated: {clinic.joinedAt ? new Date(clinic.joinedAt).toLocaleDateString() : 'Active'}</span>
                         </div>
@@ -799,20 +755,15 @@ export const DoctorDashboard: React.FC = () => {
               )}
             </div>
 
-            {/* Section 2: Authorized Clinic Receptionists */}
+            {/* Section 2: Authorized Clinic Desk Staff */}
             <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-6 shadow-sm">
-              <div className="mb-6">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-lg font-semibold text-[#1d1d1f] tracking-tight">
-                    Authorized Clinic Desk Staff
-                  </h3>
-                  <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f]">
-                    {affiliations?.receptionists.length || 0}
-                  </span>
-                </div>
-                <p className="text-xs text-[#86868b] mt-0.5">
-                  Receptionists provisioned and assigned to your desk by affiliated clinic administrators. They issue walk-in passes and manage patient queues on your behalf.
-                </p>
+              <div className="flex items-center gap-2 mb-6">
+                <h3 className="text-lg font-semibold text-[#1d1d1f] tracking-tight">
+                  Authorized Clinic Desk Staff
+                </h3>
+                <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f]">
+                  {affiliations?.receptionists.length || 0}
+                </span>
               </div>
 
               {affiliationsLoading ? (
@@ -834,14 +785,14 @@ export const DoctorDashboard: React.FC = () => {
                   {affiliations?.receptionists.map((rec) => (
                     <div
                       key={rec.receptionistId}
-                      className="rounded-2xl border border-[#e5e5ea] p-5 hover:border-[#0088e8]/40 transition-all flex items-center justify-between gap-4 bg-white shadow-sm"
+                      className="rounded-2xl border border-[#e5e5ea] p-4.5 hover:border-[#0088e8]/40 transition-all flex items-center justify-between gap-4 bg-white shadow-sm"
                     >
                       <div className="flex items-center gap-3.5 min-w-0">
                         <div className="w-10 h-10 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold flex-shrink-0">
                           <Users className="w-5 h-5" />
                         </div>
                         <div className="min-w-0">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <h4 className="font-semibold text-sm text-[#1d1d1f] truncate">
                               {rec.fullName}
                             </h4>
@@ -855,12 +806,10 @@ export const DoctorDashboard: React.FC = () => {
                             )}
                           </div>
                           <p className="text-xs text-[#86868b] truncate mt-0.5">{rec.email}</p>
-                          {rec.phone && (
-                            <p className="text-[11px] text-[#86868b] mt-0.5">Phone: {rec.phone}</p>
-                          )}
-                          <p className="text-[10px] text-[#86868b] mt-1">
-                            Linked: {new Date(rec.joinedAt).toLocaleDateString()}
-                          </p>
+                          <div className="flex items-center gap-3 text-[11px] text-[#86868b] mt-1">
+                            {rec.phone && <span>Phone: {rec.phone}</span>}
+                            <span>Linked: {new Date(rec.joinedAt).toLocaleDateString()}</span>
+                          </div>
                         </div>
                       </div>
                       <AppleButton
