@@ -208,24 +208,24 @@ export const Home: React.FC = () => {
 
   return (
     <div className="flex flex-col min-h-screen bg-[#f5f5f7]">
-      {/* 1. Hero Section - Search-Driven Apple Aesthetic with Healthcare Background */}
-      <section className="relative overflow-hidden border-b border-[#e5e5ea] py-20 sm:py-28 md:py-32 lg:py-36 px-4 sm:px-6 min-h-[500px] sm:min-h-[560px] flex items-center justify-center bg-white">
-        {/* Apple Healthcare Themed Hero Background - Elegant MediArca Cyan Skyline Watermark */}
+      {/* 1. Hero Section - Search-Driven Apple Aesthetic with Modern Hospital Campus Background */}
+      <section className="relative overflow-hidden border-b border-[#e5e5ea] py-20 sm:py-28 md:py-32 lg:py-36 px-4 sm:px-6 min-h-[500px] sm:min-h-[560px] flex items-center justify-center">
+        {/* Modern Hospital Campus Background - Clean, Visible & Rich */}
         <div className="absolute inset-0 pointer-events-none select-none overflow-hidden">
           <img
             src={healthcareHeroBg}
-            alt="Healthcare clinical setting"
-            className="w-full h-full object-cover object-bottom opacity-45 select-none"
+            alt="Modern Hospital Campus Entrance"
+            className="w-full h-full object-cover object-[center_35%]"
           />
-          {/* High-Key Gradient Wash for 100% Text Legibility & Contrast */}
-          <div className="absolute inset-0 bg-gradient-to-b from-white via-white/80 to-transparent pointer-events-none" />
-          <div className="absolute inset-0 bg-radial-[at_50%_35%] from-white/90 via-white/50 to-transparent pointer-events-none" />
+          {/* Subtle balanced daylight overlay - keeps the hospital clearly visible while ensuring 100% text readability */}
+          <div className="absolute inset-0 bg-gradient-to-b from-white/70 via-white/35 to-[#f5f5f7]/90 pointer-events-none" />
+          <div className="absolute inset-0 bg-radial-[at_50%_35%] from-white/80 via-white/30 to-transparent pointer-events-none" />
         </div>
 
         <div className="relative z-10 max-w-4xl mx-auto text-center w-full">
           {/* Role Aware Status Bar */}
           {user ? (
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full backdrop-blur-md bg-white/90 border border-white/80 shadow-[0_2px_8px_rgba(0,0,0,0.06)] text-xs font-semibold text-[#1d1d1f] mb-6">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full backdrop-blur-md bg-white/95 border border-white/80 shadow-[0_2px_12px_rgba(0,0,0,0.06)] text-xs font-semibold text-[#1d1d1f] mb-6">
               <BrandLogo variant="icon" size="xs" />
               <span>
                 {user.fullName?.split(' ')[0] || user.fullName} •{' '}
@@ -241,17 +241,17 @@ export const Home: React.FC = () => {
               </span>
             </div>
           ) : (
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full backdrop-blur-md bg-white/90 border border-white/80 shadow-[0_2px_8px_rgba(0,0,0,0.06)] text-xs font-semibold text-[#1d1d1f] mb-6">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full backdrop-blur-md bg-white/95 border border-white/80 shadow-[0_2px_12px_rgba(0,0,0,0.06)] text-xs font-semibold text-[#1d1d1f] mb-6">
               <BrandLogo variant="icon" size="xs" />
               <span>Live Queue & Instant Booking</span>
             </div>
           )}
 
-          <h1 className="text-3xl sm:text-5xl md:text-6xl font-extrabold text-[#1d1d1f] tracking-tight leading-[1.15] mb-4">
+          <h1 className="text-3xl sm:text-5xl md:text-6xl font-extrabold text-[#1d1d1f] tracking-tight leading-[1.15] mb-4 drop-shadow-[0_2px_10px_rgba(255,255,255,0.9)]">
             Book <span className="text-[#0088e8]">doctor appointments</span> all across India.
           </h1>
 
-          <p className="text-sm sm:text-base text-[#48484a] max-w-xl mx-auto mb-7 font-normal leading-relaxed">
+          <p className="text-sm sm:text-base text-[#1d1d1f]/85 max-w-xl mx-auto mb-7 font-medium leading-relaxed drop-shadow-[0_1px_6px_rgba(255,255,255,0.9)]">
             Instant live token passes, verify queue status in real-time, and skip clinic waiting rooms.
           </p>
 
