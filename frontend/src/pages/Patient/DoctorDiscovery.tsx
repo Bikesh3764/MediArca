@@ -59,17 +59,6 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
   const [minExp, setMinExp] = useState<number>(0);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
-  const quickCategories = useMemo(() => [
-    'All',
-    'Cardiology',
-    'Dermatology',
-    'Pediatrics',
-    'Orthopedics',
-    'General Medicine',
-    'Neurology',
-    'Dentistry',
-    'Gynecology',
-  ], []);
 
   const patientNavItems: DashboardNavItem[] = [
     {
@@ -191,32 +180,6 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
 
   const discoveryContent = (
     <div className="w-full space-y-6">
-      {/* Top Horizontal Category Filter Pills (Hoardspace style) */}
-      <div className="border border-[#e5e5ea] bg-white rounded-2xl p-2.5 shadow-2xs">
-        <div className="flex items-center gap-2 overflow-x-auto scrollbar-none py-0.5">
-          {quickCategories.map((cat) => {
-            const isActive = selectedSpecialty.toLowerCase() === cat.toLowerCase();
-            return (
-              <button
-                key={cat}
-                type="button"
-                onClick={() => {
-                  setSelectedSpecialty(cat);
-                  setSearchParams(cat === 'All' ? {} : { specialty: cat });
-                }}
-                className={`px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer shrink-0 ${
-                  isActive
-                    ? 'bg-[#0088e8] text-white shadow-xs'
-                    : 'bg-[#f5f5f7] text-[#48484a] hover:bg-[#e5e5ea] hover:text-[#1d1d1f] border border-[#e5e5ea]'
-                }`}
-              >
-                {cat === 'All' ? 'All Specialists' : cat}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
       {/* Mobile Filter Toggle Drawer */}
       <div className="lg:hidden">
         <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-3.5 shadow-xs">
@@ -829,7 +792,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
         </span>
       </SubNav>
 
-      <div className="max-w-[1560px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="w-full max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-8">
         {discoveryContent}
       </div>
     </div>

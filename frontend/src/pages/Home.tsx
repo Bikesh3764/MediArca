@@ -50,17 +50,6 @@ export const Home: React.FC = () => {
   const [availabilityFilter, setAvailabilityFilter] = useState<'ALL' | 'ACTIVE_NOW'>('ALL');
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
-  const quickCategories = useMemo(() => [
-    'All',
-    'Cardiology',
-    'Dermatology',
-    'Pediatrics',
-    'Orthopedics',
-    'General Medicine',
-    'Neurology',
-    'Dentistry',
-    'Gynecology',
-  ], []);
 
   useEffect(() => {
     const fetchDoctors = async () => {
@@ -221,17 +210,13 @@ export const Home: React.FC = () => {
     <div className="flex flex-col min-h-screen bg-[#f5f5f7]">
       {/* 1. Hero Section - Search-Driven Apple Aesthetic with Healthcare Background */}
       <section className="relative overflow-hidden border-b border-[#e5e5ea] py-20 sm:py-28 md:py-32 lg:py-36 px-4 sm:px-6 min-h-[500px] sm:min-h-[560px] flex items-center justify-center">
-        {/* Apple Healthcare Themed Hero Background - Crystal Clear & Crisp (No Milky Fog) */}
+        {/* Apple Healthcare Themed Hero Background - 100% Crisp & Clear (No Fog / No Blur) */}
         <div className="absolute inset-0 pointer-events-none select-none overflow-hidden">
           <img
             src={healthcareHeroBg}
             alt="Healthcare clinical setting"
-            className="w-full h-full object-cover object-center filter saturate-[1.06] contrast-[1.06]"
+            className="w-full h-full object-cover object-center"
           />
-          {/* Subtle soft center backlight behind text to preserve razor-sharp photo visibility */}
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.28)_0%,transparent_65%)]" />
-          {/* Subtle bottom edge blend into canvas */}
-          <div className="absolute bottom-0 inset-x-0 h-16 sm:h-20 bg-gradient-to-t from-[#f5f5f7] to-transparent" />
         </div>
 
         <div className="relative z-10 max-w-4xl mx-auto text-center w-full">
@@ -329,33 +314,8 @@ export const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* Top Horizontal Category Filter Pills (Hoardspace style) */}
-      <div className="border-y border-[#e5e5ea] bg-white sticky top-16 z-20 shadow-2xs">
-        <div className="max-w-[1560px] mx-auto px-4 sm:px-6 lg:px-8 py-3">
-          <div className="flex items-center gap-2 overflow-x-auto scrollbar-none py-0.5">
-            {quickCategories.map((cat) => {
-              const isActive = selectedSpecialty.toLowerCase() === cat.toLowerCase();
-              return (
-                <button
-                  key={cat}
-                  type="button"
-                  onClick={() => setSelectedSpecialty(cat)}
-                  className={`px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer shrink-0 ${
-                    isActive
-                      ? 'bg-[#0088e8] text-white shadow-xs'
-                      : 'bg-[#f5f5f7] text-[#48484a] hover:bg-[#e5e5ea] hover:text-[#1d1d1f] border border-[#e5e5ea]'
-                  }`}
-                >
-                  {cat === 'All' ? 'All Specialists' : cat}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
       {/* Explore Doctors Catalog - Responsive Layout with Left Filter Sidebar on Desktop */}
-      <section id="doctors-catalog" className="max-w-[1560px] mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 flex-1 w-full">
+      <section id="doctors-catalog" className="w-full max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-8 sm:py-10 flex-1">
         {/* Mobile Filter Toggle Drawer */}
         <div className="lg:hidden mb-6">
           <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-3.5 shadow-xs">
@@ -985,7 +945,7 @@ export const Home: React.FC = () => {
 
       {/* 4. Operational Portals */}
       <section className="bg-white border-t border-[#e5e5ea] py-10 px-4 sm:px-6 mt-10">
-        <div className="max-w-[1560px] mx-auto">
+        <div className="max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10">
           <div className="text-center max-w-xl mx-auto mb-6">
             <h3 className="text-xl font-semibold text-[#1d1d1f] tracking-tight">
               Operational Portals
