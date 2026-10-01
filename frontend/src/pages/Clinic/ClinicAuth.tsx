@@ -49,7 +49,7 @@ export const ClinicAuth: React.FC = () => {
   const handleSignupSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!state) {
-      setError('Please select the state or union territory where your clinic is located');
+      setError('Please select the state where your clinic is located');
       return;
     }
     if (!isValidIndianPhone(phone)) {

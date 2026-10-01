@@ -262,14 +262,14 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
               {/* State Filter */}
               <div>
                 <label className="block text-xs font-semibold text-[#48484a] mb-1">
-                  State / Territory
+                  State
                 </label>
                 <select
                   value={selectedState}
                   onChange={(e) => setSelectedState(e.target.value)}
                   className="w-full py-2 px-3 rounded-xl border border-[#e5e5ea] bg-[#f5f5f7] text-xs font-medium text-[#1d1d1f] focus:outline-none focus:border-[#0088e8] cursor-pointer"
                 >
-                  <option value="All">All States & UTs</option>
+                  <option value="All">All States</option>
                   {INDIAN_STATES.map((st) => (
                     <option key={st} value={st}>
                       {st}
@@ -434,14 +434,14 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
             {/* State Filter */}
             <div>
               <label className="block text-xs font-semibold text-[#48484a] mb-1.5">
-                State / Territory
+                State
               </label>
               <select
                 value={selectedState}
                 onChange={(e) => setSelectedState(e.target.value)}
                 className="w-full py-2 px-3 rounded-xl border border-[#e5e5ea] bg-[#f5f5f7] text-xs font-medium text-[#1d1d1f] focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20 cursor-pointer"
               >
-                <option value="All">All States & UTs</option>
+                <option value="All">All States</option>
                 {INDIAN_STATES.map((st) => (
                   <option key={st} value={st}>
                     {st}

@@ -4335,16 +4335,26 @@ function runTests() {
 
   // --- Test 147: Indian States & Geographic Filtering ---
   console.log('\n--- Test 147: Indian States & Clinic Location Filtering ---');
-  const { INDIAN_STATES, isValidIndianState } = require('../src/utils/indiaStates');
+  const { INDIAN_STATES, isValidIndianState, normalizeIndianState } = require('../src/utils/indiaStates');
 
   assert(INDIAN_STATES.length === 36, 'All 36 Indian States and Union Territories are registered');
+  // Check strict alphabetical order
+  const sortedCopy = [...INDIAN_STATES].sort((a, b) => a.localeCompare(b));
+  assert(JSON.stringify(INDIAN_STATES) === JSON.stringify(sortedCopy), 'INDIAN_STATES must be strictly sorted alphabetically A-Z');
   assert(INDIAN_STATES.includes('Odisha' as any), 'Odisha is in states list');
   assert(INDIAN_STATES.includes('Maharashtra' as any), 'Maharashtra is in states list');
   assert(INDIAN_STATES.includes('Delhi' as any), 'Delhi is in states list');
+  assert(INDIAN_STATES.includes('Chandigarh' as any), 'Chandigarh is in states list');
+  assert(INDIAN_STATES.includes('Ladakh' as any), 'Ladakh is in states list');
   assert(INDIAN_STATES.includes('Karnataka' as any), 'Karnataka is in states list');
   assert(isValidIndianState('Odisha') === true, 'Valid Indian state Odisha recognized');
   assert(isValidIndianState('odisha') === true, 'Case-insensitive state matching works');
   assert(isValidIndianState('Delhi') === true, 'Delhi recognized');
+  assert(isValidIndianState('Delhi NCR') === true, 'Delhi NCR alias recognized as valid');
+  assert(isValidIndianState('Orissa') === true, 'Orissa alias recognized as valid');
+  assert(normalizeIndianState('delhi ncr') === 'Delhi', 'normalizeIndianState normalizes delhi ncr to Delhi');
+  assert(normalizeIndianState('Orissa') === 'Odisha', 'normalizeIndianState normalizes Orissa to Odisha');
+  assert(normalizeIndianState('J&K') === 'Jammu and Kashmir', 'normalizeIndianState normalizes J&K to Jammu and Kashmir');
   assert(isValidIndianState('New York') === false, 'Foreign state New York rejected');
   assert(isValidIndianState('') === false, 'Empty state rejected');
 
