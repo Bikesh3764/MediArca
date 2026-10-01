@@ -277,8 +277,8 @@ export const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* Explore Doctors Catalog - Full Width Modern Apple Grid */}
-      <section id="doctors-catalog" className="max-w-7xl mx-auto px-4 sm:px-6 py-10 flex-1 w-full">
+      {/* Explore Doctors Catalog - Refined Proportional Apple Grid */}
+      <section id="doctors-catalog" className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-10 flex-1 w-full">
         {/* Section Header & Inline Refine Toolbar */}
         <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-5 sm:p-6 mb-8 shadow-xs">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-[#f0f0f0]">
@@ -384,7 +384,7 @@ export const Home: React.FC = () => {
 
         {/* Doctor Cards Grid */}
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 w-full">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6 w-full">
             {[1, 2, 3, 4].map((i) => (
               <div
                 key={i}
@@ -408,7 +408,7 @@ export const Home: React.FC = () => {
             </AppleButton>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 w-full">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6 w-full">
             {filteredDoctors.map((doctor) => {
               const slots = parseDoctorSlots(doctor);
               const getHomeDoctorDetailPath = (docId: string) =>
@@ -427,7 +427,7 @@ export const Home: React.FC = () => {
                   {/* 1. Full-Width Doctor Photo Banner at Top */}
                   <div
                     onClick={() => navigate(getHomeDoctorDetailPath(doctor.id))}
-                    className="relative w-full h-64 sm:h-72 bg-white border-b border-[#f0f0f2] overflow-hidden cursor-pointer flex items-center justify-center p-3"
+                    className="relative w-full h-56 sm:h-64 bg-white border-b border-[#f0f0f2] overflow-hidden cursor-pointer flex items-center justify-center p-2.5 sm:p-3"
                   >
                     {doctor.user?.avatarUrl ? (
                       <img

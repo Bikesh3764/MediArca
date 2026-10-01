@@ -168,7 +168,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
 
       {/* Doctor Grid */}
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 w-full">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6 w-full">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="h-72 rounded-[28px] bg-white border border-[#e5e5ea] animate-pulse p-7"></div>
           ))}
@@ -191,7 +191,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
           </AppleButton>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 w-full">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6 w-full">
           {doctors.map((doctor) => {
             const slots = parseDoctorSlots(doctor);
             const cleanDegrees = formatDoctorDegrees(doctor.qualifications);
@@ -206,7 +206,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
                 {/* 1. Full-Width Doctor Photo Banner at Top */}
                 <div
                   onClick={() => navigate(getDoctorDetailPath(doctor.id))}
-                  className="relative w-full h-64 sm:h-72 bg-white border-b border-[#f0f0f2] overflow-hidden cursor-pointer flex items-center justify-center p-3"
+                  className="relative w-full h-56 sm:h-64 bg-white border-b border-[#f0f0f2] overflow-hidden cursor-pointer flex items-center justify-center p-2.5 sm:p-3"
                 >
                   {doctor.user?.avatarUrl ? (
                     <img
@@ -372,7 +372,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
           </div>
         }
       >
-        <div className="space-y-6">
+        <div className="max-w-5xl space-y-6">
           {discoveryContent}
         </div>
       </DashboardLayout>
@@ -387,7 +387,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
         </span>
       </SubNav>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-8">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-8">
         {discoveryContent}
       </div>
     </div>
