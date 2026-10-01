@@ -15,7 +15,7 @@ import { useAuth } from '../context/AuthContext';
 import { AppleButton } from '../components/ui/AppleButton';
 import { BrandLogo } from '../components/ui/BrandLogo';
 import { SearchableSpecialtySelect } from '../components/ui/SearchableSpecialtySelect';
-import healthcareHeroBg from '../assets/healthcare-hero-bg.jpg';
+import healthcareHeroBg from '../assets/healthcare-hero-bg.png';
 import {
   Search,
   MapPin,
@@ -210,16 +210,13 @@ export const Home: React.FC = () => {
     <div className="flex flex-col min-h-screen bg-[#f5f5f7]">
       {/* 1. Hero Section - Search-Driven Apple Aesthetic with Modern Hospital Campus Background */}
       <section className="relative overflow-hidden border-b border-[#e5e5ea] py-20 sm:py-28 md:py-32 lg:py-36 px-4 sm:px-6 min-h-[500px] sm:min-h-[560px] flex items-center justify-center">
-        {/* Modern Hospital Campus Background - Clean, Visible & Rich */}
+        {/* Modern Hospital Campus Background - 100% Crystal Clear & Vivid (Zero Fog / Zero Haze) */}
         <div className="absolute inset-0 pointer-events-none select-none overflow-hidden">
           <img
             src={healthcareHeroBg}
             alt="Modern Hospital Campus Entrance"
             className="w-full h-full object-cover object-[center_35%]"
           />
-          {/* Subtle balanced daylight overlay - keeps the hospital clearly visible while ensuring 100% text readability */}
-          <div className="absolute inset-0 bg-gradient-to-b from-white/70 via-white/35 to-[#f5f5f7]/90 pointer-events-none" />
-          <div className="absolute inset-0 bg-radial-[at_50%_35%] from-white/80 via-white/30 to-transparent pointer-events-none" />
         </div>
 
         <div className="relative z-10 max-w-4xl mx-auto text-center w-full">
