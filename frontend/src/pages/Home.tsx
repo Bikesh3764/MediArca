@@ -209,14 +209,17 @@ export const Home: React.FC = () => {
   return (
     <div className="flex flex-col min-h-screen bg-[#f5f5f7]">
       {/* 1. Hero Section - Search-Driven Apple Aesthetic with Healthcare Background */}
-      <section className="relative overflow-hidden border-b border-[#e5e5ea] py-20 sm:py-28 md:py-32 lg:py-36 px-4 sm:px-6 min-h-[500px] sm:min-h-[560px] flex items-center justify-center">
-        {/* Apple Healthcare Themed Hero Background - 100% Crisp & Clear (No Fog / No Blur) */}
+      <section className="relative overflow-hidden border-b border-[#e5e5ea] py-20 sm:py-28 md:py-32 lg:py-36 px-4 sm:px-6 min-h-[500px] sm:min-h-[560px] flex items-center justify-center bg-white">
+        {/* Apple Healthcare Themed Hero Background - Elegant MediArca Cyan Skyline Watermark */}
         <div className="absolute inset-0 pointer-events-none select-none overflow-hidden">
           <img
             src={healthcareHeroBg}
             alt="Healthcare clinical setting"
-            className="w-full h-full object-cover object-center"
+            className="w-full h-full object-cover object-bottom opacity-45 select-none"
           />
+          {/* High-Key Gradient Wash for 100% Text Legibility & Contrast */}
+          <div className="absolute inset-0 bg-gradient-to-b from-white via-white/80 to-transparent pointer-events-none" />
+          <div className="absolute inset-0 bg-radial-[at_50%_35%] from-white/90 via-white/50 to-transparent pointer-events-none" />
         </div>
 
         <div className="relative z-10 max-w-4xl mx-auto text-center w-full">
