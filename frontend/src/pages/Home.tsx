@@ -481,12 +481,14 @@ export const Home: React.FC = () => {
         <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start w-full">
           {/* LEFT SIDEBAR: Sticky Filters on Desktop */}
           <aside className="hidden lg:block w-64 xl:w-72 flex-shrink-0 lg:sticky lg:top-32 space-y-4">
-            <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-5 shadow-xs space-y-5">
+            <div className="bg-white rounded-[24px] border border-[#e5e5ea]/90 p-5 shadow-[0_4px_24px_rgba(0,0,0,0.03)] space-y-5">
               {/* Header */}
               <div className="flex items-center justify-between pb-3.5 border-b border-[#f0f0f2]">
                 <div className="flex items-center gap-2">
-                  <SlidersHorizontal className="w-4 h-4 text-[#0088e8]" />
-                  <h3 className="text-sm font-semibold text-[#1d1d1f] tracking-tight">Filters & Refine</h3>
+                  <div className="w-6 h-6 rounded-full bg-[#0088e8]/10 text-[#0088e8] flex items-center justify-center">
+                    <SlidersHorizontal className="w-3.5 h-3.5 text-[#0088e8]" />
+                  </div>
+                  <h3 className="text-sm font-bold text-[#1d1d1f] tracking-tight">Filters & Refine</h3>
                 </div>
                 {hasActiveFilters && (
                   <button
@@ -506,7 +508,7 @@ export const Home: React.FC = () => {
                 <label className="block text-xs font-semibold text-[#48484a] mb-1.5">
                   Doctor or Keyword
                 </label>
-                <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] focus-within:border-[#0088e8] focus-within:ring-2 focus-within:ring-[#0088e8]/20 focus-within:bg-white transition-all">
+                <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#f5f5f7]/80 hover:bg-[#f5f5f7] border border-[#e5e5ea] focus-within:border-[#0088e8] focus-within:ring-2 focus-within:ring-[#0088e8]/20 focus-within:bg-white transition-all shadow-xs">
                   <Search className="w-4 h-4 text-[#86868b] flex-shrink-0" />
                   <input
                     type="text"
@@ -528,7 +530,7 @@ export const Home: React.FC = () => {
                 <label className="block text-xs font-semibold text-[#48484a] mb-1.5">
                   City or Location
                 </label>
-                <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] focus-within:border-[#0088e8] focus-within:ring-2 focus-within:ring-[#0088e8]/20 focus-within:bg-white transition-all">
+                <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#f5f5f7]/80 hover:bg-[#f5f5f7] border border-[#e5e5ea] focus-within:border-[#0088e8] focus-within:ring-2 focus-within:ring-[#0088e8]/20 focus-within:bg-white transition-all shadow-xs">
                   <MapPin className="w-4 h-4 text-[#86868b] flex-shrink-0" />
                   <input
                     type="text"
@@ -564,7 +566,7 @@ export const Home: React.FC = () => {
               <div>
                 <div className="flex items-center justify-between text-xs font-semibold text-[#48484a] mb-1.5">
                   <span>Max Fee</span>
-                  <span className="text-[#0088e8] font-bold">Up to ₹{maxFee}</span>
+                  <span className="text-[#0088e8] font-bold px-2 py-0.5 rounded-md bg-[#0088e8]/10 text-xs">Up to ₹{maxFee}</span>
                 </div>
                 <input
                   type="range"
@@ -575,7 +577,7 @@ export const Home: React.FC = () => {
                   onChange={(e) => setMaxFee(Number(e.target.value))}
                   className="w-full accent-[#0088e8] cursor-pointer"
                 />
-                <div className="flex justify-between text-[10px] text-[#86868b] mt-0.5">
+                <div className="flex justify-between text-[10px] text-[#86868b] font-medium mt-0.5">
                   <span>₹300</span>
                   <span>₹3000</span>
                 </div>
@@ -597,10 +599,10 @@ export const Home: React.FC = () => {
                       key={item.value}
                       type="button"
                       onClick={() => setMinExperience(item.value)}
-                      className={`py-1.5 px-2 rounded-xl text-xs font-medium border text-center transition-all cursor-pointer ${
+                      className={`py-1.5 px-2 rounded-xl text-xs border text-center transition-all cursor-pointer ${
                         minExperience === item.value
-                          ? 'bg-[#0088e8] text-white border-[#0088e8] shadow-xs'
-                          : 'bg-[#f5f5f7] text-[#48484a] border-[#e5e5ea] hover:bg-[#ebebee]'
+                          ? 'bg-[#0088e8] text-white border-[#0088e8] shadow-[0_2px_8px_rgba(0,136,232,0.25)] font-semibold'
+                          : 'bg-[#f5f5f7] text-[#48484a] border-[#e5e5ea] hover:bg-[#ebebee] hover:border-[#d1d1d6] font-medium'
                       }`}
                     >
                       {item.label}
@@ -618,10 +620,10 @@ export const Home: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setAvailabilityFilter('ALL')}
-                    className={`py-1.5 px-2 rounded-xl text-xs font-medium border text-center transition-all cursor-pointer ${
+                    className={`py-1.5 px-2 rounded-xl text-xs border text-center transition-all cursor-pointer ${
                       availabilityFilter === 'ALL'
-                        ? 'bg-[#0088e8] text-white border-[#0088e8] shadow-xs'
-                        : 'bg-[#f5f5f7] text-[#48484a] border-[#e5e5ea] hover:bg-[#ebebee]'
+                        ? 'bg-[#0088e8] text-white border-[#0088e8] shadow-[0_2px_8px_rgba(0,136,232,0.25)] font-semibold'
+                        : 'bg-[#f5f5f7] text-[#48484a] border-[#e5e5ea] hover:bg-[#ebebee] hover:border-[#d1d1d6] font-medium'
                     }`}
                   >
                     All
@@ -629,10 +631,10 @@ export const Home: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setAvailabilityFilter('ACTIVE_NOW')}
-                    className={`py-1.5 px-2 rounded-xl text-xs font-medium border text-center transition-all cursor-pointer ${
+                    className={`py-1.5 px-2 rounded-xl text-xs border text-center transition-all cursor-pointer ${
                       availabilityFilter === 'ACTIVE_NOW'
-                        ? 'bg-[#0088e8] text-white border-[#0088e8] shadow-xs'
-                        : 'bg-[#f5f5f7] text-[#48484a] border-[#e5e5ea] hover:bg-[#ebebee]'
+                        ? 'bg-[#0088e8] text-white border-[#0088e8] shadow-[0_2px_8px_rgba(0,136,232,0.25)] font-semibold'
+                        : 'bg-[#f5f5f7] text-[#48484a] border-[#e5e5ea] hover:bg-[#ebebee] hover:border-[#d1d1d6] font-medium'
                     }`}
                   >
                     Active Now
@@ -648,7 +650,7 @@ export const Home: React.FC = () => {
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as any)}
-                  className="w-full py-2 px-3 rounded-xl border border-[#e5e5ea] bg-[#f5f5f7] text-xs font-medium text-[#1d1d1f] focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20 cursor-pointer"
+                  className="w-full py-2 px-3 rounded-xl border border-[#e5e5ea] bg-[#f5f5f7]/80 text-xs font-semibold text-[#1d1d1f] focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20 cursor-pointer shadow-xs"
                 >
                   <option value="rating">Recommended</option>
                   <option value="experience">Most Experienced</option>
@@ -662,12 +664,12 @@ export const Home: React.FC = () => {
           {/* RIGHT MAIN AREA: Results Header + 4-Column Doctor Cards Grid */}
           <div className="flex-1 w-full min-w-0">
             {/* Results Status Header */}
-            <div className="bg-white rounded-[20px] sm:rounded-[24px] border border-[#e5e5ea] p-4 sm:p-5 mb-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="bg-white rounded-[20px] sm:rounded-[24px] border border-[#e5e5ea]/90 p-4 sm:p-5 mb-6 shadow-[0_4px_24px_rgba(0,0,0,0.03)] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <h2 className="text-lg sm:text-xl font-bold text-[#1d1d1f] tracking-tight">
+                <h2 className="text-lg sm:text-xl font-extrabold text-[#1d1d1f] tracking-tight">
                   {selectedSpecialty === 'All' ? 'Verified Specialists' : `${selectedSpecialty} Specialists`}
                 </h2>
-                <p className="text-xs text-[#86868b] mt-0.5">
+                <p className="text-xs text-[#86868b] font-medium mt-0.5">
                   Showing 1–{filteredDoctors.length} of {doctors.length} verified practitioners
                 </p>
               </div>
@@ -717,7 +719,7 @@ export const Home: React.FC = () => {
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value as any)}
-                    className="py-1.5 px-3 rounded-xl border border-[#e5e5ea] bg-[#f5f5f7] text-xs font-medium text-[#1d1d1f] focus:outline-none focus:border-[#0088e8] cursor-pointer"
+                    className="py-1.5 px-3.5 rounded-full border border-[#e5e5ea] bg-[#f5f5f7] hover:bg-white hover:border-[#0088e8]/40 text-xs font-semibold text-[#1d1d1f] focus:outline-none focus:border-[#0088e8] cursor-pointer shadow-xs transition-all"
                   >
                     <option value="rating">Recommended</option>
                     <option value="experience">Most Experienced</option>
@@ -769,12 +771,12 @@ export const Home: React.FC = () => {
                   return (
                     <div
                       key={doctor.id}
-                      className="w-full bg-white rounded-[20px] sm:rounded-[22px] border border-[#e5e5ea] overflow-hidden hover:shadow-[0_12px_32px_rgba(0,0,0,0.08)] hover:border-[#0088e8]/35 transition-all duration-300 flex flex-col justify-between group"
+                      className="w-full bg-white rounded-[22px] sm:rounded-[24px] border border-[#e5e5ea]/80 overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.03)] hover:shadow-[0_16px_36px_rgba(0,0,0,0.08)] hover:border-[#0088e8]/35 transition-all duration-300 flex flex-col justify-between group"
                     >
                       {/* 1. Full-Width Doctor Photo Banner with Floating Badges (Hoardspace Pattern) */}
                       <div
                         onClick={() => navigate(getHomeDoctorDetailPath(doctor.id))}
-                        className="relative w-full aspect-[16/10] bg-[#f5f5f7] border-b border-[#f0f0f2] overflow-hidden cursor-pointer flex items-center justify-center"
+                        className="relative w-full aspect-[16/10] bg-gradient-to-b from-[#f5f5f7] to-[#ebebee] border-b border-[#f0f0f2] overflow-hidden cursor-pointer flex items-center justify-center"
                       >
                         {doctor.user?.avatarUrl ? (
                           <img
@@ -797,7 +799,7 @@ export const Home: React.FC = () => {
 
                         {/* Floating Specialty Badge on Bottom Left */}
                         <div className="absolute bottom-2.5 left-2.5 z-10">
-                          <span className="backdrop-blur-md bg-black/65 text-white text-[11px] font-medium px-2.5 py-0.5 rounded-full shadow-xs">
+                          <span className="backdrop-blur-md bg-white/95 text-[#1d1d1f] text-[11px] font-semibold px-2.5 py-1 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.12)] border border-white/80">
                             {doctor.specialty}
                           </span>
                         </div>
@@ -805,7 +807,7 @@ export const Home: React.FC = () => {
                         {/* Floating Clinic / City Badge on Bottom Right */}
                         {clinicCity && (
                           <div className="absolute bottom-2.5 right-2.5 z-10">
-                            <span className="backdrop-blur-md bg-black/65 text-white text-[11px] font-medium px-2 py-0.5 rounded-full shadow-xs flex items-center gap-1">
+                            <span className="backdrop-blur-md bg-white/95 text-[#1d1d1f] text-[11px] font-semibold px-2.5 py-1 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.12)] border border-white/80 flex items-center gap-1">
                               <MapPin className="w-2.5 h-2.5 text-[#0088e8]" />
                               <span>{clinicCity}</span>
                             </span>
@@ -814,26 +816,26 @@ export const Home: React.FC = () => {
                       </div>
 
                       {/* 2. Doctor Details Flowing Down Lengthwise */}
-                      <div className="p-4 flex-1 flex flex-col justify-between">
+                      <div className="p-4 sm:p-4.5 flex-1 flex flex-col justify-between">
                         {/* Doctor Name, Qualifications & Experience */}
                         <div>
                           <div className="flex items-center gap-1.5 min-w-0">
                             <h3
                               onClick={() => navigate(getHomeDoctorDetailPath(doctor.id))}
-                              className="text-base font-bold text-[#1d1d1f] hover:text-[#0088e8] cursor-pointer tracking-tight transition-colors truncate"
+                              className="text-base sm:text-[17px] font-bold text-[#1d1d1f] hover:text-[#0088e8] cursor-pointer tracking-tight transition-colors truncate"
                               title={doctor.user?.fullName || 'Doctor'}
                             >
                               {doctor.user?.fullName || 'Doctor'}
                             </h3>
-                            <CheckCircle2 className="w-4 h-4 text-[#0088e8] fill-[#0088e8]/10 shrink-0" />
+                            <CheckCircle2 className="w-4 h-4 text-[#0088e8] fill-[#0088e8]/15 shrink-0" />
                           </div>
 
-                          <div className="mt-1 flex items-center gap-1.5 text-xs text-[#86868b] truncate">
-                            <span>{doctor.experienceYears} yrs exp</span>
+                          <div className="mt-1 flex items-center gap-1.5 text-xs text-[#86868b] truncate font-medium">
+                            <span className="text-[#48484a] font-semibold">{doctor.experienceYears} yrs exp</span>
                             {cleanDegrees && (
                               <>
                                 <span className="text-[#d1d1d6]">•</span>
-                                <span className="text-[#48484a] font-normal truncate" title={cleanDegrees}>
+                                <span className="truncate" title={cleanDegrees}>
                                   {cleanDegrees}
                                 </span>
                               </>
@@ -844,11 +846,11 @@ export const Home: React.FC = () => {
                         {/* Practice Venue & Shift Timing */}
                         <div className="mt-3 pt-2.5 border-t border-[#f0f0f2] space-y-1.5 text-xs">
                           {/* Practice Venue */}
-                          <div className="flex items-center gap-1.5 text-[#48484a] min-w-0">
-                            <Building2 className="w-3.5 h-3.5 text-[#86868b] shrink-0" />
+                          <div className="flex items-center gap-2 py-1 px-2.5 rounded-lg bg-[#f5f5f7]/70 border border-[#e5e5ea]/50 text-xs min-w-0">
+                            <Building2 className="w-3.5 h-3.5 text-[#0088e8] shrink-0" />
                             {hasClinics && primaryClinic ? (
                               <span
-                                className="font-medium text-[#1d1d1f] truncate"
+                                className="font-semibold text-[#1d1d1f] truncate"
                                 title={`${primaryClinic.clinicName}${primaryClinic.city ? ` • ${primaryClinic.city}` : ''}`}
                               >
                                 {primaryClinic.clinicName}
@@ -859,7 +861,7 @@ export const Home: React.FC = () => {
                                 )}
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1 text-xs text-amber-600 font-medium">
+                              <span className="inline-flex items-center gap-1 text-xs text-amber-600 font-semibold">
                                 <AlertCircle className="w-3 h-3 text-amber-500 shrink-0" />
                                 Direct Practice
                               </span>
@@ -867,9 +869,9 @@ export const Home: React.FC = () => {
                           </div>
 
                           {/* Shift Timing */}
-                          <div className="flex items-center gap-1.5 text-[#86868b] min-w-0">
-                            <Clock className="w-3.5 h-3.5 text-[#86868b] shrink-0" />
-                            <span className="font-normal truncate">
+                          <div className="flex items-center gap-2 py-1 px-2.5 rounded-lg bg-[#f5f5f7]/70 border border-[#e5e5ea]/50 text-xs min-w-0">
+                            <Clock className="w-3.5 h-3.5 text-[#0088e8] shrink-0" />
+                            <span className="font-medium text-[#48484a] truncate">
                               {slots.length > 0
                                 ? `${format12Hour(slots[0].startTime)} – ${format12Hour(slots[0].endTime)}`
                                 : doctor.checkingStartTime
@@ -887,8 +889,8 @@ export const Home: React.FC = () => {
                         {/* 3. Bottom Section: Consultation Fee & Action CTA */}
                         <div className="mt-3.5 pt-2.5 border-t border-[#f0f0f2] flex items-center justify-between gap-3">
                           <div className="flex flex-col">
-                            <span className="text-[10px] font-semibold uppercase tracking-wider text-[#86868b]">Fee</span>
-                            <span className="text-base sm:text-lg font-bold text-[#1d1d1f] tracking-tight">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-[#86868b]">Fee</span>
+                            <span className="text-base sm:text-lg font-extrabold text-[#1d1d1f] tracking-tight">
                               ₹{doctor.consultationFee.toFixed(0)} <span className="text-[10px] font-normal text-[#86868b]">/ visit</span>
                             </span>
                           </div>
@@ -899,7 +901,7 @@ export const Home: React.FC = () => {
                                 variant="primary"
                                 size="sm"
                                 onClick={() => navigate(getHomeDoctorBookPath(doctor.id))}
-                                className="text-xs px-3.5 py-1.5 rounded-full flex items-center gap-1 font-semibold shadow-xs hover:shadow-apple-button active:scale-[0.98] transition-all bg-[#0088e8] hover:bg-[#0077cc] text-white"
+                                className="text-xs px-3.5 py-1.5 rounded-full flex items-center gap-1 font-semibold shadow-[0_2px_8px_rgba(0,136,232,0.25)] hover:shadow-[0_4px_16px_rgba(0,136,232,0.35)] active:scale-[0.98] transition-all bg-[#0088e8] hover:bg-[#0077cc] text-white"
                               >
                                 <span>Book Token</span>
                                 <ChevronRight className="w-3 h-3 stroke-[2.5]" />
