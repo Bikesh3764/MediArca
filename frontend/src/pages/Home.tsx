@@ -244,27 +244,27 @@ export const Home: React.FC = () => {
             </div>
           )}
 
-          <h1 className="text-3xl sm:text-5xl md:text-6xl font-bold text-[#1d1d1f] tracking-tight leading-[1.1] mb-3 drop-shadow-[0_2px_12px_rgba(255,255,255,0.95)]">
-            Find doctors. <span className="text-[#0088e8]">Book queue tokens.</span>
+          <h1 className="text-3xl sm:text-5xl md:text-6xl font-extrabold text-[#1d1d1f] tracking-tight leading-[1.15] mb-4">
+            Book <span className="text-[#0088e8]">doctor appointments</span> all across India.
           </h1>
 
-          <p className="text-sm sm:text-base text-[#1d1d1f] max-w-xl mx-auto mb-8 font-medium leading-relaxed drop-shadow-[0_1px_8px_rgba(255,255,255,0.95)]">
-            Book live token passes, verify queue status in real-time, and skip clinic waiting rooms.
+          <p className="text-sm sm:text-base text-[#48484a] max-w-xl mx-auto mb-7 font-normal leading-relaxed">
+            Instant live token passes, verify queue status in real-time, and skip clinic waiting rooms.
           </p>
 
-          {/* Central Integrated Search Bar */}
+          {/* Central Integrated Search Bar (Hoardspace Pattern) */}
           <form
             onSubmit={handleHeroSearch}
-            className="backdrop-blur-2xl bg-white/95 sm:bg-white/90 p-2 sm:p-2.5 rounded-[24px] sm:rounded-full border border-white/90 sm:border-[#e5e5ea] shadow-[0_16px_48px_rgba(0,0,0,0.12)] max-w-3xl mx-auto flex flex-col sm:flex-row items-center gap-2 transition-all focus-within:border-[#0088e8] focus-within:shadow-[0_20px_50px_rgba(0,136,232,0.22)] focus-within:bg-white"
+            className="bg-white p-2 rounded-2xl sm:rounded-full border border-[#e5e5ea] shadow-[0_8px_30px_rgba(0,0,0,0.08)] max-w-3xl mx-auto flex flex-col sm:flex-row items-center gap-2 transition-all focus-within:border-[#0088e8] focus-within:shadow-[0_12px_40px_rgba(0,136,232,0.18)]"
           >
-            {/* Doctor or Keyword Input */}
+            {/* Doctor, Clinic or Location Input */}
             <div className="flex items-center gap-2.5 flex-1 w-full px-4 py-2 sm:py-0">
               <Search className="w-4 h-4 text-[#86868b] flex-shrink-0" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search doctor, condition, or clinic..."
+                placeholder="Search by doctor, clinic or keyword..."
                 className="w-full bg-transparent text-sm text-[#1d1d1f] placeholder-[#86868b] focus:outline-none"
               />
             </div>
@@ -272,7 +272,7 @@ export const Home: React.FC = () => {
             <div className="hidden sm:block w-px h-6 bg-[#e5e5ea]"></div>
 
             {/* City / Location Input */}
-            <div className="flex items-center gap-2.5 w-full sm:w-48 px-4 py-2 sm:py-0">
+            <div className="flex items-center gap-2.5 w-full sm:w-44 px-4 py-2 sm:py-0">
               <MapPin className="w-4 h-4 text-[#86868b] flex-shrink-0" />
               <input
                 type="text"
@@ -286,13 +286,13 @@ export const Home: React.FC = () => {
             <div className="hidden sm:block w-px h-6 bg-[#e5e5ea]"></div>
 
             {/* Specialty Selector Dropdown */}
-            <div className="w-full sm:w-48 px-3 py-1 sm:py-0">
+            <div className="w-full sm:w-44 px-3 py-1 sm:py-0">
               <select
                 value={selectedSpecialty}
                 onChange={(e) => setSelectedSpecialty(e.target.value)}
                 className="w-full bg-transparent text-xs sm:text-sm font-medium text-[#1d1d1f] focus:outline-none cursor-pointer py-1.5"
               >
-                <option value="All">All Specialties</option>
+                <option value="All">All Types</option>
                 {ALL_SPECIALTIES.filter((s) => s !== 'Other').map((spec) => (
                   <option key={spec} value={spec}>
                     {spec}
@@ -306,11 +306,29 @@ export const Home: React.FC = () => {
               variant="primary"
               size="md"
               type="submit"
-              className="w-full sm:w-auto px-6 py-2.5 rounded-full flex-shrink-0 font-medium active:scale-[0.98]"
+              className="w-full sm:w-auto px-6 py-2.5 rounded-full flex-shrink-0 font-medium active:scale-[0.98] bg-[#0088e8] hover:bg-[#0077cc] text-white shadow-xs"
             >
-              Search Doctors
+              <span>Search Doctors</span>
+              <Search className="w-4 h-4 ml-1 stroke-[2.2]" />
             </AppleButton>
           </form>
+
+          {/* Hoardspace-style Companion Banner Chip */}
+          <div
+            onClick={() => {
+              const el = document.getElementById('doctors-catalog');
+              if (el) el.scrollIntoView({ behavior: 'smooth' });
+            }}
+            className="mt-4 inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-white/95 border border-[#e5e5ea] shadow-xs text-xs text-[#48484a] hover:border-[#0088e8]/40 hover:text-[#0088e8] transition-all cursor-pointer group"
+          >
+            <div className="w-5 h-5 rounded-full bg-[#0088e8]/10 text-[#0088e8] flex items-center justify-center font-bold text-[11px] group-hover:bg-[#0088e8] group-hover:text-white transition-colors">
+              M
+            </div>
+            <span>
+              Skip waiting rooms with <strong className="font-semibold text-[#1d1d1f] group-hover:text-[#0088e8]">Real-Time Queue Tokens</strong> — Instant Doctor Pass
+            </span>
+            <ArrowRight className="w-3.5 h-3.5 text-[#86868b] group-hover:text-[#0088e8] group-hover:translate-x-0.5 transition-all" />
+          </div>
         </div>
       </section>
 
