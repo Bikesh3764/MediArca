@@ -160,10 +160,10 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
         const lq = locationQuery.toLowerCase();
         const matchesClinic = doc.clinicAddress?.toLowerCase().includes(lq);
         const matchesAffiliated = doc.clinics?.some((c) =>
-          c.clinic.address.toLowerCase().includes(lq) ||
-          c.clinic.city?.toLowerCase().includes(lq) ||
-          c.clinic.state?.toLowerCase().includes(lq) ||
-          c.clinic.clinicName.toLowerCase().includes(lq)
+          (c.clinic?.address && c.clinic.address.toLowerCase().includes(lq)) ||
+          (c.clinic?.city && c.clinic.city.toLowerCase().includes(lq)) ||
+          (c.clinic?.state && c.clinic.state.toLowerCase().includes(lq)) ||
+          (c.clinic?.clinicName && c.clinic.clinicName.toLowerCase().includes(lq))
         );
         if (!matchesClinic && !matchesAffiliated) return false;
       }
@@ -171,14 +171,14 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
         const sLower = selectedState.toLowerCase();
         const matchesState =
           doc.clinics?.some((c) => c.clinic?.state?.toLowerCase() === sLower) ||
-          doc.clinicAddress?.toLowerCase().includes(sLower);
+          Boolean(doc.clinicAddress?.toLowerCase().includes(sLower));
         if (!matchesState) return false;
       }
       if (selectedCity !== 'All') {
         const cLower = selectedCity.toLowerCase();
         const matchesCity =
           doc.clinics?.some((c) => c.clinic?.city?.toLowerCase() === cLower) ||
-          doc.clinicAddress?.toLowerCase().includes(cLower);
+          Boolean(doc.clinicAddress?.toLowerCase().includes(cLower));
         if (!matchesCity) return false;
       }
       if (maxFee < 3000 && doc.consultationFee > maxFee) return false;

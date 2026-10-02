@@ -33,6 +33,20 @@ import {
   ExternalLink,
 } from 'lucide-react';
 
+const getClinicLocationDisplay = (clinic?: { address?: string; city?: string | null; state?: string | null } | null): string => {
+  if (!clinic) return 'Clinical Facility';
+  const addressParts: string[] = [];
+  const addrLower = (clinic.address || '').toLowerCase();
+  if (clinic.address) addressParts.push(clinic.address);
+  if (clinic.city && !addrLower.includes(clinic.city.toLowerCase())) {
+    addressParts.push(clinic.city);
+  }
+  if (clinic.state && !addrLower.includes(clinic.state.toLowerCase())) {
+    addressParts.push(clinic.state);
+  }
+  return addressParts.join(', ') || 'Clinical Facility';
+};
+
 export const Home: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -124,11 +138,19 @@ export const Home: React.FC = () => {
   // Filtered Clinics List
   const filteredClinics = useMemo(() => {
     return clinics.filter((c) => {
-      if (clinicSelectedState !== 'All' && c.state && c.state.toLowerCase() !== clinicSelectedState.toLowerCase()) {
-        return false;
+      if (clinicSelectedState !== 'All') {
+        const sLower = clinicSelectedState.toLowerCase();
+        const matchesState =
+          (c.state && c.state.toLowerCase() === sLower) ||
+          (c.address && c.address.toLowerCase().includes(sLower));
+        if (!matchesState) return false;
       }
-      if (clinicSelectedCity !== 'All' && c.city && c.city.toLowerCase() !== clinicSelectedCity.toLowerCase()) {
-        return false;
+      if (clinicSelectedCity !== 'All') {
+        const cLower = clinicSelectedCity.toLowerCase();
+        const matchesCity =
+          (c.city && c.city.toLowerCase() === cLower) ||
+          (c.address && c.address.toLowerCase().includes(cLower));
+        if (!matchesCity) return false;
       }
       if (clinicSearchQuery.trim()) {
         const q = clinicSearchQuery.toLowerCase().trim();
@@ -167,10 +189,10 @@ export const Home: React.FC = () => {
           const lq = doctorLocationQuery.toLowerCase().trim();
           const matchesClinic = doc.clinicAddress?.toLowerCase().includes(lq);
           const matchesAffiliated = doc.clinics?.some((c) =>
-            c.clinic.address.toLowerCase().includes(lq) ||
-            c.clinic.city?.toLowerCase().includes(lq) ||
-            c.clinic.state?.toLowerCase().includes(lq) ||
-            c.clinic.clinicName.toLowerCase().includes(lq)
+            (c.clinic?.address && c.clinic.address.toLowerCase().includes(lq)) ||
+            (c.clinic?.city && c.clinic.city.toLowerCase().includes(lq)) ||
+            (c.clinic?.state && c.clinic.state.toLowerCase().includes(lq)) ||
+            (c.clinic?.clinicName && c.clinic.clinicName.toLowerCase().includes(lq))
           );
           if (!matchesClinic && !matchesAffiliated) {
             return false;
@@ -185,7 +207,7 @@ export const Home: React.FC = () => {
           const sLower = selectedState.toLowerCase();
           const matchesState =
             doc.clinics?.some((c) => c.clinic?.state?.toLowerCase() === sLower) ||
-            doc.clinicAddress?.toLowerCase().includes(sLower);
+            Boolean(doc.clinicAddress?.toLowerCase().includes(sLower));
           if (!matchesState) return false;
         }
 
@@ -193,7 +215,7 @@ export const Home: React.FC = () => {
           const cLower = selectedCity.toLowerCase();
           const matchesCity =
             doc.clinics?.some((c) => c.clinic?.city?.toLowerCase() === cLower) ||
-            doc.clinicAddress?.toLowerCase().includes(cLower);
+            Boolean(doc.clinicAddress?.toLowerCase().includes(cLower));
           if (!matchesCity) return false;
         }
 
@@ -281,7 +303,7 @@ export const Home: React.FC = () => {
       {/* 2. Main Discovery Workspace */}
       <section id="catalog-section" className="w-full max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-8 sm:py-12 flex-1">
         {/* Navigation & Segmented Tabs Bar */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8 pb-4 border-b border-[#e5e5ea]">
+        <div className="flex items-center justify-between gap-4 mb-8 pb-4 border-b border-[#e5e5ea]">
           <div className="flex flex-wrap items-center gap-3">
             <div className="inline-flex p-1 bg-[#e5e5ea] rounded-full border border-[#d2d2d7]/50">
               <button
@@ -321,12 +343,6 @@ export const Home: React.FC = () => {
               </button>
             )}
           </div>
-
-          <p className="text-xs text-[#86868b]">
-            {activeSection === 'clinics'
-              ? `Showing ${filteredClinics.length} verified clinical facilities`
-              : `Showing ${filteredDoctors.length} certified medical practitioners`}
-          </p>
         </div>
 
         {/* SECTION A: CLINICS DISCOVERY */}
@@ -367,9 +383,7 @@ export const Home: React.FC = () => {
                         <p className="flex items-center gap-2">
                           <MapPin className="w-3.5 h-3.5 text-[#86868b] shrink-0" />
                           <span>
-                            {selectedClinic.address}
-                            {selectedClinic.city ? `, ${selectedClinic.city}` : ''}
-                            {selectedClinic.state ? `, ${selectedClinic.state}` : ''}
+                            {getClinicLocationDisplay(selectedClinic)}
                           </span>
                         </p>
                         {selectedClinic.phone && (
@@ -602,7 +616,9 @@ export const Home: React.FC = () => {
                       onChange={(e) => setClinicSelectedCity(e.target.value)}
                       className="w-full bg-transparent text-xs sm:text-sm font-normal text-[#1d1d1f] focus:outline-none cursor-pointer"
                     >
-                      <option value="All">All Cities</option>
+                      <option value="All">
+                        {clinicSelectedState !== 'All' ? `All Cities in ${clinicSelectedState}` : 'All Cities'}
+                      </option>
                       {availableClinicCities.map((ct) => (
                         <option key={ct} value={ct}>
                           {ct}
@@ -650,16 +666,7 @@ export const Home: React.FC = () => {
                     {filteredClinics.map((clinic) => {
                       const docCount = clinic._count?.doctors ?? (clinic.doctors?.length || 0);
 
-                      // Clean up location display: prevent repeating city/state if already in address
-                      const addressParts: string[] = [];
-                      if (clinic.address) addressParts.push(clinic.address);
-                      if (clinic.city && !clinic.address.toLowerCase().includes(clinic.city.toLowerCase())) {
-                        addressParts.push(clinic.city);
-                      }
-                      if (clinic.state && !clinic.address.toLowerCase().includes(clinic.state.toLowerCase())) {
-                        addressParts.push(clinic.state);
-                      }
-                      const locationDisplay = addressParts.join(', ');
+                      const locationDisplay = getClinicLocationDisplay(clinic);
 
                       return (
                         <div
@@ -692,7 +699,7 @@ export const Home: React.FC = () => {
                               <p className="flex items-start gap-2">
                                 <MapPin className="w-3.5 h-3.5 text-[#86868b] shrink-0 mt-0.5" />
                                 <span className="line-clamp-2 leading-relaxed text-[#7a7a7a]">
-                                  {locationDisplay || 'Clinical Facility'}
+                                  {locationDisplay}
                                 </span>
                               </p>
                               {clinic.phone && (
@@ -704,17 +711,17 @@ export const Home: React.FC = () => {
                             </div>
 
                             {/* Specialists Available Capsule */}
-                            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#f5f5f7] text-[#1d1d1f] text-xs font-normal border border-[#e0e0e0]">
+                            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#f5f5f7] text-[#1d1d1f] text-xs font-medium border border-[#e0e0e0]">
                               <Stethoscope className="w-3.5 h-3.5 text-[#0066cc]" />
                               <span>{docCount === 1 ? '1 Specialist Practicing' : `${docCount} Specialists Practicing`}</span>
                             </div>
                           </div>
 
                           {/* Refined Apple Footer CTA */}
-                          <div className="mt-5 pt-3.5 border-t border-[#f0f0f2] flex items-center justify-between">
-                            <div className="flex items-center gap-1.5 text-xs text-[#86868b]">
-                              <span className="w-1.5 h-1.5 rounded-full bg-[#34c759]" />
-                              <span>{docCount > 0 ? 'Accepting Patients' : 'Clinical Facility'}</span>
+                          <div className="mt-5 pt-3.5 border-t border-[#f0f0f2] flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-1.5 text-xs text-[#86868b] min-w-0">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#34c759] shrink-0" />
+                              <span className="truncate">{docCount > 0 ? 'Accepting Patients' : 'Clinical Facility'}</span>
                             </div>
 
                             <button
@@ -723,7 +730,7 @@ export const Home: React.FC = () => {
                                 e.stopPropagation();
                                 setSelectedClinic(clinic);
                               }}
-                              className="h-8 px-4 sm:px-5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-medium transition-all active:scale-95 inline-flex items-center gap-1.5 cursor-pointer shadow-none"
+                              className="h-8 px-4 sm:px-5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-medium transition-all active:scale-95 inline-flex items-center gap-1.5 shrink-0 cursor-pointer shadow-none"
                             >
                               <span>View Doctors & Slots</span>
                               <ArrowRight className="w-3.5 h-3.5" />
@@ -805,7 +812,9 @@ export const Home: React.FC = () => {
                     onChange={(e) => setSelectedCity(e.target.value)}
                     className="w-full py-2 px-3 rounded-xl border border-[#e0e0e0] bg-[#f5f5f7] text-xs font-medium text-[#1d1d1f] focus:outline-none focus:border-[#0066cc] cursor-pointer"
                   >
-                    <option value="All">All Cities</option>
+                    <option value="All">
+                      {selectedState !== 'All' ? `All Cities in ${selectedState}` : 'All Cities'}
+                    </option>
                     {availableDoctorCities.map((ct) => (
                       <option key={ct} value={ct}>
                         {ct}
@@ -943,7 +952,9 @@ export const Home: React.FC = () => {
                         onChange={(e) => setSelectedCity(e.target.value)}
                         className="w-full py-2 px-2.5 rounded-xl border border-[#e0e0e0] bg-[#f5f5f7] text-xs"
                       >
-                        <option value="All">All Cities</option>
+                        <option value="All">
+                          {selectedState !== 'All' ? `All Cities in ${selectedState}` : 'All Cities'}
+                        </option>
                         {availableDoctorCities.map((ct) => (
                           <option key={ct} value={ct}>
                             {ct}
