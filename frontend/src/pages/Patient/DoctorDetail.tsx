@@ -269,7 +269,7 @@ export const DoctorDetail: React.FC = () => {
               <div className="py-6 border-b border-[#f0f0f0]">
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-[#86868b] mb-3 flex items-center gap-1.5">
                   <Clock className="w-3.5 h-3.5 text-[#0088e8]" />
-                  Active Practice Shifts & Capacities{selectedClinic ? ` (${selectedClinic.clinic.clinicName})` : ''}
+                  Active Practice Shifts{selectedClinic ? ` (${selectedClinic.clinic.clinicName})` : ''}
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {activeSlots.map((slot, idx) => (
@@ -277,12 +277,8 @@ export const DoctorDetail: React.FC = () => {
                       <span className="text-xs font-semibold text-[#1d1d1f] block mb-1">
                         {slot.name}
                       </span>
-                      <div className="text-xs text-[#0088e8] font-medium mb-1">
+                      <div className="text-xs text-[#0088e8] font-medium">
                         {format12Hour(slot.startTime)} – {format12Hour(slot.endTime)}
-                      </div>
-                      <div className="flex justify-between text-[11px] text-[#86868b]">
-                        <span>Capacity: {slot.maxPatients} patients</span>
-                        <span className="font-medium text-[#1d1d1f]">~{slot.avgConsultationMinutes}m pace</span>
                       </div>
                     </div>
                   ))}
@@ -547,7 +543,6 @@ export const DoctorDetail: React.FC = () => {
                                 </span>
                               </div>
                               <div className="text-right">
-                                <span className="text-[10px] block text-[#86868b]">Cap: {slot.maxPatients} pts</span>
                                 {isPassed ? (
                                   <span className="text-[10px] text-gray-500 font-medium">Shift Ended</span>
                                 ) : slotStatus?.isFull ? (
@@ -605,7 +600,7 @@ export const DoctorDetail: React.FC = () => {
                         <span>
                           {queuePreview.patientsAhead === 0
                             ? 'No patients ahead! You will be first in this shift.'
-                            : `${queuePreview.patientsAhead} patient(s) ahead • ~${queuePreview.avgConsultationMinutes}m pace`}
+                            : `${queuePreview.patientsAhead} patient(s) ahead in line`}
                         </span>
                       </div>
                     </div>

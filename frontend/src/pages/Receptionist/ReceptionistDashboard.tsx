@@ -638,7 +638,7 @@ export const ReceptionistDashboard: React.FC = () => {
                       >
                         {activeSelectedDoctor?.slots.map((s) => (
                           <option key={s.id} value={s.id}>
-                            {s.name} (Max {s.maxPatients} pts • ~{s.avgConsultationMinutes}m pace)
+                            {s.name} ({s.startTime} – {s.endTime})
                           </option>
                         ))}
                       </select>

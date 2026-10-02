@@ -591,15 +591,8 @@ export const BookAppointment: React.FC = () => {
                       </span>
                     </div>
 
-                    <div className="flex items-center justify-between text-[11px] text-[#86868b] pt-2 border-t border-[#f0f0f0]">
-                      <span>Max {s.maxPatients} patients</span>
-                      <span className="text-[#1d1d1f] font-medium">
-                        ~{s.avgConsultationMinutes}m pace
-                      </span>
-                    </div>
-
                     {/* Status Pill */}
-                    <div className="mt-2.5">
+                    <div className="mt-1">
                       {slotPassed ? (
                         <span className="inline-block text-[10px] font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
                           Shift Ended
@@ -648,7 +641,9 @@ export const BookAppointment: React.FC = () => {
                   {previewLoading ? 'Updating...' : queuePreview.estimatedTime}
                 </strong>
                 <span className="text-xs text-[#86868b] block mt-0.5 font-medium">
-                  {queuePreview.patientsAhead} patient(s) ahead • ~{queuePreview.avgConsultationMinutes}m pace
+                  {queuePreview.patientsAhead === 0
+                    ? 'Next in line for this shift'
+                    : `${queuePreview.patientsAhead} patient(s) ahead in line`}
                 </span>
               </div>
             </div>
@@ -738,70 +733,38 @@ export const BookAppointment: React.FC = () => {
             </div>
 
             <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-xs font-medium text-[#1d1d1f]">
-                  Reason for Visit
-                </label>
-                <span className="text-[11px] text-[#86868b]">Quick Select:</span>
-              </div>
-              <div className="flex flex-wrap gap-1.5 mb-2">
-                {[
-                  'General Consultation',
-                  'Routine Checkup',
-                  'Second Opinion',
-                  'Follow-up Review',
-                  'Flu / Fever Symptoms',
-                ].map((tag) => (
-                  <button
-                    key={tag}
-                    type="button"
-                    onClick={() => setReasonForVisit(tag)}
-                    className={`px-3 py-1 rounded-full text-[11px] transition-colors ${
-                      reasonForVisit === tag
-                        ? 'bg-[#0088e8] text-white font-medium shadow-2xs'
-                        : 'bg-[#f5f5f7] text-[#1d1d1f] hover:bg-[#e8e8ed]'
-                    }`}
-                  >
-                    {tag}
-                  </button>
-                ))}
-              </div>
+              <label className="block text-xs font-semibold text-[#1d1d1f] mb-1.5">
+                Reason for Visit
+              </label>
               <input
                 type="text"
                 value={reasonForVisit}
                 onChange={(e) => setReasonForVisit(e.target.value)}
-                placeholder="e.g. Annual cardiac review, chest tightness, routine check"
-                className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[14px] bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
+                placeholder="e.g. General checkup, consultation, follow-up"
+                className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-sm bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
-                Symptoms or Concerns (Optional)
+              <label className="block text-xs font-semibold text-[#1d1d1f] mb-1.5">
+                Symptoms or Concerns <span className="text-[#86868b] font-normal">(Optional)</span>
               </label>
               <textarea
-                rows={3}
+                rows={2}
                 value={symptoms}
                 onChange={(e) => setSymptoms(e.target.value)}
-                placeholder="Describe any symptoms you are experiencing..."
-                className="w-full p-3 rounded-xl border border-[#e5e5ea] text-[14px] bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
+                placeholder="Describe any symptoms or concerns for the doctor..."
+                className="w-full p-3.5 rounded-xl border border-[#e5e5ea] text-sm bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] resize-none"
               ></textarea>
             </div>
 
-            {/* Receptionist & Payment Verification Policy Notice */}
-            <div className="p-4 rounded-2xl bg-[#0088e8]/5 border border-[#0088e8]/20 text-[#1d1d1f] text-xs flex items-start gap-3">
-              <div className="w-8 h-8 rounded-full bg-[#0088e8]/10 text-[#0088e8] flex items-center justify-center flex-shrink-0 mt-0.5">
-                <Phone className="w-4 h-4" />
+            {/* Pay at Clinic Reassurance */}
+            <div className="p-3.5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2 text-[#1d1d1f] font-medium">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                <span>Zero upfront fee • Pay consultation fee directly at clinic</span>
               </div>
-              <div className="min-w-0 flex-1">
-                <strong className="block text-xs font-bold text-[#1d1d1f] mb-0.5">
-                  Receptionist Verification & Payment Required
-                </strong>
-                <p className="text-xs text-[#48484a] leading-relaxed">
-                  Online requests are reviewed by the clinic receptionist. Once submitted, please contact the reception
-                  {selectedClinic?.clinic.phone ? ` at ${formatDisplayPhone(selectedClinic.clinic.phone)}` : ''} to complete your consultation fee payment of <span className="font-semibold text-emerald-700">₹{activeFee}</span>. Your official sequential queue token is locked in immediately upon confirmation!
-                </p>
-              </div>
+              <span className="font-bold text-[#1d1d1f] text-sm">₹{activeFee}</span>
             </div>
 
             {/* Warning if slot has ended for today */}
@@ -809,7 +772,7 @@ export const BookAppointment: React.FC = () => {
               <div className="p-4 rounded-2xl bg-amber-50 border border-amber-300 text-amber-900 text-xs flex items-start gap-2.5">
                 <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
                 <div>
-                  <strong>This checking shift has already ended for today.</strong> Please select an upcoming shift above or pick a future appointment date to reserve your queue token.
+                  <strong>This checking shift has already ended for today.</strong> Please select an upcoming shift above or pick a future appointment date.
                 </div>
               </div>
             )}
@@ -821,7 +784,7 @@ export const BookAppointment: React.FC = () => {
               </div>
             )}
 
-            <div className="pt-4 border-t border-[#f0f0f0] flex justify-end">
+            <div className="pt-2 flex justify-end">
               <AppleButton
                 variant="primary"
                 size="lg"
@@ -832,12 +795,12 @@ export const BookAppointment: React.FC = () => {
                 {!doctor.clinics || doctor.clinics.length === 0
                   ? 'No Clinic Associated — Booking Disabled'
                   : submitting
-                  ? 'Submitting Request...'
+                  ? 'Reserving Token...'
                   : isSelectedSlotPassed
                   ? 'Shift Concluded — Select Next Shift'
                   : isSelectedSlotFull
                   ? 'Shift Fully Booked — Select Another Shift'
-                  : `Submit Booking Request (₹${activeFee})`}
+                  : `Confirm Appointment (₹${activeFee})`}
               </AppleButton>
             </div>
           </form>
