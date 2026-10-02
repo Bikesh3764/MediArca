@@ -86,3 +86,20 @@ export const isValidIndianPhone = (raw: string | undefined | null): boolean => {
 
   return false;
 };
+
+/**
+ * Formats phone number for display with standard grouping (e.g. "+91 98765 43210").
+ */
+export const formatDisplayPhone = (phone?: string | null): string => {
+  if (!phone) return '';
+  const digits = phone.replace(/\D/g, '');
+  if (digits.length === 10) {
+    return `+91 ${digits.slice(0, 5)} ${digits.slice(5)}`;
+  }
+  if (digits.length === 12 && digits.startsWith('91')) {
+    const raw10 = digits.slice(2);
+    return `+91 ${raw10.slice(0, 5)} ${raw10.slice(5)}`;
+  }
+  return phone.startsWith('+91') ? phone : `+91 ${phone}`;
+};
+
