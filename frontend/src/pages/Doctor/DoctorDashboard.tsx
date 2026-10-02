@@ -382,10 +382,10 @@ export const DoctorDashboard: React.FC = () => {
     >
       <div className="space-y-6 print:hidden">
         {/* Navigation Tabs (Quick pill switch) */}
-        <div className="flex items-center gap-2 border-b border-[#e5e5ea] pb-3">
+        <div className="flex items-center gap-2 border-b border-[#e5e5ea] pb-3 overflow-x-auto scrollbar-none">
           <button
             onClick={() => setActiveTab('queue')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold transition-all ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold transition-all whitespace-nowrap flex-shrink-0 ${
               activeTab === 'queue'
                 ? 'bg-[#1d1d1f] text-white shadow-sm'
                 : 'bg-white text-[#1d1d1f] hover:bg-[#f5f5f7] border border-[#e5e5ea]'
@@ -408,7 +408,7 @@ export const DoctorDashboard: React.FC = () => {
               setActiveTab('affiliations');
               fetchAffiliations();
             }}
-            className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold transition-all ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold transition-all whitespace-nowrap flex-shrink-0 ${
               activeTab === 'affiliations'
                 ? 'bg-[#1d1d1f] text-white shadow-sm'
                 : 'bg-white text-[#1d1d1f] hover:bg-[#f5f5f7] border border-[#e5e5ea]'
@@ -1346,13 +1346,13 @@ export const DoctorDashboard: React.FC = () => {
                     const nextTarget = filteredWaiting[0];
 
                     return (
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
                         <input
                           type="text"
                           value={queueSearch}
                           onChange={(e) => setQueueSearch(e.target.value)}
                           placeholder="Search patient, phone, token..."
-                          className="h-9 px-3.5 rounded-full border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] w-48 sm:w-56"
+                          className="h-9 px-3.5 rounded-full border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] w-full sm:w-56"
                         />
                         {nextTarget && (
                           <AppleButton
@@ -1360,7 +1360,7 @@ export const DoctorDashboard: React.FC = () => {
                             size="sm"
                             disabled={callingId !== null}
                             onClick={() => handleCallPatient(nextTarget.id)}
-                            className="flex items-center gap-1.5 shadow-sm whitespace-nowrap"
+                            className="flex items-center justify-center gap-1.5 shadow-sm whitespace-nowrap w-full sm:w-auto"
                           >
                             <Play className="w-3.5 h-3.5 fill-current" />
                             {callingId === nextTarget.id

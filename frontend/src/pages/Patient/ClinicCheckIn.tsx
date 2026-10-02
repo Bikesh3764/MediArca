@@ -118,7 +118,7 @@ export const ClinicCheckIn: React.FC = () => {
           </p>
         </div>
 
-        <UtilityCard className="p-6 sm:p-8">
+        <UtilityCard className="p-5 sm:p-8">
           {/* Missing Parameters / Tampered Link Alert */}
           {(!clinicId || !code) && !errorMessage && (
             <div className="text-center py-6">

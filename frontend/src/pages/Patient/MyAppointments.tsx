@@ -118,7 +118,7 @@ export const MyAppointments: React.FC = () => {
           <div className="bg-[#f5f5f7] p-1 rounded-full border border-[#e5e5ea] flex shadow-2xs">
             <button
               onClick={() => setActiveTab('upcoming')}
-              className={`px-6 py-2 rounded-full text-xs transition-all cursor-pointer active:scale-[0.98] ${
+              className={`px-4 sm:px-6 py-2 rounded-full text-xs transition-all cursor-pointer active:scale-[0.98] ${
                 activeTab === 'upcoming'
                   ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs'
                   : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
@@ -128,7 +128,7 @@ export const MyAppointments: React.FC = () => {
             </button>
             <button
               onClick={() => setActiveTab('past')}
-              className={`px-6 py-2 rounded-full text-xs transition-all cursor-pointer active:scale-[0.98] ${
+              className={`px-4 sm:px-6 py-2 rounded-full text-xs transition-all cursor-pointer active:scale-[0.98] ${
                 activeTab === 'past'
                   ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs'
                   : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'

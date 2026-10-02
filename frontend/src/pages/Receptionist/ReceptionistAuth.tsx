@@ -194,9 +194,9 @@ export const ReceptionistAuth: React.FC = () => {
 
   if (mustChangePasswordState) {
     return (
-      <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center py-16 px-4 sm:px-6 animate-fadeIn">
+      <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center py-8 sm:py-16 px-3 sm:px-6 animate-fadeIn">
         <div className="max-w-md w-full">
-          <div className="text-center mb-8">
+          <div className="text-center mb-6 sm:mb-8">
             <Link to="/" className="inline-block mb-3 hover:opacity-90 transition-opacity">
               <BrandLogo variant="full" size="md" imgClassName="h-8 w-auto mx-auto" />
             </Link>
@@ -211,7 +211,7 @@ export const ReceptionistAuth: React.FC = () => {
             </p>
           </div>
 
-          <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-6 sm:p-8 shadow-sm">
+          <div className="bg-white rounded-[20px] sm:rounded-[24px] border border-[#e5e5ea] p-4 sm:p-8 shadow-sm">
             {error && (
               <div className="mb-5 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
@@ -293,7 +293,7 @@ export const ReceptionistAuth: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center py-12 px-4 sm:px-6">
+    <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center py-8 sm:py-12 px-3 sm:px-6">
       <div className="max-w-[440px] w-full">
         {/* Header */}
         <div className="text-center mb-6">
@@ -309,7 +309,7 @@ export const ReceptionistAuth: React.FC = () => {
         </div>
 
         {/* Card */}
-        <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-6 sm:p-8 shadow-xs">
+        <div className="bg-white rounded-[20px] sm:rounded-[24px] border border-[#e5e5ea] p-4 sm:p-8 shadow-xs">
           {/* Segmented Mode Selector */}
           <div className="flex rounded-full bg-[#f5f5f7] p-1 border border-[#e5e5ea] mb-6 shadow-2xs">
             <button

@@ -27,9 +27,18 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
 
-  // Box dimensions on screen based on selected aspect ratio
-  const boxWidth = selectedRatio === '1:1' ? 320 : 360;
-  const boxHeight = selectedRatio === '1:1' ? 320 : 270;
+  const [viewportWidth, setViewportWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 400);
+
+  useEffect(() => {
+    const handleResize = () => setViewportWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Box dimensions on screen based on selected aspect ratio, adaptively scaled for mobile screens
+  const availWidth = Math.max(240, Math.min(320, viewportWidth - 64));
+  const boxWidth = selectedRatio === '1:1' ? availWidth : Math.min(340, availWidth + 20);
+  const boxHeight = selectedRatio === '1:1' ? boxWidth : Math.round(boxWidth * 0.75);
 
   // On image load, detect dimensions and choose smart default aspect ratio
   const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
@@ -123,8 +132,8 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
         naturalH = img.naturalHeight || 800;
       }
 
-      const C_w = boxWidth;
-      const C_h = boxHeight;
+      const C_w = containerRef.current?.clientWidth || boxWidth;
+      const C_h = containerRef.current?.clientHeight || boxHeight;
 
       // High-resolution export canvas (800x800 for 1:1 or 800x600 for 4:3)
       const targetWidth = 800;
@@ -374,17 +383,17 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
         </div>
 
         {/* Footer Actions */}
-        <div className="px-6 py-4 bg-white border-t border-[#f0f0f2] flex items-center justify-between">
-          <span className="text-[11px] text-[#86868b]">
+        <div className="p-4 sm:px-6 sm:py-4 bg-white border-t border-[#f0f0f2] flex flex-col sm:flex-row items-center justify-between gap-3">
+          <span className="text-[11px] text-[#86868b] text-center sm:text-left">
             Photo will save at 800px retina clarity
           </span>
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
             <AppleButton
               variant="secondary"
               size="sm"
               disabled={processing}
               onClick={onClose}
-              className="text-xs px-4"
+              className="text-xs px-4 flex-1 sm:flex-initial"
             >
               Cancel
             </AppleButton>
@@ -393,7 +402,7 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
               size="sm"
               disabled={processing}
               onClick={handleCropAndSave}
-              className="text-xs px-5 bg-[#0088e8] hover:bg-[#0077cc] active:scale-[0.98] text-white flex items-center gap-1.5 shadow-xs font-semibold cursor-pointer transition-all"
+              className="text-xs px-5 bg-[#0088e8] hover:bg-[#0077cc] active:scale-[0.98] text-white flex items-center justify-center gap-1.5 shadow-xs font-semibold cursor-pointer transition-all flex-1 sm:flex-initial"
             >
               <Check className="w-3.5 h-3.5 stroke-[2.5]" />
               <span>{processing ? 'Framing & Saving...' : 'Apply & Save Headshot'}</span>

@@ -259,21 +259,21 @@ export const ProfileCompletionModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-md animate-fadeIn">
-      <div className="bg-white rounded-[28px] border border-[#e5e5ea] shadow-2xl max-w-lg w-full max-h-[92vh] overflow-y-auto p-6 sm:p-8 relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-md animate-fadeIn">
+      <div className="bg-white rounded-[24px] sm:rounded-[28px] border border-[#e5e5ea] shadow-2xl max-w-lg w-full max-h-[94vh] overflow-y-auto p-5 sm:p-8 relative">
         {/* Close / Dismiss */}
         <button
           onClick={handleDismiss}
-          className="absolute top-5 right-5 p-2 rounded-full text-[#86868b] hover:text-[#1d1d1f] hover:bg-[#f5f5f7] transition-all"
+          className="absolute top-4 right-4 sm:top-5 sm:right-5 p-2 rounded-full text-[#86868b] hover:text-[#1d1d1f] hover:bg-[#f5f5f7] transition-all"
           title="Remind me later"
         >
           <X className="w-5 h-5" />
         </button>
 
         {/* Brand & Badge Header */}
-        <div className="text-center mb-6">
-          <BrandLogo variant="full" size="md" imgClassName="h-7 w-auto mx-auto mb-3" />
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#0088e8]/10 text-[#0088e8] text-xs font-semibold mb-3 border border-[#0088e8]/20">
+        <div className="text-center mb-5 sm:mb-6">
+          <BrandLogo variant="full" size="md" imgClassName="h-6 sm:h-7 w-auto mx-auto mb-2 sm:mb-3" />
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#0088e8]/10 text-[#0088e8] text-xs font-semibold mb-2 sm:mb-3 border border-[#0088e8]/20">
             {user.role === 'PATIENT' && <UserCheck className="w-3.5 h-3.5" />}
             {user.role === 'DOCTOR' && <Stethoscope className="w-3.5 h-3.5" />}
             {user.role === 'CLINIC' && <Building2 className="w-3.5 h-3.5" />}
@@ -283,7 +283,7 @@ export const ProfileCompletionModal: React.FC = () => {
               {user.role === 'CLINIC' && 'Complete Clinic Setup'}
             </span>
           </div>
-          <h2 className="text-2xl font-semibold text-[#1d1d1f] tracking-tight">
+          <h2 className="text-xl sm:text-2xl font-semibold text-[#1d1d1f] tracking-tight">
             {user.role === 'PATIENT' && 'Activate Your Patient Profile'}
             {user.role === 'DOCTOR' && 'Set Up Practitioner Credentials'}
             {user.role === 'CLINIC' && 'Complete Clinic Facility Details'}

@@ -147,7 +147,7 @@ export const GlobalNav: React.FC = () => {
       <div
         className={`${
           isMobile
-            ? 'fixed left-4 right-4 top-14 max-w-sm sm:max-w-md mx-auto'
+            ? 'fixed left-3 right-3 sm:left-4 sm:right-4 top-14 max-w-sm sm:max-w-md mx-auto'
             : 'absolute right-0 top-11 w-80 sm:w-96'
         } bg-white/95 backdrop-blur-2xl border border-[#e5e5ea] rounded-2xl shadow-2xl z-50 overflow-hidden animate-fadeIn text-left`}
       >
@@ -463,7 +463,7 @@ export const GlobalNav: React.FC = () => {
             </div>
           )}
           {user && (
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#0088e8]/10 text-[#0088e8] font-semibold border border-[#0088e8]/20">
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#0088e8]/10 text-[#0088e8] font-semibold border border-[#0088e8]/20 hidden sm:inline-flex">
               {user.role}
             </span>
           )}

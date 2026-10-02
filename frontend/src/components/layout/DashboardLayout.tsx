@@ -332,20 +332,20 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       {/* Main Content Area */}
       <main className="flex-1 md:pl-64 flex flex-col min-w-0">
         {/* Page Top Header with Greeting & Action Slot */}
-        <div className="bg-white border-b border-[#e5e5ea] px-6 py-5 sm:px-8 sm:py-6">
-          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="bg-white border-b border-[#e5e5ea] px-4 py-4 sm:px-8 sm:py-6">
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
             <div>
-              <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f]">
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#1d1d1f]">
                 {title || defaultGreeting}
               </h1>
               {subtitle && (
-                <p className="text-xs text-[#86868b] mt-1 font-normal">
+                <p className="text-xs text-[#86868b] mt-0.5 sm:mt-1 font-normal">
                   {subtitle}
                 </p>
               )}
             </div>
             {headerAction && (
-              <div className="flex items-center gap-2.5 flex-wrap">
+              <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
                 {headerAction}
               </div>
             )}
@@ -353,7 +353,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         </div>
 
         {/* Inner Page View Content */}
-        <div className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
           {children}
         </div>
       </main>

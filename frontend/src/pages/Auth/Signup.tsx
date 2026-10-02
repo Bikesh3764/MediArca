@@ -146,7 +146,7 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f5f5f7] flex flex-col justify-center py-10 px-4 sm:px-6">
+    <div className="min-h-screen bg-[#f5f5f7] flex flex-col justify-center py-8 sm:py-10 px-3 sm:px-6">
       <div className="sm:mx-auto sm:w-full sm:max-w-[460px]">
         {/* Brand Header */}
         <div className="text-center mb-6">
@@ -162,7 +162,7 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
         </div>
 
         {/* Main Card */}
-        <div className="bg-white py-7 px-6 sm:px-8 rounded-[24px] border border-[#e5e5ea] shadow-xs">
+        <div className="bg-white py-6 sm:py-7 px-4 sm:px-8 rounded-[20px] sm:rounded-[24px] border border-[#e5e5ea] shadow-xs">
           {/* Segmented Role Switcher */}
           <div className="flex bg-[#f5f5f7] p-1 rounded-full border border-[#e5e5ea] mb-6">
             <button

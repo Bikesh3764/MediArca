@@ -363,30 +363,30 @@ export const ClinicDashboard: React.FC = () => {
         clinic?.city ? ` • ${clinic.city}` : ''
       }${clinic?.state ? `, ${clinic.state}` : ''}`}
       headerAction={
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
           <AppleButton
             variant="secondary"
             size="sm"
             onClick={() => setShowPosterModal(true)}
-            className="flex items-center gap-1.5"
+            className="flex items-center gap-1.5 text-xs"
           >
             <QrCode className="w-3.5 h-3.5 text-[#0088e8]" />
-            Check-In Poster
+            <span className="hidden xs:inline">Check-In</span> Poster
           </AppleButton>
           <AppleButton
             variant="secondary"
             size="sm"
             onClick={() => setShowRecModal(true)}
-            className="flex items-center gap-1.5"
+            className="flex items-center gap-1.5 text-xs"
           >
             <UserCheck className="w-3.5 h-3.5" />
-            Provision Receptionist
+            <span className="hidden xs:inline">Provision</span> Receptionist
           </AppleButton>
           <AppleButton
             variant="primary"
             size="sm"
             onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-1.5 shadow-sm"
+            className="flex items-center gap-1.5 shadow-sm text-xs"
           >
             <UserPlus className="w-3.5 h-3.5" />
             Invite Doctor
@@ -394,7 +394,7 @@ export const ClinicDashboard: React.FC = () => {
         </div>
       }
     >
-      <div className="space-y-8">
+      <div className="space-y-6 sm:space-y-8">
         {/* Verification Warning if clinic not yet verified or suspended */}
         {clinic?.verificationStatus === 'SUSPENDED' && (
           <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 text-xs flex items-start gap-3 shadow-xs">
@@ -459,8 +459,8 @@ export const ClinicDashboard: React.FC = () => {
         )}
 
         {/* 1. Clinic Metrics Overview */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-6 shadow-xs">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+          <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-4 sm:p-6 shadow-xs">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-semibold text-[#86868b] uppercase tracking-wider">
                 Affiliated Doctors
@@ -469,13 +469,13 @@ export const ClinicDashboard: React.FC = () => {
                 <Users className="w-4 h-4" />
               </div>
             </div>
-            <div className="text-3xl font-semibold text-[#1d1d1f]">
+            <div className="text-2xl sm:text-3xl font-semibold text-[#1d1d1f]">
               {data?.totalDoctors ?? doctors.length}
             </div>
             <p className="text-[11px] text-[#86868b] mt-1">Practitioners linked to this facility</p>
           </div>
 
-          <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-6 shadow-xs">
+          <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-4 sm:p-6 shadow-xs">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-semibold text-[#86868b] uppercase tracking-wider">
                 Clinic Appointments
@@ -484,13 +484,13 @@ export const ClinicDashboard: React.FC = () => {
                 <CalendarCheck className="w-4 h-4" />
               </div>
             </div>
-            <div className="text-3xl font-semibold text-[#1d1d1f]">
+            <div className="text-2xl sm:text-3xl font-semibold text-[#1d1d1f]">
               {data?.totalBookings ?? 0}
             </div>
             <p className="text-[11px] text-[#86868b] mt-1">Booked at this facility across all doctors</p>
           </div>
 
-          <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-6 shadow-xs">
+          <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-4 sm:p-6 shadow-xs">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-semibold text-[#86868b] uppercase tracking-wider">
                 Clinic Revenue
@@ -499,7 +499,7 @@ export const ClinicDashboard: React.FC = () => {
                 <IndianRupee className="w-4 h-4" />
               </div>
             </div>
-            <div className="text-3xl font-semibold text-[#1d1d1f]">
+            <div className="text-2xl sm:text-3xl font-semibold text-[#1d1d1f]">
               ₹{data?.totalRevenue ? data.totalRevenue.toLocaleString() : '0'}
             </div>
             <p className="text-[11px] text-[#86868b] mt-1">
@@ -509,7 +509,7 @@ export const ClinicDashboard: React.FC = () => {
         </div>
 
         {/* 2. Affiliated Doctors Section */}
-        <div id="practitioners-section" className="scroll-mt-6 bg-white rounded-[24px] border border-[#e5e5ea] p-6 sm:p-8 shadow-xs">
+        <div id="practitioners-section" className="scroll-mt-6 bg-white rounded-[20px] sm:rounded-[24px] border border-[#e5e5ea] p-4 sm:p-8 shadow-xs">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-[#f0f0f0] mb-6">
             <div>
               <h2 className="text-lg font-semibold text-[#1d1d1f] tracking-tight">
@@ -729,7 +729,7 @@ export const ClinicDashboard: React.FC = () => {
         </div>
 
         {/* Desk Receptionists & Front Staff Section */}
-        <div id="receptionists-section" className="scroll-mt-6 bg-white rounded-[24px] border border-[#e5e5ea] p-6 sm:p-8 shadow-xs">
+        <div id="receptionists-section" className="scroll-mt-6 bg-white rounded-[20px] sm:rounded-[24px] border border-[#e5e5ea] p-4 sm:p-8 shadow-xs">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-[#f0f0f0] mb-6">
             <div>
               <h2 className="text-lg font-semibold text-[#1d1d1f] tracking-tight">
@@ -901,7 +901,7 @@ export const ClinicDashboard: React.FC = () => {
         </div>
 
         {/* 4. Recent Clinic Appointments Table */}
-        <div id="appointments-section" className="scroll-mt-6 bg-white rounded-[24px] border border-[#e5e5ea] p-6 sm:p-8 shadow-xs">
+        <div id="appointments-section" className="scroll-mt-6 bg-white rounded-[20px] sm:rounded-[24px] border border-[#e5e5ea] p-4 sm:p-8 shadow-xs">
           <h3 className="text-base font-semibold text-[#1d1d1f] mb-4">
             Recent Consultations at this Facility
           </h3>
@@ -970,8 +970,8 @@ export const ClinicDashboard: React.FC = () => {
 
       {/* Onboard Doctor Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-6 sm:p-8 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-[20px] sm:rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-5 sm:p-8 shadow-2xl">
             <div className="flex justify-between items-center pb-4 border-b border-[#f0f0f0]">
               <div>
                 <h3 className="text-base font-semibold text-[#1d1d1f]">Onboard Doctor</h3>
@@ -1086,8 +1086,8 @@ export const ClinicDashboard: React.FC = () => {
 
       {/* Provision Receptionist Modal */}
       {showRecModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-[24px] border border-[#e5e5ea] max-w-lg w-full p-6 sm:p-8 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-[20px] sm:rounded-[24px] border border-[#e5e5ea] max-w-lg w-full p-5 sm:p-8 shadow-2xl">
             <div className="flex justify-between items-center pb-4 border-b border-[#f0f0f0]">
               <div>
                 <h3 className="text-base font-semibold text-[#1d1d1f]">Provision Desk Receptionist</h3>
@@ -1252,8 +1252,8 @@ export const ClinicDashboard: React.FC = () => {
 
       {/* Edit Assigned Doctors Modal */}
       {editingRec && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-6 sm:p-8 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-[20px] sm:rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-5 sm:p-8 shadow-2xl">
             <div className="flex justify-between items-center pb-4 border-b border-[#f0f0f0]">
               <div>
                 <h3 className="text-base font-semibold text-[#1d1d1f]">Manage Doctor Desk Access</h3>
@@ -1342,8 +1342,8 @@ export const ClinicDashboard: React.FC = () => {
 
       {/* Receptionist Credentials Handover Modal */}
       {createdCredentials && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-6 sm:p-8 shadow-2xl space-y-5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-[20px] sm:rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-5 sm:p-8 shadow-2xl space-y-5">
             <div className="flex justify-between items-start pb-4 border-b border-[#f0f0f0]">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
@@ -1444,8 +1444,8 @@ export const ClinicDashboard: React.FC = () => {
 
       {/* Review & Approve Incoming Receptionist Modal */}
       {approvingRec && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-6 sm:p-8 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-[20px] sm:rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-5 sm:p-8 shadow-2xl">
             <div className="flex justify-between items-center pb-4 border-b border-[#f0f0f0]">
               <div>
                 <h3 className="text-base font-semibold text-[#1d1d1f]">Approve Receptionist Application</h3>
@@ -1550,8 +1550,8 @@ export const ClinicDashboard: React.FC = () => {
 
       {/* Clinic Physical Check-In QR Poster Modal */}
       {showPosterModal && clinic && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-6 shadow-2xl relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-[20px] sm:rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-5 sm:p-6 shadow-2xl relative">
             <button
               onClick={() => setShowPosterModal(false)}
               className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors"

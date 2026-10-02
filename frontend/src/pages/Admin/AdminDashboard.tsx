@@ -237,7 +237,7 @@ export const AdminDashboard: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-8 space-y-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 pt-5 sm:pt-8 space-y-6 sm:space-y-8">
         {loading && !stats ? (
           <div className="flex flex-col items-center justify-center py-24">
             <div className="w-8 h-8 rounded-full border-2 border-[#0088e8] border-t-transparent animate-spin mb-3"></div>
@@ -246,7 +246,7 @@ export const AdminDashboard: React.FC = () => {
         ) : (
           <>
             {/* KPI Metrics */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
               <UtilityCard>
                 <div className="flex items-center justify-between">
                   <div>
@@ -318,8 +318,8 @@ export const AdminDashboard: React.FC = () => {
             </div>
 
             {/* Verification Navigation Tabs */}
-            <div className="flex flex-wrap items-center gap-2 border-b border-[#e5e5ea] pb-4">
-              <div className="inline-flex p-1 bg-[#f5f5f7] rounded-full border border-[#e5e5ea] shadow-xs">
+            <div className="flex items-center gap-2 border-b border-[#e5e5ea] pb-4 overflow-x-auto scrollbar-none">
+              <div className="inline-flex p-1 bg-[#f5f5f7] rounded-full border border-[#e5e5ea] shadow-xs whitespace-nowrap">
                 <button
                   onClick={() => setActiveTab('doctors')}
                   className={`px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-2 transition-all active:scale-[0.98] cursor-pointer ${
@@ -719,8 +719,8 @@ export const AdminDashboard: React.FC = () => {
 
       {/* Doctor Verification Credentials Inspection Modal */}
       {selectedDoctor && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-[24px] border border-[#e5e5ea] max-w-lg w-full p-6 sm:p-8 shadow-2xl space-y-5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-[20px] sm:rounded-[24px] border border-[#e5e5ea] max-w-lg w-full p-5 sm:p-8 shadow-2xl space-y-5">
             <div className="flex justify-between items-start pb-4 border-b border-[#f0f0f0]">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] overflow-hidden flex items-center justify-center font-bold text-lg text-[#0088e8]">
@@ -875,8 +875,8 @@ export const AdminDashboard: React.FC = () => {
 
       {/* Clinic Facility Inspection & Verification Modal */}
       {selectedClinic && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-[24px] border border-[#e5e5ea] max-w-lg w-full p-6 sm:p-8 shadow-2xl space-y-5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-[20px] sm:rounded-[24px] border border-[#e5e5ea] max-w-lg w-full p-5 sm:p-8 shadow-2xl space-y-5">
             <div className="flex justify-between items-start pb-4 border-b border-[#f0f0f0]">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-lg">

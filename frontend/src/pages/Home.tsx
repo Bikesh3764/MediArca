@@ -246,7 +246,7 @@ export const Home: React.FC = () => {
         </div>
 
         <div className="relative z-10 max-w-4xl mx-auto text-center w-full">
-          <h1 className="text-3xl sm:text-5xl md:text-6xl font-extrabold text-[#1d1d1f] tracking-tight leading-[1.15] mb-6 drop-shadow-[0_2px_10px_rgba(255,255,255,0.9)]">
+          <h1 className="text-2xl sm:text-5xl md:text-6xl font-extrabold text-[#1d1d1f] tracking-tight leading-[1.15] mb-4 sm:mb-6 drop-shadow-[0_2px_10px_rgba(255,255,255,0.9)]">
             Book <span className="text-[#0088e8]">doctor appointments</span> all across India.
           </h1>
 
@@ -256,7 +256,7 @@ export const Home: React.FC = () => {
             className="bg-white p-2 rounded-2xl sm:rounded-full border border-[#e5e5ea] shadow-[0_8px_30px_rgba(0,0,0,0.08)] max-w-3xl mx-auto flex flex-col sm:flex-row items-center gap-2 transition-all focus-within:border-[#0088e8] focus-within:shadow-[0_12px_40px_rgba(0,136,232,0.18)]"
           >
             {/* Doctor, Clinic or Location Input */}
-            <div className="flex items-center gap-2.5 flex-1 w-full px-4 py-2 sm:py-0">
+            <div className="flex items-center gap-2.5 flex-1 w-full px-3 sm:px-4 py-2 sm:py-0">
               <Search className="w-4 h-4 text-[#86868b] flex-shrink-0" />
               <input
                 type="text"
@@ -270,7 +270,7 @@ export const Home: React.FC = () => {
             <div className="hidden sm:block w-px h-6 bg-[#e5e5ea]"></div>
 
             {/* City / Location Input */}
-            <div className="flex items-center gap-2.5 w-full sm:w-44 px-4 py-2 sm:py-0">
+            <div className="flex items-center gap-2.5 w-full sm:w-44 px-3 sm:px-4 py-2 sm:py-0">
               <MapPin className="w-4 h-4 text-[#86868b] flex-shrink-0" />
               <input
                 type="text"
@@ -317,15 +317,15 @@ export const Home: React.FC = () => {
               const el = document.getElementById('doctors-catalog');
               if (el) el.scrollIntoView({ behavior: 'smooth' });
             }}
-            className="mt-4 inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-white/95 border border-[#e5e5ea] shadow-xs text-xs text-[#48484a] hover:border-[#0088e8]/40 hover:text-[#0088e8] transition-all cursor-pointer group"
+            className="mt-4 inline-flex max-w-full items-center gap-2 px-3.5 sm:px-4 py-2 rounded-full bg-white/95 border border-[#e5e5ea] shadow-xs text-xs text-[#48484a] hover:border-[#0088e8]/40 hover:text-[#0088e8] transition-all cursor-pointer group"
           >
-            <div className="w-5 h-5 rounded-full bg-[#0088e8]/10 text-[#0088e8] flex items-center justify-center font-bold text-[11px] group-hover:bg-[#0088e8] group-hover:text-white transition-colors">
+            <div className="w-5 h-5 rounded-full bg-[#0088e8]/10 text-[#0088e8] flex items-center justify-center font-bold text-[11px] group-hover:bg-[#0088e8] group-hover:text-white transition-colors flex-shrink-0">
               M
             </div>
-            <span>
-              Skip waiting rooms with <strong className="font-semibold text-[#1d1d1f] group-hover:text-[#0088e8]">Real-Time Queue Tokens</strong> — Instant Doctor Pass
+            <span className="truncate">
+              Skip waiting rooms with <strong className="font-semibold text-[#1d1d1f] group-hover:text-[#0088e8]">Real-Time Queue Tokens</strong>
             </span>
-            <ArrowRight className="w-3.5 h-3.5 text-[#86868b] group-hover:text-[#0088e8] group-hover:translate-x-0.5 transition-all" />
+            <ArrowRight className="w-3.5 h-3.5 text-[#86868b] group-hover:text-[#0088e8] group-hover:translate-x-0.5 transition-all flex-shrink-0" />
           </div>
         </div>
       </section>

@@ -885,7 +885,7 @@ export const BookAppointment: React.FC = () => {
         </AppleButton>
       </SubNav>
 
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 pt-8">
+      <div className="max-w-2xl mx-auto px-3 sm:px-6 pt-5 sm:pt-8">
         {bookingContent}
       </div>
     </div>

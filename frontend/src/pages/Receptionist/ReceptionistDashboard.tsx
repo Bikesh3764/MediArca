@@ -462,77 +462,77 @@ export const ReceptionistDashboard: React.FC = () => {
         )}
 
         {/* 1. Metrics Overview */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
           <div
             onClick={() => setActiveTab('doctors')}
-            className={`bg-white rounded-2xl border p-4 sm:p-5 shadow-xs cursor-pointer transition-all active:scale-[0.99] ${
+            className={`bg-white rounded-[18px] sm:rounded-2xl border p-3.5 sm:p-5 shadow-xs cursor-pointer transition-all active:scale-[0.99] ${
               activeTab === 'doctors' ? 'border-[#0088e8]/50 ring-1 ring-[#0088e8]/20' : 'border-[#e5e5ea] hover:border-black/15'
             }`}
           >
-            <span className="text-[11px] font-semibold text-[#86868b] uppercase tracking-wider block mb-2">
+            <span className="text-[10px] sm:text-[11px] font-semibold text-[#86868b] uppercase tracking-wider block mb-1.5 sm:mb-2">
               Assigned Doctors
             </span>
-            <div className="text-2xl sm:text-3xl font-bold tracking-tight text-[#1d1d1f]">
+            <div className="text-xl sm:text-3xl font-bold tracking-tight text-[#1d1d1f]">
               {linkedDoctors.length}
             </div>
-            <p className="text-xs text-[#86868b] mt-1">Practitioners at desk</p>
+            <p className="text-[11px] sm:text-xs text-[#86868b] mt-1">Practitioners at desk</p>
           </div>
 
           <div
             onClick={() => setActiveTab('pending')}
-            className={`bg-white rounded-2xl border p-4 sm:p-5 shadow-xs cursor-pointer transition-all active:scale-[0.99] ${
+            className={`bg-white rounded-[18px] sm:rounded-2xl border p-3.5 sm:p-5 shadow-xs cursor-pointer transition-all active:scale-[0.99] ${
               activeTab === 'pending' ? 'border-[#0088e8]/50 ring-1 ring-[#0088e8]/20' : 'border-[#e5e5ea] hover:border-black/15'
             }`}
           >
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[11px] font-semibold text-[#86868b] uppercase tracking-wider">
+            <div className="flex items-center justify-between mb-1.5 sm:mb-2">
+              <span className="text-[10px] sm:text-[11px] font-semibold text-[#86868b] uppercase tracking-wider">
                 Pending Approvals
               </span>
               {pendingAppointments.length > 0 && (
                 <span className="w-2 h-2 rounded-full bg-[#0088e8]"></span>
               )}
             </div>
-            <div className="text-2xl sm:text-3xl font-bold tracking-tight text-[#1d1d1f]">
+            <div className="text-xl sm:text-3xl font-bold tracking-tight text-[#1d1d1f]">
               {pendingAppointments.length}
             </div>
-            <p className="text-xs text-[#86868b] mt-1">
-              {pendingAppointments.length === 1 ? '1 awaiting confirmation' : `${pendingAppointments.length} awaiting confirmation`}
+            <p className="text-[11px] sm:text-xs text-[#86868b] mt-1">
+              {pendingAppointments.length === 1 ? '1 awaiting' : `${pendingAppointments.length} awaiting`}
             </p>
           </div>
 
           <div
             onClick={() => setActiveTab('queue')}
-            className={`bg-white rounded-2xl border p-4 sm:p-5 shadow-xs cursor-pointer transition-all active:scale-[0.99] ${
+            className={`bg-white rounded-[18px] sm:rounded-2xl border p-3.5 sm:p-5 shadow-xs cursor-pointer transition-all active:scale-[0.99] ${
               activeTab === 'queue' ? 'border-[#0088e8]/50 ring-1 ring-[#0088e8]/20' : 'border-[#e5e5ea] hover:border-black/15'
             }`}
           >
-            <span className="text-[11px] font-semibold text-[#86868b] uppercase tracking-wider block mb-2">
+            <span className="text-[10px] sm:text-[11px] font-semibold text-[#86868b] uppercase tracking-wider block mb-1.5 sm:mb-2">
               Today's Bookings
             </span>
-            <div className="text-2xl sm:text-3xl font-bold tracking-tight text-[#1d1d1f]">
+            <div className="text-xl sm:text-3xl font-bold tracking-tight text-[#1d1d1f]">
               {linkedDoctors.reduce((sum, d) => sum + d.todayTotalBookings, 0)}
             </div>
-            <p className="text-xs text-[#86868b] mt-1">Total registered today</p>
+            <p className="text-[11px] sm:text-xs text-[#86868b] mt-1">Total registered today</p>
           </div>
 
           <div
             onClick={() => setActiveTab('queue')}
-            className={`bg-white rounded-2xl border p-4 sm:p-5 shadow-xs cursor-pointer transition-all active:scale-[0.99] ${
+            className={`bg-white rounded-[18px] sm:rounded-2xl border p-3.5 sm:p-5 shadow-xs cursor-pointer transition-all active:scale-[0.99] ${
               activeTab === 'queue' ? 'border-[#0088e8]/50 ring-1 ring-[#0088e8]/20' : 'border-[#e5e5ea] hover:border-black/15'
             }`}
           >
-            <span className="text-[11px] font-semibold text-[#86868b] uppercase tracking-wider block mb-2">
+            <span className="text-[10px] sm:text-[11px] font-semibold text-[#86868b] uppercase tracking-wider block mb-1.5 sm:mb-2">
               Patients Waiting
             </span>
-            <div className="text-2xl sm:text-3xl font-bold tracking-tight text-[#1d1d1f]">
+            <div className="text-xl sm:text-3xl font-bold tracking-tight text-[#1d1d1f]">
               {linkedDoctors.reduce((sum, d) => sum + d.todayWaitingPatients, 0)}
             </div>
-            <p className="text-xs text-[#86868b] mt-1">In clinic waiting area</p>
+            <p className="text-[11px] sm:text-xs text-[#86868b] mt-1">In clinic waiting area</p>
           </div>
         </div>
 
         {/* 2. Main Content Container */}
-        <div className="bg-white rounded-2xl border border-[#e5e5ea] p-5 sm:p-7 shadow-xs">
+        <div className="bg-white rounded-[20px] sm:rounded-2xl border border-[#e5e5ea] p-4 sm:p-7 shadow-xs">
           {/* TAB 1: Rapid Walk-in Booking */}
           {activeTab === 'walkin' && (
             <div>
@@ -1044,11 +1044,11 @@ export const ReceptionistDashboard: React.FC = () => {
                   </p>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full sm:w-auto">
                   <select
                     value={queueDoctorId}
                     onChange={(e) => setQueueDoctorId(e.target.value)}
-                    className="h-10 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] text-[#1d1d1f] transition-all focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
+                    className="h-10 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] text-[#1d1d1f] transition-all focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] w-full sm:w-auto"
                   >
                     {linkedDoctors.map((doc) => (
                       <option key={doc.doctorId} value={doc.doctorId}>
@@ -1061,14 +1061,14 @@ export const ReceptionistDashboard: React.FC = () => {
                     type="date"
                     value={queueDate}
                     onChange={(e) => setQueueDate(e.target.value)}
-                    className="h-10 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] text-[#1d1d1f] transition-all focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
+                    className="h-10 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] text-[#1d1d1f] transition-all focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] w-full sm:w-auto"
                   />
 
                   <AppleButton
                     variant="secondary"
                     size="sm"
                     onClick={() => fetchQueue()}
-                    className="flex-shrink-0"
+                    className="flex-shrink-0 w-full sm:w-auto justify-center"
                   >
                     Refresh
                   </AppleButton>
@@ -1422,8 +1422,8 @@ export const ReceptionistDashboard: React.FC = () => {
 
       {/* 3. Guaranteed Queue Token Pass Modal */}
       {bookedPass && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fadeIn print:hidden">
-          <div className="bg-white rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-6 sm:p-8 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn print:hidden">
+          <div className="bg-white rounded-[20px] sm:rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-5 sm:p-8 shadow-2xl">
             <div className="text-center pb-4 border-b border-[#f0f0f0]">
               <div className="w-10 h-10 rounded-full bg-[#f5f5f7] text-[#1d1d1f] flex items-center justify-center mx-auto mb-3">
                 <CheckCircle2 className="w-5 h-5 text-[#0088e8]" />
@@ -1570,8 +1570,8 @@ export const ReceptionistDashboard: React.FC = () => {
 
       {/* Mandatory Password Change Modal for Provisioned Accounts */}
       {user?.mustChangePassword && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-fadeIn print:hidden">
-          <div className="bg-white rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-6 sm:p-8 shadow-2xl relative text-left">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-md animate-fadeIn print:hidden">
+          <div className="bg-white rounded-[20px] sm:rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-5 sm:p-8 shadow-2xl relative text-left">
             <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center mx-auto mb-4 border border-amber-500/20">
               <ShieldCheck className="w-6 h-6" />
             </div>

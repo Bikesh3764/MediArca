@@ -44,7 +44,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
     <div className="relative bg-white rounded-[26px] sm:rounded-[28px] border border-[#e5e5ea] overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.04)] hover:shadow-[0_16px_48px_rgba(0,0,0,0.08)] transition-all duration-300 group">
       {/* Top Header Strip */}
       <div
-        className={`px-6 py-3.5 flex items-center justify-between border-b ${
+        className={`px-4 py-3 sm:px-6 sm:py-3.5 flex flex-wrap items-center justify-between gap-2 border-b ${
           status === 'IN_CONSULTATION' || liveQueue?.isYourTurn
             ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-800'
             : status === 'PENDING_APPROVAL'
@@ -97,11 +97,11 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
       </div>
 
       {/* Main Pass Body */}
-      <div className="p-6 sm:p-7">
+      <div className="p-4 sm:p-7">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           {/* Doctor Info */}
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-[18px] bg-[#f5f5f7] border border-black/[0.08] overflow-hidden shrink-0 flex items-center justify-center shadow-xs">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-[18px] bg-[#f5f5f7] border border-black/[0.08] overflow-hidden shrink-0 flex items-center justify-center shadow-xs">
               {doctor.user?.avatarUrl ? (
                 <img
                   src={getFileUrl(doctor.user.avatarUrl)}
@@ -109,31 +109,31 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center font-bold text-2xl text-[#0088e8]">
+                <div className="w-full h-full flex items-center justify-center font-bold text-xl sm:text-2xl text-[#0088e8]">
                   {(doctor.user?.fullName || 'D')[0]}
                 </div>
               )}
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="text-lg sm:text-xl font-bold text-[#1d1d1f] tracking-tight">
+                <h3 className="text-base sm:text-xl font-bold text-[#1d1d1f] tracking-tight">
                   {doctor.user?.fullName || 'Doctor'}
                 </h3>
                 <CabinStatusBadge status={doctor.cabinStatus} expectedReturnTime={doctor.expectedReturnTime} size="sm" />
               </div>
-              <p className="text-sm text-[#0088e8] font-semibold mt-0.5">{doctor.specialty}</p>
+              <p className="text-xs sm:text-sm text-[#0088e8] font-semibold mt-0.5">{doctor.specialty}</p>
               <div className="flex items-center gap-1.5 text-xs text-[#86868b] mt-1">
                 {appointment.clinic ? (
                   <>
                     <Building2 className="w-3.5 h-3.5 shrink-0 text-[#86868b]" />
-                    <span className="truncate max-w-[320px]">
+                    <span className="truncate max-w-[200px] sm:max-w-[320px]">
                       {appointment.clinic.clinicName} — {appointment.clinic.address}{appointment.clinic.city ? `, ${appointment.clinic.city}` : ''}
                     </span>
                   </>
                 ) : (
                   <>
                     <MapPin className="w-3.5 h-3.5 shrink-0 text-[#86868b]" />
-                    <span className="truncate max-w-[280px]">{doctor.clinicAddress || 'MediArca Healthcare Clinic'}</span>
+                    <span className="truncate max-w-[200px] sm:max-w-[280px]">{doctor.clinicAddress || 'MediArca Healthcare Clinic'}</span>
                   </>
                 )}
               </div>
@@ -141,26 +141,26 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
           </div>
 
           {/* Prominent Queue Badge (Apple Wallet Boarding Pass Chip) */}
-          <div className="flex flex-col items-start sm:items-end">
-            <span className="text-[10px] font-semibold text-[#86868b] uppercase tracking-widest mb-1.5">
+          <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto mt-2 sm:mt-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-[#f0f0f2]">
+            <span className="text-[10px] font-semibold text-[#86868b] uppercase tracking-widest sm:mb-1.5">
               Token Pass
             </span>
-            <div className="bg-gradient-to-br from-[#1d1d1f] via-[#28282a] to-[#1d1d1f] text-white px-5 py-2.5 rounded-[20px] flex items-baseline gap-2 shadow-[0_4px_16px_rgba(0,0,0,0.12)] border border-white/10 group-hover:border-[#0088e8]/30 transition-all">
+            <div className="bg-gradient-to-br from-[#1d1d1f] via-[#28282a] to-[#1d1d1f] text-white px-4 py-2 sm:px-5 sm:py-2.5 rounded-[18px] sm:rounded-[20px] flex items-baseline gap-2 shadow-[0_4px_16px_rgba(0,0,0,0.12)] border border-white/10 group-hover:border-[#0088e8]/30 transition-all">
               <span className="text-[11px] font-medium text-white/50 uppercase tracking-wider">Queue</span>
               {status === 'PENDING_APPROVAL' ? (
-                <span className="text-base font-bold tracking-tight text-amber-400">PENDING</span>
+                <span className="text-sm sm:text-base font-bold tracking-tight text-amber-400">PENDING</span>
               ) : (
-                <span className="text-3xl font-extrabold tracking-tight text-[#0088e8]">#{queueNumber}</span>
+                <span className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#0088e8]">#{queueNumber}</span>
               )}
             </div>
           </div>
         </div>
 
         {/* Apple Wallet Perforated Tear Line with Semicircular Notches */}
-        <div className="relative my-6 flex items-center">
-          <div className="absolute -left-[30px] sm:-left-[34px] w-5 h-5 rounded-full bg-[#f5f5f7] border-r border-[#e5e5ea]" />
+        <div className="relative my-5 sm:my-6 flex items-center">
+          <div className="absolute -left-[26px] sm:-left-[38px] w-5 h-5 rounded-full bg-[#f5f5f7] border-r border-[#e5e5ea]" />
           <div className="w-full border-t-2 border-dashed border-[#e5e5ea]/80" />
-          <div className="absolute -right-[30px] sm:-right-[34px] w-5 h-5 rounded-full bg-[#f5f5f7] border-l border-[#e5e5ea]" />
+          <div className="absolute -right-[26px] sm:-right-[38px] w-5 h-5 rounded-full bg-[#f5f5f7] border-l border-[#e5e5ea]" />
         </div>
 
         {/* Patient Details (When booked for dependent/family member or explicit patient name) */}
@@ -443,12 +443,12 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
         )}
 
         {/* Action Footer */}
-        <div className="mt-6 pt-4 border-t border-[#f0f0f0] flex items-center justify-between">
+        <div className="mt-6 pt-4 border-t border-[#f0f0f0] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="text-[12px] text-[#86868b]">
             Pass ID: <span className="font-mono text-[11px] font-medium bg-[#f5f5f7] border border-[#e5e5ea] px-1.5 py-0.5 rounded">{appointment.id.slice(0, 8)}</span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
             {status === 'COMPLETED' ? (
               <span className="text-xs font-semibold px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1.5">
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
@@ -461,7 +461,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
                 variant="ghost"
                 size="sm"
                 onClick={() => onCancel(appointment.id)}
-                className="text-rose-600 hover:text-rose-700 hover:border-rose-300"
+                className="text-rose-600 hover:text-rose-700 hover:border-rose-300 w-full sm:w-auto"
               >
                 {status === 'PENDING_APPROVAL' ? 'Withdraw Request' : 'Cancel Token'}
               </AppleButton>

@@ -350,7 +350,7 @@ export const ManageSchedule: React.FC = () => {
               </div>
             )}
 
-            <UtilityCard className="p-6 sm:p-8 space-y-6">
+            <UtilityCard className="p-4 sm:p-8 space-y-6">
               {successMsg && (
                 <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2.5 animate-fadeIn">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
@@ -421,9 +421,9 @@ export const ManageSchedule: React.FC = () => {
                 )}
               </div>
 
-            <form onSubmit={handleSubmit} className="space-y-8">
+            <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
               {/* Header & Capacity Summary Card */}
-              <div className="p-6 rounded-[22px] bg-[#f5f5f7] border border-[#e5e5ea] shadow-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div className="p-4 sm:p-6 rounded-[20px] sm:rounded-[22px] bg-[#f5f5f7] border border-[#e5e5ea] shadow-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
                     <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#0088e8]/10 text-[#0088e8] border border-[#0088e8]/20">
@@ -485,7 +485,7 @@ export const ManageSchedule: React.FC = () => {
                     return (
                       <div
                         key={slot.id || idx}
-                        className="p-5 sm:p-6 rounded-[22px] bg-white border border-[#e5e5ea] space-y-4 relative transition-all duration-200 hover:border-[#0088e8]/40 shadow-xs"
+                        className="p-4 sm:p-6 rounded-[20px] sm:rounded-[22px] bg-white border border-[#e5e5ea] space-y-4 relative transition-all duration-200 hover:border-[#0088e8]/40 shadow-xs"
                       >
                         {/* Shift Header */}
                         <div className="flex items-center justify-between gap-3 pb-3 border-b border-[#f5f5f7]">
@@ -638,7 +638,7 @@ export const ManageSchedule: React.FC = () => {
                             </span>
                           </div>
 
-                          <div className="flex items-center gap-2 self-end md:self-auto">
+                          <div className="flex flex-wrap items-center gap-2 self-start sm:self-end md:self-auto">
                             <button
                               type="button"
                               onClick={() => handleAutoPace(idx)}
@@ -666,7 +666,7 @@ export const ManageSchedule: React.FC = () => {
               </div>
 
               {/* Consultation Fee in Indian Rupees (₹ INR) */}
-              <div className="p-6 rounded-[22px] bg-white border border-[#e5e5ea] shadow-xs space-y-4">
+              <div className="p-4 sm:p-6 rounded-[20px] sm:rounded-[22px] bg-white border border-[#e5e5ea] shadow-xs space-y-4">
                 <div className="flex items-center gap-2 pb-2 border-b border-[#f0f0f0]">
                   <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
                     <IndianRupee className="w-4 h-4" />

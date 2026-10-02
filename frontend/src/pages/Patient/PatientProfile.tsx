@@ -232,13 +232,13 @@ export const PatientProfile: React.FC = () => {
             </div>
           </UtilityCard>
 
-          <div className="flex justify-end gap-3 pt-2">
+          <div className="flex flex-col sm:flex-row justify-end gap-3 pt-2">
             <AppleButton
               type="submit"
               variant="primary"
               size="md"
               disabled={saving}
-              className="flex items-center gap-2 shadow-sm"
+              className="flex items-center justify-center gap-2 shadow-sm w-full sm:w-auto"
             >
               <Save className="w-4 h-4" />
               {saving ? 'Saving Profile...' : 'Save Profile'}

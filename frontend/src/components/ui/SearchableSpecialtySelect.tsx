@@ -162,8 +162,8 @@ export const SearchableSpecialtySelect: React.FC<SearchableSpecialtySelectProps>
       {/* Dropdown Menu */}
       {isOpen && (
         <div
-          className={`absolute z-50 mt-1.5 w-72 sm:w-80 bg-white rounded-2xl border border-[#e5e5ea] shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-150 ${
-            variant === 'pill' ? 'left-0 sm:left-auto right-auto' : 'left-0 right-0 w-full'
+          className={`absolute z-50 mt-1.5 w-72 sm:w-80 max-w-[calc(100vw-24px)] bg-white rounded-2xl border border-[#e5e5ea] shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-150 ${
+            variant === 'pill' ? 'left-0 right-auto' : 'left-0 right-0 w-full'
           }`}
         >
           {/* Search Header */}

@@ -342,7 +342,7 @@ const calculatePreciseAge = (dobString: string): number => {
         </div>
       </SubNav>
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-8">
+      <div className="max-w-5xl mx-auto px-3 sm:px-6 pt-5 sm:pt-8">
         {draftSavedMsg && (
           <div className="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2 shadow-sm">
             <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-emerald-600" />

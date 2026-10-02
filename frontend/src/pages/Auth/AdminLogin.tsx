@@ -40,7 +40,7 @@ export const AdminLogin: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0d1117] text-white flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 selection:bg-amber-500 selection:text-black">
+    <div className="min-h-screen bg-[#0d1117] text-white flex flex-col justify-center py-8 sm:py-12 px-3 sm:px-6 lg:px-8 selection:bg-amber-500 selection:text-black">
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
         <Link to="/" className="inline-block mb-3 hover:opacity-90 transition-opacity">
           <BrandLogo variant="full" size="md" theme="dark" imgClassName="h-7 w-auto" />
@@ -61,8 +61,8 @@ export const AdminLogin: React.FC = () => {
         </p>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-[#161b22] py-8 px-6 sm:px-10 rounded-2xl border border-white/10 shadow-2xl backdrop-blur-xl relative overflow-hidden">
+      <div className="mt-6 sm:mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="bg-[#161b22] py-6 sm:py-8 px-4 sm:px-10 rounded-[20px] sm:rounded-2xl border border-white/10 shadow-2xl backdrop-blur-xl relative overflow-hidden">
           {/* Ambient Glow */}
           <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-amber-500 to-transparent"></div>
 

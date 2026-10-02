@@ -181,7 +181,7 @@ export const ClinicAuth: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center py-12 px-4 sm:px-6">
+    <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center py-8 sm:py-12 px-3 sm:px-6">
       <div className="max-w-[440px] w-full">
         {/* Header */}
         <div className="text-center mb-6">
@@ -197,7 +197,7 @@ export const ClinicAuth: React.FC = () => {
         </div>
 
         {/* Card */}
-        <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-6 sm:p-8 shadow-xs">
+        <div className="bg-white rounded-[20px] sm:rounded-[24px] border border-[#e5e5ea] p-4 sm:p-8 shadow-xs">
           {/* Tab Pill Switcher */}
           <div className="flex bg-[#f5f5f7] p-1 rounded-full mb-6 border border-[#e5e5ea] shadow-xs">
             <button
@@ -247,7 +247,7 @@ export const ClinicAuth: React.FC = () => {
                   shape="pill"
                   size="large"
                   text="continue_with"
-                  width="320"
+                  width="100%"
                 />
               ) : (
                 <div className="w-full space-y-2">

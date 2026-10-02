@@ -934,7 +934,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
         </span>
       </SubNav>
 
-      <div className="w-full max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-8">
+      <div className="w-full max-w-[1840px] mx-auto px-3 sm:px-6 lg:px-8 xl:px-10 py-5 sm:py-8">
         {discoveryContent}
       </div>
     </div>

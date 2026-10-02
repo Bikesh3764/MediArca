@@ -141,25 +141,25 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative w-full max-w-md bg-white/95 backdrop-blur-xl rounded-[28px] border border-[#e5e5ea] shadow-2xl p-6 sm:p-8 text-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-md animate-in fade-in duration-200">
+      <div className="relative w-full max-w-md bg-white/95 backdrop-blur-xl rounded-[24px] sm:rounded-[28px] border border-[#e5e5ea] shadow-2xl p-5 sm:p-8 text-center">
         {/* Close / Back button */}
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-5 left-5 p-2 rounded-full hover:bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f] transition-colors"
+          className="absolute top-4 left-4 sm:top-5 sm:left-5 p-2 rounded-full hover:bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f] transition-colors"
           title="Back to registration"
         >
           <ArrowLeft className="w-4 h-4" />
         </button>
 
         {/* Icon */}
-        <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-[#0088e8]/10 text-[#0088e8] flex items-center justify-center border border-[#0088e8]/20 shadow-xs">
-          <Mail className="w-7 h-7" />
+        <div className="w-12 h-12 sm:w-14 sm:h-14 mx-auto mb-3 sm:mb-4 rounded-2xl bg-[#0088e8]/10 text-[#0088e8] flex items-center justify-center border border-[#0088e8]/20 shadow-xs">
+          <Mail className="w-6 h-6 sm:w-7 sm:h-7" />
         </div>
 
         {/* Heading */}
-        <h3 className="text-2xl font-semibold text-[#1d1d1f] tracking-tight">
+        <h3 className="text-xl sm:text-2xl font-semibold text-[#1d1d1f] tracking-tight">
           Verify Your Email
         </h3>
         <p className="mt-2 text-xs sm:text-sm text-[#86868b] leading-relaxed">
@@ -186,8 +186,8 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
         )}
 
         {/* OTP Input Form */}
-        <form onSubmit={handleSubmit} className="mt-6">
-          <div className="flex justify-center gap-2 sm:gap-2.5 mb-6" onPaste={handlePaste}>
+        <form onSubmit={handleSubmit} className="mt-5 sm:mt-6">
+          <div className="flex justify-center gap-1.5 sm:gap-2.5 mb-5 sm:mb-6 max-w-full" onPaste={handlePaste}>
             {otpDigits.map((digit, idx) => (
               <input
                 key={idx}
@@ -201,7 +201,7 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
                 value={digit}
                 onChange={(e) => handleDigitChange(idx, e.target.value)}
                 onKeyDown={(e) => handleKeyDown(idx, e)}
-                className={`w-11 h-13 sm:w-12 sm:h-14 text-center text-xl sm:text-2xl font-bold rounded-xl border transition-all outline-none font-mono ${
+                className={`w-9 h-11 sm:w-12 sm:h-14 text-center text-lg sm:text-2xl font-bold rounded-lg sm:rounded-xl border transition-all outline-none font-mono ${
                   digit
                     ? 'border-[#0088e8] bg-white ring-2 ring-[#0088e8]/20 text-[#1d1d1f]'
                     : 'border-[#e5e5ea] bg-[#f5f5f7] text-[#1d1d1f] focus:border-[#0088e8] focus:bg-white focus:ring-2 focus:ring-[#0088e8]/20'
