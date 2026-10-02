@@ -1279,6 +1279,22 @@ export const checkInAppointmentWithQR = async (req: AuthRequest, res: Response):
       return;
     }
 
+    if (appointment.status === 'PENDING_APPROVAL') {
+      res.status(400).json({
+        success: false,
+        message: 'Your booking request is awaiting desk confirmation. Please pay your consultation fee at the reception desk to confirm your queue spot.',
+      });
+      return;
+    }
+
+    if (appointment.status === 'EXPIRED') {
+      res.status(400).json({
+        success: false,
+        message: 'This appointment request has expired because the consultation shift has already concluded. Please book for the next available shift.',
+      });
+      return;
+    }
+
     if (appointment.status !== 'WAITING' && appointment.status !== 'IN_CONSULTATION') {
       res.status(400).json({
         success: false,
@@ -1372,6 +1388,14 @@ export const checkInAppointmentDirect = async (req: AuthRequest, res: Response):
         res.status(403).json({ success: false, message: access.reason || 'Unauthorized for this doctor' });
         return;
       }
+    }
+
+    if (['EXPIRED', 'CANCELLED', 'REJECTED'].includes(appointment.status)) {
+      res.status(400).json({
+        success: false,
+        message: `Cannot update check-in status for an appointment with status '${appointment.status}'.`,
+      });
+      return;
     }
 
     const newCheckedInState =

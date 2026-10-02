@@ -251,6 +251,19 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
       return;
     }
 
+    const istTodayStr = getLocalDateString();
+    if (appointmentDate < istTodayStr) {
+      await prisma.appointment.updateMany({
+        where: {
+          doctorId: doctorId,
+          appointmentDate: appointmentDate,
+          status: { in: ['WAITING', 'PENDING_APPROVAL'] },
+          ...(receptionist?.clinicId ? { clinicId: receptionist.clinicId } : {}),
+        },
+        data: { status: 'EXPIRED' },
+      });
+    }
+
     const appointments = await prisma.appointment.findMany({
       where: {
         doctorId: doctorId,

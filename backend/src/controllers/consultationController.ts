@@ -31,8 +31,19 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
       return;
     }
 
-    const dateStr = (req.query.date as string) || getLocalDateString();
+    const todayIso = getLocalDateString();
+    const dateStr = (req.query.date as string) || todayIso;
     const scope = (req.query.scope as string) || 'date';
+
+    // Auto-expire past unserved appointments for this doctor
+    await prisma.appointment.updateMany({
+      where: {
+        doctorId: doctor.id,
+        status: { in: ['WAITING', 'PENDING_APPROVAL'] },
+        appointmentDate: { lt: todayIso },
+      },
+      data: { status: 'EXPIRED' },
+    });
 
     const whereClause: any = {
       doctorId: doctor.id,
@@ -41,6 +52,7 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
 
     if (scope === 'all-upcoming') {
       whereClause.status = { in: ['WAITING', 'IN_CONSULTATION'] };
+      whereClause.appointmentDate = { gte: todayIso };
     } else {
       whereClause.appointmentDate = dateStr;
     }
@@ -64,7 +76,6 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
     const completedQueue = appointments.filter((a) => a.status === 'COMPLETED');
 
     // Calculate upcoming bookings summary across dates for this doctor
-    const todayIso = getLocalDateString();
     const upcomingWaiting = await prisma.appointment.findMany({
       where: {
         doctorId: doctor.id,

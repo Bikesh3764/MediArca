@@ -1226,15 +1226,17 @@ export const DoctorDashboard: React.FC = () => {
                           </div>
                         </div>
                         <span
-                          className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                          className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full ${
                             appt.status === 'IN_CONSULTATION'
-                              ? 'bg-emerald-100 text-emerald-800'
+                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                               : appt.status === 'COMPLETED'
-                              ? 'bg-blue-100 text-blue-800'
-                              : 'bg-amber-100 text-amber-800'
+                              ? 'bg-blue-50 text-[#0088e8] border border-blue-200'
+                              : appt.status === 'EXPIRED'
+                              ? 'bg-slate-100 text-slate-600 border border-slate-200'
+                              : 'bg-amber-50 text-amber-800 border border-amber-200'
                           }`}
                         >
-                          {appt.status.replace('_', ' ')}
+                          {appt.status === 'EXPIRED' ? 'Expired' : appt.status.replace('_', ' ')}
                         </span>
                       </div>
                     ))}

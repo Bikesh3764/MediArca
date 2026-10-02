@@ -950,10 +950,14 @@ export const ClinicDashboard: React.FC = () => {
                               ? 'bg-blue-50 text-[#0088e8] border border-blue-200'
                               : appt.status === 'WAITING'
                               ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                              : appt.status === 'EXPIRED'
+                              ? 'bg-slate-100 text-slate-600 border border-slate-200'
+                              : appt.status === 'PENDING_APPROVAL'
+                              ? 'bg-amber-500/10 text-amber-800 border border-amber-500/20'
                               : 'bg-gray-100 text-gray-600'
                           }`}
                         >
-                          {appt.status}
+                          {appt.status === 'PENDING_APPROVAL' ? 'Pending Desk' : appt.status === 'EXPIRED' ? 'Expired' : appt.status}
                         </span>
                       </td>
                       <td className="py-3 text-right pr-2 font-medium text-[#1d1d1f]">

@@ -4776,6 +4776,22 @@ Follow-up Date: 2026-10-15`;
   assert(pastFiltered.some((a) => a.id === '2'), 'Today shift-passed pending booking moved to pastList');
   assert(pastFiltered.some((a) => a.id === '6'), 'EXPIRED booking is in pastList');
 
+  // Check-in Direct & QR Guards for EXPIRED and Terminal Statuses
+  const canDirectCheckIn = (status: string) => !['EXPIRED', 'CANCELLED', 'REJECTED'].includes(status);
+  assert(canDirectCheckIn('WAITING') === true, 'WAITING appointment can be checked in directly');
+  assert(canDirectCheckIn('IN_CONSULTATION') === true, 'IN_CONSULTATION appointment can be checked in directly');
+  assert(canDirectCheckIn('EXPIRED') === false, 'EXPIRED appointment cannot be checked in directly');
+  assert(canDirectCheckIn('CANCELLED') === false, 'CANCELLED appointment cannot be checked in directly');
+  assert(canDirectCheckIn('REJECTED') === false, 'REJECTED appointment cannot be checked in directly');
+
+  // Consultation View Read-Only Guard
+  const isConsultationReadOnly = (status: string) => ['COMPLETED', 'EXPIRED', 'CANCELLED', 'REJECTED'].includes(status);
+  assert(isConsultationReadOnly('COMPLETED') === true, 'COMPLETED consultation is read-only');
+  assert(isConsultationReadOnly('EXPIRED') === true, 'EXPIRED consultation is read-only');
+  assert(isConsultationReadOnly('CANCELLED') === true, 'CANCELLED consultation is read-only');
+  assert(isConsultationReadOnly('WAITING') === false, 'WAITING consultation is active/editable');
+  assert(isConsultationReadOnly('IN_CONSULTATION') === false, 'IN_CONSULTATION consultation is active/editable');
+
   console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);

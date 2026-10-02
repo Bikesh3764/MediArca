@@ -199,7 +199,7 @@ export const ConsultationView: React.FC = () => {
   };
 
   const handleSaveDraft = async () => {
-    if (!appointment || appointment.status === 'COMPLETED') return;
+    if (!appointment || ['COMPLETED', 'EXPIRED', 'CANCELLED', 'REJECTED'].includes(appointment.status)) return;
     setSavingDraft(true);
     setDraftSavedMsg(null);
     setError(null);
@@ -239,7 +239,7 @@ export const ConsultationView: React.FC = () => {
 
   const handleComplete = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!appointment) return;
+    if (!appointment || ['COMPLETED', 'EXPIRED', 'CANCELLED', 'REJECTED'].includes(appointment.status)) return;
 
     setSubmitting(true);
     setError(null);
@@ -321,6 +321,7 @@ const calculatePreciseAge = (dobString: string): number => {
     ? (appointment.patientAge.toLowerCase().includes('yr') ? appointment.patientAge : `${appointment.patientAge} yrs`)
     : (appointment.patient?.dateOfBirth ? `${calculatePreciseAge(appointment.patient.dateOfBirth)} yrs` : undefined);
   const patientGenderDisplay = appointment.patientGender || appointment.patient?.gender || 'Not specified';
+  const isReadOnly = ['COMPLETED', 'EXPIRED', 'CANCELLED', 'REJECTED'].includes(appointment.status);
 
   return (
     <div className="min-h-screen bg-[#f5f5f7] pb-16">
@@ -333,7 +334,7 @@ const calculatePreciseAge = (dobString: string): number => {
             <ChevronLeft className="w-4 h-4" />
             Queue
           </AppleButton>
-          {appointment.status !== 'COMPLETED' && (
+          {!isReadOnly && (
             <AppleButton variant="ghost" size="sm" onClick={handleSaveDraft} disabled={savingDraft} className="flex items-center gap-1">
               <Save className="w-3.5 h-3.5 text-[#0088e8]" />
               <span>{savingDraft ? 'Saving...' : 'Save Draft'}</span>
@@ -476,7 +477,7 @@ const calculatePreciseAge = (dobString: string): number => {
                   <label className="block text-[#86868b] mb-1">Blood Pressure</label>
                   <input
                     type="text"
-                    disabled={appointment.status === 'COMPLETED'}
+                    disabled={isReadOnly}
                     value={bp}
                     onChange={(e) => setBp(e.target.value)}
                     placeholder="120/80 mmHg"
@@ -487,7 +488,7 @@ const calculatePreciseAge = (dobString: string): number => {
                   <label className="block text-[#86868b] mb-1">Pulse Rate</label>
                   <input
                     type="text"
-                    disabled={appointment.status === 'COMPLETED'}
+                    disabled={isReadOnly}
                     value={pulse}
                     onChange={(e) => setPulse(e.target.value)}
                     placeholder="72 bpm"
@@ -498,7 +499,7 @@ const calculatePreciseAge = (dobString: string): number => {
                   <label className="block text-[#86868b] mb-1">Temperature</label>
                   <input
                     type="text"
-                    disabled={appointment.status === 'COMPLETED'}
+                    disabled={isReadOnly}
                     value={temp}
                     onChange={(e) => setTemp(e.target.value)}
                     placeholder="98.6 °F"
@@ -509,7 +510,7 @@ const calculatePreciseAge = (dobString: string): number => {
                   <label className="block text-[#86868b] mb-1">Weight</label>
                   <input
                     type="text"
-                    disabled={appointment.status === 'COMPLETED'}
+                    disabled={isReadOnly}
                     value={weight}
                     onChange={(e) => setWeight(e.target.value)}
                     placeholder="70 kg"
@@ -550,13 +551,13 @@ const calculatePreciseAge = (dobString: string): number => {
                       <button
                         key={diag}
                         type="button"
-                        disabled={appointment.status === 'COMPLETED'}
+                        disabled={isReadOnly}
                         onClick={() => setDiagnosis(diag)}
                         className={`px-3 py-1 rounded-full text-[11px] transition-colors ${
                           diagnosis === diag
                             ? 'bg-[#0088e8] text-white font-medium shadow-2xs'
                             : 'bg-[#f5f5f7] text-[#1d1d1f] hover:bg-[#e8e8ed]'
-                        } ${appointment.status === 'COMPLETED' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        } ${isReadOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
                         {diag}
                       </button>
@@ -564,7 +565,7 @@ const calculatePreciseAge = (dobString: string): number => {
                   </div>
                   <input
                     type="text"
-                    disabled={appointment.status === 'COMPLETED'}
+                    disabled={isReadOnly}
                     value={diagnosis}
                     onChange={(e) => setDiagnosis(e.target.value)}
                     placeholder="e.g. Acute Bronchitis, Essential Hypertension"
@@ -578,7 +579,7 @@ const calculatePreciseAge = (dobString: string): number => {
                   </label>
                   <textarea
                     rows={4}
-                    disabled={appointment.status === 'COMPLETED'}
+                    disabled={isReadOnly}
                     value={clinicalNotes}
                     onChange={(e) => setClinicalNotes(e.target.value)}
                     placeholder="Enter physical observations, clinical examination notes, and doctor remarks..."
@@ -593,7 +594,7 @@ const calculatePreciseAge = (dobString: string): number => {
                     </label>
                     <input
                       type="text"
-                      disabled={appointment.status === 'COMPLETED'}
+                      disabled={isReadOnly}
                       value={advice}
                       onChange={(e) => setAdvice(e.target.value)}
                       placeholder="e.g. Bed rest, warm fluids, hydration"
@@ -606,7 +607,7 @@ const calculatePreciseAge = (dobString: string): number => {
                     </label>
                     <input
                       type="date"
-                      disabled={appointment.status === 'COMPLETED'}
+                      disabled={isReadOnly}
                       value={followUpDate}
                       onChange={(e) => setFollowUpDate(e.target.value)}
                       className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[14px] text-[#1d1d1f] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] disabled:bg-[#f5f5f7] disabled:text-[#86868b]"
@@ -630,7 +631,7 @@ const calculatePreciseAge = (dobString: string): number => {
                 </span>
               </div>
 
-              {appointment.status !== 'COMPLETED' && (
+              {!isReadOnly && (
                 <div className="p-3.5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] mb-4 space-y-3">
                   <span className="text-[11px] font-semibold text-[#1d1d1f] uppercase tracking-wider block">
                     Add Medicine / Rx Item
@@ -742,7 +743,7 @@ const calculatePreciseAge = (dobString: string): number => {
                           </td>
                           <td className="py-2.5 px-3 text-[#1d1d1f]">{m.duration}</td>
                           <td className="py-2.5 px-3 text-[#86868b]">{m.instructions || '—'}</td>
-                          {appointment.status !== 'COMPLETED' && (
+                          {!isReadOnly && (
                             <td className="py-2.5 px-3 text-right">
                               <button
                                 type="button"
@@ -771,6 +772,46 @@ const calculatePreciseAge = (dobString: string): number => {
                     <div>
                       <h4 className="text-sm font-semibold">Consultation Finalized & Completed</h4>
                       <p className="text-xs text-emerald-700">This clinical record is finalized. Digital prescription and consultation summary have been issued.</p>
+                    </div>
+                  </div>
+                  <AppleButton
+                    variant="ghost"
+                    size="sm"
+                    type="button"
+                    onClick={() => navigate('/doctor/dashboard')}
+                  >
+                    Back to Console
+                  </AppleButton>
+                </div>
+              </UtilityCard>
+            ) : appointment.status === 'EXPIRED' ? (
+              <UtilityCard className="bg-amber-50/50 border-amber-200">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-amber-900">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0" />
+                    <div>
+                      <h4 className="text-sm font-semibold">Consultation Window Expired</h4>
+                      <p className="text-xs text-amber-700">This shift/date has concluded. The appointment is preserved for clinical audit in read-only mode.</p>
+                    </div>
+                  </div>
+                  <AppleButton
+                    variant="ghost"
+                    size="sm"
+                    type="button"
+                    onClick={() => navigate('/doctor/dashboard')}
+                  >
+                    Back to Console
+                  </AppleButton>
+                </div>
+              </UtilityCard>
+            ) : (appointment.status === 'CANCELLED' || appointment.status === 'REJECTED') ? (
+              <UtilityCard className="bg-slate-50 border-slate-200">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-slate-800">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="w-5 h-5 text-slate-500 flex-shrink-0" />
+                    <div>
+                      <h4 className="text-sm font-semibold">Appointment Cancelled / Terminated</h4>
+                      <p className="text-xs text-slate-500">This visit is cancelled and cannot be modified. Displayed in read-only mode.</p>
                     </div>
                   </div>
                   <AppleButton

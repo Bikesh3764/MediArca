@@ -94,7 +94,7 @@ export const ReceptionistDashboard: React.FC = () => {
   const [queueAppointments, setQueueAppointments] = useState<ReceptionistQueueItem[]>([]);
   const [queueLoading, setQueueLoading] = useState(false);
   const [queueSearch, setQueueSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'ALL' | 'WAITING' | 'IN_CONSULTATION' | 'COMPLETED' | 'CANCELLED'>('ALL');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'WAITING' | 'IN_CONSULTATION' | 'COMPLETED' | 'CANCELLED' | 'EXPIRED'>('ALL');
 
   const fetchPendingAppointments = useCallback(async () => {
     try {
@@ -1107,7 +1107,7 @@ export const ReceptionistDashboard: React.FC = () => {
               {/* Status Filter & Live Queue Search */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-4 border-b border-[#f0f0f0]">
                 <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
-                  {(['ALL', 'WAITING', 'IN_CONSULTATION', 'COMPLETED', 'CANCELLED'] as const).map((st) => (
+                  {(['ALL', 'WAITING', 'IN_CONSULTATION', 'COMPLETED', 'CANCELLED', 'EXPIRED'] as const).map((st) => (
                     <button
                       key={st}
                       type="button"
@@ -1227,16 +1227,24 @@ export const ReceptionistDashboard: React.FC = () => {
                             </td>
 
                             <td className="py-3 text-center">
-                              <button
+                               <button
                                 type="button"
-                                disabled={togglingCheckinId === appt.id}
+                                disabled={togglingCheckinId === appt.id || ['EXPIRED', 'CANCELLED', 'REJECTED'].includes(appt.status)}
                                 onClick={() => handleToggleCheckIn(appt.id, appt.isCheckedIn)}
                                 className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all cursor-pointer ${
-                                  appt.isCheckedIn
+                                  ['EXPIRED', 'CANCELLED', 'REJECTED'].includes(appt.status)
+                                    ? 'bg-slate-50 text-slate-400 border border-slate-200 cursor-not-allowed opacity-60'
+                                    : appt.isCheckedIn
                                     ? 'bg-emerald-100 text-emerald-800 border border-emerald-300 hover:bg-emerald-200'
                                     : 'bg-slate-100 text-slate-600 border border-slate-300 hover:bg-slate-200 hover:text-slate-800'
                                 }`}
-                                title={appt.isCheckedIn ? "Click to untick / undo arrival" : "Click to mark patient arrived at clinic"}
+                                title={
+                                  ['EXPIRED', 'CANCELLED', 'REJECTED'].includes(appt.status)
+                                    ? `Cannot mark arrival for ${appt.status.toLowerCase()} appointment`
+                                    : appt.isCheckedIn
+                                    ? "Click to untick / undo arrival"
+                                    : "Click to mark patient arrived at clinic"
+                                }
                               >
                                 {togglingCheckinId === appt.id ? (
                                   <span className="w-3 h-3 rounded-full border-2 border-current border-t-transparent animate-spin inline-block"></span>
@@ -1263,10 +1271,12 @@ export const ReceptionistDashboard: React.FC = () => {
                                     ? 'bg-[#0088e8]/10 text-[#0088e8] border border-[#0088e8]/20'
                                     : appt.status === 'WAITING'
                                     ? 'bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea]'
+                                    : appt.status === 'EXPIRED'
+                                    ? 'bg-slate-100 text-slate-600 border border-slate-200'
                                     : 'bg-[#f5f5f7] text-gray-500 border-[#e5e5ea]'
                                 }`}
                               >
-                                {appt.status.replace('_', ' ')}
+                                {appt.status === 'EXPIRED' ? 'Expired' : appt.status.replace('_', ' ')}
                               </span>
                             </td>
 
@@ -1285,7 +1295,7 @@ export const ReceptionistDashboard: React.FC = () => {
                                     In Cabin
                                   </span>
                                 )}
-                                {appt.status !== 'CANCELLED' && appt.status !== 'COMPLETED' && appt.status !== 'IN_CONSULTATION' && (
+                                {appt.status !== 'CANCELLED' && appt.status !== 'COMPLETED' && appt.status !== 'IN_CONSULTATION' && appt.status !== 'EXPIRED' && (
                                   <button
                                     onClick={() => handleStatusChange(appt.id, 'CANCELLED')}
                                     className="px-2.5 py-1 rounded-full text-[#86868b] hover:text-rose-600 hover:bg-rose-50 text-[11px] font-medium border border-[#e5e5ea] transition-all"
