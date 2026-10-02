@@ -3,6 +3,8 @@ import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import {
   api,
   Doctor,
+  ClinicProfile,
+  PublicClinicDoctor,
   parseDoctorSlots,
   format12Hour,
   formatDoctorDegrees,
@@ -13,6 +15,7 @@ import { useAuth } from '../../context/AuthContext';
 import { DashboardLayout, DashboardNavItem } from '../../components/layout/DashboardLayout';
 import { AppleButton } from '../../components/ui/AppleButton';
 import { SubNav } from '../../components/layout/SubNav';
+import clinicLobbyBg from '../../assets/clinic-lobby-bg.jpg';
 import {
   Clock,
   Calendar,
@@ -25,10 +28,28 @@ import {
   X,
   Search,
   MapPin,
+  Building2,
+  Phone,
+  ArrowLeft,
+  ChevronRight,
 } from 'lucide-react';
 
 import { SearchableSpecialtySelect } from '../../components/ui/SearchableSpecialtySelect';
 import { INDIAN_STATES, getCitiesForState } from '../../utils/indiaStates';
+
+const getClinicLocationDisplay = (clinic?: { address?: string; city?: string | null; state?: string | null } | null): string => {
+  if (!clinic) return 'Clinical Facility';
+  const addressParts: string[] = [];
+  const addrLower = (clinic.address || '').toLowerCase();
+  if (clinic.address) addressParts.push(clinic.address);
+  if (clinic.city && !addrLower.includes(clinic.city.toLowerCase())) {
+    addressParts.push(clinic.city);
+  }
+  if (clinic.state && !addrLower.includes(clinic.state.toLowerCase())) {
+    addressParts.push(clinic.state);
+  }
+  return addressParts.join(', ') || 'Clinical Facility';
+};
 
 interface DoctorDiscoveryProps {
   isPortalView?: boolean;
@@ -46,6 +67,14 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
     user?.role === 'PATIENT' ||
     location.pathname.startsWith('/patient/')
   );
+
+  const [activeSection, setActiveSection] = useState<'clinics' | 'doctors'>('doctors');
+  const [clinics, setClinics] = useState<ClinicProfile[]>([]);
+  const [loadingClinics, setLoadingClinics] = useState(true);
+  const [selectedClinic, setSelectedClinic] = useState<ClinicProfile | null>(null);
+  const [clinicSearchQuery, setClinicSearchQuery] = useState('');
+  const [clinicSelectedState, setClinicSelectedState] = useState('All');
+  const [clinicSelectedCity, setClinicSelectedCity] = useState('All');
 
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [allCatalogDoctors, setAllCatalogDoctors] = useState<Doctor[]>([]);
@@ -68,9 +97,84 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
     return getCitiesForState(selectedState);
   }, [selectedState]);
 
+  const availableClinicCities = useMemo(() => {
+    if (clinicSelectedState === 'All') {
+      return [];
+    }
+    return getCitiesForState(clinicSelectedState);
+  }, [clinicSelectedState]);
+
   const handleStateChange = (newState: string) => {
     setSelectedState(newState);
     setSelectedCity('All');
+  };
+
+  // Load public clinics
+  useEffect(() => {
+    api.getPublicClinics()
+      .then((data) => setClinics(data))
+      .catch((err) => console.error('Failed to load clinics:', err))
+      .finally(() => setLoadingClinics(false));
+  }, []);
+
+  // Filtered Clinics List
+  const filteredClinics = useMemo(() => {
+    return clinics.filter((c) => {
+      if (clinicSelectedState !== 'All') {
+        const sLower = clinicSelectedState.toLowerCase();
+        const matchesState =
+          (c.state && c.state.toLowerCase() === sLower) ||
+          (c.address && c.address.toLowerCase().includes(sLower));
+        if (!matchesState) return false;
+      }
+      if (clinicSelectedCity !== 'All') {
+        const cLower = clinicSelectedCity.toLowerCase();
+        const matchesCity =
+          (c.city && c.city.toLowerCase() === cLower) ||
+          (c.address && c.address.toLowerCase().includes(cLower));
+        if (!matchesCity) return false;
+      }
+      if (clinicSearchQuery.trim()) {
+        const q = clinicSearchQuery.toLowerCase().trim();
+        const matchName = c.clinicName.toLowerCase().includes(q);
+        const matchAddr = c.address.toLowerCase().includes(q);
+        const matchCity = c.city?.toLowerCase().includes(q);
+        const matchState = c.state?.toLowerCase().includes(q);
+        if (!matchName && !matchAddr && !matchCity && !matchState) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [clinics, clinicSearchQuery, clinicSelectedCity, clinicSelectedState]);
+
+  // Doctors practicing at the selected clinic
+  const clinicPracticingDoctors = useMemo(() => {
+    if (!selectedClinic) return [];
+    if (selectedClinic.doctors && selectedClinic.doctors.length > 0) {
+      return selectedClinic.doctors;
+    }
+    const matched = (allCatalogDoctors.length > 0 ? allCatalogDoctors : doctors).filter((d) =>
+      d.clinics?.some((c) => c.clinicId === selectedClinic.id || c.clinic?.id === selectedClinic.id)
+    );
+    return matched.map((d) => {
+      const cd = d.clinics?.find((c) => c.clinicId === selectedClinic.id || c.clinic?.id === selectedClinic.id);
+      return {
+        id: cd?.id || `cd_${d.id}`,
+        clinicId: selectedClinic.id,
+        doctorId: d.id,
+        status: 'ACCEPTED',
+        consultationFee: cd?.consultationFee ?? d.consultationFee,
+        slots: cd?.slots || d.slots,
+        doctor: d,
+      } as PublicClinicDoctor;
+    });
+  }, [selectedClinic, allCatalogDoctors, doctors]);
+
+  const resetClinicFilters = () => {
+    setClinicSearchQuery('');
+    setClinicSelectedState('All');
+    setClinicSelectedCity('All');
   };
 
 
@@ -236,9 +340,381 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
 
   const discoveryContent = (
     <div className="w-full space-y-6">
-      {/* Mobile Filter Toggle Drawer */}
-      <div className="lg:hidden">
-        <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-3.5 shadow-xs">
+      {/* Apple Segmented Switcher Header: Clinics & Doctors */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 pb-4 border-b border-[#e5e5ea]">
+        <div className="flex items-center gap-3 shrink-0">
+          <div className="inline-flex p-1 bg-[#e5e5ea] rounded-full border border-[#d2d2d7]/50">
+            <button
+              type="button"
+              onClick={() => {
+                setActiveSection('clinics');
+                setSelectedClinic(null);
+              }}
+              className={`flex items-center gap-2 px-5 py-2 rounded-full text-xs sm:text-sm font-semibold transition-all cursor-pointer active:scale-95 ${
+                activeSection === 'clinics'
+                  ? 'bg-white text-[#1d1d1f]'
+                  : 'text-[#86868b] hover:text-[#1d1d1f]'
+              }`}
+            >
+              <Building2 className={`w-4 h-4 ${activeSection === 'clinics' ? 'text-[#0066cc]' : 'text-[#86868b]'}`} />
+              <span>Clinics</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveSection('doctors')}
+              className={`flex items-center gap-2 px-5 py-2 rounded-full text-xs sm:text-sm font-semibold transition-all cursor-pointer active:scale-95 ${
+                activeSection === 'doctors'
+                  ? 'bg-white text-[#1d1d1f]'
+                  : 'text-[#86868b] hover:text-[#1d1d1f]'
+              }`}
+            >
+              <Stethoscope className={`w-4 h-4 ${activeSection === 'doctors' ? 'text-[#0066cc]' : 'text-[#86868b]'}`} />
+              <span>Doctors</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Search bar beside Clinics Switch */}
+        {activeSection === 'clinics' && !selectedClinic && (
+          <div className="flex-1 max-w-2xl bg-white p-1.5 sm:p-2 rounded-[20px] sm:rounded-full border border-[#e0e0e0] flex flex-col sm:flex-row items-center gap-2 sm:gap-3 shadow-2xs">
+            <div className="flex items-center gap-2 flex-1 w-full px-3">
+              <Search className="w-4 h-4 text-[#86868b] shrink-0" />
+              <input
+                type="text"
+                value={clinicSearchQuery}
+                onChange={(e) => setClinicSearchQuery(e.target.value)}
+                placeholder="Search clinics by name or address..."
+                className="w-full bg-transparent text-xs sm:text-sm text-[#1d1d1f] placeholder-[#86868b] focus:outline-none"
+              />
+              {clinicSearchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setClinicSearchQuery('')}
+                  className="text-[#86868b] hover:text-[#1d1d1f] cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            <div className="hidden sm:block w-px h-5 bg-[#e0e0e0]" />
+
+            {/* State Filter */}
+            <div className="w-full sm:w-36 px-2">
+              <select
+                value={clinicSelectedState}
+                onChange={(e) => {
+                  setClinicSelectedState(e.target.value);
+                  setClinicSelectedCity('All');
+                }}
+                className="w-full bg-transparent text-xs sm:text-sm font-normal text-[#1d1d1f] focus:outline-none cursor-pointer"
+              >
+                <option value="All">All States</option>
+                {INDIAN_STATES.map((st) => (
+                  <option key={st} value={st}>
+                    {st}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="hidden sm:block w-px h-5 bg-[#e0e0e0]" />
+
+            {/* City Filter */}
+            <div className="w-full sm:w-36 px-2">
+              <select
+                value={clinicSelectedCity}
+                onChange={(e) => setClinicSelectedCity(e.target.value)}
+                className="w-full bg-transparent text-xs sm:text-sm font-normal text-[#1d1d1f] focus:outline-none cursor-pointer"
+              >
+                <option value="All">
+                  {clinicSelectedState !== 'All' ? `All Cities in ${clinicSelectedState}` : 'All Cities'}
+                </option>
+                {availableClinicCities.map((ct) => (
+                  <option key={ct} value={ct}>
+                    {ct}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {(clinicSearchQuery || clinicSelectedCity !== 'All' || clinicSelectedState !== 'All') && (
+              <button
+                type="button"
+                onClick={resetClinicFilters}
+                className="px-3 py-1.5 rounded-full text-xs font-normal text-[#86868b] hover:text-[#1d1d1f] cursor-pointer active:scale-95"
+              >
+                Reset
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* SECTION A: CLINICS DISCOVERY */}
+      {activeSection === 'clinics' && (
+        <div>
+          {selectedClinic ? (
+            <div className="space-y-6 animate-fadeIn">
+              <div className="flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={() => setSelectedClinic(null)}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-[#e5e5ea] text-xs font-semibold text-[#1d1d1f] hover:border-[#0066cc] hover:text-[#0066cc] transition-all cursor-pointer shadow-2xs"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Back to Clinics</span>
+                </button>
+              </div>
+
+              {/* Selected Clinic Header Card */}
+              <div className="bg-white rounded-[20px] border border-[#e0e0e0] p-6 sm:p-8">
+                <div>
+                  <h2 className="text-2xl sm:text-3xl font-semibold text-[#1d1d1f] tracking-tight mb-2">
+                    {selectedClinic.clinicName}
+                  </h2>
+                  <div className="space-y-1.5 text-sm text-[#7a7a7a]">
+                    <p className="flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-[#86868b] shrink-0" />
+                      <span>{getClinicLocationDisplay(selectedClinic)}</span>
+                    </p>
+                    {selectedClinic.phone && (
+                      <p className="flex items-center gap-2 text-[13px] text-[#86868b]">
+                        <Phone className="w-3.5 h-3.5 text-[#86868b] shrink-0" />
+                        <span>{selectedClinic.phone}</span>
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Practicing Doctors Section */}
+              <div>
+                <div className="mb-6">
+                  <h3 className="text-xl sm:text-2xl font-semibold text-[#1d1d1f] tracking-tight">
+                    Doctors at this clinic
+                  </h3>
+                </div>
+
+                {clinicPracticingDoctors.length === 0 ? (
+                  <div className="bg-white rounded-[18px] border border-[#e0e0e0] p-12 text-center max-w-md mx-auto">
+                    <Stethoscope className="w-8 h-8 text-[#86868b] mx-auto mb-3" />
+                    <h4 className="text-base font-semibold text-[#1d1d1f] mb-1">
+                      No doctors listed
+                    </h4>
+                    <p className="text-xs text-[#86868b] mb-4">
+                      No doctors listed right now.
+                    </p>
+                    <AppleButton variant="secondary" size="sm" onClick={() => setSelectedClinic(null)}>
+                      Back to Clinics
+                    </AppleButton>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:[grid-template-columns:repeat(auto-fill,minmax(330px,1fr))] gap-5 sm:gap-6 w-full">
+                    {clinicPracticingDoctors.map((docItem) => {
+                      const doctor = docItem.doctor;
+                      const slots = parseDoctorSlots({
+                        ...doctor,
+                        slots: docItem.slots || doctor.slots,
+                      });
+                      const effectiveFee = docItem.consultationFee ?? doctor.consultationFee;
+                      const cleanDegrees = formatDoctorDegrees(doctor.qualifications);
+
+                      return (
+                        <div
+                          key={doctor.id}
+                          className="w-full bg-white rounded-[20px] border border-[#e0e0e0] overflow-hidden hover:border-[#0066cc]/40 transition-all duration-200 flex flex-col justify-between group"
+                        >
+                          {/* Doctor Photo Banner */}
+                          <div
+                            onClick={() => navigate(getDoctorDetailPath(doctor.id) + `?clinicId=${selectedClinic.id}`)}
+                            className="relative w-full aspect-[16/10] bg-[#f5f5f7] border-b border-[#f0f0f2] overflow-hidden cursor-pointer flex items-center justify-center"
+                          >
+                            {doctor.user?.avatarUrl ? (
+                              <img
+                                src={getFileUrl(doctor.user.avatarUrl)}
+                                alt={doctor.user?.fullName}
+                                className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none';
+                                  const fallback = e.currentTarget.parentElement?.querySelector('.doc-disc-clinic-fallback');
+                                  if (fallback) (fallback as HTMLElement).style.display = 'flex';
+                                }}
+                              />
+                            ) : null}
+                            <div
+                              className={`doc-disc-clinic-fallback w-full h-full ${
+                                doctor.user?.avatarUrl ? 'hidden' : 'flex'
+                              } items-center justify-center font-bold text-3xl text-white bg-[#0066cc] select-none`}
+                            >
+                              {(doctor.user?.fullName ? doctor.user.fullName.replace(/^Dr\.\s*/i, '').trim()[0] : null) || 'D'}
+                            </div>
+                          </div>
+
+                          {/* Card Body */}
+                          <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between">
+                            <div>
+                              <div className="flex items-start justify-between gap-2.5">
+                                <div className="min-w-0">
+                                  <h4
+                                    onClick={() => navigate(getDoctorDetailPath(doctor.id) + `?clinicId=${selectedClinic.id}`)}
+                                    className="text-[16px] sm:text-[17px] font-semibold text-[#1d1d1f] hover:text-[#0066cc] cursor-pointer tracking-tight transition-colors truncate leading-snug"
+                                    title={doctor.user?.fullName}
+                                  >
+                                    {doctor.user?.fullName}
+                                  </h4>
+                                  <p className="mt-1 text-xs text-[#86868b] font-normal truncate">
+                                    <span className="font-medium text-[#0066cc]">{doctor.specialty}</span>
+                                    {cleanDegrees && <span> • {cleanDegrees}</span>}
+                                  </p>
+                                </div>
+                                <span className="text-[11px] font-medium text-[#48484a] bg-[#f5f5f7] px-2.5 py-0.5 rounded-full border border-[#e5e5ea] shrink-0 whitespace-nowrap">
+                                  {doctor.experienceYears} yrs exp
+                                </span>
+                              </div>
+
+                              <div className="mt-3.5 space-y-1.5 text-xs text-[#86868b]">
+                                <div className="flex items-center gap-2 min-w-0 text-[#86868b]">
+                                  <Clock className="w-3.5 h-3.5 text-[#86868b] shrink-0" />
+                                  <span className="truncate text-[#1d1d1f] font-normal">
+                                    {slots.length > 0
+                                      ? `${format12Hour(slots[0].startTime)} – ${format12Hour(slots[0].endTime)}`
+                                      : 'Clinical Shift'}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="mt-4 pt-3.5 border-t border-[#f0f0f2] flex items-center justify-between gap-3">
+                              <div className="flex items-baseline gap-1">
+                                <span className="text-[19px] sm:text-[21px] font-semibold text-[#1d1d1f] tracking-tight">
+                                  ₹{effectiveFee.toFixed(0)}
+                                </span>
+                                <span className="text-xs text-[#86868b] font-normal">/ visit</span>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() => navigate(getBookPath(doctor.id) + `?clinicId=${selectedClinic.id}`)}
+                                className="h-8 min-w-[76px] px-5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-[13px] font-medium tracking-tight transition-all duration-200 active:scale-95 inline-flex items-center justify-center shadow-none cursor-pointer"
+                              >
+                                Book
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div>
+              {loadingClinics ? (
+                <div className="grid grid-cols-1 md:[grid-template-columns:repeat(auto-fill,minmax(330px,1fr))] gap-5 sm:gap-6 w-full">
+                  {[1, 2, 3, 4, 5, 6].map((i) => (
+                    <div
+                      key={i}
+                      className="h-72 rounded-[20px] bg-white border border-[#e0e0e0] animate-pulse p-4"
+                    />
+                  ))}
+                </div>
+              ) : filteredClinics.length === 0 ? (
+                <div className="bg-white rounded-[24px] border border-[#e0e0e0] p-12 text-center max-w-md mx-auto">
+                  <Building2 className="w-10 h-10 text-[#86868b] mx-auto mb-3" />
+                  <h3 className="text-base font-semibold text-[#1d1d1f] mb-1">
+                    No clinics found
+                  </h3>
+                  <p className="text-xs text-[#86868b] mb-5">
+                    Try searching with a different name or location.
+                  </p>
+                  <AppleButton variant="secondary" size="sm" onClick={resetClinicFilters}>
+                    Reset
+                  </AppleButton>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:[grid-template-columns:repeat(auto-fill,minmax(330px,1fr))] gap-5 sm:gap-6 w-full">
+                  {filteredClinics.map((clinic) => {
+                    const docCount = clinic._count?.doctors ?? (clinic.doctors?.length || 0);
+                    const locationDisplay = getClinicLocationDisplay(clinic);
+
+                    return (
+                      <div
+                        key={clinic.id}
+                        onClick={() => setSelectedClinic(clinic)}
+                        className="w-full bg-white rounded-[20px] border border-[#e0e0e0] overflow-hidden hover:border-[#0066cc]/40 transition-all duration-200 flex flex-col justify-between group cursor-pointer"
+                      >
+                        {/* Top Facility Photography Banner */}
+                        <div className="relative w-full aspect-[16/10] bg-[#f5f5f7] border-b border-[#f0f0f2] overflow-hidden flex items-center justify-center">
+                          <img
+                            src={clinicLobbyBg}
+                            alt={clinic.clinicName}
+                            className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
+                          />
+                          <div className="absolute top-3 right-3">
+                            <span className="text-[11px] font-medium text-[#1d1d1f] bg-white/95 backdrop-blur-sm px-3 py-1 rounded-full border border-black/5 shadow-2xs">
+                              {docCount === 1 ? '1 Doctor' : `${docCount} Doctors`}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Card Body */}
+                        <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between">
+                          <div>
+                            <h3
+                              className="text-[16px] sm:text-[17px] font-semibold text-[#1d1d1f] tracking-tight leading-snug group-hover:text-[#0066cc] transition-colors truncate"
+                              title={clinic.clinicName}
+                            >
+                              {clinic.clinicName}
+                            </h3>
+
+                            <div className="mt-2.5 space-y-1.5 text-xs text-[#86868b]">
+                              <p className="flex items-start gap-1.5 leading-snug">
+                                <MapPin className="w-3.5 h-3.5 text-[#86868b] shrink-0 mt-0.5" />
+                                <span className="line-clamp-2 text-[#48484a]">
+                                  {locationDisplay}
+                                </span>
+                              </p>
+                              {clinic.phone && (
+                                <p className="flex items-center gap-1.5 text-xs text-[#86868b]">
+                                  <Phone className="w-3 h-3 text-[#86868b] shrink-0" />
+                                  <span>{clinic.phone}</span>
+                                </p>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="mt-4 pt-3.5 border-t border-[#f0f0f2]">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedClinic(clinic);
+                              }}
+                              className="w-full h-9 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-[13px] font-medium tracking-tight transition-all duration-200 active:scale-[0.98] inline-flex items-center justify-center gap-1.5 cursor-pointer shadow-none group-hover:bg-[#0071e3]"
+                            >
+                              <span>View Doctors</span>
+                              <ChevronRight className="w-3.5 h-3.5 text-white/90 transition-transform duration-200 group-hover:translate-x-0.5" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* SECTION B: DOCTORS DISCOVERY */}
+      {activeSection === 'doctors' && (
+        <>
+          {/* Mobile Filter Toggle Drawer */}
+          <div className="lg:hidden">
+            <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-3.5 shadow-xs">
           <div className="flex items-center gap-2">
             <div className="flex-1 flex items-center gap-2 px-3 py-2 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] focus-within:border-[#0066cc] focus-within:bg-white transition-all">
               <Search className="w-4 h-4 text-[#86868b] flex-shrink-0" />
@@ -655,7 +1131,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
 
           {/* Doctor Cards Grid */}
           {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-5 sm:gap-6 w-full">
+            <div className="grid grid-cols-1 md:[grid-template-columns:repeat(auto-fill,minmax(330px,1fr))] gap-5 sm:gap-6 w-full">
               {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
                 <div key={i} className="h-72 rounded-[20px] bg-white border border-[#e5e5ea] animate-pulse p-4"></div>
               ))}
@@ -676,7 +1152,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-5 sm:gap-6 w-full">
+            <div className="grid grid-cols-1 md:[grid-template-columns:repeat(auto-fill,minmax(330px,1fr))] gap-5 sm:gap-6 w-full">
               {filteredDoctors.map((doctor) => {
                 const slots = parseDoctorSlots(doctor);
                 const cleanDegrees = formatDoctorDegrees(doctor.qualifications);
@@ -833,6 +1309,8 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
           )}
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 
@@ -847,16 +1325,28 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
         headerAction={
           <div className="flex items-center gap-2">
             <span className="text-xs px-3 py-1 rounded-full bg-[#f5f5f7] text-[#1d1d1f] font-medium border border-[#e0e0e0]">
-              {doctors.length} Specialist{doctors.length === 1 ? '' : 's'}
+              {activeSection === 'clinics'
+                ? `${clinics.length} Clinic${clinics.length === 1 ? '' : 's'}`
+                : `${doctors.length} Specialist${doctors.length === 1 ? '' : 's'}`}
             </span>
             <AppleButton
               variant="ghost"
               size="sm"
-              onClick={() => loadDoctors(search, selectedSpecialty, sortBy)}
+              onClick={() => {
+                if (activeSection === 'clinics') {
+                  setLoadingClinics(true);
+                  api.getPublicClinics()
+                    .then((data) => setClinics(data))
+                    .catch(() => {})
+                    .finally(() => setLoadingClinics(false));
+                } else {
+                  loadDoctors(search, selectedSpecialty, sortBy);
+                }
+              }}
               className="flex items-center gap-1.5 text-xs text-[#48484a]"
-              title="Refresh doctor listings"
+              title={activeSection === 'clinics' ? 'Refresh clinics' : 'Refresh doctors'}
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-[#0066cc]' : ''}`} />
+              <RefreshCw className={`w-3.5 h-3.5 ${(activeSection === 'clinics' ? loadingClinics : loading) ? 'animate-spin text-[#0066cc]' : ''}`} />
               <span className="hidden sm:inline">Refresh</span>
             </AppleButton>
           </div>
@@ -871,9 +1361,11 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
 
   return (
     <div className="min-h-screen bg-[#f5f5f7] pb-16">
-      <SubNav title="Doctor Directory" subtitle="Verified healthcare practitioners">
+      <SubNav title="Doctor & Clinic Directory" subtitle="Verified healthcare facilities and practitioners">
         <span className="text-xs text-[#86868b] font-medium">
-          {doctors.length} Verified Specialist{doctors.length === 1 ? '' : 's'}
+          {activeSection === 'clinics'
+            ? `${clinics.length} Verified Clinic${clinics.length === 1 ? '' : 's'}`
+            : `${doctors.length} Verified Specialist${doctors.length === 1 ? '' : 's'}`}
         </span>
       </SubNav>
 

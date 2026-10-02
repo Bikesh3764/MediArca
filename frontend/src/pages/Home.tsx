@@ -28,7 +28,7 @@ import {
   X,
   SlidersHorizontal,
   Phone,
-  ExternalLink,
+  RotateCcw,
   ChevronRight,
 } from 'lucide-react';
 
@@ -377,7 +377,7 @@ export const Home: React.FC = () => {
       <section id="catalog-section" className="w-full px-4 sm:px-6 lg:px-10 xl:px-14 py-8 sm:py-10 flex-1">
         {/* Navigation & Search Bar Header */}
         <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 mb-8 pb-4 border-b border-[#e5e5ea]">
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-3 shrink-0">
             <div className="inline-flex p-1 bg-[#e5e5ea] rounded-full border border-[#d2d2d7]/50">
               <button
                 type="button"
@@ -404,17 +404,6 @@ export const Home: React.FC = () => {
                 <span>Doctors</span>
               </button>
             </div>
-
-            {activeSection === 'doctors' && (
-              <button
-                type="button"
-                onClick={() => navigate(user?.role === 'PATIENT' ? '/patient/doctors' : '/doctors')}
-                className="hidden xl:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold text-[#0066cc] hover:text-[#0071e3] hover:bg-[#0066cc]/5 transition-all cursor-pointer active:scale-95"
-              >
-                <span>Browse Dedicated Doctor Page</span>
-                <ExternalLink className="w-3.5 h-3.5" />
-              </button>
-            )}
           </div>
 
           {/* Search bar beside Clinics & Doctors Switch */}
@@ -840,39 +829,29 @@ export const Home: React.FC = () => {
         {activeSection === 'doctors' && (
           <div className="flex flex-col lg:flex-row gap-8 items-start">
             {/* Desktop Left Filter Sidebar */}
-            <aside className="hidden lg:block w-72 bg-white rounded-[20px] border border-[#e0e0e0] p-5 shrink-0">
-              <div className="flex items-center justify-between pb-3 mb-4 border-b border-[#f0f0f2]">
-                <h3 className="text-sm font-semibold text-[#1d1d1f] flex items-center gap-1.5">
-                  <SlidersHorizontal className="w-4 h-4 text-[#0066cc]" />
-                  <span>Filter Practitioners</span>
-                </h3>
-                <button
-                  type="button"
-                  onClick={resetDoctorFilters}
-                  className="text-xs text-[#0066cc] hover:underline"
-                >
-                  Reset
-                </button>
+            <aside className="hidden lg:block w-72 bg-white rounded-[20px] border border-[#e0e0e0] p-5 shrink-0 space-y-5">
+              <div className="flex items-center justify-between pb-3.5 border-b border-[#f0f0f2]">
+                <div className="flex items-center gap-2">
+                  <SlidersHorizontal className="w-4 h-4 text-[#86868b]" />
+                  <h3 className="text-sm font-semibold text-[#1d1d1f] tracking-tight">Filters</h3>
+                </div>
+                {(doctorSearchQuery || doctorLocationQuery || selectedSpecialty !== 'All' || selectedCity !== 'All' || selectedState !== 'All' || minExperience > 0 || maxFee < 3000) && (
+                  <button
+                    type="button"
+                    onClick={resetDoctorFilters}
+                    className="h-6 px-2.5 rounded-full text-xs font-medium text-[#0066cc] hover:text-white bg-[#0066cc]/10 hover:bg-[#0066cc] border border-[#0066cc]/20 hover:border-[#0066cc] transition-all flex items-center gap-1 cursor-pointer active:scale-95 group shadow-2xs"
+                    title="Reset all filters"
+                  >
+                    <RotateCcw className="w-3 h-3 group-hover:-rotate-90 transition-transform duration-200" />
+                    <span>Reset</span>
+                  </button>
+                )}
               </div>
 
               <div className="space-y-4">
-                {/* Specialty */}
-                <div>
-                  <label className="block text-xs font-semibold text-[#48484a] mb-1">
-                    Specialty
-                  </label>
-                  <SearchableSpecialtySelect
-                    value={selectedSpecialty}
-                    onChange={setSelectedSpecialty}
-                    variant="form"
-                    includeAll={true}
-                    counts={specialtyCounts}
-                  />
-                </div>
-
                 {/* State */}
                 <div>
-                  <label className="block text-xs font-semibold text-[#48484a] mb-1">
+                  <label className="block text-xs font-medium text-[#86868b] mb-1.5">
                     State
                   </label>
                   <select
@@ -881,7 +860,7 @@ export const Home: React.FC = () => {
                       setSelectedState(e.target.value);
                       setSelectedCity('All');
                     }}
-                    className="w-full py-2 px-3 rounded-xl border border-[#e0e0e0] bg-[#f5f5f7] text-xs font-medium text-[#1d1d1f] focus:outline-none focus:border-[#0066cc] cursor-pointer"
+                    className="w-full py-2 px-3 rounded-xl border border-[#e0e0e0] bg-[#f5f5f7] text-xs font-medium text-[#1d1d1f] focus:outline-none focus:border-[#0066cc] focus:ring-2 focus:ring-[#0066cc]/20 cursor-pointer"
                   >
                     <option value="All">All States</option>
                     {INDIAN_STATES.map((st) => (
@@ -894,13 +873,13 @@ export const Home: React.FC = () => {
 
                 {/* City */}
                 <div>
-                  <label className="block text-xs font-semibold text-[#48484a] mb-1">
+                  <label className="block text-xs font-medium text-[#86868b] mb-1.5">
                     City
                   </label>
                   <select
                     value={selectedCity}
                     onChange={(e) => setSelectedCity(e.target.value)}
-                    className="w-full py-2 px-3 rounded-xl border border-[#e0e0e0] bg-[#f5f5f7] text-xs font-medium text-[#1d1d1f] focus:outline-none focus:border-[#0066cc] cursor-pointer"
+                    className="w-full py-2 px-3 rounded-xl border border-[#e0e0e0] bg-[#f5f5f7] text-xs font-medium text-[#1d1d1f] focus:outline-none focus:border-[#0066cc] focus:ring-2 focus:ring-[#0066cc]/20 cursor-pointer"
                   >
                     <option value="All">
                       {selectedState !== 'All' ? `All Cities in ${selectedState}` : 'All Cities'}
@@ -913,38 +892,68 @@ export const Home: React.FC = () => {
                   </select>
                 </div>
 
-                {/* Max Fee */}
+                {/* Specialty */}
                 <div>
-                  <div className="flex justify-between text-xs font-semibold text-[#48484a] mb-1">
-                    <span>Max Fee</span>
-                    <span className="text-[#0066cc]">₹{maxFee}</span>
+                  <label className="block text-xs font-medium text-[#86868b] mb-1.5">
+                    Specialty
+                  </label>
+                  <SearchableSpecialtySelect
+                    value={selectedSpecialty}
+                    onChange={setSelectedSpecialty}
+                    variant="form"
+                    includeAll={true}
+                    counts={specialtyCounts}
+                    placeholder="Select specialty..."
+                  />
+                </div>
+
+                {/* Max Consultation Fee Slider */}
+                <div>
+                  <div className="flex items-center justify-between text-xs font-medium text-[#86868b] mb-1.5">
+                    <span>Fee Limit</span>
+                    <span className="text-[#1d1d1f] font-semibold">Up to ₹{maxFee}</span>
                   </div>
                   <input
                     type="range"
-                    min="200"
+                    min="300"
                     max="3000"
                     step="100"
                     value={maxFee}
                     onChange={(e) => setMaxFee(Number(e.target.value))}
-                    className="w-full accent-[#0066cc] cursor-pointer"
+                    className="w-full h-1 bg-[#e5e5ea] rounded-lg appearance-none cursor-pointer accent-[#0066cc]"
                   />
+                  <div className="flex justify-between text-[11px] text-[#86868b] mt-1 font-normal">
+                    <span>₹300</span>
+                    <span>₹3000</span>
+                  </div>
                 </div>
 
-                {/* Min Experience */}
+                {/* Experience Segmented Control */}
                 <div>
-                  <label className="block text-xs font-semibold text-[#48484a] mb-1">
-                    Min Experience (Years)
+                  <label className="block text-xs font-medium text-[#86868b] mb-1.5">
+                    Experience
                   </label>
-                  <select
-                    value={minExperience}
-                    onChange={(e) => setMinExperience(Number(e.target.value))}
-                    className="w-full py-2 px-3 rounded-xl border border-[#e0e0e0] bg-[#f5f5f7] text-xs font-medium text-[#1d1d1f] focus:outline-none focus:border-[#0066cc] cursor-pointer"
-                  >
-                    <option value={0}>Any Experience</option>
-                    <option value={5}>5+ Years</option>
-                    <option value={10}>10+ Years</option>
-                    <option value={15}>15+ Years</option>
-                  </select>
+                  <div className="p-0.5 rounded-lg bg-[#e5e5ea]/70 grid grid-cols-4 gap-0.5">
+                    {[
+                      { label: 'All', value: 0 },
+                      { label: '5+ yr', value: 5 },
+                      { label: '10+ yr', value: 10 },
+                      { label: '15+ yr', value: 15 },
+                    ].map((item) => (
+                      <button
+                        key={item.value}
+                        type="button"
+                        onClick={() => setMinExperience(item.value)}
+                        className={`py-1 rounded-md text-[11px] font-medium transition-all text-center cursor-pointer ${
+                          minExperience === item.value
+                            ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs'
+                            : 'text-[#86868b] hover:text-[#1d1d1f]'
+                        }`}
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </aside>
@@ -953,9 +962,22 @@ export const Home: React.FC = () => {
             <div className="flex-1 w-full space-y-6">
               {/* Mobile Collapsible Filters */}
               {doctorMobileFiltersOpen && (
-                <div className="lg:hidden bg-white p-4 rounded-[20px] border border-[#e0e0e0] space-y-3">
+                <div className="lg:hidden bg-white p-4 rounded-[20px] border border-[#e0e0e0] space-y-4">
+                  <div className="flex items-center justify-between pb-2 border-b border-[#f0f0f2]">
+                    <span className="text-xs font-semibold text-[#1d1d1f]">Filter Options</span>
+                    {(doctorSearchQuery || doctorLocationQuery || selectedSpecialty !== 'All' || selectedCity !== 'All' || selectedState !== 'All' || minExperience > 0 || maxFee < 3000) && (
+                      <button
+                        type="button"
+                        onClick={resetDoctorFilters}
+                        className="text-xs text-[#0066cc] font-medium flex items-center gap-1 cursor-pointer"
+                      >
+                        <RotateCcw className="w-3 h-3" />
+                        <span>Reset</span>
+                      </button>
+                    )}
+                  </div>
                   <div>
-                    <label className="block text-xs font-semibold text-[#48484a] mb-1">
+                    <label className="block text-xs font-medium text-[#86868b] mb-1">
                       Specialty
                     </label>
                     <SearchableSpecialtySelect
@@ -968,7 +990,7 @@ export const Home: React.FC = () => {
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-xs font-semibold text-[#48484a] mb-1">
+                      <label className="block text-xs font-medium text-[#86868b] mb-1">
                         State
                       </label>
                       <select
@@ -977,7 +999,7 @@ export const Home: React.FC = () => {
                           setSelectedState(e.target.value);
                           setSelectedCity('All');
                         }}
-                        className="w-full py-2 px-2.5 rounded-xl border border-[#e0e0e0] bg-[#f5f5f7] text-xs"
+                        className="w-full py-2 px-2.5 rounded-xl border border-[#e0e0e0] bg-[#f5f5f7] text-xs font-medium text-[#1d1d1f] focus:outline-none"
                       >
                         <option value="All">All States</option>
                         {INDIAN_STATES.map((st) => (
@@ -988,13 +1010,13 @@ export const Home: React.FC = () => {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-[#48484a] mb-1">
+                      <label className="block text-xs font-medium text-[#86868b] mb-1">
                         City
                       </label>
                       <select
                         value={selectedCity}
                         onChange={(e) => setSelectedCity(e.target.value)}
-                        className="w-full py-2 px-2.5 rounded-xl border border-[#e0e0e0] bg-[#f5f5f7] text-xs"
+                        className="w-full py-2 px-2.5 rounded-xl border border-[#e0e0e0] bg-[#f5f5f7] text-xs font-medium text-[#1d1d1f] focus:outline-none"
                       >
                         <option value="All">
                           {selectedState !== 'All' ? `All Cities in ${selectedState}` : 'All Cities'}
@@ -1007,12 +1029,59 @@ export const Home: React.FC = () => {
                       </select>
                     </div>
                   </div>
+
+                  <div>
+                    <div className="flex items-center justify-between text-xs font-medium text-[#86868b] mb-1">
+                      <span>Fee Limit</span>
+                      <span className="text-[#1d1d1f] font-semibold">Up to ₹{maxFee}</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="300"
+                      max="3000"
+                      step="100"
+                      value={maxFee}
+                      onChange={(e) => setMaxFee(Number(e.target.value))}
+                      className="w-full h-1 bg-[#e5e5ea] rounded-lg appearance-none cursor-pointer accent-[#0066cc]"
+                    />
+                    <div className="flex justify-between text-[11px] text-[#86868b] mt-1 font-normal">
+                      <span>₹300</span>
+                      <span>₹3000</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-[#86868b] mb-1">
+                      Experience
+                    </label>
+                    <div className="p-0.5 rounded-lg bg-[#e5e5ea]/70 grid grid-cols-4 gap-0.5">
+                      {[
+                        { label: 'All', value: 0 },
+                        { label: '5+ yr', value: 5 },
+                        { label: '10+ yr', value: 10 },
+                        { label: '15+ yr', value: 15 },
+                      ].map((item) => (
+                        <button
+                          key={item.value}
+                          type="button"
+                          onClick={() => setMinExperience(item.value)}
+                          className={`py-1 rounded-md text-[11px] font-medium transition-all text-center cursor-pointer ${
+                            minExperience === item.value
+                              ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs'
+                              : 'text-[#86868b] hover:text-[#1d1d1f]'
+                          }`}
+                        >
+                          {item.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               )}
 
               {/* Doctor Cards Grid */}
               {loadingDoctors ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-5 sm:gap-6">
                   {[1, 2, 3, 4, 5, 6].map((i) => (
                     <div
                       key={i}

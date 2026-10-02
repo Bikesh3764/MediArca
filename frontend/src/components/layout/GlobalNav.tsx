@@ -240,16 +240,6 @@ export const GlobalNav: React.FC = () => {
           >
             Home
           </Link>
-          <Link
-            to={user?.role === 'PATIENT' ? '/patient/doctors' : '/doctors'}
-            className={`px-3.5 py-1.5 rounded-full transition-all duration-200 text-xs ${
-              isActive('/doctors')
-                ? 'bg-[#0088e8]/10 text-[#0088e8] font-semibold border border-[#0088e8]/20 shadow-2xs'
-                : 'hover:text-[#1d1d1f] hover:bg-black/[0.04] font-medium'
-            }`}
-          >
-            Find Doctors
-          </Link>
 
           {user?.role === 'PATIENT' && (
             <>
@@ -498,15 +488,6 @@ export const GlobalNav: React.FC = () => {
               }`}
             >
               Home
-            </Link>
-            <Link
-              to={user?.role === 'PATIENT' ? '/patient/doctors' : '/doctors'}
-              onClick={closeMenu}
-              className={`py-2 px-3.5 rounded-full transition-colors ${
-                isActive('/doctors') ? 'bg-[#0088e8]/10 text-[#0088e8] font-semibold border border-[#0088e8]/20' : 'hover:bg-black/[0.04] hover:text-[#1d1d1f] font-medium'
-              }`}
-            >
-              Find Doctors
             </Link>
 
             {user?.role === 'PATIENT' && (
