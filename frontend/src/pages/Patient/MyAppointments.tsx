@@ -63,27 +63,18 @@ export const MyAppointments: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#f5f5f7] pb-16">
       {/* Sleek Apple Header */}
-      <div className="bg-white border-b border-[#e5e5ea]/80 shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="bg-white border-b border-[#e5e5ea]/80">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-[#0066cc]">Live Care Access</span>
-                {upcomingList.length > 0 && (
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#0066cc]/10 text-[#0066cc]">
-                    {upcomingList.length} Active {upcomingList.length === 1 ? 'Pass' : 'Passes'}
-                  </span>
-                )}
-              </div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-[#1d1d1f] tracking-tight">Appointments & Passes</h1>
-              <p className="text-xs sm:text-sm text-[#86868b] mt-0.5">Track your live queue position, consultation passes, and token updates</p>
+              <h1 className="text-2xl font-bold text-[#1d1d1f] tracking-tight">Appointments</h1>
             </div>
             <div className="flex items-center gap-2">
               <AppleButton
                 variant="ghost"
                 size="sm"
                 onClick={() => fetchAppointments()}
-                className="flex items-center gap-1.5"
+                className="flex items-center gap-1.5 text-xs"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
                 Refresh
@@ -92,7 +83,7 @@ export const MyAppointments: React.FC = () => {
                 variant="primary"
                 size="sm"
                 onClick={() => navigate('/doctors')}
-                className="flex items-center gap-1.5 shadow-sm"
+                className="flex items-center gap-1.5 shadow-none bg-[#0066cc] hover:bg-[#0071e3] text-xs font-semibold"
               >
                 <Plus className="w-3.5 h-3.5" />
                 Book Doctor
@@ -108,17 +99,17 @@ export const MyAppointments: React.FC = () => {
           <div className="bg-[#f5f5f7] p-1 rounded-full border border-[#e5e5ea] flex shadow-2xs">
             <button
               onClick={() => setActiveTab('upcoming')}
-              className={`px-4 sm:px-6 py-2 rounded-full text-xs transition-all cursor-pointer active:scale-[0.98] ${
+              className={`px-5 py-2 rounded-full text-xs transition-all cursor-pointer active:scale-[0.98] ${
                 activeTab === 'upcoming'
                   ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs'
                   : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
               }`}
             >
-              Active Passes ({upcomingList.length})
+              Upcoming ({upcomingList.length})
             </button>
             <button
               onClick={() => setActiveTab('past')}
-              className={`px-4 sm:px-6 py-2 rounded-full text-xs transition-all cursor-pointer active:scale-[0.98] ${
+              className={`px-5 py-2 rounded-full text-xs transition-all cursor-pointer active:scale-[0.98] ${
                 activeTab === 'past'
                   ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs'
                   : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
@@ -138,19 +129,19 @@ export const MyAppointments: React.FC = () => {
           </div>
         ) : activeTab === 'upcoming' ? (
           upcomingList.length === 0 ? (
-            <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-12 text-center max-w-lg mx-auto shadow-sm">
+            <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-10 sm:p-12 text-center max-w-md mx-auto shadow-sm">
               <Calendar className="w-10 h-10 text-[#86868b] mx-auto mb-3" />
-              <h3 className="text-lg font-semibold text-[#1d1d1f]">No active queue tokens</h3>
-              <p className="text-xs text-[#86868b] mt-1 max-w-sm mx-auto">
-                You have no scheduled appointments currently waiting in queue.
+              <h3 className="text-base font-semibold text-[#1d1d1f]">No upcoming appointments</h3>
+              <p className="text-xs text-[#86868b] mt-1">
+                Your scheduled visits and queue tokens will appear here.
               </p>
               <AppleButton
                 variant="primary"
                 size="md"
                 onClick={() => navigate('/doctors')}
-                className="mt-6"
+                className="mt-5 px-6 font-semibold bg-[#0066cc] hover:bg-[#0071e3] shadow-none"
               >
-                Find and Book a Doctor
+                Book Doctor
               </AppleButton>
             </div>
           ) : (
@@ -165,9 +156,9 @@ export const MyAppointments: React.FC = () => {
             </div>
           )
         ) : pastList.length === 0 ? (
-          <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-12 text-center max-w-lg mx-auto shadow-sm">
+          <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-10 sm:p-12 text-center max-w-md mx-auto shadow-sm">
             <Calendar className="w-10 h-10 text-[#86868b] mx-auto mb-3" />
-            <h3 className="text-lg font-semibold text-[#1d1d1f]">No past consultations recorded</h3>
+            <h3 className="text-base font-semibold text-[#1d1d1f]">No past appointments</h3>
             <p className="text-xs text-[#86868b] mt-1">
               Completed consultations will appear here.
             </p>
