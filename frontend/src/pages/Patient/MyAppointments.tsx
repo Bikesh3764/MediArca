@@ -64,7 +64,7 @@ export const MyAppointments: React.FC = () => {
     <div className="min-h-screen bg-[#f5f5f7] pb-16">
       {/* Sleek Apple Header */}
       <div className="bg-white border-b border-[#e5e5ea]/80">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h1 className="text-2xl font-bold text-[#1d1d1f] tracking-tight">Appointments</h1>
@@ -93,7 +93,7 @@ export const MyAppointments: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         {/* Apple Pill Segmented Filter */}
         <div className="flex justify-center mb-8">
           <div className="bg-[#f5f5f7] p-1 rounded-full border border-[#e5e5ea] flex shadow-2xs">
