@@ -366,25 +366,24 @@ export const Home: React.FC = () => {
                 </div>
 
                 {/* Selected Clinic Header Card */}
-                <div className="bg-white rounded-[24px] border border-[#e0e0e0] p-6 sm:p-8">
+                <div className="bg-white rounded-[18px] border border-[#e0e0e0] p-6 sm:p-8">
                   <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
                     <div>
-                      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#0066cc]/10 text-[#0066cc] text-xs font-semibold mb-3 border border-[#0066cc]/20">
-                        <Building2 className="w-3.5 h-3.5" />
-                        <span>Clinical Facility</span>
+                      <div className="text-[12px] font-normal text-[#7a7a7a] tracking-tight mb-1">
+                        Clinical Facility
                       </div>
                       <h2 className="text-2xl sm:text-3xl font-semibold text-[#1d1d1f] tracking-tight mb-2">
                         {selectedClinic.clinicName}
                       </h2>
-                      <div className="space-y-1.5 text-xs text-[#7a7a7a]">
+                      <div className="space-y-1.5 text-[14px] text-[#7a7a7a]">
                         <p className="flex items-center gap-2">
-                          <MapPin className="w-3.5 h-3.5 text-[#86868b] shrink-0" />
+                          <MapPin className="w-4 h-4 text-[#86868b] shrink-0" />
                           <span>
                             {getClinicLocationDisplay(selectedClinic)}
                           </span>
                         </p>
                         {selectedClinic.phone && (
-                          <p className="flex items-center gap-2">
+                          <p className="flex items-center gap-2 text-[13px] text-[#86868b]">
                             <Phone className="w-3.5 h-3.5 text-[#86868b] shrink-0" />
                             <span>{selectedClinic.phone}</span>
                           </p>
@@ -393,11 +392,11 @@ export const Home: React.FC = () => {
                     </div>
 
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                      <div className="px-4 py-3 rounded-2xl bg-[#f5f5f7] border border-[#e0e0e0] text-center min-w-[130px]">
+                      <div className="px-5 py-3 rounded-[14px] bg-[#f5f5f7] border border-[#e0e0e0] text-center min-w-[130px]">
                         <span className="block text-2xl font-semibold text-[#1d1d1f] tracking-tight">
                           {clinicPracticingDoctors.length}
                         </span>
-                        <span className="text-[11px] text-[#86868b] font-normal">
+                        <span className="text-[12px] text-[#86868b] font-normal">
                           Practicing Specialists
                         </span>
                       </div>
@@ -669,57 +668,49 @@ export const Home: React.FC = () => {
                         <div
                           key={clinic.id}
                           onClick={() => setSelectedClinic(clinic)}
-                          className="bg-white rounded-[20px] border border-[#e0e0e0] p-6 hover:border-[#0066cc]/40 transition-all duration-200 flex flex-col justify-between group cursor-pointer"
+                          className="bg-white rounded-[18px] border border-[#e0e0e0] p-6 hover:border-[#0066cc]/40 transition-all duration-200 flex flex-col justify-between group cursor-pointer"
                         >
                           <div>
-                            {/* Card Top Row */}
-                            <div className="flex items-center justify-between gap-2 mb-3.5">
-                              <div className="w-10 h-10 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-[#0066cc] flex items-center justify-center transition-colors group-hover:bg-[#0066cc] group-hover:text-white">
-                                <Building2 className="w-5 h-5" />
-                              </div>
-                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#0066cc]/10 text-[#0066cc] text-[11px] font-medium border border-[#0066cc]/20">
-                                <CheckCircle2 className="w-3 h-3" />
-                                <span>Verified Clinic</span>
+                            {/* Eyebrow Category */}
+                            <div className="flex items-center justify-between gap-2 mb-2">
+                              <span className="text-[12px] font-normal text-[#7a7a7a] tracking-tight">
+                                Clinical Facility
+                              </span>
+                              <span className="text-[12px] font-normal text-[#0066cc] tracking-tight">
+                                Verified
                               </span>
                             </div>
 
                             {/* Clinic Name */}
                             <h3
-                              className="text-[18px] font-semibold text-[#1d1d1f] tracking-tight group-hover:text-[#0066cc] transition-colors mb-2 leading-snug truncate"
+                              className="text-[19px] sm:text-[21px] font-semibold text-[#1d1d1f] tracking-tight leading-snug group-hover:text-[#0066cc] transition-colors truncate"
                               title={clinic.clinicName}
                             >
                               {clinic.clinicName}
                             </h3>
 
                             {/* Location & Contact Info */}
-                            <div className="space-y-1.5 text-xs text-[#86868b] mb-4">
-                              <p className="flex items-start gap-2">
-                                <MapPin className="w-3.5 h-3.5 text-[#86868b] shrink-0 mt-0.5" />
-                                <span className="line-clamp-2 leading-relaxed text-[#7a7a7a]">
+                            <div className="mt-3 space-y-1.5 text-[14px] text-[#7a7a7a]">
+                              <p className="flex items-start gap-2 leading-relaxed">
+                                <MapPin className="w-4 h-4 text-[#86868b] shrink-0 mt-0.5" />
+                                <span className="line-clamp-2">
                                   {locationDisplay}
                                 </span>
                               </p>
                               {clinic.phone && (
-                                <p className="flex items-center gap-2 text-[#86868b]">
+                                <p className="flex items-center gap-2 text-[13px] text-[#86868b]">
                                   <Phone className="w-3.5 h-3.5 shrink-0" />
                                   <span>{clinic.phone}</span>
                                 </p>
                               )}
                             </div>
-
-                            {/* Specialists Available Capsule */}
-                            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#f5f5f7] text-[#1d1d1f] text-xs font-medium border border-[#e0e0e0]">
-                              <Stethoscope className="w-3.5 h-3.5 text-[#0066cc]" />
-                              <span>{docCount === 1 ? '1 Specialist Practicing' : `${docCount} Specialists Practicing`}</span>
-                            </div>
                           </div>
 
-                          {/* Refined Apple Footer CTA */}
-                          <div className="mt-5 pt-3.5 border-t border-[#f0f0f2] flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-1.5 text-xs text-[#86868b] min-w-0">
-                              <span className="w-1.5 h-1.5 rounded-full bg-[#34c759] shrink-0" />
-                              <span className="truncate">{docCount > 0 ? 'Accepting Patients' : 'Clinical Facility'}</span>
-                            </div>
+                          {/* Apple HIG Card Footer */}
+                          <div className="mt-6 pt-4 border-t border-[#f0f0f2] flex items-center justify-between gap-3">
+                            <span className="text-[13px] text-[#1d1d1f] font-normal">
+                              {docCount === 1 ? '1 Specialist' : `${docCount} Specialists`}
+                            </span>
 
                             <button
                               type="button"
@@ -727,10 +718,9 @@ export const Home: React.FC = () => {
                                 e.stopPropagation();
                                 setSelectedClinic(clinic);
                               }}
-                              className="h-8 px-4 sm:px-5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-medium transition-all active:scale-95 inline-flex items-center gap-1.5 shrink-0 cursor-pointer shadow-none"
+                              className="h-8 px-5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-[13px] font-normal transition-all active:scale-95 inline-flex items-center justify-center cursor-pointer"
                             >
-                              <span>View Doctors & Slots</span>
-                              <ArrowRight className="w-3.5 h-3.5" />
+                              View Doctors
                             </button>
                           </div>
                         </div>
