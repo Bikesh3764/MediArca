@@ -61,19 +61,13 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
   const [minExp, setMinExp] = useState<number>(0);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
+  // Available Cities - only populated when a specific state is selected
   const availableCities = useMemo(() => {
-    if (selectedState !== 'All') {
-      return getCitiesForState(selectedState);
+    if (selectedState === 'All') {
+      return [];
     }
-    const citiesFromDocs = new Set<string>();
-    const source = allCatalogDoctors.length > 0 ? allCatalogDoctors : doctors;
-    source.forEach((d) => {
-      d.clinics?.forEach((c) => {
-        if (c.clinic?.city) citiesFromDocs.add(c.clinic.city.trim());
-      });
-    });
-    return Array.from(citiesFromDocs).sort((a, b) => a.localeCompare(b));
-  }, [selectedState, allCatalogDoctors, doctors]);
+    return getCitiesForState(selectedState);
+  }, [selectedState]);
 
   const handleStateChange = (newState: string) => {
     setSelectedState(newState);

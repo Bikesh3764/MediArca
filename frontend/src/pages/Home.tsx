@@ -16,7 +16,6 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { AppleButton } from '../components/ui/AppleButton';
 import { SearchableSpecialtySelect } from '../components/ui/SearchableSpecialtySelect';
-import healthcareHeroBg from '../assets/healthcare-hero-bg.png';
 import { INDIAN_STATES, getCitiesForState } from '../utils/indiaStates';
 import {
   Search,
@@ -27,14 +26,10 @@ import {
   Building2,
   UserCheck,
   Stethoscope,
-  RotateCcw,
-  ChevronDown,
   X,
   CheckCircle2,
   SlidersHorizontal,
   Phone,
-  Calendar,
-  Sparkles,
   ExternalLink,
 } from 'lucide-react';
 
@@ -101,31 +96,21 @@ export const Home: React.FC = () => {
     fetchData();
   }, []);
 
-  // Available Cities for Clinics
+  // Available Cities for Clinics - only populated when a specific state is selected
   const availableClinicCities = useMemo(() => {
-    if (clinicSelectedState !== 'All') {
-      return getCitiesForState(clinicSelectedState);
+    if (clinicSelectedState === 'All') {
+      return [];
     }
-    const citiesSet = new Set<string>();
-    clinics.forEach((c) => {
-      if (c.city) citiesSet.add(c.city.trim());
-    });
-    return Array.from(citiesSet).sort((a, b) => a.localeCompare(b));
-  }, [clinics, clinicSelectedState]);
+    return getCitiesForState(clinicSelectedState);
+  }, [clinicSelectedState]);
 
-  // Available Cities for Doctors
+  // Available Cities for Doctors - only populated when a specific state is selected
   const availableDoctorCities = useMemo(() => {
-    if (selectedState !== 'All') {
-      return getCitiesForState(selectedState);
+    if (selectedState === 'All') {
+      return [];
     }
-    const citiesFromDocs = new Set<string>();
-    doctors.forEach((d) => {
-      d.clinics?.forEach((c) => {
-        if (c.clinic?.city) citiesFromDocs.add(c.clinic.city.trim());
-      });
-    });
-    return Array.from(citiesFromDocs).sort((a, b) => a.localeCompare(b));
-  }, [selectedState, doctors]);
+    return getCitiesForState(selectedState);
+  }, [selectedState]);
 
   // Compute specialty counts for doctors
   const specialtyCounts = useMemo(() => {
@@ -279,73 +264,17 @@ export const Home: React.FC = () => {
     return qs ? `${basePath}?${qs}` : basePath;
   };
 
-  const handleHeroSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    const catalogElement = document.getElementById('catalog-section');
-    if (catalogElement) {
-      catalogElement.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-
   return (
     <div className="flex flex-col min-h-screen bg-[#f5f5f7]">
       {/* 1. Hero Section - Apple HIG Minimalist Canvas */}
-      <section className="relative overflow-hidden border-b border-[#e5e5ea] bg-[#f5f5f7] py-20 sm:py-24 md:py-28 px-4 sm:px-6 flex items-center justify-center">
+      <section className="relative overflow-hidden border-b border-[#e5e5ea] bg-[#f5f5f7] py-16 sm:py-20 md:py-24 px-4 sm:px-6 flex items-center justify-center">
         <div className="relative z-10 max-w-4xl mx-auto text-center w-full">
-          {/* Eyebrow badge */}
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white border border-[#e5e5ea] text-xs font-normal text-[#1d1d1f] mb-6">
-            <span className="w-2 h-2 rounded-full bg-[#0066cc]" />
-            <span>Digital Outpatient Care Network</span>
-          </div>
-
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-semibold text-[#1d1d1f] tracking-tight leading-[1.07] mb-4 sm:mb-5">
             Certified clinics & <span className="text-[#0066cc]">specialists</span> across India.
           </h1>
-          <p className="text-[17px] text-[#7a7a7a] max-w-2xl mx-auto mb-8 font-normal leading-relaxed">
+          <p className="text-[17px] text-[#7a7a7a] max-w-2xl mx-auto font-normal leading-relaxed">
             Search top clinical facilities or browse specialized practitioners with real-time queue tokens and punctual check-ins.
           </p>
-
-          {/* Quick Segmented Section Switcher in Hero */}
-          <div className="inline-flex p-1 bg-[#e5e5ea] rounded-full border border-[#d2d2d7]/50">
-            <button
-              type="button"
-              onClick={() => handleSectionSwitch('clinics')}
-              className={`flex items-center gap-2 px-6 sm:px-8 py-2.5 rounded-full text-xs sm:text-sm font-semibold transition-all duration-200 cursor-pointer active:scale-95 ${
-                activeSection === 'clinics'
-                  ? 'bg-white text-[#1d1d1f]'
-                  : 'text-[#86868b] hover:text-[#1d1d1f]'
-              }`}
-            >
-              <Building2 className={`w-4 h-4 ${activeSection === 'clinics' ? 'text-[#0066cc]' : 'text-[#86868b]'}`} />
-              <span>Clinics</span>
-              <span
-                className={`text-[11px] px-2 py-0.5 rounded-full ${
-                  activeSection === 'clinics' ? 'bg-[#0066cc]/10 text-[#0066cc]' : 'bg-[#d2d2d7]/50 text-[#48484a]'
-                }`}
-              >
-                {clinics.length}
-              </span>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleSectionSwitch('doctors')}
-              className={`flex items-center gap-2 px-6 sm:px-8 py-2.5 rounded-full text-xs sm:text-sm font-semibold transition-all duration-200 cursor-pointer active:scale-95 ${
-                activeSection === 'doctors'
-                  ? 'bg-white text-[#1d1d1f]'
-                  : 'text-[#86868b] hover:text-[#1d1d1f]'
-              }`}
-            >
-              <Stethoscope className={`w-4 h-4 ${activeSection === 'doctors' ? 'text-[#0066cc]' : 'text-[#86868b]'}`} />
-              <span>Doctors</span>
-              <span
-                className={`text-[11px] px-2 py-0.5 rounded-full ${
-                  activeSection === 'doctors' ? 'bg-[#0066cc]/10 text-[#0066cc]' : 'bg-[#d2d2d7]/50 text-[#48484a]'
-                }`}
-              >
-                {doctors.length}
-              </span>
-            </button>
-          </div>
         </div>
       </section>
 
@@ -560,7 +489,7 @@ export const Home: React.FC = () => {
                                 </label>
                                 <div className="space-y-1.5">
                                   {slots.map((slot) => {
-                                    const status = evaluateSlotStatus(slot, todayStr, 0, now);
+                                    const _status = evaluateSlotStatus(slot, todayStr, 0, now);
                                     return (
                                       <div
                                         key={slot.id}
@@ -721,6 +650,17 @@ export const Home: React.FC = () => {
                     {filteredClinics.map((clinic) => {
                       const docCount = clinic._count?.doctors ?? (clinic.doctors?.length || 0);
 
+                      // Clean up location display: prevent repeating city/state if already in address
+                      const addressParts: string[] = [];
+                      if (clinic.address) addressParts.push(clinic.address);
+                      if (clinic.city && !clinic.address.toLowerCase().includes(clinic.city.toLowerCase())) {
+                        addressParts.push(clinic.city);
+                      }
+                      if (clinic.state && !clinic.address.toLowerCase().includes(clinic.state.toLowerCase())) {
+                        addressParts.push(clinic.state);
+                      }
+                      const locationDisplay = addressParts.join(', ');
+
                       return (
                         <div
                           key={clinic.id}
@@ -728,30 +668,31 @@ export const Home: React.FC = () => {
                           className="bg-white rounded-[20px] border border-[#e0e0e0] p-6 hover:border-[#0066cc]/40 transition-all duration-200 flex flex-col justify-between group cursor-pointer"
                         >
                           <div>
-                            {/* Card Top Pill */}
-                            <div className="flex items-center justify-between gap-2 mb-3">
-                              <div className="w-10 h-10 rounded-2xl bg-[#f5f5f7] border border-[#e0e0e0] text-[#0066cc] flex items-center justify-center font-bold text-lg group-hover:bg-[#0066cc] group-hover:text-white transition-all">
+                            {/* Card Top Row */}
+                            <div className="flex items-center justify-between gap-2 mb-3.5">
+                              <div className="w-10 h-10 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] text-[#0066cc] flex items-center justify-center transition-colors group-hover:bg-[#0066cc] group-hover:text-white">
                                 <Building2 className="w-5 h-5" />
                               </div>
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#0066cc]/10 text-[#0066cc] text-[11px] font-normal border border-[#0066cc]/20">
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#0066cc]/10 text-[#0066cc] text-[11px] font-medium border border-[#0066cc]/20">
                                 <CheckCircle2 className="w-3 h-3" />
                                 <span>Verified Clinic</span>
                               </span>
                             </div>
 
                             {/* Clinic Name */}
-                            <h3 className="text-lg font-semibold text-[#1d1d1f] tracking-tight group-hover:text-[#0066cc] transition-colors mb-2">
+                            <h3
+                              className="text-[18px] font-semibold text-[#1d1d1f] tracking-tight group-hover:text-[#0066cc] transition-colors mb-2 leading-snug truncate"
+                              title={clinic.clinicName}
+                            >
                               {clinic.clinicName}
                             </h3>
 
                             {/* Location & Contact Info */}
-                            <div className="space-y-1.5 text-xs text-[#7a7a7a] mb-4">
+                            <div className="space-y-1.5 text-xs text-[#86868b] mb-4">
                               <p className="flex items-start gap-2">
                                 <MapPin className="w-3.5 h-3.5 text-[#86868b] shrink-0 mt-0.5" />
-                                <span className="line-clamp-2">
-                                  {clinic.address}
-                                  {clinic.city ? `, ${clinic.city}` : ''}
-                                  {clinic.state ? `, ${clinic.state}` : ''}
+                                <span className="line-clamp-2 leading-relaxed text-[#7a7a7a]">
+                                  {locationDisplay || 'Clinical Facility'}
                                 </span>
                               </p>
                               {clinic.phone && (
@@ -762,22 +703,27 @@ export const Home: React.FC = () => {
                               )}
                             </div>
 
-                            {/* Specialists Available Badge */}
+                            {/* Specialists Available Capsule */}
                             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#f5f5f7] text-[#1d1d1f] text-xs font-normal border border-[#e0e0e0]">
                               <Stethoscope className="w-3.5 h-3.5 text-[#0066cc]" />
-                              <span>{docCount} Specialists Practicing</span>
+                              <span>{docCount === 1 ? '1 Specialist Practicing' : `${docCount} Specialists Practicing`}</span>
                             </div>
                           </div>
 
-                          {/* CTA Button */}
-                          <div className="mt-5 pt-4 border-t border-[#f0f0f2]">
+                          {/* Refined Apple Footer CTA */}
+                          <div className="mt-5 pt-3.5 border-t border-[#f0f0f2] flex items-center justify-between">
+                            <div className="flex items-center gap-1.5 text-xs text-[#86868b]">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#34c759]" />
+                              <span>{docCount > 0 ? 'Accepting Patients' : 'Clinical Facility'}</span>
+                            </div>
+
                             <button
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setSelectedClinic(clinic);
                               }}
-                              className="w-full py-2.5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-normal transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
+                              className="h-8 px-4 sm:px-5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-medium transition-all active:scale-95 inline-flex items-center gap-1.5 cursor-pointer shadow-none"
                             >
                               <span>View Doctors & Slots</span>
                               <ArrowRight className="w-3.5 h-3.5" />
