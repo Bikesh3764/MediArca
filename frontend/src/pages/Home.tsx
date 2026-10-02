@@ -29,6 +29,7 @@ import {
   SlidersHorizontal,
   Phone,
   ExternalLink,
+  ChevronRight,
 } from 'lucide-react';
 
 const getClinicLocationDisplay = (clinic?: { address?: string; city?: string | null; state?: string | null } | null): string => {
@@ -811,17 +812,17 @@ export const Home: React.FC = () => {
                             </div>
 
                             {/* Apple HIG Card Footer */}
-                            <div className="mt-4 pt-3.5 border-t border-[#f0f0f2] flex items-center justify-between gap-2">
-                              <span className="text-xs text-[#86868b]">Outpatient Care</span>
+                            <div className="mt-4 pt-3.5 border-t border-[#f0f0f2]">
                               <button
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setSelectedClinic(clinic);
                                 }}
-                                className="h-8 px-4.5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-medium transition-all active:scale-95 inline-flex items-center justify-center cursor-pointer shadow-none"
+                                className="w-full h-9 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-[13px] font-medium tracking-tight transition-all duration-200 active:scale-[0.98] inline-flex items-center justify-center gap-1.5 cursor-pointer shadow-none group-hover:bg-[#0071e3]"
                               >
-                                View Doctors
+                                <span>View Doctors</span>
+                                <ChevronRight className="w-3.5 h-3.5 text-white/90 transition-transform duration-200 group-hover:translate-x-0.5" />
                               </button>
                             </div>
                           </div>
