@@ -7,8 +7,6 @@ import {
   PublicClinicDoctor,
   parseDoctorSlots,
   format12Hour,
-  evaluateSlotStatus,
-  getLocalDateString,
   formatDoctorDegrees,
   ALL_SPECIALTIES,
   getFileUrl,
@@ -404,28 +402,25 @@ export const Home: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Practicing Doctors & Time Slots Section */}
+                {/* Practicing Doctors Section */}
                 <div>
                   <div className="mb-6">
-                    <h3 className="text-xl font-semibold text-[#1d1d1f] tracking-tight">
-                      Available Doctors at {selectedClinic.clinicName}
+                    <h3 className="text-2xl font-semibold text-[#1d1d1f] tracking-tight">
+                      Practicing Specialists
                     </h3>
-                    <p className="text-xs text-[#86868b] mt-1">
-                      Choose any specialist below to book directly into their scheduled time slots at this facility.
-                    </p>
                   </div>
 
                   {clinicPracticingDoctors.length === 0 ? (
-                    <div className="bg-white rounded-[20px] border border-[#e0e0e0] p-12 text-center max-w-md mx-auto">
+                    <div className="bg-white rounded-[18px] border border-[#e0e0e0] p-12 text-center max-w-md mx-auto">
                       <Stethoscope className="w-8 h-8 text-[#86868b] mx-auto mb-3" />
-                      <h4 className="text-sm font-semibold text-[#1d1d1f] mb-1">
-                        No specialists currently listed
+                      <h4 className="text-base font-semibold text-[#1d1d1f] mb-1">
+                        No specialists listed
                       </h4>
                       <p className="text-xs text-[#86868b] mb-4">
-                        This facility is active, but doctor shifts are being updated. Check back shortly.
+                        Doctor shifts for this facility are currently being updated.
                       </p>
                       <AppleButton variant="secondary" size="sm" onClick={() => setSelectedClinic(null)}>
-                        Explore Other Clinics
+                        Back to Clinics
                       </AppleButton>
                     </div>
                   ) : (
@@ -438,17 +433,15 @@ export const Home: React.FC = () => {
                         });
                         const effectiveFee = docItem.consultationFee ?? doctor.consultationFee;
                         const cleanDegrees = formatDoctorDegrees(doctor.qualifications);
-                        const todayStr = getLocalDateString();
-                        const now = new Date();
 
                         return (
                           <div
                             key={doctor.id}
-                            className="bg-white rounded-[20px] border border-[#e0e0e0] p-5 hover:border-[#0066cc]/40 transition-all flex flex-col justify-between"
+                            className="bg-white rounded-[18px] border border-[#e0e0e0] p-5 hover:border-[#0066cc]/40 transition-all flex flex-col justify-between group"
                           >
                             <div>
-                              {/* Doctor Head Info */}
-                              <div className="flex items-start gap-3 mb-4">
+                              {/* Doctor Header */}
+                              <div className="flex items-start gap-3.5">
                                 <div className="w-14 h-14 rounded-2xl bg-[#f5f5f7] border border-[#e0e0e0] overflow-hidden shrink-0 flex items-center justify-center">
                                   {doctor.user?.avatarUrl ? (
                                     <img
@@ -467,87 +460,60 @@ export const Home: React.FC = () => {
                                 </div>
 
                                 <div className="min-w-0 flex-1">
-                                  <div className="flex items-center gap-1.5">
+                                  <div className="flex items-center gap-1.5 min-w-0">
                                     <h4
                                       onClick={() => navigate(getDoctorDetailPath(doctor.id))}
-                                      className="text-base font-semibold text-[#1d1d1f] hover:text-[#0066cc] cursor-pointer tracking-tight truncate"
+                                      className="text-[17px] font-semibold text-[#1d1d1f] hover:text-[#0066cc] cursor-pointer tracking-tight truncate"
                                       title={doctor.user.fullName}
                                     >
                                       {doctor.user.fullName}
                                     </h4>
-                                    <CheckCircle2 className="w-3.5 h-3.5 text-[#0066cc] shrink-0" />
+                                    <CheckCircle2 className="w-4 h-4 text-[#0066cc] shrink-0" />
                                   </div>
 
-                                  {/* Specialty & Clean Degrees (NO FACC) */}
-                                  <p className="text-xs text-[#86868b] truncate mt-0.5">
-                                    <span className="text-[#0066cc] font-semibold">{doctor.specialty}</span>
+                                  {/* Specialty & Clean Degrees */}
+                                  <p className="mt-1 text-xs text-[#86868b] truncate font-normal">
+                                    <span className="text-[#0066cc] font-medium">{doctor.specialty}</span>
                                     {cleanDegrees ? ` • ${cleanDegrees}` : ''}
                                   </p>
 
-                                  <div className="mt-1 flex items-center gap-2">
-                                    <span className="text-[11px] font-normal text-[#48484a] bg-[#f5f5f7] px-2 py-0.5 rounded-full border border-[#e0e0e0]">
+                                  <div className="mt-2">
+                                    <span className="text-[11px] font-normal text-[#48484a] bg-[#f5f5f7] px-2.5 py-0.5 rounded-full border border-[#e0e0e0]">
                                       {doctor.experienceYears} yrs exp
                                     </span>
                                   </div>
                                 </div>
                               </div>
 
-                              {/* Time Slots / Shifts at this clinic */}
-                              <div className="mb-4">
-                                <label className="block text-[11px] font-semibold text-[#86868b] uppercase tracking-wider mb-2">
-                                  Practicing Shifts at Facility
-                                </label>
-                                <div className="space-y-1.5">
-                                  {slots.map((slot) => {
-                                    const _status = evaluateSlotStatus(slot, todayStr, 0, now);
-                                    return (
-                                      <div
-                                        key={slot.id}
-                                        className="p-2.5 rounded-xl bg-[#f5f5f7] border border-[#e0e0e0] flex items-center justify-between gap-2 text-xs"
-                                      >
-                                        <div className="min-w-0">
-                                          <p className="font-semibold text-[#1d1d1f] truncate">
-                                            {slot.name}
-                                          </p>
-                                          <p className="text-[11px] text-[#86868b] flex items-center gap-1 mt-0.5">
-                                            <Clock className="w-3 h-3 text-[#86868b]" />
-                                            <span>
-                                              {format12Hour(slot.startTime)} – {format12Hour(slot.endTime)}
-                                            </span>
-                                          </p>
-                                        </div>
-
-                                        <button
-                                          type="button"
-                                          onClick={() =>
-                                            navigate(getDoctorBookPath(doctor.id, selectedClinic.id, slot.id))
-                                          }
-                                          className="px-3.5 py-1.5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-[11px] font-normal transition-all active:scale-95 shrink-0 cursor-pointer"
-                                        >
-                                          Book Slot
-                                        </button>
-                                      </div>
-                                    );
-                                  })}
-                                </div>
+                              {/* Shift Timing: Clean, single representation */}
+                              <div className="mt-4 pt-3.5 border-t border-[#f0f0f2] flex items-center gap-2 text-xs text-[#86868b]">
+                                <Clock className="w-3.5 h-3.5 shrink-0" />
+                                <span className="truncate text-[12px] text-[#1d1d1f]">
+                                  {slots.length > 0
+                                    ? `${format12Hour(slots[0].startTime)} – ${format12Hour(slots[0].endTime)}`
+                                    : doctor.checkingStartTime
+                                    ? `${format12Hour(doctor.checkingStartTime)} – ${format12Hour(doctor.checkingEndTime)}`
+                                    : 'Outpatient Shift'}
+                                  {slots.length > 1 ? ` (+${slots.length - 1} more slots)` : ''}
+                                </span>
                               </div>
                             </div>
 
-                            {/* Card Footer: Fee & Booking */}
-                            <div className="pt-3 border-t border-[#f0f0f2] flex items-center justify-between">
-                              <div>
-                                <span className="text-lg font-semibold text-[#1d1d1f] tracking-tight">
+                            {/* Card Footer: Fee & Single Booking CTA */}
+                            <div className="mt-4 pt-3.5 border-t border-[#f0f0f2] flex items-center justify-between">
+                              <div className="flex items-baseline gap-1">
+                                <span className="text-xl font-semibold text-[#1d1d1f] tracking-tight">
                                   ₹{effectiveFee.toFixed(0)}
                                 </span>
-                                <span className="text-xs text-[#86868b]"> / visit</span>
+                                <span className="text-xs text-[#86868b] font-normal">/ visit</span>
                               </div>
 
                               <button
                                 type="button"
-                                onClick={() => navigate(getDoctorBookPath(doctor.id, selectedClinic.id))}
-                                className="px-5 py-2 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-normal transition-all active:scale-95 cursor-pointer"
+                                onClick={() => navigate(getDoctorBookPath(doctor.id, selectedClinic.id, slots[0]?.id))}
+                                className="h-8 px-5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-normal transition-all active:scale-95 cursor-pointer"
                               >
-                                Book Appointment
+                                Book
                               </button>
                             </div>
                           </div>
