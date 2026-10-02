@@ -438,94 +438,114 @@ export const Home: React.FC = () => {
                         return (
                           <div
                             key={doctor.id}
-                            className="w-full bg-white rounded-[18px] border border-[#e0e0e0] overflow-hidden hover:border-[#0066cc]/40 transition-all duration-200 flex flex-col justify-between group"
+                            className="w-full bg-white rounded-[20px] border border-[#e0e0e0] p-5 sm:p-6 hover:border-[#0066cc]/40 transition-all duration-200 flex flex-col justify-between group"
                           >
-                            {/* Top Photo Banner */}
-                            <div
-                              onClick={() => navigate(getDoctorDetailPath(doctor.id))}
-                              className="relative w-full aspect-[16/10] bg-[#f5f5f7] border-b border-[#f0f0f2] overflow-hidden cursor-pointer flex items-center justify-center"
-                            >
-                              {doctor.user?.avatarUrl ? (
-                                <img
-                                  src={getFileUrl(doctor.user.avatarUrl)}
-                                  alt={doctor.user.fullName}
-                                  className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
-                                  onError={(e) => {
-                                    e.currentTarget.style.display = 'none';
-                                    const fallback = e.currentTarget.parentElement?.querySelector('.doc-fallback-banner');
-                                    if (fallback) (fallback as HTMLElement).style.display = 'flex';
-                                  }}
-                                />
-                              ) : null}
-                              <div
-                                className={`doc-fallback-banner w-full h-full ${
-                                  doctor.user?.avatarUrl ? 'hidden' : 'flex'
-                                } items-center justify-center font-bold text-3xl text-white bg-[#0066cc] select-none`}
-                              >
-                                {(doctor.user?.fullName ? doctor.user.fullName.replace(/^Dr\.\s*/i, '').trim()[0] : null) || 'D'}
+                            <div>
+                              {/* Doctor Header: Compact Avatar + Identity */}
+                              <div className="flex items-start gap-4">
+                                {/* Refined Doctor Avatar (Proportionate Apple HIG size) */}
+                                <div
+                                  onClick={() => navigate(getDoctorDetailPath(doctor.id))}
+                                  className="w-14 h-14 sm:w-16 sm:h-16 rounded-[16px] bg-[#f5f5f7] border border-[#e0e0e0] overflow-hidden shrink-0 cursor-pointer flex items-center justify-center group-hover:border-[#0066cc]/40 transition-colors shadow-2xs"
+                                >
+                                  {doctor.user?.avatarUrl ? (
+                                    <img
+                                      src={getFileUrl(doctor.user.avatarUrl)}
+                                      alt={doctor.user.fullName}
+                                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                      onError={(e) => {
+                                        e.currentTarget.style.display = 'none';
+                                        const fallback = e.currentTarget.parentElement?.querySelector('.doc-fallback-avatar');
+                                        if (fallback) (fallback as HTMLElement).style.display = 'flex';
+                                      }}
+                                    />
+                                  ) : null}
+                                  <div
+                                    className={`doc-fallback-avatar w-full h-full ${
+                                      doctor.user?.avatarUrl ? 'hidden' : 'flex'
+                                    } items-center justify-center font-bold text-xl text-white bg-[#0066cc] select-none`}
+                                  >
+                                    {(doctor.user?.fullName ? doctor.user.fullName.replace(/^Dr\.\s*/i, '').trim()[0] : null) || 'D'}
+                                  </div>
+                                </div>
+
+                                {/* Practitioner Details */}
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-1.5 min-w-0">
+                                    <h3
+                                      onClick={() => navigate(getDoctorDetailPath(doctor.id))}
+                                      className="text-[17px] sm:text-[18px] font-semibold text-[#1d1d1f] hover:text-[#0066cc] cursor-pointer tracking-tight transition-colors truncate leading-snug"
+                                      title={doctor.user.fullName}
+                                    >
+                                      {doctor.user.fullName}
+                                    </h3>
+                                    <CheckCircle2 className="w-4 h-4 text-[#0066cc] shrink-0" />
+                                  </div>
+
+                                  {/* Specialty & Clean Degrees */}
+                                  <p className="mt-0.5 text-xs sm:text-[13px] text-[#7a7a7a] truncate font-normal">
+                                    <span className="text-[#0066cc] font-medium">{doctor.specialty}</span>
+                                    {cleanDegrees ? ` • ${cleanDegrees}` : ''}
+                                  </p>
+
+                                  {/* Experience Pill */}
+                                  <div className="mt-2 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#f5f5f7] border border-[#e0e0e0] text-[11px] font-medium text-[#48484a]">
+                                    <UserCheck className="w-3 h-3 text-[#0066cc]" />
+                                    <span>{doctor.experienceYears} yrs exp</span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Consultation Shift Capsule (Apple Theme) */}
+                              <div className="mt-5 p-3 rounded-[14px] bg-[#f5f5f7] border border-[#e5e5ea] flex items-center justify-between gap-3">
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                  <div className="w-7 h-7 rounded-full bg-white border border-[#e0e0e0] flex items-center justify-center shrink-0 shadow-2xs">
+                                    <Clock className="w-3.5 h-3.5 text-[#0066cc]" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <span className="block text-[10px] uppercase tracking-wider font-semibold text-[#86868b]">
+                                      Consultation Shift
+                                    </span>
+                                    <span className="block text-xs font-semibold text-[#1d1d1f] truncate">
+                                      {slots.length > 0
+                                        ? `${format12Hour(slots[0].startTime)} – ${format12Hour(slots[0].endTime)}`
+                                        : doctor.checkingStartTime
+                                        ? `${format12Hour(doctor.checkingStartTime)} – ${format12Hour(doctor.checkingEndTime)}`
+                                        : 'Outpatient Shift'}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {slots.length > 1 && (
+                                  <span className="shrink-0 text-[10px] font-medium text-[#0066cc] bg-white px-2 py-0.5 rounded-full border border-[#e0e0e0]">
+                                    +{slots.length - 1} more
+                                  </span>
+                                )}
                               </div>
                             </div>
 
-                            {/* Card Body */}
-                            <div className="p-5 flex-1 flex flex-col justify-between">
+                            {/* Apple Card Footer: Consultation Fee & Action Blue Pill Button */}
+                            <div className="mt-5 pt-4 border-t border-[#f0f0f2] flex items-center justify-between gap-3">
                               <div>
-                                {/* Doctor Name & Experience Badge */}
-                                <div className="flex items-start justify-between gap-2">
-                                  <div className="min-w-0">
-                                    <div className="flex items-center gap-1.5 min-w-0">
-                                      <h3
-                                        onClick={() => navigate(getDoctorDetailPath(doctor.id))}
-                                        className="text-[17px] font-semibold text-[#1d1d1f] hover:text-[#0066cc] cursor-pointer tracking-tight transition-colors truncate"
-                                        title={doctor.user.fullName}
-                                      >
-                                        {doctor.user.fullName}
-                                      </h3>
-                                      <CheckCircle2 className="w-4 h-4 text-[#0066cc] shrink-0" />
-                                    </div>
-
-                                    {/* Specialty & Clean Degrees */}
-                                    <p className="mt-1 text-xs text-[#86868b] truncate font-normal">
-                                      <span className="text-[#0066cc] font-medium">{doctor.specialty}</span>
-                                      {cleanDegrees ? ` • ${cleanDegrees}` : ''}
-                                    </p>
-                                  </div>
-
-                                  <span className="text-[11px] font-medium text-[#48484a] bg-[#f5f5f7] px-2.5 py-1 rounded-full border border-[#e0e0e0] shrink-0">
-                                    {doctor.experienceYears} yrs exp
-                                  </span>
-                                </div>
-
-                                {/* Shift Timing: Clean, single representation */}
-                                <div className="mt-4 pt-3.5 border-t border-[#f0f0f2] flex items-center gap-2 text-xs text-[#86868b]">
-                                  <Clock className="w-3.5 h-3.5 shrink-0" />
-                                  <span className="truncate text-[12px] text-[#1d1d1f]">
-                                    {slots.length > 0
-                                      ? `${format12Hour(slots[0].startTime)} – ${format12Hour(slots[0].endTime)}`
-                                      : doctor.checkingStartTime
-                                      ? `${format12Hour(doctor.checkingStartTime)} – ${format12Hour(doctor.checkingEndTime)}`
-                                      : 'Outpatient Shift'}
-                                    {slots.length > 1 ? ` (+${slots.length - 1} more slots)` : ''}
-                                  </span>
-                                </div>
-                              </div>
-
-                              {/* Card Footer: Fee & Single Booking CTA */}
-                              <div className="mt-4 pt-3.5 border-t border-[#f0f0f2] flex items-center justify-between">
-                                <div className="flex items-baseline gap-1">
-                                  <span className="text-xl font-semibold text-[#1d1d1f] tracking-tight">
+                                <span className="block text-[10px] uppercase tracking-wider font-semibold text-[#86868b]">
+                                  Consultation Fee
+                                </span>
+                                <div className="flex items-baseline gap-1 mt-0.5">
+                                  <span className="text-[22px] font-semibold text-[#1d1d1f] tracking-tight">
                                     ₹{effectiveFee.toFixed(0)}
                                   </span>
                                   <span className="text-xs text-[#86868b] font-normal">/ visit</span>
                                 </div>
-
-                                <button
-                                  type="button"
-                                  onClick={() => navigate(getDoctorBookPath(doctor.id, selectedClinic.id, slots[0]?.id))}
-                                  className="h-8 px-5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-medium transition-all active:scale-95 cursor-pointer"
-                                >
-                                  Book
-                                </button>
                               </div>
+
+                              <button
+                                type="button"
+                                onClick={() => navigate(getDoctorBookPath(doctor.id, selectedClinic.id, slots[0]?.id))}
+                                className="h-9 px-5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-medium transition-all duration-200 active:scale-95 inline-flex items-center gap-1.5 shadow-none cursor-pointer"
+                              >
+                                <span>Book Visit</span>
+                                <ArrowRight className="w-3.5 h-3.5" />
+                              </button>
                             </div>
                           </div>
                         );
@@ -980,109 +1000,115 @@ export const Home: React.FC = () => {
                     return (
                       <div
                         key={doctor.id}
-                        className="w-full bg-white rounded-[20px] border border-[#e0e0e0] overflow-hidden hover:border-[#0066cc]/30 transition-all duration-200 flex flex-col justify-between group"
+                        className="w-full bg-white rounded-[20px] border border-[#e0e0e0] p-5 sm:p-6 hover:border-[#0066cc]/40 transition-all duration-200 flex flex-col justify-between group"
                       >
-                        {/* Top Photo Banner */}
-                        <div
-                          onClick={() => navigate(getDoctorDetailPath(doctor.id))}
-                          className="relative w-full aspect-[16/10] bg-[#f5f5f7] border-b border-[#f0f0f2] overflow-hidden cursor-pointer flex items-center justify-center"
-                        >
-                          {doctor.user?.avatarUrl ? (
-                            <img
-                              src={getFileUrl(doctor.user.avatarUrl)}
-                              alt={doctor.user.fullName}
-                              className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
-                              onError={(e) => {
-                                e.currentTarget.style.display = 'none';
-                                const fallback = e.currentTarget.parentElement?.querySelector('.doc-fallback-banner');
-                                if (fallback) (fallback as HTMLElement).style.display = 'flex';
-                              }}
-                            />
-                          ) : null}
-                          <div
-                            className={`doc-fallback-banner w-full h-full ${
-                              doctor.user?.avatarUrl ? 'hidden' : 'flex'
-                            } items-center justify-center font-bold text-3xl text-white bg-[#0066cc] select-none`}
-                          >
-                            {(doctor.user?.fullName ? doctor.user.fullName.replace(/^Dr\.\s*/i, '').trim()[0] : null) || 'D'}
-                          </div>
-                        </div>
+                        <div>
+                          {/* Doctor Header: Compact Avatar + Identity */}
+                          <div className="flex items-start gap-4">
+                            {/* Refined Doctor Avatar (Proportionate Apple HIG size) */}
+                            <div
+                              onClick={() => navigate(getDoctorDetailPath(doctor.id))}
+                              className="w-14 h-14 sm:w-16 sm:h-16 rounded-[16px] bg-[#f5f5f7] border border-[#e0e0e0] overflow-hidden shrink-0 cursor-pointer flex items-center justify-center group-hover:border-[#0066cc]/40 transition-colors shadow-2xs"
+                            >
+                              {doctor.user?.avatarUrl ? (
+                                <img
+                                  src={getFileUrl(doctor.user.avatarUrl)}
+                                  alt={doctor.user.fullName}
+                                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                    const fallback = e.currentTarget.parentElement?.querySelector('.doc-cat-fallback-avatar');
+                                    if (fallback) (fallback as HTMLElement).style.display = 'flex';
+                                  }}
+                                />
+                              ) : null}
+                              <div
+                                className={`doc-cat-fallback-avatar w-full h-full ${
+                                  doctor.user?.avatarUrl ? 'hidden' : 'flex'
+                                } items-center justify-center font-bold text-xl text-white bg-[#0066cc] select-none`}
+                              >
+                                {(doctor.user?.fullName ? doctor.user.fullName.replace(/^Dr\.\s*/i, '').trim()[0] : null) || 'D'}
+                              </div>
+                            </div>
 
-                        {/* Card Body */}
-                        <div className="p-5 flex-1 flex flex-col justify-between">
-                          <div>
-                            {/* Doctor Name & Experience Badge */}
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="min-w-0">
-                                <div className="flex items-center gap-1.5 min-w-0">
-                                  <h3
-                                    onClick={() => navigate(getDoctorDetailPath(doctor.id))}
-                                    className="text-[17px] font-semibold text-[#1d1d1f] hover:text-[#0066cc] cursor-pointer tracking-tight transition-colors truncate"
-                                    title={doctor.user.fullName}
-                                  >
-                                    {doctor.user.fullName}
-                                  </h3>
-                                  <CheckCircle2 className="w-4 h-4 text-[#0066cc] shrink-0" />
-                                </div>
-
-                                {/* Specialty & Clean Degrees (NO FACC!) */}
-                                <p className="mt-1 text-xs text-[#86868b] truncate font-normal">
-                                  <span className="text-[#0066cc] font-medium">{doctor.specialty}</span>
-                                  {cleanDegrees ? ` • ${cleanDegrees}` : ''}
-                                </p>
+                            {/* Practitioner Details */}
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <h3
+                                  onClick={() => navigate(getDoctorDetailPath(doctor.id))}
+                                  className="text-[17px] sm:text-[18px] font-semibold text-[#1d1d1f] hover:text-[#0066cc] cursor-pointer tracking-tight transition-colors truncate leading-snug"
+                                  title={doctor.user.fullName}
+                                >
+                                  {doctor.user.fullName}
+                                </h3>
+                                <CheckCircle2 className="w-4 h-4 text-[#0066cc] shrink-0" />
                               </div>
 
-                              <span className="text-[11px] font-medium text-[#48484a] bg-[#f5f5f7] px-2.5 py-1 rounded-full border border-[#e0e0e0] shrink-0">
-                                {doctor.experienceYears} yrs exp
+                              {/* Specialty & Clean Degrees (NO FACC!) */}
+                              <p className="mt-0.5 text-xs sm:text-[13px] text-[#7a7a7a] truncate font-normal">
+                                <span className="text-[#0066cc] font-medium">{doctor.specialty}</span>
+                                {cleanDegrees ? ` • ${cleanDegrees}` : ''}
+                              </p>
+
+                              {/* Experience Pill */}
+                              <div className="mt-2 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#f5f5f7] border border-[#e0e0e0] text-[11px] font-medium text-[#48484a]">
+                                <UserCheck className="w-3 h-3 text-[#0066cc]" />
+                                <span>{doctor.experienceYears} yrs exp</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Clinical Practice Venue & Timing Capsule */}
+                          <div className="mt-5 p-3 rounded-[14px] bg-[#f5f5f7] border border-[#e5e5ea] space-y-2">
+                            <div className="flex items-center gap-2 min-w-0 text-xs">
+                              <MapPin className="w-3.5 h-3.5 text-[#0066cc] shrink-0" />
+                              <span className="truncate text-[#1d1d1f] font-medium">
+                                {primaryClinic ? (
+                                  <>
+                                    <span>{primaryClinic.clinicName}</span>
+                                    {primaryClinic.city ? <span className="text-[#7a7a7a]"> • {primaryClinic.city}</span> : ''}
+                                  </>
+                                ) : (
+                                  <span>Direct Clinic Practice</span>
+                                )}
                               </span>
                             </div>
 
-                            {/* Clinical Practice Venue & Timing */}
-                            <div className="mt-4 space-y-2 text-xs text-[#636366]">
-                              <div className="flex items-center gap-2 min-w-0">
-                                <MapPin className="w-3.5 h-3.5 text-[#86868b] shrink-0" />
-                                <span className="truncate text-[#1d1d1f]">
-                                  {primaryClinic ? (
-                                    <>
-                                      <span className="font-medium">{primaryClinic.clinicName}</span>
-                                      {primaryClinic.city ? ` • ${primaryClinic.city}` : ''}
-                                    </>
-                                  ) : (
-                                    <span>Direct Clinic Practice</span>
-                                  )}
-                                </span>
-                              </div>
-
-                              <div className="flex items-center gap-2 min-w-0 text-[#86868b]">
-                                <Clock className="w-3.5 h-3.5 shrink-0" />
-                                <span className="truncate text-[11px]">
-                                  {slots.length > 0
-                                    ? `${format12Hour(slots[0].startTime)} – ${format12Hour(slots[0].endTime)}`
-                                    : doctor.checkingStartTime
-                                    ? `${format12Hour(doctor.checkingStartTime)} – ${format12Hour(doctor.checkingEndTime)}`
-                                    : 'Outpatient Shift'}
-                                </span>
-                              </div>
+                            <div className="flex items-center gap-2 min-w-0 text-xs text-[#86868b] pt-1.5 border-t border-[#e5e5ea]/60">
+                              <Clock className="w-3.5 h-3.5 text-[#86868b] shrink-0" />
+                              <span className="truncate text-[12px] text-[#48484a]">
+                                {slots.length > 0
+                                  ? `${format12Hour(slots[0].startTime)} – ${format12Hour(slots[0].endTime)}`
+                                  : doctor.checkingStartTime
+                                  ? `${format12Hour(doctor.checkingStartTime)} – ${format12Hour(doctor.checkingEndTime)}`
+                                  : 'Outpatient Shift'}
+                              </span>
                             </div>
                           </div>
+                        </div>
 
-                          {/* Footer: Fee & Booking */}
-                          <div className="mt-4 pt-3.5 border-t border-[#f0f0f2] flex items-center justify-between">
-                            <div className="flex items-baseline gap-1">
-                              <span className="text-xl font-semibold text-[#1d1d1f] tracking-tight">
+                        {/* Apple Card Footer: Fee & Action Blue CTA */}
+                        <div className="mt-5 pt-4 border-t border-[#f0f0f2] flex items-center justify-between gap-3">
+                          <div>
+                            <span className="block text-[10px] uppercase tracking-wider font-semibold text-[#86868b]">
+                              Consultation Fee
+                            </span>
+                            <div className="flex items-baseline gap-1 mt-0.5">
+                              <span className="text-[22px] font-semibold text-[#1d1d1f] tracking-tight">
                                 ₹{doctor.consultationFee.toFixed(0)}
                               </span>
                               <span className="text-xs text-[#86868b] font-normal">/ visit</span>
                             </div>
-
-                            <button
-                              type="button"
-                              onClick={() => navigate(getDoctorBookPath(doctor.id, primaryClinic?.id))}
-                              className="h-8 px-5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-medium transition-all active:scale-95 cursor-pointer"
-                            >
-                              Book
-                            </button>
                           </div>
+
+                          <button
+                            type="button"
+                            onClick={() => navigate(getDoctorBookPath(doctor.id, primaryClinic?.id))}
+                            className="h-9 px-5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-medium transition-all duration-200 active:scale-95 inline-flex items-center gap-1.5 shadow-none cursor-pointer"
+                          >
+                            <span>Book Visit</span>
+                            <ArrowRight className="w-3.5 h-3.5" />
+                          </button>
                         </div>
                       </div>
                     );
