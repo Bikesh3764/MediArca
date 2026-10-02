@@ -538,9 +538,9 @@ export const Home: React.FC = () => {
                     <button
                       type="button"
                       onClick={resetFilters}
-                      className="w-full py-2 rounded-xl text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                      className="w-full py-2.5 rounded-xl text-xs font-medium text-[#0066cc] hover:text-white bg-[#0066cc]/10 hover:bg-[#0066cc] border border-[#0066cc]/20 hover:border-[#0066cc] transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.99] group shadow-2xs"
                     >
-                      <RotateCcw className="w-3.5 h-3.5" />
+                      <RotateCcw className="w-3.5 h-3.5 group-hover:-rotate-90 transition-transform duration-200" />
                       <span>Reset All Filters</span>
                     </button>
                   </div>
@@ -558,19 +558,17 @@ export const Home: React.FC = () => {
               {/* Header */}
               <div className="flex items-center justify-between pb-3.5 border-b border-[#f0f0f2]">
                 <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-[#0088e8]/10 text-[#0088e8] flex items-center justify-center">
-                    <SlidersHorizontal className="w-3.5 h-3.5 text-[#0088e8]" />
-                  </div>
-                  <h3 className="text-sm font-bold text-[#1d1d1f] tracking-tight">Filters & Refine</h3>
+                  <SlidersHorizontal className="w-4 h-4 text-[#86868b]" />
+                  <h3 className="text-sm font-semibold text-[#1d1d1f] tracking-tight">Filters</h3>
                 </div>
                 {hasActiveFilters && (
                   <button
                     type="button"
                     onClick={resetFilters}
-                    className="text-xs font-semibold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 px-2.5 py-1 rounded-full border border-rose-200/70 transition-all flex items-center gap-1 cursor-pointer active:scale-95"
+                    className="h-6 px-2.5 rounded-full text-xs font-medium text-[#0066cc] hover:text-white bg-[#0066cc]/10 hover:bg-[#0066cc] border border-[#0066cc]/20 hover:border-[#0066cc] transition-all flex items-center gap-1 cursor-pointer active:scale-95 group shadow-2xs"
                     title="Reset all filters"
                   >
-                    <RotateCcw className="w-3 h-3" />
+                    <RotateCcw className="w-3 h-3 group-hover:-rotate-90 transition-transform duration-200" />
                     <span>Reset</span>
                   </button>
                 )}
@@ -945,20 +943,36 @@ export const Home: React.FC = () => {
                         <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/50 via-black/20 to-transparent pointer-events-none" />
 
                         {/* Floating Specialty Badge on Bottom Left */}
-                        <div className="absolute bottom-3 left-3 z-10">
-                          <span className="backdrop-blur-xl bg-white/95 text-[#1d1d1f] text-[11px] font-semibold px-3 py-1.5 rounded-full shadow-[0_2px_10px_rgba(0,0,0,0.18)] border border-white/80 flex items-center gap-1.5 tracking-tight">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#0088e8] shrink-0" />
+                        <div className="absolute bottom-2.5 left-2.5 z-10">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedSpecialty(doctor.specialty);
+                            }}
+                            className="backdrop-blur-md bg-white/85 hover:bg-white text-[#1d1d1f] text-xs font-medium h-7 px-3 rounded-full shadow-[0_2px_10px_rgba(0,0,0,0.10)] hover:shadow-[0_4px_14px_rgba(0,0,0,0.16)] border border-white/80 flex items-center gap-1.5 tracking-tight transition-all active:scale-95 cursor-pointer"
+                            title={`Filter by ${doctor.specialty}`}
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#0066cc] shadow-[0_0_6px_rgba(0,102,204,0.6)] shrink-0" />
                             <span>{doctor.specialty}</span>
-                          </span>
+                          </button>
                         </div>
 
                         {/* Floating Clinic / City Badge on Bottom Right */}
                         {clinicLocationLabel && (
-                          <div className="absolute bottom-3 right-3 z-10" title={allCitiesTooltip}>
-                            <span className="backdrop-blur-xl bg-white/95 text-[#1d1d1f] text-[11px] font-semibold px-3 py-1.5 rounded-full shadow-[0_2px_10px_rgba(0,0,0,0.18)] border border-white/80 flex items-center gap-1.5 tracking-tight cursor-default">
-                              <MapPin className="w-3 h-3 text-[#0088e8] stroke-[2.2] shrink-0" />
+                          <div className="absolute bottom-2.5 right-2.5 z-10" title={allCitiesTooltip}>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (displayCity) setLocationQuery(displayCity);
+                              }}
+                              className="backdrop-blur-md bg-white/85 hover:bg-white text-[#1d1d1f] text-xs font-medium h-7 px-3 rounded-full shadow-[0_2px_10px_rgba(0,0,0,0.10)] hover:shadow-[0_4px_14px_rgba(0,0,0,0.16)] border border-white/80 flex items-center gap-1.5 tracking-tight transition-all active:scale-95 cursor-pointer"
+                              title={allCitiesTooltip || `Filter by ${displayCity}`}
+                            >
+                              <MapPin className="w-3.5 h-3.5 text-[#0066cc] stroke-[2] shrink-0" />
                               <span>{clinicLocationLabel}</span>
-                            </span>
+                            </button>
                           </div>
                         )}
                       </div>
