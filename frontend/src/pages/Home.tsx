@@ -26,6 +26,7 @@ import {
   Stethoscope,
   RotateCcw,
   ChevronRight,
+  ChevronDown,
   X,
   CheckCircle2,
   SlidersHorizontal,
@@ -777,22 +778,32 @@ export const Home: React.FC = () => {
           {/* RIGHT MAIN AREA: Results Header + 4-Column Doctor Cards Grid */}
           <div className="flex-1 w-full min-w-0">
             {/* Results Status Header */}
-            <div className="bg-white rounded-[20px] sm:rounded-[24px] border border-[#e5e5ea]/90 p-4 sm:p-5 mb-6 shadow-[0_4px_24px_rgba(0,0,0,0.03)] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <h2 className="text-lg sm:text-xl font-extrabold text-[#1d1d1f] tracking-tight">
-                  {selectedSpecialty === 'All' ? 'Verified Specialists' : `${selectedSpecialty} Specialists`}
-                </h2>
-                <p className="text-xs text-[#86868b] font-medium mt-0.5">
-                  Showing 1–{filteredDoctors.length} of {doctors.length} verified practitioners
-                </p>
+            <div className="bg-white rounded-2xl border border-[#e5e5ea] px-4 py-3 sm:px-5 sm:py-3.5 mb-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-[#0088e8]/10 border border-[#0088e8]/20 flex items-center justify-center text-[#0088e8] shrink-0">
+                  <Stethoscope className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-base sm:text-lg font-bold text-[#1d1d1f] tracking-tight">
+                      {selectedSpecialty === 'All' ? 'Verified Specialists' : `${selectedSpecialty} Specialists`}
+                    </h2>
+                    <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f]">
+                      {filteredDoctors.length} {filteredDoctors.length === 1 ? 'doctor' : 'doctors'}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-[#86868b] font-medium mt-0.5">
+                    Showing 1–{filteredDoctors.length} of {doctors.length} verified clinical practitioners
+                  </p>
+                </div>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2.5 flex-wrap">
                 {/* Active Filter Chips */}
                 {hasActiveFilters && (
-                  <div className="hidden sm:flex flex-wrap items-center gap-1.5">
+                  <div className="flex flex-wrap items-center gap-1.5">
                     {selectedSpecialty !== 'All' && (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#0088e8]/10 text-[#0088e8] text-xs font-medium border border-[#0088e8]/20">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#0088e8]/10 text-[#0088e8] text-[11px] font-medium border border-[#0088e8]/20">
                         {selectedSpecialty}
                         <button type="button" onClick={() => setSelectedSpecialty('All')} className="hover:opacity-75 cursor-pointer">
                           <X className="w-3 h-3" />
@@ -800,7 +811,7 @@ export const Home: React.FC = () => {
                       </span>
                     )}
                     {selectedState !== 'All' && (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#0088e8]/10 text-[#0088e8] text-xs font-medium border border-[#0088e8]/20">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#0088e8]/10 text-[#0088e8] text-[11px] font-medium border border-[#0088e8]/20">
                         {selectedState}
                         <button type="button" onClick={() => handleStateChange('All')} className="hover:opacity-75 cursor-pointer">
                           <X className="w-3 h-3" />
@@ -808,7 +819,7 @@ export const Home: React.FC = () => {
                       </span>
                     )}
                     {selectedCity !== 'All' && (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#0088e8]/10 text-[#0088e8] text-xs font-medium border border-[#0088e8]/20">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#0088e8]/10 text-[#0088e8] text-[11px] font-medium border border-[#0088e8]/20">
                         {selectedCity}
                         <button type="button" onClick={() => setSelectedCity('All')} className="hover:opacity-75 cursor-pointer">
                           <X className="w-3 h-3" />
@@ -816,7 +827,7 @@ export const Home: React.FC = () => {
                       </span>
                     )}
                     {maxFee < 3000 && (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#0088e8]/10 text-[#0088e8] text-xs font-medium border border-[#0088e8]/20">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#0088e8]/10 text-[#0088e8] text-[11px] font-medium border border-[#0088e8]/20">
                         ≤ ₹{maxFee}
                         <button type="button" onClick={() => setMaxFee(3000)} className="hover:opacity-75 cursor-pointer">
                           <X className="w-3 h-3" />
@@ -824,7 +835,7 @@ export const Home: React.FC = () => {
                       </span>
                     )}
                     {minExperience > 0 && (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#0088e8]/10 text-[#0088e8] text-xs font-medium border border-[#0088e8]/20">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#0088e8]/10 text-[#0088e8] text-[11px] font-medium border border-[#0088e8]/20">
                         {minExperience}+ Yrs
                         <button type="button" onClick={() => setMinExperience(0)} className="hover:opacity-75 cursor-pointer">
                           <X className="w-3 h-3" />
@@ -832,7 +843,7 @@ export const Home: React.FC = () => {
                       </span>
                     )}
                     {locationQuery && (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#0088e8]/10 text-[#0088e8] text-xs font-medium border border-[#0088e8]/20">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#0088e8]/10 text-[#0088e8] text-[11px] font-medium border border-[#0088e8]/20">
                         {locationQuery}
                         <button type="button" onClick={() => setLocationQuery('')} className="hover:opacity-75 cursor-pointer">
                           <X className="w-3 h-3" />
@@ -843,18 +854,21 @@ export const Home: React.FC = () => {
                 )}
 
                 {/* Desktop Sort Dropdown */}
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <span className="text-xs text-[#86868b] font-medium hidden md:inline">Sort:</span>
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value as any)}
-                    className="py-1.5 px-3.5 rounded-full border border-[#e5e5ea] bg-[#f5f5f7] hover:bg-white hover:border-[#0088e8]/40 text-xs font-semibold text-[#1d1d1f] focus:outline-none focus:border-[#0088e8] cursor-pointer shadow-xs transition-all"
-                  >
-                    <option value="rating">Recommended</option>
-                    <option value="experience">Most Experienced</option>
-                    <option value="fee_low">Price: Low to High</option>
-                    <option value="fee_high">Price: High to Low</option>
-                  </select>
+                <div className="flex items-center gap-1.5 shrink-0 ml-auto sm:ml-0">
+                  <span className="text-[11px] text-[#86868b] font-medium hidden md:inline">Sort:</span>
+                  <div className="relative inline-flex items-center">
+                    <select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value as any)}
+                      className="appearance-none h-8 pl-3 pr-7 rounded-full border border-[#e5e5ea] bg-[#f5f5f7] hover:bg-white hover:border-[#0088e8]/40 text-[11px] font-semibold text-[#1d1d1f] focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] cursor-pointer shadow-2xs transition-all"
+                    >
+                      <option value="rating">Recommended</option>
+                      <option value="experience">Most Experienced</option>
+                      <option value="fee_low">Price: Low to High</option>
+                      <option value="fee_high">Price: High to Low</option>
+                    </select>
+                    <ChevronDown className="w-3 h-3 text-[#86868b] pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2" />
+                  </div>
                 </div>
               </div>
             </div>
@@ -996,50 +1010,45 @@ export const Home: React.FC = () => {
                             </div>
 
                             <div className="mt-1 flex items-center gap-2 text-xs text-[#86868b] truncate font-medium">
-                              <span className="text-[#0088e8] font-semibold">{doctor.experienceYears} yrs exp</span>
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-[#0088e8]/8 text-[#0088e8] text-[11px] font-semibold border border-[#0088e8]/15">
+                                {doctor.experienceYears} yrs exp
+                              </span>
                               {cleanDegrees && (
-                                <>
-                                  <span className="text-[#d1d1d6]">•</span>
-                                  <span className="text-[#636366] truncate font-medium" title={cleanDegrees}>
-                                    {cleanDegrees}
-                                  </span>
-                                </>
+                                <span className="text-[#636366] truncate font-medium text-xs" title={cleanDegrees}>
+                                  {cleanDegrees}
+                                </span>
                               )}
                             </div>
                           </div>
 
-                          {/* Clinical Venue & Shifts Details in rounded panel */}
-                          <div className="mt-3.5 p-3 rounded-2xl bg-[#f5f5f7]/80 border border-[#e5e5ea]/60 space-y-2 text-xs">
+                          {/* Clinical Venue & Shifts Details in elegant Apple card */}
+                          <div className="mt-3.5 p-3 rounded-xl bg-[#fafafc] border border-[#f0f0f4] space-y-2 text-xs">
                             {/* Primary Clinic */}
-                            <div className="flex items-center gap-2.5 min-w-0">
-                              <div className="w-6 h-6 rounded-lg bg-white shadow-2xs border border-[#e5e5ea]/50 flex items-center justify-center shrink-0 text-[#0088e8]">
-                                <Building2 className="w-3.5 h-3.5" />
-                              </div>
+                            <div className="flex items-center gap-2 min-w-0">
+                              <Building2 className="w-3.5 h-3.5 text-[#0088e8] shrink-0" />
                               {hasClinics && primaryClinic ? (
                                 <div className="min-w-0 flex-1 flex items-center gap-1.5 truncate">
                                   <span
-                                    className="font-semibold text-[#1d1d1f] truncate"
+                                    className="font-medium text-[#1d1d1f] truncate"
                                     title={`${primaryClinic.clinicName}${primaryClinic.city ? ` • ${primaryClinic.city}` : ''}`}
                                   >
                                     {primaryClinic.clinicName}
                                   </span>
                                   {(doctor.clinics?.length ?? 0) > 1 && (
-                                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-[#0088e8]/10 text-[#0088e8] shrink-0">
+                                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-[#0088e8]/10 text-[#0088e8] shrink-0">
                                       +{(doctor.clinics?.length ?? 0) - 1} clinics
                                     </span>
                                   )}
                                 </div>
                               ) : (
-                                <span className="text-xs font-medium text-[#86868b]">Direct Practice</span>
+                                <span className="text-xs font-normal text-[#86868b]">Direct Practice</span>
                               )}
                             </div>
 
                             {/* Practice Hours / Shift */}
-                            <div className="flex items-center gap-2.5 min-w-0">
-                              <div className="w-6 h-6 rounded-lg bg-white shadow-2xs border border-[#e5e5ea]/50 flex items-center justify-center shrink-0 text-[#86868b]">
-                                <Clock className="w-3.5 h-3.5" />
-                              </div>
-                              <div className="min-w-0 flex-1 flex items-center gap-1.5 truncate text-[#48484a] font-medium">
+                            <div className="flex items-center gap-2 min-w-0 text-[#636366]">
+                              <Clock className="w-3.5 h-3.5 text-[#86868b] shrink-0" />
+                              <div className="min-w-0 flex-1 flex items-center gap-1.5 truncate text-[11px] font-normal">
                                 <span className="truncate">
                                   {slots.length > 0
                                     ? `${format12Hour(slots[0].startTime)} – ${format12Hour(slots[0].endTime)}`
@@ -1048,7 +1057,7 @@ export const Home: React.FC = () => {
                                     : 'Outpatient Shift'}
                                 </span>
                                 {slots.length > 1 && (
-                                  <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-[#e5e5ea] text-[#636366] shrink-0">
+                                  <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-[#e5e5ea] text-[#636366] shrink-0">
                                     +{slots.length - 1} shifts
                                   </span>
                                 )}
@@ -1060,11 +1069,11 @@ export const Home: React.FC = () => {
                         {/* Footer: Fee & Booking CTA */}
                         <div className="mt-4 pt-3.5 border-t border-[#f0f0f2] flex items-center justify-between gap-3">
                           <div>
-                            <span className="block text-[10px] font-bold uppercase tracking-wider text-[#86868b]">
+                            <span className="block text-[11px] font-medium text-[#86868b]">
                               Consultation Fee
                             </span>
                             <div className="flex items-baseline gap-1 mt-0.5">
-                              <span className="text-lg sm:text-xl font-extrabold text-[#1d1d1f] tracking-tight">
+                              <span className="text-xl font-bold text-[#1d1d1f] tracking-tight">
                                 ₹{doctor.consultationFee.toFixed(0)}
                               </span>
                               <span className="text-xs text-[#86868b] font-normal">/ visit</span>
@@ -1076,7 +1085,7 @@ export const Home: React.FC = () => {
                               <button
                                 type="button"
                                 onClick={() => navigate(getHomeDoctorBookPath(doctor.id))}
-                                className="group/btn h-10 px-5 rounded-full bg-gradient-to-r from-[#0088e8] to-[#0077cc] hover:from-[#0077cc] hover:to-[#0066b3] text-white text-xs font-semibold flex items-center gap-1.5 transition-all shadow-[0_2px_8px_rgba(0,136,232,0.25)] hover:shadow-[0_4px_16px_rgba(0,136,232,0.35)] active:scale-[0.98] cursor-pointer"
+                                className="group/btn h-9 sm:h-10 px-4 sm:px-5 rounded-full bg-[#0088e8] hover:bg-[#0077cc] text-white text-xs font-semibold flex items-center gap-1.5 transition-all shadow-xs hover:shadow-sm active:scale-[0.98] cursor-pointer"
                               >
                                 <span>Book Token</span>
                                 <ChevronRight className="w-3.5 h-3.5 stroke-[2.5] transition-transform duration-200 group-hover/btn:translate-x-0.5" />
@@ -1085,7 +1094,7 @@ export const Home: React.FC = () => {
                               <button
                                 type="button"
                                 disabled
-                                className="h-10 px-4 rounded-full bg-[#f5f5f7] text-[#86868b] text-xs font-medium border border-[#e5e5ea] cursor-not-allowed"
+                                className="h-9 sm:h-10 px-4 rounded-full bg-[#f5f5f7] text-[#86868b] text-xs font-medium border border-[#e5e5ea] cursor-not-allowed"
                               >
                                 Unavailable
                               </button>
