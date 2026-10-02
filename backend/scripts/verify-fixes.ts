@@ -4728,6 +4728,54 @@ Follow-up Date: 2026-10-15`;
   ]);
   assert(fromDb.user === 'db@test.com' && fromDb.pass === 'dbsecret', 'Resolves SMTP credentials from database SystemConfig when env is empty');
 
+  // --- Test 153: Appointment Auto-Expiration & EXPIRED Status State Machine ---
+  console.log('\n--- Test 153: Appointment Auto-Expiration & EXPIRED Status State Machine ---');
+  assert(canTransition('PENDING_APPROVAL', 'EXPIRED', 'RECEPTIONIST').allowed === true, 'PENDING_APPROVAL can transition to EXPIRED');
+  assert(canTransition('WAITING', 'EXPIRED', 'RECEPTIONIST').allowed === true, 'WAITING can transition to EXPIRED');
+  assert(canTransition('EXPIRED', 'WAITING', 'RECEPTIONIST').allowed === false, 'EXPIRED cannot be reactivated to WAITING');
+  assert(canTransition('EXPIRED', 'IN_CONSULTATION', 'DOCTOR').allowed === false, 'EXPIRED cannot transition to IN_CONSULTATION');
+  assert(canTransition('EXPIRED', 'COMPLETED', 'DOCTOR').allowed === false, 'EXPIRED cannot transition to COMPLETED');
+
+  // Expiration detection logic
+  const checkIsExpired = (apptDate: string, todayStr: string, isShiftPassed: boolean, status: string) => {
+    if (status === 'EXPIRED') return true;
+    if (apptDate < todayStr && (status === 'PENDING_APPROVAL' || status === 'WAITING')) return true;
+    if (apptDate === todayStr && isShiftPassed && status === 'PENDING_APPROVAL') return true;
+    return false;
+  };
+
+  assert(checkIsExpired('2026-09-30', '2026-10-02', false, 'PENDING_APPROVAL') === true, 'Past date pending appointment is expired');
+  assert(checkIsExpired('2026-09-30', '2026-10-02', false, 'WAITING') === true, 'Past date waiting appointment is expired');
+  assert(checkIsExpired('2026-10-02', '2026-10-02', true, 'PENDING_APPROVAL') === true, 'Today pending appointment with passed shift is expired');
+  assert(checkIsExpired('2026-10-02', '2026-10-02', false, 'PENDING_APPROVAL') === false, 'Today pending appointment with active shift is NOT expired');
+  assert(checkIsExpired('2026-10-03', '2026-10-02', false, 'PENDING_APPROVAL') === false, 'Future date pending appointment is NOT expired');
+
+  // Active vs Past filtering in Patient Appointments
+  const testAppointments = [
+    { id: '1', appointmentDate: '2026-09-30', status: 'PENDING_APPROVAL', liveQueue: { isShiftPassed: true } },
+    { id: '2', appointmentDate: '2026-10-02', status: 'PENDING_APPROVAL', liveQueue: { isShiftPassed: true } },
+    { id: '3', appointmentDate: '2026-10-02', status: 'PENDING_APPROVAL', liveQueue: { isShiftPassed: false } },
+    { id: '4', appointmentDate: '2026-10-02', status: 'WAITING', liveQueue: { isShiftPassed: false } },
+    { id: '5', appointmentDate: '2026-09-29', status: 'COMPLETED', liveQueue: {} },
+    { id: '6', appointmentDate: '2026-10-01', status: 'EXPIRED', liveQueue: {} },
+  ];
+
+  const currentDateStr = '2026-10-02';
+  const upcomingFiltered = testAppointments.filter((a) => {
+    if (a.status !== 'WAITING' && a.status !== 'IN_CONSULTATION' && a.status !== 'PENDING_APPROVAL') return false;
+    if (a.appointmentDate < currentDateStr) return false;
+    if (a.status === 'PENDING_APPROVAL' && a.appointmentDate === currentDateStr && a.liveQueue?.isShiftPassed) return false;
+    return true;
+  });
+  const pastFiltered = testAppointments.filter((a) => !upcomingFiltered.includes(a));
+
+  assert(upcomingFiltered.length === 2, 'Only future/active-shift today appointments are in upcomingList');
+  assert(upcomingFiltered.map((a) => a.id).sort().join(',') === '3,4', 'Upcoming passes are exactly id 3 and 4');
+  assert(pastFiltered.length === 4, 'Expired, past-date, and completed appointments are in pastList');
+  assert(pastFiltered.some((a) => a.id === '1'), 'Past-date pending booking (2026-09-30) moved to pastList');
+  assert(pastFiltered.some((a) => a.id === '2'), 'Today shift-passed pending booking moved to pastList');
+  assert(pastFiltered.some((a) => a.id === '6'), 'EXPIRED booking is in pastList');
+
   console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);

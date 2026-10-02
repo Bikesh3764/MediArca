@@ -137,7 +137,8 @@ export const getMyClinic = async (req: AuthRequest, res: Response): Promise<void
         (a) =>
           (a.paymentStatus === 'PAID' || a.status === 'COMPLETED') &&
           a.status !== 'CANCELLED' &&
-          a.status !== 'REJECTED'
+          a.status !== 'REJECTED' &&
+          a.status !== 'EXPIRED'
       );
       const effectiveFee = typeof cd.consultationFee === 'number' && Number.isFinite(cd.consultationFee)
         ? cd.consultationFee

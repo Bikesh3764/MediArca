@@ -840,7 +840,7 @@ export interface Appointment {
   slotId?: string;
   checkingWindow: string;
   estimatedTime: string;
-  status: 'PENDING_APPROVAL' | 'WAITING' | 'IN_CONSULTATION' | 'COMPLETED' | 'CANCELLED' | 'REJECTED';
+  status: 'PENDING_APPROVAL' | 'WAITING' | 'IN_CONSULTATION' | 'COMPLETED' | 'CANCELLED' | 'REJECTED' | 'EXPIRED';
   paymentStatus?: 'PENDING' | 'PAID' | 'FAILED' | string;
   approvedBy?: string;
   approvedAt?: string;

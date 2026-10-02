@@ -257,7 +257,7 @@ export const updateNotesAndVitals = async (req: AuthRequest, res: Response): Pro
       return;
     }
 
-    if (['CANCELLED', 'REJECTED', 'PENDING_APPROVAL', 'COMPLETED'].includes(targetAppointment.status)) {
+    if (['CANCELLED', 'REJECTED', 'PENDING_APPROVAL', 'COMPLETED', 'EXPIRED'].includes(targetAppointment.status)) {
       res.status(400).json({
         success: false,
         message: `Cannot update clinical notes for an appointment with status '${targetAppointment.status}'. Clinical notes and vitals cannot be modified after consultation finalization.`,

@@ -8,6 +8,7 @@ import {
   parseDoctorSlots,
   evaluateSlotStatus,
   getLocalDateString,
+  getIndianTimeMinutes,
   timeToMinutes,
   minutesTo12Hour,
   isValidAppointmentDate,
@@ -399,7 +400,18 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
       return;
     }
 
-    const appointmentDate = requestedDate || getLocalDateString();
+    const now = new Date();
+    const istTodayStr = getLocalDateString(now);
+    const currentMinutes = getIndianTimeMinutes(now);
+
+    const appointmentDate = requestedDate || istTodayStr;
+    if (appointmentDate < istTodayStr) {
+      res.status(400).json({
+        success: false,
+        message: 'Cannot book appointments for past dates.',
+      });
+      return;
+    }
 
     const access = await verifyReceptionistDoctorAccess(req.user.id, doctorId, clinicId);
     if (!access.authorized) {
@@ -539,9 +551,33 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
             },
           });
           if (existingInTx) {
-            throw new Error(
-              `DUPLICATE_ACTIVE_BOOKING: Patient already has an active booking (Queue #${existingInTx.queueNumber}) with this doctor on ${appointmentDate}.`
-            );
+            let isExpiredTx = false;
+            if (existingInTx.status === 'PENDING_APPROVAL') {
+              if (appointmentDate < istTodayStr) {
+                isExpiredTx = true;
+              } else if (appointmentDate === istTodayStr) {
+                const prevSlot = (existingInTx.slotId && slots.find((s) => s.id === existingInTx.slotId)) || slots[0];
+                if (prevSlot) {
+                  const prevStartMins = timeToMinutes(prevSlot.startTime);
+                  let prevEndMins = timeToMinutes(prevSlot.endTime);
+                  if (prevEndMins <= prevStartMins) prevEndMins += 24 * 60;
+                  if (currentMinutes >= prevEndMins) {
+                    isExpiredTx = true;
+                  }
+                }
+              }
+            }
+
+            if (isExpiredTx) {
+              await tx.appointment.update({
+                where: { id: existingInTx.id },
+                data: { status: 'EXPIRED' },
+              });
+            } else {
+              throw new Error(
+                `DUPLICATE_ACTIVE_BOOKING: Patient already has an active booking (Queue #${existingInTx.queueNumber}) with this doctor on ${appointmentDate}.`
+              );
+            }
           }
 
           const dayAppointments = await tx.appointment.findMany({
@@ -942,11 +978,27 @@ export const getPendingAppointments = async (req: AuthRequest, res: Response): P
       .filter((d) => d.status === 'ACTIVE' && (activeDoctorIds.length === 0 || activeDoctorIds.includes(d.doctorId)))
       .map((d) => d.doctorId);
 
+    const now = new Date();
+    const istTodayStr = getLocalDateString(now);
+    const currentMinutes = getIndianTimeMinutes(now);
+
+    // Auto-expire past pending requests in database
+    await prisma.appointment.updateMany({
+      where: {
+        doctorId: { in: assignedDoctorIds },
+        ...(receptionist.clinicId ? { clinicId: receptionist.clinicId } : {}),
+        status: 'PENDING_APPROVAL',
+        appointmentDate: { lt: istTodayStr },
+      },
+      data: { status: 'EXPIRED' },
+    });
+
     const pendingAppointments = await prisma.appointment.findMany({
       where: {
         doctorId: { in: assignedDoctorIds },
         ...(receptionist.clinicId ? { clinicId: receptionist.clinicId } : {}),
         status: 'PENDING_APPROVAL',
+        appointmentDate: { gte: istTodayStr },
       },
       include: {
         doctor: {
@@ -972,7 +1024,35 @@ export const getPendingAppointments = async (req: AuthRequest, res: Response): P
       (appt) => isDoctorEligibleForClinicalPractice(appt.doctor).eligible
     );
 
-    const enriched = eligibleAppointments.map((appt) => {
+    // Filter and auto-expire requests for today whose shift has already ended
+    const unexpiredAppointments = eligibleAppointments.filter((appt) => {
+      if (appt.appointmentDate === istTodayStr) {
+        let slots = parseDoctorSlots(appt.doctor);
+        const cd = (appt.doctor as any)?.clinics?.find((c: any) => c.clinicId === appt.clinicId);
+        if (cd?.slots) {
+          try {
+            const parsed = typeof cd.slots === 'string' ? JSON.parse(cd.slots) : cd.slots;
+            if (Array.isArray(parsed) && parsed.length > 0) slots = parsed;
+          } catch {}
+        }
+        const slot = (appt.slotId && slots.find((s) => s.id === appt.slotId)) || slots[0];
+        if (slot) {
+          const slotStartMins = timeToMinutes(slot.startTime);
+          let slotEndMins = timeToMinutes(slot.endTime);
+          if (slotEndMins <= slotStartMins) slotEndMins += 24 * 60;
+          if (currentMinutes >= slotEndMins) {
+            prisma.appointment.update({
+              where: { id: appt.id },
+              data: { status: 'EXPIRED' },
+            }).catch(() => {});
+            return false;
+          }
+        }
+      }
+      return true;
+    });
+
+    const enriched = unexpiredAppointments.map((appt) => {
       const cd =
         (appt.doctor as any)?.clinics?.find((c: any) => c.clinicId === appt.clinicId) ||
         (appt.doctor as any)?.clinics?.[0];
@@ -1041,6 +1121,52 @@ export const approveAppointment = async (req: AuthRequest, res: Response): Promi
     if (!docCheck.eligible) {
       res.status(403).json({ success: false, message: docCheck.reason });
       return;
+    }
+
+    const now = new Date();
+    const istTodayStr = getLocalDateString(now);
+    const currentMinutes = getIndianTimeMinutes(now);
+
+    if (appointment.status === 'EXPIRED' || appointment.appointmentDate < istTodayStr) {
+      if (appointment.status === 'PENDING_APPROVAL') {
+        await prisma.appointment.update({
+          where: { id: appointment.id },
+          data: { status: 'EXPIRED' },
+        });
+      }
+      res.status(400).json({
+        success: false,
+        message: `Cannot approve appointment request: the consultation date (${appointment.appointmentDate}) has already passed.`,
+      });
+      return;
+    }
+
+    if (appointment.appointmentDate === istTodayStr) {
+      let slots = parseDoctorSlots(appointment.doctor);
+      const targetClinic = appointment.doctor.clinics?.find((c: any) => c.clinicId === appointment.clinicId);
+      if (targetClinic?.slots) {
+        try {
+          const parsed = typeof targetClinic.slots === 'string' ? JSON.parse(targetClinic.slots) : targetClinic.slots;
+          if (Array.isArray(parsed) && parsed.length > 0) slots = parsed;
+        } catch {}
+      }
+      const slot = (appointment.slotId && slots.find((s) => s.id === appointment.slotId)) || slots[0];
+      if (slot) {
+        const slotStartMins = timeToMinutes(slot.startTime);
+        let slotEndMins = timeToMinutes(slot.endTime);
+        if (slotEndMins <= slotStartMins) slotEndMins += 24 * 60;
+        if (currentMinutes >= slotEndMins) {
+          await prisma.appointment.update({
+            where: { id: appointment.id },
+            data: { status: 'EXPIRED' },
+          });
+          res.status(400).json({
+            success: false,
+            message: `Cannot approve appointment request: the consultation shift (${slot.name || slot.startTime}) has already concluded for today.`,
+          });
+          return;
+        }
+      }
     }
 
     const transition = canTransition(appointment.status, 'WAITING', req.user?.role || 'RECEPTIONIST');

@@ -554,7 +554,8 @@ export const getDoctorAffiliations = async (req: AuthRequest, res: Response): Pr
           (a) =>
             (a.paymentStatus === 'PAID' || a.status === 'COMPLETED') &&
             a.status !== 'CANCELLED' &&
-            a.status !== 'REJECTED'
+            a.status !== 'REJECTED' &&
+            a.status !== 'EXPIRED'
         );
         const clinicFee = (cd as any).consultationFee ?? doctor.consultationFee;
         const revenue = paidOrCompleted.length * clinicFee;

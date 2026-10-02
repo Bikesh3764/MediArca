@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { api, Appointment } from '../../services/api';
+import { api, Appointment, getLocalDateString } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { DashboardLayout, DashboardNavItem } from '../../components/layout/DashboardLayout';
 import { LiveQueueTicket } from '../../components/queue/LiveQueueTicket';
@@ -52,12 +52,14 @@ export const MyAppointments: React.FC = () => {
     }
   };
 
-  const upcomingList = appointments.filter(
-    (a) => a.status === 'WAITING' || a.status === 'IN_CONSULTATION' || a.status === 'PENDING_APPROVAL'
-  );
-  const pastList = appointments.filter(
-    (a) => a.status === 'COMPLETED' || a.status === 'CANCELLED' || a.status === 'REJECTED'
-  );
+  const todayStr = getLocalDateString();
+  const upcomingList = appointments.filter((a) => {
+    if (a.status !== 'WAITING' && a.status !== 'IN_CONSULTATION' && a.status !== 'PENDING_APPROVAL') return false;
+    if (a.appointmentDate < todayStr) return false;
+    if (a.status === 'PENDING_APPROVAL' && a.appointmentDate === todayStr && a.liveQueue?.isShiftPassed) return false;
+    return true;
+  });
+  const pastList = appointments.filter((a) => !upcomingList.includes(a));
 
   const navItems: DashboardNavItem[] = [
     {

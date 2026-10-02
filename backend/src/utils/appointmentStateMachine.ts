@@ -4,7 +4,8 @@ export type AppointmentStatus =
   | 'IN_CONSULTATION'
   | 'COMPLETED'
   | 'CANCELLED'
-  | 'REJECTED';
+  | 'REJECTED'
+  | 'EXPIRED';
 
 export type UserRole = 'PATIENT' | 'DOCTOR' | 'RECEPTIONIST' | 'CLINIC' | 'ADMIN';
 
@@ -35,6 +36,9 @@ export const canTransition = (
   if (from === 'REJECTED') {
     return { allowed: false, reason: 'Rejected appointments cannot be updated or reactivated.' };
   }
+  if (from === 'EXPIRED') {
+    return { allowed: false, reason: 'Expired appointments cannot be updated or reactivated.' };
+  }
 
   // Idempotent transitions (same state)
   if (from === to) {
@@ -43,6 +47,9 @@ export const canTransition = (
 
   switch (from) {
     case 'PENDING_APPROVAL':
+      if (to === 'EXPIRED') {
+        return { allowed: true };
+      }
       if (to === 'WAITING') {
         if (['RECEPTIONIST', 'CLINIC', 'ADMIN'].includes(actorRole)) {
           return { allowed: true };
@@ -65,6 +72,9 @@ export const canTransition = (
       };
 
     case 'WAITING':
+      if (to === 'EXPIRED') {
+        return { allowed: true };
+      }
       if (to === 'IN_CONSULTATION') {
         if (['DOCTOR', 'RECEPTIONIST', 'CLINIC'].includes(actorRole)) {
           return { allowed: true };
