@@ -26,7 +26,6 @@ import { ReceptionistAuth } from './pages/Receptionist/ReceptionistAuth';
 import { ReceptionistDashboard } from './pages/Receptionist/ReceptionistDashboard';
 import { ClinicCheckIn } from './pages/Patient/ClinicCheckIn';
 import { ProfileCompletionModal } from './components/auth/ProfileCompletionModal';
-import { AppleShowcase } from './pages/Demo/AppleShowcase';
 
 // Redirect helpers for seamless patient portal continuity
 const DoctorRedirectToPatientDetail: React.FC = () => {
@@ -104,9 +103,7 @@ function AppShell() {
       user?.role === 'PATIENT') ||
     (location.pathname.startsWith('/book/') && user?.role === 'PATIENT') ||
     location.pathname === '/admin' ||
-    location.pathname === '/admin-login' ||
-    location.pathname === '/apple-showcase' ||
-    location.pathname === '/demo';
+    location.pathname === '/admin-login';
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -283,10 +280,6 @@ function AppShell() {
               </ProtectedRoute>
             }
           />
-
-          {/* Apple Design System Showcase (Isolated Demo) */}
-          <Route path="/apple-showcase" element={<AppleShowcase />} />
-          <Route path="/demo" element={<AppleShowcase />} />
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
