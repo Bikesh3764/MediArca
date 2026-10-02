@@ -6,7 +6,6 @@ import { UtilityCard } from '../../components/ui/UtilityCard';
 import {
   AlertCircle,
   CheckCircle2,
-  Save,
 } from 'lucide-react';
 import { sanitizeIndianPhone, formatIndianPhone, isValidIndianPhone } from '../../utils/phoneUtils';
 
@@ -52,9 +51,9 @@ export const PatientProfile: React.FC = () => {
       });
 
       updateUser(updated);
-      setSuccessMsg('Profile information saved successfully.');
+      setSuccessMsg('Profile updated.');
     } catch (err: any) {
-      setErrorMsg(err.message || 'Failed to update profile. Please try again.');
+      setErrorMsg(err.message || 'Failed to update profile.');
     } finally {
       setSaving(false);
     }
@@ -63,13 +62,9 @@ export const PatientProfile: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#f5f5f7] pb-16">
       {/* Sleek Apple Header */}
-      <div className="bg-white border-b border-[#e5e5ea]/80 shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-[#0066cc]">Account Identity</span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-[#1d1d1f] tracking-tight">Patient Profile & Info</h1>
-          <p className="text-xs sm:text-sm text-[#86868b] mt-0.5">Manage your contact details, demographic info, and health preferences</p>
+      <div className="bg-white border-b border-[#e5e5ea]/80">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6">
+          <h1 className="text-2xl font-bold text-[#1d1d1f] tracking-tight">Profile</h1>
         </div>
       </div>
 
@@ -89,28 +84,28 @@ export const PatientProfile: React.FC = () => {
         )}
 
         <form onSubmit={handleSave} className="space-y-6">
-          {/* Identity & Contact Card */}
-          <UtilityCard title="Account & Contact Identity" subtitle="Visible to doctors and clinics during appointments">
+          {/* Personal Information */}
+          <UtilityCard title="Personal Information">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
               <div>
                 <label className="block text-xs font-semibold text-[#1d1d1f] mb-1.5">
-                  Full Legal Name *
+                  Full Name
                 </label>
                 <input
                   type="text"
                   required
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  placeholder="e.g. Rahul Sharma"
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] transition-all"
+                  placeholder="Full Name"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] transition-all"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-[#1d1d1f] mb-1.5">
-                  Primary Phone Number (India)
+                  Phone Number
                 </label>
-                <div className="flex rounded-xl border border-[#e5e5ea] overflow-hidden focus-within:ring-2 focus-within:ring-[#0088e8]/20 focus-within:border-[#0088e8] bg-white transition-all">
+                <div className="flex rounded-xl border border-[#e5e5ea] overflow-hidden focus-within:ring-2 focus-within:ring-[#0066cc]/20 focus-within:border-[#0066cc] bg-white transition-all">
                   <span className="inline-flex items-center gap-1 px-3 bg-[#f5f5f7] border-r border-[#e5e5ea] text-[#1d1d1f] font-semibold text-xs select-none">
                     <span>🇮🇳</span>
                     <span>+91</span>
@@ -124,40 +119,37 @@ export const PatientProfile: React.FC = () => {
                     className="w-full h-11 px-3.5 text-xs bg-white focus:outline-none tracking-wider font-mono text-[#1d1d1f]"
                   />
                 </div>
-                <p className="text-[11px] text-[#86868b] mt-1">
-                  Standard 10-digit Indian mobile number
-                </p>
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-[#86868b] mb-1.5">
-                  Registered Email Address (Locked)
+                  Email
                 </label>
                 <input
                   type="email"
                   disabled
                   value={user?.email || ''}
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] text-[#86868b] cursor-not-allowed"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] text-[#86868b] cursor-not-allowed select-none"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-[#1d1d1f] mb-1.5">
-                  Emergency Contact (Name & Phone)
+                  Emergency Contact
                 </label>
                 <input
                   type="text"
                   value={emergencyContact}
                   onChange={(e) => setEmergencyContact(e.target.value)}
-                  placeholder="e.g. Anjali (Spouse) - 9876543210"
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] transition-all"
+                  placeholder="Optional contact name & number"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] transition-all"
                 />
               </div>
             </div>
           </UtilityCard>
 
-          {/* Demographic & Vital Health Details Card */}
-          <UtilityCard title="Medical Vitals & Demographics" subtitle="Basic health demographics for consultations">
+          {/* Health Details */}
+          <UtilityCard title="Health Details">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2">
               <div>
                 <label className="block text-xs font-semibold text-[#1d1d1f] mb-1.5">
@@ -167,7 +159,7 @@ export const PatientProfile: React.FC = () => {
                   type="date"
                   value={dateOfBirth}
                   onChange={(e) => setDateOfBirth(e.target.value)}
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] transition-all"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] transition-all"
                 />
               </div>
 
@@ -178,9 +170,9 @@ export const PatientProfile: React.FC = () => {
                 <select
                   value={gender}
                   onChange={(e) => setGender(e.target.value)}
-                  className="w-full h-11 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] transition-all cursor-pointer"
+                  className="w-full h-11 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] transition-all cursor-pointer"
                 >
-                  <option value="">Select Gender</option>
+                  <option value="">Select</option>
                   <option value="Male">Male</option>
                   <option value="Female">Female</option>
                   <option value="Other">Other</option>
@@ -195,9 +187,9 @@ export const PatientProfile: React.FC = () => {
                 <select
                   value={bloodGroup}
                   onChange={(e) => setBloodGroup(e.target.value)}
-                  className="w-full h-11 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-white focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] transition-all cursor-pointer"
+                  className="w-full h-11 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] transition-all cursor-pointer"
                 >
-                  <option value="">Select Blood Group</option>
+                  <option value="">Select</option>
                   <option value="A+">A+</option>
                   <option value="A-">A-</option>
                   <option value="B+">B+</option>
@@ -211,16 +203,15 @@ export const PatientProfile: React.FC = () => {
             </div>
           </UtilityCard>
 
-          <div className="flex flex-col sm:flex-row justify-end gap-3 pt-2">
+          <div className="flex justify-end pt-2">
             <AppleButton
               type="submit"
               variant="primary"
               size="md"
               disabled={saving}
-              className="flex items-center justify-center gap-2 shadow-sm w-full sm:w-auto"
+              className="px-7 py-2.5 font-semibold text-[13px] tracking-tight shadow-none w-full sm:w-auto"
             >
-              <Save className="w-4 h-4" />
-              {saving ? 'Saving Profile...' : 'Save Profile'}
+              {saving ? 'Saving...' : 'Save'}
             </AppleButton>
           </div>
         </form>
