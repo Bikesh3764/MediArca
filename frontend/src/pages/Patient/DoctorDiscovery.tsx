@@ -655,9 +655,9 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
 
           {/* Doctor Cards Grid */}
           {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-4 w-full">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-5 sm:gap-6 w-full">
               {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-                <div key={i} className="h-64 rounded-[16px] bg-white border border-[#e5e5ea] animate-pulse p-4"></div>
+                <div key={i} className="h-72 rounded-[20px] bg-white border border-[#e5e5ea] animate-pulse p-4"></div>
               ))}
             </div>
           ) : filteredDoctors.length === 0 ? (
@@ -676,7 +676,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-4 w-full">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-5 sm:gap-6 w-full">
               {filteredDoctors.map((doctor) => {
                 const slots = parseDoctorSlots(doctor);
                 const cleanDegrees = formatDoctorDegrees(doctor.qualifications);
@@ -710,7 +710,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
                 return (
                   <div
                     key={doctor.id}
-                    className="w-full bg-white rounded-[16px] border border-[#e0e0e0] overflow-hidden hover:border-[#0066cc]/40 transition-all duration-200 flex flex-col justify-between group"
+                    className="w-full bg-white rounded-[20px] border border-[#e0e0e0] overflow-hidden hover:border-[#0066cc]/40 transition-all duration-200 flex flex-col justify-between group"
                   >
                     {/* Doctor Photo Banner - Natural 16:10 proportion displaying the full photo */}
                     <div
@@ -740,30 +740,30 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
                     </div>
 
                     {/* Card Body with Refined Apple Typography */}
-                    <div className="p-3.5 sm:p-4 flex-1 flex flex-col justify-between">
+                    <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between">
                       <div>
                         {/* Header: Doctor Name & Experience */}
                         <div className="flex items-start justify-between gap-2.5">
                           <div className="min-w-0">
                             <h3
                               onClick={() => navigate(getDoctorDetailPath(doctor.id))}
-                              className="text-[15px] font-semibold text-[#1d1d1f] hover:text-[#0066cc] cursor-pointer tracking-tight transition-colors truncate leading-snug"
+                              className="text-[16px] sm:text-[17px] font-semibold text-[#1d1d1f] hover:text-[#0066cc] cursor-pointer tracking-tight transition-colors truncate leading-snug"
                               title={doctor.user?.fullName || 'Doctor'}
                             >
                               {doctor.user?.fullName || 'Doctor'}
                             </h3>
-                            <p className="mt-0.5 text-xs text-[#86868b] font-normal truncate">
+                            <p className="mt-1 text-xs text-[#86868b] font-normal truncate">
                               <span className="font-medium text-[#0066cc]">{doctor.specialty}</span>
                               {cleanDegrees && <span> • {cleanDegrees}</span>}
                             </p>
                           </div>
-                          <span className="text-[10px] font-medium text-[#48484a] bg-[#f5f5f7] px-2 py-0.5 rounded-full border border-[#e5e5ea] shrink-0 whitespace-nowrap">
+                          <span className="text-[11px] font-medium text-[#48484a] bg-[#f5f5f7] px-2.5 py-0.5 rounded-full border border-[#e5e5ea] shrink-0 whitespace-nowrap">
                             {doctor.experienceYears} yrs exp
                           </span>
                         </div>
 
                         {/* Clinical Venue & Shifts */}
-                        <div className="mt-3 space-y-1.5 text-xs text-[#86868b]">
+                        <div className="mt-3.5 space-y-1.5 text-xs text-[#86868b]">
                           <div className="flex items-center gap-2 min-w-0">
                             <MapPin className="w-3.5 h-3.5 text-[#86868b] shrink-0" />
                             <span className="truncate text-[#1d1d1f] font-normal" title={allCitiesTooltip || primaryClinic?.clinicName}>
@@ -801,9 +801,9 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
                       </div>
 
                       {/* Apple Card Footer: Fee & Booking CTA */}
-                      <div className="mt-3.5 pt-3 border-t border-[#f0f0f2] flex items-center justify-between gap-3">
+                      <div className="mt-4 pt-3.5 border-t border-[#f0f0f2] flex items-center justify-between gap-3">
                         <div className="flex items-baseline gap-1">
-                          <span className="text-[18px] sm:text-[20px] font-semibold text-[#1d1d1f] tracking-tight">
+                          <span className="text-[19px] sm:text-[21px] font-semibold text-[#1d1d1f] tracking-tight">
                             ₹{doctor.consultationFee.toFixed(0)}
                           </span>
                           <span className="text-xs text-[#86868b] font-normal">/ visit</span>
@@ -814,7 +814,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
                             <button
                               type="button"
                               onClick={() => navigate(getBookPath(doctor.id))}
-                              className="h-7.5 px-4 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-medium transition-all duration-200 active:scale-95 inline-flex items-center justify-center shadow-none cursor-pointer"
+                              className="h-8 px-4.5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-medium transition-all duration-200 active:scale-95 inline-flex items-center justify-center shadow-none cursor-pointer"
                             >
                               Book
                             </button>
@@ -877,7 +877,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
         </span>
       </SubNav>
 
-      <div className="w-full max-w-[1840px] mx-auto px-3 sm:px-6 lg:px-8 xl:px-10 py-5 sm:py-8">
+      <div className="w-full max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-14 py-5 sm:py-8">
         {discoveryContent}
       </div>
     </div>
