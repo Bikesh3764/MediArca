@@ -25,7 +25,6 @@ import {
   UserCheck,
   Stethoscope,
   RotateCcw,
-  ChevronRight,
   ChevronDown,
   X,
   CheckCircle2,
@@ -677,10 +676,11 @@ export const Home: React.FC = () => {
               </div>
 
               {/* Max Consultation Fee Slider */}
+              {/* Max Consultation Fee Slider */}
               <div>
-                <div className="flex items-center justify-between text-xs font-semibold text-[#48484a] mb-1.5">
-                  <span>Max Fee</span>
-                  <span className="text-[#0088e8] font-bold px-2 py-0.5 rounded-md bg-[#0088e8]/10 text-xs">Up to ₹{maxFee}</span>
+                <div className="flex items-center justify-between text-xs mb-2">
+                  <span className="text-xs font-medium text-[#1d1d1f]">Max Fee</span>
+                  <span className="text-xs font-medium text-[#86868b]">Up to ₹{maxFee}</span>
                 </div>
                 <input
                   type="range"
@@ -689,34 +689,34 @@ export const Home: React.FC = () => {
                   step="100"
                   value={maxFee}
                   onChange={(e) => setMaxFee(Number(e.target.value))}
-                  className="w-full accent-[#0088e8] cursor-pointer"
+                  className="w-full h-1 bg-[#e5e5ea] rounded-lg appearance-none cursor-pointer accent-[#0066cc]"
                 />
-                <div className="flex justify-between text-[10px] text-[#86868b] font-medium mt-0.5">
+                <div className="flex justify-between text-[11px] text-[#86868b] mt-1 font-normal">
                   <span>₹300</span>
-                  <span>₹3000</span>
+                  <span>₹3,000</span>
                 </div>
               </div>
 
-              {/* Experience Buttons */}
+              {/* Experience Segmented Control */}
               <div>
-                <label className="block text-xs font-semibold text-[#48484a] mb-1.5">
+                <label className="block text-xs font-medium text-[#1d1d1f] mb-2">
                   Experience
                 </label>
-                <div className="grid grid-cols-2 gap-1.5">
+                <div className="p-0.5 rounded-lg bg-[#e5e5ea]/70 grid grid-cols-4 gap-0.5 text-xs">
                   {[
                     { label: 'All', value: 0 },
-                    { label: '5+ Yrs', value: 5 },
-                    { label: '10+ Yrs', value: 10 },
-                    { label: '15+ Yrs', value: 15 },
+                    { label: '5+ yr', value: 5 },
+                    { label: '10+ yr', value: 10 },
+                    { label: '15+ yr', value: 15 },
                   ].map((item) => (
                     <button
                       key={item.value}
                       type="button"
                       onClick={() => setMinExperience(item.value)}
-                      className={`py-1.5 px-2 rounded-xl text-xs border text-center transition-all cursor-pointer ${
+                      className={`py-1.5 rounded-md text-xs text-center transition-all cursor-pointer ${
                         minExperience === item.value
-                          ? 'bg-[#0088e8] text-white border-[#0088e8] shadow-[0_2px_8px_rgba(0,136,232,0.25)] font-semibold'
-                          : 'bg-[#f5f5f7] text-[#48484a] border-[#e5e5ea] hover:bg-[#ebebee] hover:border-[#d1d1d6] font-medium'
+                          ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs'
+                          : 'text-[#86868b] hover:text-[#1d1d1f] font-normal'
                       }`}
                     >
                       {item.label}
@@ -725,19 +725,19 @@ export const Home: React.FC = () => {
                 </div>
               </div>
 
-              {/* Availability Toggle */}
+              {/* Availability Segmented Control */}
               <div>
-                <label className="block text-xs font-semibold text-[#48484a] mb-1.5">
+                <label className="block text-xs font-medium text-[#1d1d1f] mb-2">
                   Availability
                 </label>
-                <div className="grid grid-cols-2 gap-1.5">
+                <div className="p-0.5 rounded-lg bg-[#e5e5ea]/70 grid grid-cols-2 gap-0.5 text-xs">
                   <button
                     type="button"
                     onClick={() => setAvailabilityFilter('ALL')}
-                    className={`py-1.5 px-2 rounded-xl text-xs border text-center transition-all cursor-pointer ${
+                    className={`py-1.5 rounded-md text-xs text-center transition-all cursor-pointer ${
                       availabilityFilter === 'ALL'
-                        ? 'bg-[#0088e8] text-white border-[#0088e8] shadow-[0_2px_8px_rgba(0,136,232,0.25)] font-semibold'
-                        : 'bg-[#f5f5f7] text-[#48484a] border-[#e5e5ea] hover:bg-[#ebebee] hover:border-[#d1d1d6] font-medium'
+                        ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs'
+                        : 'text-[#86868b] hover:text-[#1d1d1f] font-normal'
                     }`}
                   >
                     All
@@ -745,130 +745,100 @@ export const Home: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setAvailabilityFilter('ACTIVE_NOW')}
-                    className={`py-1.5 px-2 rounded-xl text-xs border text-center transition-all cursor-pointer ${
+                    className={`py-1.5 rounded-md text-xs text-center transition-all cursor-pointer ${
                       availabilityFilter === 'ACTIVE_NOW'
-                        ? 'bg-[#0088e8] text-white border-[#0088e8] shadow-[0_2px_8px_rgba(0,136,232,0.25)] font-semibold'
-                        : 'bg-[#f5f5f7] text-[#48484a] border-[#e5e5ea] hover:bg-[#ebebee] hover:border-[#d1d1d6] font-medium'
+                        ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs'
+                        : 'text-[#86868b] hover:text-[#1d1d1f] font-normal'
                     }`}
                   >
                     Active Now
                   </button>
                 </div>
               </div>
-
-              {/* Sort By */}
-              <div>
-                <label className="block text-xs font-semibold text-[#48484a] mb-1.5">
-                  Sort By
-                </label>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as any)}
-                  className="w-full py-2 px-3 rounded-xl border border-[#e5e5ea] bg-[#f5f5f7]/80 text-xs font-semibold text-[#1d1d1f] focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20 cursor-pointer shadow-xs"
-                >
-                  <option value="rating">Recommended</option>
-                  <option value="experience">Most Experienced</option>
-                  <option value="fee_low">Fee: Low to High</option>
-                  <option value="fee_high">Fee: High to Low</option>
-                </select>
-              </div>
             </div>
           </aside>
 
           {/* RIGHT MAIN AREA: Results Header + 4-Column Doctor Cards Grid */}
           <div className="flex-1 w-full min-w-0">
-            {/* Results Status Header */}
-            <div className="bg-white rounded-2xl border border-[#e5e5ea] px-4 py-3 sm:px-5 sm:py-3.5 mb-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-[#0088e8]/10 border border-[#0088e8]/20 flex items-center justify-center text-[#0088e8] shrink-0">
-                  <Stethoscope className="w-4 h-4" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-base sm:text-lg font-bold text-[#1d1d1f] tracking-tight">
-                      {selectedSpecialty === 'All' ? 'Verified Specialists' : `${selectedSpecialty} Specialists`}
-                    </h2>
-                    <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f]">
-                      {filteredDoctors.length} {filteredDoctors.length === 1 ? 'doctor' : 'doctors'}
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-[#86868b] font-medium mt-0.5">
-                    Showing 1–{filteredDoctors.length} of {doctors.length} verified clinical practitioners
-                  </p>
-                </div>
+            {/* Catalog Results Header (Apple Design) */}
+            <div className="flex items-center justify-between pb-3 mb-6 border-b border-[#e5e5ea]">
+              <div className="flex items-baseline gap-2">
+                <h2 className="text-xl sm:text-2xl font-semibold text-[#1d1d1f] tracking-tight">
+                  {selectedSpecialty === 'All' ? 'Specialists' : selectedSpecialty}
+                </h2>
+                <span className="text-sm text-[#86868b] font-normal">
+                  ({filteredDoctors.length})
+                </span>
               </div>
 
-              <div className="flex items-center gap-2.5 flex-wrap">
+              <div className="flex items-center gap-3">
                 {/* Active Filter Chips */}
                 {hasActiveFilters && (
-                  <div className="flex flex-wrap items-center gap-1.5">
+                  <div className="hidden sm:flex flex-wrap items-center gap-1.5">
                     {selectedSpecialty !== 'All' && (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#0088e8]/10 text-[#0088e8] text-[11px] font-medium border border-[#0088e8]/20">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white text-[#1d1d1f] text-xs font-medium border border-[#e5e5ea] shadow-2xs">
                         {selectedSpecialty}
                         <button type="button" onClick={() => setSelectedSpecialty('All')} className="hover:opacity-75 cursor-pointer">
-                          <X className="w-3 h-3" />
+                          <X className="w-3 h-3 text-[#86868b]" />
                         </button>
                       </span>
                     )}
                     {selectedState !== 'All' && (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#0088e8]/10 text-[#0088e8] text-[11px] font-medium border border-[#0088e8]/20">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white text-[#1d1d1f] text-xs font-medium border border-[#e5e5ea] shadow-2xs">
                         {selectedState}
                         <button type="button" onClick={() => handleStateChange('All')} className="hover:opacity-75 cursor-pointer">
-                          <X className="w-3 h-3" />
+                          <X className="w-3 h-3 text-[#86868b]" />
                         </button>
                       </span>
                     )}
                     {selectedCity !== 'All' && (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#0088e8]/10 text-[#0088e8] text-[11px] font-medium border border-[#0088e8]/20">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white text-[#1d1d1f] text-xs font-medium border border-[#e5e5ea] shadow-2xs">
                         {selectedCity}
                         <button type="button" onClick={() => setSelectedCity('All')} className="hover:opacity-75 cursor-pointer">
-                          <X className="w-3 h-3" />
+                          <X className="w-3 h-3 text-[#86868b]" />
                         </button>
                       </span>
                     )}
                     {maxFee < 3000 && (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#0088e8]/10 text-[#0088e8] text-[11px] font-medium border border-[#0088e8]/20">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white text-[#1d1d1f] text-xs font-medium border border-[#e5e5ea] shadow-2xs">
                         ≤ ₹{maxFee}
                         <button type="button" onClick={() => setMaxFee(3000)} className="hover:opacity-75 cursor-pointer">
-                          <X className="w-3 h-3" />
+                          <X className="w-3 h-3 text-[#86868b]" />
                         </button>
                       </span>
                     )}
                     {minExperience > 0 && (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#0088e8]/10 text-[#0088e8] text-[11px] font-medium border border-[#0088e8]/20">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white text-[#1d1d1f] text-xs font-medium border border-[#e5e5ea] shadow-2xs">
                         {minExperience}+ Yrs
                         <button type="button" onClick={() => setMinExperience(0)} className="hover:opacity-75 cursor-pointer">
-                          <X className="w-3 h-3" />
+                          <X className="w-3 h-3 text-[#86868b]" />
                         </button>
                       </span>
                     )}
                     {locationQuery && (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#0088e8]/10 text-[#0088e8] text-[11px] font-medium border border-[#0088e8]/20">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white text-[#1d1d1f] text-xs font-medium border border-[#e5e5ea] shadow-2xs">
                         {locationQuery}
                         <button type="button" onClick={() => setLocationQuery('')} className="hover:opacity-75 cursor-pointer">
-                          <X className="w-3 h-3" />
+                          <X className="w-3 h-3 text-[#86868b]" />
                         </button>
                       </span>
                     )}
                   </div>
                 )}
 
-                {/* Desktop Sort Dropdown */}
-                <div className="flex items-center gap-1.5 shrink-0 ml-auto sm:ml-0">
-                  <span className="text-[11px] text-[#86868b] font-medium hidden md:inline">Sort:</span>
-                  <div className="relative inline-flex items-center">
-                    <select
-                      value={sortBy}
-                      onChange={(e) => setSortBy(e.target.value as any)}
-                      className="appearance-none h-8 pl-3 pr-7 rounded-full border border-[#e5e5ea] bg-[#f5f5f7] hover:bg-white hover:border-[#0088e8]/40 text-[11px] font-semibold text-[#1d1d1f] focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] cursor-pointer shadow-2xs transition-all"
-                    >
-                      <option value="rating">Recommended</option>
-                      <option value="experience">Most Experienced</option>
-                      <option value="fee_low">Price: Low to High</option>
-                      <option value="fee_high">Price: High to Low</option>
-                    </select>
-                    <ChevronDown className="w-3 h-3 text-[#86868b] pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2" />
-                  </div>
+                {/* Apple Sort Selector */}
+                <div className="relative inline-flex items-center">
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as any)}
+                    className="appearance-none h-8 pl-3 pr-7 rounded-full border border-[#e5e5ea] bg-white hover:bg-[#f5f5f7] text-xs font-medium text-[#1d1d1f] focus:outline-none focus:border-[#0066cc] cursor-pointer shadow-2xs transition-all"
+                  >
+                    <option value="rating">Recommended</option>
+                    <option value="experience">Experience</option>
+                    <option value="fee_low">Price: Low to High</option>
+                    <option value="fee_high">Price: High to Low</option>
+                  </select>
+                  <ChevronDown className="w-3.5 h-3.5 text-[#86868b] pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2" />
                 </div>
               </div>
             </div>
@@ -996,88 +966,57 @@ export const Home: React.FC = () => {
                       {/* 2. Doctor Details Flowing Down Lengthwise */}
                       <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between">
                         <div>
-                          {/* Doctor Name, Qualifications & Experience */}
+                          {/* Doctor Name, Specialty & Experience */}
                           <div className="min-w-0">
                             <div className="flex items-center gap-1.5 min-w-0">
                               <h3
                                 onClick={() => navigate(getHomeDoctorDetailPath(doctor.id))}
-                                className="text-base sm:text-[17px] font-bold text-[#1d1d1f] hover:text-[#0088e8] cursor-pointer tracking-tight transition-colors truncate"
+                                className="text-[17px] font-semibold text-[#1d1d1f] hover:text-[#0066cc] cursor-pointer tracking-tight transition-colors truncate"
                                 title={doctor.user?.fullName || 'Doctor'}
                               >
                                 {doctor.user?.fullName || 'Doctor'}
                               </h3>
-                              <CheckCircle2 className="w-4 h-4 text-[#0088e8] shrink-0" />
+                              <CheckCircle2 className="w-4 h-4 text-[#0066cc] shrink-0" />
                             </div>
 
-                            <div className="mt-1 flex items-center gap-2 text-xs text-[#86868b] truncate font-medium">
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-[#0088e8]/8 text-[#0088e8] text-[11px] font-semibold border border-[#0088e8]/15">
-                                {doctor.experienceYears} yrs exp
-                              </span>
-                              {cleanDegrees && (
-                                <span className="text-[#636366] truncate font-medium text-xs" title={cleanDegrees}>
-                                  {cleanDegrees}
-                                </span>
-                              )}
-                            </div>
+                            <p className="mt-1 text-xs text-[#86868b] truncate font-normal">
+                              {doctor.specialty} • {doctor.experienceYears} yrs exp{cleanDegrees ? ` • ${cleanDegrees}` : ''}
+                            </p>
                           </div>
 
-                          {/* Clinical Venue & Shifts Details in elegant Apple card */}
-                          <div className="mt-3.5 p-3 rounded-xl bg-[#fafafc] border border-[#f0f0f4] space-y-2 text-xs">
-                            {/* Primary Clinic */}
-                            <div className="flex items-center gap-2 min-w-0">
-                              <Building2 className="w-3.5 h-3.5 text-[#0088e8] shrink-0" />
-                              {hasClinics && primaryClinic ? (
-                                <div className="min-w-0 flex-1 flex items-center gap-1.5 truncate">
-                                  <span
-                                    className="font-medium text-[#1d1d1f] truncate"
-                                    title={`${primaryClinic.clinicName}${primaryClinic.city ? ` • ${primaryClinic.city}` : ''}`}
-                                  >
-                                    {primaryClinic.clinicName}
-                                  </span>
-                                  {(doctor.clinics?.length ?? 0) > 1 && (
-                                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-[#0088e8]/10 text-[#0088e8] shrink-0">
-                                      +{(doctor.clinics?.length ?? 0) - 1} clinics
-                                    </span>
-                                  )}
-                                </div>
-                              ) : (
-                                <span className="text-xs font-normal text-[#86868b]">Direct Practice</span>
+                          {/* Clinical Venue & Shifts: Natural open layout */}
+                          <div className="mt-3.5 pt-3 border-t border-[#f0f0f2] space-y-1.5 text-xs">
+                            <div className="flex items-center gap-2 min-w-0 text-[#1d1d1f]">
+                              <Building2 className="w-3.5 h-3.5 text-[#86868b] shrink-0" />
+                              <span className="truncate font-normal" title={primaryClinic?.clinicName}>
+                                {hasClinics && primaryClinic ? primaryClinic.clinicName : 'Direct Practice'}
+                              </span>
+                              {(doctor.clinics?.length ?? 0) > 1 && (
+                                <span className="text-[11px] text-[#86868b] shrink-0">
+                                  (+{(doctor.clinics?.length ?? 0) - 1})
+                                </span>
                               )}
                             </div>
 
-                            {/* Practice Hours / Shift */}
-                            <div className="flex items-center gap-2 min-w-0 text-[#636366]">
-                              <Clock className="w-3.5 h-3.5 text-[#86868b] shrink-0" />
-                              <div className="min-w-0 flex-1 flex items-center gap-1.5 truncate text-[11px] font-normal">
-                                <span className="truncate">
-                                  {slots.length > 0
-                                    ? `${format12Hour(slots[0].startTime)} – ${format12Hour(slots[0].endTime)}`
-                                    : doctor.checkingStartTime
-                                    ? `${format12Hour(doctor.checkingStartTime)} – ${format12Hour(doctor.checkingEndTime)}`
-                                    : 'Outpatient Shift'}
-                                </span>
-                                {slots.length > 1 && (
-                                  <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-[#e5e5ea] text-[#636366] shrink-0">
-                                    +{slots.length - 1} shifts
-                                  </span>
-                                )}
-                              </div>
+                            <div className="flex items-center gap-2 min-w-0 text-[#86868b]">
+                              <Clock className="w-3.5 h-3.5 shrink-0" />
+                              <span className="truncate text-[11px]">
+                                {slots.length > 0
+                                  ? `${format12Hour(slots[0].startTime)} – ${format12Hour(slots[0].endTime)}`
+                                  : doctor.checkingStartTime
+                                  ? `${format12Hour(doctor.checkingStartTime)} – ${format12Hour(doctor.checkingEndTime)}`
+                                  : 'Outpatient Shift'}
+                              </span>
                             </div>
                           </div>
                         </div>
 
                         {/* Footer: Fee & Booking CTA */}
-                        <div className="mt-4 pt-3.5 border-t border-[#f0f0f2] flex items-center justify-between gap-3">
+                        <div className="mt-4 pt-3 border-t border-[#f0f0f2] flex items-center justify-between">
                           <div>
-                            <span className="block text-[11px] font-medium text-[#86868b]">
-                              Consultation Fee
+                            <span className="text-lg font-semibold text-[#1d1d1f] tracking-tight">
+                              ₹{doctor.consultationFee.toFixed(0)}
                             </span>
-                            <div className="flex items-baseline gap-1 mt-0.5">
-                              <span className="text-xl font-bold text-[#1d1d1f] tracking-tight">
-                                ₹{doctor.consultationFee.toFixed(0)}
-                              </span>
-                              <span className="text-xs text-[#86868b] font-normal">/ visit</span>
-                            </div>
                           </div>
 
                           <div>
@@ -1085,19 +1024,12 @@ export const Home: React.FC = () => {
                               <button
                                 type="button"
                                 onClick={() => navigate(getHomeDoctorBookPath(doctor.id))}
-                                className="group/btn h-9 sm:h-10 px-4 sm:px-5 rounded-full bg-[#0088e8] hover:bg-[#0077cc] text-white text-xs font-semibold flex items-center gap-1.5 transition-all shadow-xs hover:shadow-sm active:scale-[0.98] cursor-pointer"
+                                className="h-8 px-4 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-medium transition-all active:scale-[0.98] cursor-pointer"
                               >
-                                <span>Book Token</span>
-                                <ChevronRight className="w-3.5 h-3.5 stroke-[2.5] transition-transform duration-200 group-hover/btn:translate-x-0.5" />
+                                Book
                               </button>
                             ) : (
-                              <button
-                                type="button"
-                                disabled
-                                className="h-9 sm:h-10 px-4 rounded-full bg-[#f5f5f7] text-[#86868b] text-xs font-medium border border-[#e5e5ea] cursor-not-allowed"
-                              >
-                                Unavailable
-                              </button>
+                              <span className="text-xs text-[#86868b]">Unavailable</span>
                             )}
                           </div>
                         </div>
