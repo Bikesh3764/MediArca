@@ -291,12 +291,9 @@ export const Home: React.FC = () => {
       {/* 1. Hero Section - Apple HIG Minimalist Canvas */}
       <section className="relative overflow-hidden border-b border-[#e5e5ea] bg-[#f5f5f7] py-16 sm:py-20 md:py-24 px-4 sm:px-6 flex items-center justify-center">
         <div className="relative z-10 max-w-4xl mx-auto text-center w-full">
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-semibold text-[#1d1d1f] tracking-tight leading-[1.07] mb-4 sm:mb-5">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-semibold text-[#1d1d1f] tracking-tight leading-[1.07]">
             Certified clinics & <span className="text-[#0066cc]">specialists</span> across India.
           </h1>
-          <p className="text-[17px] text-[#7a7a7a] max-w-2xl mx-auto font-normal leading-relaxed">
-            Search top clinical facilities or browse specialized practitioners with real-time queue tokens and punctual check-ins.
-          </p>
         </div>
       </section>
 
