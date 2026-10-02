@@ -814,7 +814,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
                             <button
                               type="button"
                               onClick={() => navigate(getBookPath(doctor.id))}
-                              className="h-8 px-4.5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-medium transition-all duration-200 active:scale-95 inline-flex items-center justify-center shadow-none cursor-pointer"
+                              className="h-8 min-w-[76px] px-5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-[13px] font-medium tracking-tight transition-all duration-200 active:scale-95 inline-flex items-center justify-center shadow-none cursor-pointer"
                             >
                               Book
                             </button>
