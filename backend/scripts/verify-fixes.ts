@@ -4706,6 +4706,28 @@ Follow-up Date: 2026-10-15`;
   assert(verifiedUser.isEmailVerified === true, 'Verified registrant is marked true');
   assert(verifiedUser.emailVerificationOtp === null, 'OTP is cleared upon successful verification');
 
+  // --- Test 152: Dynamic SMTP Credential Fallback ---
+  console.log('\n--- Test 152: Dynamic SMTP Credential Fallback ---');
+  const resolveCredentials = (env: Record<string, string>, dbRows: Array<{ key: string; value: string }>) => {
+    let user = env.SMTP_USER || '';
+    let pass = env.SMTP_PASS || '';
+    if (!user || !pass) {
+      const map = new Map(dbRows.map((r) => [r.key, r.value]));
+      user = map.get('SMTP_USER') || '';
+      pass = map.get('SMTP_PASS') || '';
+    }
+    return { user, pass };
+  };
+
+  const fromEnv = resolveCredentials({ SMTP_USER: 'env@test.com', SMTP_PASS: 'secret' }, []);
+  assert(fromEnv.user === 'env@test.com' && fromEnv.pass === 'secret', 'Resolves SMTP credentials from environment variables when present');
+
+  const fromDb = resolveCredentials({}, [
+    { key: 'SMTP_USER', value: 'db@test.com' },
+    { key: 'SMTP_PASS', value: 'dbsecret' },
+  ]);
+  assert(fromDb.user === 'db@test.com' && fromDb.pass === 'dbsecret', 'Resolves SMTP credentials from database SystemConfig when env is empty');
+
   console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);

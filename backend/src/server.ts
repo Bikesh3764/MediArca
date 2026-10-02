@@ -38,6 +38,12 @@ async function ensureSchema() {
     [`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "emailVerificationOtp" TEXT;`, `ALTER TABLE "User" ADD COLUMN "emailVerificationOtp" TEXT;`],
     [`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "emailVerificationOtpExpiresAt" TIMESTAMP(3);`, `ALTER TABLE "User" ADD COLUMN "emailVerificationOtpExpiresAt" DATETIME;`],
 
+    // SystemConfig table for cloud configuration fallback (SMTP, etc.)
+    [
+      `CREATE TABLE IF NOT EXISTS "SystemConfig" ("key" TEXT PRIMARY KEY, "value" TEXT NOT NULL, "updatedAt" TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP);`,
+      `CREATE TABLE IF NOT EXISTS "SystemConfig" ("key" TEXT PRIMARY KEY, "value" TEXT NOT NULL, "updatedAt" DATETIME DEFAULT CURRENT_TIMESTAMP);`
+    ],
+
     // DoctorProfile columns
     [`ALTER TABLE "DoctorProfile" ADD COLUMN IF NOT EXISTS "slots" TEXT;`, `ALTER TABLE "DoctorProfile" ADD COLUMN "slots" TEXT;`],
     [`ALTER TABLE "DoctorProfile" ADD COLUMN IF NOT EXISTS "cabinStatus" TEXT NOT NULL DEFAULT 'IN_CABIN';`, `ALTER TABLE "DoctorProfile" ADD COLUMN "cabinStatus" TEXT DEFAULT 'IN_CABIN';`],

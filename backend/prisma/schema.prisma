@@ -208,3 +208,9 @@ model DoctorReceptionist {
   @@unique([doctorId, receptionistId])
   @@index([receptionistId, status])
 }
+
+model SystemConfig {
+  key       String   @id
+  value     String
+  updatedAt DateTime @default(now()) @updatedAt
+}

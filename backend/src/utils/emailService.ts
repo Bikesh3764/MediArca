@@ -1,21 +1,63 @@
-import nodemailer from 'nodemailer';
+import nodemailer, { Transporter } from 'nodemailer';
+import prisma from '../config/database';
 
-const smtpUser = process.env.SMTP_USER || '';
-const smtpPass = process.env.SMTP_PASS || '';
-const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
-const smtpPort = Number(process.env.SMTP_PORT) || 465;
-const smtpFrom = process.env.SMTP_FROM || (smtpUser ? `MediArca <${smtpUser}>` : 'MediArca <noreply@mediarca.com>');
+let cachedTransporter: Transporter | null = null;
+let cachedFrom: string = '';
 
-// Configure Gmail SMTP Transporter
-export const emailTransporter = nodemailer.createTransport({
-  host: smtpHost,
-  port: smtpPort,
-  secure: smtpPort === 465, // true for 465, false for 587
-  auth: {
-    user: smtpUser,
-    pass: smtpPass,
-  },
-});
+export async function getTransporter(): Promise<{ transporter: Transporter | null; from: string }> {
+  if (cachedTransporter) {
+    return { transporter: cachedTransporter, from: cachedFrom };
+  }
+
+  let user = process.env.SMTP_USER || '';
+  let pass = process.env.SMTP_PASS || '';
+  let host = process.env.SMTP_HOST || 'smtp.gmail.com';
+  let port = Number(process.env.SMTP_PORT) || 465;
+  let secure = process.env.SMTP_SECURE === 'true' || port === 465;
+  let from = process.env.SMTP_FROM || (user ? `MediArca <${user}>` : 'MediArca <noreply@mediarca.com>');
+
+  // If environment variables are not set in cloud host, query database SystemConfig table
+  if (!user || !pass) {
+    try {
+      const rows = await prisma.$queryRawUnsafe<Array<{ key: string; value: string }>>(
+        `SELECT "key", "value" FROM "SystemConfig" WHERE "key" IN ('SMTP_USER', 'SMTP_PASS', 'SMTP_HOST', 'SMTP_PORT', 'SMTP_SECURE', 'SMTP_FROM')`
+      );
+      if (Array.isArray(rows) && rows.length > 0) {
+        const configMap = new Map(rows.map(r => [r.key, r.value]));
+        const dbUser = configMap.get('SMTP_USER');
+        const dbPass = configMap.get('SMTP_PASS');
+        if (dbUser && dbPass) {
+          user = dbUser;
+          pass = dbPass;
+          host = configMap.get('SMTP_HOST') || host;
+          port = Number(configMap.get('SMTP_PORT')) || port;
+          secure = configMap.get('SMTP_SECURE') === 'true' || port === 465;
+          from = configMap.get('SMTP_FROM') || `MediArca <${user}>`;
+        }
+      }
+    } catch (dbErr: any) {
+      console.warn('[emailService] Notice: could not load SMTP credentials from SystemConfig table:', dbErr?.message || dbErr);
+    }
+  }
+
+  if (!user || !pass) {
+    console.warn('[emailService] Warning: SMTP credentials are not configured in environment or database.');
+    return { transporter: null, from };
+  }
+
+  cachedTransporter = nodemailer.createTransport({
+    host,
+    port,
+    secure,
+    auth: {
+      user,
+      pass,
+    },
+  });
+  cachedFrom = from;
+
+  return { transporter: cachedTransporter, from: cachedFrom };
+}
 
 /**
  * Sends a 6-digit email verification OTP using Apple-designed responsive HTML template.
@@ -153,8 +195,14 @@ export async function sendVerificationOtpEmail(
 
     const textContent = `Hello ${greetingName},\n\nYour MediArca 6-digit verification code is: ${otp}\n\nThis code is valid for 10 minutes.\nIf you did not request this, please ignore this email.\n\nMediArca Clinical Platform`;
 
-    const info = await emailTransporter.sendMail({
-      from: smtpFrom,
+    const { transporter, from } = await getTransporter();
+    if (!transporter) {
+      console.warn(`[emailService] Verification OTP for ${toEmail} is [${otp}] (SMTP not configured)`);
+      return { success: false, error: 'SMTP credentials not configured' };
+    }
+
+    const info = await transporter.sendMail({
+      from,
       to: toEmail,
       subject: `${otp} is your MediArca verification code`,
       text: textContent,
