@@ -717,7 +717,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
                 return (
                   <div
                     key={doctor.id}
-                    className="w-full bg-white rounded-[20px] border border-[#e5e5ea] overflow-hidden shadow-xs hover:shadow-md hover:border-[#0066cc]/30 transition-all duration-200 flex flex-col justify-between group"
+                    className="w-full bg-white rounded-[20px] border border-[#e0e0e0] overflow-hidden hover:border-[#0066cc]/30 transition-all duration-200 flex flex-col justify-between group"
                   >
                     {/* 1. Doctor Top Photo Banner */}
                     <div
@@ -738,7 +738,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
                         />
                       ) : null}
                       <div
-                        className={`doc-fallback-banner w-full h-full ${doctor.user?.avatarUrl ? 'hidden' : 'flex'} items-center justify-center font-bold text-4xl text-white bg-gradient-to-br from-[#0066cc] to-[#0071e3] select-none`}
+                        className={`doc-fallback-banner w-full h-full ${doctor.user?.avatarUrl ? 'hidden' : 'flex'} items-center justify-center font-bold text-4xl text-white bg-[#0066cc] select-none`}
                       >
                         {(doctor.user?.fullName ? doctor.user.fullName.replace(/^Dr\.\s*/i, '').trim()[0] : null) || 'D'}
                       </div>
@@ -769,7 +769,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
                           </div>
 
                           {/* Experience Pill */}
-                          <span className="text-[11px] font-medium text-[#48484a] bg-[#f5f5f7] px-2.5 py-1 rounded-full border border-[#e5e5ea] shrink-0">
+                          <span className="text-[11px] font-medium text-[#48484a] bg-[#f5f5f7] px-2.5 py-1 rounded-full border border-[#e0e0e0] shrink-0">
                             {doctor.experienceYears} yrs exp
                           </span>
                         </div>
@@ -826,7 +826,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
                             <button
                               type="button"
                               onClick={() => navigate(getBookPath(doctor.id))}
-                              className="h-8 px-5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-medium transition-all active:scale-[0.98] cursor-pointer shadow-2xs hover:shadow-xs"
+                              className="h-8 px-5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-medium transition-all active:scale-95 cursor-pointer"
                             >
                               Book
                             </button>
@@ -856,7 +856,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
         subtitle="Browse verified practitioners, compare checking shifts, and book instant queue tokens"
         headerAction={
           <div className="flex items-center gap-2">
-            <span className="text-xs px-3 py-1 rounded-full bg-[#f5f5f7] text-[#1d1d1f] font-medium border border-[#e5e5ea]">
+            <span className="text-xs px-3 py-1 rounded-full bg-[#f5f5f7] text-[#1d1d1f] font-medium border border-[#e0e0e0]">
               {doctors.length} Specialist{doctors.length === 1 ? '' : 's'}
             </span>
             <AppleButton

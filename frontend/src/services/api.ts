@@ -136,39 +136,72 @@ export const parseDoctorSlots = (doctor: any): DoctorSlot[] => {
 export const formatDoctorDegrees = (qualifications?: string | null): string => {
   if (!qualifications || !qualifications.trim()) return 'Certified Specialist';
 
-  // Recognized primary & postgrad medical/dental/AYUSH degrees
-  const RECOGNIZED_DEGREES = new Set([
-    'MBBS', 'MD', 'MS', 'DM', 'MCH', 'BDS', 'MDS', 'DNB',
-    'BAMS', 'BHMS', 'BUMS', 'BSMS', 'BVSC', 'DO', 'PHD',
-    'MPH', 'DGO', 'DCH', 'DMRD', 'DORTHO', 'DA', 'MBCHB',
-    'BMBS', 'BM BCH', 'BM', 'BCHIR', 'BMED', 'MRCGP'
-  ]);
+  // Recognized primary & postgrad medical/dental/AYUSH degrees & recognized clinical PG diplomas
+  const RECOGNIZED_DEGREES_MAP: Record<string, string> = {
+    MBBS: 'MBBS',
+    MD: 'MD',
+    MS: 'MS',
+    DM: 'DM',
+    MCH: 'MCh',
+    BDS: 'BDS',
+    MDS: 'MDS',
+    DNB: 'DNB',
+    BAMS: 'BAMS',
+    BHMS: 'BHMS',
+    BUMS: 'BUMS',
+    BSMS: 'BSMS',
+    BNYS: 'BNYS',
+    BVSC: 'BVSc',
+    BPT: 'BPT',
+    MPT: 'MPT',
+    BOT: 'BOT',
+    MOT: 'MOT',
+    DO: 'DO',
+    PHD: 'PhD',
+    MPH: 'MPH',
+    MHA: 'MHA',
+    DGO: 'DGO',
+    DCH: 'DCH',
+    DMRD: 'DMRD',
+    DORTHO: 'DOrtho',
+    DA: 'DA',
+    DTCD: 'DTCD',
+    DDVL: 'DDVL',
+    DVD: 'DVD',
+    DPM: 'DPM',
+    DOMS: 'DOMS',
+    DLO: 'DLO',
+    MBCHB: 'MBChB',
+    BMBS: 'BMBS',
+    BCHIR: 'BChir',
+    BMED: 'BMed',
+    MRCGP: 'MRCGP',
+  };
 
-  // Non-degree abbreviations and fluff to strictly strip out:
-  // Fellowships (FACC, FAAP, FACS, FACP, FRCS, FRCP, MRCP, MRCS, FAHA, FESC, FICM, FAMS, FICO, FICS, FCCP, FCPS, FACR, FAAD, etc.)
-  // Certifications / Memberships ("Board Certified", "Board Eligible", "Fellow", "Diplomate", "Member", "Certified Specialist", etc.)
-  // Schools / Universities / Hospitals / Institutes
-  const NON_DEGREE_PATTERN = /\b(facc|faap|facs|facp|frcs|frcp|mrcp|mrcs|faha|fesc|ficm|fams|fico|fics|fccp|fcps|facr|faad|board\s*certified|board\s*eligible|fellow|diplomate|member|specialist|certified|university|college|school|hospital|institute|academy|faculty|campus|stanford|harvard|hopkins|oxford|cambridge|aiims|pgi)\b/i;
+  // Strip parenthetical text such as "(Cardiology)", "(Pediatrics)", etc. to extract core degree
+  const cleanedInput = qualifications.replace(/\([^)]*\)/g, ' ');
 
-  const parts = qualifications.split(/[,;]+/);
+  // Non-degree patterns:
+  // 1. Fellowships starting with F followed by 2-5 uppercase letters (FACC, FACS, FAAP, FACP, FRCS, FRCP, FRCOG, FICOG, FAGE, FAOI, FIAP, FNB, FAMS, FICO, FICS, FCCP, FCPS, FACR, FAAD, FESC, FAHA, FICM, etc.)
+  // 2. Fluff words: fellow, fellowship, diplomate, member, board certified, board eligible, certified, specialist, consultant, physician, surgeon, general
+  // 3. Institution/University/Hospital/Location fluff: university, college, school, hospital, institute, academy, faculty, campus, stanford, harvard, hopkins, oxford, cambridge, aiims, pgi, yale, columbia, boston, london, etc.
+  const NON_DEGREE_PATTERN = /\b(f[a-z]{2,5}|fellow|fellowship|diplomate|member|board\s*certified|board\s*eligible|certified|specialist|consultant|physician|surgeon|general|university|college|school|hospital|institute|academy|faculty|campus|stanford|harvard|hopkins|oxford|cambridge|aiims|pgi|yale|columbia|boston|london)\b/i;
+
+  const parts = cleanedInput.split(/[,;\n/]+/);
   const collectedDegrees: string[] = [];
 
   for (const part of parts) {
-    const subSegments = part.split(/\s*[-–—/]\s*/);
+    const subSegments = part.split(/\s*[-–—]\s*/);
     for (const sub of subSegments) {
       const trimmed = sub.trim().replace(/\.+/g, '');
       if (!trimmed) continue;
-      if (NON_DEGREE_PATTERN.test(sub)) continue;
+      if (NON_DEGREE_PATTERN.test(trimmed)) continue;
 
       const upper = trimmed.toUpperCase();
-      if (RECOGNIZED_DEGREES.has(upper)) {
-        const canonical = upper === 'MCH' ? 'MCh' : upper;
+      if (RECOGNIZED_DEGREES_MAP[upper]) {
+        const canonical = RECOGNIZED_DEGREES_MAP[upper];
         if (!collectedDegrees.includes(canonical)) {
           collectedDegrees.push(canonical);
-        }
-      } else if (!NON_DEGREE_PATTERN.test(trimmed) && trimmed.length <= 8 && /^[A-Za-z]+$/.test(trimmed)) {
-        if (!collectedDegrees.includes(trimmed)) {
-          collectedDegrees.push(trimmed);
         }
       }
     }
@@ -176,11 +209,6 @@ export const formatDoctorDegrees = (qualifications?: string | null): string => {
 
   if (collectedDegrees.length > 0) {
     return collectedDegrees.join(', ');
-  }
-
-  const firstSegment = qualifications.split(/\s*[-–—,;/]\s*/)[0].trim().replace(/\.+/g, '');
-  if (firstSegment && !NON_DEGREE_PATTERN.test(firstSegment) && firstSegment.length <= 10) {
-    return firstSegment;
   }
 
   return 'Certified Specialist';

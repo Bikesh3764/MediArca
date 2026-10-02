@@ -980,38 +980,69 @@ function runTests() {
   assert(ALLOWED_FILE_EXTENSIONS.includes('.webp'), 'Allowed extensions include .webp');
   assert(ALLOWED_FILE_EXTENSIONS.includes('.pdf'), 'Allowed extensions include .pdf');
 
-  // 47. Doctor Degrees Sanitization (Degrees Only, No School / University Fluff or Fellowships like FACC)
+  // 47. Doctor Degrees Sanitization (Degrees Only, No School / University Fluff or Fellowships like FACC, FRCOG, FICOG)
   const formatDoctorDegrees = (qualifications?: string | null): string => {
     if (!qualifications || !qualifications.trim()) return 'Certified Specialist';
 
-    const RECOGNIZED_DEGREES = new Set([
-      'MBBS', 'MD', 'MS', 'DM', 'MCH', 'BDS', 'MDS', 'DNB',
-      'BAMS', 'BHMS', 'BUMS', 'BSMS', 'BVSC', 'DO', 'PHD',
-      'MPH', 'DGO', 'DCH', 'DMRD', 'DORTHO', 'DA', 'MBCHB',
-      'BMBS', 'BM BCH', 'BM', 'BCHIR', 'BMED', 'MRCGP'
-    ]);
+    const RECOGNIZED_DEGREES_MAP: Record<string, string> = {
+      MBBS: 'MBBS',
+      MD: 'MD',
+      MS: 'MS',
+      DM: 'DM',
+      MCH: 'MCh',
+      BDS: 'BDS',
+      MDS: 'MDS',
+      DNB: 'DNB',
+      BAMS: 'BAMS',
+      BHMS: 'BHMS',
+      BUMS: 'BUMS',
+      BSMS: 'BSMS',
+      BNYS: 'BNYS',
+      BVSC: 'BVSc',
+      BPT: 'BPT',
+      MPT: 'MPT',
+      BOT: 'BOT',
+      MOT: 'MOT',
+      DO: 'DO',
+      PHD: 'PhD',
+      MPH: 'MPH',
+      MHA: 'MHA',
+      DGO: 'DGO',
+      DCH: 'DCH',
+      DMRD: 'DMRD',
+      DORTHO: 'DOrtho',
+      DA: 'DA',
+      DTCD: 'DTCD',
+      DDVL: 'DDVL',
+      DVD: 'DVD',
+      DPM: 'DPM',
+      DOMS: 'DOMS',
+      DLO: 'DLO',
+      MBCHB: 'MBChB',
+      BMBS: 'BMBS',
+      BCHIR: 'BChir',
+      BMED: 'BMed',
+      MRCGP: 'MRCGP',
+    };
 
-    const NON_DEGREE_PATTERN = /\b(facc|faap|facs|facp|frcs|frcp|mrcp|mrcs|faha|fesc|ficm|fams|fico|fics|fccp|fcps|facr|faad|board\s*certified|board\s*eligible|fellow|diplomate|member|specialist|certified|university|college|school|hospital|institute|academy|faculty|campus|stanford|harvard|hopkins|oxford|cambridge|aiims|pgi)\b/i;
+    const cleanedInput = qualifications.replace(/\([^)]*\)/g, ' ');
+    const NON_DEGREE_PATTERN = /\b(f[a-z]{2,5}|fellow|fellowship|diplomate|member|board\s*certified|board\s*eligible|certified|specialist|consultant|physician|surgeon|general|university|college|school|hospital|institute|academy|faculty|campus|stanford|harvard|hopkins|oxford|cambridge|aiims|pgi|yale|columbia|boston|london)\b/i;
 
-    const parts = qualifications.split(/[,;]+/);
+    const parts = cleanedInput.split(/[,;\n/]+/);
     const collectedDegrees: string[] = [];
 
     for (const part of parts) {
-      const subSegments = part.split(/\s*[-–—/]\s*/);
+      const subSegments = part.split(/\s*[-–—]\s*/);
       for (const sub of subSegments) {
         const trimmed = sub.trim().replace(/\.+/g, '');
         if (!trimmed) continue;
-        if (NON_DEGREE_PATTERN.test(sub)) continue;
+        if (NON_DEGREE_PATTERN.test(trimmed)) continue;
 
         const upper = trimmed.toUpperCase();
-        if (RECOGNIZED_DEGREES.has(upper)) {
-          const canonical = upper === 'MCH' ? 'MCh' : upper;
+        if (RECOGNIZED_DEGREES_MAP[upper]) {
+          const canonical = RECOGNIZED_DEGREES_MAP[upper];
           if (!collectedDegrees.includes(canonical)) {
             collectedDegrees.push(canonical);
-          }
-        } else if (!NON_DEGREE_PATTERN.test(trimmed) && trimmed.length <= 8 && /^[A-Za-z]+$/.test(trimmed)) {
-          if (!collectedDegrees.includes(trimmed)) {
-            collectedDegrees.push(trimmed);
           }
         }
       }
@@ -1019,11 +1050,6 @@ function runTests() {
 
     if (collectedDegrees.length > 0) {
       return collectedDegrees.join(', ');
-    }
-
-    const firstSegment = qualifications.split(/\s*[-–—,;/]\s*/)[0].trim().replace(/\.+/g, '');
-    if (firstSegment && !NON_DEGREE_PATTERN.test(firstSegment) && firstSegment.length <= 10) {
-      return firstSegment;
     }
 
     return 'Certified Specialist';
@@ -1035,6 +1061,12 @@ function runTests() {
   assert(formatDoctorDegrees('DO - Chicago College of Osteopathic Medicine') === 'DO', 'Chicago College stripped from qualifications');
   assert(formatDoctorDegrees('MBBS, MD') === 'MBBS, MD', 'Clean degrees preserved');
   assert(formatDoctorDegrees('MD, FACC') === 'MD', 'FACC stripped from qualifications');
+  assert(formatDoctorDegrees('MBBS, MD, FRCOG, FICOG') === 'MBBS, MD', 'FRCOG and FICOG fellowships stripped');
+  assert(formatDoctorDegrees('MD, Yale') === 'MD', 'Yale university stripped from qualifications');
+  assert(formatDoctorDegrees('MBBS, MD (Internal Medicine), FACC') === 'MBBS, MD', 'Parenthetical specialty parsed and FACC stripped');
+  assert(formatDoctorDegrees('MBBS, M.S., M.Ch., F.A.C.S.') === 'MBBS, MS, MCh', 'MCh canonicalized and FACS fellowship stripped');
+  assert(formatDoctorDegrees('FACC') === 'Certified Specialist', 'FACC alone falls back to Certified Specialist');
+  assert(formatDoctorDegrees('FRCOG') === 'Certified Specialist', 'FRCOG alone falls back to Certified Specialist');
   assert(formatDoctorDegrees(null) === 'Certified Specialist', 'Null fallback returns Certified Specialist');
 
   // 48. Multi-Clinic Practitioner Affiliation & Booking Routing

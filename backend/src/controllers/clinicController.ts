@@ -662,7 +662,7 @@ export const getPublicClinics = async (req: any, res: Response): Promise<void> =
       verificationStatus: 'VERIFIED',
     };
 
-    if (city && typeof city === 'string' && city.trim()) {
+    if (city && typeof city === 'string' && city.trim() && city !== 'All') {
       whereClause.city = { contains: city.trim(), mode: 'insensitive' };
     }
 
