@@ -6,6 +6,7 @@ import { BrandLogo } from '../../components/ui/BrandLogo';
 import { AlertCircle, Sparkles } from 'lucide-react';
 import { GoogleLogin } from '@react-oauth/google';
 import { isGoogleConfigured } from '../../config/auth';
+import { EmailVerificationModal } from '../../components/auth/EmailVerificationModal';
 
 export interface LoginProps {
   portal?: 'PATIENT' | 'DOCTOR';
@@ -16,6 +17,7 @@ export const Login: React.FC<LoginProps> = ({ portal }) => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [verificationPendingEmail, setVerificationPendingEmail] = useState<string | null>(null);
 
   const { login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
@@ -58,6 +60,11 @@ export const Login: React.FC<LoginProps> = ({ portal }) => {
       const loggedUser = await login({ email: email.trim(), password });
       navigate(getTargetDestination(loggedUser.role), { replace: true });
     } catch (err: any) {
+      if (err.requiresVerification) {
+        setVerificationPendingEmail(err.email || email.trim());
+        setError(null);
+        return;
+      }
       setError(err.message || 'Invalid email or password');
     } finally {
       setSubmitting(false);
@@ -299,6 +306,16 @@ export const Login: React.FC<LoginProps> = ({ portal }) => {
           </form>
         </div>
 
+        {/* Email Verification Modal */}
+        <EmailVerificationModal
+          isOpen={Boolean(verificationPendingEmail)}
+          email={verificationPendingEmail || ''}
+          onSuccess={(verifiedUser) => {
+            setVerificationPendingEmail(null);
+            navigate(getTargetDestination(verifiedUser.role), { replace: true });
+          }}
+          onClose={() => setVerificationPendingEmail(null)}
+        />
       </div>
     </div>
   );

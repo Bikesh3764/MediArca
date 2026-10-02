@@ -9,6 +9,7 @@ import { isGoogleConfigured } from '../../config/auth';
 import { SearchableSpecialtySelect } from '../../components/ui/SearchableSpecialtySelect';
 import { DEFAULT_PHONE_PREFIX } from '../../services/api';
 import { sanitizeIndianPhone, formatIndianPhone, isValidIndianPhone } from '../../utils/phoneUtils';
+import { EmailVerificationModal } from '../../components/auth/EmailVerificationModal';
 
 export interface SignupProps {
   initialRole?: 'PATIENT' | 'DOCTOR';
@@ -35,6 +36,7 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
 
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [verificationPendingEmail, setVerificationPendingEmail] = useState<string | null>(null);
 
   const { register, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
@@ -90,8 +92,14 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
         payload.checkingEndTime = '17:00';
       }
 
-      const registered = await register(payload);
-      navigate(getTargetDestination(registered.role), { replace: true });
+      const res = await register(payload);
+      if (res.requiresVerification && res.email) {
+        setVerificationPendingEmail(res.email);
+        return;
+      }
+      if (res.user) {
+        navigate(getTargetDestination(res.user.role), { replace: true });
+      }
     } catch (err: any) {
       setError(err.message || 'Registration failed');
     } finally {
@@ -377,6 +385,16 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
           </form>
         </div>
 
+        {/* Post-Registration Email Verification Modal */}
+        <EmailVerificationModal
+          isOpen={Boolean(verificationPendingEmail)}
+          email={verificationPendingEmail || ''}
+          onSuccess={(verifiedUser) => {
+            setVerificationPendingEmail(null);
+            navigate(getTargetDestination(verifiedUser.role), { replace: true });
+          }}
+          onClose={() => setVerificationPendingEmail(null)}
+        />
       </div>
     </div>
   );

@@ -908,18 +908,41 @@ const getHeaders = (isMultipart = false) => {
 async function handleResponse<T>(res: Response): Promise<T> {
   const data = await res.json();
   if (!res.ok || !data.success) {
-    throw new Error(data.message || 'API request failed');
+    const error: any = new Error(data.message || 'API request failed');
+    if (data.requiresVerification) {
+      error.requiresVerification = true;
+      error.email = data.email;
+    }
+    throw error;
   }
   return data.data !== undefined ? data.data : data;
 }
 
 export const api = {
   // Auth
-  async register(body: any): Promise<{ user: User; token: string }> {
+  async register(body: any): Promise<{ user?: User; token?: string; requiresVerification?: boolean; email?: string; message?: string }> {
     const res = await fetch(`${API_BASE_URL}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
+    });
+    return handleResponse(res);
+  },
+
+  async verifyEmailOtp(body: { email: string; otp: string }): Promise<{ user: User; token: string }> {
+    const res = await fetch(`${API_BASE_URL}/auth/verify-otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    return handleResponse(res);
+  },
+
+  async resendEmailOtp(email: string): Promise<{ success: boolean; message: string }> {
+    const res = await fetch(`${API_BASE_URL}/auth/resend-otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
     });
     return handleResponse(res);
   },

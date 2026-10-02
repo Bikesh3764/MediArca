@@ -8,6 +8,7 @@ import { sanitizeIndianPhone, formatIndianPhone, isValidIndianPhone } from '../.
 import { INDIAN_STATES, getCitiesForState } from '../../utils/indiaStates';
 import { GoogleLogin } from '@react-oauth/google';
 import { isGoogleConfigured } from '../../config/auth';
+import { EmailVerificationModal } from '../../components/auth/EmailVerificationModal';
 
 export const ClinicAuth: React.FC = () => {
   const location = useLocation();
@@ -16,6 +17,7 @@ export const ClinicAuth: React.FC = () => {
   const [mode, setMode] = useState<'login' | 'signup'>(isSignupInit ? 'signup' : 'login');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [verificationPendingEmail, setVerificationPendingEmail] = useState<string | null>(null);
 
   // Form fields
   const [clinicName, setClinicName] = useState('');
@@ -110,6 +112,11 @@ export const ClinicAuth: React.FC = () => {
       }
       navigate('/clinic/dashboard');
     } catch (err: any) {
+      if (err.requiresVerification) {
+        setVerificationPendingEmail(err.email || email.trim());
+        setError(null);
+        return;
+      }
       setError(err.message || 'Invalid clinic credentials');
     } finally {
       setSubmitting(false);
@@ -129,7 +136,7 @@ export const ClinicAuth: React.FC = () => {
     setError(null);
     setSubmitting(true);
     try {
-      await register({
+      const res = await register({
         role: 'CLINIC',
         fullName: clinicName,
         clinicName,
@@ -140,6 +147,10 @@ export const ClinicAuth: React.FC = () => {
         email: email.trim(),
         password,
       });
+      if (res.requiresVerification && res.email) {
+        setVerificationPendingEmail(res.email);
+        return;
+      }
       navigate('/clinic/dashboard');
     } catch (err: any) {
       setError(err.message || 'Clinic registration failed');
@@ -502,6 +513,17 @@ export const ClinicAuth: React.FC = () => {
             </form>
           )}
         </div>
+
+        {/* Email Verification Modal */}
+        <EmailVerificationModal
+          isOpen={Boolean(verificationPendingEmail)}
+          email={verificationPendingEmail || ''}
+          onSuccess={() => {
+            setVerificationPendingEmail(null);
+            navigate('/clinic/dashboard');
+          }}
+          onClose={() => setVerificationPendingEmail(null)}
+        />
       </div>
     </div>
   );

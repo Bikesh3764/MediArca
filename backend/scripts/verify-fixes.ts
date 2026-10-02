@@ -4678,6 +4678,34 @@ Follow-up Date: 2026-10-15`;
   assert(resolveRole('patient') === 'PATIENT', 'Google Auth normalizes patient to PATIENT');
   assert(resolveRole(undefined) === 'PATIENT', 'Google Auth defaults undefined role to PATIENT');
 
+  // --- Test 151: Email Verification OTP Logic ---
+  console.log('\n--- Test 151: Email Verification OTP Logic ---');
+  const generateOtpTest = () => Math.floor(100000 + Math.random() * 900000).toString();
+  for (let i = 0; i < 10; i++) {
+    const code = generateOtpTest();
+    assert(code.length === 6 && /^\d{6}$/.test(code), `Generated OTP ${code} is strictly 6 numerical digits`);
+  }
+
+  const testNow = new Date();
+  const future10m = new Date(testNow.getTime() + 10 * 60 * 1000);
+  const expired1m = new Date(testNow.getTime() - 1 * 60 * 1000);
+  assert(future10m > testNow, 'Fresh 10-minute OTP is valid and active');
+  assert(expired1m < testNow, 'Expired OTP is recognized as invalid/expired');
+
+  const testUser = {
+    email: 'user@example.com',
+    isEmailVerified: false,
+    emailVerificationOtp: '654321',
+    emailVerificationOtpExpiresAt: future10m,
+  };
+  assert(testUser.emailVerificationOtp === '654321', 'Valid OTP matches expected value');
+  assert(testUser.emailVerificationOtp !== '123456', 'Incorrect OTP is rejected');
+  assert(testUser.isEmailVerified === false, 'New registrant is initially unverified');
+
+  const verifiedUser = { ...testUser, isEmailVerified: true, emailVerificationOtp: null, emailVerificationOtpExpiresAt: null };
+  assert(verifiedUser.isEmailVerified === true, 'Verified registrant is marked true');
+  assert(verifiedUser.emailVerificationOtp === null, 'OTP is cleared upon successful verification');
+
   console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);

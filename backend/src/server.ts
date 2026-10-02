@@ -33,6 +33,11 @@ async function safeExecute(primarySql: string, fallbackSql?: string) {
 
 async function ensureSchema() {
   const migrations: [string, string?][] = [
+    // User email verification columns
+    [`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "isEmailVerified" BOOLEAN NOT NULL DEFAULT TRUE;`, `ALTER TABLE "User" ADD COLUMN "isEmailVerified" BOOLEAN DEFAULT 1;`],
+    [`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "emailVerificationOtp" TEXT;`, `ALTER TABLE "User" ADD COLUMN "emailVerificationOtp" TEXT;`],
+    [`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "emailVerificationOtpExpiresAt" TIMESTAMP(3);`, `ALTER TABLE "User" ADD COLUMN "emailVerificationOtpExpiresAt" DATETIME;`],
+
     // DoctorProfile columns
     [`ALTER TABLE "DoctorProfile" ADD COLUMN IF NOT EXISTS "slots" TEXT;`, `ALTER TABLE "DoctorProfile" ADD COLUMN "slots" TEXT;`],
     [`ALTER TABLE "DoctorProfile" ADD COLUMN IF NOT EXISTS "cabinStatus" TEXT NOT NULL DEFAULT 'IN_CABIN';`, `ALTER TABLE "DoctorProfile" ADD COLUMN "cabinStatus" TEXT DEFAULT 'IN_CABIN';`],

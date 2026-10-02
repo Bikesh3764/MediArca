@@ -11,6 +11,7 @@ import { uploadToR2, deleteFromR2, isR2Configured } from '../config/r2';
 import { isValidDobDate, validateDoctorSlots, timeToMinutes, validateDoctorNumericBounds } from '../utils/scheduleUtils';
 import { validateMagicBytes } from '../middleware/uploadMiddleware';
 import { isValidIndianPhone, formatIndianPhone, sanitizeIndianPhone } from '../utils/phoneUtils';
+import { sendVerificationOtpEmail } from '../utils/emailService';
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -171,6 +172,9 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       formattedPhone = formatIndianPhone(trimmedPhone);
     }
 
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
     let newUser;
     if (normalizedRole === 'PATIENT') {
       let formattedDob: string | null = null;
@@ -197,11 +201,14 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
       newUser = await prisma.user.create({
         data: {
-          email: email.toLowerCase().trim(),
+          email: cleanEmail,
           passwordHash,
           fullName,
           phone: formattedPhone,
           role: 'PATIENT',
+          isEmailVerified: false,
+          emailVerificationOtp: otp,
+          emailVerificationOtpExpiresAt: otpExpiresAt,
           patientProfile: {
             create: {
               dateOfBirth: formattedDob,
@@ -249,11 +256,14 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
       newUser = await prisma.user.create({
         data: {
-          email: email.toLowerCase().trim(),
+          email: cleanEmail,
           passwordHash,
           fullName,
           phone: formattedPhone,
           role: 'DOCTOR',
+          isEmailVerified: false,
+          emailVerificationOtp: otp,
+          emailVerificationOtpExpiresAt: otpExpiresAt,
           doctorProfile: {
             create: {
               specialty: profileData.specialty || 'General Physician',
@@ -275,11 +285,14 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     } else if (normalizedRole === 'CLINIC') {
       newUser = await prisma.user.create({
         data: {
-          email: email.toLowerCase().trim(),
+          email: cleanEmail,
           passwordHash,
           fullName: profileData.clinicName || fullName,
           phone: formattedPhone,
           role: 'CLINIC',
+          isEmailVerified: false,
+          emailVerificationOtp: otp,
+          emailVerificationOtpExpiresAt: otpExpiresAt,
           clinicProfile: {
             create: {
               clinicName: profileData.clinicName || fullName,
@@ -297,11 +310,12 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       // RECEPTIONIST
       newUser = await prisma.user.create({
         data: {
-          email: email.toLowerCase().trim(),
+          email: cleanEmail,
           passwordHash,
           fullName,
           phone: formattedPhone,
           role: 'RECEPTIONIST',
+          isEmailVerified: true,
           receptionistProfile: {
             create: {
               phone: formattedPhone,
@@ -317,25 +331,21 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       await migrateSyntheticWalkinAppointments(newUser.id, formattedPhone);
     }
 
-    const token = jwt.sign(
-      {
-        id: newUser.id,
-        email: newUser.email,
-        role: newUser.role,
-        fullName: newUser.fullName,
-        mustChangePassword: newUser.mustChangePassword,
-      },
-      getJwtSecret(),
-      { expiresIn: '7d' }
-    );
+    // Trigger OTP Email dispatch via Gmail SMTP
+    sendVerificationOtpEmail(cleanEmail, otp, fullName).catch((mailErr) => {
+      console.error('Async OTP email dispatch failed:', mailErr);
+    });
 
     const { passwordHash: _, ...userWithoutPassword } = newUser;
     res.status(201).json({
       success: true,
-      message: 'Account registered successfully',
+      requiresVerification: true,
+      email: cleanEmail,
+      message: 'Account registered! A 6-digit verification code has been sent to your email.',
       data: {
+        requiresVerification: true,
+        email: cleanEmail,
         user: userWithoutPassword,
-        token,
       },
     });
   } catch (error: any) {
@@ -424,6 +434,32 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    if (!user.isEmailVerified) {
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          emailVerificationOtp: otp,
+          emailVerificationOtpExpiresAt: otpExpiresAt,
+        },
+      });
+      sendVerificationOtpEmail(user.email, otp, user.fullName).catch((mailErr) => {
+        console.error('Async OTP email dispatch failed on login:', mailErr);
+      });
+      res.status(403).json({
+        success: false,
+        requiresVerification: true,
+        email: user.email,
+        message: 'Your email address is not verified yet. A fresh 6-digit verification code has been sent to your email.',
+        data: {
+          requiresVerification: true,
+          email: user.email,
+        },
+      });
+      return;
+    }
+
     if (user.role === 'RECEPTIONIST') {
       const recStatus = (user.receptionistProfile as any)?.status;
       if (!user.receptionistProfile || recStatus === 'PENDING') {
@@ -486,6 +522,187 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     res.status(500).json({
       success: false,
       message: 'Internal server error during login',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
+  }
+};
+
+export const verifyEmailOtp = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { email, otp } = req.body;
+    if (!email || !otp) {
+      res.status(400).json({ success: false, message: 'Email and 6-digit verification code are required' });
+      return;
+    }
+
+    const cleanEmail = String(email).toLowerCase().trim();
+    const cleanOtp = String(otp).trim();
+
+    const user = await prisma.user.findUnique({
+      where: { email: cleanEmail },
+      include: {
+        patientProfile: true,
+        doctorProfile: {
+          include: {
+            clinics: { include: { clinic: true } },
+          },
+        },
+        clinicProfile: {
+          include: {
+            doctors: { include: { doctor: true } },
+          },
+        },
+        receptionistProfile: {
+          include: { clinic: true },
+        },
+      },
+    });
+
+    if (!user) {
+      res.status(404).json({ success: false, message: 'Account not found with this email' });
+      return;
+    }
+
+    if (user.isEmailVerified) {
+      // User is already verified: issue JWT token and log them in
+      const token = jwt.sign(
+        {
+          id: user.id,
+          email: user.email,
+          role: user.role,
+          fullName: user.fullName,
+          mustChangePassword: user.mustChangePassword,
+        },
+        getJwtSecret(),
+        { expiresIn: '7d' }
+      );
+      const { passwordHash: _, ...userWithoutPassword } = user;
+      (userWithoutPassword as any).needsProfileCompletion = checkNeedsProfileCompletion(user);
+      res.json({
+        success: true,
+        message: 'Email is already verified',
+        data: {
+          user: userWithoutPassword,
+          token,
+        },
+      });
+      return;
+    }
+
+    if (!user.emailVerificationOtp || user.emailVerificationOtp !== cleanOtp) {
+      res.status(400).json({ success: false, message: 'Invalid verification code. Please check your email and try again.' });
+      return;
+    }
+
+    if (user.emailVerificationOtpExpiresAt && user.emailVerificationOtpExpiresAt < new Date()) {
+      res.status(400).json({ success: false, message: 'Verification code has expired. Please request a new code.' });
+      return;
+    }
+
+    // Mark as verified and clear OTP
+    const updatedUser = await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        isEmailVerified: true,
+        emailVerificationOtp: null,
+        emailVerificationOtpExpiresAt: null,
+      },
+      include: {
+        patientProfile: true,
+        doctorProfile: {
+          include: {
+            clinics: { include: { clinic: true } },
+          },
+        },
+        clinicProfile: {
+          include: {
+            doctors: { include: { doctor: true } },
+          },
+        },
+        receptionistProfile: {
+          include: { clinic: true },
+        },
+      },
+    });
+
+    const token = jwt.sign(
+      {
+        id: updatedUser.id,
+        email: updatedUser.email,
+        role: updatedUser.role,
+        fullName: updatedUser.fullName,
+        mustChangePassword: updatedUser.mustChangePassword,
+      },
+      getJwtSecret(),
+      { expiresIn: '7d' }
+    );
+
+    const { passwordHash: _, ...userWithoutPassword } = updatedUser;
+    (userWithoutPassword as any).needsProfileCompletion = checkNeedsProfileCompletion(updatedUser);
+
+    res.json({
+      success: true,
+      message: 'Email verified successfully!',
+      data: {
+        user: userWithoutPassword,
+        token,
+      },
+    });
+  } catch (error: any) {
+    console.error('Verify OTP error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error during verification',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
+  }
+};
+
+export const resendEmailOtp = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      res.status(400).json({ success: false, message: 'Email address is required' });
+      return;
+    }
+
+    const cleanEmail = String(email).toLowerCase().trim();
+    const user = await prisma.user.findUnique({
+      where: { email: cleanEmail },
+    });
+
+    if (!user) {
+      res.status(404).json({ success: false, message: 'Account not found with this email' });
+      return;
+    }
+
+    if (user.isEmailVerified) {
+      res.status(400).json({ success: false, message: 'Email is already verified. Please sign in.' });
+      return;
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        emailVerificationOtp: otp,
+        emailVerificationOtpExpiresAt: otpExpiresAt,
+      },
+    });
+
+    await sendVerificationOtpEmail(cleanEmail, otp, user.fullName);
+
+    res.json({
+      success: true,
+      message: 'A fresh 6-digit verification code has been sent to your email.',
+    });
+  } catch (error: any) {
+    console.error('Resend OTP error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error resending verification code',
       ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
     });
   }
@@ -882,6 +1099,7 @@ export const googleAuth = async (req: Request, res: Response): Promise<void> => 
             fullName,
             avatarUrl,
             role: 'PATIENT',
+            isEmailVerified: true,
             patientProfile: { create: {} },
           },
           include: {
@@ -898,6 +1116,7 @@ export const googleAuth = async (req: Request, res: Response): Promise<void> => 
             fullName,
             avatarUrl,
             role: 'DOCTOR',
+            isEmailVerified: true,
             doctorProfile: {
               create: {
                 specialty: 'General Medicine',
@@ -923,6 +1142,7 @@ export const googleAuth = async (req: Request, res: Response): Promise<void> => 
             fullName,
             avatarUrl,
             role: 'CLINIC',
+            isEmailVerified: true,
             clinicProfile: {
               create: {
                 clinicName: fullName || 'New Healthcare Clinic',
@@ -942,6 +1162,9 @@ export const googleAuth = async (req: Request, res: Response): Promise<void> => 
       user = await prisma.user.update({
         where: { id: user.id },
         data: {
+          isEmailVerified: true,
+          emailVerificationOtp: null,
+          emailVerificationOtpExpiresAt: null,
           ...(avatarUrl && !user.avatarUrl ? { avatarUrl } : {}),
         },
         include: {

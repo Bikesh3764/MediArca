@@ -7,7 +7,8 @@ interface AuthContextType {
   loading: boolean;
   login: (credentials: { email: string; password: string }) => Promise<User>;
   loginWithGoogle: (credential: string, role?: string) => Promise<User>;
-  register: (data: any) => Promise<User>;
+  register: (data: any) => Promise<{ user?: User; requiresVerification?: boolean; email?: string }>;
+  verifyOtp: (email: string, otp: string) => Promise<User>;
   logout: () => void;
   refreshUser: () => Promise<void>;
   updateUser: (updatedUser: User) => void;
@@ -71,8 +72,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return data.user;
   };
 
-  const register = async (formData: any): Promise<User> => {
+  const register = async (formData: any): Promise<{ user?: User; requiresVerification?: boolean; email?: string }> => {
     const data = await api.register(formData);
+    if (data.requiresVerification) {
+      return { requiresVerification: true, email: data.email };
+    }
+    if (data.token && data.user) {
+      localStorage.setItem('mediarca_token', data.token);
+      localStorage.setItem('mediarca_user', JSON.stringify(data.user));
+      setToken(data.token);
+      setUser(data.user);
+      return { user: data.user };
+    }
+    return {};
+  };
+
+  const verifyOtp = async (email: string, otp: string): Promise<User> => {
+    const data = await api.verifyEmailOtp({ email, otp });
     localStorage.setItem('mediarca_token', data.token);
     localStorage.setItem('mediarca_user', JSON.stringify(data.user));
     setToken(data.token);
@@ -97,7 +113,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, loginWithGoogle, register, logout, refreshUser, updateUser }}>
+    <AuthContext.Provider value={{ user, token, loading, login, loginWithGoogle, register, verifyOtp, logout, refreshUser, updateUser }}>
       {children}
     </AuthContext.Provider>
   );
