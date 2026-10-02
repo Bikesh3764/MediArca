@@ -138,6 +138,20 @@ export const GlobalNav: React.FC = () => {
     return name.slice(0, 2).toUpperCase();
   };
 
+  const getNavLinkClass = (active: boolean) =>
+    `px-3.5 py-1.5 rounded-full transition-all duration-200 text-xs flex items-center gap-1.5 cursor-pointer ${
+      active
+        ? 'bg-black/[0.06] text-[#1d1d1f] font-semibold'
+        : 'text-[#86868b] hover:text-[#1d1d1f] hover:bg-black/[0.03] font-medium'
+    }`;
+
+  const getMobileNavLinkClass = (active: boolean) =>
+    `py-2.5 px-3.5 rounded-xl transition-colors flex items-center gap-2 text-xs cursor-pointer ${
+      active
+        ? 'bg-black/[0.06] text-[#1d1d1f] font-semibold'
+        : 'text-[#86868b] hover:bg-black/[0.03] hover:text-[#1d1d1f] font-medium'
+    }`;
+
   const renderNotificationDropdown = (isMobile = false) => (
     <>
       <div
@@ -232,11 +246,7 @@ export const GlobalNav: React.FC = () => {
         <nav className="hidden md:flex items-center gap-1 text-[#86868b]">
           <Link
             to="/"
-            className={`px-3.5 py-1.5 rounded-full transition-all duration-200 text-xs ${
-              isActive('/')
-                ? 'bg-[#0088e8]/10 text-[#0088e8] font-semibold border border-[#0088e8]/20 shadow-2xs'
-                : 'hover:text-[#1d1d1f] hover:bg-black/[0.04] font-medium'
-            }`}
+            className={getNavLinkClass(isActive('/'))}
           >
             Home
           </Link>
@@ -245,22 +255,14 @@ export const GlobalNav: React.FC = () => {
             <>
               <Link
                 to="/patient/appointments"
-                className={`px-3.5 py-1.5 rounded-full transition-all duration-200 text-xs flex items-center gap-1.5 ${
-                  isActive('/patient/appointments')
-                    ? 'bg-[#0088e8]/10 text-[#0088e8] font-semibold border border-[#0088e8]/20 shadow-2xs'
-                    : 'text-[#0088e8] hover:bg-[#0088e8]/10 font-medium'
-                }`}
+                className={getNavLinkClass(isActive('/patient/appointments'))}
               >
-                <Calendar className="w-3.5 h-3.5" />
+                <Calendar className="w-3.5 h-3.5 text-current opacity-80" />
                 Live Queue & Passes
               </Link>
               <Link
                 to="/patient/profile"
-                className={`px-3.5 py-1.5 rounded-full transition-all duration-200 text-xs ${
-                  isActive('/patient/profile')
-                    ? 'bg-[#0088e8]/10 text-[#0088e8] font-semibold border border-[#0088e8]/20 shadow-2xs'
-                    : 'hover:text-[#1d1d1f] hover:bg-black/[0.04] font-medium'
-                }`}
+                className={getNavLinkClass(isActive('/patient/profile'))}
               >
                 Profile
               </Link>
@@ -271,32 +273,20 @@ export const GlobalNav: React.FC = () => {
             <>
               <Link
                 to="/doctor/dashboard"
-                className={`px-3.5 py-1.5 rounded-full transition-all duration-200 text-xs flex items-center gap-1.5 ${
-                  isActive('/doctor/dashboard')
-                    ? 'bg-[#0088e8]/10 text-[#0088e8] font-semibold border border-[#0088e8]/20 shadow-2xs'
-                    : 'text-[#0088e8] hover:bg-[#0088e8]/10 font-medium'
-                }`}
+                className={getNavLinkClass(isActive('/doctor/dashboard') && !location.search.includes('tab=affiliations'))}
               >
-                <Stethoscope className="w-3.5 h-3.5" />
+                <Stethoscope className="w-3.5 h-3.5 text-current opacity-80" />
                 Doctor Console
               </Link>
               <Link
                 to="/doctor/dashboard?tab=affiliations"
-                className={`px-3.5 py-1.5 rounded-full transition-all duration-200 text-xs ${
-                  isActive('/doctor/dashboard') && location.search.includes('tab=affiliations')
-                    ? 'bg-[#0088e8]/10 text-[#0088e8] font-semibold border border-[#0088e8]/20 shadow-2xs'
-                    : 'hover:text-[#1d1d1f] hover:bg-black/[0.04] font-medium'
-                }`}
+                className={getNavLinkClass(isActive('/doctor/dashboard') && location.search.includes('tab=affiliations'))}
               >
                 Clinics & Schedule
               </Link>
               <Link
                 to="/doctor/profile"
-                className={`px-3.5 py-1.5 rounded-full transition-all duration-200 text-xs ${
-                  isActive('/doctor/profile')
-                    ? 'bg-[#0088e8]/10 text-[#0088e8] font-semibold border border-[#0088e8]/20 shadow-2xs'
-                    : 'hover:text-[#1d1d1f] hover:bg-black/[0.04] font-medium'
-                }`}
+                className={getNavLinkClass(isActive('/doctor/profile'))}
               >
                 Profile & Settings
               </Link>
@@ -306,13 +296,9 @@ export const GlobalNav: React.FC = () => {
           {user?.role === 'ADMIN' && (
             <Link
               to="/admin"
-              className={`px-3.5 py-1.5 rounded-full transition-all duration-200 text-xs flex items-center gap-1.5 ${
-                isActive('/admin')
-                  ? 'bg-amber-100/90 text-amber-900 font-semibold border border-amber-300 shadow-2xs'
-                  : 'text-amber-800 hover:bg-amber-50 font-medium'
-              }`}
+              className={getNavLinkClass(isActive('/admin'))}
             >
-              <ShieldCheck className="w-3.5 h-3.5" />
+              <ShieldCheck className="w-3.5 h-3.5 text-current opacity-80" />
               Admin Portal
             </Link>
           )}
@@ -320,13 +306,9 @@ export const GlobalNav: React.FC = () => {
           {user?.role === 'CLINIC' && (
             <Link
               to="/clinic/dashboard"
-              className={`px-3.5 py-1.5 rounded-full transition-all duration-200 text-xs flex items-center gap-1.5 ${
-                isActive('/clinic/dashboard')
-                  ? 'bg-[#0088e8]/10 text-[#0088e8] font-semibold border border-[#0088e8]/20 shadow-2xs'
-                  : 'text-[#0088e8] hover:bg-[#0088e8]/10 font-medium'
-              }`}
+              className={getNavLinkClass(isActive('/clinic/dashboard'))}
             >
-              <Building2 className="w-3.5 h-3.5" />
+              <Building2 className="w-3.5 h-3.5 text-current opacity-80" />
               Clinic Dashboard
             </Link>
           )}
@@ -334,13 +316,9 @@ export const GlobalNav: React.FC = () => {
           {user?.role === 'RECEPTIONIST' && (
             <Link
               to="/receptionist/dashboard"
-              className={`px-3.5 py-1.5 rounded-full transition-all duration-200 text-xs flex items-center gap-1.5 ${
-                isActive('/receptionist/dashboard')
-                  ? 'bg-teal-100/90 text-teal-900 font-semibold border border-teal-300 shadow-2xs'
-                  : 'text-teal-800 hover:bg-teal-50 font-medium'
-              }`}
+              className={getNavLinkClass(isActive('/receptionist/dashboard'))}
             >
-              <Users className="w-3.5 h-3.5" />
+              <Users className="w-3.5 h-3.5 text-current opacity-80" />
               Reception Desk
             </Link>
           )}
@@ -361,7 +339,7 @@ export const GlobalNav: React.FC = () => {
                 >
                   <Bell className="w-4 h-4" />
                   {unreadCount > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-[#0088e8] text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-xs border-2 border-white">
+                    <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-[#0066cc] text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-xs border-2 border-white">
                       {unreadCount > 9 ? '9+' : unreadCount}
                     </span>
                   )}
@@ -385,7 +363,7 @@ export const GlobalNav: React.FC = () => {
                 className="flex items-center gap-2 px-3 py-1 rounded-full bg-[#f5f5f7] hover:bg-[#ebebee] border border-[#e5e5ea] transition-all hover:border-[#d2d2d7]"
                 title="Manage Profile & Settings"
               >
-                <div className="w-6 h-6 rounded-full bg-[#0088e8] flex items-center justify-center text-[10px] font-bold text-white shadow-2xs overflow-hidden flex-shrink-0">
+                <div className="w-6 h-6 rounded-full bg-[#0066cc] flex items-center justify-center text-[10px] font-bold text-white overflow-hidden flex-shrink-0">
                   {user.avatarUrl ? (
                     <img src={getFileUrl(user.avatarUrl)} alt={user.fullName} className="w-full h-full object-cover" />
                   ) : (
@@ -395,7 +373,7 @@ export const GlobalNav: React.FC = () => {
                 <span className="text-xs text-[#1d1d1f] max-w-[120px] truncate font-medium">
                   {user.fullName}
                 </span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-white text-[#0088e8] font-semibold border border-[#0088e8]/20 shadow-2xs">
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-white text-[#1d1d1f] font-medium border border-black/[0.06]">
                   {user.role}
                 </span>
               </Link>
@@ -411,13 +389,13 @@ export const GlobalNav: React.FC = () => {
             <div className="flex items-center gap-2">
               <Link
                 to="/login"
-                className="text-[#1d1d1f] hover:text-[#0088e8] px-3.5 py-1.5 text-xs font-semibold transition-colors hover:bg-black/[0.04] rounded-full"
+                className="text-[#1d1d1f] hover:text-[#0066cc] px-3.5 py-1.5 text-xs font-medium transition-colors hover:bg-black/[0.04] rounded-full"
               >
                 Sign In
               </Link>
               <Link
                 to="/signup"
-                className="bg-[#0088e8] hover:bg-[#0077cc] text-white px-3.5 py-1.5 rounded-full text-xs font-semibold shadow-xs active:scale-[0.98] transition-all"
+                className="bg-[#0066cc] hover:bg-[#0071e3] text-white px-4 py-1.5 rounded-full text-xs font-medium active:scale-95 transition-all"
               >
                 Register
               </Link>
@@ -437,7 +415,7 @@ export const GlobalNav: React.FC = () => {
               >
                 <Bell className="w-4 h-4" />
                 {unreadCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-[16px] px-0.5 bg-[#0088e8] text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                  <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-[16px] px-0.5 bg-[#0066cc] text-white text-[9px] font-bold rounded-full flex items-center justify-center">
                     {unreadCount > 9 ? '9+' : unreadCount}
                   </span>
                 )}
@@ -483,9 +461,7 @@ export const GlobalNav: React.FC = () => {
             <Link
               to="/"
               onClick={closeMenu}
-              className={`py-2 px-3.5 rounded-full transition-colors ${
-                isActive('/') ? 'bg-[#0088e8]/10 text-[#0088e8] font-semibold border border-[#0088e8]/20' : 'hover:bg-black/[0.04] hover:text-[#1d1d1f] font-medium'
-              }`}
+              className={getMobileNavLinkClass(isActive('/'))}
             >
               Home
             </Link>
@@ -495,23 +471,15 @@ export const GlobalNav: React.FC = () => {
                 <Link
                   to="/patient/appointments"
                   onClick={closeMenu}
-                  className={`py-2 px-3.5 rounded-full transition-colors flex items-center gap-2 ${
-                    isActive('/patient/appointments')
-                      ? 'bg-[#0088e8]/10 text-[#0088e8] font-semibold border border-[#0088e8]/20'
-                      : 'text-[#0088e8] hover:bg-[#0088e8]/5 font-medium'
-                  }`}
+                  className={getMobileNavLinkClass(isActive('/patient/appointments'))}
                 >
-                  <Calendar className="w-4 h-4" />
+                  <Calendar className="w-4 h-4 text-current opacity-80" />
                   Live Queue Passes
                 </Link>
                 <Link
                   to="/patient/profile"
                   onClick={closeMenu}
-                  className={`py-2 px-3.5 rounded-full transition-colors flex items-center gap-2 ${
-                    isActive('/patient/profile')
-                      ? 'bg-[#0088e8]/10 text-[#0088e8] font-semibold border border-[#0088e8]/20'
-                      : 'hover:bg-black/[0.04] hover:text-[#1d1d1f] font-medium'
-                  }`}
+                  className={getMobileNavLinkClass(isActive('/patient/profile'))}
                 >
                   Profile & Settings
                 </Link>
@@ -523,34 +491,22 @@ export const GlobalNav: React.FC = () => {
                 <Link
                   to="/doctor/dashboard"
                   onClick={closeMenu}
-                  className={`py-2 px-3.5 rounded-full transition-colors flex items-center gap-2 ${
-                    isActive('/doctor/dashboard')
-                      ? 'bg-[#0088e8]/10 text-[#0088e8] font-semibold border border-[#0088e8]/20'
-                      : 'text-[#0088e8] hover:bg-[#0088e8]/5 font-medium'
-                  }`}
+                  className={getMobileNavLinkClass(isActive('/doctor/dashboard') && !location.search.includes('tab=affiliations'))}
                 >
-                  <Stethoscope className="w-4 h-4" />
+                  <Stethoscope className="w-4 h-4 text-current opacity-80" />
                   Doctor Console
                 </Link>
                 <Link
                   to="/doctor/dashboard?tab=affiliations"
                   onClick={closeMenu}
-                  className={`py-2 px-3.5 rounded-full transition-colors ${
-                    isActive('/doctor/dashboard') && location.search.includes('tab=affiliations')
-                      ? 'bg-[#0088e8]/10 text-[#0088e8] font-semibold border border-[#0088e8]/20'
-                      : 'hover:bg-black/[0.04] hover:text-[#1d1d1f] font-medium'
-                  }`}
+                  className={getMobileNavLinkClass(isActive('/doctor/dashboard') && location.search.includes('tab=affiliations'))}
                 >
                   Clinics & Schedule
                 </Link>
                 <Link
                   to="/doctor/profile"
                   onClick={closeMenu}
-                  className={`py-2 px-3.5 rounded-full transition-colors ${
-                    isActive('/doctor/profile')
-                      ? 'bg-[#0088e8]/10 text-[#0088e8] font-semibold border border-[#0088e8]/20'
-                      : 'hover:bg-black/[0.04] hover:text-[#1d1d1f] font-medium'
-                  }`}
+                  className={getMobileNavLinkClass(isActive('/doctor/profile'))}
                 >
                   Doctor Profile
                 </Link>
@@ -561,13 +517,9 @@ export const GlobalNav: React.FC = () => {
               <Link
                 to="/admin"
                 onClick={closeMenu}
-                className={`py-2 px-3.5 rounded-full transition-colors flex items-center gap-2 ${
-                  isActive('/admin')
-                    ? 'bg-amber-100/90 text-amber-900 font-semibold border border-amber-300'
-                    : 'text-amber-800 hover:bg-amber-50 font-medium'
-                }`}
+                className={getMobileNavLinkClass(isActive('/admin'))}
               >
-                <ShieldCheck className="w-4 h-4" />
+                <ShieldCheck className="w-4 h-4 text-current opacity-80" />
                 Admin Portal
               </Link>
             )}
@@ -576,13 +528,9 @@ export const GlobalNav: React.FC = () => {
               <Link
                 to="/clinic/dashboard"
                 onClick={closeMenu}
-                className={`py-2 px-3.5 rounded-full transition-colors flex items-center gap-2 ${
-                  isActive('/clinic/dashboard')
-                    ? 'bg-[#0088e8]/10 text-[#0088e8] font-semibold border border-[#0088e8]/20'
-                    : 'text-[#0088e8] hover:bg-[#0088e8]/5 font-medium'
-                }`}
+                className={getMobileNavLinkClass(isActive('/clinic/dashboard'))}
               >
-                <Building2 className="w-4 h-4" />
+                <Building2 className="w-4 h-4 text-current opacity-80" />
                 Clinic Dashboard
               </Link>
             )}
@@ -591,13 +539,9 @@ export const GlobalNav: React.FC = () => {
               <Link
                 to="/receptionist/dashboard"
                 onClick={closeMenu}
-                className={`py-2 px-3.5 rounded-full transition-colors flex items-center gap-2 ${
-                  isActive('/receptionist/dashboard')
-                    ? 'bg-teal-100/90 text-teal-900 font-semibold border border-teal-300'
-                    : 'text-teal-800 hover:bg-teal-50 font-medium'
-                }`}
+                className={getMobileNavLinkClass(isActive('/receptionist/dashboard'))}
               >
-                <Users className="w-4 h-4" />
+                <Users className="w-4 h-4 text-current opacity-80" />
                 Reception Desk
               </Link>
             )}
@@ -624,7 +568,7 @@ export const GlobalNav: React.FC = () => {
                 <Link
                   to="/signup"
                   onClick={closeMenu}
-                  className="py-2.5 text-center rounded-full bg-[#0088e8] hover:bg-[#0077cc] text-white font-semibold text-xs active:scale-[0.98] transition-all shadow-xs"
+                  className="py-2.5 text-center rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white font-medium text-xs active:scale-95 transition-all"
                 >
                   Register
                 </Link>
