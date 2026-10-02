@@ -376,47 +376,45 @@ export const Home: React.FC = () => {
       {/* 2. Main Discovery Workspace */}
       <section id="catalog-section" className="w-full px-4 sm:px-6 lg:px-10 xl:px-14 py-8 sm:py-10 flex-1">
         {/* Navigation & Search Bar Header */}
-        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 mb-8 pb-4 border-b border-[#e5e5ea]">
-          <div className="flex items-center gap-3 shrink-0">
-            <div className="inline-flex p-1 bg-[#e5e5ea] rounded-full border border-[#d2d2d7]/50">
-              <button
-                type="button"
-                onClick={() => handleSectionSwitch('clinics')}
-                className={`flex items-center gap-2 px-5 py-2 rounded-full text-xs sm:text-sm font-semibold transition-all cursor-pointer active:scale-95 ${
-                  activeSection === 'clinics'
-                    ? 'bg-white text-[#1d1d1f]'
-                    : 'text-[#86868b] hover:text-[#1d1d1f]'
-                }`}
-              >
-                <Building2 className={`w-4 h-4 ${activeSection === 'clinics' ? 'text-[#0066cc]' : 'text-[#86868b]'}`} />
-                <span>Clinics</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSectionSwitch('doctors')}
-                className={`flex items-center gap-2 px-5 py-2 rounded-full text-xs sm:text-sm font-semibold transition-all cursor-pointer active:scale-95 ${
-                  activeSection === 'doctors'
-                    ? 'bg-white text-[#1d1d1f]'
-                    : 'text-[#86868b] hover:text-[#1d1d1f]'
-                }`}
-              >
-                <Stethoscope className={`w-4 h-4 ${activeSection === 'doctors' ? 'text-[#0066cc]' : 'text-[#86868b]'}`} />
-                <span>Doctors</span>
-              </button>
-            </div>
+        <div className="flex flex-col sm:flex-row items-center gap-3.5 sm:gap-4 pb-6 mb-8 border-b border-[#e5e5ea]">
+          <div className="h-11 inline-flex items-center p-1 bg-[#f5f5f7] rounded-full border border-[#e5e5ea] shrink-0">
+            <button
+              type="button"
+              onClick={() => handleSectionSwitch('clinics')}
+              className={`h-full flex items-center gap-2 px-5 rounded-full text-xs sm:text-sm font-semibold transition-all cursor-pointer active:scale-95 ${
+                activeSection === 'clinics'
+                  ? 'bg-white text-[#1d1d1f] shadow-xs'
+                  : 'text-[#86868b] hover:text-[#1d1d1f]'
+              }`}
+            >
+              <Building2 className={`w-4 h-4 ${activeSection === 'clinics' ? 'text-[#0066cc]' : 'text-[#86868b]'}`} />
+              <span>Clinics</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSectionSwitch('doctors')}
+              className={`h-full flex items-center gap-2 px-5 rounded-full text-xs sm:text-sm font-semibold transition-all cursor-pointer active:scale-95 ${
+                activeSection === 'doctors'
+                  ? 'bg-white text-[#1d1d1f] shadow-xs'
+                  : 'text-[#86868b] hover:text-[#1d1d1f]'
+              }`}
+            >
+              <Stethoscope className={`w-4 h-4 ${activeSection === 'doctors' ? 'text-[#0066cc]' : 'text-[#86868b]'}`} />
+              <span>Doctors</span>
+            </button>
           </div>
 
           {/* Search bar beside Clinics & Doctors Switch */}
           {activeSection === 'clinics' && !selectedClinic && (
-            <div className="flex-1 max-w-3xl bg-white p-2 rounded-[20px] sm:rounded-full border border-[#e0e0e0] flex flex-col sm:flex-row items-center gap-2 sm:gap-3">
-              <div className="flex items-center gap-2 flex-1 w-full px-3">
+            <div className="flex-1 h-11 bg-white px-3.5 rounded-full border border-[#e5e5ea] flex items-center gap-2.5 sm:gap-3">
+              <div className="flex items-center gap-2 flex-1 h-full min-w-0">
                 <Search className="w-4 h-4 text-[#86868b] shrink-0" />
                 <input
                   type="text"
                   value={clinicSearchQuery}
                   onChange={(e) => setClinicSearchQuery(e.target.value)}
                   placeholder="Search clinics by name or address..."
-                  className="w-full bg-transparent text-xs sm:text-sm text-[#1d1d1f] placeholder-[#86868b] focus:outline-none"
+                  className="w-full h-full bg-transparent text-xs sm:text-sm text-[#1d1d1f] placeholder-[#86868b] focus:outline-none"
                 />
                 {clinicSearchQuery && (
                   <button
@@ -429,17 +427,17 @@ export const Home: React.FC = () => {
                 )}
               </div>
 
-              <div className="hidden sm:block w-px h-5 bg-[#e0e0e0]" />
+              <div className="hidden sm:block w-px h-5 bg-[#e5e5ea] shrink-0" />
 
               {/* State Filter */}
-              <div className="w-full sm:w-36 px-2">
+              <div className="w-32 sm:w-36 h-full flex items-center shrink-0">
                 <select
                   value={clinicSelectedState}
                   onChange={(e) => {
                     setClinicSelectedState(e.target.value);
                     setClinicSelectedCity('All');
                   }}
-                  className="w-full bg-transparent text-xs sm:text-sm font-normal text-[#1d1d1f] focus:outline-none cursor-pointer"
+                  className="w-full h-full bg-transparent text-xs sm:text-sm font-normal text-[#1d1d1f] focus:outline-none cursor-pointer pr-1"
                 >
                   <option value="All">All States</option>
                   {INDIAN_STATES.map((st) => (
@@ -450,17 +448,17 @@ export const Home: React.FC = () => {
                 </select>
               </div>
 
-              <div className="hidden sm:block w-px h-5 bg-[#e0e0e0]" />
+              <div className="hidden sm:block w-px h-5 bg-[#e5e5ea] shrink-0" />
 
               {/* City Filter */}
-              <div className="w-full sm:w-36 px-2">
+              <div className="w-32 sm:w-36 h-full flex items-center shrink-0">
                 <select
                   value={clinicSelectedCity}
                   onChange={(e) => setClinicSelectedCity(e.target.value)}
-                  className="w-full bg-transparent text-xs sm:text-sm font-normal text-[#1d1d1f] focus:outline-none cursor-pointer"
+                  className="w-full h-full bg-transparent text-xs sm:text-sm font-normal text-[#1d1d1f] focus:outline-none cursor-pointer pr-1"
                 >
                   <option value="All">
-                    {clinicSelectedState !== 'All' ? `All Cities in ${clinicSelectedState}` : 'All Cities'}
+                    {clinicSelectedState !== 'All' ? `All in ${clinicSelectedState}` : 'All Cities'}
                   </option>
                   {availableClinicCities.map((ct) => (
                     <option key={ct} value={ct}>
@@ -474,7 +472,7 @@ export const Home: React.FC = () => {
                 <button
                   type="button"
                   onClick={resetClinicFilters}
-                  className="px-3 py-1.5 rounded-full text-xs font-normal text-[#86868b] hover:text-[#1d1d1f] cursor-pointer active:scale-95"
+                  className="h-7 px-2.5 rounded-full text-xs font-normal text-[#86868b] hover:text-[#1d1d1f] hover:bg-black/[0.04] cursor-pointer active:scale-95 shrink-0"
                 >
                   Reset
                 </button>
@@ -483,43 +481,43 @@ export const Home: React.FC = () => {
           )}
 
           {activeSection === 'doctors' && (
-            <div className="flex-1 max-w-3xl bg-white p-2 rounded-[20px] sm:rounded-full border border-[#e0e0e0] flex flex-col sm:flex-row items-center gap-2 sm:gap-3">
-              <div className="flex items-center gap-2 flex-1 w-full px-3">
+            <div className="flex-1 h-11 bg-white px-3.5 rounded-full border border-[#e5e5ea] flex items-center gap-2.5 sm:gap-3">
+              <div className="flex items-center gap-2 flex-1 h-full min-w-0">
                 <Search className="w-4 h-4 text-[#86868b] shrink-0" />
                 <input
                   type="text"
                   value={doctorSearchQuery}
                   onChange={(e) => setDoctorSearchQuery(e.target.value)}
                   placeholder="Search doctors by name or specialty..."
-                  className="w-full bg-transparent text-xs sm:text-sm text-[#1d1d1f] placeholder-[#86868b] focus:outline-none"
+                  className="w-full h-full bg-transparent text-xs sm:text-sm text-[#1d1d1f] placeholder-[#86868b] focus:outline-none"
                 />
                 {doctorSearchQuery && (
                   <button
                     type="button"
                     onClick={() => setDoctorSearchQuery('')}
-                    className="text-[#86868b] hover:text-[#1d1d1f]"
+                    className="text-[#86868b] hover:text-[#1d1d1f] cursor-pointer"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
                 )}
               </div>
 
-              <div className="hidden sm:block w-px h-5 bg-[#e0e0e0]" />
+              <div className="hidden sm:block w-px h-5 bg-[#e5e5ea] shrink-0" />
 
-              <div className="flex items-center gap-2 w-full sm:w-44 px-3">
+              <div className="flex items-center gap-2 w-36 sm:w-44 h-full shrink-0">
                 <MapPin className="w-4 h-4 text-[#86868b] shrink-0" />
                 <input
                   type="text"
                   value={doctorLocationQuery}
                   onChange={(e) => setDoctorLocationQuery(e.target.value)}
                   placeholder="City or locality..."
-                  className="w-full bg-transparent text-xs sm:text-sm text-[#1d1d1f] placeholder-[#86868b] focus:outline-none"
+                  className="w-full h-full bg-transparent text-xs sm:text-sm text-[#1d1d1f] placeholder-[#86868b] focus:outline-none"
                 />
                 {doctorLocationQuery && (
                   <button
                     type="button"
                     onClick={() => setDoctorLocationQuery('')}
-                    className="text-[#86868b] hover:text-[#1d1d1f]"
+                    className="text-[#86868b] hover:text-[#1d1d1f] cursor-pointer"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -530,7 +528,7 @@ export const Home: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setDoctorMobileFiltersOpen(!doctorMobileFiltersOpen)}
-                className="lg:hidden px-3.5 py-1.5 rounded-full border border-[#e0e0e0] bg-[#f5f5f7] text-xs font-medium text-[#1d1d1f] flex items-center gap-1.5"
+                className="lg:hidden h-7 px-3 rounded-full border border-[#e5e5ea] bg-[#f5f5f7] text-xs font-medium text-[#1d1d1f] flex items-center gap-1.5 shrink-0"
               >
                 <SlidersHorizontal className="w-3.5 h-3.5" />
                 <span>Filters</span>
@@ -540,7 +538,7 @@ export const Home: React.FC = () => {
                 <button
                   type="button"
                   onClick={resetDoctorFilters}
-                  className="px-3 py-1.5 rounded-full text-xs font-normal text-[#86868b] hover:text-[#1d1d1f] cursor-pointer active:scale-95"
+                  className="h-7 px-2.5 rounded-full text-xs font-normal text-[#86868b] hover:text-[#1d1d1f] hover:bg-black/[0.04] cursor-pointer active:scale-95 shrink-0"
                 >
                   Reset
                 </button>

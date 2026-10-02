@@ -304,50 +304,48 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
   const discoveryContent = (
     <div className="w-full space-y-6">
       {/* Apple Segmented Switcher Header: Clinics & Doctors */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 pb-4 border-b border-[#e5e5ea]">
-        <div className="flex items-center gap-3 shrink-0">
-          <div className="inline-flex p-1 bg-[#e5e5ea] rounded-full border border-[#d2d2d7]/50">
-            <button
-              type="button"
-              onClick={() => {
-                setActiveSection('clinics');
-                setSelectedClinic(null);
-              }}
-              className={`flex items-center gap-2 px-5 py-2 rounded-full text-xs sm:text-sm font-semibold transition-all cursor-pointer active:scale-95 ${
-                activeSection === 'clinics'
-                  ? 'bg-white text-[#1d1d1f]'
-                  : 'text-[#86868b] hover:text-[#1d1d1f]'
-              }`}
-            >
-              <Building2 className={`w-4 h-4 ${activeSection === 'clinics' ? 'text-[#0066cc]' : 'text-[#86868b]'}`} />
-              <span>Clinics</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveSection('doctors')}
-              className={`flex items-center gap-2 px-5 py-2 rounded-full text-xs sm:text-sm font-semibold transition-all cursor-pointer active:scale-95 ${
-                activeSection === 'doctors'
-                  ? 'bg-white text-[#1d1d1f]'
-                  : 'text-[#86868b] hover:text-[#1d1d1f]'
-              }`}
-            >
-              <Stethoscope className={`w-4 h-4 ${activeSection === 'doctors' ? 'text-[#0066cc]' : 'text-[#86868b]'}`} />
-              <span>Doctors</span>
-            </button>
-          </div>
+      <div className="flex flex-col sm:flex-row items-center gap-3.5 sm:gap-4 pb-6 border-b border-[#e5e5ea]">
+        <div className="h-11 inline-flex items-center p-1 bg-[#f5f5f7] rounded-full border border-[#e5e5ea] shrink-0">
+          <button
+            type="button"
+            onClick={() => {
+              setActiveSection('clinics');
+              setSelectedClinic(null);
+            }}
+            className={`h-full flex items-center gap-2 px-5 rounded-full text-xs sm:text-sm font-semibold transition-all cursor-pointer active:scale-95 ${
+              activeSection === 'clinics'
+                ? 'bg-white text-[#1d1d1f] shadow-xs'
+                : 'text-[#86868b] hover:text-[#1d1d1f]'
+            }`}
+          >
+            <Building2 className={`w-4 h-4 ${activeSection === 'clinics' ? 'text-[#0066cc]' : 'text-[#86868b]'}`} />
+            <span>Clinics</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveSection('doctors')}
+            className={`h-full flex items-center gap-2 px-5 rounded-full text-xs sm:text-sm font-semibold transition-all cursor-pointer active:scale-95 ${
+              activeSection === 'doctors'
+                ? 'bg-white text-[#1d1d1f] shadow-xs'
+                : 'text-[#86868b] hover:text-[#1d1d1f]'
+            }`}
+          >
+            <Stethoscope className={`w-4 h-4 ${activeSection === 'doctors' ? 'text-[#0066cc]' : 'text-[#86868b]'}`} />
+            <span>Doctors</span>
+          </button>
         </div>
 
         {/* Search bar beside Clinics Switch */}
         {activeSection === 'clinics' && !selectedClinic && (
-          <div className="flex-1 max-w-2xl bg-white p-1.5 sm:p-2 rounded-[20px] sm:rounded-full border border-[#e0e0e0] flex flex-col sm:flex-row items-center gap-2 sm:gap-3 shadow-2xs">
-            <div className="flex items-center gap-2 flex-1 w-full px-3">
+          <div className="flex-1 h-11 bg-white px-3.5 rounded-full border border-[#e5e5ea] flex items-center gap-2.5 sm:gap-3">
+            <div className="flex items-center gap-2 flex-1 h-full min-w-0">
               <Search className="w-4 h-4 text-[#86868b] shrink-0" />
               <input
                 type="text"
                 value={clinicSearchQuery}
                 onChange={(e) => setClinicSearchQuery(e.target.value)}
                 placeholder="Search clinics by name or address..."
-                className="w-full bg-transparent text-xs sm:text-sm text-[#1d1d1f] placeholder-[#86868b] focus:outline-none"
+                className="w-full h-full bg-transparent text-xs sm:text-sm text-[#1d1d1f] placeholder-[#86868b] focus:outline-none"
               />
               {clinicSearchQuery && (
                 <button
@@ -360,17 +358,17 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
               )}
             </div>
 
-            <div className="hidden sm:block w-px h-5 bg-[#e0e0e0]" />
+            <div className="hidden sm:block w-px h-5 bg-[#e5e5ea] shrink-0" />
 
             {/* State Filter */}
-            <div className="w-full sm:w-36 px-2">
+            <div className="w-32 sm:w-36 h-full flex items-center shrink-0">
               <select
                 value={clinicSelectedState}
                 onChange={(e) => {
                   setClinicSelectedState(e.target.value);
                   setClinicSelectedCity('All');
                 }}
-                className="w-full bg-transparent text-xs sm:text-sm font-normal text-[#1d1d1f] focus:outline-none cursor-pointer"
+                className="w-full h-full bg-transparent text-xs sm:text-sm font-normal text-[#1d1d1f] focus:outline-none cursor-pointer pr-1"
               >
                 <option value="All">All States</option>
                 {INDIAN_STATES.map((st) => (
@@ -381,17 +379,17 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
               </select>
             </div>
 
-            <div className="hidden sm:block w-px h-5 bg-[#e0e0e0]" />
+            <div className="hidden sm:block w-px h-5 bg-[#e5e5ea] shrink-0" />
 
             {/* City Filter */}
-            <div className="w-full sm:w-36 px-2">
+            <div className="w-32 sm:w-36 h-full flex items-center shrink-0">
               <select
                 value={clinicSelectedCity}
                 onChange={(e) => setClinicSelectedCity(e.target.value)}
-                className="w-full bg-transparent text-xs sm:text-sm font-normal text-[#1d1d1f] focus:outline-none cursor-pointer"
+                className="w-full h-full bg-transparent text-xs sm:text-sm font-normal text-[#1d1d1f] focus:outline-none cursor-pointer pr-1"
               >
                 <option value="All">
-                  {clinicSelectedState !== 'All' ? `All Cities in ${clinicSelectedState}` : 'All Cities'}
+                  {clinicSelectedState !== 'All' ? `All in ${clinicSelectedState}` : 'All Cities'}
                 </option>
                 {availableClinicCities.map((ct) => (
                   <option key={ct} value={ct}>
@@ -405,7 +403,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
               <button
                 type="button"
                 onClick={resetClinicFilters}
-                className="px-3 py-1.5 rounded-full text-xs font-normal text-[#86868b] hover:text-[#1d1d1f] cursor-pointer active:scale-95"
+                className="h-7 px-2.5 rounded-full text-xs font-normal text-[#86868b] hover:text-[#1d1d1f] hover:bg-black/[0.04] cursor-pointer active:scale-95 shrink-0"
               >
                 Reset
               </button>
