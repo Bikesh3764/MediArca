@@ -938,49 +938,43 @@ export const Home: React.FC = () => {
                         >
                           {(doctor.user?.fullName ? doctor.user.fullName.replace(/^Dr\.\s*/i, '').trim()[0] : null) || 'D'}
                         </div>
-
-                        {/* Subtle bottom gradient scrim so badges always pop with high contrast */}
-                        <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/50 via-black/20 to-transparent pointer-events-none" />
-
-                        {/* Floating Specialty Badge on Bottom Left */}
-                        <div className="absolute bottom-2.5 left-2.5 z-10">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedSpecialty(doctor.specialty);
-                            }}
-                            className="backdrop-blur-md bg-white/85 hover:bg-white text-[#1d1d1f] text-xs font-medium h-7 px-3 rounded-full shadow-[0_2px_10px_rgba(0,0,0,0.10)] hover:shadow-[0_4px_14px_rgba(0,0,0,0.16)] border border-white/80 flex items-center gap-1.5 tracking-tight transition-all active:scale-95 cursor-pointer"
-                            title={`Filter by ${doctor.specialty}`}
-                          >
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#0066cc] shadow-[0_0_6px_rgba(0,102,204,0.6)] shrink-0" />
-                            <span>{doctor.specialty}</span>
-                          </button>
-                        </div>
-
-                        {/* Floating Clinic / City Badge on Bottom Right */}
-                        {clinicLocationLabel && (
-                          <div className="absolute bottom-2.5 right-2.5 z-10" title={allCitiesTooltip}>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (displayCity) setLocationQuery(displayCity);
-                              }}
-                              className="backdrop-blur-md bg-white/85 hover:bg-white text-[#1d1d1f] text-xs font-medium h-7 px-3 rounded-full shadow-[0_2px_10px_rgba(0,0,0,0.10)] hover:shadow-[0_4px_14px_rgba(0,0,0,0.16)] border border-white/80 flex items-center gap-1.5 tracking-tight transition-all active:scale-95 cursor-pointer"
-                              title={allCitiesTooltip || `Filter by ${displayCity}`}
-                            >
-                              <MapPin className="w-3.5 h-3.5 text-[#0066cc] stroke-[2] shrink-0" />
-                              <span>{clinicLocationLabel}</span>
-                            </button>
-                          </div>
-                        )}
                       </div>
 
                       {/* 2. Doctor Details Flowing Down Lengthwise */}
                       <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between">
                         <div>
-                          {/* Doctor Name, Specialty & Experience */}
+                          {/* Department & Location Row */}
+                          <div className="flex items-center justify-between gap-2 mb-2">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedSpecialty(doctor.specialty);
+                              }}
+                              className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#0066cc]/8 hover:bg-[#0066cc]/15 text-[#0066cc] text-[11px] font-semibold border border-[#0066cc]/15 transition-colors cursor-pointer"
+                              title={`Filter by ${doctor.specialty}`}
+                            >
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#0066cc]" />
+                              <span>{doctor.specialty}</span>
+                            </button>
+
+                            {clinicLocationLabel && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (displayCity) setLocationQuery(displayCity);
+                                }}
+                                className="inline-flex items-center gap-1 text-[11px] text-[#86868b] hover:text-[#1d1d1f] font-medium transition-colors cursor-pointer truncate max-w-[55%]"
+                                title={allCitiesTooltip || clinicLocationLabel}
+                              >
+                                <MapPin className="w-3 h-3 text-[#0066cc] shrink-0" />
+                                <span className="truncate">{clinicLocationLabel}</span>
+                              </button>
+                            )}
+                          </div>
+
+                          {/* Doctor Name, Qualifications & Experience */}
                           <div className="min-w-0">
                             <div className="flex items-center gap-1.5 min-w-0">
                               <h3
@@ -994,7 +988,7 @@ export const Home: React.FC = () => {
                             </div>
 
                             <p className="mt-1 text-xs text-[#86868b] truncate font-normal">
-                              {doctor.specialty} • {doctor.experienceYears} yrs exp{cleanDegrees ? ` • ${cleanDegrees}` : ''}
+                              {doctor.experienceYears} yrs experience{cleanDegrees ? ` • ${cleanDegrees}` : ''}
                             </p>
                           </div>
 
