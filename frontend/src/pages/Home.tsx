@@ -895,12 +895,6 @@ export const Home: React.FC = () => {
                     ? uniqueCities.find((c) => c.toLowerCase().includes(locationQuery.trim().toLowerCase()))
                     : null;
                   const displayCity = matchedCity || uniqueCities[0] || '';
-                  const extraCitiesCount = uniqueCities.length > 1 ? uniqueCities.length - 1 : 0;
-                  const clinicLocationLabel = displayCity
-                    ? extraCitiesCount > 0
-                      ? `${displayCity} (+${extraCitiesCount})`
-                      : displayCity
-                    : '';
                   const locationStrings = affiliatedClinics
                     .map((c) => [c?.city?.trim(), c?.state?.trim()].filter(Boolean).join(', '))
                     .filter((s) => s.length > 0);
@@ -943,61 +937,50 @@ export const Home: React.FC = () => {
                       {/* 2. Doctor Details Flowing Down Lengthwise */}
                       <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between">
                         <div>
-                          {/* Department & Location Row */}
-                          <div className="flex items-center justify-between gap-2 mb-2">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedSpecialty(doctor.specialty);
-                              }}
-                              className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#0066cc]/8 hover:bg-[#0066cc]/15 text-[#0066cc] text-[11px] font-semibold border border-[#0066cc]/15 transition-colors cursor-pointer"
-                              title={`Filter by ${doctor.specialty}`}
-                            >
-                              <span className="w-1.5 h-1.5 rounded-full bg-[#0066cc]" />
-                              <span>{doctor.specialty}</span>
-                            </button>
+                          {/* Doctor Name & Experience Badge */}
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <h3
+                                  onClick={() => navigate(getHomeDoctorDetailPath(doctor.id))}
+                                  className="text-[17px] font-semibold text-[#1d1d1f] hover:text-[#0066cc] cursor-pointer tracking-tight transition-colors truncate"
+                                  title={doctor.user?.fullName || 'Doctor'}
+                                >
+                                  {doctor.user?.fullName || 'Doctor'}
+                                </h3>
+                                <CheckCircle2 className="w-4 h-4 text-[#0066cc] shrink-0" />
+                              </div>
 
-                            {clinicLocationLabel && (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (displayCity) setLocationQuery(displayCity);
-                                }}
-                                className="inline-flex items-center gap-1 text-[11px] text-[#86868b] hover:text-[#1d1d1f] font-medium transition-colors cursor-pointer truncate max-w-[55%]"
-                                title={allCitiesTooltip || clinicLocationLabel}
-                              >
-                                <MapPin className="w-3 h-3 text-[#0066cc] shrink-0" />
-                                <span className="truncate">{clinicLocationLabel}</span>
-                              </button>
-                            )}
-                          </div>
-
-                          {/* Doctor Name, Qualifications & Experience */}
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-1.5 min-w-0">
-                              <h3
-                                onClick={() => navigate(getHomeDoctorDetailPath(doctor.id))}
-                                className="text-[17px] font-semibold text-[#1d1d1f] hover:text-[#0066cc] cursor-pointer tracking-tight transition-colors truncate"
-                                title={doctor.user?.fullName || 'Doctor'}
-                              >
-                                {doctor.user?.fullName || 'Doctor'}
-                              </h3>
-                              <CheckCircle2 className="w-4 h-4 text-[#0066cc] shrink-0" />
+                              {/* Specialty & Degrees */}
+                              <p className="mt-1 text-xs text-[#86868b] truncate font-normal">
+                                <span className="text-[#0066cc] font-medium">{doctor.specialty}</span>
+                                {cleanDegrees ? ` • ${cleanDegrees}` : ''}
+                              </p>
                             </div>
 
-                            <p className="mt-1 text-xs text-[#86868b] truncate font-normal">
-                              {doctor.experienceYears} yrs experience{cleanDegrees ? ` • ${cleanDegrees}` : ''}
-                            </p>
+                            {/* Experience Pill */}
+                            <span className="text-[11px] font-medium text-[#48484a] bg-[#f5f5f7] px-2.5 py-1 rounded-full border border-[#e5e5ea] shrink-0">
+                              {doctor.experienceYears} yrs exp
+                            </span>
                           </div>
 
-                          {/* Clinical Venue & Shifts: Natural open layout */}
-                          <div className="mt-3.5 pt-3 border-t border-[#f0f0f2] space-y-1.5 text-xs">
-                            <div className="flex items-center gap-2 min-w-0 text-[#1d1d1f]">
-                              <Building2 className="w-3.5 h-3.5 text-[#86868b] shrink-0" />
-                              <span className="truncate font-normal" title={primaryClinic?.clinicName}>
-                                {hasClinics && primaryClinic ? primaryClinic.clinicName : 'Direct Practice'}
+                          {/* Clinical Venue & Shifts (Unified & Clean) */}
+                          <div className="mt-4 space-y-2 text-xs text-[#636366]">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <MapPin className="w-3.5 h-3.5 text-[#86868b] shrink-0" />
+                              <span className="truncate text-[#1d1d1f] font-normal" title={allCitiesTooltip || primaryClinic?.clinicName}>
+                                {hasClinics && primaryClinic ? (
+                                  <>
+                                    <span className="font-medium text-[#1d1d1f]">{primaryClinic.clinicName}</span>
+                                    {primaryClinic.city ? (
+                                      <span className="text-[#86868b]"> • {primaryClinic.city}</span>
+                                    ) : displayCity ? (
+                                      <span className="text-[#86868b]"> • {displayCity}</span>
+                                    ) : null}
+                                  </>
+                                ) : (
+                                  <span className="text-[#86868b]">Direct Practice{displayCity ? ` • ${displayCity}` : ''}</span>
+                                )}
                               </span>
                               {(doctor.clinics?.length ?? 0) > 1 && (
                                 <span className="text-[11px] text-[#86868b] shrink-0">
@@ -1020,11 +1003,12 @@ export const Home: React.FC = () => {
                         </div>
 
                         {/* Footer: Fee & Booking CTA */}
-                        <div className="mt-4 pt-3 border-t border-[#f0f0f2] flex items-center justify-between">
-                          <div>
-                            <span className="text-lg font-semibold text-[#1d1d1f] tracking-tight">
+                        <div className="mt-4 pt-3.5 border-t border-[#f0f0f2] flex items-center justify-between">
+                          <div className="flex items-baseline gap-1">
+                            <span className="text-xl font-semibold text-[#1d1d1f] tracking-tight">
                               ₹{doctor.consultationFee.toFixed(0)}
                             </span>
+                            <span className="text-xs text-[#86868b] font-normal">/ visit</span>
                           </div>
 
                           <div>
@@ -1032,7 +1016,7 @@ export const Home: React.FC = () => {
                               <button
                                 type="button"
                                 onClick={() => navigate(getHomeDoctorBookPath(doctor.id))}
-                                className="h-8 px-4 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-medium transition-all active:scale-[0.98] cursor-pointer"
+                                className="h-8 px-5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-medium transition-all active:scale-[0.98] cursor-pointer shadow-2xs hover:shadow-xs"
                               >
                                 Book
                               </button>
