@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { AppleButton } from '../../components/ui/AppleButton';
 import { BrandLogo } from '../../components/ui/BrandLogo';
-import { AlertCircle, UserCheck, Stethoscope, Building2, ArrowRight } from 'lucide-react';
+import { AlertCircle, UserCheck, Stethoscope, Building2 } from 'lucide-react';
 import { GoogleLogin } from '@react-oauth/google';
 import { isGoogleConfigured } from '../../config/auth';
 import { SearchableSpecialtySelect } from '../../components/ui/SearchableSpecialtySelect';
@@ -142,21 +142,6 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
         <Link to="/" className="inline-block mb-3 hover:opacity-90 transition-opacity">
           <BrandLogo variant="full" size="lg" imgClassName="h-9 w-auto mx-auto" />
         </Link>
-
-        {/* Portal Identifier Badge */}
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#0088e8]/10 text-[#0088e8] text-xs font-semibold mb-3 border border-[#0088e8]/20 shadow-2xs">
-          {role === 'DOCTOR' ? (
-            <>
-              <Stethoscope className="w-3.5 h-3.5" />
-              <span>Doctor Practice Portal</span>
-            </>
-          ) : (
-            <>
-              <UserCheck className="w-3.5 h-3.5" />
-              <span>Patient Healthcare Portal</span>
-            </>
-          )}
-        </div>
 
         <h2 className="text-3xl font-semibold text-[#1d1d1f] tracking-tight">
           {role === 'DOCTOR' ? 'Doctor Practice Registration' : 'Patient Registration'}
@@ -392,44 +377,6 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
           </form>
         </div>
 
-        {/* Portal Switcher Card */}
-        <div className="mt-5 p-4 rounded-2xl bg-white border border-[#e5e5ea] shadow-2xs space-y-2.5">
-          <p className="text-[11px] font-semibold text-[#86868b] uppercase tracking-wider">
-            Switch Dedicated Portal:
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-xs">
-            {role === 'DOCTOR' ? (
-              <Link
-                to="/patient/signup"
-                onClick={() => setRole('PATIENT')}
-                className="flex items-center gap-1.5 text-[#0088e8] hover:text-[#0077cc] font-medium transition-colors"
-              >
-                <UserCheck className="w-3.5 h-3.5" />
-                <span>Patient Registration</span>
-                <ArrowRight className="w-3 h-3" />
-              </Link>
-            ) : (
-              <Link
-                to="/doctor/signup"
-                onClick={() => setRole('DOCTOR')}
-                className="flex items-center gap-1.5 text-[#0088e8] hover:text-[#0077cc] font-medium transition-colors"
-              >
-                <Stethoscope className="w-3.5 h-3.5" />
-                <span>Doctor Practice Registration</span>
-                <ArrowRight className="w-3 h-3" />
-              </Link>
-            )}
-
-            <Link
-              to="/clinic/signup"
-              className="flex items-center gap-1.5 text-[#86868b] hover:text-[#1d1d1f] font-medium transition-colors"
-            >
-              <Building2 className="w-3.5 h-3.5" />
-              <span>Clinic Partner Portal</span>
-              <ArrowRight className="w-3 h-3" />
-            </Link>
-          </div>
-        </div>
       </div>
     </div>
   );
