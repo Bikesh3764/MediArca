@@ -570,20 +570,22 @@ export const Home: React.FC = () => {
                 {/* Selected Clinic Header Card */}
                 <div className="bg-white rounded-[20px] border border-[#e0e0e0] p-6 sm:p-8">
                   <div>
-                    <h2 className="text-2xl sm:text-3xl font-semibold text-[#1d1d1f] tracking-tight mb-2">
+                    <h2 className="text-2xl sm:text-3xl font-semibold text-[#1d1d1f] tracking-tight mb-2.5">
                       {selectedClinic.clinicName}
                     </h2>
-                    <div className="space-y-1.5 text-sm text-[#7a7a7a]">
+                    <div className="space-y-2 text-sm">
                       <p className="flex items-center gap-2">
-                        <MapPin className="w-4 h-4 text-[#86868b] shrink-0" />
-                        <span>
+                        <MapPin className="w-4 h-4 text-[#0066cc] shrink-0" />
+                        <span className="font-semibold text-[#1d1d1f] tracking-tight">
                           {getClinicLocationDisplay(selectedClinic)}
                         </span>
                       </p>
                       {selectedClinic.phone && (
-                        <p className="flex items-center gap-2 text-[13px] text-[#86868b]">
-                          <Phone className="w-3.5 h-3.5 text-[#86868b] shrink-0" />
-                          <span>{selectedClinic.phone}</span>
+                        <p className="flex items-center gap-2 text-[14px]">
+                          <Phone className="w-4 h-4 text-[#0066cc] shrink-0" />
+                          <span className="font-semibold text-[#1d1d1f] tracking-tight">
+                            {selectedClinic.phone}
+                          </span>
                         </p>
                       )}
                     </div>
@@ -784,17 +786,19 @@ export const Home: React.FC = () => {
                               </h3>
 
                               {/* Location & Contact Info */}
-                              <div className="mt-2.5 space-y-1.5 text-xs text-[#86868b]">
-                                <p className="flex items-start gap-1.5 leading-snug">
-                                  <MapPin className="w-3.5 h-3.5 text-[#86868b] shrink-0 mt-0.5" />
-                                  <span className="line-clamp-2 text-[#48484a]">
+                              <div className="mt-3 space-y-2">
+                                <p className="flex items-start gap-2 text-[13px] leading-snug">
+                                  <MapPin className="w-4 h-4 text-[#0066cc] shrink-0 mt-0.5" />
+                                  <span className="line-clamp-2 font-semibold text-[#1d1d1f] tracking-tight">
                                     {locationDisplay}
                                   </span>
                                 </p>
                                 {clinic.phone && (
-                                  <p className="flex items-center gap-1.5 text-xs text-[#86868b]">
-                                    <Phone className="w-3 h-3 text-[#86868b] shrink-0" />
-                                    <span>{clinic.phone}</span>
+                                  <p className="flex items-center gap-2 text-[13px] leading-snug">
+                                    <Phone className="w-4 h-4 text-[#0066cc] shrink-0" />
+                                    <span className="font-semibold text-[#1d1d1f] tracking-tight">
+                                      {clinic.phone}
+                                    </span>
                                   </p>
                                 )}
                               </div>

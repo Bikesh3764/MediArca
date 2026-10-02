@@ -31,6 +31,7 @@ import {
   User as UserIcon,
   AlertCircle,
   Check,
+  Phone,
 } from 'lucide-react';
 
 export const DoctorDetail: React.FC = () => {
@@ -326,13 +327,14 @@ export const DoctorDetail: React.FC = () => {
                                   </span>
                                 )}
                               </div>
-                              <p className="text-xs text-[#86868b] mt-0.5 flex items-center gap-1">
-                                <MapPin className="w-3 h-3 text-[#86868b] flex-shrink-0" />
+                              <p className="text-[13px] font-semibold text-[#1d1d1f] tracking-tight mt-1 flex items-center gap-1.5">
+                                <MapPin className="w-3.5 h-3.5 text-[#0066cc] flex-shrink-0" />
                                 <span>{cd.clinic.address}{cd.clinic.city ? `, ${cd.clinic.city}` : ''}{cd.clinic.state ? `, ${cd.clinic.state}` : ''}</span>
                               </p>
                               {cd.clinic.phone && (
-                                <span className="text-[11px] text-[#0066cc] block mt-1.5 font-medium">
-                                  Contact: {cd.clinic.phone}
+                                <span className="text-[13px] font-semibold text-[#1d1d1f] tracking-tight block mt-1 flex items-center gap-1.5">
+                                  <Phone className="w-3.5 h-3.5 text-[#0066cc] flex-shrink-0" />
+                                  <span>{cd.clinic.phone}</span>
                                 </span>
                               )}
                               <div className="flex items-center gap-2 mt-2.5">

@@ -520,8 +520,8 @@ export const BookAppointment: React.FC = () => {
                               </span>
                             ) : null}
                           </div>
-                          <span className="text-xs text-[#86868b] flex items-center gap-1.5 mt-1 line-clamp-1">
-                            <MapPin className="w-3.5 h-3.5 text-[#86868b] flex-shrink-0" />
+                          <span className="text-[13px] font-semibold text-[#1d1d1f] tracking-tight flex items-center gap-1.5 mt-1 line-clamp-1">
+                            <MapPin className="w-3.5 h-3.5 text-[#0066cc] flex-shrink-0" />
                             <span>{c.clinic.address}{c.clinic.city ? `, ${c.clinic.city}` : ''}</span>
                           </span>
                           <div className="flex flex-wrap items-center gap-2 mt-3">
@@ -536,7 +536,7 @@ export const BookAppointment: React.FC = () => {
                           </div>
                         </div>
                         {c.clinic.phone && (
-                          <div className="flex items-center gap-1.5 text-xs text-[#0066cc] font-medium mt-3 pt-2.5 border-t border-[#f5f5f7]">
+                          <div className="flex items-center gap-1.5 text-[13px] text-[#1d1d1f] font-semibold tracking-tight mt-3 pt-2.5 border-t border-[#f5f5f7]">
                             <Phone className="w-3.5 h-3.5 text-[#0066cc] flex-shrink-0" />
                             <span>Reception Desk: {formatDisplayPhone(c.clinic.phone)}</span>
                           </div>
