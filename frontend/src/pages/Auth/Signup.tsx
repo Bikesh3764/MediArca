@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { AppleButton } from '../../components/ui/AppleButton';
 import { BrandLogo } from '../../components/ui/BrandLogo';
-import { AlertCircle, UserCheck, Stethoscope, Building2 } from 'lucide-react';
+import { AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { GoogleLogin } from '@react-oauth/google';
 import { isGoogleConfigured } from '../../config/auth';
 import { SearchableSpecialtySelect } from '../../components/ui/SearchableSpecialtySelect';
@@ -26,6 +26,7 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [phone, setPhone] = useState(DEFAULT_PHONE_PREFIX);
 
   // Doctor specific fields
@@ -145,60 +146,55 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f5f5f7] flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
-        <Link to="/" className="inline-block mb-3 hover:opacity-90 transition-opacity">
-          <BrandLogo variant="full" size="lg" imgClassName="h-9 w-auto mx-auto" />
-        </Link>
-
-        <h2 className="text-3xl font-semibold text-[#1d1d1f] tracking-tight">
-          {role === 'DOCTOR' ? 'Doctor Practice Registration' : 'Patient Registration'}
-        </h2>
-        <p className="mt-2 text-sm text-[#86868b]">
-          Already registered?{' '}
-          <Link
-            to={{
-              pathname: role === 'DOCTOR' ? '/doctor/login' : '/patient/login',
-              search: location.search,
-            }}
-            state={location.state}
-            className="text-[#0088e8] font-semibold hover:underline"
-          >
-            {role === 'DOCTOR' ? 'Sign in to Doctor Portal' : 'Sign in to Patient Portal'}
+    <div className="min-h-screen bg-[#f5f5f7] flex flex-col justify-center py-10 px-4 sm:px-6">
+      <div className="sm:mx-auto sm:w-full sm:max-w-[460px]">
+        {/* Brand Header */}
+        <div className="text-center mb-6">
+          <Link to="/" className="inline-block hover:opacity-90 transition-opacity mb-3">
+            <BrandLogo variant="full" size="md" imgClassName="h-8 w-auto mx-auto" />
           </Link>
-        </p>
-      </div>
-
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-lg">
-        {/* Role Selector Tabs (Apple Pill Segmented Control) */}
-        <div className="bg-[#f5f5f7] p-1 rounded-full border border-[#e5e5ea] flex max-w-sm mx-auto mb-6 shadow-2xs">
-          <button
-            type="button"
-            onClick={() => setRole('PATIENT')}
-            className={`flex-1 py-2 rounded-full text-xs font-medium transition-all flex items-center justify-center gap-2 ${
-              role === 'PATIENT'
-                ? 'bg-[#1d1d1f] text-white shadow-xs font-semibold'
-                : 'text-[#86868b] hover:text-[#1d1d1f]'
-            }`}
-          >
-            <UserCheck className="w-3.5 h-3.5" />
-            I am a Patient
-          </button>
-          <button
-            type="button"
-            onClick={() => setRole('DOCTOR')}
-            className={`flex-1 py-2 rounded-full text-xs font-medium transition-all flex items-center justify-center gap-2 ${
-              role === 'DOCTOR'
-                ? 'bg-[#1d1d1f] text-white shadow-xs font-semibold'
-                : 'text-[#86868b] hover:text-[#1d1d1f]'
-            }`}
-          >
-            <Stethoscope className="w-3.5 h-3.5" />
-            I am a Doctor
-          </button>
+          <h1 className="text-2xl font-semibold text-[#1d1d1f] tracking-tight">
+            Create Account
+          </h1>
+          <p className="text-xs text-[#86868b] mt-1">
+            Join MediArca Clinical Platform
+          </p>
         </div>
 
-        <div className="bg-white py-8 px-6 sm:px-10 rounded-[24px] border border-[#e5e5ea] shadow-xs">
+        {/* Main Card */}
+        <div className="bg-white py-7 px-6 sm:px-8 rounded-[24px] border border-[#e5e5ea] shadow-xs">
+          {/* Segmented Role Switcher */}
+          <div className="flex bg-[#f5f5f7] p-1 rounded-full border border-[#e5e5ea] mb-6">
+            <button
+              type="button"
+              onClick={() => {
+                setRole('PATIENT');
+                setError(null);
+              }}
+              className={`flex-1 py-1.5 text-xs font-semibold rounded-full transition-all cursor-pointer ${
+                role === 'PATIENT'
+                  ? 'bg-white text-[#1d1d1f] shadow-xs'
+                  : 'text-[#86868b] hover:text-[#1d1d1f]'
+              }`}
+            >
+              Patient
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setRole('DOCTOR');
+                setError(null);
+              }}
+              className={`flex-1 py-1.5 text-xs font-semibold rounded-full transition-all cursor-pointer ${
+                role === 'DOCTOR'
+                  ? 'bg-white text-[#1d1d1f] shadow-xs'
+                  : 'text-[#86868b] hover:text-[#1d1d1f]'
+              }`}
+            >
+              Doctor
+            </button>
+          </div>
+
           {error && (
             <div className="mb-5 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
@@ -207,8 +203,8 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
           )}
 
           {/* Google Sign-In */}
-          <div className="mb-6">
-            <div className="flex justify-center">
+          <div className="mb-5">
+            <div className="flex flex-col items-center justify-center">
               {isGoogleConfigured ? (
                 <GoogleLogin
                   onSuccess={handleGoogleSuccess}
@@ -216,41 +212,36 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
                   shape="pill"
                   size="large"
                   text="signup_with"
-                  width="320"
+                  width="100%"
                 />
               ) : (
-                <div className="w-full space-y-2">
-                  <button
-                    type="button"
-                    onClick={handleSimulatedGoogleLogin}
-                    className="w-full h-11 px-4 rounded-full border border-[#e5e5ea] bg-white hover:bg-[#f5f5f7] text-[#1d1d1f] text-sm font-medium transition-all shadow-2xs active:scale-[0.98] flex items-center justify-center gap-3 cursor-pointer"
-                  >
-                    <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24">
-                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
-                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
-                    </svg>
-                    <span>Sign up with Google ({role === 'DOCTOR' ? 'Doctor' : 'Patient'})</span>
-                  </button>
-                  <p className="text-[11px] text-center text-[#86868b]">
-                    Instant registration using your verified Google profile.
-                  </p>
-                </div>
+                <button
+                  type="button"
+                  onClick={handleSimulatedGoogleLogin}
+                  className="w-full h-11 px-4 rounded-full border border-[#e5e5ea] bg-white hover:bg-[#fbfbfd] text-[#1d1d1f] text-xs font-medium transition-all shadow-2xs active:scale-[0.98] flex items-center justify-center gap-2.5 cursor-pointer"
+                >
+                  <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                  </svg>
+                  <span>Sign up with Google</span>
+                </button>
               )}
             </div>
 
-            <div className="relative my-6 text-center">
+            <div className="relative my-5 text-center">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-[#e5e5ea]" />
               </div>
               <div className="relative flex justify-center text-xs">
-                <span className="bg-white px-3 text-[#86868b]">or register with details</span>
+                <span className="bg-white px-3 text-[#86868b]">or</span>
               </div>
             </div>
           </div>
 
-          <form className="space-y-4" onSubmit={handleSubmit}>
+          <form className="space-y-3.5" onSubmit={handleSubmit}>
             <div>
               <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
                 Full Name
@@ -261,11 +252,11 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder={role === 'DOCTOR' ? 'Dr. First Last' : 'First Last'}
-                className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[15px] text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20"
+                className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-sm text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20 bg-[#fbfbfd] focus:bg-white"
               />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
                   Email Address
@@ -276,20 +267,20 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@example.com"
-                  className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[15px] text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-sm text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20 bg-[#fbfbfd] focus:bg-white"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
-                  Mobile Number (+91)
+                  Mobile (+91)
                 </label>
                 <input
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="+91 98765 43210"
-                  className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[15px] text-[#1d1d1f] font-mono placeholder:text-[#86868b] transition-all focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-sm text-[#1d1d1f] font-mono placeholder:text-[#86868b] transition-all focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20 bg-[#fbfbfd] focus:bg-white"
                 />
               </div>
             </div>
@@ -298,20 +289,29 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
               <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
                 Password
               </label>
-              <input
-                type="password"
-                required
-                minLength={8}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Min. 8 characters"
-                className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[15px] text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20"
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  minLength={8}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Min. 8 characters"
+                  className="w-full h-11 pl-3.5 pr-10 rounded-xl border border-[#e5e5ea] text-sm text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20 bg-[#fbfbfd] focus:bg-white"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-3 text-[#86868b] hover:text-[#1d1d1f] transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
 
             {/* Doctor Specific Fields */}
             {role === 'DOCTOR' && (
-              <div className="space-y-4 pt-2 border-t border-[#f5f5f7]">
+              <div className="space-y-3 pt-2 border-t border-[#f0f0f2]">
                 <div>
                   <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
                     Specialty
@@ -322,11 +322,11 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
                     customValue={customSpecialty}
                     onCustomChange={setCustomSpecialty}
                     allowOther={true}
-                    placeholder="Search specialty (e.g. Cardiology, Dermatology)..."
+                    placeholder="Select or search specialty..."
                   />
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
                       Qualifications
@@ -336,14 +336,14 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
                       required
                       value={qualifications}
                       onChange={(e) => setQualifications(e.target.value)}
-                      placeholder="e.g. MBBS, MD, MS"
-                      className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[14px] text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20"
+                      placeholder="e.g. MBBS, MD"
+                      className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-sm text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20 bg-[#fbfbfd] focus:bg-white"
                     />
                   </div>
 
                   <div>
                     <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
-                      Years of Experience
+                      Experience (Years)
                     </label>
                     <input
                       type="number"
@@ -351,27 +351,19 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
                       min={0}
                       value={experienceYears}
                       onChange={(e) => setExperienceYears(e.target.value)}
-                      placeholder="Years of clinical practice"
-                      className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[14px] text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20"
+                      placeholder="5"
+                      className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-sm text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20 bg-[#fbfbfd] focus:bg-white"
                     />
                   </div>
                 </div>
 
-                <div className="p-3.5 bg-[#fafafc] rounded-2xl border border-[#e5e5ea] flex items-start gap-2.5">
-                  <Building2 className="w-4 h-4 text-[#0088e8] flex-shrink-0 mt-0.5" />
-                  <div className="text-[11px] text-[#6e6e73] leading-relaxed">
-                    <span className="font-semibold text-[#1d1d1f]">Practice Notice: </span>
-                    Clinic venue, consultation fee, and practice shifts are configured when connecting with your practicing clinics.
-                  </div>
-                </div>
-
-                <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-800">
-                  Notice: Doctor accounts require administrative verification before appearing in public searches.
-                </div>
+                <p className="text-[11px] text-[#86868b] leading-relaxed">
+                  Doctor profiles require administrative license verification before appearing in search.
+                </p>
               </div>
             )}
 
-            <div className="pt-3">
+            <div className="pt-2">
               <AppleButton
                 variant="primary"
                 size="md"
@@ -379,11 +371,22 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
                 disabled={submitting}
                 className="w-full"
               >
-                {submitting ? 'Creating Account...' : 'Complete Registration'}
+                {submitting ? 'Creating Account...' : `Create ${role === 'DOCTOR' ? 'Doctor Profile' : 'Patient Account'}`}
               </AppleButton>
             </div>
           </form>
         </div>
+
+        {/* Footer Navigation */}
+        <p className="mt-4 text-center text-xs text-[#86868b]">
+          Already registered?{' '}
+          <Link
+            to={role === 'DOCTOR' ? '/doctor/login' : '/patient/login'}
+            className="text-[#0088e8] font-semibold hover:underline"
+          >
+            Sign in to {role === 'DOCTOR' ? 'Doctor Console' : 'Patient Account'}
+          </Link>
+        </p>
 
         {/* Post-Registration Email Verification Modal */}
         <EmailVerificationModal

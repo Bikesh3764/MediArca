@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { AppleButton } from '../../components/ui/AppleButton';
 import { BrandLogo } from '../../components/ui/BrandLogo';
-import { Clock, AlertCircle, Sparkles, Mail, Lock, Info, Building2, User, Phone, CheckCircle2 } from 'lucide-react';
+import { AlertCircle, Sparkles, Mail, Lock, Building2, User, Phone, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 import { api, ClinicProfile } from '../../services/api';
 import { sanitizeIndianPhone, formatIndianPhone, isValidIndianPhone } from '../../utils/phoneUtils';
 
@@ -15,6 +15,7 @@ export const ReceptionistAuth: React.FC = () => {
   // Login form fields
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   // Apply form fields
   const [applyFullName, setApplyFullName] = useState('');
@@ -292,26 +293,23 @@ export const ReceptionistAuth: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center py-16 px-4 sm:px-6">
-      <div className="max-w-md w-full">
+    <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center py-12 px-4 sm:px-6">
+      <div className="max-w-[440px] w-full">
         {/* Header */}
-        <div className="text-center mb-8">
-          <Link to="/" className="inline-block mb-3 hover:opacity-90 transition-opacity">
+        <div className="text-center mb-6">
+          <Link to="/" className="inline-block hover:opacity-90 transition-opacity mb-3">
             <BrandLogo variant="full" size="md" imgClassName="h-8 w-auto mx-auto" />
           </Link>
-          <div className="w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center mx-auto mb-4 border border-amber-500/20 shadow-xs">
-            <Clock className="w-7 h-7" />
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-semibold text-[#1d1d1f] tracking-tight">
-            Receptionist Desk Portal
+          <h1 className="text-2xl font-semibold text-[#1d1d1f] tracking-tight">
+            Reception Desk
           </h1>
-          <p className="text-xs sm:text-sm text-[#86868b] mt-1.5 leading-relaxed max-w-xs mx-auto">
-            Book rapid walk-in patients, print queue passes, and manage live doctor queues.
+          <p className="text-xs text-[#86868b] mt-1">
+            Front desk queue and walk-in management
           </p>
         </div>
 
         {/* Card */}
-        <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-6 sm:p-8 shadow-sm">
+        <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-6 sm:p-8 shadow-xs">
           {/* Segmented Mode Selector */}
           <div className="flex rounded-full bg-[#f5f5f7] p-1 border border-[#e5e5ea] mb-6 shadow-2xs">
             <button
@@ -491,80 +489,81 @@ export const ReceptionistAuth: React.FC = () => {
               </p>
             </form>
           ) : (
-            <>
-              {/* Informational Callout */}
-              <div className="mb-6 p-3.5 rounded-2xl bg-[#0088e8]/5 border border-[#0088e8]/15 flex items-start gap-2.5 text-xs text-[#0088e8]">
-                <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                <div className="leading-relaxed">
-                  <span className="font-semibold block text-[#1d1d1f]">Clinic Provisioned Access</span>
-                  Sign in with credentials provided by your clinic admin, or use "Apply to Clinic" to request desk access.
+            <form onSubmit={handleLoginSubmit} className="space-y-3.5">
+              <div>
+                <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
+                  Desk Email Address
+                </label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-[#86868b] absolute left-3.5 top-3.5" />
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="receptionist@domain.com"
+                    className="w-full h-11 pl-10 pr-4 rounded-xl border border-[#e5e5ea] text-sm bg-[#fbfbfd] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
+                  />
                 </div>
               </div>
 
-              <form onSubmit={handleLoginSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
-                    Desk Email Address
-                  </label>
-                  <div className="relative">
-                    <Mail className="w-4 h-4 text-[#86868b] absolute left-3.5 top-3.5" />
-                    <input
-                      type="email"
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="receptionist@domain.com"
-                      className="w-full h-11 pl-10 pr-4 rounded-xl border border-[#e5e5ea] text-[14px] bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-[#1d1d1f] mb-1">Password</label>
-                  <div className="relative">
-                    <Lock className="w-4 h-4 text-[#86868b] absolute left-3.5 top-3.5" />
-                    <input
-                      type="password"
-                      required
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="w-full h-11 pl-10 pr-4 rounded-xl border border-[#e5e5ea] text-[14px] bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
-                    />
-                  </div>
-                </div>
-
-                <div className="pt-2">
-                  <AppleButton
-                    variant="primary"
-                    size="md"
-                    type="submit"
-                    disabled={submitting}
-                    className="w-full"
-                  >
-                    {submitting ? 'Authenticating...' : 'Sign In to Receptionist Desk'}
-                  </AppleButton>
-                </div>
-
-                {/* Demo 1-Click Login */}
-                <div className="pt-3 border-t border-[#f0f0f0]">
+              <div>
+                <label className="block text-xs font-medium text-[#1d1d1f] mb-1">Password</label>
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-[#86868b] absolute left-3.5 top-3.5" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full h-11 pl-10 pr-10 rounded-xl border border-[#e5e5ea] text-sm bg-[#fbfbfd] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
+                  />
                   <button
                     type="button"
-                    onClick={handleDemoLogin}
-                    disabled={submitting}
-                    className="w-full py-2.5 px-3 rounded-full bg-amber-50 hover:bg-amber-100/70 border border-amber-200 text-xs font-semibold text-amber-800 flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] shadow-xs cursor-pointer"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-3 text-[#86868b] hover:text-[#1d1d1f] transition-colors"
                   >
-                    <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-                    <span>One-Click Demo Receptionist Login</span>
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
-                  <p className="text-[11px] text-center text-[#86868b] mt-2">
-                    Demo Credentials: <span className="font-semibold text-[#1d1d1f]">receptionist@mediarca.com</span> • <span className="font-semibold text-[#1d1d1f]">receptionist123</span>
-                  </p>
                 </div>
-              </form>
-            </>
+              </div>
+
+              <div className="pt-2">
+                <AppleButton
+                  variant="primary"
+                  size="md"
+                  type="submit"
+                  disabled={submitting}
+                  className="w-full"
+                >
+                  {submitting ? 'Authenticating...' : 'Sign In to Desk'}
+                </AppleButton>
+              </div>
+
+              {/* Demo 1-Click Login */}
+              <div className="pt-4 border-t border-[#f0f0f2]">
+                <button
+                  type="button"
+                  onClick={handleDemoLogin}
+                  disabled={submitting}
+                  className="w-full py-2 px-3 rounded-xl bg-[#f5f5f7] hover:bg-[#ebebee] border border-[#e5e5ea] text-xs font-medium text-[#1d1d1f] flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] cursor-pointer"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-[#0088e8]" />
+                  <span>Instant Demo: Clara Oswald (Front Desk)</span>
+                </button>
+              </div>
+            </form>
           )}
         </div>
+
+        {/* Footer Link */}
+        <p className="mt-4 text-center text-xs text-[#86868b]">
+          Clinic administrator?{' '}
+          <Link to="/clinic/login" className="text-[#0088e8] font-semibold hover:underline">
+            Clinic Portal Sign In
+          </Link>
+        </p>
       </div>
     </div>
   );
