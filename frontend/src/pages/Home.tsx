@@ -373,7 +373,7 @@ export const Home: React.FC = () => {
       </section>
 
       {/* 2. Main Discovery Workspace */}
-      <section id="catalog-section" className="w-full max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-8 sm:py-12 flex-1">
+      <section id="catalog-section" className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 flex-1">
         {/* Navigation & Search Bar Header */}
         <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 mb-8 pb-4 border-b border-[#e5e5ea]">
           <div className="flex flex-wrap items-center gap-3">
@@ -622,7 +622,7 @@ export const Home: React.FC = () => {
                       </AppleButton>
                     </div>
                   ) : (
-                    <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 ${clinicPracticingDoctors.length === 1 ? 'max-w-md' : ''}`}>
+                    <div className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 ${clinicPracticingDoctors.length === 1 ? 'max-w-[320px]' : clinicPracticingDoctors.length === 2 ? 'max-w-2xl' : ''}`}>
                       {clinicPracticingDoctors.map((docItem) => {
                         const doctor = docItem.doctor;
                         const slots = parseDoctorSlots({
@@ -635,7 +635,7 @@ export const Home: React.FC = () => {
                         return (
                           <div
                             key={doctor.id}
-                            className="w-full bg-white rounded-[20px] border border-[#e0e0e0] overflow-hidden hover:border-[#0066cc]/40 transition-all duration-200 flex flex-col justify-between group"
+                            className="w-full bg-white rounded-[16px] border border-[#e0e0e0] overflow-hidden hover:border-[#0066cc]/40 transition-all duration-200 flex flex-col justify-between group"
                           >
                             {/* Doctor Photo Banner - Natural 16:10 proportion displaying the full photo */}
                             <div
@@ -664,14 +664,14 @@ export const Home: React.FC = () => {
                             </div>
 
                             {/* Card Body with Refined Apple Typography */}
-                            <div className="p-5 flex-1 flex flex-col justify-between">
+                            <div className="p-3.5 sm:p-4 flex-1 flex flex-col justify-between">
                               <div>
                                 {/* Header: Doctor Name & Experience */}
-                                <div className="flex items-start justify-between gap-3">
+                                <div className="flex items-start justify-between gap-2.5">
                                   <div className="min-w-0">
                                     <h3
                                       onClick={() => navigate(getDoctorDetailPath(doctor.id))}
-                                      className="text-[17px] sm:text-[18px] font-semibold text-[#1d1d1f] tracking-tight hover:text-[#0066cc] transition-colors cursor-pointer truncate"
+                                      className="text-[15px] font-semibold text-[#1d1d1f] tracking-tight hover:text-[#0066cc] transition-colors cursor-pointer truncate"
                                       title={doctor.user.fullName}
                                     >
                                       {doctor.user.fullName}
@@ -681,13 +681,13 @@ export const Home: React.FC = () => {
                                       {cleanDegrees && <span> • {cleanDegrees}</span>}
                                     </p>
                                   </div>
-                                  <span className="text-[11px] font-medium text-[#48484a] bg-[#f5f5f7] px-2.5 py-1 rounded-full border border-[#e5e5ea] shrink-0 whitespace-nowrap">
+                                  <span className="text-[10px] font-medium text-[#48484a] bg-[#f5f5f7] px-2 py-0.5 rounded-full border border-[#e5e5ea] shrink-0 whitespace-nowrap">
                                     {doctor.experienceYears} yrs exp
                                   </span>
                                 </div>
 
                                 {/* Shift Timing: Clean, Quiet Apple Row */}
-                                <div className="mt-4 flex items-center gap-2 text-xs text-[#86868b]">
+                                <div className="mt-3 flex items-center gap-2 text-xs text-[#86868b]">
                                   <Clock className="w-3.5 h-3.5 text-[#86868b] shrink-0" />
                                   <span className="font-normal text-[#1d1d1f] truncate">
                                     {slots.length > 0
@@ -705,9 +705,9 @@ export const Home: React.FC = () => {
                               </div>
 
                               {/* Card Footer: Fee & Apple Action Blue Pill Button */}
-                              <div className="mt-5 pt-3.5 border-t border-[#f0f0f2] flex items-center justify-between gap-3">
+                              <div className="mt-3.5 pt-3 border-t border-[#f0f0f2] flex items-center justify-between gap-3">
                                 <div className="flex items-baseline gap-1">
-                                  <span className="text-[20px] sm:text-[22px] font-semibold text-[#1d1d1f] tracking-tight">
+                                  <span className="text-[18px] sm:text-[20px] font-semibold text-[#1d1d1f] tracking-tight">
                                     ₹{effectiveFee.toFixed(0)}
                                   </span>
                                   <span className="text-xs text-[#86868b] font-normal">/ visit</span>
@@ -716,7 +716,7 @@ export const Home: React.FC = () => {
                                 <button
                                   type="button"
                                   onClick={() => navigate(getDoctorBookPath(doctor.id, selectedClinic.id, slots[0]?.id))}
-                                  className="h-8 px-5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-medium transition-all duration-200 active:scale-95 inline-flex items-center justify-center shadow-none cursor-pointer"
+                                  className="h-7.5 px-4 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-medium transition-all duration-200 active:scale-95 inline-flex items-center justify-center shadow-none cursor-pointer"
                                 >
                                   Book
                                 </button>
@@ -734,11 +734,11 @@ export const Home: React.FC = () => {
               <div className="space-y-6">
                 {/* Clinics Cards Grid */}
                 {loadingClinics ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                    {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
                       <div
                         key={i}
-                        className="h-64 rounded-[20px] bg-white border border-[#e0e0e0] animate-pulse p-6"
+                        className="h-64 rounded-[16px] bg-white border border-[#e0e0e0] animate-pulse p-4"
                       />
                     ))}
                   </div>
@@ -756,7 +756,7 @@ export const Home: React.FC = () => {
                     </AppleButton>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     {filteredClinics.map((clinic) => {
                       const docCount = clinic._count?.doctors ?? (clinic.doctors?.length || 0);
                       const locationDisplay = getClinicLocationDisplay(clinic);
@@ -765,46 +765,45 @@ export const Home: React.FC = () => {
                         <div
                           key={clinic.id}
                           onClick={() => setSelectedClinic(clinic)}
-                          className="w-full bg-white rounded-[20px] border border-[#e0e0e0] overflow-hidden hover:border-[#0066cc]/40 transition-all duration-200 flex flex-col justify-between group cursor-pointer"
+                          className="w-full bg-white rounded-[16px] border border-[#e0e0e0] overflow-hidden hover:border-[#0066cc]/40 transition-all duration-200 flex flex-col justify-between group cursor-pointer"
                         >
                           {/* Top Facility Photography Banner */}
-                          <div className="relative w-full aspect-[16/9] bg-[#f5f5f7] border-b border-[#f0f0f2] overflow-hidden flex items-center justify-center">
+                          <div className="relative w-full aspect-[16/10] bg-[#f5f5f7] border-b border-[#f0f0f2] overflow-hidden flex items-center justify-center">
                             <img
                               src={clinicLobbyBg}
                               alt={clinic.clinicName}
                               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                             />
+                            {/* Doctor Count Pill Badge Overlay */}
+                            <div className="absolute top-2.5 right-2.5">
+                              <span className="text-[10px] font-medium text-[#1d1d1f] bg-white/95 backdrop-blur-sm px-2.5 py-0.5 rounded-full border border-black/5 shadow-2xs">
+                                {docCount === 1 ? '1 Doctor' : `${docCount} Doctors`}
+                              </span>
+                            </div>
                           </div>
 
                           {/* Card Body */}
-                          <div className="p-5 flex-1 flex flex-col justify-between">
+                          <div className="p-3.5 sm:p-4 flex-1 flex flex-col justify-between">
                             <div>
-                              {/* Doctor Count */}
-                              <div className="flex items-center justify-end">
-                                <span className="text-[11px] font-medium text-[#48484a] bg-[#f5f5f7] px-2.5 py-0.5 rounded-full border border-[#e0e0e0]">
-                                  {docCount === 1 ? '1 Doctor' : `${docCount} Doctors`}
-                                </span>
-                              </div>
-
                               {/* Clinic Name */}
                               <h3
-                                className="mt-2 text-[18px] sm:text-[19px] font-semibold text-[#1d1d1f] tracking-tight leading-snug group-hover:text-[#0066cc] transition-colors truncate"
+                                className="text-[15px] font-semibold text-[#1d1d1f] tracking-tight leading-snug group-hover:text-[#0066cc] transition-colors truncate"
                                 title={clinic.clinicName}
                               >
                                 {clinic.clinicName}
                               </h3>
 
                               {/* Location & Contact Info */}
-                              <div className="mt-2.5 space-y-1.5 text-xs text-[#86868b]">
-                                <p className="flex items-start gap-1.5 leading-relaxed">
+                              <div className="mt-2 space-y-1 text-xs text-[#86868b]">
+                                <p className="flex items-start gap-1.5 leading-snug">
                                   <MapPin className="w-3.5 h-3.5 text-[#86868b] shrink-0 mt-0.5" />
                                   <span className="line-clamp-2 text-[#48484a]">
                                     {locationDisplay}
                                   </span>
                                 </p>
                                 {clinic.phone && (
-                                  <p className="flex items-center gap-1.5 text-[12px]">
-                                    <Phone className="w-3.5 h-3.5 text-[#86868b] shrink-0" />
+                                  <p className="flex items-center gap-1.5 text-[11px] text-[#86868b]">
+                                    <Phone className="w-3 h-3 text-[#86868b] shrink-0" />
                                     <span>{clinic.phone}</span>
                                   </p>
                                 )}
@@ -812,14 +811,15 @@ export const Home: React.FC = () => {
                             </div>
 
                             {/* Apple HIG Card Footer */}
-                            <div className="mt-5 pt-3.5 border-t border-[#f0f0f2] flex items-center justify-end">
+                            <div className="mt-3.5 pt-2.5 border-t border-[#f0f0f2] flex items-center justify-between gap-2">
+                              <span className="text-[11px] text-[#86868b]">Outpatient Care</span>
                               <button
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setSelectedClinic(clinic);
                                 }}
-                                className="h-8 px-5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-medium transition-all active:scale-95 inline-flex items-center justify-center cursor-pointer"
+                                className="h-7.5 px-3.5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-medium transition-all active:scale-95 inline-flex items-center justify-center cursor-pointer shadow-none"
                               >
                                 View Doctors
                               </button>
@@ -1033,7 +1033,7 @@ export const Home: React.FC = () => {
                   </AppleButton>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
                   {filteredDoctors.map((doctor) => {
                     const slots = parseDoctorSlots(doctor);
                     // Strictly sanitize doctor degrees to legitimate medical degrees only (NO FACC!)
@@ -1043,7 +1043,7 @@ export const Home: React.FC = () => {
                     return (
                       <div
                         key={doctor.id}
-                        className="w-full bg-white rounded-[20px] border border-[#e0e0e0] overflow-hidden hover:border-[#0066cc]/40 transition-all duration-200 flex flex-col justify-between group"
+                        className="w-full bg-white rounded-[16px] border border-[#e0e0e0] overflow-hidden hover:border-[#0066cc]/40 transition-all duration-200 flex flex-col justify-between group"
                       >
                         {/* Doctor Photo Banner - Natural 16:10 proportion displaying the full photo */}
                         <div
@@ -1072,14 +1072,14 @@ export const Home: React.FC = () => {
                         </div>
 
                         {/* Card Body with Refined Apple Typography */}
-                        <div className="p-5 flex-1 flex flex-col justify-between">
+                        <div className="p-3.5 sm:p-4 flex-1 flex flex-col justify-between">
                           <div>
                             {/* Header: Doctor Name & Experience */}
-                            <div className="flex items-start justify-between gap-3">
+                            <div className="flex items-start justify-between gap-2.5">
                               <div className="min-w-0">
                                 <h3
                                   onClick={() => navigate(getDoctorDetailPath(doctor.id))}
-                                  className="text-[17px] sm:text-[18px] font-semibold text-[#1d1d1f] tracking-tight hover:text-[#0066cc] transition-colors cursor-pointer truncate"
+                                  className="text-[15px] font-semibold text-[#1d1d1f] tracking-tight hover:text-[#0066cc] transition-colors cursor-pointer truncate"
                                   title={doctor.user.fullName}
                                 >
                                   {doctor.user.fullName}
@@ -1089,13 +1089,13 @@ export const Home: React.FC = () => {
                                   {cleanDegrees && <span> • {cleanDegrees}</span>}
                                 </p>
                               </div>
-                              <span className="text-[11px] font-medium text-[#48484a] bg-[#f5f5f7] px-2.5 py-1 rounded-full border border-[#e5e5ea] shrink-0 whitespace-nowrap">
+                              <span className="text-[10px] font-medium text-[#48484a] bg-[#f5f5f7] px-2 py-0.5 rounded-full border border-[#e5e5ea] shrink-0 whitespace-nowrap">
                                 {doctor.experienceYears} yrs exp
                               </span>
                             </div>
 
                             {/* Practice Clinic & Shift Timing */}
-                            <div className="mt-4 space-y-2 text-xs text-[#86868b]">
+                            <div className="mt-3 space-y-1.5 text-xs text-[#86868b]">
                               {primaryClinic && (
                                 <div className="flex items-center gap-2 min-w-0">
                                   <MapPin className="w-3.5 h-3.5 text-[#86868b] shrink-0" />
@@ -1120,9 +1120,9 @@ export const Home: React.FC = () => {
                           </div>
 
                           {/* Card Footer: Fee & Apple Action Blue Pill Button */}
-                          <div className="mt-5 pt-3.5 border-t border-[#f0f0f2] flex items-center justify-between gap-3">
+                          <div className="mt-3.5 pt-3 border-t border-[#f0f0f2] flex items-center justify-between gap-3">
                             <div className="flex items-baseline gap-1">
-                              <span className="text-[20px] sm:text-[22px] font-semibold text-[#1d1d1f] tracking-tight">
+                              <span className="text-[18px] sm:text-[20px] font-semibold text-[#1d1d1f] tracking-tight">
                                 ₹{doctor.consultationFee.toFixed(0)}
                               </span>
                               <span className="text-xs text-[#86868b] font-normal">/ visit</span>
@@ -1131,7 +1131,7 @@ export const Home: React.FC = () => {
                             <button
                               type="button"
                               onClick={() => navigate(getDoctorBookPath(doctor.id, primaryClinic?.id))}
-                              className="h-8 px-5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-medium transition-all duration-200 active:scale-95 inline-flex items-center justify-center shadow-none cursor-pointer"
+                              className="h-7.5 px-4 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-medium transition-all duration-200 active:scale-95 inline-flex items-center justify-center shadow-none cursor-pointer"
                             >
                               Book
                             </button>
