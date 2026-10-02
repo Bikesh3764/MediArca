@@ -3,11 +3,15 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { AppleButton } from '../../components/ui/AppleButton';
 import { BrandLogo } from '../../components/ui/BrandLogo';
-import { AlertCircle, Sparkles } from 'lucide-react';
+import { AlertCircle, Sparkles, Stethoscope, UserCheck, ArrowRight, Building2 } from 'lucide-react';
 import { GoogleLogin } from '@react-oauth/google';
 import { isGoogleConfigured } from '../../config/auth';
 
-export const Login: React.FC = () => {
+export interface LoginProps {
+  portal?: 'PATIENT' | 'DOCTOR';
+}
+
+export const Login: React.FC<LoginProps> = ({ portal }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -16,6 +20,13 @@ export const Login: React.FC = () => {
   const { login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
+  const isDoctorPortal =
+    portal === 'DOCTOR' ||
+    location.pathname.startsWith('/doctor/login') ||
+    new URLSearchParams(location.search).get('role')?.toUpperCase() === 'DOCTOR';
+
+  const portalRole = isDoctorPortal ? 'DOCTOR' : 'PATIENT';
 
   const getDestination = (role: string) => {
     if (role === 'DOCTOR') return '/doctor/dashboard';
@@ -33,7 +44,7 @@ export const Login: React.FC = () => {
     }
     const fromPath = (location.state as any)?.from?.pathname;
     const search = (location.state as any)?.from?.search || '';
-    if (fromPath && fromPath !== '/login' && fromPath !== '/signup') {
+    if (fromPath && fromPath !== '/login' && fromPath !== '/signup' && fromPath !== '/doctor/login' && fromPath !== '/patient/login') {
       return `${fromPath}${search}`;
     }
     return getDestination(role);
@@ -44,7 +55,7 @@ export const Login: React.FC = () => {
     setError(null);
     setSubmitting(true);
     try {
-      const loggedUser = await login({ email, password });
+      const loggedUser = await login({ email: email.trim(), password });
       navigate(getTargetDestination(loggedUser.role), { replace: true });
     } catch (err: any) {
       setError(err.message || 'Invalid email or password');
@@ -71,7 +82,7 @@ export const Login: React.FC = () => {
       setError(null);
       setSubmitting(true);
       try {
-        const loggedUser = await loginWithGoogle(credentialResponse.credential, 'PATIENT');
+        const loggedUser = await loginWithGoogle(credentialResponse.credential, portalRole);
         navigate(getTargetDestination(loggedUser.role), { replace: true });
       } catch (err: any) {
         setError(err.message || 'Google sign-in authentication failed');
@@ -81,22 +92,21 @@ export const Login: React.FC = () => {
     }
   };
 
-  // Demo Google Sign-in simulation (for testing before user inputs their Google Client ID)
+  // Demo Google Sign-in simulation
   const handleSimulatedGoogleLogin = async () => {
     setError(null);
     setSubmitting(true);
     try {
-      // Mock Google JWT structure
       const header = btoa(JSON.stringify({ alg: 'none', typ: 'JWT' }));
       const payload = btoa(
         JSON.stringify({
-          email: 'alex.google@example.com',
-          name: 'Alex Rivera (Google)',
+          email: isDoctorPortal ? 'dr.alex.google@example.com' : 'alex.google@example.com',
+          name: isDoctorPortal ? 'Dr. Alex Rivera (Google)' : 'Alex Rivera (Google)',
           picture: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=256&q=80',
         })
       );
       const simulatedToken = `${header}.${payload}.signature`;
-      const loggedUser = await loginWithGoogle(simulatedToken, 'PATIENT');
+      const loggedUser = await loginWithGoogle(simulatedToken, portalRole);
       navigate(getTargetDestination(loggedUser.role), { replace: true });
     } catch (err: any) {
       setError(err.message || 'Simulated Google login failed');
@@ -105,43 +115,83 @@ export const Login: React.FC = () => {
     }
   };
 
-
   return (
     <div className="min-h-screen bg-[#f5f5f7] flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
-        <Link to="/" className="inline-block mb-4 hover:opacity-90 transition-opacity">
+        <Link to="/" className="inline-block mb-3 hover:opacity-90 transition-opacity">
           <BrandLogo variant="full" size="lg" imgClassName="h-9 w-auto mx-auto" />
         </Link>
+
+        {/* Portal Identifier Badge */}
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#0088e8]/10 text-[#0088e8] text-xs font-semibold mb-3 border border-[#0088e8]/20 shadow-2xs">
+          {isDoctorPortal ? (
+            <>
+              <Stethoscope className="w-3.5 h-3.5" />
+              <span>Doctor Console Portal</span>
+            </>
+          ) : (
+            <>
+              <UserCheck className="w-3.5 h-3.5" />
+              <span>Patient Healthcare Portal</span>
+            </>
+          )}
+        </div>
+
         <h2 className="text-3xl font-semibold text-[#1d1d1f] tracking-tight">
-          Sign in to your account
+          {isDoctorPortal ? 'Doctor Portal Sign In' : 'Patient Portal Sign In'}
         </h2>
         <p className="mt-2 text-sm text-[#86868b]">
+          {isDoctorPortal ? 'Sign in to manage your appointments, live queue, and schedule.' : 'Sign in to access your appointments and live queue passes.'}
+        </p>
+        <p className="mt-1 text-xs text-[#86868b]">
           Or{' '}
-          <Link to={{ pathname: '/signup', search: location.search }} state={location.state} className="text-[#0088e8] font-medium hover:underline">
-            create a new MediArca account
+          <Link
+            to={{
+              pathname: isDoctorPortal ? '/doctor/signup' : '/patient/signup',
+              search: location.search,
+            }}
+            state={location.state}
+            className="text-[#0088e8] font-semibold hover:underline"
+          >
+            {isDoctorPortal ? 'register a new practitioner practice' : 'create a new MediArca patient account'}
           </Link>
         </p>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+      <div className="mt-7 sm:mx-auto sm:w-full sm:max-w-md">
         {/* Instant Demo Accounts Banner */}
         <div className="bg-white border border-[#e5e5ea] rounded-[22px] p-4 mb-5 shadow-2xs">
-          <div className="flex items-center gap-2 mb-2 text-xs font-semibold text-[#1d1d1f]">
-            <Sparkles className="w-3.5 h-3.5 text-[#0088e8]" />
-            <span>Demo Accounts:</span>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2 text-xs font-semibold text-[#1d1d1f]">
+              <Sparkles className="w-3.5 h-3.5 text-[#0088e8]" />
+              <span>Instant Demo One-Click Login:</span>
+            </div>
+            {isDoctorPortal && (
+              <span className="text-[10px] font-semibold text-[#0088e8] bg-[#0088e8]/10 px-2 py-0.5 rounded-full">
+                Doctor Mode
+              </span>
+            )}
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <button
               type="button"
               onClick={() => handleQuickLogin('john.doe@gmail.com', 'patient123', '/patient/appointments')}
-              className="py-2 px-2 rounded-full bg-[#f5f5f7] hover:bg-[#0088e8]/10 text-[#0088e8] border border-[#e5e5ea] text-[11px] font-semibold transition-all text-center cursor-pointer active:scale-[0.98] shadow-2xs truncate"
+              className={`py-2 px-2 rounded-full border text-[11px] font-semibold transition-all text-center cursor-pointer active:scale-[0.98] shadow-2xs truncate ${
+                !isDoctorPortal
+                  ? 'bg-[#0088e8] text-white border-[#0088e8]'
+                  : 'bg-[#f5f5f7] hover:bg-[#0088e8]/10 text-[#0088e8] border-[#e5e5ea]'
+              }`}
             >
               Patient
             </button>
             <button
               type="button"
               onClick={() => handleQuickLogin('dr.sarah@mediarca.com', 'doctor123', '/doctor/dashboard')}
-              className="py-2 px-2 rounded-full bg-[#f5f5f7] hover:bg-[#0088e8]/10 text-[#0088e8] border border-[#e5e5ea] text-[11px] font-semibold transition-all text-center cursor-pointer active:scale-[0.98] shadow-2xs truncate"
+              className={`py-2 px-2 rounded-full border text-[11px] font-semibold transition-all text-center cursor-pointer active:scale-[0.98] shadow-2xs truncate ${
+                isDoctorPortal
+                  ? 'bg-[#0088e8] text-white border-[#0088e8]'
+                  : 'bg-[#f5f5f7] hover:bg-[#0088e8]/10 text-[#0088e8] border-[#e5e5ea]'
+              }`}
             >
               Doctor
             </button>
@@ -196,10 +246,16 @@ export const Login: React.FC = () => {
                       <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
                       <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
                     </svg>
-                    <span>Continue with Google (Demo Sign-In)</span>
+                    <span>
+                      {isDoctorPortal
+                        ? 'Continue with Google (Doctor Sign-In)'
+                        : 'Continue with Google (Patient Sign-In)'}
+                    </span>
                   </button>
                   <p className="text-[11px] text-center text-[#86868b]">
-                    To connect live Google credentials, add <span className="font-mono text-[10px] bg-gray-100 px-1 py-0.5 rounded">VITE_GOOGLE_CLIENT_ID</span> (see GOOGLE_AUTH_SETUP.md).
+                    {isDoctorPortal
+                      ? 'Signs in or registers your practitioner profile directly.'
+                      : 'Instant access with your verified Google account.'}
                   </p>
                 </div>
               )}
@@ -218,14 +274,14 @@ export const Login: React.FC = () => {
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div>
               <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
-                Email Address
+                {isDoctorPortal ? 'Doctor Professional Email' : 'Email Address'}
               </label>
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="name@example.com"
+                placeholder={isDoctorPortal ? 'dr.name@domain.com' : 'name@example.com'}
                 className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[15px] text-[#1d1d1f] placeholder:text-[#86868b] focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20 transition-all"
               />
             </div>
@@ -252,12 +308,51 @@ export const Login: React.FC = () => {
                 disabled={submitting}
                 className="w-full"
               >
-                {submitting ? 'Authenticating...' : 'Sign In'}
+                {submitting ? 'Authenticating...' : isDoctorPortal ? 'Sign In to Doctor Console' : 'Sign In as Patient'}
               </AppleButton>
             </div>
           </form>
+        </div>
+
+        {/* Portal Switcher Card */}
+        <div className="mt-5 p-4 rounded-2xl bg-white border border-[#e5e5ea] shadow-2xs space-y-2.5">
+          <p className="text-[11px] font-semibold text-[#86868b] uppercase tracking-wider">
+            Switch Dedicated Portal:
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-xs">
+            {isDoctorPortal ? (
+              <Link
+                to="/patient/login"
+                className="flex items-center gap-1.5 text-[#0088e8] hover:text-[#0077cc] font-medium transition-colors"
+              >
+                <UserCheck className="w-3.5 h-3.5" />
+                <span>Patient Portal Sign In</span>
+                <ArrowRight className="w-3 h-3" />
+              </Link>
+            ) : (
+              <Link
+                to="/doctor/login"
+                className="flex items-center gap-1.5 text-[#0088e8] hover:text-[#0077cc] font-medium transition-colors"
+              >
+                <Stethoscope className="w-3.5 h-3.5" />
+                <span>Doctor Portal Sign In</span>
+                <ArrowRight className="w-3 h-3" />
+              </Link>
+            )}
+
+            <Link
+              to="/clinic/login"
+              className="flex items-center gap-1.5 text-[#86868b] hover:text-[#1d1d1f] font-medium transition-colors"
+            >
+              <Building2 className="w-3.5 h-3.5" />
+              <span>Clinic Partner Portal</span>
+              <ArrowRight className="w-3 h-3" />
+            </Link>
+          </div>
         </div>
       </div>
     </div>
   );
 };
+
+export default Login;

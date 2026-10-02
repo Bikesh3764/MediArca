@@ -3,15 +3,25 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { AppleButton } from '../../components/ui/AppleButton';
 import { BrandLogo } from '../../components/ui/BrandLogo';
-import { AlertCircle, UserCheck, Stethoscope, Building2 } from 'lucide-react';
+import { AlertCircle, UserCheck, Stethoscope, Building2, ArrowRight } from 'lucide-react';
 import { GoogleLogin } from '@react-oauth/google';
 import { isGoogleConfigured } from '../../config/auth';
 import { SearchableSpecialtySelect } from '../../components/ui/SearchableSpecialtySelect';
 import { DEFAULT_PHONE_PREFIX } from '../../services/api';
 import { sanitizeIndianPhone, formatIndianPhone, isValidIndianPhone } from '../../utils/phoneUtils';
 
-export const Signup: React.FC = () => {
-  const [role, setRole] = useState<'PATIENT' | 'DOCTOR'>('PATIENT');
+export interface SignupProps {
+  initialRole?: 'PATIENT' | 'DOCTOR';
+}
+
+export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
+  const location = useLocation();
+  const isDoctorRoute =
+    initialRole === 'DOCTOR' ||
+    location.pathname.startsWith('/doctor/signup') ||
+    new URLSearchParams(location.search).get('role')?.toUpperCase() === 'DOCTOR';
+
+  const [role, setRole] = useState<'PATIENT' | 'DOCTOR'>(isDoctorRoute ? 'DOCTOR' : 'PATIENT');
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -28,7 +38,6 @@ export const Signup: React.FC = () => {
 
   const { register, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
 
   const getDestination = (targetRole: string) => {
     if (targetRole === 'DOCTOR') return '/doctor/dashboard';
@@ -46,7 +55,7 @@ export const Signup: React.FC = () => {
     }
     const fromPath = (location.state as any)?.from?.pathname;
     const search = (location.state as any)?.from?.search || '';
-    if (fromPath && fromPath !== '/login' && fromPath !== '/signup') {
+    if (fromPath && fromPath !== '/login' && fromPath !== '/signup' && fromPath !== '/doctor/login' && fromPath !== '/patient/login') {
       return `${fromPath}${search}`;
     }
     return getDestination(targetRole);
@@ -127,20 +136,42 @@ export const Signup: React.FC = () => {
     }
   };
 
-
   return (
     <div className="min-h-screen bg-[#f5f5f7] flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
-        <Link to="/" className="inline-block mb-4 hover:opacity-90 transition-opacity">
+        <Link to="/" className="inline-block mb-3 hover:opacity-90 transition-opacity">
           <BrandLogo variant="full" size="lg" imgClassName="h-9 w-auto mx-auto" />
         </Link>
+
+        {/* Portal Identifier Badge */}
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#0088e8]/10 text-[#0088e8] text-xs font-semibold mb-3 border border-[#0088e8]/20 shadow-2xs">
+          {role === 'DOCTOR' ? (
+            <>
+              <Stethoscope className="w-3.5 h-3.5" />
+              <span>Doctor Practice Portal</span>
+            </>
+          ) : (
+            <>
+              <UserCheck className="w-3.5 h-3.5" />
+              <span>Patient Healthcare Portal</span>
+            </>
+          )}
+        </div>
+
         <h2 className="text-3xl font-semibold text-[#1d1d1f] tracking-tight">
-          Create your account
+          {role === 'DOCTOR' ? 'Doctor Practice Registration' : 'Patient Registration'}
         </h2>
         <p className="mt-2 text-sm text-[#86868b]">
-          Already have an account?{' '}
-          <Link to={{ pathname: '/login', search: location.search }} state={location.state} className="text-[#0088e8] font-medium hover:underline">
-            Sign in
+          Already registered?{' '}
+          <Link
+            to={{
+              pathname: role === 'DOCTOR' ? '/doctor/login' : '/patient/login',
+              search: location.search,
+            }}
+            state={location.state}
+            className="text-[#0088e8] font-semibold hover:underline"
+          >
+            {role === 'DOCTOR' ? 'Sign in to Doctor Portal' : 'Sign in to Patient Portal'}
           </Link>
         </p>
       </div>
@@ -207,10 +238,10 @@ export const Signup: React.FC = () => {
                       <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
                       <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
                     </svg>
-                    <span>Sign up with Google (Demo {role === 'DOCTOR' ? 'Doctor' : 'Patient'})</span>
+                    <span>Sign up with Google ({role === 'DOCTOR' ? 'Doctor' : 'Patient'})</span>
                   </button>
                   <p className="text-[11px] text-center text-[#86868b]">
-                    To connect live Google credentials, add <span className="font-mono text-[10px] bg-gray-100 px-1 py-0.5 rounded">VITE_GOOGLE_CLIENT_ID</span>.
+                    Instant registration using your verified Google profile.
                   </p>
                 </div>
               )}
@@ -221,7 +252,7 @@ export const Signup: React.FC = () => {
                 <div className="w-full border-t border-[#e5e5ea]" />
               </div>
               <div className="relative flex justify-center text-xs">
-                <span className="bg-white px-3 text-[#86868b]">or sign up with email</span>
+                <span className="bg-white px-3 text-[#86868b]">or register with details</span>
               </div>
             </div>
           </div>
@@ -236,12 +267,12 @@ export const Signup: React.FC = () => {
                 required
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                placeholder={role === 'DOCTOR' ? 'Dr. Jane Smith' : 'John Doe'}
+                placeholder={role === 'DOCTOR' ? 'Dr. First Last' : 'First Last'}
                 className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[15px] text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20"
               />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
                   Email Address
@@ -251,32 +282,22 @@ export const Signup: React.FC = () => {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="email@example.com"
+                  placeholder="name@example.com"
                   className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[15px] text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
-                  Phone Number (India)
+                  Mobile Number (+91)
                 </label>
-                <div className="flex rounded-xl border border-[#e5e5ea] overflow-hidden focus-within:border-[#0088e8] focus-within:ring-2 focus-within:ring-[#0088e8]/20 bg-white transition-all">
-                  <span className="inline-flex items-center gap-1 px-3 bg-[#f5f5f7] border-r border-[#e5e5ea] text-[#1d1d1f] font-semibold text-xs select-none">
-                    <span>🇮🇳</span>
-                    <span>+91</span>
-                  </span>
-                  <input
-                    type="tel"
-                    value={sanitizeIndianPhone(phone)}
-                    onChange={(e) => {
-                      const digits = sanitizeIndianPhone(e.target.value);
-                      setPhone(digits ? `+91 ${digits}` : '');
-                    }}
-                    placeholder="98765 43210"
-                    maxLength={10}
-                    className="w-full h-11 px-3.5 text-[15px] bg-white focus:outline-none tracking-wider font-mono text-[#1d1d1f] placeholder:text-[#86868b]"
-                  />
-                </div>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="+91 98765 43210"
+                  className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[15px] text-[#1d1d1f] font-mono placeholder:text-[#86868b] transition-all focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20"
+                />
               </div>
             </div>
 
@@ -287,19 +308,20 @@ export const Signup: React.FC = () => {
               <input
                 type="password"
                 required
+                minLength={8}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Minimum 6 characters"
+                placeholder="Min. 8 characters"
                 className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[15px] text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20"
               />
             </div>
 
-            {/* Doctor-Specific Details */}
+            {/* Doctor Specific Fields */}
             {role === 'DOCTOR' && (
-              <div className="pt-3 border-t border-[#f0f0f0] space-y-3.5">
+              <div className="space-y-4 pt-2 border-t border-[#f5f5f7]">
                 <div>
                   <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
-                    Specialty *
+                    Specialty
                   </label>
                   <SearchableSpecialtySelect
                     value={specialty}
@@ -307,18 +329,14 @@ export const Signup: React.FC = () => {
                     customValue={customSpecialty}
                     onCustomChange={setCustomSpecialty}
                     allowOther={true}
-                    variant="form"
-                    placeholder="Search or select medical specialty..."
+                    placeholder="Search specialty (e.g. Cardiology, Dermatology)..."
                   />
-                  <p className="text-[11px] text-[#86868b] mt-1">
-                    Choose from 30+ medical specialties or select &ldquo;Other&rdquo; to type your clinical field.
-                  </p>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
-                      Qualifications & Degrees *
+                      Qualifications
                     </label>
                     <input
                       type="text"
@@ -332,7 +350,7 @@ export const Signup: React.FC = () => {
 
                   <div>
                     <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
-                      Experience (Years) *
+                      Years of Experience
                     </label>
                     <input
                       type="number"
@@ -350,7 +368,7 @@ export const Signup: React.FC = () => {
                   <Building2 className="w-4 h-4 text-[#0088e8] flex-shrink-0 mt-0.5" />
                   <div className="text-[11px] text-[#6e6e73] leading-relaxed">
                     <span className="font-semibold text-[#1d1d1f]">Practice Notice: </span>
-                    Clinic venue, consultation fee, and checking shifts (e.g. Shift 1: 9 AM – 1 PM, Shift 2: 3 PM – 6 PM) are configured when affiliating with your practicing clinics.
+                    Clinic venue, consultation fee, and practice shifts are configured when connecting with your practicing clinics.
                   </div>
                 </div>
 
@@ -373,7 +391,48 @@ export const Signup: React.FC = () => {
             </div>
           </form>
         </div>
+
+        {/* Portal Switcher Card */}
+        <div className="mt-5 p-4 rounded-2xl bg-white border border-[#e5e5ea] shadow-2xs space-y-2.5">
+          <p className="text-[11px] font-semibold text-[#86868b] uppercase tracking-wider">
+            Switch Dedicated Portal:
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-xs">
+            {role === 'DOCTOR' ? (
+              <Link
+                to="/patient/signup"
+                onClick={() => setRole('PATIENT')}
+                className="flex items-center gap-1.5 text-[#0088e8] hover:text-[#0077cc] font-medium transition-colors"
+              >
+                <UserCheck className="w-3.5 h-3.5" />
+                <span>Patient Registration</span>
+                <ArrowRight className="w-3 h-3" />
+              </Link>
+            ) : (
+              <Link
+                to="/doctor/signup"
+                onClick={() => setRole('DOCTOR')}
+                className="flex items-center gap-1.5 text-[#0088e8] hover:text-[#0077cc] font-medium transition-colors"
+              >
+                <Stethoscope className="w-3.5 h-3.5" />
+                <span>Doctor Practice Registration</span>
+                <ArrowRight className="w-3 h-3" />
+              </Link>
+            )}
+
+            <Link
+              to="/clinic/signup"
+              className="flex items-center gap-1.5 text-[#86868b] hover:text-[#1d1d1f] font-medium transition-colors"
+            >
+              <Building2 className="w-3.5 h-3.5" />
+              <span>Clinic Partner Portal</span>
+              <ArrowRight className="w-3 h-3" />
+            </Link>
+          </div>
+        </div>
       </div>
     </div>
   );
 };
+
+export default Signup;

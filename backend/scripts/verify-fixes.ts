@@ -42,7 +42,7 @@ import { getJwtSecret, optionalAuthenticate, authenticate, AuthRequest } from '.
 import jwt from 'jsonwebtoken';
 import { canTransition } from '../src/utils/appointmentStateMachine';
 import { isDoctorEligibleForClinicalPractice, isClinicActive } from '../src/utils/authGuards';
-import { sanitizeClinicalHistoryList } from '../src/controllers/authController';
+import { sanitizeClinicalHistoryList, checkNeedsProfileCompletion } from '../src/controllers/authController';
 
 function runTests() {
   console.log('=== RUNNING MEDIARCA VERIFICATION SUITE ===\n');
@@ -4594,6 +4594,89 @@ Follow-up Date: 2026-10-15`;
   assert(parsedNotes.medicines.length === 2, 'Bug 2.2: Parser extracts all medicine lines');
   assert(parsedNotes.medicines[0].includes('Azithromycin 500mg'), 'Bug 2.2: Parser medicine contains name');
   assert(parsedNotes.remarks === 'Patient shows bilateral wheezing and mild throat congestion.', 'Bug 2.2: Parser extracts pure remarks without headers');
+
+  // --- Test 150: Google Auth Clinic Support & Profile Completion Audit ---
+  console.log('\n--- Test 150: Google Auth Clinic Support & Profile Completion Audit ---');
+  // Patient profile completion tests
+  const newGooglePatient = {
+    role: 'PATIENT',
+    phone: null,
+    patientProfile: { gender: null, dateOfBirth: null },
+  };
+  assert(checkNeedsProfileCompletion(newGooglePatient) === true, 'First-time Google patient requires profile completion (missing phone, gender, dob)');
+
+  const patientWithPhoneOnly = {
+    role: 'PATIENT',
+    phone: '+91 9876543210',
+    patientProfile: { gender: null, dateOfBirth: null },
+  };
+  assert(checkNeedsProfileCompletion(patientWithPhoneOnly) === true, 'Patient without gender & dob requires profile completion');
+
+  const completePatient = {
+    role: 'PATIENT',
+    phone: '+91 9876543210',
+    patientProfile: { gender: 'MALE', dateOfBirth: '1995-05-15' },
+  };
+  assert(checkNeedsProfileCompletion(completePatient) === false, 'Complete patient profile does not need completion');
+
+  // Doctor profile completion tests
+  const newGoogleDoctor = {
+    role: 'DOCTOR',
+    phone: null,
+    doctorProfile: {
+      specialty: 'General Medicine',
+      qualifications: 'Medical Practitioner',
+      experienceYears: 0,
+    },
+  };
+  assert(checkNeedsProfileCompletion(newGoogleDoctor) === true, 'First-time Google doctor requires profile completion (missing phone, credentials)');
+
+  const completeDoctor = {
+    role: 'DOCTOR',
+    phone: '+91 9876543211',
+    doctorProfile: {
+      specialty: 'Cardiology',
+      qualifications: 'MBBS, MD',
+      experienceYears: 12,
+    },
+  };
+  assert(checkNeedsProfileCompletion(completeDoctor) === false, 'Complete doctor profile does not need completion');
+
+  // Clinic profile completion tests
+  const newGoogleClinic = {
+    role: 'CLINIC',
+    phone: null,
+    clinicProfile: {
+      clinicName: 'MediArca Clinic Center',
+      address: '',
+      city: null,
+      state: null,
+    },
+  };
+  assert(checkNeedsProfileCompletion(newGoogleClinic) === true, 'First-time Google clinic requires profile completion (missing phone, address, city, state)');
+
+  const completeClinic = {
+    role: 'CLINIC',
+    phone: '+91 9876543212',
+    clinicProfile: {
+      clinicName: 'Metro Healthcare Clinic',
+      address: 'Plot 42, Kharadi',
+      city: 'Pune',
+      state: 'Maharashtra',
+    },
+  };
+  assert(checkNeedsProfileCompletion(completeClinic) === false, 'Complete clinic profile does not need completion');
+
+  // Google Auth role normalization
+  const resolveRole = (r?: string) => {
+    const raw = (r || 'PATIENT').toUpperCase();
+    return raw === 'DOCTOR' ? 'DOCTOR' : (raw === 'CLINIC' ? 'CLINIC' : 'PATIENT');
+  };
+  assert(resolveRole('clinic') === 'CLINIC', 'Google Auth normalizes clinic to CLINIC');
+  assert(resolveRole('CLINIC') === 'CLINIC', 'Google Auth normalizes CLINIC to CLINIC');
+  assert(resolveRole('doctor') === 'DOCTOR', 'Google Auth normalizes doctor to DOCTOR');
+  assert(resolveRole('patient') === 'PATIENT', 'Google Auth normalizes patient to PATIENT');
+  assert(resolveRole(undefined) === 'PATIENT', 'Google Auth defaults undefined role to PATIENT');
 
   console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);

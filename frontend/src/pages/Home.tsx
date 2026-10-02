@@ -1114,7 +1114,7 @@ export const Home: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Patient Portal */}
             <div
-              onClick={() => navigate('/patient/appointments')}
+              onClick={() => navigate(user?.role === 'PATIENT' ? '/patient/appointments' : '/patient/login')}
               className="p-5 rounded-2xl bg-[#f5f5f7] hover:bg-white border border-[#e5e5ea] hover:border-[#0088e8]/30 cursor-pointer transition-all duration-200 hover:shadow-xs flex items-center justify-between group"
             >
               <div className="flex items-center gap-3.5">
@@ -1130,7 +1130,7 @@ export const Home: React.FC = () => {
 
             {/* Doctor Console */}
             <div
-              onClick={() => navigate('/doctor/dashboard')}
+              onClick={() => navigate(user?.role === 'DOCTOR' ? '/doctor/dashboard' : '/doctor/login')}
               className="p-5 rounded-2xl bg-[#f5f5f7] hover:bg-white border border-[#e5e5ea] hover:border-[#0088e8]/30 cursor-pointer transition-all duration-200 hover:shadow-xs flex items-center justify-between group"
             >
               <div className="flex items-center gap-3.5">

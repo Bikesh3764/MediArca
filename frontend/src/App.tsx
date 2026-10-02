@@ -25,6 +25,7 @@ import { ClinicDashboard } from './pages/Clinic/ClinicDashboard';
 import { ReceptionistAuth } from './pages/Receptionist/ReceptionistAuth';
 import { ReceptionistDashboard } from './pages/Receptionist/ReceptionistDashboard';
 import { ClinicCheckIn } from './pages/Patient/ClinicCheckIn';
+import { ProfileCompletionModal } from './components/auth/ProfileCompletionModal';
 
 // Redirect helpers for seamless patient portal continuity
 const DoctorRedirectToPatientDetail: React.FC = () => {
@@ -64,6 +65,12 @@ const ProtectedRoute: React.FC<{
     if (allowedRoles && allowedRoles.includes('RECEPTIONIST')) {
       return <Navigate to="/receptionist/login" replace />;
     }
+    if (allowedRoles && allowedRoles.includes('DOCTOR') && !allowedRoles.includes('PATIENT')) {
+      return <Navigate to="/doctor/login" state={{ from: location }} replace />;
+    }
+    if (allowedRoles && allowedRoles.includes('PATIENT') && !allowedRoles.includes('DOCTOR')) {
+      return <Navigate to="/patient/login" state={{ from: location }} replace />;
+    }
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
@@ -85,10 +92,15 @@ function AppShell() {
     location.pathname.startsWith('/doctor/profile') ||
     location.pathname.startsWith('/clinic/dashboard') ||
     location.pathname.startsWith('/receptionist/dashboard') ||
-    location.pathname.startsWith('/patient/') ||
+    (location.pathname.startsWith('/patient/') &&
+      location.pathname !== '/patient/login' &&
+      location.pathname !== '/patient/signup') ||
     location.pathname === '/clinic-checkin' ||
     (location.pathname === '/doctors' && user?.role === 'PATIENT') ||
-    (location.pathname.startsWith('/doctor/') && user?.role === 'PATIENT') ||
+    (location.pathname.startsWith('/doctor/') &&
+      location.pathname !== '/doctor/login' &&
+      location.pathname !== '/doctor/signup' &&
+      user?.role === 'PATIENT') ||
     (location.pathname.startsWith('/book/') && user?.role === 'PATIENT') ||
     location.pathname === '/admin' ||
     location.pathname === '/admin-login';
@@ -96,12 +108,17 @@ function AppShell() {
   return (
     <div className="flex flex-col min-h-screen">
       {!isPortalRoute && <GlobalNav />}
+      <ProfileCompletionModal />
       <main className="flex-grow">
         <Routes>
-          {/* Public Routes */}
+          {/* Public & Dedicated Portals */}
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/patient/login" element={<Login portal="PATIENT" />} />
+          <Route path="/patient/signup" element={<Signup initialRole="PATIENT" />} />
+          <Route path="/doctor/login" element={<Login portal="DOCTOR" />} />
+          <Route path="/doctor/signup" element={<Signup initialRole="DOCTOR" />} />
           <Route path="/clinic-checkin" element={<ClinicCheckIn />} />
           <Route
             path="/doctors"

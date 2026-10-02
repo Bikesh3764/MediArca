@@ -86,6 +86,31 @@ export const sanitizeClinicalHistoryList = (val: unknown): string | null => {
   return null;
 };
 
+export const checkNeedsProfileCompletion = (user: any): boolean => {
+  if (!user) return false;
+  if (user.role === 'PATIENT') {
+    return !user.phone || !user.patientProfile?.gender || !user.patientProfile?.dateOfBirth;
+  }
+  if (user.role === 'DOCTOR') {
+    return (
+      !user.phone ||
+      !user.doctorProfile?.qualifications ||
+      user.doctorProfile?.qualifications === 'Medical Practitioner' ||
+      !user.doctorProfile?.specialty ||
+      !user.doctorProfile?.experienceYears
+    );
+  }
+  if (user.role === 'CLINIC') {
+    return (
+      !user.phone ||
+      !user.clinicProfile?.address ||
+      !user.clinicProfile?.city ||
+      !user.clinicProfile?.state
+    );
+  }
+  return false;
+};
+
 export const register = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, password, fullName, phone, role = 'PATIENT', ...profileData } = req.body;
@@ -447,6 +472,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     );
 
     const { passwordHash: _, ...userWithoutPassword } = user;
+    (userWithoutPassword as any).needsProfileCompletion = checkNeedsProfileCompletion(user);
     res.json({
       success: true,
       message: 'Logged in successfully',
@@ -526,6 +552,7 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
     }
 
     const { passwordHash: _, ...userWithoutPassword } = user;
+    (userWithoutPassword as any).needsProfileCompletion = checkNeedsProfileCompletion(user);
     res.json({ success: true, data: userWithoutPassword });
   } catch (error: any) {
     res.status(500).json({
@@ -718,14 +745,41 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
           ...safeDoctorData,
         },
       });
+    } else if (req.user.role === 'CLINIC') {
+      const { clinicName, address, city, state } = roleSpecificData;
+      const safeClinicData: any = {};
+      if (clinicName !== undefined) safeClinicData.clinicName = String(clinicName).trim();
+      if (address !== undefined) safeClinicData.address = String(address).trim();
+      if (city !== undefined) safeClinicData.city = city ? String(city).trim() : null;
+      if (state !== undefined) safeClinicData.state = state ? String(state).trim() : null;
+      if (formattedPhone !== undefined) safeClinicData.phone = formattedPhone;
+
+      await prisma.clinicProfile.upsert({
+        where: { userId: req.user.id },
+        update: safeClinicData,
+        create: {
+          userId: req.user.id,
+          clinicName: safeClinicData.clinicName || req.user.fullName,
+          address: safeClinicData.address || '',
+          city: safeClinicData.city || null,
+          state: safeClinicData.state || null,
+          phone: formattedPhone || null,
+          checkinCode: crypto.randomBytes(3).toString('hex').toUpperCase(),
+        },
+      });
     }
 
     const refreshedUser = await prisma.user.findUnique({
       where: { id: req.user.id },
-      include: { patientProfile: true, doctorProfile: true },
+      include: {
+        patientProfile: true,
+        doctorProfile: { include: { clinics: { include: { clinic: true } } } },
+        clinicProfile: true,
+      },
     });
 
     const { passwordHash: _, ...result } = refreshedUser!;
+    (result as any).needsProfileCompletion = checkNeedsProfileCompletion(refreshedUser);
     res.json({ success: true, message: 'Profile updated successfully', data: result });
   } catch (error: any) {
     res.status(500).json({
@@ -796,18 +850,24 @@ export const googleAuth = async (req: Request, res: Response): Promise<void> => 
 
     const fullName = payload.name || email.split('@')[0];
     const avatarUrl = payload.picture || null;
-    const normalizedRole = role.toUpperCase() === 'DOCTOR' ? 'DOCTOR' : 'PATIENT';
+    const rawRole = (role || 'PATIENT').toUpperCase();
+    const normalizedRole: 'PATIENT' | 'DOCTOR' | 'CLINIC' =
+      rawRole === 'DOCTOR' ? 'DOCTOR' : (rawRole === 'CLINIC' ? 'CLINIC' : 'PATIENT');
 
     let user = await prisma.user.findUnique({
       where: { email },
-      include: { patientProfile: true, doctorProfile: true },
+      include: {
+        patientProfile: true,
+        doctorProfile: { include: { clinics: { include: { clinic: true } } } },
+        clinicProfile: true,
+      },
     });
 
-    if (user && user.role !== 'PATIENT' && user.role !== 'DOCTOR') {
+    if (user && user.role !== 'PATIENT' && user.role !== 'DOCTOR' && user.role !== 'CLINIC') {
       res.status(403).json({
         success: false,
         message:
-          'Google Sign-In is only permitted for patient and doctor accounts. Clinic and administrative accounts must authenticate with email and password.',
+          'Google Sign-In is only permitted for patient, doctor, and clinic accounts. Administrative and receptionist accounts must authenticate with credentials.',
       });
       return;
     }
@@ -824,9 +884,13 @@ export const googleAuth = async (req: Request, res: Response): Promise<void> => 
             role: 'PATIENT',
             patientProfile: { create: {} },
           },
-          include: { patientProfile: true, doctorProfile: true },
+          include: {
+            patientProfile: true,
+            doctorProfile: { include: { clinics: { include: { clinic: true } } } },
+            clinicProfile: true,
+          },
         });
-      } else {
+      } else if (normalizedRole === 'DOCTOR') {
         user = await prisma.user.create({
           data: {
             email,
@@ -844,7 +908,34 @@ export const googleAuth = async (req: Request, res: Response): Promise<void> => 
               },
             },
           },
-          include: { patientProfile: true, doctorProfile: true },
+          include: {
+            patientProfile: true,
+            doctorProfile: { include: { clinics: { include: { clinic: true } } } },
+            clinicProfile: true,
+          },
+        });
+      } else {
+        // CLINIC
+        user = await prisma.user.create({
+          data: {
+            email,
+            passwordHash: defaultPassword,
+            fullName,
+            avatarUrl,
+            role: 'CLINIC',
+            clinicProfile: {
+              create: {
+                clinicName: fullName || 'New Healthcare Clinic',
+                address: '',
+                checkinCode: crypto.randomBytes(3).toString('hex').toUpperCase(),
+              },
+            },
+          },
+          include: {
+            patientProfile: true,
+            doctorProfile: { include: { clinics: { include: { clinic: true } } } },
+            clinicProfile: true,
+          },
         });
       }
     } else {
@@ -853,7 +944,11 @@ export const googleAuth = async (req: Request, res: Response): Promise<void> => 
         data: {
           ...(avatarUrl && !user.avatarUrl ? { avatarUrl } : {}),
         },
-        include: { patientProfile: true, doctorProfile: true },
+        include: {
+          patientProfile: true,
+          doctorProfile: { include: { clinics: { include: { clinic: true } } } },
+          clinicProfile: true,
+        },
       });
 
       if (user.role === 'PATIENT' && !user.patientProfile) {
@@ -869,11 +964,24 @@ export const googleAuth = async (req: Request, res: Response): Promise<void> => 
             checkingEndTime: '13:00',
           },
         });
+      } else if (user.role === 'CLINIC' && !user.clinicProfile) {
+        await prisma.clinicProfile.create({
+          data: {
+            userId: user.id,
+            clinicName: user.fullName || 'New Healthcare Clinic',
+            address: '',
+            checkinCode: crypto.randomBytes(3).toString('hex').toUpperCase(),
+          },
+        });
       }
 
       user = (await prisma.user.findUnique({
         where: { id: user.id },
-        include: { patientProfile: true, doctorProfile: true },
+        include: {
+          patientProfile: true,
+          doctorProfile: { include: { clinics: { include: { clinic: true } } } },
+          clinicProfile: true,
+        },
       })) as any;
     }
 
@@ -894,6 +1002,7 @@ export const googleAuth = async (req: Request, res: Response): Promise<void> => 
     );
 
     const { passwordHash: _, ...userWithoutPassword } = user;
+    (userWithoutPassword as any).needsProfileCompletion = checkNeedsProfileCompletion(user);
     res.json({
       success: true,
       message: 'Google authentication successful',

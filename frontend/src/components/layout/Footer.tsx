@@ -1,8 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { BrandLogo } from '../ui/BrandLogo';
+import { useAuth } from '../../context/AuthContext';
 
 export const Footer: React.FC = () => {
+  const { user } = useAuth();
+
   return (
     <footer className="bg-[#f5f5f7] border-t border-[#e5e5ea] text-[#86868b] mt-auto select-none">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
@@ -16,16 +19,28 @@ export const Footer: React.FC = () => {
             <Link to="/doctors" className="hover:text-[#1d1d1f] transition-colors">
               Find Doctors
             </Link>
-            <Link to="/patient/appointments" className="hover:text-[#1d1d1f] transition-colors">
+            <Link
+              to={user?.role === 'PATIENT' ? '/patient/appointments' : '/patient/login'}
+              className="hover:text-[#1d1d1f] transition-colors"
+            >
               Patient Portal
             </Link>
-            <Link to="/doctor/dashboard" className="hover:text-[#1d1d1f] transition-colors">
+            <Link
+              to={user?.role === 'DOCTOR' ? '/doctor/dashboard' : '/doctor/login'}
+              className="hover:text-[#1d1d1f] transition-colors"
+            >
               Doctor Console
             </Link>
-            <Link to="/clinic/login" className="hover:text-[#1d1d1f] transition-colors">
+            <Link
+              to={user?.role === 'CLINIC' ? '/clinic/dashboard' : '/clinic/login'}
+              className="hover:text-[#1d1d1f] transition-colors"
+            >
               Clinic Portal
             </Link>
-            <Link to="/receptionist/login" className="hover:text-[#1d1d1f] transition-colors">
+            <Link
+              to={user?.role === 'RECEPTIONIST' ? '/receptionist/dashboard' : '/receptionist/login'}
+              className="hover:text-[#1d1d1f] transition-colors"
+            >
               Reception Desk
             </Link>
           </div>

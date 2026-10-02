@@ -418,16 +418,23 @@ export const GlobalNav: React.FC = () => {
               </button>
             </div>
           ) : (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <Link
-                to="/login"
-                className="text-[#1d1d1f] hover:text-[#0088e8] px-3.5 py-1.5 text-xs font-medium transition-colors hover:bg-black/[0.04] rounded-full"
+                to="/patient/login"
+                className="text-[#1d1d1f] hover:text-[#0088e8] px-3 py-1.5 text-xs font-medium transition-colors hover:bg-black/[0.04] rounded-full"
               >
-                Sign In
+                Patient Sign In
+              </Link>
+              <Link
+                to="/doctor/login"
+                className="text-[#1d1d1f] hover:text-[#0088e8] px-3 py-1.5 text-xs font-medium transition-colors hover:bg-black/[0.04] rounded-full hidden sm:inline-flex items-center gap-1.5"
+              >
+                <Stethoscope className="w-3.5 h-3.5 text-[#0088e8]" />
+                <span>Doctor Portal</span>
               </Link>
               <Link
                 to="/signup"
-                className="bg-[#0088e8] hover:bg-[#0077cc] text-white px-4 py-1.5 rounded-full text-xs font-semibold shadow-xs active:scale-[0.98] transition-all"
+                className="bg-[#0088e8] hover:bg-[#0077cc] text-white px-3.5 py-1.5 rounded-full text-xs font-semibold shadow-xs active:scale-[0.98] transition-all"
               >
                 Register
               </Link>
@@ -632,21 +639,41 @@ export const GlobalNav: React.FC = () => {
                 Sign Out ({user.fullName.split(' ')[0]})
               </button>
             ) : (
-              <div className="flex items-center gap-2.5 w-full">
-                <Link
-                  to="/login"
-                  onClick={closeMenu}
-                  className="flex-1 py-2.5 text-center rounded-full bg-[#f5f5f7] text-[#1d1d1f] font-semibold text-xs hover:bg-[#ebebee] transition-colors"
-                >
-                  Sign In
-                </Link>
-                <Link
-                  to="/signup"
-                  onClick={closeMenu}
-                  className="flex-1 py-2.5 text-center rounded-full bg-[#0088e8] hover:bg-[#0077cc] text-white font-semibold text-xs active:scale-[0.98] transition-all shadow-xs"
-                >
-                  Register
-                </Link>
+              <div className="space-y-2 w-full">
+                <div className="grid grid-cols-2 gap-2">
+                  <Link
+                    to="/patient/login"
+                    onClick={closeMenu}
+                    className="py-2.5 text-center rounded-full bg-[#f5f5f7] text-[#1d1d1f] font-semibold text-xs hover:bg-[#ebebee] transition-colors"
+                  >
+                    Patient Sign In
+                  </Link>
+                  <Link
+                    to="/doctor/login"
+                    onClick={closeMenu}
+                    className="py-2.5 text-center rounded-full bg-[#f5f5f7] text-[#0088e8] font-semibold text-xs hover:bg-[#0088e8]/10 transition-colors border border-[#0088e8]/20 flex items-center justify-center gap-1.5"
+                  >
+                    <Stethoscope className="w-3.5 h-3.5" />
+                    <span>Doctor Portal</span>
+                  </Link>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <Link
+                    to="/clinic/login"
+                    onClick={closeMenu}
+                    className="py-2.5 text-center rounded-full bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f] font-medium text-xs transition-colors flex items-center justify-center gap-1.5"
+                  >
+                    <Building2 className="w-3.5 h-3.5" />
+                    <span>Clinic Portal</span>
+                  </Link>
+                  <Link
+                    to="/signup"
+                    onClick={closeMenu}
+                    className="py-2.5 text-center rounded-full bg-[#0088e8] hover:bg-[#0077cc] text-white font-semibold text-xs active:scale-[0.98] transition-all shadow-xs"
+                  >
+                    Register
+                  </Link>
+                </div>
               </div>
             )}
           </div>
