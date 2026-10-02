@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { api, Doctor, format12Hour, getFileUrl } from '../../services/api';
+import { api, Doctor, format12Hour, getFileUrl, formatDoctorDegrees } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { BrandLogo } from '../../components/ui/BrandLogo';
@@ -194,7 +194,7 @@ export const AdminDashboard: React.FC = () => {
               className="flex items-center gap-1.5 text-xs text-[#48484a]"
               title="Refresh platform statistics"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-[#0088e8]' : ''}`} />
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-[#0066cc]' : ''}`} />
               <span className="hidden md:inline">Refresh</span>
             </AppleButton>
 
@@ -230,7 +230,7 @@ export const AdminDashboard: React.FC = () => {
           </div>
           <div className="flex items-center gap-2 text-xs text-[#86868b]">
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] font-medium text-[#1d1d1f]">
-              <Users className="w-3.5 h-3.5 text-[#0088e8]" />
+              <Users className="w-3.5 h-3.5 text-[#0066cc]" />
               {(stats?.totalDoctors || 0) + (stats?.totalClinics || clinics.length)} Registered Providers
             </span>
           </div>
@@ -240,7 +240,7 @@ export const AdminDashboard: React.FC = () => {
       <div className="max-w-7xl mx-auto px-3 sm:px-6 pt-5 sm:pt-8 space-y-6 sm:space-y-8">
         {loading && !stats ? (
           <div className="flex flex-col items-center justify-center py-24">
-            <div className="w-8 h-8 rounded-full border-2 border-[#0088e8] border-t-transparent animate-spin mb-3"></div>
+            <div className="w-8 h-8 rounded-full border-2 border-[#0066cc] border-t-transparent animate-spin mb-3"></div>
             <p className="text-xs text-[#86868b]">Loading records...</p>
           </div>
         ) : (
@@ -253,7 +253,7 @@ export const AdminDashboard: React.FC = () => {
                     <span className="text-[11px] text-[#86868b] uppercase font-semibold">Patients</span>
                     <h3 className="text-3xl font-semibold text-[#1d1d1f] mt-1">{stats?.totalPatients || 0}</h3>
                   </div>
-                  <div className="w-10 h-10 rounded-xl bg-[#0088e8]/10 text-[#0088e8] flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-xl bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center">
                     <Users className="w-5 h-5" />
                   </div>
                 </div>
@@ -328,7 +328,7 @@ export const AdminDashboard: React.FC = () => {
                       : 'text-[#86868b] hover:text-[#1d1d1f]'
                   }`}
                 >
-                  <ShieldCheck className="w-4 h-4 text-[#0088e8]" />
+                  <ShieldCheck className="w-4 h-4 text-[#0066cc]" />
                   <span>Doctor Verification</span>
                   {doctors.filter((d) => getPractitionerStatus(d) === 'PENDING').length > 0 ? (
                     <span className="px-2 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-bold">
@@ -413,7 +413,7 @@ export const AdminDashboard: React.FC = () => {
                                     className="w-full h-full object-cover"
                                   />
                                 ) : (
-                                  <div className="w-full h-full flex items-center justify-center font-bold text-[#0088e8]">
+                                  <div className="w-full h-full flex items-center justify-center font-bold text-[#0066cc]">
                                     {doc.user.fullName[0]}
                                   </div>
                                 )}
@@ -422,7 +422,7 @@ export const AdminDashboard: React.FC = () => {
                                 <button
                                   type="button"
                                   onClick={() => setSelectedDoctor(doc)}
-                                  className="text-[13px] text-[#1d1d1f] font-semibold block text-left hover:text-[#0088e8] transition-colors"
+                                  className="text-[13px] text-[#1d1d1f] font-semibold block text-left hover:text-[#0066cc] transition-colors"
                                 >
                                   {doc.user.fullName}
                                 </button>
@@ -504,7 +504,7 @@ export const AdminDashboard: React.FC = () => {
                                   size="sm"
                                   disabled={actionId === doc.id}
                                   onClick={() => handleVerify(doc.id, 'VERIFIED')}
-                                  className="text-[#0088e8] hover:text-[#0284c7] text-xs"
+                                  className="text-[#0066cc] hover:text-[#0284c7] text-xs"
                                 >
                                   {actionId === doc.id ? 'Updating...' : 'Approve & Verify'}
                                 </AppleButton>
@@ -562,7 +562,7 @@ export const AdminDashboard: React.FC = () => {
                                   <button
                                     type="button"
                                     onClick={() => setSelectedClinic(c)}
-                                    className="text-[13px] text-[#1d1d1f] font-semibold block text-left hover:text-[#0088e8] transition-colors cursor-pointer"
+                                    className="text-[13px] text-[#1d1d1f] font-semibold block text-left hover:text-[#0066cc] transition-colors cursor-pointer"
                                   >
                                     {c.clinicName}
                                   </button>
@@ -654,7 +654,7 @@ export const AdminDashboard: React.FC = () => {
                                     size="sm"
                                     disabled={clinicActionId === c.id}
                                     onClick={() => handleVerifyClinic(c.id, 'VERIFIED')}
-                                    className="text-[#0088e8] hover:text-[#0284c7] text-xs"
+                                    className="text-[#0066cc] hover:text-[#0284c7] text-xs"
                                   >
                                     {clinicActionId === c.id ? 'Updating...' : 'Approve & Verify'}
                                   </AppleButton>
@@ -699,7 +699,7 @@ export const AdminDashboard: React.FC = () => {
                       {appointments.slice(0, 15).map((appt) => (
                         <tr key={appt.id} className="hover:bg-[#f5f5f7]/60">
                           <td className="py-3 px-3 font-medium text-[#1d1d1f]">{appt.appointmentDate}</td>
-                          <td className="py-3 px-3 font-bold text-[#0088e8]">Queue #{appt.queueNumber}</td>
+                          <td className="py-3 px-3 font-bold text-[#0066cc]">Queue #{appt.queueNumber}</td>
                           <td className="py-3 px-3">{appt.patient?.user?.fullName}</td>
                           <td className="py-3 px-3">{appt.doctor?.user?.fullName}</td>
                           <td className="py-3 px-3">
@@ -723,7 +723,7 @@ export const AdminDashboard: React.FC = () => {
           <div className="bg-white rounded-[20px] sm:rounded-[24px] border border-[#e5e5ea] max-w-lg w-full p-5 sm:p-8 shadow-2xl space-y-5">
             <div className="flex justify-between items-start pb-4 border-b border-[#f0f0f0]">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] overflow-hidden flex items-center justify-center font-bold text-lg text-[#0088e8]">
+                <div className="w-12 h-12 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] overflow-hidden flex items-center justify-center font-bold text-lg text-[#0066cc]">
                   {selectedDoctor.user.avatarUrl ? (
                     <img src={getFileUrl(selectedDoctor.user.avatarUrl)} alt={selectedDoctor.user.fullName} className="w-full h-full object-cover" />
                   ) : (
@@ -733,7 +733,7 @@ export const AdminDashboard: React.FC = () => {
                 <div>
                   <h3 className="text-lg font-semibold text-[#1d1d1f]">{selectedDoctor.user.fullName}</h3>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <p className="text-xs text-[#0088e8] font-medium">{selectedDoctor.specialty}</p>
+                    <p className="text-xs text-[#0066cc] font-medium">{selectedDoctor.specialty}</p>
                     {renderStatusBadge(getPractitionerStatus(selectedDoctor))}
                   </div>
                 </div>
@@ -750,7 +750,7 @@ export const AdminDashboard: React.FC = () => {
               <div className="grid grid-cols-2 gap-3 p-3.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea]">
                 <div>
                   <span className="text-[#86868b] block">Qualifications:</span>
-                  <strong className="text-[#1d1d1f]">{selectedDoctor.qualifications}</strong>
+                  <strong className="text-[#1d1d1f]">{formatDoctorDegrees(selectedDoctor.qualifications)}</strong>
                 </div>
                 <div>
                   <span className="text-[#86868b] block">Experience:</span>
@@ -762,7 +762,7 @@ export const AdminDashboard: React.FC = () => {
                 </div>
                 <div>
                   <span className="text-[#86868b] block">Checking Window:</span>
-                  <strong className="text-[#0088e8]">
+                  <strong className="text-[#0066cc]">
                     {selectedDoctor.checkingStartTime ? `${format12Hour(selectedDoctor.checkingStartTime)} – ${format12Hour(selectedDoctor.checkingEndTime)}` : 'Flexible'}
                   </strong>
                 </div>
@@ -919,7 +919,7 @@ export const AdminDashboard: React.FC = () => {
                 </div>
                 <div>
                   <span className="text-[10px] text-[#86868b] uppercase font-semibold block">Receptionists</span>
-                  <p className="text-base font-bold text-[#0088e8] mt-0.5">
+                  <p className="text-base font-bold text-[#0066cc] mt-0.5">
                     {selectedClinic._count?.receptionists ?? selectedClinic.receptionistsCount ?? 0}
                   </p>
                 </div>

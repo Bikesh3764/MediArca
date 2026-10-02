@@ -17,9 +17,9 @@ export default {
           mintTint: '#f0fdf4',
         },
         apple: {
-          primary: '#0088e8',
-          focus: '#0284c7',
-          sky: '#38bdf8',
+          primary: '#0066cc',
+          focus: '#0071e3',
+          sky: '#2997ff',
           ink: '#1d1d1f',
           parchment: '#f5f5f7',
           pearl: '#fafafc',

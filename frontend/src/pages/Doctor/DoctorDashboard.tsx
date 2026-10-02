@@ -9,6 +9,7 @@ import {
   getTomorrowDateString,
   DoctorAffiliationsData,
   ClinicProfile,
+  formatDoctorDegrees,
 } from '../../services/api';
 import { sanitizeIndianPhone, formatIndianPhone, isValidIndianPhone } from '../../utils/phoneUtils';
 import { useAuth } from '../../context/AuthContext';
@@ -1836,7 +1837,7 @@ export const DoctorDashboard: React.FC = () => {
             {user?.doctorProfile?.specialty || 'General Specialist'}
           </p>
           {user?.doctorProfile?.qualifications && (
-            <p className="text-xs text-gray-600 font-medium mt-0.5">{user.doctorProfile.qualifications}</p>
+            <p className="text-xs text-gray-600 font-medium mt-0.5">{formatDoctorDegrees(user.doctorProfile.qualifications)}</p>
           )}
           {user?.doctorProfile?.clinicAddress && (
             <p className="text-xs text-gray-600 mt-1">{user.doctorProfile.clinicAddress}</p>

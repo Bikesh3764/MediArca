@@ -25,21 +25,21 @@ export const AppleButton: React.FC<AppleButtonProps> = ({
   let variantClass = '';
   switch (variant) {
     case 'primary':
-      // Apple Action Blue (#0088e8)
-      variantClass = 'bg-[#0088e8] hover:bg-[#0077cc] text-white shadow-xs hover:shadow-md rounded-full font-semibold';
+      // Apple Action Blue (#0066cc) per DESIGN.md
+      variantClass = 'bg-[#0066cc] hover:bg-[#0071e3] text-white shadow-2xs hover:shadow-xs rounded-full font-medium';
       break;
     case 'secondary':
-      // MediArca secondary pill with Brand Cyan outline
-      variantClass = 'bg-white text-[#0088e8] border border-[#0088e8]/35 hover:border-[#0088e8] hover:bg-[#0088e8]/5 rounded-full font-semibold';
+      // Apple secondary pill per DESIGN.md
+      variantClass = 'bg-white text-[#0066cc] border border-[#0066cc] hover:bg-[#0066cc]/5 rounded-full font-medium';
       break;
     case 'secondary-dark':
     case 'glass':
       // Apple translucent glass pill for dark backgrounds with high contrast white text
-      variantClass = 'bg-white/12 text-white border border-white/30 hover:bg-white/22 hover:border-white backdrop-blur-md rounded-full shadow-sm font-medium';
+      variantClass = 'bg-white/12 text-white border border-white/30 hover:bg-white/20 hover:border-white backdrop-blur-md rounded-full shadow-2xs font-medium';
       break;
     case 'ghost':
-      // Apple soft parchment/pearl capsule button with dark text
-      variantClass = 'bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea] hover:bg-white hover:border-[#d2d2d7] rounded-full font-medium';
+      // Apple Pearl/Parchment Button capsule per DESIGN.md
+      variantClass = 'bg-[#fafafc] text-[#1d1d1f] border border-[#e5e5ea] hover:bg-white hover:border-[#d2d2d7] rounded-full font-medium';
       break;
     case 'dark':
       // Dark utility button (SF Pro Text 14px / 400)

@@ -5,6 +5,7 @@ import {
   respondToDoctorAffiliation,
   removeDoctorFromClinic,
   getPublicClinics,
+  getPublicClinicById,
   addClinicReceptionist,
   getClinicReceptionists,
   updateClinicReceptionistDoctors,
@@ -15,8 +16,9 @@ import { authenticate, authorize, requireActiveClinic } from '../middleware/auth
 
 const router = Router();
 
-// Public route to view verified clinic list
+// Public route to view verified clinic list & clinic details
 router.get('/public', getPublicClinics);
+router.get('/public/:id', getPublicClinicById);
 
 // Clinic authenticated operations
 router.use(authenticate, authorize('CLINIC'));

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { api, ClinicDashboardData, ClinicReceptionistItem, Doctor, getFileUrl } from '../../services/api';
+import { api, ClinicDashboardData, ClinicReceptionistItem, Doctor, getFileUrl, formatDoctorDegrees } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { AppleButton } from '../../components/ui/AppleButton';
 import { DashboardLayout, DashboardNavItem } from '../../components/layout/DashboardLayout';
@@ -678,7 +678,7 @@ export const ClinicDashboard: React.FC = () => {
                               {doc.fullName}
                             </div>
                             <div className="text-[11px] text-[#86868b]">
-                              {doc.qualifications} • {doc.experienceYears} yrs exp.
+                              {formatDoctorDegrees(doc.qualifications)} • {doc.experienceYears} yrs exp.
                             </div>
                             <div className="text-[10px] text-[#86868b]">{doc.email}</div>
                           </div>

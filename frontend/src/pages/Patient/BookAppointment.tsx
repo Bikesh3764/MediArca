@@ -315,7 +315,7 @@ export const BookAppointment: React.FC = () => {
           }
         >
           <div className="flex flex-col items-center justify-center py-24">
-            <div className="w-8 h-8 rounded-full border-2 border-[#0088e8] border-t-transparent animate-spin mb-3"></div>
+            <div className="w-8 h-8 rounded-full border-2 border-[#0066cc] border-t-transparent animate-spin mb-3"></div>
             <p className="text-xs text-[#86868b]">Loading appointment booking workspace...</p>
           </div>
         </DashboardLayout>
@@ -323,7 +323,7 @@ export const BookAppointment: React.FC = () => {
     }
     return (
       <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center">
-        <div className="w-8 h-8 rounded-full border-2 border-[#0088e8] border-t-transparent animate-spin"></div>
+        <div className="w-8 h-8 rounded-full border-2 border-[#0066cc] border-t-transparent animate-spin"></div>
       </div>
     );
   }
@@ -402,7 +402,7 @@ export const BookAppointment: React.FC = () => {
                 />
               ) : null}
               <div
-                className={`book-doc-fallback w-full h-full ${doctor.user?.avatarUrl ? 'hidden' : 'flex'} items-center justify-center font-bold text-xl text-white bg-[#0088e8] shadow-inner select-none`}
+                className={`book-doc-fallback w-full h-full ${doctor.user?.avatarUrl ? 'hidden' : 'flex'} items-center justify-center font-bold text-xl text-white bg-[#0066cc] shadow-inner select-none`}
               >
                 {(doctor.user?.fullName ? doctor.user.fullName.replace(/^Dr\.\s*/i, '').trim()[0] : null) || 'D'}
               </div>
@@ -410,17 +410,17 @@ export const BookAppointment: React.FC = () => {
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <h3 className="text-xl font-bold text-[#1d1d1f] tracking-tight">{doctor.user?.fullName || 'Doctor'}</h3>
-                <CheckCircle2 className="w-4 h-4 text-[#0088e8] flex-shrink-0" />
+                <CheckCircle2 className="w-4 h-4 text-[#0066cc] flex-shrink-0" />
               </div>
               <div className="flex flex-wrap items-center gap-2 mt-1">
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#0088e8]/10 text-[#0088e8] border border-[#0088e8]/20">
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20">
                   {doctor.specialty}
                 </span>
                 <span className="text-xs text-[#6e6e73] font-medium">{formatDoctorDegrees(doctor.qualifications)}</span>
               </div>
               {selectedClinic ? (
                 <p className="text-xs text-[#48484a] font-medium flex items-center gap-1.5 mt-1">
-                  <Building2 className="w-3.5 h-3.5 text-[#0088e8] flex-shrink-0" />
+                  <Building2 className="w-3.5 h-3.5 text-[#0066cc] flex-shrink-0" />
                   <span>Practicing at {selectedClinic.clinic.clinicName}{selectedClinic.clinic.city ? ` • ${selectedClinic.clinic.city}` : ''}</span>
                 </p>
               ) : (
@@ -448,7 +448,7 @@ export const BookAppointment: React.FC = () => {
             <div className="py-4 border-b border-[#f0f0f0]">
               <label className="block text-xs font-medium text-[#1d1d1f] mb-2 flex items-center justify-between">
                 <span className="flex items-center gap-1.5 font-semibold">
-                  <Building2 className="w-3.5 h-3.5 text-[#0088e8]" />
+                  <Building2 className="w-3.5 h-3.5 text-[#0066cc]" />
                   Consultation Venue / Clinic
                 </span>
                 <span className="text-[11px] text-[#86868b]">
@@ -457,8 +457,8 @@ export const BookAppointment: React.FC = () => {
               </label>
 
               {doctor.clinics.length === 1 ? (
-                <div className="p-4 sm:p-5 rounded-[22px] bg-white border-2 border-[#0088e8] shadow-[0_4px_16px_rgba(0,136,232,0.08)] flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-2xl bg-[#0088e8]/10 text-[#0088e8] flex items-center justify-center flex-shrink-0 mt-0.5">
+                <div className="p-4 sm:p-5 rounded-[22px] bg-white border-2 border-[#0066cc] shadow-[0_4px_16px_rgba(0,136,232,0.08)] flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-2xl bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center flex-shrink-0 mt-0.5">
                     <Building2 className="w-5 h-5" />
                   </div>
                   <div className="min-w-0 flex-1">
@@ -466,7 +466,7 @@ export const BookAppointment: React.FC = () => {
                       <span className="text-sm font-bold text-[#1d1d1f] block truncate">
                         {doctor.clinics[0].clinic.clinicName}
                       </span>
-                      <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#0088e8] text-white flex-shrink-0 shadow-2xs">
+                      <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#0066cc] text-white flex-shrink-0 shadow-2xs">
                         Selected Venue
                       </span>
                     </div>
@@ -479,14 +479,14 @@ export const BookAppointment: React.FC = () => {
                         Fee: ₹{doctor.clinics[0].consultationFee ?? doctor.consultationFee}
                       </span>
                       {doctor.clinics[0].slots && doctor.clinics[0].slots.length > 0 && (
-                        <span className="px-2.5 py-0.5 rounded-full bg-[#0088e8]/10 text-[#0088e8] text-xs font-medium">
+                        <span className="px-2.5 py-0.5 rounded-full bg-[#0066cc]/10 text-[#0066cc] text-xs font-medium">
                           {doctor.clinics[0].slots.length} shift{doctor.clinics[0].slots.length > 1 ? 's' : ''}
                         </span>
                       )}
                     </div>
                     {doctor.clinics[0].clinic.phone && (
-                      <div className="flex items-center gap-1.5 text-xs text-[#0088e8] font-medium mt-3 pt-2.5 border-t border-[#f5f5f7]">
-                        <Phone className="w-3.5 h-3.5 text-[#0088e8] flex-shrink-0" />
+                      <div className="flex items-center gap-1.5 text-xs text-[#0066cc] font-medium mt-3 pt-2.5 border-t border-[#f5f5f7]">
+                        <Phone className="w-3.5 h-3.5 text-[#0066cc] flex-shrink-0" />
                         <a href={`tel:${doctor.clinics[0].clinic.phone.replace(/\s+/g, '')}`} className="hover:underline">
                           Reception Desk: {formatDisplayPhone(doctor.clinics[0].clinic.phone)}
                         </a>
@@ -506,15 +506,15 @@ export const BookAppointment: React.FC = () => {
                         onClick={() => handleSelectClinic(c.clinicId)}
                         className={`p-4 sm:p-5 rounded-[22px] border text-left transition-all duration-200 flex flex-col justify-between cursor-pointer ${
                           isSelected
-                            ? 'bg-white border-[#0088e8] ring-2 ring-[#0088e8]/20 shadow-[0_4px_20px_rgba(0,136,232,0.1)]'
-                            : 'bg-white border-[#e5e5ea] hover:border-[#0088e8]/40 hover:bg-[#fafafa]'
+                            ? 'bg-white border-[#0066cc] ring-2 ring-[#0066cc]/20 shadow-[0_4px_20px_rgba(0,136,232,0.1)]'
+                            : 'bg-white border-[#e5e5ea] hover:border-[#0066cc]/40 hover:bg-[#fafafa]'
                         }`}
                       >
                         <div>
                           <div className="flex items-center justify-between gap-1 mb-1.5">
                             <span className="text-sm font-bold text-[#1d1d1f] truncate">{c.clinic.clinicName}</span>
                             {isSelected ? (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#0088e8] text-white flex-shrink-0 shadow-2xs">
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#0066cc] text-white flex-shrink-0 shadow-2xs">
                                 <Check className="w-3 h-3" />
                                 Selected
                               </span>
@@ -529,15 +529,15 @@ export const BookAppointment: React.FC = () => {
                               Fee: ₹{clinicFee}
                             </span>
                             {c.slots && c.slots.length > 0 && (
-                              <span className="px-2.5 py-0.5 rounded-full bg-[#0088e8]/10 text-[#0088e8] text-xs font-medium">
+                              <span className="px-2.5 py-0.5 rounded-full bg-[#0066cc]/10 text-[#0066cc] text-xs font-medium">
                                 {c.slots.length} shift{c.slots.length > 1 ? 's' : ''}
                               </span>
                             )}
                           </div>
                         </div>
                         {c.clinic.phone && (
-                          <div className="flex items-center gap-1.5 text-xs text-[#0088e8] font-medium mt-3 pt-2.5 border-t border-[#f5f5f7]">
-                            <Phone className="w-3.5 h-3.5 text-[#0088e8] flex-shrink-0" />
+                          <div className="flex items-center gap-1.5 text-xs text-[#0066cc] font-medium mt-3 pt-2.5 border-t border-[#f5f5f7]">
+                            <Phone className="w-3.5 h-3.5 text-[#0066cc] flex-shrink-0" />
                             <span>Reception Desk: {formatDisplayPhone(c.clinic.phone)}</span>
                           </div>
                         )}
@@ -553,7 +553,7 @@ export const BookAppointment: React.FC = () => {
           <div className="pt-4 pb-2">
             <div className="flex items-center justify-between mb-1.5">
               <label className="text-xs font-medium text-[#1d1d1f] flex items-center gap-1">
-                <Calendar className="w-3.5 h-3.5 text-[#0088e8]" />
+                <Calendar className="w-3.5 h-3.5 text-[#0066cc]" />
                 Select Appointment Date
               </label>
               <div className="flex items-center gap-1">
@@ -587,7 +587,7 @@ export const BookAppointment: React.FC = () => {
               value={appointmentDate}
               min={getLocalDateString()}
               onChange={(e) => setAppointmentDate(e.target.value)}
-              className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[14px] bg-white text-[#1d1d1f] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
+              className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[14px] bg-white text-[#1d1d1f] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
             />
           </div>
 
@@ -595,7 +595,7 @@ export const BookAppointment: React.FC = () => {
           <div className="py-4">
             <label className="block text-xs font-medium text-[#1d1d1f] mb-2 flex items-center justify-between">
               <span className="flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-[#0088e8]" />
+                <Clock className="w-3.5 h-3.5 text-[#0066cc]" />
                 Choose Doctor Checking Slot (Shift)
               </span>
               <span className="text-[11px] text-[#86868b]">
@@ -621,8 +621,8 @@ export const BookAppointment: React.FC = () => {
                       slotPassed
                         ? 'bg-gray-50 border-gray-200 opacity-60 cursor-not-allowed'
                         : isSelected
-                        ? 'bg-white border-[#0088e8] ring-2 ring-[#0088e8]/20 shadow-sm'
-                        : 'bg-white border-[#e5e5ea] hover:border-[#0088e8]/40 hover:bg-[#fafafa]'
+                        ? 'bg-white border-[#0066cc] ring-2 ring-[#0066cc]/20 shadow-sm'
+                        : 'bg-white border-[#e5e5ea] hover:border-[#0066cc]/40 hover:bg-[#fafafa]'
                     }`}
                   >
                     <div className="flex items-center justify-between gap-2 mb-1.5">
@@ -630,13 +630,13 @@ export const BookAppointment: React.FC = () => {
                         {cleanShiftName}
                       </span>
                       {isSelected && !slotPassed && (
-                        <span className="w-4 h-4 rounded-full bg-[#0088e8] text-white flex items-center justify-center flex-shrink-0">
+                        <span className="w-4 h-4 rounded-full bg-[#0066cc] text-white flex items-center justify-center flex-shrink-0">
                           <Check className="w-2.5 h-2.5" />
                         </span>
                       )}
                     </div>
 
-                    <div className="text-xs text-[#0088e8] font-medium flex items-center gap-1.5 mb-2">
+                    <div className="text-xs text-[#0066cc] font-medium flex items-center gap-1.5 mb-2">
                       <Clock className="w-3.5 h-3.5 flex-shrink-0" />
                       <span>
                         {format12Hour(s.startTime)} – {format12Hour(s.endTime)}
@@ -680,13 +680,13 @@ export const BookAppointment: React.FC = () => {
                 </span>
                 <strong
                   className={`text-2xl sm:text-3xl font-bold tracking-tight block mt-0.5 ${
-                    isSelectedSlotPassed ? 'text-[#86868b]' : 'text-[#0088e8]'
+                    isSelectedSlotPassed ? 'text-[#86868b]' : 'text-[#0066cc]'
                   }`}
                 >
                   {isSelectedSlotPassed ? 'Shift Ended' : `Queue #${queuePreview.nextQueueNumber}`}
                 </strong>
                 <p className="text-xs text-[#86868b] mt-1 flex items-center gap-1.5 font-medium">
-                  <Clock className="w-3.5 h-3.5 text-[#0088e8]" />
+                  <Clock className="w-3.5 h-3.5 text-[#0066cc]" />
                   Checking Shift: {queuePreview.checkingWindow}
                 </p>
               </div>
@@ -750,8 +750,8 @@ export const BookAppointment: React.FC = () => {
               </div>
 
               {bookingFor === 'other' && (
-                <div className="mt-3 p-4 rounded-2xl bg-[#0088e8]/5 border border-[#0088e8]/20 space-y-3 animate-fadeIn">
-                  <div className="text-xs font-semibold text-[#0088e8]">
+                <div className="mt-3 p-4 rounded-2xl bg-[#0066cc]/5 border border-[#0066cc]/20 space-y-3 animate-fadeIn">
+                  <div className="text-xs font-semibold text-[#0066cc]">
                     Patient Details (Dependent / Family Member)
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -765,7 +765,7 @@ export const BookAppointment: React.FC = () => {
                         value={patientName}
                         onChange={(e) => setPatientName(e.target.value)}
                         placeholder="e.g. Rahul Ray"
-                        className="w-full h-10 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
+                        className="w-full h-10 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
                       />
                     </div>
                     <div>
@@ -778,7 +778,7 @@ export const BookAppointment: React.FC = () => {
                         value={patientAge}
                         onChange={(e) => setPatientAge(e.target.value)}
                         placeholder="e.g. 12"
-                        className="w-full h-10 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
+                        className="w-full h-10 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
                       />
                     </div>
                     <div>
@@ -788,7 +788,7 @@ export const BookAppointment: React.FC = () => {
                       <select
                         value={patientGender}
                         onChange={(e) => setPatientGender(e.target.value)}
-                        className="w-full h-10 px-2.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
+                        className="w-full h-10 px-2.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
                       >
                         <option value="Male">Male</option>
                         <option value="Female">Female</option>
@@ -809,7 +809,7 @@ export const BookAppointment: React.FC = () => {
                 value={reasonForVisit}
                 onChange={(e) => setReasonForVisit(e.target.value)}
                 placeholder="e.g. General checkup, consultation, follow-up"
-                className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-sm bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
+                className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-sm bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
               />
             </div>
 
@@ -822,7 +822,7 @@ export const BookAppointment: React.FC = () => {
                 value={symptoms}
                 onChange={(e) => setSymptoms(e.target.value)}
                 placeholder="Describe any symptoms or concerns for the doctor..."
-                className="w-full p-3.5 rounded-xl border border-[#e5e5ea] text-sm bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] resize-none"
+                className="w-full p-3.5 rounded-xl border border-[#e5e5ea] text-sm bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] resize-none"
               ></textarea>
             </div>
 
@@ -830,7 +830,7 @@ export const BookAppointment: React.FC = () => {
             <div className="p-4 sm:p-5 rounded-[22px] bg-white border border-[#e5e5ea] shadow-xs space-y-3.5">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-start gap-3 min-w-0">
-                  <div className="w-9 h-9 rounded-full bg-[#0088e8]/10 text-[#0088e8] flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <div className="w-9 h-9 rounded-full bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center flex-shrink-0 mt-0.5">
                     <Phone className="w-4 h-4" />
                   </div>
                   <div className="min-w-0">
@@ -855,14 +855,14 @@ export const BookAppointment: React.FC = () => {
                 <div className="pt-3 border-t border-[#f0f0f2] space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] font-semibold text-[#86868b] uppercase tracking-wider flex items-center gap-1.5">
-                      <UserIcon className="w-3.5 h-3.5 text-[#0088e8]" />
+                      <UserIcon className="w-3.5 h-3.5 text-[#0066cc]" />
                       Clinic Reception Desk ({attachedReceptionists.length})
                     </span>
                     {attachedReceptionists.length > 1 && (
                       <button
                         type="button"
                         onClick={() => setShowAllReceptionists(!showAllReceptionists)}
-                        className="text-[11px] font-semibold text-[#0088e8] hover:underline cursor-pointer"
+                        className="text-[11px] font-semibold text-[#0066cc] hover:underline cursor-pointer"
                       >
                         {showAllReceptionists ? 'Show Less' : `View All (${attachedReceptionists.length}) Details`}
                       </button>
@@ -892,9 +892,9 @@ export const BookAppointment: React.FC = () => {
                         {rec.phone && (
                           <a
                             href={`tel:${rec.phone.replace(/\s+/g, '')}`}
-                            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white border border-[#e5e5ea] hover:border-[#0088e8] text-xs font-semibold text-[#0088e8] hover:bg-[#0088e8]/5 transition-all active:scale-[0.98] shadow-2xs whitespace-nowrap self-start sm:self-auto"
+                            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white border border-[#e5e5ea] hover:border-[#0066cc] text-xs font-semibold text-[#0066cc] hover:bg-[#0066cc]/5 transition-all active:scale-[0.98] shadow-2xs whitespace-nowrap self-start sm:self-auto"
                           >
-                            <Phone className="w-3 h-3 text-[#0088e8]" />
+                            <Phone className="w-3 h-3 text-[#0066cc]" />
                             <span>Call {formatDisplayPhone(rec.phone)}</span>
                           </a>
                         )}

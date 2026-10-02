@@ -980,35 +980,61 @@ function runTests() {
   assert(ALLOWED_FILE_EXTENSIONS.includes('.webp'), 'Allowed extensions include .webp');
   assert(ALLOWED_FILE_EXTENSIONS.includes('.pdf'), 'Allowed extensions include .pdf');
 
-  // 47. Doctor Degrees Sanitization (Degrees Only, No School / University Fluff)
+  // 47. Doctor Degrees Sanitization (Degrees Only, No School / University Fluff or Fellowships like FACC)
   const formatDoctorDegrees = (qualifications?: string | null): string => {
     if (!qualifications || !qualifications.trim()) return 'Certified Specialist';
-    const parts = qualifications.split(',');
-    const cleanedParts = parts.map((part) => {
-      const subParts = part.split(/\s*[-–—]\s*/);
-      if (subParts.length > 1) {
-        const degreesOnly = subParts.filter(
-          (sp) => !/(university|college|school|hospital|institute|academy|faculty|campus|stanford|harvard|hopkins|oxford|cambridge|aiims|pgi)/i.test(sp)
-        );
-        return degreesOnly.join(', ').trim();
-      }
-      if (/(university|college|school|hospital|institute|academy|faculty|campus|stanford|harvard|hopkins|oxford|cambridge|aiims|pgi)/i.test(part)) {
-        return '';
-      }
-      return part.trim();
-    }).filter(Boolean);
 
-    const result = cleanedParts.join(', ').trim();
-    if (result) return result;
-    const firstSegment = qualifications.split(/\s*[-–—]\s*/)[0].trim();
-    return firstSegment || 'Certified Specialist';
+    const RECOGNIZED_DEGREES = new Set([
+      'MBBS', 'MD', 'MS', 'DM', 'MCH', 'BDS', 'MDS', 'DNB',
+      'BAMS', 'BHMS', 'BUMS', 'BSMS', 'BVSC', 'DO', 'PHD',
+      'MPH', 'DGO', 'DCH', 'DMRD', 'DORTHO', 'DA', 'MBCHB',
+      'BMBS', 'BM BCH', 'BM', 'BCHIR', 'BMED', 'MRCGP'
+    ]);
+
+    const NON_DEGREE_PATTERN = /\b(facc|faap|facs|facp|frcs|frcp|mrcp|mrcs|faha|fesc|ficm|fams|fico|fics|fccp|fcps|facr|faad|board\s*certified|board\s*eligible|fellow|diplomate|member|specialist|certified|university|college|school|hospital|institute|academy|faculty|campus|stanford|harvard|hopkins|oxford|cambridge|aiims|pgi)\b/i;
+
+    const parts = qualifications.split(/[,;]+/);
+    const collectedDegrees: string[] = [];
+
+    for (const part of parts) {
+      const subSegments = part.split(/\s*[-–—/]\s*/);
+      for (const sub of subSegments) {
+        const trimmed = sub.trim().replace(/\.+/g, '');
+        if (!trimmed) continue;
+        if (NON_DEGREE_PATTERN.test(sub)) continue;
+
+        const upper = trimmed.toUpperCase();
+        if (RECOGNIZED_DEGREES.has(upper)) {
+          const canonical = upper === 'MCH' ? 'MCh' : upper;
+          if (!collectedDegrees.includes(canonical)) {
+            collectedDegrees.push(canonical);
+          }
+        } else if (!NON_DEGREE_PATTERN.test(trimmed) && trimmed.length <= 8 && /^[A-Za-z]+$/.test(trimmed)) {
+          if (!collectedDegrees.includes(trimmed)) {
+            collectedDegrees.push(trimmed);
+          }
+        }
+      }
+    }
+
+    if (collectedDegrees.length > 0) {
+      return collectedDegrees.join(', ');
+    }
+
+    const firstSegment = qualifications.split(/\s*[-–—,;/]\s*/)[0].trim().replace(/\.+/g, '');
+    if (firstSegment && !NON_DEGREE_PATTERN.test(firstSegment) && firstSegment.length <= 10) {
+      return firstSegment;
+    }
+
+    return 'Certified Specialist';
   };
 
-  assert(formatDoctorDegrees('MD - Harvard Medical School, FACC') === 'MD, FACC', 'Harvard Medical School stripped from qualifications');
-  assert(formatDoctorDegrees('MD - Stanford Medicine, Board Certified') === 'MD, Board Certified', 'Stanford Medicine stripped from qualifications');
-  assert(formatDoctorDegrees('MD, FAAP - Johns Hopkins University') === 'MD, FAAP', 'Johns Hopkins University stripped from qualifications');
+  assert(formatDoctorDegrees('MD - Harvard Medical School, FACC') === 'MD', 'Harvard Medical School and FACC stripped from qualifications');
+  assert(formatDoctorDegrees('MD - Stanford Medicine, Board Certified') === 'MD', 'Stanford Medicine and Board Certified stripped from qualifications');
+  assert(formatDoctorDegrees('MD, FAAP - Johns Hopkins University') === 'MD', 'Johns Hopkins University and FAAP stripped from qualifications');
   assert(formatDoctorDegrees('DO - Chicago College of Osteopathic Medicine') === 'DO', 'Chicago College stripped from qualifications');
   assert(formatDoctorDegrees('MBBS, MD') === 'MBBS, MD', 'Clean degrees preserved');
+  assert(formatDoctorDegrees('MD, FACC') === 'MD', 'FACC stripped from qualifications');
   assert(formatDoctorDegrees(null) === 'Certified Specialist', 'Null fallback returns Certified Specialist');
 
   // 48. Multi-Clinic Practitioner Affiliation & Booking Routing

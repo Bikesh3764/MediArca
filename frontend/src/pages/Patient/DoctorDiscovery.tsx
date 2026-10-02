@@ -247,7 +247,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
       <div className="lg:hidden">
         <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-3.5 shadow-xs">
           <div className="flex items-center gap-2">
-            <div className="flex-1 flex items-center gap-2 px-3 py-2 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] focus-within:border-[#0088e8] focus-within:bg-white transition-all">
+            <div className="flex-1 flex items-center gap-2 px-3 py-2 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] focus-within:border-[#0066cc] focus-within:bg-white transition-all">
               <Search className="w-4 h-4 text-[#86868b] flex-shrink-0" />
               <input
                 type="text"
@@ -268,14 +268,14 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
               onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
               className={`px-3.5 py-2 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
                 hasActiveFilters || mobileFiltersOpen
-                  ? 'bg-[#0088e8] text-white border-[#0088e8] shadow-xs'
+                  ? 'bg-[#0066cc] text-white border-[#0066cc] shadow-xs'
                   : 'bg-[#f5f5f7] text-[#1d1d1f] border-[#e5e5ea] hover:bg-[#ebebee]'
               }`}
             >
               <SlidersHorizontal className="w-3.5 h-3.5" />
               <span>Filters</span>
               {activeFilterCount > 0 && (
-                <span className="w-4 h-4 rounded-full bg-white text-[#0088e8] text-[10px] font-bold flex items-center justify-center">
+                <span className="w-4 h-4 rounded-full bg-white text-[#0066cc] text-[10px] font-bold flex items-center justify-center">
                   {activeFilterCount}
                 </span>
               )}
@@ -294,7 +294,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
                 <select
                   value={selectedState}
                   onChange={(e) => handleStateChange(e.target.value)}
-                  className="w-full py-2 px-3 rounded-xl border border-[#e5e5ea] bg-[#f5f5f7] text-xs font-medium text-[#1d1d1f] focus:outline-none focus:border-[#0088e8] cursor-pointer"
+                  className="w-full py-2 px-3 rounded-xl border border-[#e5e5ea] bg-[#f5f5f7] text-xs font-medium text-[#1d1d1f] focus:outline-none focus:border-[#0066cc] cursor-pointer"
                 >
                   <option value="All">All States</option>
                   {INDIAN_STATES.map((st) => (
@@ -313,7 +313,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
                 <select
                   value={selectedCity}
                   onChange={(e) => setSelectedCity(e.target.value)}
-                  className="w-full py-2 px-3 rounded-xl border border-[#e5e5ea] bg-[#f5f5f7] text-xs font-medium text-[#1d1d1f] focus:outline-none focus:border-[#0088e8] cursor-pointer"
+                  className="w-full py-2 px-3 rounded-xl border border-[#e5e5ea] bg-[#f5f5f7] text-xs font-medium text-[#1d1d1f] focus:outline-none focus:border-[#0066cc] cursor-pointer"
                 >
                   <option value="All">
                     {selectedState !== 'All' ? `All Cities in ${selectedState}` : 'All Cities'}
@@ -369,7 +369,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
                   <select
                     value={minExp}
                     onChange={(e) => setMinExp(Number(e.target.value))}
-                    className="w-full py-2 px-3 rounded-xl border border-[#e5e5ea] bg-[#f5f5f7] text-xs font-medium text-[#1d1d1f] focus:outline-none focus:border-[#0088e8] cursor-pointer"
+                    className="w-full py-2 px-3 rounded-xl border border-[#e5e5ea] bg-[#f5f5f7] text-xs font-medium text-[#1d1d1f] focus:outline-none focus:border-[#0066cc] cursor-pointer"
                   >
                     <option value={0}>All Experience</option>
                     <option value={5}>5+ Years</option>
@@ -385,7 +385,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value)}
-                    className="w-full py-2 px-3 rounded-xl border border-[#e5e5ea] bg-[#f5f5f7] text-xs font-medium text-[#1d1d1f] focus:outline-none focus:border-[#0088e8] cursor-pointer"
+                    className="w-full py-2 px-3 rounded-xl border border-[#e5e5ea] bg-[#f5f5f7] text-xs font-medium text-[#1d1d1f] focus:outline-none focus:border-[#0066cc] cursor-pointer"
                   >
                     <option value="rating">Recommended</option>
                     <option value="experience">Most Experienced</option>
@@ -440,7 +440,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
               <label className="block text-xs font-medium text-[#86868b] mb-1.5">
                 Search
               </label>
-              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] focus-within:border-[#0088e8] focus-within:ring-2 focus-within:ring-[#0088e8]/20 focus-within:bg-white transition-all">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] focus-within:border-[#0066cc] focus-within:ring-2 focus-within:ring-[#0066cc]/20 focus-within:bg-white transition-all">
                 <Search className="w-4 h-4 text-[#86868b] flex-shrink-0" />
                 <input
                   type="text"
@@ -465,7 +465,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
               <select
                 value={selectedState}
                 onChange={(e) => handleStateChange(e.target.value)}
-                className="w-full py-2 px-3 rounded-xl border border-[#e5e5ea] bg-[#f5f5f7] text-xs font-medium text-[#1d1d1f] focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20 cursor-pointer"
+                className="w-full py-2 px-3 rounded-xl border border-[#e5e5ea] bg-[#f5f5f7] text-xs font-medium text-[#1d1d1f] focus:outline-none focus:border-[#0066cc] focus:ring-2 focus:ring-[#0066cc]/20 cursor-pointer"
               >
                 <option value="All">All States</option>
                 {INDIAN_STATES.map((st) => (
@@ -484,7 +484,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
               <select
                 value={selectedCity}
                 onChange={(e) => setSelectedCity(e.target.value)}
-                className="w-full py-2 px-3 rounded-xl border border-[#e5e5ea] bg-[#f5f5f7] text-xs font-medium text-[#1d1d1f] focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20 cursor-pointer"
+                className="w-full py-2 px-3 rounded-xl border border-[#e5e5ea] bg-[#f5f5f7] text-xs font-medium text-[#1d1d1f] focus:outline-none focus:border-[#0066cc] focus:ring-2 focus:ring-[#0066cc]/20 cursor-pointer"
               >
                 <option value="All">
                   {selectedState !== 'All' ? `All Cities in ${selectedState}` : 'All Cities'}
@@ -717,12 +717,12 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
                 return (
                   <div
                     key={doctor.id}
-                    className="w-full bg-white rounded-[20px] border border-[#e5e5ea] overflow-hidden shadow-xs hover:shadow-md hover:border-[#0088e8]/30 transition-all duration-200 flex flex-col justify-between group"
+                    className="w-full bg-white rounded-[20px] border border-[#e5e5ea] overflow-hidden shadow-xs hover:shadow-md hover:border-[#0066cc]/30 transition-all duration-200 flex flex-col justify-between group"
                   >
                     {/* 1. Doctor Top Photo Banner */}
                     <div
                       onClick={() => navigate(getDoctorDetailPath(doctor.id))}
-                      className="relative w-full aspect-[16/10] bg-gradient-to-b from-[#f5f5f7] to-[#e5e5ea] border-b border-[#e5e5ea] overflow-hidden cursor-pointer flex items-center justify-center"
+                      className="relative w-full aspect-[16/10] bg-[#f5f5f7] border-b border-[#f0f0f2] overflow-hidden cursor-pointer flex items-center justify-center"
                     >
                       {doctor.user?.avatarUrl ? (
                         <img
@@ -738,7 +738,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
                         />
                       ) : null}
                       <div
-                        className={`doc-fallback-banner w-full h-full ${doctor.user?.avatarUrl ? 'hidden' : 'flex'} items-center justify-center font-bold text-4xl text-white bg-gradient-to-br from-[#0088e8] to-[#0066cc] select-none`}
+                        className={`doc-fallback-banner w-full h-full ${doctor.user?.avatarUrl ? 'hidden' : 'flex'} items-center justify-center font-bold text-4xl text-white bg-gradient-to-br from-[#0066cc] to-[#0071e3] select-none`}
                       >
                         {(doctor.user?.fullName ? doctor.user.fullName.replace(/^Dr\.\s*/i, '').trim()[0] : null) || 'D'}
                       </div>
@@ -866,7 +866,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
               className="flex items-center gap-1.5 text-xs text-[#48484a]"
               title="Refresh doctor listings"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-[#0088e8]' : ''}`} />
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-[#0066cc]' : ''}`} />
               <span className="hidden sm:inline">Refresh</span>
             </AppleButton>
           </div>

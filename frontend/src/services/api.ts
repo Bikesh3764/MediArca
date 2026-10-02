@@ -136,27 +136,54 @@ export const parseDoctorSlots = (doctor: any): DoctorSlot[] => {
 export const formatDoctorDegrees = (qualifications?: string | null): string => {
   if (!qualifications || !qualifications.trim()) return 'Certified Specialist';
 
-  // Extract degrees only, excluding medical schools, universities, colleges, hospitals, institutes
-  const parts = qualifications.split(',');
-  const cleanedParts = parts.map((part) => {
-    const subParts = part.split(/\s*[-–—]\s*/);
-    if (subParts.length > 1) {
-      const degreesOnly = subParts.filter(
-        (sp) => !/(university|college|school|hospital|institute|academy|faculty|campus|stanford|harvard|hopkins|oxford|cambridge|aiims|pgi)/i.test(sp)
-      );
-      return degreesOnly.join(', ').trim();
-    }
-    if (/(university|college|school|hospital|institute|academy|faculty|campus|stanford|harvard|hopkins|oxford|cambridge|aiims|pgi)/i.test(part)) {
-      return '';
-    }
-    return part.trim();
-  }).filter(Boolean);
+  // Recognized primary & postgrad medical/dental/AYUSH degrees
+  const RECOGNIZED_DEGREES = new Set([
+    'MBBS', 'MD', 'MS', 'DM', 'MCH', 'BDS', 'MDS', 'DNB',
+    'BAMS', 'BHMS', 'BUMS', 'BSMS', 'BVSC', 'DO', 'PHD',
+    'MPH', 'DGO', 'DCH', 'DMRD', 'DORTHO', 'DA', 'MBCHB',
+    'BMBS', 'BM BCH', 'BM', 'BCHIR', 'BMED', 'MRCGP'
+  ]);
 
-  const result = cleanedParts.join(', ').trim();
-  if (result) return result;
+  // Non-degree abbreviations and fluff to strictly strip out:
+  // Fellowships (FACC, FAAP, FACS, FACP, FRCS, FRCP, MRCP, MRCS, FAHA, FESC, FICM, FAMS, FICO, FICS, FCCP, FCPS, FACR, FAAD, etc.)
+  // Certifications / Memberships ("Board Certified", "Board Eligible", "Fellow", "Diplomate", "Member", "Certified Specialist", etc.)
+  // Schools / Universities / Hospitals / Institutes
+  const NON_DEGREE_PATTERN = /\b(facc|faap|facs|facp|frcs|frcp|mrcp|mrcs|faha|fesc|ficm|fams|fico|fics|fccp|fcps|facr|faad|board\s*certified|board\s*eligible|fellow|diplomate|member|specialist|certified|university|college|school|hospital|institute|academy|faculty|campus|stanford|harvard|hopkins|oxford|cambridge|aiims|pgi)\b/i;
 
-  const firstSegment = qualifications.split(/\s*[-–—]\s*/)[0].trim();
-  return firstSegment || 'Certified Specialist';
+  const parts = qualifications.split(/[,;]+/);
+  const collectedDegrees: string[] = [];
+
+  for (const part of parts) {
+    const subSegments = part.split(/\s*[-–—/]\s*/);
+    for (const sub of subSegments) {
+      const trimmed = sub.trim().replace(/\.+/g, '');
+      if (!trimmed) continue;
+      if (NON_DEGREE_PATTERN.test(sub)) continue;
+
+      const upper = trimmed.toUpperCase();
+      if (RECOGNIZED_DEGREES.has(upper)) {
+        const canonical = upper === 'MCH' ? 'MCh' : upper;
+        if (!collectedDegrees.includes(canonical)) {
+          collectedDegrees.push(canonical);
+        }
+      } else if (!NON_DEGREE_PATTERN.test(trimmed) && trimmed.length <= 8 && /^[A-Za-z]+$/.test(trimmed)) {
+        if (!collectedDegrees.includes(trimmed)) {
+          collectedDegrees.push(trimmed);
+        }
+      }
+    }
+  }
+
+  if (collectedDegrees.length > 0) {
+    return collectedDegrees.join(', ');
+  }
+
+  const firstSegment = qualifications.split(/\s*[-–—,;/]\s*/)[0].trim().replace(/\.+/g, '');
+  if (firstSegment && !NON_DEGREE_PATTERN.test(firstSegment) && firstSegment.length <= 10) {
+    return firstSegment;
+  }
+
+  return 'Certified Specialist';
 };
 
 export const getLocalDateString = (d: Date = new Date()): string => {
@@ -321,7 +348,7 @@ export const DEMO_DOCTORS: Doctor[] = [
     id: 'doc_sarah_01',
     userId: 'usr_sarah_02',
     specialty: 'Cardiology',
-    qualifications: 'MD, FACC',
+    qualifications: 'MD',
     experienceYears: 14,
     consultationFee: 800,
     bio: 'Specialist in preventive cardiology, hypertension, coronary artery disease, and heart failure management with over 14 years of clinical experience.',
@@ -388,7 +415,7 @@ export const DEMO_DOCTORS: Doctor[] = [
     id: 'doc_arjun_02',
     userId: 'usr_arjun_03',
     specialty: 'Dermatology',
-    qualifications: 'MD, Board Certified',
+    qualifications: 'MD',
     experienceYears: 10,
     consultationFee: 650,
     bio: 'Consultant dermatologist focusing on acne, eczema, psoriasis, skin cancer screening, and cosmetic laser treatments.',
@@ -443,7 +470,7 @@ export const DEMO_DOCTORS: Doctor[] = [
     id: 'doc_elena_03',
     userId: 'usr_elena_04',
     specialty: 'Pediatrics',
-    qualifications: 'MD, FAAP',
+    qualifications: 'MD',
     experienceYears: 12,
     consultationFee: 700,
     bio: 'Dedicated pediatrician providing comprehensive child wellness care, developmental tracking, vaccinations, and adolescent healthcare.',
@@ -551,6 +578,16 @@ export interface User {
   receptionistProfile?: ReceptionistProfile;
 }
 
+export interface PublicClinicDoctor {
+  id: string;
+  clinicId: string;
+  doctorId: string;
+  status: string;
+  consultationFee?: number | null;
+  slots?: DoctorSlot[] | string | null;
+  doctor: Doctor;
+}
+
 export interface ClinicProfile {
   id: string;
   clinicName: string;
@@ -562,6 +599,10 @@ export interface ClinicProfile {
   verificationStatus?: 'PENDING' | 'VERIFIED' | 'SUSPENDED' | 'REJECTED' | string;
   checkinCode?: string | null;
   createdAt?: string;
+  _count?: {
+    doctors?: number;
+  };
+  doctors?: PublicClinicDoctor[];
 }
 
 export interface ReceptionistProfile {
@@ -1520,9 +1561,86 @@ export const api = {
     return handleResponse(res);
   },
 
-  async getPublicClinics(): Promise<ClinicProfile[]> {
-    const res = await fetch(`${API_BASE_URL}/clinics/public`, { headers: getHeaders() });
-    return handleResponse(res);
+  async getPublicClinics(params?: { search?: string; city?: string; state?: string }): Promise<ClinicProfile[]> {
+    try {
+      const query = new URLSearchParams();
+      if (params?.search) query.append('search', params.search);
+      if (params?.city && params.city !== 'All') query.append('city', params.city);
+      if (params?.state && params.state !== 'All') query.append('state', params.state);
+      const qs = query.toString();
+      const url = qs ? `${API_BASE_URL}/clinics/public?${qs}` : `${API_BASE_URL}/clinics/public`;
+      const res = await fetch(url, { headers: getHeaders() });
+      return await handleResponse(res);
+    } catch (err) {
+      if (import.meta.env.DEV && import.meta.env.VITE_ENABLE_DEMO_FALLBACK === 'true') {
+        console.warn('Dev mode: backend unavailable, using demo clinics fallback', err);
+        const clinicMap = new Map<string, ClinicProfile>();
+        DEMO_DOCTORS.forEach((doc) => {
+          doc.clinics?.forEach((cd) => {
+            const c = cd.clinic;
+            if (!clinicMap.has(c.id)) {
+              clinicMap.set(c.id, {
+                id: c.id,
+                clinicName: c.clinicName,
+                address: c.address,
+                city: c.city,
+                state: 'Maharashtra',
+                phone: c.phone,
+                isVerified: c.isVerified,
+                verificationStatus: 'VERIFIED',
+                _count: { doctors: 0 },
+                doctors: [],
+              });
+            }
+            const existing = clinicMap.get(c.id)!;
+            const alreadyHasDoc = existing.doctors?.some((d) => d.doctorId === doc.id);
+            if (!alreadyHasDoc) {
+              existing.doctors = existing.doctors || [];
+              existing.doctors.push({
+                id: cd.id,
+                clinicId: c.id,
+                doctorId: doc.id,
+                status: 'ACCEPTED',
+                consultationFee: cd.consultationFee ?? doc.consultationFee,
+                slots: cd.slots || doc.slots,
+                doctor: doc,
+              });
+              existing._count = { doctors: existing.doctors.length };
+            }
+          });
+        });
+
+        let list = Array.from(clinicMap.values());
+        if (params?.city && params.city !== 'All') {
+          list = list.filter((c) => c.city?.toLowerCase() === params.city?.toLowerCase());
+        }
+        if (params?.search) {
+          const q = params.search.toLowerCase();
+          list = list.filter(
+            (c) =>
+              c.clinicName.toLowerCase().includes(q) ||
+              c.address.toLowerCase().includes(q) ||
+              c.city?.toLowerCase().includes(q)
+          );
+        }
+        return list;
+      }
+      throw err;
+    }
+  },
+
+  async getPublicClinicById(id: string): Promise<ClinicProfile> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/clinics/public/${id}`, { headers: getHeaders() });
+      return await handleResponse(res);
+    } catch (err) {
+      if (import.meta.env.DEV && import.meta.env.VITE_ENABLE_DEMO_FALLBACK === 'true') {
+        const clinics = await this.getPublicClinics();
+        const found = clinics.find((c) => c.id === id);
+        if (found) return found;
+      }
+      throw err;
+    }
   },
 
   // Receptionist Portal

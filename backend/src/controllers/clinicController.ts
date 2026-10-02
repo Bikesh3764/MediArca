@@ -696,6 +696,48 @@ export const getPublicClinics = async (req: any, res: Response): Promise<void> =
             },
           },
         },
+        doctors: {
+          where: {
+            status: { in: ['ACTIVE', 'ACCEPTED'] },
+            doctor: { isVerified: true, verificationStatus: { not: 'SUSPENDED' } },
+          },
+          select: {
+            id: true,
+            clinicId: true,
+            doctorId: true,
+            status: true,
+            consultationFee: true,
+            slots: true,
+            doctor: {
+              select: {
+                id: true,
+                specialty: true,
+                qualifications: true,
+                experienceYears: true,
+                consultationFee: true,
+                bio: true,
+                clinicAddress: true,
+                isVerified: true,
+                checkingStartTime: true,
+                checkingEndTime: true,
+                avgConsultationMinutes: true,
+                maxDailyPatients: true,
+                rating: true,
+                totalReviews: true,
+                slots: true,
+                user: {
+                  select: {
+                    id: true,
+                    fullName: true,
+                    email: true,
+                    phone: true,
+                    avatarUrl: true,
+                  },
+                },
+              },
+            },
+          },
+        },
       },
       orderBy: { clinicName: 'asc' },
     });
@@ -709,6 +751,97 @@ export const getPublicClinics = async (req: any, res: Response): Promise<void> =
     res.status(500).json({
       success: false,
       message: 'Failed to retrieve clinics',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
+  }
+};
+
+/**
+ * Public details of a verified clinic by ID
+ */
+export const getPublicClinicById = async (req: any, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const clinic = await prisma.clinicProfile.findFirst({
+      where: {
+        id,
+        isVerified: true,
+        verificationStatus: 'VERIFIED',
+      },
+      select: {
+        id: true,
+        clinicName: true,
+        address: true,
+        city: true,
+        state: true,
+        phone: true,
+        isVerified: true,
+        _count: {
+          select: {
+            doctors: {
+              where: { status: { in: ['ACTIVE', 'ACCEPTED'] } },
+            },
+          },
+        },
+        doctors: {
+          where: {
+            status: { in: ['ACTIVE', 'ACCEPTED'] },
+            doctor: { isVerified: true, verificationStatus: { not: 'SUSPENDED' } },
+          },
+          select: {
+            id: true,
+            clinicId: true,
+            doctorId: true,
+            status: true,
+            consultationFee: true,
+            slots: true,
+            doctor: {
+              select: {
+                id: true,
+                specialty: true,
+                qualifications: true,
+                experienceYears: true,
+                consultationFee: true,
+                bio: true,
+                clinicAddress: true,
+                isVerified: true,
+                checkingStartTime: true,
+                checkingEndTime: true,
+                avgConsultationMinutes: true,
+                maxDailyPatients: true,
+                rating: true,
+                totalReviews: true,
+                slots: true,
+                user: {
+                  select: {
+                    id: true,
+                    fullName: true,
+                    email: true,
+                    phone: true,
+                    avatarUrl: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!clinic) {
+      res.status(404).json({ success: false, message: 'Clinic not found or not verified' });
+      return;
+    }
+
+    res.json({
+      success: true,
+      data: clinic,
+    });
+  } catch (error: any) {
+    console.error('getPublicClinicById error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve clinic details',
       ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
     });
   }

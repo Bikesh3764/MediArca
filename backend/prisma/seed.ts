@@ -55,7 +55,7 @@ async function main() {
       doctorProfile: {
         create: {
           specialty: 'Cardiology',
-          qualifications: 'MD, FACC',
+          qualifications: 'MD',
           experienceYears: 14,
           consultationFee: 800.0,
           bio: 'Specialist in preventive cardiology, hypertension, coronary artery disease, and heart failure management with over 14 years of clinical experience.',
@@ -103,7 +103,7 @@ async function main() {
       doctorProfile: {
         create: {
           specialty: 'Dermatology',
-          qualifications: 'MD, Board Certified',
+          qualifications: 'MD',
           experienceYears: 10,
           consultationFee: 650.0,
           bio: 'Consultant dermatologist focusing on acne, eczema, psoriasis, skin cancer screening, and cosmetic laser treatments.',
@@ -151,7 +151,7 @@ async function main() {
       doctorProfile: {
         create: {
           specialty: 'Pediatrics',
-          qualifications: 'MD, FAAP',
+          qualifications: 'MD',
           experienceYears: 12,
           consultationFee: 700.0,
           bio: 'Dedicated pediatrician providing comprehensive child wellness care, developmental tracking, vaccinations, and adolescent healthcare.',
