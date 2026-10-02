@@ -23,10 +23,17 @@ export const formatDoctorClinics = (doc: any) => {
         }
       } catch {}
     }
+    const receptionists = (cd.clinic?.receptionists || []).map((r: any) => ({
+      id: r.id,
+      name: r.user?.fullName || 'Reception Desk',
+      phone: r.phone || r.user?.phone || cd.clinic?.phone || null,
+    }));
+
     return {
       ...cd,
       consultationFee: cd.consultationFee ?? doc.consultationFee,
       slots: clinicSlots,
+      receptionists,
     };
   });
 };
@@ -189,7 +196,45 @@ export const getDoctorById = async (req: Request, res: Response): Promise<void> 
       clinics: {
         where: { clinic: { isVerified: true, verificationStatus: 'VERIFIED' }, status: { in: ['ACTIVE', 'ACCEPTED'] } },
         include: {
-          clinic: true,
+          clinic: {
+            include: {
+              receptionists: {
+                where: { status: 'ACTIVE' },
+                include: {
+                  user: {
+                    select: {
+                      id: true,
+                      fullName: true,
+                      phone: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      receptionists: {
+        where: { status: 'ACTIVE' },
+        include: {
+          receptionist: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  fullName: true,
+                  phone: true,
+                },
+              },
+              clinic: {
+                select: {
+                  id: true,
+                  clinicName: true,
+                  phone: true,
+                },
+              },
+            },
+          },
         },
       },
       reviews: {
@@ -230,12 +275,21 @@ export const getDoctorById = async (req: Request, res: Response): Promise<void> 
       }
     }
 
+    const doctorReceptionists = (doctor.receptionists || []).map((dr: any) => ({
+      id: dr.receptionist?.id,
+      name: dr.receptionist?.user?.fullName || 'Reception Desk',
+      phone: dr.receptionist?.phone || dr.receptionist?.user?.phone || dr.receptionist?.clinic?.phone || null,
+      clinicId: dr.receptionist?.clinicId,
+      clinicName: dr.receptionist?.clinic?.clinicName,
+    }));
+
     res.json({
       success: true,
       data: {
         ...doctor,
         slots: parseDoctorSlots(doctor),
         clinics: formatDoctorClinics(doctor),
+        receptionists: doctorReceptionists,
         reviews: (doctor.reviews || []).map((r) => ({
           ...r,
           patientUser: {

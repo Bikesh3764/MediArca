@@ -756,6 +756,18 @@ export interface Doctor {
     clinic: ClinicProfile;
     consultationFee?: number;
     slots?: DoctorSlot[];
+    receptionists?: Array<{
+      id: string;
+      name: string;
+      phone?: string;
+    }>;
+  }>;
+  receptionists?: Array<{
+    id: string;
+    name: string;
+    phone?: string;
+    clinicId?: string;
+    clinicName?: string;
   }>;
   user: {
     id: string;
