@@ -19,7 +19,6 @@ import {
   Stethoscope,
   User as UserIcon,
   RefreshCw,
-  CheckCircle2,
   SlidersHorizontal,
   RotateCcw,
   ChevronDown,
@@ -738,12 +737,6 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
                         } items-center justify-center font-bold text-3xl text-white bg-[#0066cc] select-none`}
                       >
                         {(doctor.user?.fullName ? doctor.user.fullName.replace(/^Dr\.\s*/i, '').trim()[0] : null) || 'D'}
-                      </div>
-
-                      {/* Verified Doctor Pill on Image */}
-                      <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-md px-2.5 py-1 rounded-full border border-black/5 flex items-center gap-1.5 shadow-2xs">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-[#0066cc]" />
-                        <span className="text-[11px] font-medium text-[#1d1d1f]">Verified Doctor</span>
                       </div>
                     </div>
 
