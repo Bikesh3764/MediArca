@@ -1,5 +1,5 @@
 import React from 'react';
-import { HashRouter as Router, Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { GlobalNav } from './components/layout/GlobalNav';
 import { Footer } from './components/layout/Footer';
@@ -26,18 +26,6 @@ import { ReceptionistAuth } from './pages/Receptionist/ReceptionistAuth';
 import { ReceptionistDashboard } from './pages/Receptionist/ReceptionistDashboard';
 import { ClinicCheckIn } from './pages/Patient/ClinicCheckIn';
 import { ProfileCompletionModal } from './components/auth/ProfileCompletionModal';
-
-// Redirect helpers for seamless patient portal continuity
-const DoctorRedirectToPatientDetail: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
-  return <Navigate to={`/patient/doctor/${id}`} replace />;
-};
-
-const BookRedirectToPatientBook: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
-  const location = useLocation();
-  return <Navigate to={`/patient/book/${id}${location.search}`} replace />;
-};
 
 // Protected Route Helpers
 const ProtectedRoute: React.FC<{
@@ -83,8 +71,9 @@ const ProtectedRoute: React.FC<{
 
 function AppShell() {
   const location = useLocation();
-  const { user } = useAuth();
 
+  // Only enterprise staff desks and administrative backends use dedicated sidebar layouts.
+  // Patient experience is fully integrated into the main website under GlobalNav.
   const isPortalRoute =
     location.pathname.startsWith('/doctor/dashboard') ||
     location.pathname.startsWith('/doctor/consultation') ||
@@ -92,16 +81,7 @@ function AppShell() {
     location.pathname.startsWith('/doctor/profile') ||
     location.pathname.startsWith('/clinic/dashboard') ||
     location.pathname.startsWith('/receptionist/dashboard') ||
-    (location.pathname.startsWith('/patient/') &&
-      location.pathname !== '/patient/login' &&
-      location.pathname !== '/patient/signup') ||
     location.pathname === '/clinic-checkin' ||
-    (location.pathname === '/doctors' && user?.role === 'PATIENT') ||
-    (location.pathname.startsWith('/doctor/') &&
-      location.pathname !== '/doctor/login' &&
-      location.pathname !== '/doctor/signup' &&
-      user?.role === 'PATIENT') ||
-    (location.pathname.startsWith('/book/') && user?.role === 'PATIENT') ||
     location.pathname === '/admin' ||
     location.pathname === '/admin-login';
 
@@ -120,41 +100,17 @@ function AppShell() {
           <Route path="/doctor/login" element={<Login portal="DOCTOR" />} />
           <Route path="/doctor/signup" element={<Signup initialRole="DOCTOR" />} />
           <Route path="/clinic-checkin" element={<ClinicCheckIn />} />
-          <Route
-            path="/doctors"
-            element={
-              user?.role === 'PATIENT' ? (
-                <Navigate to="/patient/doctors" replace />
-              ) : (
-                <DoctorDiscovery />
-              )
-            }
-          />
-          <Route
-            path="/doctor/:id"
-            element={
-              user?.role === 'PATIENT' ? (
-                <DoctorRedirectToPatientDetail />
-              ) : (
-                <DoctorDetail />
-              )
-            }
-          />
 
-          {/* Patient Routes */}
+          {/* Directory & Booking */}
+          <Route path="/doctors" element={<DoctorDiscovery />} />
+          <Route path="/patient/doctors" element={<Navigate to="/doctors" replace />} />
+          <Route path="/doctor/:id" element={<DoctorDetail />} />
+          <Route path="/patient/doctor/:id" element={<DoctorDetail />} />
           <Route
-            path="/patient/doctors"
+            path="/book/:id"
             element={
               <ProtectedRoute allowedRoles={['PATIENT']}>
-                <DoctorDiscovery isPortalView={true} />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/patient/doctor/:id"
-            element={
-              <ProtectedRoute allowedRoles={['PATIENT']}>
-                <DoctorDetail />
+                <BookAppointment />
               </ProtectedRoute>
             }
           />
@@ -166,18 +122,8 @@ function AppShell() {
               </ProtectedRoute>
             }
           />
-          <Route
-            path="/book/:id"
-            element={
-              user?.role === 'PATIENT' ? (
-                <BookRedirectToPatientBook />
-              ) : (
-                <ProtectedRoute allowedRoles={['PATIENT']}>
-                  <BookAppointment />
-                </ProtectedRoute>
-              )
-            }
-          />
+
+          {/* Patient Dedicated Pages */}
           <Route
             path="/patient/appointments"
             element={
@@ -185,6 +131,22 @@ function AppShell() {
                 <MyAppointments />
               </ProtectedRoute>
             }
+          />
+          <Route
+            path="/appointments"
+            element={<Navigate to="/patient/appointments" replace />}
+          />
+          <Route
+            path="/patient/profile"
+            element={
+              <ProtectedRoute allowedRoles={['PATIENT']}>
+                <PatientProfile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={<Navigate to="/patient/profile" replace />}
           />
           <Route
             path="/patient/records"
@@ -201,14 +163,6 @@ function AppShell() {
           <Route
             path="/vault"
             element={<Navigate to="/patient/appointments" replace />}
-          />
-          <Route
-            path="/patient/profile"
-            element={
-              <ProtectedRoute allowedRoles={['PATIENT']}>
-                <PatientProfile />
-              </ProtectedRoute>
-            }
           />
 
           {/* Doctor Routes */}

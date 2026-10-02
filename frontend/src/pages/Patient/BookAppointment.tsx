@@ -12,7 +12,6 @@ import {
   getFileUrl,
 } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
-import { DashboardLayout, DashboardNavItem } from '../../components/layout/DashboardLayout';
 import { SubNav } from '../../components/layout/SubNav';
 import { AppleButton } from '../../components/ui/AppleButton';
 import { UtilityCard } from '../../components/ui/UtilityCard';
@@ -26,7 +25,6 @@ import {
   Building2,
   MapPin,
   Phone,
-  Stethoscope,
   User as UserIcon,
 } from 'lucide-react';
 
@@ -42,28 +40,6 @@ const formatDisplayPhone = (phone?: string) => {
   }
   return phone.startsWith('+91') ? phone : `+91 ${phone}`;
 };
-
-const patientNavItems: DashboardNavItem[] = [
-  {
-    id: 'appointments',
-    label: 'Live Queue & Passes',
-    icon: Calendar,
-    path: '/patient/appointments',
-  },
-  {
-    id: 'find-doctors',
-    label: 'Find Specialists',
-    icon: Stethoscope,
-    path: '/patient/doctors',
-    active: true,
-  },
-  {
-    id: 'profile',
-    label: 'Patient Profile',
-    icon: UserIcon,
-    path: '/patient/profile',
-  },
-];
 
 export const BookAppointment: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -287,82 +263,25 @@ export const BookAppointment: React.FC = () => {
     if (window.history.length > 1) {
       navigate(-1);
     } else if (id) {
-      navigate(user?.role === 'PATIENT' ? `/patient/doctor/${id}` : `/doctor/${id}`);
+      navigate(`/doctor/${id}`);
     } else {
-      navigate(user?.role === 'PATIENT' ? '/patient/doctors' : '/doctors');
+      navigate('/doctors');
     }
   };
 
   if (loading) {
-    if (user?.role === 'PATIENT') {
-      return (
-        <DashboardLayout
-          portalType="PATIENT"
-          portalSubtitle="PATIENT PORTAL"
-          navItems={patientNavItems}
-          title="Confirm Appointment"
-          subtitle="Loading shift and queue preview..."
-          headerAction={
-            <AppleButton
-              variant="ghost"
-              size="sm"
-              onClick={handleBack}
-              className="flex items-center gap-1.5 text-xs font-medium"
-            >
-              <ChevronLeft className="w-4 h-4" />
-              Back
-            </AppleButton>
-          }
-        >
-          <div className="flex flex-col items-center justify-center py-24">
-            <div className="w-8 h-8 rounded-full border-2 border-[#0066cc] border-t-transparent animate-spin mb-3"></div>
-            <p className="text-xs text-[#86868b]">Loading appointment booking workspace...</p>
-          </div>
-        </DashboardLayout>
-      );
-    }
     return (
-      <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center">
-        <div className="w-8 h-8 rounded-full border-2 border-[#0066cc] border-t-transparent animate-spin"></div>
+      <div className="min-h-screen bg-[#f5f5f7] flex flex-col items-center justify-center py-24">
+        <div className="w-8 h-8 rounded-full border-2 border-[#0066cc] border-t-transparent animate-spin mb-3"></div>
+        <p className="text-xs text-[#86868b]">Loading appointment booking workspace...</p>
       </div>
     );
   }
 
   if (!doctor) {
-    if (user?.role === 'PATIENT') {
-      return (
-        <DashboardLayout
-          portalType="PATIENT"
-          portalSubtitle="PATIENT PORTAL"
-          navItems={patientNavItems}
-          title="Booking Unavailable"
-          subtitle="The requested doctor could not be found"
-          headerAction={
-            <AppleButton
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate('/patient/doctors')}
-              className="flex items-center gap-1.5 text-xs font-medium"
-            >
-              <ChevronLeft className="w-4 h-4" />
-              Back to Specialists
-            </AppleButton>
-          }
-        >
-          <div className="text-center p-8 bg-white rounded-2xl shadow-sm border border-[#e5e5ea] max-w-md mx-auto my-12">
-            <AlertCircle className="w-12 h-12 text-rose-500 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-[#1d1d1f] mb-2">Doctor Profile Unavailable</h2>
-            <p className="text-xs text-[#86868b] mb-6">{error || 'This doctor is unavailable or inactive.'}</p>
-            <AppleButton variant="primary" onClick={() => navigate('/patient/doctors')}>
-              Return to Specialists
-            </AppleButton>
-          </div>
-        </DashboardLayout>
-      );
-    }
     return (
-      <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center">
-        <div className="text-center p-8 bg-white rounded-2xl shadow-sm border border-[#e5e5ea] max-w-md">
+      <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center py-20 px-4">
+        <div className="text-center p-8 bg-white rounded-2xl shadow-sm border border-[#e5e5ea] max-w-md mx-auto">
           <AlertCircle className="w-12 h-12 text-rose-500 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-[#1d1d1f] mb-2">Doctor Profile Unavailable</h2>
           <p className="text-xs text-[#86868b] mb-6">{error || 'This doctor is unavailable or inactive.'}</p>
@@ -944,33 +863,6 @@ export const BookAppointment: React.FC = () => {
           </form>
         </UtilityCard>
   );
-
-  if (user?.role === 'PATIENT') {
-    return (
-      <DashboardLayout
-        portalType="PATIENT"
-        portalSubtitle="PATIENT PORTAL"
-        navItems={patientNavItems}
-        title="Confirm Appointment"
-        subtitle="Guaranteed queue spot with zero payment barrier"
-        headerAction={
-          <AppleButton
-            variant="ghost"
-            size="sm"
-            onClick={handleBack}
-            className="flex items-center gap-1.5 text-xs font-medium"
-          >
-            <ChevronLeft className="w-4 h-4" />
-            Back
-          </AppleButton>
-        }
-      >
-        <div className="max-w-2xl mx-auto space-y-6">
-          {bookingContent}
-        </div>
-      </DashboardLayout>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-[#f5f5f7] pb-16">

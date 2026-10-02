@@ -1,13 +1,9 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
-import { DashboardLayout, DashboardNavItem } from '../../components/layout/DashboardLayout';
 import { AppleButton } from '../../components/ui/AppleButton';
 import { UtilityCard } from '../../components/ui/UtilityCard';
 import {
-  Calendar,
-  User as UserIcon,
-  Stethoscope,
   AlertCircle,
   CheckCircle2,
   Save,
@@ -27,28 +23,6 @@ export const PatientProfile: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-
-  const navItems: DashboardNavItem[] = [
-    {
-      id: 'appointments',
-      label: 'Live Queue & Passes',
-      icon: Calendar,
-      path: '/patient/appointments',
-    },
-    {
-      id: 'find-doctors',
-      label: 'Find Specialists',
-      icon: Stethoscope,
-      path: '/patient/doctors',
-    },
-    {
-      id: 'profile',
-      label: 'Patient Profile',
-      icon: UserIcon,
-      path: '/patient/profile',
-      active: true,
-    },
-  ];
 
   const handlePhoneInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const digits = sanitizeIndianPhone(e.target.value);
@@ -87,14 +61,19 @@ export const PatientProfile: React.FC = () => {
   };
 
   return (
-    <DashboardLayout
-      portalType="PATIENT"
-      portalSubtitle="PATIENT HEALTH RECORD"
-      navItems={navItems}
-      title="Personal Profile & Health Info"
-      subtitle="Manage your contact identity and demographic details"
-    >
-      <div className="max-w-4xl space-y-6">
+    <div className="min-h-screen bg-[#f5f5f7] pb-16">
+      {/* Sleek Apple Header */}
+      <div className="bg-white border-b border-[#e5e5ea]/80 shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-[#0066cc]">Account Identity</span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#1d1d1f] tracking-tight">Patient Profile & Info</h1>
+          <p className="text-xs sm:text-sm text-[#86868b] mt-0.5">Manage your contact details, demographic info, and health preferences</p>
+        </div>
+      </div>
+
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         {successMsg && (
           <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2.5 shadow-sm">
             <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
@@ -246,6 +225,6 @@ export const PatientProfile: React.FC = () => {
           </div>
         </form>
       </div>
-    </DashboardLayout>
+    </div>
   );
 };

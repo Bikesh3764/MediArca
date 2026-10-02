@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   api,
   Doctor,
@@ -11,17 +11,12 @@ import {
   getFileUrl,
   ALL_SPECIALTIES,
 } from '../../services/api';
-import { useAuth } from '../../context/AuthContext';
-import { DashboardLayout, DashboardNavItem } from '../../components/layout/DashboardLayout';
 import { AppleButton } from '../../components/ui/AppleButton';
 import { SubNav } from '../../components/layout/SubNav';
 import clinicLobbyBg from '../../assets/clinic-lobby-bg.jpg';
 import {
   Clock,
-  Calendar,
   Stethoscope,
-  User as UserIcon,
-  RefreshCw,
   SlidersHorizontal,
   RotateCcw,
   ChevronDown,
@@ -55,18 +50,10 @@ interface DoctorDiscoveryProps {
   isPortalView?: boolean;
 }
 
-export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }) => {
-  const { user } = useAuth();
-  const location = useLocation();
+export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialSpecialty = searchParams.get('specialty') || 'All';
-
-  const isPatientPortal = Boolean(
-    isPortalView ||
-    user?.role === 'PATIENT' ||
-    location.pathname.startsWith('/patient/')
-  );
 
   const [activeSection, setActiveSection] = useState<'clinics' | 'doctors'>('doctors');
   const [clinics, setClinics] = useState<ClinicProfile[]>([]);
@@ -176,29 +163,6 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
     setClinicSelectedState('All');
     setClinicSelectedCity('All');
   };
-
-
-  const patientNavItems: DashboardNavItem[] = [
-    {
-      id: 'appointments',
-      label: 'Live Queue & Passes',
-      icon: Calendar,
-      path: '/patient/appointments',
-    },
-    {
-      id: 'find-doctors',
-      label: 'Find Specialists',
-      icon: Stethoscope,
-      path: '/patient/doctors',
-      active: true,
-    },
-    {
-      id: 'profile',
-      label: 'Patient Profile',
-      icon: UserIcon,
-      path: '/patient/profile',
-    },
-  ];
 
   const loadDoctors = async (
     queryText: string,
@@ -332,11 +296,9 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
     });
   }, [searchParams, selectedSpecialty]);
 
-  const getDoctorDetailPath = (doctorId: string) =>
-    isPatientPortal ? `/patient/doctor/${doctorId}` : `/doctor/${doctorId}`;
+  const getDoctorDetailPath = (doctorId: string) => `/doctor/${doctorId}`;
 
-  const getBookPath = (doctorId: string) =>
-    isPatientPortal ? `/patient/book/${doctorId}` : `/book/${doctorId}`;
+  const getBookPath = (doctorId: string) => `/book/${doctorId}`;
 
   const discoveryContent = (
     <div className="w-full space-y-6">
@@ -1319,51 +1281,6 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = ({ isPortalView }
       )}
     </div>
   );
-
-  if (isPatientPortal) {
-    return (
-      <DashboardLayout
-        portalType="PATIENT"
-        portalSubtitle="PATIENT PORTAL"
-        navItems={patientNavItems}
-        title="Find Specialists"
-        subtitle="Browse verified practitioners, compare checking shifts, and book instant queue tokens"
-        headerAction={
-          <div className="flex items-center gap-2">
-            <span className="text-xs px-3 py-1 rounded-full bg-[#f5f5f7] text-[#1d1d1f] font-medium border border-[#e0e0e0]">
-              {activeSection === 'clinics'
-                ? `${clinics.length} Clinic${clinics.length === 1 ? '' : 's'}`
-                : `${doctors.length} Specialist${doctors.length === 1 ? '' : 's'}`}
-            </span>
-            <AppleButton
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                if (activeSection === 'clinics') {
-                  setLoadingClinics(true);
-                  api.getPublicClinics()
-                    .then((data) => setClinics(data))
-                    .catch(() => {})
-                    .finally(() => setLoadingClinics(false));
-                } else {
-                  loadDoctors(search, selectedSpecialty, sortBy);
-                }
-              }}
-              className="flex items-center gap-1.5 text-xs text-[#48484a]"
-              title={activeSection === 'clinics' ? 'Refresh clinics' : 'Refresh doctors'}
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${(activeSection === 'clinics' ? loadingClinics : loading) ? 'animate-spin text-[#0066cc]' : ''}`} />
-              <span className="hidden sm:inline">Refresh</span>
-            </AppleButton>
-          </div>
-        }
-      >
-        <div className="w-full space-y-6">
-          {discoveryContent}
-        </div>
-      </DashboardLayout>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-[#f5f5f7] pb-16">

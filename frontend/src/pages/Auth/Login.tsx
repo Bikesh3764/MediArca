@@ -35,7 +35,7 @@ export const Login: React.FC<LoginProps> = ({ portal }) => {
     if (role === 'ADMIN') return '/admin';
     if (role === 'CLINIC') return '/clinic/dashboard';
     if (role === 'RECEPTIONIST') return '/receptionist/dashboard';
-    return '/patient/doctors';
+    return '/';
   };
 
   const getTargetDestination = (role: string) => {

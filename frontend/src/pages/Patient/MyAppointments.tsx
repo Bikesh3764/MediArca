@@ -2,10 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api, Appointment, getLocalDateString } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
-import { DashboardLayout, DashboardNavItem } from '../../components/layout/DashboardLayout';
 import { LiveQueueTicket } from '../../components/queue/LiveQueueTicket';
 import { AppleButton } from '../../components/ui/AppleButton';
-import { Calendar, Plus, RefreshCw, Stethoscope, User as UserIcon } from 'lucide-react';
+import { Calendar, Plus, RefreshCw } from 'lucide-react';
 
 export const MyAppointments: React.FC = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -61,60 +60,49 @@ export const MyAppointments: React.FC = () => {
   });
   const pastList = appointments.filter((a) => !upcomingList.includes(a));
 
-  const navItems: DashboardNavItem[] = [
-    {
-      id: 'appointments',
-      label: 'Live Queue & Passes',
-      icon: Calendar,
-      path: '/patient/appointments',
-      active: true,
-      badge: upcomingList.length > 0 ? upcomingList.length : undefined,
-    },
-    {
-      id: 'find-doctors',
-      label: 'Find Specialists',
-      icon: Stethoscope,
-      path: '/patient/doctors',
-    },
-    {
-      id: 'profile',
-      label: 'Patient Profile',
-      icon: UserIcon,
-      path: '/patient/profile',
-    },
-  ];
-
   return (
-    <DashboardLayout
-      portalType="PATIENT"
-      portalSubtitle="PATIENT PORTAL"
-      navItems={navItems}
-      title="Appointments & Passes"
-      subtitle="Track your live queue position and consultation tokens"
-      headerAction={
-        <div className="flex items-center gap-2">
-          <AppleButton
-            variant="ghost"
-            size="sm"
-            onClick={() => fetchAppointments()}
-            className="flex items-center gap-1.5"
-          >
-            <RefreshCw className="w-3.5 h-3.5" />
-            Refresh
-          </AppleButton>
-          <AppleButton
-            variant="primary"
-            size="sm"
-            onClick={() => navigate('/patient/doctors')}
-            className="flex items-center gap-1.5 shadow-sm"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            Book Doctor
-          </AppleButton>
+    <div className="min-h-screen bg-[#f5f5f7] pb-16">
+      {/* Sleek Apple Header */}
+      <div className="bg-white border-b border-[#e5e5ea]/80 shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-[#0066cc]">Live Care Access</span>
+                {upcomingList.length > 0 && (
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#0066cc]/10 text-[#0066cc]">
+                    {upcomingList.length} Active {upcomingList.length === 1 ? 'Pass' : 'Passes'}
+                  </span>
+                )}
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-[#1d1d1f] tracking-tight">Appointments & Passes</h1>
+              <p className="text-xs sm:text-sm text-[#86868b] mt-0.5">Track your live queue position, consultation passes, and token updates</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <AppleButton
+                variant="ghost"
+                size="sm"
+                onClick={() => fetchAppointments()}
+                className="flex items-center gap-1.5"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                Refresh
+              </AppleButton>
+              <AppleButton
+                variant="primary"
+                size="sm"
+                onClick={() => navigate('/doctors')}
+                className="flex items-center gap-1.5 shadow-sm"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Book Doctor
+              </AppleButton>
+            </div>
+          </div>
         </div>
-      }
-    >
-      <div className="max-w-4xl mx-auto space-y-6">
+      </div>
+
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         {/* Apple Pill Segmented Filter */}
         <div className="flex justify-center mb-8">
           <div className="bg-[#f5f5f7] p-1 rounded-full border border-[#e5e5ea] flex shadow-2xs">
@@ -159,7 +147,7 @@ export const MyAppointments: React.FC = () => {
               <AppleButton
                 variant="primary"
                 size="md"
-                onClick={() => navigate('/patient/doctors')}
+                onClick={() => navigate('/doctors')}
                 className="mt-6"
               >
                 Find and Book a Doctor
@@ -195,6 +183,6 @@ export const MyAppointments: React.FC = () => {
           </div>
         )}
       </div>
-    </DashboardLayout>
+    </div>
   );
 };

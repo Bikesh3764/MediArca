@@ -47,7 +47,7 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
     if (targetRole === 'ADMIN') return '/admin';
     if (targetRole === 'CLINIC') return '/clinic/dashboard';
     if (targetRole === 'RECEPTIONIST') return '/receptionist/dashboard';
-    return '/patient/doctors';
+    return '/';
   };
 
   const getTargetDestination = (targetRole: string) => {

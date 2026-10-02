@@ -294,15 +294,14 @@ export const Home: React.FC = () => {
     setClinicSelectedState('All');
   };
 
-  const getDoctorDetailPath = (docId: string) =>
-    user?.role === 'PATIENT' ? `/patient/doctor/${docId}` : `/doctor/${docId}`;
+  const getDoctorDetailPath = (docId: string) => `/doctor/${docId}`;
 
   const getDoctorBookPath = (docId: string, clinicId?: string, slotId?: string) => {
     const params = new URLSearchParams();
     if (clinicId) params.append('clinic', clinicId);
     if (slotId) params.append('slot', slotId);
     const qs = params.toString();
-    const basePath = user?.role === 'PATIENT' ? `/patient/book/${docId}` : `/book/${docId}`;
+    const basePath = `/book/${docId}`;
     return qs ? `${basePath}?${qs}` : basePath;
   };
 

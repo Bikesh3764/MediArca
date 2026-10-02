@@ -11,8 +11,6 @@ import {
   formatDoctorDegrees,
   getFileUrl,
 } from '../../services/api';
-import { useAuth } from '../../context/AuthContext';
-import { DashboardLayout, DashboardNavItem } from '../../components/layout/DashboardLayout';
 import { SubNav } from '../../components/layout/SubNav';
 import { AppleButton } from '../../components/ui/AppleButton';
 import { UtilityCard } from '../../components/ui/UtilityCard';
@@ -27,15 +25,12 @@ import {
   UserCheck,
   ChevronLeft,
   Building2,
-  Stethoscope,
-  User as UserIcon,
   AlertCircle,
   Check,
   Phone,
 } from 'lucide-react';
 
 export const DoctorDetail: React.FC = () => {
-  const { user } = useAuth();
   const { id } = useParams<{ id: string }>();
   const [doctor, setDoctor] = useState<Doctor | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>(() => getLocalDateString());
@@ -46,29 +41,6 @@ export const DoctorDetail: React.FC = () => {
   const [loadingQueue, setLoadingQueue] = useState(false);
 
   const navigate = useNavigate();
-  const isPatient = user?.role === 'PATIENT';
-
-  const patientNavItems: DashboardNavItem[] = [
-    {
-      id: 'appointments',
-      label: 'Live Queue & Passes',
-      icon: Calendar,
-      path: '/patient/appointments',
-    },
-    {
-      id: 'find-doctors',
-      label: 'Find Specialists',
-      icon: Stethoscope,
-      path: '/patient/doctors',
-      active: true,
-    },
-    {
-      id: 'profile',
-      label: 'Patient Profile',
-      icon: UserIcon,
-      path: '/patient/profile',
-    },
-  ];
 
   useEffect(() => {
     const fetchDoctor = async () => {
@@ -123,75 +95,18 @@ export const DoctorDetail: React.FC = () => {
   }, [id, selectedDate, selectedSlotId, selectedClinicId]);
 
   if (loading) {
-    if (isPatient) {
-      return (
-        <DashboardLayout
-          portalType="PATIENT"
-          portalSubtitle="PATIENT PORTAL"
-          navItems={patientNavItems}
-          title="Loading Specialist Profile..."
-          subtitle="Retrieving doctor credentials, verification status and shift schedule"
-          headerAction={
-            <AppleButton
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate('/patient/doctors')}
-              className="flex items-center gap-1.5 text-xs font-medium"
-            >
-              <ChevronLeft className="w-4 h-4" />
-              Back to Specialists
-            </AppleButton>
-          }
-        >
-          <div className="flex flex-col items-center justify-center py-24">
-            <div className="w-8 h-8 rounded-full border-2 border-[#0066cc] border-t-transparent animate-spin mb-3"></div>
-            <p className="text-xs text-[#86868b]">Loading doctor profile and clinic schedule...</p>
-          </div>
-        </DashboardLayout>
-      );
-    }
     return (
-      <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center">
-        <div className="w-8 h-8 rounded-full border-2 border-[#0066cc] border-t-transparent animate-spin"></div>
+      <div className="min-h-screen bg-[#f5f5f7] flex flex-col items-center justify-center py-24">
+        <div className="w-8 h-8 rounded-full border-2 border-[#0066cc] border-t-transparent animate-spin mb-3"></div>
+        <p className="text-xs text-[#86868b]">Loading doctor profile and clinic schedule...</p>
       </div>
     );
   }
 
   if (!doctor) {
-    if (isPatient) {
-      return (
-        <DashboardLayout
-          portalType="PATIENT"
-          portalSubtitle="PATIENT PORTAL"
-          navItems={patientNavItems}
-          title="Practitioner Not Available"
-          subtitle="The requested doctor profile could not be located"
-          headerAction={
-            <AppleButton
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate('/patient/doctors')}
-              className="flex items-center gap-1.5 text-xs font-medium"
-            >
-              <ChevronLeft className="w-4 h-4" />
-              Back to Specialists
-            </AppleButton>
-          }
-        >
-          <div className="text-center p-8 bg-white rounded-2xl shadow-sm border border-[#e5e5ea] max-w-md mx-auto my-12">
-            <AlertCircle className="w-12 h-12 text-rose-500 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-[#1d1d1f] mb-2">Practitioner Not Found</h2>
-            <p className="text-xs text-[#86868b] mb-6">The requested doctor profile is unavailable or inactive.</p>
-            <AppleButton variant="primary" onClick={() => navigate('/patient/doctors')}>
-              Return to Specialists
-            </AppleButton>
-          </div>
-        </DashboardLayout>
-      );
-    }
     return (
-      <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center">
-        <div className="text-center p-8 bg-white rounded-2xl shadow-sm border border-[#e5e5ea] max-w-md">
+      <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center py-20 px-4">
+        <div className="text-center p-8 bg-white rounded-2xl shadow-sm border border-[#e5e5ea] max-w-md mx-auto">
           <AlertCircle className="w-12 h-12 text-rose-500 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-[#1d1d1f] mb-2">Practitioner Not Found</h2>
           <p className="text-xs text-[#86868b] mb-6">The requested doctor profile is unavailable or inactive.</p>
@@ -638,9 +553,7 @@ export const DoctorDetail: React.FC = () => {
                 disabled={Boolean(!doctor.clinics || doctor.clinics.length === 0 || queuePreview?.isFull || queuePreview?.isPassed)}
                 onClick={() =>
                   navigate(
-                    isPatient
-                      ? `/patient/book/${doctor.id}?date=${selectedDate}${selectedSlotId ? `&slot=${selectedSlotId}` : ''}${selectedClinicId ? `&clinic=${selectedClinicId}` : ''}`
-                      : `/book/${doctor.id}?date=${selectedDate}${selectedSlotId ? `&slot=${selectedSlotId}` : ''}${selectedClinicId ? `&clinic=${selectedClinicId}` : ''}`
+                    `/book/${doctor.id}?date=${selectedDate}${selectedSlotId ? `&slot=${selectedSlotId}` : ''}${selectedClinicId ? `&clinic=${selectedClinicId}` : ''}`
                   )
                 }
                 className="w-full"
@@ -657,33 +570,6 @@ export const DoctorDetail: React.FC = () => {
           </div>
     </div>
   );
-
-  if (isPatient) {
-    return (
-      <DashboardLayout
-        portalType="PATIENT"
-        portalSubtitle="PATIENT PORTAL"
-        navItems={patientNavItems}
-        title={doctor.user?.fullName || 'Doctor'}
-        subtitle={`${doctor.specialty} • ${doctor.experienceYears} Years Experience`}
-        headerAction={
-          <AppleButton
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate('/patient/doctors')}
-            className="flex items-center gap-1.5 text-xs font-medium"
-          >
-            <ChevronLeft className="w-4 h-4" />
-            Back to Specialists
-          </AppleButton>
-        }
-      >
-        <div className="space-y-6">
-          {detailContent}
-        </div>
-      </DashboardLayout>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-[#f5f5f7] pb-16">
