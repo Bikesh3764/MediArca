@@ -297,7 +297,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
     });
   }, [searchParams, selectedSpecialty]);
 
-  const getDoctorDetailPath = (doctorId: string) => `/doctor/${doctorId}`;
+  const getDoctorDetailPath = (doctorId: string) => `/book/${doctorId}`;
 
   const getBookPath = (doctorId: string) => `/book/${doctorId}`;
 

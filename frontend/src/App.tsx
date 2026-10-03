@@ -1,5 +1,5 @@
 import React from 'react';
-import { HashRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { GlobalNav } from './components/layout/GlobalNav';
 import { Footer } from './components/layout/Footer';
@@ -10,7 +10,6 @@ import { Home } from './pages/Home';
 import { Login } from './pages/Auth/Login';
 import { Signup } from './pages/Auth/Signup';
 import { DoctorDiscovery } from './pages/Patient/DoctorDiscovery';
-import { DoctorDetail } from './pages/Patient/DoctorDetail';
 import { BookAppointment } from './pages/Patient/BookAppointment';
 import { MyAppointments } from './pages/Patient/MyAppointments';
 import { PatientProfile } from './pages/Patient/PatientProfile';
@@ -69,6 +68,11 @@ const ProtectedRoute: React.FC<{
   return <>{children}</>;
 };
 
+const DoctorRouteRedirect: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  return <Navigate to={`/book/${id || ''}`} replace />;
+};
+
 function AppShell() {
   const location = useLocation();
 
@@ -104,8 +108,8 @@ function AppShell() {
           {/* Directory & Booking */}
           <Route path="/doctors" element={<DoctorDiscovery />} />
           <Route path="/patient/doctors" element={<Navigate to="/doctors" replace />} />
-          <Route path="/doctor/:id" element={<DoctorDetail />} />
-          <Route path="/patient/doctor/:id" element={<DoctorDetail />} />
+          <Route path="/doctor/:id" element={<DoctorRouteRedirect />} />
+          <Route path="/patient/doctor/:id" element={<DoctorRouteRedirect />} />
           <Route
             path="/book/:id"
             element={

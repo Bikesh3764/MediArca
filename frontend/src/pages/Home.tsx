@@ -295,7 +295,7 @@ export const Home: React.FC = () => {
     setClinicSelectedState('All');
   };
 
-  const getDoctorDetailPath = (docId: string) => `/doctor/${docId}`;
+  const getDoctorDetailPath = (docId: string) => `/book/${docId}`;
 
   const getDoctorBookPath = (docId: string, clinicId?: string, slotId?: string) => {
     const params = new URLSearchParams();

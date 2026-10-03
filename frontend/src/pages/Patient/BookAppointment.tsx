@@ -3,6 +3,7 @@ import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import {
   api,
   Doctor,
+  Appointment,
   QueuePreview,
   parseDoctorSlots,
   format12Hour,
@@ -16,8 +17,6 @@ import { SubNav } from '../../components/layout/SubNav';
 import { AppleButton } from '../../components/ui/AppleButton';
 import { UtilityCard } from '../../components/ui/UtilityCard';
 import {
-  Clock,
-  Calendar,
   AlertCircle,
   CheckCircle2,
   ChevronLeft,
@@ -25,7 +24,6 @@ import {
   Building2,
   MapPin,
   Phone,
-  User as UserIcon,
 } from 'lucide-react';
 
 const formatDisplayPhone = (phone?: string) => {
@@ -46,7 +44,7 @@ export const BookAppointment: React.FC = () => {
   const [searchParams] = useSearchParams();
   const initialDate = searchParams.get('date') || getLocalDateString();
   const initialSlot = searchParams.get('slot') || null;
-  const initialClinic = searchParams.get('clinic') || null;
+  const initialClinic = searchParams.get('clinic') || searchParams.get('clinicId') || null;
 
   const [doctor, setDoctor] = useState<Doctor | null>(null);
   const [appointmentDate, setAppointmentDate] = useState<string>(initialDate);
@@ -63,9 +61,9 @@ export const BookAppointment: React.FC = () => {
   const [patientGender, setPatientGender] = useState('Male');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showAllReceptionists, setShowAllReceptionists] = useState(false);
+  const [confirmedAppointment, setConfirmedAppointment] = useState<Appointment | null>(null);
 
-  const { user, loading: loadingAuth } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   const selectedClinic = doctor?.clinics?.find((c) => c.clinicId === selectedClinicId) || doctor?.clinics?.[0];
@@ -109,117 +107,101 @@ export const BookAppointment: React.FC = () => {
       });
     }
 
-    // 3. Fallback to clinic front desk phone
-    if (list.length === 0 && selectedClinic?.clinic.phone) {
-      list.push({
-        id: 'desk_default',
-        name: `${selectedClinic.clinic.clinicName} Reception Desk`,
-        phone: selectedClinic.clinic.phone,
-        clinicName: selectedClinic.clinic.clinicName,
-      });
-    }
-
     return list;
   }, [doctor, selectedClinic, selectedClinicId]);
 
-  const handleSelectClinic = (clinicId: string) => {
-    setSelectedClinicId(clinicId);
-    if (!doctor) return;
-    const targetClinic = doctor.clinics?.find((c) => c.clinicId === clinicId);
-    const clinicSlots = (targetClinic?.slots && targetClinic.slots.length > 0)
-      ? targetClinic.slots
-      : parseDoctorSlots(doctor);
-    if (clinicSlots.length > 0 && !clinicSlots.some((s) => s.id === selectedSlotId)) {
-      setSelectedSlotId(clinicSlots[0].id);
-    }
-  };
-
-  // Load doctor profile
   useEffect(() => {
-    if (loadingAuth) return;
-    if (!user) {
-      navigate('/login');
-      return;
-    }
-
     const fetchDoctor = async () => {
       if (!id) return;
       try {
-        const docData = await api.getDoctorById(id);
-        setDoctor(docData);
-        let targetClinicId = '';
-        if (initialClinic && docData.clinics?.some((c: any) => c.clinicId === initialClinic)) {
-          targetClinicId = initialClinic;
-          setSelectedClinicId(initialClinic);
-        } else if (docData.clinics && docData.clinics.length > 0) {
-          targetClinicId = docData.clinics[0].clinicId;
-          setSelectedClinicId(docData.clinics[0].clinicId);
-        }
+        const data = await api.getDoctorById(id);
+        setDoctor(data);
 
-        const activeClinic = docData.clinics?.find((c: any) => c.clinicId === targetClinicId) || docData.clinics?.[0];
-        const slots = (activeClinic?.slots && activeClinic.slots.length > 0) ? activeClinic.slots : parseDoctorSlots(docData);
-        if (slots.length > 0) {
-          setSelectedSlotId((prev) => {
-            if (prev) return prev;
-            const matchingSlot = initialSlot ? slots.find((s) => s.id === initialSlot) : null;
-            return matchingSlot ? matchingSlot.id : slots[0].id;
-          });
+        // Preselect clinic if provided via query params or pick first available clinic
+        if (data.clinics && data.clinics.length > 0) {
+          const matchedClinic = initialClinic ? data.clinics.find((c) => c.clinicId === initialClinic) : null;
+          const targetClinic = matchedClinic || data.clinics[0];
+          setSelectedClinicId(targetClinic.clinicId);
+
+          const slots = (targetClinic.slots && targetClinic.slots.length > 0) ? targetClinic.slots : parseDoctorSlots(data);
+          if (slots.length > 0) {
+            setSelectedSlotId(initialSlot || slots[0].id);
+          }
+        } else {
+          const slots = parseDoctorSlots(data);
+          if (slots.length > 0) {
+            setSelectedSlotId(initialSlot || slots[0].id);
+          }
         }
       } catch (err: any) {
-        console.error('Failed to load doctor:', err);
-        setError(err.message);
+        setError(err.message || 'Failed to load doctor profile');
       } finally {
         setLoading(false);
       }
     };
 
     fetchDoctor();
-  }, [id, user, loadingAuth, navigate, initialSlot, initialClinic]);
+  }, [id, initialClinic, initialSlot]);
 
-  // Fetch queue preview when date, slotId, or clinicId changes
+  // Sync queue preview dynamically when slot or date or clinic changes
   useEffect(() => {
-    const fetchQueue = async () => {
-      if (!id || !doctor) return;
+    const fetchPreview = async () => {
+      if (!id || !appointmentDate) return;
       setPreviewLoading(true);
       try {
-        const previewData = await api.getQueuePreview(
+        const preview = await api.getQueuePreview(
           id,
           appointmentDate,
           selectedSlotId || undefined,
           selectedClinicId || undefined
         );
-        setQueuePreview(previewData);
-        if (previewData.selectedSlotId && (!selectedSlotId || (previewData.isPassed && previewData.selectedSlotId !== selectedSlotId))) {
-          setSelectedSlotId(previewData.selectedSlotId);
+        setQueuePreview(preview);
+        if (preview.selectedSlotId && (!selectedSlotId || (preview.isPassed && preview.selectedSlotId !== selectedSlotId))) {
+          setSelectedSlotId(preview.selectedSlotId);
         }
-      } catch (err: any) {
-        console.error('Failed to load queue preview:', err);
+      } catch (err) {
+        console.error('Queue calculation preview failed:', err);
       } finally {
         setPreviewLoading(false);
       }
     };
 
-    if (doctor) {
-      fetchQueue();
+    fetchPreview();
+  }, [id, appointmentDate, selectedSlotId, selectedClinicId]);
+
+  const handleSelectClinic = (clinicId: string) => {
+    setSelectedClinicId(clinicId);
+    const target = doctor?.clinics?.find((c) => c.clinicId === clinicId);
+    const clinicSlots = (target?.slots && target.slots.length > 0)
+      ? target.slots
+      : (doctor ? parseDoctorSlots(doctor) : []);
+
+    if (clinicSlots.length > 0 && !clinicSlots.some((s) => s.id === selectedSlotId)) {
+      setSelectedSlotId(clinicSlots[0].id);
     }
-  }, [id, doctor, appointmentDate, selectedSlotId, selectedClinicId]);
+  };
 
   const handleBooking = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!doctor) return;
+
+    if (!user) {
+      navigate('/patient/login', { state: { from: `/book/${doctor.id}` } });
+      return;
+    }
 
     setError(null);
     setSubmitting(true);
 
     const hasClinics = Boolean(doctor.clinics && doctor.clinics.length > 0);
     if (!hasClinics) {
-      setError('This doctor is currently not associated with any active verified clinic. Appointments cannot be booked.');
+      setError('This doctor is currently not associated with an active clinic. Appointments cannot be booked.');
       setSubmitting(false);
       return;
     }
 
     if (doctor.clinics!.length > 1 && !selectedClinicId) {
-      setError('Please select which clinic venue you wish to attend.');
+      setError('Please select a clinic venue.');
       setSubmitting(false);
       return;
     }
@@ -237,7 +219,7 @@ export const BookAppointment: React.FC = () => {
     }
 
     try {
-      await api.bookAppointment({
+      const appt = await api.bookAppointment({
         doctorId: doctor.id,
         clinicId: selectedClinicId || undefined,
         appointmentDate,
@@ -250,8 +232,9 @@ export const BookAppointment: React.FC = () => {
         patientGender: isForOther ? patientGender : undefined,
       });
 
-      // Redirect immediately to My Appointments to view the live pass
-      navigate('/patient/appointments');
+      // Reveal confirmed appointment and receptionist contact details
+      setConfirmedAppointment(appt);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err: any) {
       setError(err.message || 'Failed to complete appointment booking');
     } finally {
@@ -262,8 +245,6 @@ export const BookAppointment: React.FC = () => {
   const handleBack = () => {
     if (window.history.length > 1) {
       navigate(-1);
-    } else if (id) {
-      navigate(`/doctor/${id}`);
     } else {
       navigate('/doctors');
     }
@@ -273,7 +254,7 @@ export const BookAppointment: React.FC = () => {
     return (
       <div className="min-h-screen bg-[#f5f5f7] flex flex-col items-center justify-center py-24">
         <div className="w-8 h-8 rounded-full border-2 border-[#0066cc] border-t-transparent animate-spin mb-3"></div>
-        <p className="text-xs text-[#86868b]">Loading appointment booking workspace...</p>
+        <p className="text-xs text-[#86868b]">Loading booking...</p>
       </div>
     );
   }
@@ -283,10 +264,10 @@ export const BookAppointment: React.FC = () => {
       <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center py-20 px-4">
         <div className="text-center p-8 bg-white rounded-2xl shadow-sm border border-[#e5e5ea] max-w-md mx-auto">
           <AlertCircle className="w-12 h-12 text-rose-500 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-[#1d1d1f] mb-2">Doctor Profile Unavailable</h2>
-          <p className="text-xs text-[#86868b] mb-6">{error || 'This doctor is unavailable or inactive.'}</p>
+          <h2 className="text-xl font-semibold text-[#1d1d1f] mb-2">Doctor Not Found</h2>
+          <p className="text-xs text-[#86868b] mb-6">The requested doctor is unavailable or inactive.</p>
           <AppleButton variant="primary" onClick={() => navigate('/doctors')}>
-            Return to Directory
+            Back to Directory
           </AppleButton>
         </div>
       </div>
@@ -296,18 +277,136 @@ export const BookAppointment: React.FC = () => {
   const isSelectedSlotPassed = Boolean(queuePreview?.isPassed);
   const isSelectedSlotFull = Boolean(queuePreview?.isFull);
 
-  const bookingContent = (
-    <UtilityCard>
+  // Receptionist Contact Info resolved for confirmation screen
+  const primaryReceptionist = attachedReceptionists[0];
+  const deskPhone = primaryReceptionist?.phone || selectedClinic?.clinic.phone;
+  const deskName = primaryReceptionist?.name || 'Clinic Reception Desk';
+
+  // 1. Post-Booking Success & Receptionist Details Screen
+  if (confirmedAppointment) {
+    return (
+      <div className="min-h-screen bg-[#f5f5f7] pb-16">
+        <SubNav title="Token Reserved">
+          <AppleButton
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/doctors')}
+            className="flex items-center gap-1"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            Doctors
+          </AppleButton>
+        </SubNav>
+
+        <div className="max-w-xl mx-auto px-4 sm:px-6 pt-6 sm:pt-10">
+          <UtilityCard className="text-center py-8 px-5 sm:px-8 space-y-6">
+            <div className="w-16 h-16 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200/80 flex items-center justify-center mx-auto shadow-xs">
+              <CheckCircle2 className="w-8 h-8" />
+            </div>
+
+            <div>
+              <span className="text-xs font-semibold uppercase tracking-wider text-[#86868b] block mb-1">
+                Token Reserved
+              </span>
+              <h2 className="text-3xl font-bold tracking-tight text-[#0066cc]">
+                Queue #{confirmedAppointment.queueNumber}
+              </h2>
+              <p className="text-xs text-[#86868b] mt-1 font-medium">
+                {confirmedAppointment.appointmentDate} · {confirmedAppointment.checkingWindow}
+              </p>
+            </div>
+
+            {/* Receptionist Contact Details Card (NOW REVEALED!) */}
+            <div className="p-4 sm:p-5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] text-left space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <span className="text-[11px] font-semibold text-[#86868b] uppercase tracking-wider block">
+                    Pay Receptionist to Confirm
+                  </span>
+                  <h4 className="text-base font-bold text-[#1d1d1f] mt-0.5">
+                    {deskName}
+                  </h4>
+                  <p className="text-xs text-[#86868b] mt-0.5">
+                    {selectedClinic?.clinic.clinicName} · {selectedClinic?.clinic.address}{selectedClinic?.clinic.city ? `, ${selectedClinic.clinic.city}` : ''}
+                  </p>
+                </div>
+                <div className="text-right shrink-0">
+                  <span className="text-base font-bold text-emerald-700 block">
+                    ₹{activeFee}
+                  </span>
+                  <span className="text-[10px] text-[#86868b]">Fee</span>
+                </div>
+              </div>
+
+              <p className="text-xs text-[#86868b] leading-relaxed pt-2.5 border-t border-[#e5e5ea]">
+                Please pay the receptionist at the clinic desk to confirm your queue token. Unconfirmed requests may be claimed by other patients who confirm first.
+              </p>
+
+              {deskPhone && (
+                <div className="pt-1">
+                  <a
+                    href={`tel:${deskPhone.replace(/\s+/g, '')}`}
+                    className="w-full h-11 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-semibold flex items-center justify-center gap-2 active:scale-95 transition-all shadow-sm cursor-pointer"
+                  >
+                    <Phone className="w-4 h-4" />
+                    <span>Call Receptionist: {formatDisplayPhone(deskPhone)}</span>
+                  </a>
+                </div>
+              )}
+            </div>
+
+            {/* Navigation Actions */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+              <AppleButton
+                variant="primary"
+                size="lg"
+                onClick={() => navigate('/patient/appointments')}
+                className="w-full sm:w-auto"
+              >
+                View My Passes & Tickets
+              </AppleButton>
+              <AppleButton
+                variant="secondary"
+                size="lg"
+                onClick={() => navigate('/doctors')}
+                className="w-full sm:w-auto"
+              >
+                Back to Doctors
+              </AppleButton>
+            </div>
+          </UtilityCard>
+        </div>
+      </div>
+    );
+  }
+
+  // 2. Main Booking Form (Zero receptionist details exposed before confirm)
+  return (
+    <div className="min-h-screen bg-[#f5f5f7] pb-16">
+      <SubNav title="Book Appointment">
+        <AppleButton
+          variant="ghost"
+          size="sm"
+          onClick={handleBack}
+          className="flex items-center gap-1"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          Back
+        </AppleButton>
+      </SubNav>
+
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 pt-5 sm:pt-8">
+        <UtilityCard>
           {error && (
-            <div className="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <div className="mb-5 p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{error}</span>
             </div>
           )}
 
           {/* Doctor Info Card */}
-          <div className="flex items-center gap-4 pb-6 border-b border-[#f0f0f0]">
-            <div className="w-16 h-16 rounded-full bg-white border border-[#e5e5ea] overflow-hidden flex-shrink-0 flex items-center justify-center shadow-xs">
+          <div className="flex items-center gap-4 pb-5 border-b border-[#f0f0f2]">
+            <div className="w-16 h-16 rounded-full bg-white border border-[#e5e5ea] overflow-hidden shrink-0 flex items-center justify-center shadow-xs">
               {doctor.user?.avatarUrl ? (
                 <img
                   src={getFileUrl(doctor.user.avatarUrl)}
@@ -328,93 +427,61 @@ export const BookAppointment: React.FC = () => {
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <h3 className="text-xl font-bold text-[#1d1d1f] tracking-tight">{doctor.user?.fullName || 'Doctor'}</h3>
-                <CheckCircle2 className="w-4 h-4 text-[#0066cc] flex-shrink-0" />
+                <h3 className="text-lg font-bold text-[#1d1d1f] tracking-tight truncate">
+                  {doctor.user?.fullName || 'Doctor'}
+                </h3>
+                <CheckCircle2 className="w-4 h-4 text-[#0066cc] shrink-0" />
               </div>
               <div className="flex flex-wrap items-center gap-2 mt-1">
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20">
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#0066cc]/10 text-[#0066cc]">
                   {doctor.specialty}
                 </span>
-                <span className="text-xs text-[#6e6e73] font-medium">{formatDoctorDegrees(doctor.qualifications)}</span>
+                <span className="text-xs text-[#86868b] font-medium">
+                  {formatDoctorDegrees(doctor.qualifications)}
+                </span>
               </div>
               {selectedClinic ? (
-                <p className="text-xs text-[#48484a] font-medium flex items-center gap-1.5 mt-1">
-                  <Building2 className="w-3.5 h-3.5 text-[#0066cc] flex-shrink-0" />
-                  <span>Practicing at {selectedClinic.clinic.clinicName}{selectedClinic.clinic.city ? ` • ${selectedClinic.clinic.city}` : ''}</span>
+                <p className="text-xs text-[#6e6e73] font-medium flex items-center gap-1.5 mt-1 truncate">
+                  <Building2 className="w-3.5 h-3.5 text-[#0066cc] shrink-0" />
+                  <span className="truncate">{selectedClinic.clinic.clinicName}{selectedClinic.clinic.city ? ` · ${selectedClinic.clinic.city}` : ''}</span>
                 </p>
-              ) : (
-                <p className="text-xs text-[#86868b] mt-1">{doctor.clinicAddress || 'MediArca Healthcare Network'}</p>
-              )}
+              ) : null}
             </div>
           </div>
 
-          {/* Clinic / Practice Venue Selection */}
+          {/* Clinic Venue Selection */}
           {!doctor.clinics || doctor.clinics.length === 0 ? (
-            <div className="py-4 border-b border-[#f0f0f0]">
-              <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                <div>
-                  <h4 className="text-xs font-bold text-amber-900 uppercase tracking-wide">
-                    No Clinic Affiliation Registered
-                  </h4>
-                  <p className="text-xs text-amber-800/90 mt-1 leading-relaxed">
-                    {doctor.user?.fullName ? (doctor.user.fullName.startsWith('Dr.') ? doctor.user.fullName : `Dr. ${doctor.user.fullName}`) : 'The practitioner'} is currently not practicing at any active verified clinic venue. Online queue reservations cannot be issued.
-                  </p>
-                </div>
+            <div className="py-4 border-b border-[#f0f0f2]">
+              <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start gap-2.5">
+                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <p className="leading-relaxed">
+                  Doctor is not currently affiliated with an active clinic. Online booking is disabled.
+                </p>
               </div>
             </div>
           ) : (
-            <div className="py-4 border-b border-[#f0f0f0]">
-              <label className="block text-xs font-medium text-[#1d1d1f] mb-2 flex items-center justify-between">
-                <span className="flex items-center gap-1.5 font-semibold">
-                  <Building2 className="w-3.5 h-3.5 text-[#0066cc]" />
-                  Consultation Venue / Clinic
-                </span>
-                <span className="text-[11px] text-[#86868b]">
-                  {doctor.clinics.length} facility location{doctor.clinics.length > 1 ? 's' : ''}
-                </span>
+            <div className="py-4 border-b border-[#f0f0f2]">
+              <label className="block text-xs font-semibold text-[#1d1d1f] mb-2">
+                Clinic
               </label>
 
               {doctor.clinics.length === 1 ? (
-                <div className="p-4 sm:p-5 rounded-[22px] bg-white border-2 border-[#0066cc] shadow-[0_4px_16px_rgba(0,136,232,0.08)] flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-2xl bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <Building2 className="w-5 h-5" />
-                  </div>
+                <div className="p-3.5 rounded-2xl bg-white border border-[#0066cc] ring-2 ring-[#0066cc]/10 shadow-xs flex items-center justify-between">
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-sm font-bold text-[#1d1d1f] block truncate">
-                        {doctor.clinics[0].clinic.clinicName}
-                      </span>
-                      <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#0066cc] text-white flex-shrink-0 shadow-2xs">
-                        Selected Venue
-                      </span>
-                    </div>
-                    <span className="text-xs text-[#86868b] flex items-center gap-1.5 mt-1 line-clamp-1">
-                      <MapPin className="w-3.5 h-3.5 text-[#86868b] flex-shrink-0" />
-                      <span>{doctor.clinics[0].clinic.address}{doctor.clinics[0].clinic.city ? `, ${doctor.clinics[0].clinic.city}` : ''}</span>
+                    <span className="text-sm font-semibold text-[#1d1d1f] block truncate">
+                      {doctor.clinics[0].clinic.clinicName}
                     </span>
-                    <div className="flex flex-wrap items-center gap-2 mt-3">
-                      <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200/60 text-emerald-700 text-xs font-semibold">
-                        Fee: ₹{doctor.clinics[0].consultationFee ?? doctor.consultationFee}
-                      </span>
-                      {doctor.clinics[0].slots && doctor.clinics[0].slots.length > 0 && (
-                        <span className="px-2.5 py-0.5 rounded-full bg-[#0066cc]/10 text-[#0066cc] text-xs font-medium">
-                          {doctor.clinics[0].slots.length} shift{doctor.clinics[0].slots.length > 1 ? 's' : ''}
-                        </span>
-                      )}
-                    </div>
-                    {doctor.clinics[0].clinic.phone && (
-                      <div className="flex items-center gap-1.5 text-xs text-[#0066cc] font-medium mt-3 pt-2.5 border-t border-[#f5f5f7]">
-                        <Phone className="w-3.5 h-3.5 text-[#0066cc] flex-shrink-0" />
-                        <a href={`tel:${doctor.clinics[0].clinic.phone.replace(/\s+/g, '')}`} className="hover:underline">
-                          Reception Desk: {formatDisplayPhone(doctor.clinics[0].clinic.phone)}
-                        </a>
-                      </div>
-                    )}
+                    <span className="text-xs text-[#86868b] flex items-center gap-1 mt-0.5 truncate">
+                      <MapPin className="w-3 h-3 text-[#86868b] shrink-0" />
+                      <span className="truncate">{doctor.clinics[0].clinic.address}{doctor.clinics[0].clinic.city ? `, ${doctor.clinics[0].clinic.city}` : ''}</span>
+                    </span>
                   </div>
+                  <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full shrink-0 ml-2">
+                    Fee: ₹{doctor.clinics[0].consultationFee ?? doctor.consultationFee}
+                  </span>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   {doctor.clinics.map((c) => {
                     const isSelected = selectedClinicId === c.clinicId;
                     const clinicFee = c.consultationFee ?? doctor.consultationFee;
@@ -423,43 +490,28 @@ export const BookAppointment: React.FC = () => {
                         key={c.clinicId}
                         type="button"
                         onClick={() => handleSelectClinic(c.clinicId)}
-                        className={`p-4 sm:p-5 rounded-[22px] border text-left transition-all duration-200 flex flex-col justify-between cursor-pointer ${
+                        className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer ${
                           isSelected
-                            ? 'bg-white border-[#0066cc] ring-2 ring-[#0066cc]/20 shadow-[0_4px_20px_rgba(0,136,232,0.1)]'
-                            : 'bg-white border-[#e5e5ea] hover:border-[#0066cc]/40 hover:bg-[#fafafa]'
+                            ? 'bg-white border-[#0066cc] ring-2 ring-[#0066cc]/15 shadow-xs'
+                            : 'bg-[#fafafc] border-[#e5e5ea] hover:bg-white hover:border-[#d2d2d7]'
                         }`}
                       >
-                        <div>
-                          <div className="flex items-center justify-between gap-1 mb-1.5">
-                            <span className="text-sm font-bold text-[#1d1d1f] truncate">{c.clinic.clinicName}</span>
-                            {isSelected ? (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#0066cc] text-white flex-shrink-0 shadow-2xs">
-                                <Check className="w-3 h-3" />
-                                Selected
-                              </span>
-                            ) : null}
-                          </div>
-                          <span className="text-[13px] font-semibold text-[#1d1d1f] tracking-tight flex items-center gap-1.5 mt-1 line-clamp-1">
-                            <MapPin className="w-3.5 h-3.5 text-[#0066cc] flex-shrink-0" />
-                            <span>{c.clinic.address}{c.clinic.city ? `, ${c.clinic.city}` : ''}</span>
-                          </span>
-                          <div className="flex flex-wrap items-center gap-2 mt-3">
-                            <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200/60 text-emerald-700 text-xs font-semibold">
-                              Fee: ₹{clinicFee}
+                        <div className="flex items-center justify-between gap-1 mb-1">
+                          <span className="text-sm font-semibold text-[#1d1d1f] truncate">{c.clinic.clinicName}</span>
+                          {isSelected && (
+                            <span className="w-4 h-4 rounded-full bg-[#0066cc] text-white flex items-center justify-center shrink-0">
+                              <Check className="w-2.5 h-2.5 stroke-[3]" />
                             </span>
-                            {c.slots && c.slots.length > 0 && (
-                              <span className="px-2.5 py-0.5 rounded-full bg-[#0066cc]/10 text-[#0066cc] text-xs font-medium">
-                                {c.slots.length} shift{c.slots.length > 1 ? 's' : ''}
-                              </span>
-                            )}
-                          </div>
+                          )}
                         </div>
-                        {c.clinic.phone && (
-                          <div className="flex items-center gap-1.5 text-[13px] text-[#1d1d1f] font-semibold tracking-tight mt-3 pt-2.5 border-t border-[#f5f5f7]">
-                            <Phone className="w-3.5 h-3.5 text-[#0066cc] flex-shrink-0" />
-                            <span>Reception Desk: {formatDisplayPhone(c.clinic.phone)}</span>
-                          </div>
-                        )}
+                        <span className="text-xs text-[#86868b] flex items-center gap-1 truncate">
+                          <MapPin className="w-3 h-3 text-[#86868b] shrink-0" />
+                          <span className="truncate">{c.clinic.address}{c.clinic.city ? `, ${c.clinic.city}` : ''}</span>
+                        </span>
+                        <div className="mt-2 pt-2 border-t border-[#f0f0f2] flex items-center justify-between text-xs">
+                          <span className="text-[#86868b]">Fee</span>
+                          <span className="font-semibold text-[#1d1d1f]">₹{clinicFee}</span>
+                        </div>
                       </button>
                     );
                   })}
@@ -468,21 +520,18 @@ export const BookAppointment: React.FC = () => {
             </div>
           )}
 
-          {/* Date Picker with Quick Shortcuts */}
+          {/* Date Picker */}
           <div className="pt-4 pb-2">
             <div className="flex items-center justify-between mb-1.5">
-              <label className="text-xs font-medium text-[#1d1d1f] flex items-center gap-1">
-                <Calendar className="w-3.5 h-3.5 text-[#0066cc]" />
-                Select Appointment Date
-              </label>
+              <label className="text-xs font-semibold text-[#1d1d1f]">Date</label>
               <div className="flex items-center gap-1">
                 <button
                   type="button"
                   onClick={() => setAppointmentDate(getLocalDateString())}
-                  className={`px-2.5 py-0.5 rounded-full text-xs font-medium transition-all ${
+                  className={`px-2.5 py-0.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
                     appointmentDate === getLocalDateString()
-                      ? 'bg-[#1d1d1f] text-white shadow-2xs'
-                      : 'bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f] hover:bg-[#e8e8ed]'
+                      ? 'bg-[#1d1d1f] text-white'
+                      : 'bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f]'
                   }`}
                 >
                   Today
@@ -490,10 +539,10 @@ export const BookAppointment: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setAppointmentDate(getTomorrowDateString())}
-                  className={`px-2.5 py-0.5 rounded-full text-xs font-medium transition-all ${
+                  className={`px-2.5 py-0.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
                     appointmentDate === getTomorrowDateString()
-                      ? 'bg-[#1d1d1f] text-white shadow-2xs'
-                      : 'bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f] hover:bg-[#e8e8ed]'
+                      ? 'bg-[#1d1d1f] text-white'
+                      : 'bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f]'
                   }`}
                 >
                   Tomorrow
@@ -506,29 +555,21 @@ export const BookAppointment: React.FC = () => {
               value={appointmentDate}
               min={getLocalDateString()}
               onChange={(e) => setAppointmentDate(e.target.value)}
-              className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[14px] bg-white text-[#1d1d1f] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
+              className="w-full h-10 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] transition-all focus:outline-none focus:border-[#0066cc]"
             />
           </div>
 
-          {/* Multiple Checking Slots Selection */}
-          <div className="py-4">
-            <label className="block text-xs font-medium text-[#1d1d1f] mb-2 flex items-center justify-between">
-              <span className="flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-[#0066cc]" />
-                Choose Doctor Checking Slot (Shift)
-              </span>
-              <span className="text-[11px] text-[#86868b]">
-                {doctorSlots.length} available shift{doctorSlots.length > 1 ? 's' : ''}
-              </span>
-            </label>
+          {/* Shift Selection */}
+          <div className="py-4 border-b border-[#f0f0f2]">
+            <label className="block text-xs font-semibold text-[#1d1d1f] mb-2">Shift</label>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               {(queuePreview?.availableSlots || doctorSlots.map((s) => ({ slot: s }))).map((item: any) => {
                 const s = item.slot;
                 const isSelected = selectedSlotId === s.id;
                 const slotPassed = Boolean(item.isPassed);
                 const slotFull = Boolean(item.isFull);
-                const cleanShiftName = s.name.replace(/\s*\([^)]*\)/, '').trim() || 'Checking Shift';
+                const cleanShiftName = s.name.replace(/\s*\([^)]*\)/, '').trim() || 'Shift';
 
                 return (
                   <button
@@ -536,44 +577,40 @@ export const BookAppointment: React.FC = () => {
                     type="button"
                     disabled={slotPassed}
                     onClick={() => setSelectedSlotId(s.id)}
-                    className={`p-4 rounded-2xl border text-left transition-all relative cursor-pointer ${
+                    className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer ${
                       slotPassed
-                        ? 'bg-gray-50 border-gray-200 opacity-60 cursor-not-allowed'
+                        ? 'bg-[#f5f5f7] border-[#e5e5ea] opacity-60 cursor-not-allowed'
                         : isSelected
-                        ? 'bg-white border-[#0066cc] ring-2 ring-[#0066cc]/20 shadow-sm'
-                        : 'bg-white border-[#e5e5ea] hover:border-[#0066cc]/40 hover:bg-[#fafafa]'
+                        ? 'bg-white border-[#0066cc] ring-2 ring-[#0066cc]/15 shadow-xs'
+                        : 'bg-[#fafafc] border-[#e5e5ea] hover:bg-white hover:border-[#d2d2d7]'
                     }`}
                   >
-                    <div className="flex items-center justify-between gap-2 mb-1.5">
-                      <span className="text-xs font-bold text-[#1d1d1f] block truncate">
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <span className="text-xs font-semibold text-[#1d1d1f] truncate">
                         {cleanShiftName}
                       </span>
                       {isSelected && !slotPassed && (
-                        <span className="w-4 h-4 rounded-full bg-[#0066cc] text-white flex items-center justify-center flex-shrink-0">
-                          <Check className="w-2.5 h-2.5" />
+                        <span className="w-4 h-4 rounded-full bg-[#0066cc] text-white flex items-center justify-center shrink-0">
+                          <Check className="w-2.5 h-2.5 stroke-[3]" />
                         </span>
                       )}
                     </div>
 
-                    <div className="text-xs text-[#0066cc] font-medium flex items-center gap-1.5 mb-2">
-                      <Clock className="w-3.5 h-3.5 flex-shrink-0" />
-                      <span>
-                        {format12Hour(s.startTime)} – {format12Hour(s.endTime)}
-                      </span>
+                    <div className="text-xs text-[#0066cc] font-medium mb-1.5">
+                      {format12Hour(s.startTime)} – {format12Hour(s.endTime)}
                     </div>
 
-                    {/* Status Pill */}
-                    <div className="mt-1">
+                    <div>
                       {slotPassed ? (
-                        <span className="inline-block text-[10px] font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
+                        <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-gray-200 text-gray-700">
                           Shift Ended
                         </span>
                       ) : slotFull ? (
-                        <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200">
-                          Capacity Reached
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-rose-50 text-rose-700">
+                          Full
                         </span>
                       ) : (
-                        <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f]">
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">
                           Available
                         </span>
                       )}
@@ -584,53 +621,31 @@ export const BookAppointment: React.FC = () => {
             </div>
           </div>
 
-          {/* Queue & Schedule Reservation Banner */}
+          {/* Queue Preview Tile */}
           {queuePreview && (
-            <div
-              className={`my-5 p-5 rounded-[22px] border transition-all ${
-                isSelectedSlotPassed
-                  ? 'bg-[#fafafc] border-[#e5e5ea]'
-                  : 'bg-[#f5f5f7] border-[#e5e5ea]'
-              } flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4`}
-            >
-              <div>
-                <span className="text-[10px] uppercase font-semibold text-[#86868b] tracking-wider block">
-                  {isSelectedSlotPassed ? 'Shift Status' : 'Queue Position'}
-                </span>
-                <strong
-                  className={`text-2xl sm:text-3xl font-bold tracking-tight block mt-0.5 ${
-                    isSelectedSlotPassed ? 'text-[#86868b]' : 'text-[#0066cc]'
-                  }`}
-                >
-                  {isSelectedSlotPassed ? 'Shift Ended' : `Queue #${queuePreview.nextQueueNumber}`}
-                </strong>
-                <p className="text-xs text-[#86868b] mt-1 flex items-center gap-1.5 font-medium">
-                  <Clock className="w-3.5 h-3.5 text-[#0066cc]" />
-                  Checking Shift: {queuePreview.checkingWindow}
-                </p>
+            <div className="my-4 p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea]">
+              <div className="flex items-baseline justify-between mb-2">
+                <div>
+                  <span className="text-[11px] text-[#86868b] block font-medium">Your Token</span>
+                  <span className="text-2xl sm:text-3xl font-bold tracking-tight text-[#0066cc]">
+                    {isSelectedSlotPassed ? 'Shift Ended' : `Queue #${queuePreview.nextQueueNumber}`}
+                  </span>
+                </div>
+                <div className="text-right">
+                  <span className="text-[11px] text-[#86868b] block font-medium">Est. Time</span>
+                  <span className="text-base sm:text-lg font-semibold text-[#1d1d1f]">
+                    {previewLoading ? 'Updating...' : isSelectedSlotPassed ? 'Closed' : queuePreview.estimatedTime}
+                  </span>
+                </div>
               </div>
-
-              <div className="text-left sm:text-right border-t sm:border-t-0 pt-3 sm:pt-0 border-[#e5e5ea] w-full sm:w-auto">
-                <span className="text-[10px] uppercase font-semibold text-[#86868b] block">
-                  {isSelectedSlotPassed ? 'Availability' : 'Est. Consultation Time'}
-                </span>
-                <strong
-                  className={`text-xl sm:text-2xl block tracking-tight ${
-                    isSelectedSlotPassed ? 'text-amber-600' : 'text-[#1d1d1f]'
-                  }`}
-                >
-                  {previewLoading
-                    ? 'Updating...'
-                    : isSelectedSlotPassed
-                    ? 'Closed For Today'
-                    : queuePreview.estimatedTime}
-                </strong>
-                <span className="text-xs text-[#86868b] block mt-0.5 font-medium">
+              <div className="pt-2 border-t border-[#e5e5ea] text-xs text-[#86868b] flex items-center justify-between">
+                <span>{queuePreview.checkingWindow}</span>
+                <span>
                   {isSelectedSlotPassed
-                    ? 'Please pick an upcoming shift or future date'
+                    ? 'Pick an upcoming shift'
                     : queuePreview.patientsAhead === 0
-                    ? 'First in line for this shift'
-                    : `${queuePreview.patientsAhead} patient(s) ahead in line`}
+                    ? 'First in line'
+                    : `${queuePreview.patientsAhead} ahead`}
                 </span>
               </div>
             </div>
@@ -638,16 +653,16 @@ export const BookAppointment: React.FC = () => {
 
           {/* Booking Form */}
           <form onSubmit={handleBooking} className="space-y-4">
-            {/* Booking For Segmented Control */}
-            <div className="py-2 border-b border-[#e5e5ea] pb-4">
+            {/* Booking For Toggle */}
+            <div className="py-2 border-b border-[#f0f0f2] pb-4">
               <label className="block text-xs font-semibold text-[#1d1d1f] mb-2">
                 Booking For:
               </label>
-              <div className="flex rounded-full bg-[#f5f5f7] p-1 border border-[#e5e5ea] max-w-sm shadow-xs">
+              <div className="flex rounded-full bg-[#f5f5f7] p-1 border border-[#e5e5ea] max-w-xs shadow-2xs">
                 <button
                   type="button"
                   onClick={() => setBookingFor('myself')}
-                  className={`flex-1 py-1.5 text-xs font-semibold rounded-full transition-all active:scale-[0.98] ${
+                  className={`flex-1 py-1.5 text-xs font-semibold rounded-full transition-all cursor-pointer ${
                     bookingFor === 'myself'
                       ? 'bg-white text-[#1d1d1f] shadow-xs'
                       : 'text-[#86868b] hover:text-[#1d1d1f]'
@@ -658,25 +673,25 @@ export const BookAppointment: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setBookingFor('other')}
-                  className={`flex-1 py-1.5 text-xs font-semibold rounded-full transition-all active:scale-[0.98] ${
+                  className={`flex-1 py-1.5 text-xs font-semibold rounded-full transition-all cursor-pointer ${
                     bookingFor === 'other'
                       ? 'bg-white text-[#1d1d1f] shadow-xs'
                       : 'text-[#86868b] hover:text-[#1d1d1f]'
                   }`}
                 >
-                  Someone Else / Family
+                  Someone Else
                 </button>
               </div>
 
               {bookingFor === 'other' && (
-                <div className="mt-3 p-4 rounded-2xl bg-[#0066cc]/5 border border-[#0066cc]/20 space-y-3 animate-fadeIn">
+                <div className="mt-3 p-3.5 rounded-2xl bg-[#0066cc]/5 border border-[#0066cc]/20 space-y-3">
                   <div className="text-xs font-semibold text-[#0066cc]">
-                    Patient Details (Dependent / Family Member)
+                    Patient Details
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div className="sm:col-span-1">
                       <label className="block text-[11px] font-semibold text-[#1d1d1f] mb-1">
-                        Patient Full Name *
+                        Full Name *
                       </label>
                       <input
                         type="text"
@@ -684,20 +699,20 @@ export const BookAppointment: React.FC = () => {
                         value={patientName}
                         onChange={(e) => setPatientName(e.target.value)}
                         placeholder="e.g. Rahul Ray"
-                        className="w-full h-10 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
+                        className="w-full h-10 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] focus:outline-none focus:border-[#0066cc]"
                       />
                     </div>
                     <div>
                       <label className="block text-[11px] font-semibold text-[#1d1d1f] mb-1">
-                        Patient Age *
+                        Age *
                       </label>
                       <input
                         type="text"
                         required={bookingFor === 'other'}
                         value={patientAge}
                         onChange={(e) => setPatientAge(e.target.value)}
-                        placeholder="e.g. 12"
-                        className="w-full h-10 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
+                        placeholder="e.g. 24"
+                        className="w-full h-10 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] focus:outline-none focus:border-[#0066cc]"
                       />
                     </div>
                     <div>
@@ -707,7 +722,7 @@ export const BookAppointment: React.FC = () => {
                       <select
                         value={patientGender}
                         onChange={(e) => setPatientGender(e.target.value)}
-                        className="w-full h-10 px-2.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
+                        className="w-full h-10 px-2.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] focus:outline-none focus:border-[#0066cc]"
                       >
                         <option value="Male">Male</option>
                         <option value="Female">Female</option>
@@ -727,117 +742,44 @@ export const BookAppointment: React.FC = () => {
                 type="text"
                 value={reasonForVisit}
                 onChange={(e) => setReasonForVisit(e.target.value)}
-                placeholder="e.g. General checkup, consultation, follow-up"
-                className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-sm bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
+                placeholder="e.g. Checkup, consultation, follow-up"
+                className="w-full h-10 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] focus:outline-none focus:border-[#0066cc]"
               />
             </div>
 
             <div>
               <label className="block text-xs font-semibold text-[#1d1d1f] mb-1.5">
-                Symptoms or Concerns <span className="text-[#86868b] font-normal">(Optional)</span>
+                Symptoms <span className="text-[#86868b] font-normal">(Optional)</span>
               </label>
               <textarea
                 rows={2}
                 value={symptoms}
                 onChange={(e) => setSymptoms(e.target.value)}
-                placeholder="Describe any symptoms or concerns for the doctor..."
-                className="w-full p-3.5 rounded-xl border border-[#e5e5ea] text-sm bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] resize-none"
+                placeholder="Describe any symptoms (optional)..."
+                className="w-full p-3 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] focus:outline-none focus:border-[#0066cc] resize-none"
               ></textarea>
             </div>
 
-            {/* Receptionist Payment & Queue Confirmation Card */}
-            <div className="p-4 sm:p-5 rounded-[22px] bg-white border border-[#e5e5ea] shadow-xs space-y-3.5">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-start gap-3 min-w-0">
-                  <div className="w-9 h-9 rounded-full bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <Phone className="w-4 h-4" />
-                  </div>
-                  <div className="min-w-0">
-                    <h4 className="text-sm font-bold text-[#1d1d1f] tracking-tight">
-                      Pay Receptionist to Confirm Token
-                    </h4>
-                    <p className="text-xs text-[#86868b] mt-0.5 leading-relaxed">
-                      Token is confirmed once fee is paid to the receptionist. Unconfirmed requests may be claimed by another patient who confirms first.
-                    </p>
-                  </div>
-                </div>
-                <div className="text-right flex-shrink-0">
-                  <span className="px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200/80 text-emerald-700 text-sm font-bold block">
-                    ₹{activeFee}
-                  </span>
-                  <span className="text-[10px] text-[#86868b] block mt-0.5">Consultation Fee</span>
-                </div>
+            {/* Fee & Confirmation Notice (ZERO receptionist contact exposed before button click!) */}
+            <div className="p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-[#86868b]">Consultation Fee</span>
+                <span className="text-base font-semibold text-[#1d1d1f]">₹{activeFee}</span>
               </div>
-
-              {/* Receptionist Contact Roster */}
-              {attachedReceptionists.length > 0 && (
-                <div className="pt-3 border-t border-[#f0f0f2] space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-semibold text-[#86868b] uppercase tracking-wider flex items-center gap-1.5">
-                      <UserIcon className="w-3.5 h-3.5 text-[#0066cc]" />
-                      Clinic Reception Desk ({attachedReceptionists.length})
-                    </span>
-                    {attachedReceptionists.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => setShowAllReceptionists(!showAllReceptionists)}
-                        className="text-[11px] font-semibold text-[#0066cc] hover:underline cursor-pointer"
-                      >
-                        {showAllReceptionists ? 'Show Less' : `View All (${attachedReceptionists.length}) Details`}
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    {(showAllReceptionists ? attachedReceptionists : attachedReceptionists.slice(0, 1)).map((rec, idx) => (
-                      <div
-                        key={rec.id || idx}
-                        className="p-3 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 transition-all"
-                      >
-                        <div className="min-w-0 flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-full bg-white border border-[#e5e5ea] text-[#1d1d1f] flex items-center justify-center text-xs font-bold shadow-2xs flex-shrink-0">
-                            {rec.name.replace(/^Dr\.\s*/i, '').trim()[0] || 'R'}
-                          </div>
-                          <div className="min-w-0">
-                            <span className="text-xs font-bold text-[#1d1d1f] block truncate">
-                              {rec.name}
-                            </span>
-                            <span className="text-[11px] text-[#86868b] block truncate">
-                              {rec.clinicName || selectedClinic?.clinic.clinicName || 'Clinic'} • Reception Desk
-                            </span>
-                          </div>
-                        </div>
-
-                        {rec.phone && (
-                          <a
-                            href={`tel:${rec.phone.replace(/\s+/g, '')}`}
-                            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white border border-[#e5e5ea] hover:border-[#0066cc] text-xs font-semibold text-[#0066cc] hover:bg-[#0066cc]/5 transition-all active:scale-[0.98] shadow-2xs whitespace-nowrap self-start sm:self-auto"
-                          >
-                            <Phone className="w-3 h-3 text-[#0066cc]" />
-                            <span>Call {formatDisplayPhone(rec.phone)}</span>
-                          </a>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <p className="text-[11px] text-[#86868b] leading-relaxed">
+                Fee is paid directly to the receptionist to confirm your token. Unconfirmed requests may be claimed by other patients who confirm first.
+              </p>
             </div>
 
-            {/* Warning if slot has ended for today */}
             {isSelectedSlotPassed && (
-              <div className="p-4 rounded-2xl bg-amber-50 border border-amber-300 text-amber-900 text-xs flex items-start gap-2.5">
-                <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
-                <div>
-                  <strong>This checking shift has already ended for today.</strong> Please select an upcoming shift above or pick a future appointment date.
-                </div>
+              <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs">
+                This shift has ended for today. Pick an upcoming shift or future date.
               </div>
             )}
 
             {isSelectedSlotFull && !isSelectedSlotPassed && (
-              <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                <span>This checking slot has reached maximum capacity. Please pick another slot or date.</span>
+              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs">
+                Shift is full. Select another slot or date.
               </div>
             )}
 
@@ -847,39 +789,21 @@ export const BookAppointment: React.FC = () => {
                 size="lg"
                 type="submit"
                 disabled={submitting || isSelectedSlotPassed || isSelectedSlotFull || !doctor.clinics || doctor.clinics.length === 0}
-                className="w-full sm:w-auto font-semibold shadow-apple-button"
+                className="w-full sm:w-auto font-semibold"
               >
                 {!doctor.clinics || doctor.clinics.length === 0
-                  ? 'No Clinic Associated — Booking Disabled'
+                  ? 'Booking Unavailable'
                   : submitting
                   ? 'Reserving Token...'
                   : isSelectedSlotPassed
-                  ? 'Shift Concluded — Select Next Shift'
+                  ? 'Shift Ended'
                   : isSelectedSlotFull
-                  ? 'Shift Fully Booked — Select Another Shift'
+                  ? 'Shift Full'
                   : `Confirm & Pay Receptionist (₹${activeFee})`}
               </AppleButton>
             </div>
           </form>
         </UtilityCard>
-  );
-
-  return (
-    <div className="min-h-screen bg-[#f5f5f7] pb-16">
-      <SubNav title="Confirm Appointment" subtitle="Guaranteed queue spot with zero payment barrier">
-        <AppleButton
-          variant="ghost"
-          size="sm"
-          onClick={handleBack}
-          className="flex items-center gap-1"
-        >
-          <ChevronLeft className="w-4 h-4" />
-          Back
-        </AppleButton>
-      </SubNav>
-
-      <div className="max-w-2xl mx-auto px-3 sm:px-6 pt-5 sm:pt-8">
-        {bookingContent}
       </div>
     </div>
   );
