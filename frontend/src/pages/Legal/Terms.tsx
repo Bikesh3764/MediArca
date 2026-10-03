@@ -6,9 +6,6 @@ export const Terms: React.FC = () => {
       <div className="max-w-3xl mx-auto space-y-8">
         {/* Header */}
         <div className="space-y-2">
-          <span className="text-xs font-semibold uppercase tracking-wider text-[#0066cc] bg-[#0066cc]/10 px-3 py-1 rounded-full border border-[#0066cc]/20">
-            Terms of Service
-          </span>
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[#1d1d1f]">
             Terms and Conditions
           </h1>
@@ -70,8 +67,8 @@ export const Terms: React.FC = () => {
             </h2>
             <p>
               If you have any questions regarding these terms, please contact us at{' '}
-              <a href="mailto:support@mediarca.com" className="text-[#0066cc] font-medium underline">
-                support@mediarca.com
+              <a href="mailto:contact@mediarca.in" className="text-[#0066cc] font-medium underline">
+                contact@mediarca.in
               </a>.
             </p>
           </section>

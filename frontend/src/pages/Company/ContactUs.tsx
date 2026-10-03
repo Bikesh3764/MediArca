@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, Send, CheckCircle2 } from 'lucide-react';
-import { AppleButton } from '../../components/ui/AppleButton';
+import { Mail, CheckCircle2 } from 'lucide-react';
 
 export const ContactUs: React.FC = () => {
   const [fullName, setFullName] = useState('');
@@ -27,9 +26,6 @@ export const ContactUs: React.FC = () => {
       <div className="max-w-2xl mx-auto space-y-8">
         {/* Header */}
         <div className="text-center space-y-3">
-          <span className="text-xs font-semibold uppercase tracking-wider text-[#0066cc] bg-[#0066cc]/10 px-3 py-1 rounded-full border border-[#0066cc]/20">
-            Support
-          </span>
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[#1d1d1f]">
             Contact Us
           </h1>
@@ -41,22 +37,22 @@ export const ContactUs: React.FC = () => {
         {/* Email Direct Card */}
         <div className="bg-white rounded-[20px] p-5 border border-[#e5e5ea] shadow-xs flex items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
-            <div className="w-10 h-10 rounded-full bg-blue-50 text-[#0066cc] flex items-center justify-center shrink-0">
-              <Mail className="w-5 h-5" />
+            <div className="w-10 h-10 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] flex items-center justify-center shrink-0">
+              <Mail className="w-4 h-4 text-[#1d1d1f]" />
             </div>
             <div>
               <p className="text-xs text-[#86868b] font-medium">Direct Email Support</p>
               <a
-                href="mailto:support@mediarca.com"
+                href="mailto:contact@mediarca.in"
                 className="text-sm sm:text-base font-semibold text-[#1d1d1f] hover:text-[#0066cc] transition-colors"
               >
-                support@mediarca.com
+                contact@mediarca.in
               </a>
             </div>
           </div>
           <a
-            href="mailto:support@mediarca.com"
-            className="text-xs font-medium text-[#0066cc] hover:underline shrink-0"
+            href="mailto:contact@mediarca.in"
+            className="text-xs font-semibold text-[#0066cc] hover:underline shrink-0"
           >
             Send Email →
           </a>
@@ -67,11 +63,11 @@ export const ContactUs: React.FC = () => {
           <h2 className="text-lg font-bold text-[#1d1d1f]">Send a Message</h2>
 
           {submitted && (
-            <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-3">
+            <div className="p-4 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] text-xs flex items-center gap-3">
               <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
               <div>
                 <p className="font-semibold text-sm">Message Sent</p>
-                <p className="text-emerald-700 mt-0.5">
+                <p className="text-[#6e6e73] mt-0.5">
                   Thank you for reaching out. We will get back to you at your email soon.
                 </p>
               </div>
@@ -130,15 +126,13 @@ export const ContactUs: React.FC = () => {
             </div>
 
             <div className="pt-2">
-              <AppleButton
-                variant="primary"
-                size="md"
+              <button
                 type="submit"
                 disabled={loading}
-                className="w-full"
+                className="w-full py-3 px-6 rounded-full bg-[#1d1d1f] hover:bg-black text-white text-sm font-semibold transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
               >
                 {loading ? 'Sending...' : 'Send Message'}
-              </AppleButton>
+              </button>
             </div>
           </form>
         </div>

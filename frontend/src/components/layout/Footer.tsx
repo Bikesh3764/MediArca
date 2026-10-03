@@ -27,7 +27,7 @@ export const Footer: React.FC = () => {
             {/* Direct Contact Channels */}
             <div className="space-y-3 pt-1 text-sm text-[#48484a]">
               <a
-                href="mailto:support@mediarca.com"
+                href="mailto:contact@mediarca.in"
                 className="flex items-center gap-3 text-[#48484a] hover:text-[#0066cc] transition-colors group"
               >
                 <div className="w-8 h-8 rounded-full bg-white border border-[#e5e5ea] flex items-center justify-center shrink-0 shadow-2xs group-hover:border-[#0066cc]/30 transition-colors">
@@ -35,7 +35,7 @@ export const Footer: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-[11px] text-[#86868b] font-normal">Support & Inquiries</p>
-                  <p className="font-medium text-[#1d1d1f] group-hover:text-[#0066cc] transition-colors">support@mediarca.com</p>
+                  <p className="font-medium text-[#1d1d1f] group-hover:text-[#0066cc] transition-colors">contact@mediarca.in</p>
                 </div>
               </a>
             </div>
@@ -141,21 +141,6 @@ export const Footer: React.FC = () => {
               <li>
                 <Link to="/contact" className="hover:text-[#0066cc] transition-colors py-0.5 inline-block">
                   Contact Support
-                </Link>
-              </li>
-              <li>
-                <Link to="/terms" className="hover:text-[#0066cc] transition-colors py-0.5 inline-block">
-                  Terms of Service
-                </Link>
-              </li>
-              <li>
-                <Link to="/privacy" className="hover:text-[#0066cc] transition-colors py-0.5 inline-block">
-                  Privacy Policy
-                </Link>
-              </li>
-              <li>
-                <Link to="/refund-policy" className="hover:text-[#0066cc] transition-colors py-0.5 inline-block">
-                  Cancellation Policy
                 </Link>
               </li>
             </ul>

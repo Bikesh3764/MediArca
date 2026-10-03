@@ -5,11 +5,8 @@ export const RefundPolicy: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#f5f5f7] text-[#1d1d1f] py-10 sm:py-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto space-y-8">
-        {/* Header */}
+        {/* Header (No pill badge) */}
         <div className="space-y-2">
-          <span className="text-xs font-semibold uppercase tracking-wider text-[#0066cc] bg-[#0066cc]/10 px-3 py-1 rounded-full border border-[#0066cc]/20">
-            Billing Policy
-          </span>
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[#1d1d1f]">
             Cancellation and Refund Policy
           </h1>
@@ -20,12 +17,12 @@ export const RefundPolicy: React.FC = () => {
 
         {/* Content Card */}
         <div className="bg-white rounded-[24px] p-6 sm:p-10 border border-[#e5e5ea] shadow-xs space-y-6 text-xs sm:text-sm text-[#48484a] leading-relaxed">
-          {/* Highlight */}
-          <div className="p-4 rounded-[18px] bg-emerald-50 border border-emerald-200/80 text-emerald-900 flex items-start gap-3">
-            <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+          {/* Neutral Highlight */}
+          <div className="p-4 rounded-[18px] bg-[#fbfbfd] border border-[#e5e5ea] text-[#1d1d1f] flex items-start gap-3">
+            <CheckCircle2 className="w-5 h-5 text-[#1d1d1f] shrink-0 mt-0.5" />
             <div>
-              <p className="font-semibold text-sm text-emerald-950">Zero Upfront Online Payments</p>
-              <p className="text-xs text-emerald-800 mt-0.5">
+              <p className="font-semibold text-sm">Zero Upfront Online Payments</p>
+              <p className="text-xs text-[#6e6e73] mt-0.5">
                 MediArca does not charge any booking fees online. Generating a token is completely free.
               </p>
             </div>
@@ -73,8 +70,8 @@ export const RefundPolicy: React.FC = () => {
             </h2>
             <p>
               If you have any questions regarding your appointment or billing policy, write to us at{' '}
-              <a href="mailto:support@mediarca.com" className="text-[#0066cc] font-medium underline">
-                support@mediarca.com
+              <a href="mailto:contact@mediarca.in" className="text-[#0066cc] font-medium underline">
+                contact@mediarca.in
               </a>.
             </p>
           </section>

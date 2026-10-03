@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, HelpCircle } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 interface FAQItem {
@@ -59,11 +59,8 @@ export const FAQ: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#f5f5f7] text-[#1d1d1f] py-10 sm:py-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto space-y-10">
-        {/* Header */}
+        {/* Header (No pill badge) */}
         <div className="text-center space-y-3">
-          <span className="text-xs font-semibold uppercase tracking-wider text-[#0066cc] bg-[#0066cc]/10 px-3 py-1 rounded-full border border-[#0066cc]/20">
-            Frequently Asked Questions
-          </span>
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[#1d1d1f]">
             Help & FAQs
           </h1>
@@ -91,7 +88,7 @@ export const FAQ: React.FC = () => {
                   </span>
                   <div
                     className={`w-7 h-7 rounded-full bg-[#f5f5f7] flex items-center justify-center shrink-0 transition-transform duration-200 ${
-                      isOpen ? 'rotate-180 bg-[#0066cc]/10 text-[#0066cc]' : 'text-[#86868b]'
+                      isOpen ? 'rotate-180 text-[#1d1d1f]' : 'text-[#86868b]'
                     }`}
                   >
                     <ChevronDown className="w-4 h-4" />
@@ -113,8 +110,8 @@ export const FAQ: React.FC = () => {
           <p className="text-sm font-semibold text-[#1d1d1f]">Still have a question?</p>
           <p className="text-xs text-[#6e6e73]">
             Feel free to write to us anytime at{' '}
-            <a href="mailto:support@mediarca.com" className="text-[#0066cc] font-medium hover:underline">
-              support@mediarca.com
+            <a href="mailto:contact@mediarca.in" className="text-[#0066cc] font-medium hover:underline">
+              contact@mediarca.in
             </a>
           </p>
         </div>
