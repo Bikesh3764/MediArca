@@ -940,6 +940,7 @@ export interface Appointment {
   patientGender?: string;
   isCheckedIn?: boolean;
   checkedInAt?: string | null;
+  completedAt?: string | null;
   createdAt?: string;
   updatedAt?: string;
   doctor: Doctor;

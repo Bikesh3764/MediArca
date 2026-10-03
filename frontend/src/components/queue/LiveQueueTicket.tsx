@@ -9,12 +9,14 @@ interface LiveQueueTicketProps {
   appointment: Appointment;
   onCancel?: (id: string) => void;
   onScanQr?: (appointment: Appointment) => void;
+  onTogglePresence?: (appointmentId: string, isCheckedIn: boolean) => Promise<void>;
 }
 
 export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
   appointment,
   onCancel,
   onScanQr,
+  onTogglePresence,
 }) => {
   const { doctor, queueNumber, status, appointmentDate, checkingWindow, estimatedTime, liveQueue } =
     appointment;
@@ -25,6 +27,25 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
   const [reviewError, setReviewError] = useState<string | null>(null);
   const [submittedReview, setSubmittedReview] = useState(appointment.review);
   const [imgError, setImgError] = useState(false);
+  const [togglingPresence, setTogglingPresence] = useState(false);
+  const [presenceOverride, setPresenceOverride] = useState<boolean | null>(null);
+  const localCheckedIn = presenceOverride !== null ? presenceOverride : Boolean(appointment.isCheckedIn);
+
+  const handleTogglePresence = async (newState: boolean) => {
+    setTogglingPresence(true);
+    try {
+      if (onTogglePresence) {
+        await onTogglePresence(appointment.id, newState);
+      } else {
+        await api.checkInAppointmentDirect(appointment.id, newState);
+      }
+      setPresenceOverride(newState);
+    } catch (err: any) {
+      alert(err.message || 'Failed to update presence status');
+    } finally {
+      setTogglingPresence(false);
+    }
+  };
 
   const handleSubmitReview = async () => {
     setSubmittingReview(true);
@@ -137,14 +158,14 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
                 <span className="text-xs font-medium text-[#86868b]">Expired</span>
               </div>
             ) : status === 'COMPLETED' ? (
-              <div className="bg-emerald-50 border border-emerald-200 px-3.5 py-1.5 rounded-full flex items-center gap-2">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                <span className="text-xs font-semibold text-emerald-800">Completed • Token #{queueNumber}</span>
+              <div className="bg-[#f5f5f7] border border-[#e5e5ea] px-3.5 py-1.5 rounded-full flex items-center gap-2">
+                <CheckCircle2 className="w-3.5 h-3.5 text-[#0066cc]" />
+                <span className="text-xs font-semibold text-[#1d1d1f]">Completed • Token #{queueNumber}</span>
               </div>
             ) : status === 'IN_CONSULTATION' || liveQueue?.isYourTurn ? (
-              <div className="bg-emerald-50 border border-emerald-200 px-4 py-2 rounded-2xl flex items-baseline gap-2">
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-emerald-700">Serving</span>
-                <span className="text-2xl font-bold text-emerald-800 tracking-tight">#{queueNumber}</span>
+              <div className="bg-[#1d1d1f] text-white px-4 py-2 rounded-2xl flex items-baseline gap-2 shadow-2xs">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-white/70">Serving</span>
+                <span className="text-2xl font-bold text-white tracking-tight">#{queueNumber}</span>
               </div>
             ) : status === 'CANCELLED' || status === 'REJECTED' ? (
               <div className="bg-rose-50 border border-rose-200 px-3.5 py-1.5 rounded-full text-xs font-semibold text-rose-700">
@@ -186,7 +207,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
             </span>
             <div className="text-[14px] font-semibold mt-0.5 flex items-center gap-1.5">
               {status === 'IN_CONSULTATION' ? (
-                <span className="text-emerald-700">In Cabin</span>
+                <span className="text-[#0066cc] font-semibold">In Cabin</span>
               ) : status === 'COMPLETED' ? (
                 <span className="text-[#86868b]">Completed</span>
               ) : status === 'EXPIRED' ? (
@@ -194,7 +215,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
               ) : status === 'CANCELLED' || status === 'REJECTED' ? (
                 <span className="text-rose-600">{status === 'REJECTED' ? 'Declined' : 'Cancelled'}</span>
               ) : liveQueue?.isYourTurn ? (
-                <span className="text-emerald-700 animate-pulse">Your Turn</span>
+                <span className="text-[#0066cc] font-semibold animate-pulse">Your Turn</span>
               ) : liveQueue?.isShiftPassed ? (
                 <span className="text-amber-600">Shift Ended</span>
               ) : isToday && liveQueue?.isShiftActive && liveQueue?.liveEstimatedTime ? (
@@ -289,42 +310,55 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
           </div>
         )}
 
-        {/* Physical Clinic Check-In Status */}
-        {appointment.isCheckedIn ? (
-          <div className="mt-3.5 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span className="font-semibold text-emerald-900">
-                Checked In at Clinic 📍
-              </span>
-            </div>
-            <span className="text-[11px] font-medium text-emerald-700">
-              In Waiting Area
-            </span>
-          </div>
-        ) : isToday && (status === 'WAITING' || status === 'IN_CONSULTATION') ? (
-          <div className="mt-3.5 p-3 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-slate-400"></span>
-              <span className="font-medium text-[#1d1d1f]">
-                Not Yet Checked In (En Route)
-              </span>
-            </div>
-            {onScanQr ? (
+        {/* Physical Clinic & Cabin Presence Status */}
+        {isToday && (status === 'WAITING' || status === 'IN_CONSULTATION') ? (
+          localCheckedIn ? (
+            <div className="mt-3.5 p-3.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-[#0066cc]"></span>
+                <span className="font-semibold text-[#1d1d1f]">
+                  Checked In at Clinic • Waiting Area
+                </span>
+              </div>
               <button
                 type="button"
-                onClick={() => onScanQr(appointment)}
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white hover:bg-[#0066cc]/5 text-[#0066cc] border border-[#0066cc]/30 text-[11px] font-semibold active:scale-95 transition-all shadow-2xs cursor-pointer self-start sm:self-auto"
+                disabled={togglingPresence}
+                onClick={() => handleTogglePresence(false)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white hover:bg-[#fafafc] text-[#86868b] hover:text-[#1d1d1f] border border-[#e5e5ea] text-[11px] font-medium active:scale-95 transition-all shadow-2xs cursor-pointer self-start sm:self-auto"
               >
-                <QrCode className="w-3.5 h-3.5" />
-                <span>Scan Desk QR to Check In</span>
+                <span>{togglingPresence ? 'Updating...' : 'Step Out (Not in Cabin)'}</span>
               </button>
-            ) : (
-              <span className="text-[11px] font-semibold text-[#0066cc] bg-white px-2.5 py-1 rounded-full border border-[#0066cc]/20 self-start sm:self-auto">
-                Scan Desk QR Upon Arrival
-              </span>
-            )}
-          </div>
+            </div>
+          ) : (
+            <div className="mt-3.5 p-3.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-[#86868b]"></span>
+                <span className="font-medium text-[#48484a]">
+                  Not in Cabin (En Route / Outside)
+                </span>
+              </div>
+              <div className="flex items-center gap-2 self-start sm:self-auto">
+                {onScanQr && (
+                  <button
+                    type="button"
+                    onClick={() => onScanQr(appointment)}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-[11px] font-semibold active:scale-95 transition-all shadow-2xs cursor-pointer"
+                  >
+                    <QrCode className="w-3.5 h-3.5" />
+                    <span>Scan QR</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  disabled={togglingPresence}
+                  onClick={() => handleTogglePresence(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white hover:bg-[#fafafc] text-[#1d1d1f] border border-[#e5e5ea] text-[11px] font-medium active:scale-95 transition-all shadow-2xs cursor-pointer"
+                >
+                  <span>{togglingPresence ? 'Updating...' : 'Mark in Cabin'}</span>
+                </button>
+              </div>
+            </div>
+          )
         ) : null}
 
         {/* Doctor Shift Concluded Notice for Confirmed WAITING Tickets */}
@@ -361,8 +395,8 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-semibold text-[#1d1d1f] flex items-center gap-2">
                 <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#0066cc]/40 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#0066cc]"></span>
                 </span>
                 Live Tracker
               </span>
@@ -389,10 +423,10 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
             )}
 
             {liveQueue.isYourTurn ? (
-              <div className="flex items-center gap-2.5 text-emerald-950 bg-emerald-100 p-3.5 rounded-xl text-xs font-medium border border-emerald-300">
-                <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
+              <div className="flex items-center gap-2.5 text-[#1d1d1f] bg-white p-3.5 rounded-xl text-xs font-medium border border-[#0066cc]/30 shadow-2xs">
+                <CheckCircle2 className="w-4 h-4 text-[#0066cc] shrink-0" />
                 <span>
-                  <strong>It is your turn!</strong> Doctor {doctor.user?.fullName || 'the Doctor'} is ready for you now.
+                  <strong>It is your turn!</strong> {doctorDisplayName} is ready for you now.
                 </span>
               </div>
             ) : (
@@ -518,8 +552,8 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
 
           <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
             {status === 'COMPLETED' ? (
-              <span className="text-xs font-semibold px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+              <span className="text-xs font-semibold px-3 py-1 rounded-full bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea] flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5 text-[#0066cc]" />
                 <span>Consultation Completed</span>
               </span>
             ) : null}

@@ -147,44 +147,46 @@ export const Footer: React.FC = () => {
           </div>
         </div>
 
-        {/* Operational Portals Strip (Admin removed completely) */}
-        <div className="mt-12 pt-6 border-t border-[#e5e5ea] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-[#0066cc]" />
-            <span className="text-sm font-semibold text-[#1d1d1f]">
-              Desk & Partner Portals:
-            </span>
+        {/* Operational Portals Strip (Shown only to guests/unauthenticated visitors; hidden once signed in) */}
+        {!user && (
+          <div className="mt-12 pt-6 border-t border-[#e5e5ea] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-[#0066cc]" />
+              <span className="text-sm font-semibold text-[#1d1d1f]">
+                Desk & Partner Portals:
+              </span>
+            </div>
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
+              <Link
+                to="/patient/login"
+                className="text-[#48484a] hover:text-[#0066cc] transition-colors font-medium"
+              >
+                Patient Portal
+              </Link>
+              <span className="text-[#d2d2d7]">•</span>
+              <Link
+                to="/doctor/login"
+                className="text-[#48484a] hover:text-[#0066cc] transition-colors font-medium"
+              >
+                Doctor Console
+              </Link>
+              <span className="text-[#d2d2d7]">•</span>
+              <Link
+                to="/clinic/login"
+                className="text-[#48484a] hover:text-[#0066cc] transition-colors font-medium"
+              >
+                Clinic Management
+              </Link>
+              <span className="text-[#d2d2d7]">•</span>
+              <Link
+                to="/receptionist/login"
+                className="text-[#48484a] hover:text-[#0066cc] transition-colors font-medium"
+              >
+                Reception Desk
+              </Link>
+            </div>
           </div>
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
-            <Link
-              to={user?.role === 'PATIENT' ? '/patient/appointments' : '/patient/login'}
-              className="text-[#48484a] hover:text-[#0066cc] transition-colors font-medium"
-            >
-              Patient Portal
-            </Link>
-            <span className="text-[#d2d2d7]">•</span>
-            <Link
-              to={user?.role === 'DOCTOR' ? '/doctor/dashboard' : '/doctor/login'}
-              className="text-[#48484a] hover:text-[#0066cc] transition-colors font-medium"
-            >
-              Doctor Console
-            </Link>
-            <span className="text-[#d2d2d7]">•</span>
-            <Link
-              to={user?.role === 'CLINIC' ? '/clinic/dashboard' : '/clinic/login'}
-              className="text-[#48484a] hover:text-[#0066cc] transition-colors font-medium"
-            >
-              Clinic Management
-            </Link>
-            <span className="text-[#d2d2d7]">•</span>
-            <Link
-              to={user?.role === 'RECEPTIONIST' ? '/receptionist/dashboard' : '/receptionist/login'}
-              className="text-[#48484a] hover:text-[#0066cc] transition-colors font-medium"
-            >
-              Reception Desk
-            </Link>
-          </div>
-        </div>
+        )}
 
         {/* Bottom Disclaimer & Copyright Bar */}
         <div className="mt-8 pt-6 border-t border-[#e5e5ea] space-y-4 text-xs text-[#86868b]">

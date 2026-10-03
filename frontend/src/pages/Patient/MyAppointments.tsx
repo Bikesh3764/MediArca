@@ -135,13 +135,13 @@ export const MyAppointments: React.FC = () => {
           <div
             className={`p-4 rounded-2xl border text-xs flex items-center justify-between shadow-2xs ${
               checkinMessage.type === 'success'
-                ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
+                ? 'bg-[#f5f5f7] border-[#e5e5ea] text-[#1d1d1f]'
                 : 'bg-rose-50 border-rose-200 text-rose-900'
             }`}
           >
             <div className="flex items-center gap-2">
               {checkinMessage.type === 'success' ? (
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <CheckCircle2 className="w-4 h-4 text-[#0066cc] shrink-0" />
               ) : (
                 <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
               )}
@@ -216,6 +216,10 @@ export const MyAppointments: React.FC = () => {
                   onScanQr={(a) => {
                     setSelectedApptForScan(a);
                     setScannerOpen(true);
+                  }}
+                  onTogglePresence={async (apptId, isPresent) => {
+                    await api.checkInAppointmentDirect(apptId, isPresent);
+                    fetchAppointments(true);
                   }}
                 />
               ))}

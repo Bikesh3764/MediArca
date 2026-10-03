@@ -323,6 +323,19 @@ export const DoctorDashboard: React.FC = () => {
     }
   };
 
+  const [completingId, setCompletingId] = useState<string | null>(null);
+  const handleCompleteConsultation = async (appointmentId: string) => {
+    setCompletingId(appointmentId);
+    try {
+      await api.completeConsultation({ appointmentId });
+      await fetchQueue();
+    } catch (err: any) {
+      alert(err.message || 'Failed to complete consultation');
+    } finally {
+      setCompletingId(null);
+    }
+  };
+
   const isVerified = user?.doctorProfile?.isVerified ?? true;
   const totalPendingRequests = affiliations?.incomingRequests?.length || 0;
 
@@ -464,9 +477,9 @@ export const DoctorDashboard: React.FC = () => {
           <div className="space-y-8 animate-fadeIn">
             {/* Feedback Alerts */}
             {feedbackSuccess && (
-              <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center justify-between shadow-sm">
+              <div className="p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] text-xs flex items-center justify-between shadow-sm">
                 <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                  <CheckCircle2 className="w-4 h-4 text-[#0066cc] flex-shrink-0" />
                   <span>{feedbackSuccess}</span>
                 </div>
                 <button
@@ -522,7 +535,7 @@ export const DoctorDashboard: React.FC = () => {
               <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-5 flex items-center justify-between shadow-sm">
                 <div>
                   <span className="text-xs text-[#86868b] font-medium">Clinic Attributed Revenue</span>
-                  <h3 className="text-2xl sm:text-3xl font-bold text-emerald-600 mt-1 tracking-tight">
+                  <h3 className="text-2xl sm:text-3xl font-bold text-[#0066cc] mt-1 tracking-tight">
                     ₹{(
                       affiliations?.clinics.reduce(
                         (sum: number, c) => sum + (c.revenue || 0),
@@ -531,7 +544,7 @@ export const DoctorDashboard: React.FC = () => {
                     ).toLocaleString('en-IN')}
                   </h3>
                 </div>
-                <div className="w-11 h-11 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                <div className="w-11 h-11 rounded-2xl bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center">
                   <IndianRupee className="w-5 h-5" />
                 </div>
               </div>
@@ -743,7 +756,7 @@ export const DoctorDashboard: React.FC = () => {
                           </div>
                           <div>
                             <span className="text-[11px] font-medium text-[#86868b] block">Revenue</span>
-                            <span className="text-sm font-bold text-emerald-600 mt-0.5 block">
+                            <span className="text-sm font-bold text-[#0066cc] mt-0.5 block">
                               ₹{(clinic.revenue ?? 0).toLocaleString('en-IN')}
                             </span>
                           </div>
@@ -1281,7 +1294,7 @@ export const DoctorDashboard: React.FC = () => {
                         <span
                           className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full ${
                             appt.status === 'IN_CONSULTATION'
-                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                              ? 'bg-[#0066cc]/10 text-emerald-700 border border-emerald-200'
                               : appt.status === 'COMPLETED'
                               ? 'bg-blue-50 text-[#0088e8] border border-blue-200'
                               : appt.status === 'EXPIRED'
@@ -1323,9 +1336,9 @@ export const DoctorDashboard: React.FC = () => {
                 </h3>
 
                 {queueData?.activeInConsultation ? (
-                  <div className="bg-white rounded-[20px] border-2 border-emerald-500/40 p-6 shadow-sm">
+                  <div className="bg-white rounded-[20px] border border-[#0066cc]/30 p-6 shadow-sm">
                     <div className="flex justify-between items-start mb-4">
-                      <span className="bg-emerald-50 text-emerald-700 font-semibold text-xs px-2.5 py-1 rounded-full border border-emerald-200 animate-pulse">
+                      <span className="bg-[#0066cc]/10 text-[#0066cc] font-semibold text-xs px-2.5 py-1 rounded-full border border-[#0066cc]/20">
                         IN CONSULTATION
                       </span>
                       <span className="text-xl font-bold text-[#1d1d1f]">
@@ -1338,8 +1351,8 @@ export const DoctorDashboard: React.FC = () => {
                         {queueData.activeInConsultation.patientName || queueData.activeInConsultation.patient?.user?.fullName || 'Patient'}
                       </h4>
                       {queueData.activeInConsultation.isForOther && (
-                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#0088e8]/10 text-[#0088e8] border border-[#0088e8]/20">
-                          Booked for family ({queueData.activeInConsultation.patientAge ? `Age ${queueData.activeInConsultation.patientAge}` : 'Other'} • by {queueData.activeInConsultation.patient?.user.fullName})
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20">
+                          Booked for family ({queueData.activeInConsultation.patientAge ? `Age ${queueData.activeInConsultation.patientAge}` : 'Other'} • by {queueData.activeInConsultation.patient?.user?.fullName})
                         </span>
                       )}
                     </div>
@@ -1360,17 +1373,29 @@ export const DoctorDashboard: React.FC = () => {
                       )}
                     </div>
 
-                    <AppleButton
-                      variant="primary"
-                      size="md"
-                      onClick={() =>
-                        navigate(`/doctor/consultation/${queueData.activeInConsultation?.id}`)
-                      }
-                      className="w-full flex items-center gap-1.5"
-                    >
-                      <FileEdit className="w-4 h-4" />
-                      Continue Consultation & Notes
-                    </AppleButton>
+                    <div className="flex flex-col sm:flex-row items-center gap-2">
+                      <AppleButton
+                        variant="primary"
+                        size="md"
+                        disabled={completingId === queueData.activeInConsultation.id}
+                        onClick={() => handleCompleteConsultation(queueData.activeInConsultation!.id)}
+                        className="w-full sm:flex-1 flex items-center justify-center gap-1.5 bg-[#1d1d1f] hover:bg-black text-white font-semibold cursor-pointer shadow-none"
+                      >
+                        <CheckCircle2 className="w-4 h-4 text-white" />
+                        <span>{completingId === queueData.activeInConsultation.id ? 'Completing...' : 'Mark Consultation Completed'}</span>
+                      </AppleButton>
+                      <AppleButton
+                        variant="ghost"
+                        size="md"
+                        onClick={() =>
+                          navigate(`/doctor/consultation/${queueData.activeInConsultation?.id}`)
+                        }
+                        className="w-full sm:w-auto flex items-center justify-center gap-1.5 text-xs text-[#0066cc] hover:bg-[#0066cc]/5 border border-[#0066cc]/20 cursor-pointer"
+                      >
+                        <FileEdit className="w-3.5 h-3.5" />
+                        <span>Notes</span>
+                      </AppleButton>
+                    </div>
                   </div>
                 ) : (
                   <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-8 text-center">
@@ -1526,7 +1551,7 @@ export const DoctorDashboard: React.FC = () => {
                               {appt.appointmentDate && (
                                 <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
                                   appt.appointmentDate === getLocalDateString()
-                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                    ? 'bg-[#0066cc]/10 text-[#0066cc] border-[#0066cc]/20'
                                     : appt.appointmentDate === queueData?.upcomingSummary?.tomorrowDate
                                     ? 'bg-blue-50 text-blue-700 border-blue-200'
                                     : 'bg-[#f5f5f7] text-[#1d1d1f] border-[#e5e5ea]'
@@ -1535,9 +1560,9 @@ export const DoctorDashboard: React.FC = () => {
                                 </span>
                               )}
                               {appt.isCheckedIn ? (
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
-                                  <span>At Clinic 📍</span>
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea] flex items-center gap-1">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-[#0066cc]"></span>
+                                  <span>At Clinic</span>
                                 </span>
                               ) : (
                                 <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200">
@@ -1596,7 +1621,7 @@ export const DoctorDashboard: React.FC = () => {
                             </span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className="text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full font-medium border border-emerald-200">
+                            <span className="text-[#0066cc] bg-[#0066cc]/10 px-2.5 py-0.5 rounded-full font-medium border border-[#0066cc]/20">
                               Consultation Completed
                             </span>
                             <AppleButton
@@ -1728,8 +1753,8 @@ export const DoctorDashboard: React.FC = () => {
             )}
 
             {walkinSuccess && (
-              <div className="mb-4 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+              <div className="mb-4 p-3 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] text-xs flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-[#0066cc] flex-shrink-0" />
                 <span>{walkinSuccess}</span>
               </div>
             )}

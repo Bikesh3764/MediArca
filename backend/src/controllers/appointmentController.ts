@@ -1604,8 +1604,8 @@ export const checkInAppointmentWithQR = async (req: AuthRequest, res: Response):
  */
 export const checkInAppointmentDirect = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    if (!req.user || !['RECEPTIONIST', 'DOCTOR', 'ADMIN'].includes(req.user.role)) {
-      res.status(403).json({ success: false, message: 'Access denied: staff privileges required' });
+    if (!req.user || !['RECEPTIONIST', 'DOCTOR', 'ADMIN', 'PATIENT'].includes(req.user.role)) {
+      res.status(403).json({ success: false, message: 'Access denied: valid account required' });
       return;
     }
 
@@ -1629,6 +1629,15 @@ export const checkInAppointmentDirect = async (req: AuthRequest, res: Response):
       const access = await verifyReceptionistDoctorAccess(req.user.id, appointment.doctorId, appointment.clinicId);
       if (!access.authorized) {
         res.status(403).json({ success: false, message: access.reason || 'Unauthorized for this doctor' });
+        return;
+      }
+    } else if (req.user.role === 'PATIENT') {
+      const patProfile = await prisma.patientProfile.findUnique({
+        where: { userId: req.user.id },
+        select: { id: true },
+      });
+      if (!patProfile || appointment.patientId !== patProfile.id) {
+        res.status(403).json({ success: false, message: "Unauthorized for another patient's appointment" });
         return;
       }
     }

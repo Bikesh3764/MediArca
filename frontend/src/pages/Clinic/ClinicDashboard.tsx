@@ -1564,7 +1564,7 @@ export const ClinicDashboard: React.FC = () => {
             </button>
 
             <div className="text-center">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100 px-3 py-1 rounded-full border border-emerald-300 inline-block mb-3">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-[#0066cc] bg-[#0066cc]/10 px-3 py-1 rounded-full border border-[#0066cc]/20 inline-block mb-3">
                 Official Clinic Arrival QR
               </span>
               <h3 className="text-lg font-bold text-[#1d1d1f]">

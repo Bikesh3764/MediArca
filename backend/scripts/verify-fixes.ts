@@ -3028,12 +3028,12 @@ function runTests() {
   assert(canTransition('WAITING', 'IN_CONSULTATION', 'RECEPTIONIST').allowed === true, 'Receptionist can advance WAITING patient to IN_CONSULTATION');
   assert(canTransition('WAITING', 'IN_CONSULTATION', 'PATIENT').allowed === false, 'Patient cannot call themselves into consultation');
   assert(canTransition('WAITING', 'COMPLETED', 'DOCTOR').allowed === true, 'Doctor can complete WAITING consultation directly');
-  assert(canTransition('WAITING', 'COMPLETED', 'RECEPTIONIST').allowed === false, 'Receptionist CANNOT mark consultation COMPLETED');
+  assert(canTransition('WAITING', 'COMPLETED', 'RECEPTIONIST').allowed === true, 'Receptionist can mark WAITING consultation COMPLETED');
   assert(canTransition('WAITING', 'CANCELLED', 'RECEPTIONIST').allowed === true, 'Receptionist can cancel WAITING appointment');
 
   // IN_CONSULTATION transitions
   assert(canTransition('IN_CONSULTATION', 'COMPLETED', 'DOCTOR').allowed === true, 'Doctor can complete active consultation');
-  assert(canTransition('IN_CONSULTATION', 'COMPLETED', 'RECEPTIONIST').allowed === false, 'Receptionist cannot complete active consultation');
+  assert(canTransition('IN_CONSULTATION', 'COMPLETED', 'RECEPTIONIST').allowed === true, 'Receptionist can complete active consultation');
   assert(canTransition('IN_CONSULTATION', 'COMPLETED', 'CLINIC').allowed === false, 'Clinic cannot complete active consultation');
   assert(canTransition('IN_CONSULTATION', 'WAITING', 'DOCTOR').allowed === true, 'Doctor can put patient back to WAITING');
   assert(canTransition('IN_CONSULTATION', 'WAITING', 'RECEPTIONIST').allowed === true, 'Receptionist can put patient back to WAITING');
@@ -3291,9 +3291,9 @@ function runTests() {
   assert(c2Status === 'IN_CONSULTATION', 'Clinic 2 active consultation untouched and preserved');
 
   // --- Test 119: Strict State Machine Transition Violations ---
-  console.log('\n--- Test 119: Strict State Machine Transition Violations ---');
-  assert(canTransition('IN_CONSULTATION', 'COMPLETED', 'RECEPTIONIST').allowed === false, 'Receptionist cannot mark consultation COMPLETED');
-  assert(canTransition('WAITING', 'COMPLETED', 'RECEPTIONIST').allowed === false, 'Receptionist cannot complete WAITING appointment');
+  assert(canTransition('IN_CONSULTATION', 'COMPLETED', 'RECEPTIONIST').allowed === true, 'Receptionist can mark consultation COMPLETED');
+  assert(canTransition('WAITING', 'COMPLETED', 'RECEPTIONIST').allowed === true, 'Receptionist can complete WAITING appointment');
+  assert(canTransition('IN_CONSULTATION', 'COMPLETED', 'PATIENT').allowed === false, 'Patient cannot complete consultation');
   assert(canTransition('IN_CONSULTATION', 'PENDING_APPROVAL', 'RECEPTIONIST').allowed === false, 'Receptionist cannot revert IN_CONSULTATION to PENDING_APPROVAL');
   assert(canTransition('COMPLETED', 'IN_CONSULTATION', 'DOCTOR').allowed === false, 'Doctor cannot recall COMPLETED consultation');
   assert(canTransition('WAITING', 'IN_CONSULTATION', 'DOCTOR').allowed === true, 'Doctor can call WAITING patient');
@@ -5140,6 +5140,14 @@ Follow-up Date: 2026-10-15`;
   assert(sampleMessageRecord.isRead === false, 'New contact messages default to unread');
   const readMessageRecord = { ...sampleMessageRecord, isRead: true };
   assert(readMessageRecord.isRead === true, 'Admin can mark contact messages as read');
+
+  // --- Test 157: Doctor & Receptionist Consultation Completion and Patient Presence ---
+  console.log('\n--- Test 157: Doctor & Receptionist Consultation Completion and Patient Presence ---');
+  assert(canTransition('IN_CONSULTATION', 'COMPLETED', 'DOCTOR').allowed === true, 'Doctor can complete consultation');
+  assert(canTransition('IN_CONSULTATION', 'COMPLETED', 'RECEPTIONIST').allowed === true, 'Receptionist can complete consultation');
+  assert(canTransition('WAITING', 'COMPLETED', 'DOCTOR').allowed === true, 'Doctor can complete waiting consultation directly');
+  assert(canTransition('WAITING', 'COMPLETED', 'RECEPTIONIST').allowed === true, 'Receptionist can complete waiting consultation directly');
+  assert(canTransition('IN_CONSULTATION', 'COMPLETED', 'PATIENT').allowed === false, 'Patient cannot complete consultation');
 
   console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);

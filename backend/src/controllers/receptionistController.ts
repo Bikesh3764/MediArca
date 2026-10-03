@@ -810,9 +810,14 @@ export const updateAppointmentStatus = async (req: AuthRequest, res: Response): 
       });
     }
 
+    const updatePayload: any = { status };
+    if (status === 'COMPLETED') {
+      updatePayload.completedAt = new Date();
+    }
+
     const updated = await prisma.appointment.update({
       where: { id: appointmentId },
-      data: { status },
+      data: updatePayload,
       include: {
         doctor: { include: { user: { select: { fullName: true } } } },
         patient: { include: { user: { select: { id: true, fullName: true, phone: true } } } },
@@ -836,6 +841,13 @@ export const updateAppointmentStatus = async (req: AuthRequest, res: Response): 
           'Called to Consultation Cabin',
           `It is your turn! Queue #${updated.queueNumber} has been called into Dr. ${docName}'s cabin.`,
           'QUEUE'
+        ).catch(() => {});
+      } else if (status === 'COMPLETED' && patientUserId) {
+        createNotification(
+          patientUserId,
+          'Consultation Completed',
+          `Your consultation with Dr. ${docName} (Token #${updated.queueNumber}) has been completed.`,
+          'APPOINTMENT'
         ).catch(() => {});
       }
     }

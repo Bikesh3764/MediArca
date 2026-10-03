@@ -425,6 +425,7 @@ export const completeConsultation = async (req: AuthRequest, res: Response): Pro
       where: { id: appointmentId },
       data: {
         status: 'COMPLETED',
+        completedAt: new Date(),
         ...(finalNotes !== undefined && { clinicalNotes: finalNotes }),
         ...(vitals && { vitals: typeof vitals === 'object' ? JSON.stringify(vitals) : vitals }),
       },

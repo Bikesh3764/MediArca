@@ -1565,7 +1565,7 @@ export const ReceptionistDashboard: React.FC = () => {
                                   ['EXPIRED', 'CANCELLED', 'REJECTED'].includes(appt.status)
                                     ? 'bg-slate-50 text-slate-400 border border-slate-200 cursor-not-allowed opacity-60'
                                     : appt.isCheckedIn
-                                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-300 hover:bg-emerald-200'
+                                    ? 'bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/25 hover:bg-[#0066cc]/15'
                                     : 'bg-slate-100 text-slate-600 border border-slate-300 hover:bg-slate-200 hover:text-slate-800'
                                 }`}
                                 title={
@@ -1621,9 +1621,12 @@ export const ReceptionistDashboard: React.FC = () => {
                                   </button>
                                 )}
                                 {appt.status === 'IN_CONSULTATION' && (
-                                  <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-[11px] font-medium border border-emerald-200">
-                                    In Cabin
-                                  </span>
+                                  <button
+                                    onClick={() => handleStatusChange(appt.id, 'COMPLETED')}
+                                    className="px-3.5 py-1.5 rounded-full bg-[#1d1d1f] hover:bg-black text-white text-[11px] font-semibold shadow-xs transition-all active:scale-[0.98] cursor-pointer"
+                                  >
+                                    Mark Completed
+                                  </button>
                                 )}
                                 {(appt.status === 'WAITING' || appt.status === 'PENDING_APPROVAL') && (
                                   <button

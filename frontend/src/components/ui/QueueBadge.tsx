@@ -18,9 +18,9 @@ export const QueueBadge: React.FC<QueueBadgeProps> = ({
   let statusText = 'Waiting in Queue';
 
   if (status === 'IN_CONSULTATION') {
-    statusBg = 'bg-emerald-50 text-emerald-700 border-emerald-300';
-    pulseColor = 'bg-emerald-500';
-    statusText = 'Currently in Consultation';
+    statusBg = 'bg-[#0066cc]/10 text-[#0066cc] border-[#0066cc]/30';
+    pulseColor = 'bg-[#0066cc]';
+    statusText = 'In Consultation';
   } else if (status === 'COMPLETED') {
     statusBg = 'bg-gray-100 text-gray-700 border-gray-300';
     pulseColor = 'bg-gray-400';
@@ -44,7 +44,7 @@ export const QueueBadge: React.FC<QueueBadgeProps> = ({
       >
         {status === 'IN_CONSULTATION' && (
           <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#0066cc]/40 opacity-75"></span>
             <span className={`relative inline-flex rounded-full h-2 w-2 ${pulseColor}`}></span>
           </span>
         )}
