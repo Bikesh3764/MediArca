@@ -212,11 +212,11 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
                     Awaiting Front Desk Confirmation
                   </h4>
                   <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                    Fee: ₹{appointment.fee || (appointment as any).consultationFee || doctor.consultationFee || 0} • Pay at Desk
+                    Fee: ₹{appointment.fee || (appointment as any).consultationFee || doctor.consultationFee || 0} • Pay Receptionist to Confirm
                   </span>
                 </div>
                 <p className="text-xs text-[#86868b] mt-1">
-                  Queue spot activates upon reception check-in. Consultation fee is payable at the clinic desk.
+                  Pay the fee to the receptionist to confirm your token. Unconfirmed requests may be claimed by another patient who confirms first.
                 </p>
                 {appointment.clinic?.phone && (
                   <div className="mt-2.5">

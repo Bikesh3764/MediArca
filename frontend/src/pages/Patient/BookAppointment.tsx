@@ -754,10 +754,10 @@ export const BookAppointment: React.FC = () => {
                   </div>
                   <div className="min-w-0">
                     <h4 className="text-sm font-bold text-[#1d1d1f] tracking-tight">
-                      Pay Receptionist to Confirm Queue Spot
+                      Pay Receptionist to Confirm Token
                     </h4>
                     <p className="text-xs text-[#86868b] mt-0.5 leading-relaxed">
-                      Queue token is verified and confirmed upon paying the consultation fee directly to the clinic receptionist.
+                      Token is confirmed once fee is paid to the receptionist. Unconfirmed requests may be claimed by another patient who confirms first.
                     </p>
                   </div>
                 </div>

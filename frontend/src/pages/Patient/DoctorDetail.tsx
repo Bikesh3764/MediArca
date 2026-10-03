@@ -443,11 +443,15 @@ export const DoctorDetail: React.FC = () => {
             </>
           )}
 
-          {/* Fee Row */}
-          <div className="pt-3 border-t border-[#f0f0f2] mb-4">
+          {/* Fee & Confirmation Notice */}
+          <div className="pt-3 border-t border-[#f0f0f2] mb-4 space-y-2">
             <div className="flex items-center justify-between text-xs">
-              <span className="text-[#86868b]">Fee (Pay at clinic)</span>
+              <span className="text-[#86868b]">Fee (Pay Receptionist to Confirm)</span>
               <span className="text-base font-semibold text-[#1d1d1f]">₹{activeFee}</span>
+            </div>
+            <div className="p-2.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-[11px] text-[#86868b] leading-relaxed">
+              <span className="font-semibold text-[#1d1d1f] block mb-0.5">Pay receptionist to confirm token</span>
+              Token is confirmed only after paying the fee to the receptionist. Unconfirmed requests may be claimed by another patient who confirms first.
             </div>
           </div>
 
