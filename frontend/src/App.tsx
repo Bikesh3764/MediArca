@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { HashRouter as Router, Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { GlobalNav } from './components/layout/GlobalNav';
@@ -82,6 +82,16 @@ const ProtectedRoute: React.FC<{
 const DoctorRouteRedirect: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   return <Navigate to={`/book/${id || ''}`} replace />;
+};
+
+const ScrollToTop: React.FC = () => {
+  const { pathname, search } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, [pathname, search]);
+
+  return null;
 };
 
 function AppShell() {
@@ -277,6 +287,7 @@ export function App() {
     <ErrorBoundary>
       <AuthProvider>
         <Router>
+          <ScrollToTop />
           <AppShell />
         </Router>
       </AuthProvider>
