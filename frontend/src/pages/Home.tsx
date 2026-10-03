@@ -21,10 +21,8 @@ import {
   Search,
   MapPin,
   Clock,
-  ArrowRight,
   ArrowLeft,
   Building2,
-  UserCheck,
   Stethoscope,
   X,
   SlidersHorizontal,
@@ -1219,86 +1217,6 @@ export const Home: React.FC = () => {
             </div>
           </div>
         )}
-      </section>
-
-      {/* 3. Operational Portals Section (Pristine Apple HIG Style) */}
-      <section className="bg-white border-t border-[#e0e0e0] py-12 px-4 sm:px-6 mt-10">
-        <div className="max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10">
-          <div className="text-center max-w-xl mx-auto mb-8">
-            <h3 className="text-xl font-semibold text-[#1d1d1f] tracking-tight">
-              Operational Portals
-            </h3>
-            <p className="text-xs text-[#86868b] mt-1">
-              Select your role to access management consoles and digital clinic desks.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Patient Portal */}
-            <div
-              onClick={() => navigate(user?.role === 'PATIENT' ? '/patient/appointments' : '/patient/login')}
-              className="p-5 rounded-[20px] bg-[#f5f5f7] hover:bg-white border border-[#e0e0e0] hover:border-[#0066cc]/40 cursor-pointer transition-all duration-200 flex items-center justify-between group"
-            >
-              <div className="flex items-center gap-3.5">
-                <div className="w-10 h-10 rounded-xl bg-white border border-[#e0e0e0] text-[#0066cc] flex items-center justify-center group-hover:scale-105 transition-transform">
-                  <UserCheck className="w-5 h-5" />
-                </div>
-                <h4 className="text-sm font-semibold text-[#1d1d1f] group-hover:text-[#0066cc] transition-colors">
-                  Patient Portal
-                </h4>
-              </div>
-              <ArrowRight className="w-4 h-4 text-[#86868b] group-hover:text-[#0066cc] group-hover:translate-x-0.5 transition-all" />
-            </div>
-
-            {/* Doctor Console */}
-            <div
-              onClick={() => navigate(user?.role === 'DOCTOR' ? '/doctor/dashboard' : '/doctor/login')}
-              className="p-5 rounded-[20px] bg-[#f5f5f7] hover:bg-white border border-[#e0e0e0] hover:border-[#0066cc]/40 cursor-pointer transition-all duration-200 flex items-center justify-between group"
-            >
-              <div className="flex items-center gap-3.5">
-                <div className="w-10 h-10 rounded-xl bg-white border border-[#e0e0e0] text-[#0066cc] flex items-center justify-center group-hover:scale-105 transition-transform">
-                  <Stethoscope className="w-5 h-5" />
-                </div>
-                <h4 className="text-sm font-semibold text-[#1d1d1f] group-hover:text-[#0066cc] transition-colors">
-                  Doctor Console
-                </h4>
-              </div>
-              <ArrowRight className="w-4 h-4 text-[#86868b] group-hover:text-[#0066cc] group-hover:translate-x-0.5 transition-all" />
-            </div>
-
-            {/* Clinic Partner Portal */}
-            <div
-              onClick={() => navigate(user?.role === 'CLINIC' ? '/clinic/dashboard' : '/clinic/login')}
-              className="p-5 rounded-[20px] bg-[#f5f5f7] hover:bg-white border border-[#e0e0e0] hover:border-[#0066cc]/40 cursor-pointer transition-all duration-200 flex items-center justify-between group"
-            >
-              <div className="flex items-center gap-3.5">
-                <div className="w-10 h-10 rounded-xl bg-white border border-[#e0e0e0] text-[#0066cc] flex items-center justify-center group-hover:scale-105 transition-transform">
-                  <Building2 className="w-5 h-5" />
-                </div>
-                <h4 className="text-sm font-semibold text-[#1d1d1f] group-hover:text-[#0066cc] transition-colors">
-                  Clinic Portal
-                </h4>
-              </div>
-              <ArrowRight className="w-4 h-4 text-[#86868b] group-hover:text-[#0066cc] group-hover:translate-x-0.5 transition-all" />
-            </div>
-
-            {/* Receptionist Desk */}
-            <div
-              onClick={() => navigate(user?.role === 'RECEPTIONIST' ? '/receptionist/dashboard' : '/receptionist/login')}
-              className="p-5 rounded-[20px] bg-[#f5f5f7] hover:bg-white border border-[#e0e0e0] hover:border-[#0066cc]/40 cursor-pointer transition-all duration-200 flex items-center justify-between group"
-            >
-              <div className="flex items-center gap-3.5">
-                <div className="w-10 h-10 rounded-xl bg-white border border-[#e0e0e0] text-[#0066cc] flex items-center justify-center group-hover:scale-105 transition-transform">
-                  <Clock className="w-5 h-5" />
-                </div>
-                <h4 className="text-sm font-semibold text-[#1d1d1f] group-hover:text-[#0066cc] transition-colors">
-                  Reception Desk
-                </h4>
-              </div>
-              <ArrowRight className="w-4 h-4 text-[#86868b] group-hover:text-[#0066cc] group-hover:translate-x-0.5 transition-all" />
-            </div>
-          </div>
-        </div>
       </section>
     </div>
   );
