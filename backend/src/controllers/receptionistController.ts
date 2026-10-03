@@ -1289,11 +1289,13 @@ export const approveAppointment = async (req: AuthRequest, res: Response): Promi
     }
 
     if (appointment?.patient?.userId) {
+      const rawDocName = appointment.doctor?.user?.fullName || 'Practitioner';
+      const cleanDocName = rawDocName.startsWith('Dr.') ? rawDocName : `Dr. ${rawDocName}`;
       createNotification(
         appointment.patient.userId,
-        'Appointment Approved & Token Assigned',
-        `Your appointment with Dr. ${appointment.doctor?.user?.fullName || 'Practitioner'} has been approved. Queue Token #${updated.queueNumber}.`,
-        'QUEUE'
+        'Appointment Booking Confirmed',
+        `Your visit request with ${cleanDocName} for ${appointment.appointmentDate} has been confirmed. You are Queue #${updated.queueNumber}.`,
+        'APPOINTMENT'
       ).catch(() => {});
     }
 

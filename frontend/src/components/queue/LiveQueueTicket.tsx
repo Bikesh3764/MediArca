@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { api, Appointment, getLocalDateString, getFileUrl } from '../../services/api';
-import { Clock, Calendar, MapPin, CheckCircle2, Building2, Star } from 'lucide-react';
+import { Clock, Calendar, MapPin, CheckCircle2, Building2, Star, Phone } from 'lucide-react';
 import { AppleButton } from '../ui/AppleButton';
 import { CabinStatusBadge } from '../ui/DoctorCabinPresence';
+import { formatDisplayPhone } from '../../utils/phoneUtils';
 
 interface LiveQueueTicketProps {
   appointment: Appointment;
@@ -40,6 +41,20 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
 
   const isToday = appointmentDate === getLocalDateString();
 
+  // Prioritize receptionist phone, fallback to clinic phone
+  const receptionistPhone = appointment.receptionistPhone;
+  const clinicPhone = appointment.clinic?.phone;
+  const deskPhone = receptionistPhone || clinicPhone;
+
+  // Clean doctor name to prevent duplicate "Dr. Dr."
+  const rawDocName = doctor.user?.fullName || 'Doctor';
+  const doctorDisplayName = rawDocName.startsWith('Dr.') ? rawDocName : `Dr. ${rawDocName}`;
+
+  // Clean shift window display
+  const cleanShiftWindow = checkingWindow
+    ? checkingWindow.replace(/^Doctor Shift:\s*/i, '').replace(/^Shift\s*\d+\s*\((.+)\)$/i, '$1')
+    : 'Standard Hours';
+
   return (
     <div className="bg-white rounded-[20px] border border-[#e5e5ea] overflow-hidden hover:border-[#0066cc]/40 transition-all duration-200">
       <div className="p-5 sm:p-6">
@@ -51,19 +66,19 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
               {doctor.user?.avatarUrl ? (
                 <img
                   src={getFileUrl(doctor.user.avatarUrl)}
-                  alt={doctor.user?.fullName || 'Doctor'}
+                  alt={doctorDisplayName}
                   className="w-full h-full object-cover"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center font-semibold text-xl text-[#0066cc]">
-                  {(doctor.user?.fullName || 'D')[0]}
+                  {(rawDocName || 'D')[0]}
                 </div>
               )}
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="text-[17px] font-semibold text-[#1d1d1f] tracking-tight">
-                  {doctor.user?.fullName || 'Doctor'}
+                  {doctorDisplayName}
                 </h3>
                 <CabinStatusBadge status={doctor.cabinStatus} expectedReturnTime={doctor.expectedReturnTime} size="sm" />
               </div>
@@ -90,7 +105,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
           {/* Apple Status / Token Capsule */}
           <div className="shrink-0 self-start sm:self-center">
             {status === 'PENDING_APPROVAL' ? (
-              <div className="bg-amber-50 border border-amber-200 px-3.5 py-1.5 rounded-full flex items-center gap-1.5">
+              <div className="bg-amber-500/10 border border-amber-500/20 px-3.5 py-1.5 rounded-full flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
                 <span className="text-xs font-semibold text-amber-800">Pending Approval</span>
               </div>
@@ -132,12 +147,12 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
             </div>
           </div>
 
-          {/* Tile 2: Consultation Shift */}
+          {/* Tile 2: Shift */}
           <div className="bg-[#f5f5f7] rounded-xl p-3.5 border border-black/[0.03] flex flex-col justify-center">
-            <span className="text-[11px] font-medium text-[#86868b]">Consultation Shift</span>
+            <span className="text-[11px] font-medium text-[#86868b]">Shift</span>
             <div className="text-[14px] font-semibold text-[#1d1d1f] mt-0.5 flex items-center gap-1.5 truncate">
               <Clock className="w-3.5 h-3.5 text-[#0066cc] shrink-0" />
-              <span className="truncate">{checkingWindow ? checkingWindow.replace(/^Doctor Shift:\s*/i, '') : 'Standard Hours'}</span>
+              <span className="truncate">{cleanShiftWindow}</span>
             </div>
           </div>
 
@@ -168,9 +183,9 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
           </div>
         </div>
 
-        {/* Reason for Visit */}
-        {appointment.reasonForVisit && (
-          <div className="mt-3 px-3.5 py-2 rounded-xl bg-[#f5f5f7]/60 text-xs text-[#86868b] flex items-center gap-2">
+        {/* Reason for Visit (only when custom/non-default) */}
+        {appointment.reasonForVisit && appointment.reasonForVisit !== 'General Medical Consultation' && (
+          <div className="mt-3 px-3 py-1.5 rounded-lg bg-[#f5f5f7] text-xs text-[#86868b] flex items-center gap-2">
             <span className="text-[11px] font-medium text-[#86868b] shrink-0">Reason:</span>
             <span className="text-[#1d1d1f] font-medium truncate">{appointment.reasonForVisit}</span>
           </div>
@@ -203,32 +218,34 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
 
         {/* Pending Receptionist Verification Callout */}
         {status === 'PENDING_APPROVAL' && (
-          <div className="mt-3.5 p-4 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f]">
-            <div className="flex items-start gap-3">
-              <Clock className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-              <div className="flex-1 min-w-0">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <h4 className="text-xs font-semibold text-[#1d1d1f]">
-                    Awaiting Front Desk Confirmation
-                  </h4>
-                  <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                    Fee: ₹{appointment.fee || (appointment as any).consultationFee || doctor.consultationFee || 0} • Pay Receptionist to Confirm
+          <div className="mt-4 p-4 rounded-[16px] bg-[#f5f5f7] border border-[#e5e5ea]">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Clock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                  <span className="text-xs font-semibold text-[#1d1d1f]">
+                    Desk Confirmation Pending
+                  </span>
+                  <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200/80">
+                    ₹{appointment.fee || (appointment as any).consultationFee || doctor.consultationFee || 0}
                   </span>
                 </div>
                 <p className="text-xs text-[#86868b] mt-1">
-                  Pay the fee to the receptionist to confirm your token. Unconfirmed requests may be claimed by another patient who confirms first.
+                  Pay receptionist at desk to confirm token. First come, first confirmed.
                 </p>
-                {appointment.clinic?.phone && (
-                  <div className="mt-2.5">
-                    <a
-                      href={`tel:${appointment.clinic.phone}`}
-                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1d1d1f] text-white text-xs font-medium hover:bg-black active:scale-95 transition-all"
-                    >
-                      <span>Call Desk: {appointment.clinic.phone}</span>
-                    </a>
-                  </div>
-                )}
               </div>
+
+              {deskPhone && (
+                <div className="shrink-0">
+                  <a
+                    href={`tel:${deskPhone.replace(/\s+/g, '')}`}
+                    className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-full bg-[#1d1d1f] hover:bg-black text-white text-xs font-medium active:scale-95 transition-all shadow-2xs"
+                  >
+                    <Phone className="w-3 h-3 text-[#86868b] shrink-0" />
+                    <span>Call Receptionist: {formatDisplayPhone(deskPhone)}</span>
+                  </a>
+                </div>
+              )}
             </div>
           </div>
         )}

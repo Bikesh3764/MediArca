@@ -915,6 +915,8 @@ export interface Appointment {
   approvedAt?: string;
   isPendingApproval?: boolean;
   clinicPhone?: string;
+  receptionistPhone?: string | null;
+  receptionistName?: string | null;
   fee?: number;
   reasonForVisit?: string;
   symptoms?: string;

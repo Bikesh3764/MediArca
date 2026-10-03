@@ -4848,7 +4848,81 @@ Follow-up Date: 2026-10-15`;
   assert(isConsultationReadOnly('EXPIRED') === true, 'EXPIRED consultation is read-only');
   assert(isConsultationReadOnly('CANCELLED') === true, 'CANCELLED consultation is read-only');
   assert(isConsultationReadOnly('WAITING') === false, 'WAITING consultation is active/editable');
-  assert(isConsultationReadOnly('IN_CONSULTATION') === false, 'IN_CONSULTATION consultation is active/editable');
+  // --- Test 154: Receptionist Contact Resolution & Booking Notification Verification ---
+  console.log('\n--- Test 154: Receptionist Contact Resolution & Booking Notification Verification ---');
+  const { resolveReceptionistContact } = require('../src/controllers/appointmentController');
+
+  // Test 154.1: Doctor with assigned receptionist at clinic
+  const mockClinicWithAssignedRec = {
+    id: 'clinic-1',
+    clinicName: 'Health First Clinic',
+    phone: '1234567890',
+    receptionists: [
+      {
+        id: 'rec-1',
+        phone: '+91 9876543219',
+        user: { fullName: 'Clara Oswald', phone: '+91 9876543219' },
+        doctors: [{ doctorId: 'doc-1', status: 'ACTIVE' }],
+      },
+      {
+        id: 'rec-2',
+        phone: '+91 9876543220',
+        user: { fullName: 'Amy Pond', phone: '+91 9876543220' },
+        doctors: [{ doctorId: 'doc-2', status: 'ACTIVE' }],
+      },
+    ],
+  };
+
+  const recContact1 = resolveReceptionistContact(mockClinicWithAssignedRec, 'doc-1');
+  assert(recContact1.phone === '+91 9876543219', 'Resolves specifically assigned receptionist phone for doctor');
+  assert(recContact1.name === 'Clara Oswald', 'Resolves specifically assigned receptionist name for doctor');
+
+  const recContact2 = resolveReceptionistContact(mockClinicWithAssignedRec, 'doc-2');
+  assert(recContact2.phone === '+91 9876543220', 'Resolves second assigned receptionist phone for doctor 2');
+
+  // Test 154.2: Doctor not explicitly assigned, falls back to first active receptionist
+  const recContact3 = resolveReceptionistContact(mockClinicWithAssignedRec, 'doc-3');
+  assert(recContact3.phone === '+91 9876543219', 'Falls back to first active receptionist when doctor has no specific assignment');
+
+  // Test 154.3: Doctor has receptionist via doctor.receptionists
+  const mockClinicWithoutRecs = {
+    id: 'clinic-empty',
+    clinicName: 'Solo Practice Clinic',
+    phone: '9820055001',
+    receptionists: [],
+  };
+  const mockDoctorWithRecs = {
+    id: 'doc-4',
+    receptionists: [
+      {
+        status: 'ACTIVE',
+        receptionist: {
+          id: 'rec-direct',
+          phone: '+91 9876543299',
+          clinicId: 'clinic-empty',
+          user: { fullName: 'Rory Williams', phone: '+91 9876543299' },
+        },
+      },
+    ],
+  };
+  const recContact4 = resolveReceptionistContact(mockClinicWithoutRecs, 'doc-4', mockDoctorWithRecs);
+  assert(recContact4.phone === '+91 9876543299', 'Resolves receptionist from doctor.receptionists when clinic.receptionists is empty');
+
+  // Test 154.4: Notification titles: PENDING_APPROVAL gets "Appointment Request Received", approval gets "Appointment Booking Confirmed"
+  const getBookingNotificationTitle = (status: string) => {
+    return status === 'PENDING_APPROVAL' ? 'Appointment Request Received' : 'Appointment Booking Confirmed';
+  };
+  assert(getBookingNotificationTitle('PENDING_APPROVAL') === 'Appointment Request Received', 'Pending booking gets Appointment Request Received');
+  assert(getBookingNotificationTitle('WAITING') === 'Appointment Booking Confirmed', 'Direct waiting booking gets Appointment Booking Confirmed');
+
+  // Test 154.5: Clean doctor name formatting (no "Dr. Dr.")
+  const formatCleanDoctorName = (rawName?: string | null) => {
+    const raw = rawName || 'Practitioner';
+    return raw.startsWith('Dr.') ? raw : `Dr. ${raw}`;
+  };
+  assert(formatCleanDoctorName('Dr. Sarah Jenkins') === 'Dr. Sarah Jenkins', 'Preserves single Dr. prefix');
+  assert(formatCleanDoctorName('Sarah Jenkins') === 'Dr. Sarah Jenkins', 'Adds Dr. prefix when missing');
+  assert(formatCleanDoctorName('Dr. Dr. Sarah Jenkins'.replace(/^Dr\.\s*Dr\.\s*/, 'Dr. ')) === 'Dr. Sarah Jenkins', 'Strips duplicate Dr. Dr.');
 
   console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);

@@ -35,6 +35,50 @@ export const calculateEstimatedTime = (startTime24: string, offsetMinutes: numbe
   return format12Hour(`${hours24}:${minutes.toString().padStart(2, '0')}`);
 };
 
+/**
+ * Resolves active receptionist contact details for an appointment at a clinic
+ */
+export const resolveReceptionistContact = (
+  clinic: any,
+  doctorId?: string,
+  doctor?: any
+): { phone: string | null; name: string | null } => {
+  if (clinic?.receptionists && Array.isArray(clinic.receptionists) && clinic.receptionists.length > 0) {
+    if (doctorId) {
+      const assigned = clinic.receptionists.find((r: any) =>
+        r.doctors?.some((d: any) => d.doctorId === doctorId && (d.status === 'ACTIVE' || !d.status))
+      );
+      if (assigned) {
+        const phone = assigned.phone || assigned.user?.phone || null;
+        const name = assigned.user?.fullName || null;
+        if (phone) return { phone, name };
+      }
+    }
+    for (const r of clinic.receptionists) {
+      const phone = r.phone || r.user?.phone || null;
+      const name = r.user?.fullName || null;
+      if (phone) return { phone, name };
+    }
+  }
+
+  // Fallback to doctor's assigned receptionists matching this clinic
+  if (doctor?.receptionists && Array.isArray(doctor.receptionists) && doctor.receptionists.length > 0) {
+    const docRec = doctor.receptionists.find(
+      (dr: any) =>
+        (!dr.receptionist?.clinicId || !clinic?.id || dr.receptionist.clinicId === clinic.id) &&
+        (dr.receptionist?.phone || dr.receptionist?.user?.phone)
+    );
+    if (docRec?.receptionist) {
+      return {
+        phone: docRec.receptionist.phone || docRec.receptionist.user?.phone || null,
+        name: docRec.receptionist.user?.fullName || null,
+      };
+    }
+  }
+
+  return { phone: null, name: null };
+};
+
 export const getQueuePreview = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { doctorId, appointmentDate, slotId, clinicId } = req.query;
@@ -693,7 +737,22 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
                 },
               },
               clinic: {
-                select: { id: true, clinicName: true, address: true, city: true, phone: true },
+                select: {
+                  id: true,
+                  clinicName: true,
+                  address: true,
+                  city: true,
+                  phone: true,
+                  receptionists: {
+                    where: { status: 'ACTIVE' },
+                    select: {
+                      id: true,
+                      phone: true,
+                      user: { select: { fullName: true, phone: true } },
+                      doctors: { select: { doctorId: true, status: true } },
+                    },
+                  },
+                },
               },
               patient: {
                 include: {
@@ -720,27 +779,51 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
       }
     }
 
+    const rawDocName = doctor.user?.fullName || 'Practitioner';
+    const cleanDocName = rawDocName.startsWith('Dr.') ? rawDocName : `Dr. ${rawDocName}`;
+    const isPendingBooking = newAppointment.status === 'PENDING_APPROVAL';
+
     if (req.user?.id) {
-      createNotification(
-        req.user.id,
-        'Appointment Booking Confirmed',
-        `Your visit request with Dr. ${doctor.user?.fullName || 'Practitioner'} for ${appointmentDate} (${chosenSlot.name}) has been confirmed.`,
-        'APPOINTMENT'
-      ).catch(() => {});
+      if (isPendingBooking) {
+        createNotification(
+          req.user.id,
+          'Appointment Request Received',
+          `Your visit request with ${cleanDocName} for ${appointmentDate} (${chosenSlot.name}) has been submitted. Pay receptionist at desk to confirm your queue token.`,
+          'APPOINTMENT'
+        ).catch(() => {});
+      } else {
+        createNotification(
+          req.user.id,
+          'Appointment Booking Confirmed',
+          `Your visit with ${cleanDocName} for ${appointmentDate} (${chosenSlot.name}) has been confirmed. You are Queue #${newAppointment.queueNumber}.`,
+          'APPOINTMENT'
+        ).catch(() => {});
+      }
     }
     if (doctor?.userId) {
       createNotification(
         doctor.userId,
-        'New Appointment Booking',
-        `A patient has booked a visit for ${appointmentDate} (${chosenSlot.name}).`,
+        isPendingBooking ? 'New Appointment Request' : 'New Appointment Booking',
+        `A patient has ${isPendingBooking ? 'requested' : 'booked'} a visit for ${appointmentDate} (${chosenSlot.name}).`,
         'APPOINTMENT'
       ).catch(() => {});
     }
 
+    const recContact = resolveReceptionistContact(newAppointment.clinic, newAppointment.doctorId, newAppointment.doctor);
+    const appointmentResponseData = {
+      ...newAppointment,
+      receptionistPhone: recContact.phone || null,
+      receptionistName: recContact.name || null,
+    };
+
+    const responseMsg = isPendingBooking
+      ? `Appointment request submitted for ${chosenSlot.name}. Pay receptionist at desk to confirm your queue token.`
+      : `Appointment confirmed! You are Queue #${newAppointment.queueNumber} (${chosenSlot.name})`;
+
     res.status(201).json({
       success: true,
-      message: `Appointment confirmed! You are Queue #${newAppointment.queueNumber} (${chosenSlot.name})`,
-      data: newAppointment,
+      message: responseMsg,
+      data: appointmentResponseData,
     });
   } catch (error: any) {
     console.error('bookAppointment error:', error);
@@ -783,7 +866,22 @@ export const getAppointmentById = async (req: AuthRequest, res: Response): Promi
           },
         },
         clinic: {
-          select: { id: true, clinicName: true, address: true, city: true, phone: true },
+          select: {
+            id: true,
+            clinicName: true,
+            address: true,
+            city: true,
+            phone: true,
+            receptionists: {
+              where: { status: 'ACTIVE' },
+              select: {
+                id: true,
+                phone: true,
+                user: { select: { fullName: true, phone: true } },
+                doctors: { select: { doctorId: true, status: true } },
+              },
+            },
+          },
         },
         patient: {
           include: {
@@ -827,7 +925,15 @@ export const getAppointmentById = async (req: AuthRequest, res: Response): Promi
         return;
       }
 
-    res.json({ success: true, data: appointment });
+    const recContact = resolveReceptionistContact(appointment.clinic, appointment.doctorId, appointment.doctor);
+    res.json({
+      success: true,
+      data: {
+        ...appointment,
+        receptionistPhone: recContact.phone || null,
+        receptionistName: recContact.name || null,
+      },
+    });
   } catch (error: any) {
     console.error('getAppointmentById error:', error);
     res.status(500).json({
@@ -881,10 +987,35 @@ export const getPatientAppointments = async (req: AuthRequest, res: Response): P
               where: { clinic: { isVerified: true, verificationStatus: 'VERIFIED' } },
               include: { clinic: true },
             },
+            receptionists: {
+              where: { status: 'ACTIVE' },
+              include: {
+                receptionist: {
+                  include: {
+                    user: { select: { fullName: true, phone: true } },
+                  },
+                },
+              },
+            },
           },
         },
         clinic: {
-          select: { id: true, clinicName: true, address: true, city: true, phone: true },
+          select: {
+            id: true,
+            clinicName: true,
+            address: true,
+            city: true,
+            phone: true,
+            receptionists: {
+              where: { status: 'ACTIVE' },
+              select: {
+                id: true,
+                phone: true,
+                user: { select: { fullName: true, phone: true } },
+                doctors: { select: { doctorId: true, status: true } },
+              },
+            },
+          },
         },
         patient: {
           include: {
@@ -930,6 +1061,13 @@ export const getPatientAppointments = async (req: AuthRequest, res: Response): P
         ? (appt.doctor as any)?.clinics?.find((c: any) => c.clinicId === appt.clinicId)
         : null;
       const clinicFee = targetClinicAffiliation?.consultationFee ?? appt.doctor.consultationFee;
+
+      const recContact = resolveReceptionistContact(appt.clinic, appt.doctorId, appt.doctor);
+      const apptWithRec = {
+        ...appt,
+        receptionistPhone: recContact.phone || null,
+        receptionistName: recContact.name || null,
+      };
 
       if (appt.status === 'WAITING' || appt.status === 'IN_CONSULTATION') {
         let slots = parseDoctorSlots(appt.doctor);
@@ -988,7 +1126,7 @@ export const getPatientAppointments = async (req: AuthRequest, res: Response): P
         }
 
         return {
-          ...appt,
+          ...apptWithRec,
           fee: clinicFee,
           liveQueue: {
             currentServingQueueNumber: currentServingQueueNumber || (isShiftActive ? 1 : 0),
@@ -1032,7 +1170,7 @@ export const getPatientAppointments = async (req: AuthRequest, res: Response): P
         }
 
         return {
-          ...appt,
+          ...apptWithRec,
           status: effectiveStatus,
           fee: clinicFee,
           liveQueue: {
@@ -1048,7 +1186,7 @@ export const getPatientAppointments = async (req: AuthRequest, res: Response): P
       }
 
       return {
-        ...appt,
+        ...apptWithRec,
         fee: clinicFee,
       };
     });
