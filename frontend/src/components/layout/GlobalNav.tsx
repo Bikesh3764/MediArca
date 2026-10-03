@@ -15,6 +15,12 @@ import {
   CheckCheck,
   Clock,
   AlertCircle,
+  ChevronDown,
+  Info,
+  HelpCircle,
+  FileQuestion,
+  Mail,
+  QrCode,
 } from 'lucide-react';
 import { api, getFileUrl, AppNotification } from '../../services/api';
 
@@ -36,6 +42,7 @@ export const GlobalNav: React.FC = () => {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -97,6 +104,7 @@ export const GlobalNav: React.FC = () => {
     queueMicrotask(() => {
       setMobileMenuOpen(false);
       setNotificationsOpen(false);
+      setMoreMenuOpen(false);
     });
   }, [location.pathname]);
 
@@ -258,12 +266,106 @@ export const GlobalNav: React.FC = () => {
             Find Doctors
           </Link>
 
-          <Link
-            to="/how-it-works"
-            className={getNavLinkClass(isActive('/how-it-works'))}
+          {/* More Menu Dropdown on Hover & Click */}
+          <div
+            className="relative"
+            onMouseEnter={() => setMoreMenuOpen(true)}
+            onMouseLeave={() => setMoreMenuOpen(false)}
           >
-            How It Works
-          </Link>
+            <button
+              type="button"
+              onClick={() => setMoreMenuOpen((prev) => !prev)}
+              className={getNavLinkClass(
+                location.pathname === '/about' ||
+                location.pathname === '/how-it-works' ||
+                location.pathname === '/faq' ||
+                location.pathname === '/contact' ||
+                location.pathname === '/clinic-checkin' ||
+                moreMenuOpen
+              )}
+              aria-expanded={moreMenuOpen}
+            >
+              <span>More</span>
+              <ChevronDown
+                className={`w-3.5 h-3.5 opacity-70 transition-transform duration-200 ${
+                  moreMenuOpen ? 'rotate-180 opacity-100' : ''
+                }`}
+              />
+            </button>
+
+            {moreMenuOpen && (
+              <div className="absolute left-0 top-full pt-1.5 z-50 animate-fadeIn">
+                <div className="bg-white/95 backdrop-blur-2xl border border-[#e5e5ea] rounded-[20px] shadow-[0_8px_30px_rgba(0,0,0,0.08)] p-2 min-w-[210px] space-y-0.5 text-xs text-left">
+                  <Link
+                    to="/about"
+                    onClick={() => setMoreMenuOpen(false)}
+                    className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-[14px] transition-colors ${
+                      location.pathname === '/about'
+                        ? 'bg-black/[0.05] text-[#1d1d1f] font-semibold'
+                        : 'text-[#48484a] hover:bg-black/[0.04] hover:text-[#1d1d1f]'
+                    }`}
+                  >
+                    <Info className="w-4 h-4 text-[#86868b]" />
+                    <span>About MediArca</span>
+                  </Link>
+
+                  <Link
+                    to="/how-it-works"
+                    onClick={() => setMoreMenuOpen(false)}
+                    className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-[14px] transition-colors ${
+                      location.pathname === '/how-it-works'
+                        ? 'bg-black/[0.05] text-[#1d1d1f] font-semibold'
+                        : 'text-[#48484a] hover:bg-black/[0.04] hover:text-[#1d1d1f]'
+                    }`}
+                  >
+                    <HelpCircle className="w-4 h-4 text-[#86868b]" />
+                    <span>How It Works</span>
+                  </Link>
+
+                  <Link
+                    to="/faq"
+                    onClick={() => setMoreMenuOpen(false)}
+                    className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-[14px] transition-colors ${
+                      location.pathname === '/faq'
+                        ? 'bg-black/[0.05] text-[#1d1d1f] font-semibold'
+                        : 'text-[#48484a] hover:bg-black/[0.04] hover:text-[#1d1d1f]'
+                    }`}
+                  >
+                    <FileQuestion className="w-4 h-4 text-[#86868b]" />
+                    <span>FAQs & Help</span>
+                  </Link>
+
+                  <Link
+                    to="/contact"
+                    onClick={() => setMoreMenuOpen(false)}
+                    className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-[14px] transition-colors ${
+                      location.pathname === '/contact'
+                        ? 'bg-black/[0.05] text-[#1d1d1f] font-semibold'
+                        : 'text-[#48484a] hover:bg-black/[0.04] hover:text-[#1d1d1f]'
+                    }`}
+                  >
+                    <Mail className="w-4 h-4 text-[#86868b]" />
+                    <span>Contact Support</span>
+                  </Link>
+
+                  <div className="my-1 border-t border-[#f0f0f2]" />
+
+                  <Link
+                    to="/clinic-checkin"
+                    onClick={() => setMoreMenuOpen(false)}
+                    className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-[14px] transition-colors ${
+                      location.pathname === '/clinic-checkin'
+                        ? 'bg-black/[0.05] text-[#1d1d1f] font-semibold'
+                        : 'text-[#48484a] hover:bg-black/[0.04] hover:text-[#1d1d1f]'
+                    }`}
+                  >
+                    <QrCode className="w-4 h-4 text-[#86868b]" />
+                    <span>Clinic QR Check-in</span>
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
 
           {user?.role === 'PATIENT' && (
             <>
@@ -488,13 +590,7 @@ export const GlobalNav: React.FC = () => {
               Find Doctors
             </Link>
 
-            <Link
-              to="/how-it-works"
-              onClick={closeMenu}
-              className={getMobileNavLinkClass(isActive('/how-it-works'))}
-            >
-              How It Works
-            </Link>
+
 
             {user?.role === 'PATIENT' && (
               <>
@@ -575,6 +671,53 @@ export const GlobalNav: React.FC = () => {
                 Reception Desk
               </Link>
             )}
+
+            {/* More / Company Links */}
+            <div className="pt-2 mt-2 border-t border-[#f0f0f2] space-y-1">
+              <span className="px-3.5 text-[10px] font-semibold uppercase tracking-wider text-[#86868b]">
+                More
+              </span>
+              <Link
+                to="/about"
+                onClick={closeMenu}
+                className={getMobileNavLinkClass(isActive('/about'))}
+              >
+                <Info className="w-4 h-4 text-current opacity-80" />
+                About MediArca
+              </Link>
+              <Link
+                to="/how-it-works"
+                onClick={closeMenu}
+                className={getMobileNavLinkClass(isActive('/how-it-works'))}
+              >
+                <HelpCircle className="w-4 h-4 text-current opacity-80" />
+                How It Works
+              </Link>
+              <Link
+                to="/faq"
+                onClick={closeMenu}
+                className={getMobileNavLinkClass(isActive('/faq'))}
+              >
+                <FileQuestion className="w-4 h-4 text-current opacity-80" />
+                FAQs & Help
+              </Link>
+              <Link
+                to="/contact"
+                onClick={closeMenu}
+                className={getMobileNavLinkClass(isActive('/contact'))}
+              >
+                <Mail className="w-4 h-4 text-current opacity-80" />
+                Contact Support
+              </Link>
+              <Link
+                to="/clinic-checkin"
+                onClick={closeMenu}
+                className={getMobileNavLinkClass(isActive('/clinic-checkin'))}
+              >
+                <QrCode className="w-4 h-4 text-current opacity-80" />
+                Clinic QR Check-in
+              </Link>
+            </div>
           </div>
 
           <div className="pt-3.5 border-t border-black/[0.06] flex items-center justify-between">
