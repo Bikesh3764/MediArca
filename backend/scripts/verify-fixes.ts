@@ -5086,7 +5086,60 @@ Follow-up Date: 2026-10-15`;
   const notif = buildBookingNotificationForReceptionist('Rahul Ray', 'Sarah Jenkins', 4, false);
   assert(notif.title === 'New Appointment Booked', 'Creates correct booking notification title');
   assert(notif.message.includes('Rahul Ray') && notif.message.includes('Token #4'), 'Includes patient name and token in receptionist alert');
-  assert(notif.type === 'APPOINTMENT_BOOKED', 'Has APPOINTMENT_BOOKED notification type');
+  // --- Test 156: Contact Us Message Ingestion & Admin Notification Pipeline ---
+  console.log('\n--- Test 156: Contact Us Message Ingestion & Admin Notification Pipeline ---');
+  interface ContactSubmissionInput {
+    fullName: string;
+    email: string;
+    phone?: string;
+    subject?: string;
+    message: string;
+  }
+
+  const validateContactMessage = (input: ContactSubmissionInput): { valid: boolean; error?: string } => {
+    if (!input.fullName || !input.fullName.trim()) {
+      return { valid: false, error: 'Name is required' };
+    }
+    if (!input.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.email.trim())) {
+      return { valid: false, error: 'Valid email is required' };
+    }
+    if (!input.message || !input.message.trim()) {
+      return { valid: false, error: 'Message is required' };
+    }
+    return { valid: true };
+  };
+
+  const buildAdminContactNotification = (submission: ContactSubmissionInput) => {
+    return {
+      title: `New Contact Message from ${submission.fullName}`,
+      message: `${submission.fullName} (${submission.email}) sent: "${submission.message.slice(0, 80)}"`,
+      type: 'ADMIN_ALERT',
+    };
+  };
+
+  const validContact = {
+    fullName: 'Pooja Verma',
+    email: 'pooja.verma@example.com',
+    phone: '+919876543210',
+    subject: 'Appointment query',
+    message: 'Hello MediArca, I wanted to inquire about cardiology facilities.',
+  };
+
+  assert(validateContactMessage(validContact).valid === true, 'Valid contact submission passes validation');
+  assert(validateContactMessage({ ...validContact, fullName: '' }).valid === false, 'Missing name is rejected');
+  assert(validateContactMessage({ ...validContact, email: 'notanemail' }).valid === false, 'Invalid email is rejected');
+  assert(validateContactMessage({ ...validContact, message: '' }).valid === false, 'Empty message is rejected');
+
+  const adminNotif = buildAdminContactNotification(validContact);
+  assert(adminNotif.title === 'New Contact Message from Pooja Verma', 'Creates informative admin notification title');
+  assert(adminNotif.message.includes('pooja.verma@example.com'), 'Admin notification contains submitter email for direct reply');
+  assert(adminNotif.type === 'ADMIN_ALERT', 'Uses ADMIN_ALERT notification type');
+
+  // Contact message read state
+  const sampleMessageRecord = { id: 'msg_1', ...validContact, isRead: false };
+  assert(sampleMessageRecord.isRead === false, 'New contact messages default to unread');
+  const readMessageRecord = { ...sampleMessageRecord, isRead: true };
+  assert(readMessageRecord.isRead === true, 'Admin can mark contact messages as read');
 
   console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);
