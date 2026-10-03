@@ -24,6 +24,7 @@ import {
   Building2,
   MapPin,
   Phone,
+  Clock,
 } from 'lucide-react';
 
 const formatDisplayPhone = (phone?: string) => {
@@ -286,7 +287,7 @@ export const BookAppointment: React.FC = () => {
   if (confirmedAppointment) {
     return (
       <div className="min-h-screen bg-[#f5f5f7] pb-16">
-        <SubNav title="Token Reserved">
+        <SubNav title="Appointment Requested">
           <AppleButton
             variant="ghost"
             size="sm"
@@ -300,16 +301,16 @@ export const BookAppointment: React.FC = () => {
 
         <div className="max-w-xl mx-auto px-4 sm:px-6 pt-6 sm:pt-10">
           <UtilityCard className="text-center py-8 px-5 sm:px-8 space-y-6">
-            <div className="w-16 h-16 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200/80 flex items-center justify-center mx-auto shadow-xs">
-              <CheckCircle2 className="w-8 h-8" />
+            <div className="w-16 h-16 rounded-full bg-amber-50 text-amber-600 border border-amber-200/80 flex items-center justify-center mx-auto shadow-xs">
+              <Clock className="w-8 h-8" />
             </div>
 
             <div>
-              <span className="text-xs font-semibold uppercase tracking-wider text-[#86868b] block mb-1">
-                Token Reserved
+              <span className="text-xs font-semibold uppercase tracking-wider text-amber-700 block mb-1">
+                Request Submitted
               </span>
-              <h2 className="text-3xl font-bold tracking-tight text-[#0066cc]">
-                Queue #{confirmedAppointment.queueNumber}
+              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#1d1d1f]">
+                Pending Receptionist Confirmation
               </h2>
               <p className="text-xs text-[#86868b] mt-1 font-medium">
                 {confirmedAppointment.appointmentDate} · {confirmedAppointment.checkingWindow}
@@ -339,7 +340,7 @@ export const BookAppointment: React.FC = () => {
               </div>
 
               <p className="text-xs text-[#86868b] leading-relaxed pt-2.5 border-t border-[#e5e5ea]">
-                Please pay the receptionist at the clinic desk to confirm your queue token. Unconfirmed requests may be claimed by other patients who confirm first.
+                Your token will be officially assigned by the receptionist upon payment. If another patient pays earlier, their token will be confirmed before yours.
               </p>
 
               {deskPhone && (
@@ -363,7 +364,7 @@ export const BookAppointment: React.FC = () => {
                 onClick={() => navigate('/patient/appointments')}
                 className="w-full sm:w-auto"
               >
-                View My Passes & Tickets
+                View Request in My Passes
               </AppleButton>
               <AppleButton
                 variant="secondary"
@@ -626,9 +627,9 @@ export const BookAppointment: React.FC = () => {
             <div className="my-4 p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea]">
               <div className="flex items-baseline justify-between mb-2">
                 <div>
-                  <span className="text-[11px] text-[#86868b] block font-medium">Your Token</span>
+                  <span className="text-[11px] text-[#86868b] block font-medium">Estimated Token</span>
                   <span className="text-2xl sm:text-3xl font-bold tracking-tight text-[#0066cc]">
-                    {isSelectedSlotPassed ? 'Shift Ended' : `Queue #${queuePreview.nextQueueNumber}`}
+                    {isSelectedSlotPassed ? 'Shift Ended' : `Est. #${queuePreview.nextQueueNumber}`}
                   </span>
                 </div>
                 <div className="text-right">
@@ -643,9 +644,7 @@ export const BookAppointment: React.FC = () => {
                 <span>
                   {isSelectedSlotPassed
                     ? 'Pick an upcoming shift'
-                    : queuePreview.patientsAhead === 0
-                    ? 'First in line'
-                    : `${queuePreview.patientsAhead} ahead`}
+                    : 'Assigned upon receptionist payment'}
                 </span>
               </div>
             </div>
@@ -794,12 +793,12 @@ export const BookAppointment: React.FC = () => {
                 {!doctor.clinics || doctor.clinics.length === 0
                   ? 'Booking Unavailable'
                   : submitting
-                  ? 'Reserving Token...'
+                  ? 'Submitting Request...'
                   : isSelectedSlotPassed
                   ? 'Shift Ended'
                   : isSelectedSlotFull
                   ? 'Shift Full'
-                  : `Confirm & Pay Receptionist (₹${activeFee})`}
+                  : `Submit Request to Receptionist (₹${activeFee})`}
               </AppleButton>
             </div>
           </form>
