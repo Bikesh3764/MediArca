@@ -5005,6 +5005,29 @@ Follow-up Date: 2026-10-15`;
   assert(shouldDisplayReason('') === false, 'Suppresses empty reason for visit');
   assert(shouldDisplayReason(undefined) === false, 'Suppresses undefined reason for visit');
 
+  // Test 154.12: Walk-in token calculation skips negative provisional tokens and starts at 1
+  const computeWalkinQueueNumber = (existingTokens: number[]) => {
+    const positiveTokens = existingTokens.filter((q) => q > 0);
+    const highestQueue = positiveTokens.reduce((max, q) => Math.max(max, q), 0);
+    return Math.max(1, highestQueue + 1);
+  };
+  assert(computeWalkinQueueNumber([]) === 1, 'Walk-in gets Token #1 when no appointments exist');
+  assert(computeWalkinQueueNumber([-1, -2]) === 1, 'Walk-in gets Token #1 when only negative pending tokens exist');
+  assert(computeWalkinQueueNumber([1]) === 2, 'Walk-in gets Token #2 when Token #1 is confirmed');
+  assert(computeWalkinQueueNumber([1, -1, 2]) === 3, 'Walk-in gets Token #3 when Token #1 and #2 exist with negative pending tokens');
+
+  // Test 154.13: Receptionist Walk-in button text displays correct token number
+  const formatWalkinButtonText = (preview: { nextQueueNumber?: number; isPassed?: boolean; isFull?: boolean } | null, loading: boolean) => {
+    if (loading) return 'Issuing Token...';
+    if (preview?.isPassed) return 'Shift Ended — Choose Another Slot';
+    if (preview?.isFull) return 'Slot Full';
+    return `Generate Guaranteed Queue Token (#${preview?.nextQueueNumber || 1})`;
+  };
+  assert(formatWalkinButtonText({ nextQueueNumber: 1 }, false) === 'Generate Guaranteed Queue Token (#1)', 'Walk-in button shows Token (#1)');
+  assert(formatWalkinButtonText({ nextQueueNumber: 5 }, false) === 'Generate Guaranteed Queue Token (#5)', 'Walk-in button shows Token (#5)');
+  assert(formatWalkinButtonText(null, false) === 'Generate Guaranteed Queue Token (#1)', 'Walk-in button defaults to Token (#1) when preview is loading');
+  assert(formatWalkinButtonText(null, true) === 'Issuing Token...', 'Walk-in button shows loading text when issuing');
+
   console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);

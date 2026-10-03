@@ -6,6 +6,7 @@ import {
   getLocalDateString,
   Appointment,
   getFileUrl,
+  QueuePreview,
 } from '../../services/api';
 import { sanitizeIndianPhone, formatIndianPhone, isValidIndianPhone } from '../../utils/phoneUtils';
 import { useAuth } from '../../context/AuthContext';
@@ -85,6 +86,10 @@ export const ReceptionistDashboard: React.FC = () => {
   const [reasonForVisit, setReasonForVisit] = useState('');
   const [bookingLoading, setBookingLoading] = useState(false);
 
+  // Live Token & Queue calculation preview for walk-in entry
+  const [walkinPreview, setWalkinPreview] = useState<QueuePreview | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+
   // Success Token Pass Modal
   const [bookedPass, setBookedPass] = useState<TokenPassData | null>(null);
 
@@ -119,6 +124,9 @@ export const ReceptionistDashboard: React.FC = () => {
       if (res.doctors.length > 0) {
         setSelectedDoctorId((prev) => prev || res.doctors[0].doctorId);
         setQueueDoctorId((prev) => prev || res.doctors[0].doctorId);
+        if (res.doctors[0].slots && res.doctors[0].slots.length > 0) {
+          setSlotId((prev) => prev || res.doctors[0].slots[0].id);
+        }
       }
       // Refresh pending approvals badge
       fetchPendingAppointments();
@@ -231,6 +239,37 @@ export const ReceptionistDashboard: React.FC = () => {
   const activeSelectedDoctor = linkedDoctors.find((d) => d.doctorId === selectedDoctorId);
   const effectiveClinicId = data?.clinic?.id || walkinClinicId || activeSelectedDoctor?.clinics?.[0]?.clinicId;
 
+  // Dynamic queue preview for walk-in token allocation
+  const fetchWalkinPreview = useCallback(async () => {
+    if (!selectedDoctorId || !appointmentDate) {
+      setWalkinPreview(null);
+      return;
+    }
+    setPreviewLoading(true);
+    try {
+      const preview = await api.getQueuePreview(
+        selectedDoctorId,
+        appointmentDate,
+        slotId || undefined,
+        effectiveClinicId || undefined
+      );
+      setWalkinPreview(preview);
+      if (preview.selectedSlotId && (!slotId || (preview.isPassed && preview.selectedSlotId !== slotId))) {
+        setSlotId(preview.selectedSlotId);
+      }
+    } catch (err) {
+      console.error('Failed to load walk-in queue preview:', err);
+    } finally {
+      setPreviewLoading(false);
+    }
+  }, [selectedDoctorId, appointmentDate, slotId, effectiveClinicId]);
+
+  useEffect(() => {
+    if (activeTab === 'walkin' && selectedDoctorId && appointmentDate) {
+      fetchWalkinPreview();
+    }
+  }, [activeTab, selectedDoctorId, appointmentDate, slotId, effectiveClinicId, fetchWalkinPreview]);
+
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setPasswordError(null);
@@ -339,6 +378,7 @@ export const ReceptionistDashboard: React.FC = () => {
 
       // Refresh data
       fetchDeskData();
+      fetchWalkinPreview();
     } catch (err: any) {
       setError(err.message || 'Failed to book walk-in appointment');
     } finally {
@@ -595,8 +635,15 @@ export const ReceptionistDashboard: React.FC = () => {
                               )}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <div className="font-semibold text-xs text-[#1d1d1f] truncate">
-                                {cleanDoctorName(doc.fullName)}
+                              <div className="flex items-center justify-between gap-1">
+                                <div className="font-semibold text-xs text-[#1d1d1f] truncate">
+                                  {cleanDoctorName(doc.fullName)}
+                                </div>
+                                {isSelected && (
+                                  <span className="text-[10px] font-bold text-[#0066cc] bg-[#0066cc]/10 px-2 py-0.5 rounded-full border border-[#0066cc]/20 shrink-0">
+                                    Token #{walkinPreview?.nextQueueNumber || 1}
+                                  </span>
+                                )}
                               </div>
                               <div className="text-[11px] text-[#0088e8] font-medium">{doc.specialty}</div>
                               <div className="mt-1 flex items-center gap-1.5 flex-wrap">
@@ -665,6 +712,43 @@ export const ReceptionistDashboard: React.FC = () => {
                       </select>
                     </div>
                   )}
+
+                  {/* Live Token Allocation Preview */}
+                  <div className="p-4 sm:p-5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-12 h-12 rounded-2xl bg-white border border-[#e5e5ea] flex items-center justify-center text-[#0066cc] font-bold text-xl shadow-xs shrink-0">
+                        #{walkinPreview?.nextQueueNumber || 1}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-semibold text-[#1d1d1f]">
+                            Allocated Token Number
+                          </span>
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            Guaranteed Token
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-[#86868b] mt-0.5">
+                          Assigned directly upon walk-in booking for {appointmentDate}.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-4 self-end sm:self-center border-t sm:border-t-0 pt-2 sm:pt-0 border-[#e5e5ea] w-full sm:w-auto justify-between sm:justify-end">
+                      <div className="text-right">
+                        <span className="text-[10px] text-[#86868b] block font-medium">Est. Time</span>
+                        <span className="text-xs font-semibold text-[#1d1d1f]">
+                          {previewLoading ? 'Updating...' : walkinPreview?.estimatedTime || 'Immediate'}
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-[10px] text-[#86868b] block font-medium">Waiting Ahead</span>
+                        <span className="text-xs font-semibold text-[#1d1d1f]">
+                          {previewLoading ? '...' : `${walkinPreview?.patientsAhead ?? 0} patients`}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
 
                   {/* Booking For Toggle */}
                   <div>
@@ -780,7 +864,9 @@ export const ReceptionistDashboard: React.FC = () => {
                       disabled={bookingLoading}
                       className="w-full sm:w-auto px-8"
                     >
-                      {bookingLoading ? 'Issuing Token...' : 'Generate Guaranteed Queue Token'}
+                      {bookingLoading
+                        ? 'Issuing Token...'
+                        : `Generate Guaranteed Queue Token (#${walkinPreview?.nextQueueNumber || 1})`}
                     </AppleButton>
                   </div>
                 </form>

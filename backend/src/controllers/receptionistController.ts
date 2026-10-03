@@ -634,17 +634,18 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
             );
           }
 
-          // Highest queue number on this date across ALL appointments (including CANCELLED) to avoid unique constraint collision
+          // Highest queue number on this date across appointments to prevent collisions and skip negative pending tokens
           const maxQueueAppt = await tx.appointment.findFirst({
             where: {
               doctorId: doctor.id,
               appointmentDate,
+              queueNumber: { gt: 0 },
             },
             orderBy: { queueNumber: 'desc' },
             select: { queueNumber: true },
           });
-          const highestQueue = maxQueueAppt?.queueNumber || 0;
-          const queueNumber = highestQueue + 1;
+          const highestQueue = maxQueueAppt && maxQueueAppt.queueNumber > 0 ? maxQueueAppt.queueNumber : 0;
+          const queueNumber = Math.max(1, highestQueue + 1);
 
           const estimatedTime = slotStatus.estimatedTime;
           const checkingWindow = chosenSlot.name;
