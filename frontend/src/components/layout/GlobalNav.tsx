@@ -20,7 +20,6 @@ import {
   HelpCircle,
   FileQuestion,
   Mail,
-  QrCode,
 } from 'lucide-react';
 import { api, getFileUrl, AppNotification } from '../../services/api';
 
@@ -280,7 +279,6 @@ export const GlobalNav: React.FC = () => {
                 location.pathname === '/how-it-works' ||
                 location.pathname === '/faq' ||
                 location.pathname === '/contact' ||
-                location.pathname === '/clinic-checkin' ||
                 moreMenuOpen
               )}
               aria-expanded={moreMenuOpen}
@@ -346,21 +344,6 @@ export const GlobalNav: React.FC = () => {
                   >
                     <Mail className="w-4 h-4 text-[#86868b]" />
                     <span>Contact Support</span>
-                  </Link>
-
-                  <div className="my-1 border-t border-[#f0f0f2]" />
-
-                  <Link
-                    to="/clinic-checkin"
-                    onClick={() => setMoreMenuOpen(false)}
-                    className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-[14px] transition-colors ${
-                      location.pathname === '/clinic-checkin'
-                        ? 'bg-black/[0.05] text-[#1d1d1f] font-semibold'
-                        : 'text-[#48484a] hover:bg-black/[0.04] hover:text-[#1d1d1f]'
-                    }`}
-                  >
-                    <QrCode className="w-4 h-4 text-[#86868b]" />
-                    <span>Clinic QR Check-in</span>
                   </Link>
                 </div>
               </div>
@@ -708,14 +691,6 @@ export const GlobalNav: React.FC = () => {
               >
                 <Mail className="w-4 h-4 text-current opacity-80" />
                 Contact Support
-              </Link>
-              <Link
-                to="/clinic-checkin"
-                onClick={closeMenu}
-                className={getMobileNavLinkClass(isActive('/clinic-checkin'))}
-              >
-                <QrCode className="w-4 h-4 text-current opacity-80" />
-                Clinic QR Check-in
               </Link>
             </div>
           </div>

@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { AppleButton } from '../../components/ui/AppleButton';
 import { UtilityCard } from '../../components/ui/UtilityCard';
 import {
-  MapPin,
+  QrCode,
   CheckCircle2,
   AlertCircle,
   ArrowRight,
@@ -28,18 +28,15 @@ export const ClinicCheckIn: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [autoAttempted, setAutoAttempted] = useState(false);
 
-  // Auto-attempt check-in once user is loaded
+  // Auto-attempt check-in only when both clinicId and code are present
   useEffect(() => {
     let mounted = true;
     if (loadingAuth || autoAttempted) return;
     if (!user) return; // Will prompt login
+    if (!clinicId || !code) return; // Direct visit: show informational guide
 
     queueMicrotask(async () => {
       if (!mounted) return;
-      if (!clinicId || !code) {
-        setErrorMessage('Invalid QR check-in link. Please scan the official physical QR poster located at the clinic desk.');
-        return;
-      }
 
       setCheckingIn(true);
       setErrorMessage(null);
@@ -101,51 +98,111 @@ export const ClinicCheckIn: React.FC = () => {
     }
   };
 
+  const hasQueryParams = Boolean(clinicId && code);
+
   return (
-    <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center p-4 sm:p-6">
       <div className="max-w-md w-full">
-        {/* Brand Header */}
+        {/* Apple Clean Header without tacky badges */}
         <div className="text-center mb-6">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#f5f5f7] text-[#0088e8] border border-[#e5e5ea] text-xs font-semibold mb-3">
-            <MapPin className="w-3.5 h-3.5 text-[#0088e8]" />
-            <span>Clinic Arrival Check-In</span>
-          </div>
-          <h1 className="text-2xl font-bold text-[#1d1d1f] tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-semibold text-[#1d1d1f] tracking-tight">
             Clinic Check-In
           </h1>
-          <p className="text-xs text-[#86868b] mt-1">
-            Confirm your arrival at the clinic.
+          <p className="text-sm text-[#86868b] mt-1.5">
+            Confirm your physical arrival at the clinic.
           </p>
         </div>
 
-        <UtilityCard className="p-5 sm:p-8">
-          {/* Missing Parameters / Tampered Link Alert */}
-          {(!clinicId || !code) && !errorMessage && (
-            <div className="text-center py-6">
-              <div className="w-14 h-14 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mx-auto mb-4">
-                <AlertCircle className="w-7 h-7" />
+        <UtilityCard className="p-6 sm:p-8">
+          {/* Direct Visit / Informational Guide (When no QR params in URL) */}
+          {!hasQueryParams && !errorMessage && !successData && (
+            <div className="text-center py-2">
+              <div className="w-14 h-14 rounded-2xl bg-black/[0.04] text-[#1d1d1f] flex items-center justify-center mx-auto mb-4">
+                <QrCode className="w-7 h-7" />
               </div>
-              <h3 className="text-base font-semibold text-[#1d1d1f]">Invalid Check-In Link</h3>
-              <p className="text-xs text-[#86868b] mt-2 leading-relaxed">
-                Clinic arrival can only be verified by scanning the physical QR poster displayed inside the clinic facility.
+              <h3 className="text-lg font-semibold text-[#1d1d1f] tracking-tight">
+                Scan Counter QR Standee
+              </h3>
+              <p className="text-xs text-[#86868b] mt-1.5 leading-relaxed max-w-xs mx-auto">
+                Clinic arrival is confirmed in person by scanning the physical QR standee placed at the reception counter.
               </p>
-              <div className="mt-6">
-                <AppleButton variant="primary" onClick={() => navigate('/patient/appointments')} className="w-full">
-                  Return to My Passes
+
+              {/* Steps Guide */}
+              <div className="my-6 p-4 rounded-2xl bg-[#fafafc] border border-[#e5e5ea] text-left space-y-3.5">
+                <div className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full bg-black/[0.05] text-[#1d1d1f] text-xs font-semibold flex items-center justify-center shrink-0 mt-0.5">
+                    1
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-[#1d1d1f]">Arrive at the Clinic</p>
+                    <p className="text-[11px] text-[#86868b]">Reach the front desk before your estimated consultation time.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full bg-black/[0.05] text-[#1d1d1f] text-xs font-semibold flex items-center justify-center shrink-0 mt-0.5">
+                    2
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-[#1d1d1f]">Scan QR Standee</p>
+                    <p className="text-[11px] text-[#86868b]">Open your phone camera to scan the desk display.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full bg-black/[0.05] text-[#1d1d1f] text-xs font-semibold flex items-center justify-center shrink-0 mt-0.5">
+                    3
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-[#1d1d1f]">Arrival Verified</p>
+                    <p className="text-[11px] text-[#86868b]">Your queue token updates to 'Arrived' automatically.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2.5">
+                {user ? (
+                  <AppleButton
+                    variant="primary"
+                    onClick={() => navigate('/patient/appointments')}
+                    className="w-full flex items-center justify-center gap-2"
+                  >
+                    <span>View My Active Passes</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </AppleButton>
+                ) : (
+                  <AppleButton
+                    variant="primary"
+                    onClick={() => navigate('/login?redirect=/patient/appointments')}
+                    className="w-full flex items-center justify-center gap-2"
+                  >
+                    <span>Sign In to View Passes</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </AppleButton>
+                )}
+
+                <AppleButton
+                  variant="ghost"
+                  onClick={() => navigate('/doctors')}
+                  className="w-full"
+                >
+                  Find Doctors & Clinics
                 </AppleButton>
               </div>
             </div>
           )}
 
-          {/* Not Logged In Prompt */}
-          {!loadingAuth && !user && clinicId && code && (
-            <div className="text-center py-6">
-              <div className="w-14 h-14 rounded-full bg-[#0088e8]/10 text-[#0088e8] flex items-center justify-center mx-auto mb-4">
+          {/* Not Logged In Prompt (When valid QR params exist) */}
+          {hasQueryParams && !loadingAuth && !user && (
+            <div className="text-center py-2">
+              <div className="w-14 h-14 rounded-2xl bg-black/[0.04] text-[#1d1d1f] flex items-center justify-center mx-auto mb-4">
                 <UserCheck className="w-7 h-7" />
               </div>
-              <h3 className="text-base font-semibold text-[#1d1d1f]">Sign In to Confirm Arrival</h3>
-              <p className="text-xs text-[#86868b] mt-2 leading-relaxed">
-                Please sign in with the phone number or account used to book your queue token so we can match your appointment.
+              <h3 className="text-lg font-semibold text-[#1d1d1f] tracking-tight">
+                Sign In to Confirm Arrival
+              </h3>
+              <p className="text-xs text-[#86868b] mt-1.5 leading-relaxed max-w-xs mx-auto">
+                Sign in with the phone number or account used to book your token so we can verify your appointment.
               </p>
               <div className="mt-6 space-y-2.5">
                 <AppleButton
@@ -156,62 +213,63 @@ export const ClinicCheckIn: React.FC = () => {
                   }}
                   className="w-full flex items-center justify-center gap-2"
                 >
-                  <span>Sign In & Verify Check-In</span>
+                  <span>Sign In & Verify</span>
                   <ArrowRight className="w-4 h-4" />
                 </AppleButton>
                 <AppleButton
-                  variant="secondary"
+                  variant="ghost"
                   onClick={() => {
                     const currentTarget = `${location.pathname}${location.search}`;
                     navigate(`/signup?redirect=${encodeURIComponent(currentTarget)}`);
                   }}
-                  className="w-full flex items-center justify-center gap-2"
+                  className="w-full"
                 >
-                  <span>New Patient? Create Account</span>
+                  New Patient? Create Account
                 </AppleButton>
               </div>
             </div>
           )}
 
           {/* Checking In Loader */}
-          {checkingIn && (
+          {hasQueryParams && checkingIn && (
             <div className="text-center py-8">
-              <div className="w-10 h-10 rounded-full border-3 border-[#0088e8] border-t-transparent animate-spin mx-auto mb-4"></div>
+              <div className="w-10 h-10 rounded-full border-2 border-[#0066cc] border-t-transparent animate-spin mx-auto mb-4"></div>
               <h3 className="text-sm font-semibold text-[#1d1d1f]">Verifying Check-In...</h3>
-              <p className="text-xs text-[#86868b] mt-1">Confirming arrival with clinic...</p>
+              <p className="text-xs text-[#86868b] mt-1">Connecting to clinic reception desk...</p>
             </div>
           )}
 
           {/* Success Check-In Confirmation */}
           {successData && !checkingIn && (
-            <div className="text-center py-4">
-              <div className="w-16 h-16 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-4 ring-8 ring-emerald-50/50 animate-fadeIn">
-                <CheckCircle2 className="w-9 h-9" />
+            <div className="text-center py-2">
+              <div className="w-14 h-14 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-3">
+                <CheckCircle2 className="w-8 h-8" />
               </div>
-              <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100/60 px-3 py-1 rounded-full border border-emerald-300">
-                You Are Checked In 📍
-              </span>
-              <h3 className="text-xl font-bold text-[#1d1d1f] tracking-tight mt-3">
-                Welcome to Clinic
+              <h3 className="text-xl font-semibold text-[#1d1d1f] tracking-tight">
+                Arrival Confirmed
               </h3>
-              <p className="text-xs text-[#86868b] mt-1">
-                {successMessage || 'Doctor and reception desk have been notified that you are at the clinic.'}
+              <p className="text-xs text-[#86868b] mt-1 max-w-xs mx-auto">
+                {successMessage || 'Doctor and front desk have been notified that you are at the clinic.'}
               </p>
 
               {/* Ticket Capsule */}
-              <div className="my-6 p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] text-left space-y-2">
+              <div className="my-6 p-4 rounded-2xl bg-[#fafafc] border border-[#e5e5ea] text-left space-y-2.5">
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-[#86868b]">Queue Token</span>
-                  <span className="text-lg font-bold text-[#0088e8]">#{successData.queueNumber}</span>
+                  <span className="text-lg font-bold text-[#0066cc]">#{successData.queueNumber}</span>
                 </div>
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-[#86868b]">Doctor</span>
                   <span className="font-semibold text-[#1d1d1f]">
-                    {successData.doctor?.user?.fullName ? (successData.doctor.user.fullName.startsWith('Dr.') ? successData.doctor.user.fullName : `Dr. ${successData.doctor.user.fullName}`) : 'Doctor'}
+                    {successData.doctor?.user?.fullName
+                      ? (successData.doctor.user.fullName.startsWith('Dr.')
+                          ? successData.doctor.user.fullName
+                          : `Dr. ${successData.doctor.user.fullName}`)
+                      : 'Doctor'}
                   </span>
                 </div>
                 {successData.clinic && (
-                  <div className="flex items-center justify-between text-xs pt-1 border-t border-[#e5e5ea]">
+                  <div className="flex items-center justify-between text-xs pt-2 border-t border-[#e5e5ea]">
                     <span className="text-[#86868b]">Clinic Venue</span>
                     <span className="font-medium text-[#1d1d1f] truncate max-w-[200px]">
                       {successData.clinic.clinicName}
@@ -225,20 +283,20 @@ export const ClinicCheckIn: React.FC = () => {
                 onClick={() => navigate('/patient/appointments')}
                 className="w-full flex items-center justify-center gap-2"
               >
-                <span>View My Live Queue Pass</span>
+                <span>View Live Queue Pass</span>
                 <ArrowRight className="w-4 h-4" />
               </AppleButton>
             </div>
           )}
 
-          {/* Error Message */}
-          {errorMessage && !checkingIn && !successData && (
-            <div className="text-center py-4">
-              <div className="w-14 h-14 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mx-auto mb-4">
+          {/* Error / Notice State */}
+          {hasQueryParams && errorMessage && !checkingIn && !successData && (
+            <div className="text-center py-2">
+              <div className="w-14 h-14 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center mx-auto mb-4">
                 <AlertCircle className="w-7 h-7" />
               </div>
               <h3 className="text-base font-semibold text-[#1d1d1f]">Check-In Notice</h3>
-              <p className="text-xs text-rose-700 bg-rose-50 p-3 rounded-xl border border-rose-200 mt-3 leading-relaxed">
+              <p className="text-xs text-[#555558] bg-[#fafafc] p-3.5 rounded-xl border border-[#e5e5ea] mt-3 leading-relaxed text-left">
                 {errorMessage}
               </p>
 
