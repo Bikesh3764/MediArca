@@ -799,6 +799,23 @@ export const updateAppointmentStatus = async (req: AuthRequest, res: Response): 
     }
 
     if (status === 'IN_CONSULTATION') {
+      const todayIso = getLocalDateString();
+      if (targetAppointment.appointmentDate !== todayIso) {
+        res.status(400).json({
+          success: false,
+          message: `Cannot move an appointment scheduled for ${targetAppointment.appointmentDate} into consultation today.`,
+        });
+        return;
+      }
+
+      if (!targetAppointment.isCheckedIn) {
+        res.status(400).json({
+          success: false,
+          message: 'Patient has not checked in at the clinic yet. Patient must be in cabin before consultation begins.',
+        });
+        return;
+      }
+
       await prisma.appointment.updateMany({
         where: {
           doctorId: targetAppointment.doctorId,
@@ -811,9 +828,6 @@ export const updateAppointmentStatus = async (req: AuthRequest, res: Response): 
     }
 
     const updatePayload: any = { status };
-    if (status === 'COMPLETED') {
-      updatePayload.completedAt = new Date();
-    }
 
     const updated = await prisma.appointment.update({
       where: { id: appointmentId },

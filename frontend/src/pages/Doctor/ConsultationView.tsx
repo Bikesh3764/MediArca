@@ -260,7 +260,7 @@ export const ConsultationView: React.FC = () => {
               <h2 className="text-base font-semibold text-[#1d1d1f]">Consultation Completed</h2>
             </div>
             <p className="text-xs text-[#86868b] mb-4">
-              This clinical encounter was finalized on {appointment.completedAt ? new Date(appointment.completedAt).toLocaleString() : appointment.appointmentDate}.
+              This clinical encounter was finalized on {appointment.completedAt ? new Date(appointment.completedAt).toLocaleString() : (appointment as any).updatedAt ? new Date((appointment as any).updatedAt).toLocaleString() : appointment.appointmentDate}.
             </p>
 
             {clinicalNotes && (

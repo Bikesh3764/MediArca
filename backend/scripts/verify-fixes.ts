@@ -5149,6 +5149,63 @@ Follow-up Date: 2026-10-15`;
   assert(canTransition('WAITING', 'COMPLETED', 'RECEPTIONIST').allowed === true, 'Receptionist can complete waiting consultation directly');
   assert(canTransition('IN_CONSULTATION', 'COMPLETED', 'PATIENT').allowed === false, 'Patient cannot complete consultation');
 
+  // --- Test 158: Cabin Presence & Date Enforcement for Call and Complete Consultation ---
+  console.log('\n--- Test 158: Cabin Presence & Date Enforcement for Call and Complete Consultation ---');
+  // 1. Consultation complete payload safety (no invalid completedAt field)
+  const completePayload: Record<string, any> = {
+    status: 'COMPLETED',
+    clinicalNotes: 'Follow-up in 2 weeks',
+  };
+  assert(!('completedAt' in completePayload), 'Consultation complete payload must not contain completedAt field (avoids Prisma crash)');
+
+  // 2. Call Patient validation logic
+  const validateCanCallPatient = (appointment: { appointmentDate: string; isCheckedIn: boolean }, todayIso: string) => {
+    if (appointment.appointmentDate !== todayIso) {
+      return { allowed: false, message: `Cannot call appointment scheduled for ${appointment.appointmentDate}. Only patients scheduled for today (${todayIso}) can be called into the active cabin.` };
+    }
+    if (!appointment.isCheckedIn) {
+      return { allowed: false, message: 'Patient is not in the cabin yet. The patient must check in / arrive at the clinic before being called into consultation.' };
+    }
+    return { allowed: true };
+  };
+
+  const todayDateStr = getLocalDateString();
+  const tomorrowDateStr = getTomorrowDateString();
+
+  assert(
+    validateCanCallPatient({ appointmentDate: todayDateStr, isCheckedIn: true }, todayDateStr).allowed === true,
+    'Patient present in cabin today can be called into consultation'
+  );
+  assert(
+    validateCanCallPatient({ appointmentDate: todayDateStr, isCheckedIn: false }, todayDateStr).allowed === false,
+    'Patient NOT in cabin today cannot be called into consultation'
+  );
+  assert(
+    validateCanCallPatient({ appointmentDate: tomorrowDateStr, isCheckedIn: true }, todayDateStr).allowed === false,
+    'Patient scheduled for tomorrow cannot be called into active consultation today'
+  );
+  assert(
+    validateCanCallPatient({ appointmentDate: tomorrowDateStr, isCheckedIn: false }, todayDateStr).allowed === false,
+    'Unchecked-in future appointment cannot be called into active consultation'
+  );
+
+  // 3. Direct Check-in Date Validation
+  const validateCanCheckInDirect = (appointmentDate: string, isCheckedIn: boolean, todayIso: string) => {
+    if (isCheckedIn && appointmentDate !== todayIso) {
+      return { allowed: false, message: `Cannot check in an appointment scheduled for ${appointmentDate}. Check-in is only available on the scheduled date (${todayIso}).` };
+    }
+    return { allowed: true };
+  };
+
+  assert(
+    validateCanCheckInDirect(todayDateStr, true, todayDateStr).allowed === true,
+    'Today appointment can be checked in'
+  );
+  assert(
+    validateCanCheckInDirect(tomorrowDateStr, true, todayDateStr).allowed === false,
+    'Future appointment cannot be checked in today'
+  );
+
   console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);

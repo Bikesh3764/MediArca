@@ -1650,8 +1650,17 @@ export const checkInAppointmentDirect = async (req: AuthRequest, res: Response):
       return;
     }
 
+    const todayIso = getLocalDateString();
     const newCheckedInState =
       req.body.isCheckedIn !== undefined ? Boolean(req.body.isCheckedIn) : !appointment.isCheckedIn;
+
+    if (newCheckedInState && appointment.appointmentDate !== todayIso) {
+      res.status(400).json({
+        success: false,
+        message: `Cannot check in an appointment scheduled for ${appointment.appointmentDate}. Check-in is only available on the scheduled date (${todayIso}).`,
+      });
+      return;
+    }
 
     const updated = await prisma.appointment.update({
       where: { id },

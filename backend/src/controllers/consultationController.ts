@@ -180,6 +180,25 @@ export const callPatient = async (req: AuthRequest, res: Response): Promise<void
       return;
     }
 
+    // Verify appointment date: only today's patients can be called into active consultation
+    const todayIso = getLocalDateString();
+    if (targetAppointment.appointmentDate !== todayIso) {
+      res.status(400).json({
+        success: false,
+        message: `Cannot call an appointment scheduled for ${targetAppointment.appointmentDate}. Only patients scheduled for today (${todayIso}) can be called into the active cabin.`,
+      });
+      return;
+    }
+
+    // Verify patient is in cabin / checked in before calling
+    if (!targetAppointment.isCheckedIn) {
+      res.status(400).json({
+        success: false,
+        message: 'Patient is not in the cabin yet. The patient must check in / arrive at the clinic before being called into consultation.',
+      });
+      return;
+    }
+
     // Reset any currently IN_CONSULTATION appointments on this date back to WAITING for this doctor
     await prisma.appointment.updateMany({
       where: {
@@ -425,7 +444,6 @@ export const completeConsultation = async (req: AuthRequest, res: Response): Pro
       where: { id: appointmentId },
       data: {
         status: 'COMPLETED',
-        completedAt: new Date(),
         ...(finalNotes !== undefined && { clinicalNotes: finalNotes }),
         ...(vitals && { vitals: typeof vitals === 'object' ? JSON.stringify(vitals) : vitals }),
       },
