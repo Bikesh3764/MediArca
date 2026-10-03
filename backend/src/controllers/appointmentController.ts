@@ -167,17 +167,18 @@ export const getQueuePreview = async (req: AuthRequest, res: Response): Promise<
       },
     });
 
-    // Highest queue number on this date across ALL appointments (including CANCELLED) to prevent collisions
+    // Highest positive queue number on this date across appointments to prevent collisions and skip negative pending tokens
     const maxQueueAppt = await prisma.appointment.findFirst({
       where: {
         doctorId: doctor.id,
         appointmentDate: dateStr,
+        queueNumber: { gt: 0 },
       },
       orderBy: { queueNumber: 'desc' },
       select: { queueNumber: true },
     });
-    const highestQueue = maxQueueAppt?.queueNumber || 0;
-    const nextQueueNumber = highestQueue + 1;
+    const highestQueue = maxQueueAppt && maxQueueAppt.queueNumber > 0 ? maxQueueAppt.queueNumber : 0;
+    const nextQueueNumber = Math.max(1, highestQueue + 1);
 
     // Evaluate status for each slot using authoritative server time
     const availableSlots: SlotStatusResult[] = slots.map((slot) => {

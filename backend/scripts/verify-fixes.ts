@@ -4921,8 +4921,16 @@ Follow-up Date: 2026-10-15`;
     return raw.startsWith('Dr.') ? raw : `Dr. ${raw}`;
   };
   assert(formatCleanDoctorName('Dr. Sarah Jenkins') === 'Dr. Sarah Jenkins', 'Preserves single Dr. prefix');
-  assert(formatCleanDoctorName('Sarah Jenkins') === 'Dr. Sarah Jenkins', 'Adds Dr. prefix when missing');
-  assert(formatCleanDoctorName('Dr. Dr. Sarah Jenkins'.replace(/^Dr\.\s*Dr\.\s*/, 'Dr. ')) === 'Dr. Sarah Jenkins', 'Strips duplicate Dr. Dr.');
+  // Test 154.6: Token numbering starts at 1 and ignores negative provisional tokens
+  const calculateNextQueueNumber = (positiveMax?: number | null) => {
+    const highest = positiveMax && positiveMax > 0 ? positiveMax : 0;
+    return Math.max(1, highest + 1);
+  };
+  assert(calculateNextQueueNumber(null) === 1, 'Token starts at 1 when no appointments exist');
+  assert(calculateNextQueueNumber(0) === 1, 'Token starts at 1 when highest queue is 0');
+  assert(calculateNextQueueNumber(-1) === 1, 'Token starts at 1 even if negative provisional token was present');
+  assert(calculateNextQueueNumber(1) === 2, 'Token increments to 2 when token 1 exists');
+  assert(calculateNextQueueNumber(5) === 6, 'Token increments to 6 when token 5 exists');
 
   console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);

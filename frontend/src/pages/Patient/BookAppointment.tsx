@@ -627,9 +627,9 @@ export const BookAppointment: React.FC = () => {
             <div className="my-4 p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea]">
               <div className="flex items-baseline justify-between mb-2">
                 <div>
-                  <span className="text-[11px] text-[#86868b] block font-medium">Estimated Token</span>
+                  <span className="text-[11px] text-[#86868b] block font-medium">Token No.</span>
                   <span className="text-2xl sm:text-3xl font-bold tracking-tight text-[#0066cc]">
-                    {isSelectedSlotPassed ? 'Shift Ended' : `Est. #${queuePreview.nextQueueNumber}`}
+                    {isSelectedSlotPassed ? 'Shift Ended' : `#${Math.max(1, queuePreview.nextQueueNumber || 1)}`}
                   </span>
                 </div>
                 <div className="text-right">
