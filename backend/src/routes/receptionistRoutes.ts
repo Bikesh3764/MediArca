@@ -11,6 +11,7 @@ import {
   approveAppointment,
   rejectAppointment,
   applyReceptionist,
+  rescheduleAppointment,
 } from '../controllers/receptionistController';
 import { updateCabinStatus } from '../controllers/doctorController';
 import { checkInAppointmentDirect } from '../controllers/appointmentController';
@@ -32,6 +33,7 @@ router.put('/doctor-status', updateCabinStatus);
 router.get('/pending-appointments', getPendingAppointments);
 router.post('/appointments/:appointmentId/approve', approveAppointment);
 router.post('/appointments/:appointmentId/reject', rejectAppointment);
+router.post('/appointments/:appointmentId/reschedule', rescheduleAppointment);
 router.post('/book-walkin', bookWalkin);
 router.patch('/appointments/:appointmentId/status', updateAppointmentStatus);
 router.patch('/appointments/:appointmentId/check-in', checkInAppointmentDirect);

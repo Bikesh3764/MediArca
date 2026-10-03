@@ -35,11 +35,11 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
     const dateStr = (req.query.date as string) || todayIso;
     const scope = (req.query.scope as string) || 'date';
 
-    // Auto-expire past unserved appointments for this doctor
+    // Auto-expire past unconfirmed requests for this doctor
     await prisma.appointment.updateMany({
       where: {
         doctorId: doctor.id,
-        status: { in: ['WAITING', 'PENDING_APPROVAL'] },
+        status: 'PENDING_APPROVAL',
         appointmentDate: { lt: todayIso },
       },
       data: { status: 'EXPIRED' },

@@ -45,11 +45,21 @@ import {
   ChevronRight,
   Phone,
 } from 'lucide-react';
+import { ClinicQrStandeeModal } from '../../components/common/ClinicQrStandeeModal';
 
 export const DoctorDashboard: React.FC = () => {
   const { user, loading: loadingAuth, updateUser } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+
+  const [isStandeeModalOpen, setIsStandeeModalOpen] = useState(false);
+  const [selectedStandeeClinic, setSelectedStandeeClinic] = useState<{
+    clinicId: string;
+    clinicName: string;
+    clinicAddress?: string;
+    clinicPhone?: string;
+    checkinCode?: string;
+  } | null>(null);
 
   const activeTab = searchParams.get('tab') === 'affiliations' ? 'affiliations' : 'queue';
   const setActiveTab = useCallback((tab: 'queue' | 'affiliations') => {
@@ -357,6 +367,27 @@ export const DoctorDashboard: React.FC = () => {
       subtitle={user?.doctorProfile?.specialty ? `${user.doctorProfile.specialty} • ${user?.doctorProfile?.clinicAddress || 'Practice Console'}` : 'Practice Queue & Patient Roster'}
       headerAction={
         <div className="flex items-center gap-2">
+          {affiliations?.clinics && affiliations.clinics.length > 0 && (
+            <AppleButton
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                const firstClinic = affiliations.clinics[0];
+                setSelectedStandeeClinic({
+                  clinicId: firstClinic.clinicId,
+                  clinicName: firstClinic.clinicName,
+                  clinicAddress: `${firstClinic.address || ''}${firstClinic.city ? `, ${firstClinic.city}` : ''}`,
+                  clinicPhone: firstClinic.phone || '',
+                  checkinCode: (firstClinic as any).checkinCode || '',
+                });
+                setIsStandeeModalOpen(true);
+              }}
+              className="flex items-center gap-1.5 text-xs text-[#0066cc] hover:text-[#0071e3] hover:bg-[#0066cc]/5 border border-[#0066cc]/20 cursor-pointer"
+            >
+              <QrCode className="w-3.5 h-3.5" />
+              <span>Clinic QR Standee</span>
+            </AppleButton>
+          )}
           <AppleButton
             variant="ghost"
             size="sm"
@@ -734,15 +765,36 @@ export const DoctorDashboard: React.FC = () => {
 
                       {/* Actions & Footer */}
                       <div className="mt-4 pt-3 border-t border-[#f5f5f7] space-y-2.5">
-                        <AppleButton
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => navigate(`/doctor/schedule?clinic=${clinic.clinicId}`)}
-                          className="w-full flex items-center justify-center gap-2 text-xs font-semibold text-[#0088e8] border-[#0088e8]/30 hover:bg-[#0088e8]/5 shadow-sm py-2"
-                        >
-                          <Clock className="w-3.5 h-3.5 text-[#0088e8]" />
-                          Edit Shifts & Fee for this Clinic
-                        </AppleButton>
+                        <div className="flex gap-2">
+                          <AppleButton
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => navigate(`/doctor/schedule?clinic=${clinic.clinicId}`)}
+                            className="flex-1 flex items-center justify-center gap-1.5 text-xs font-semibold text-[#0066cc] border-[#0066cc]/30 hover:bg-[#0066cc]/5 shadow-xs py-2"
+                          >
+                            <Clock className="w-3.5 h-3.5 text-[#0066cc]" />
+                            <span>Shifts & Fee</span>
+                          </AppleButton>
+                          <AppleButton
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              setSelectedStandeeClinic({
+                                clinicId: clinic.clinicId,
+                                clinicName: clinic.clinicName,
+                                clinicAddress: `${clinic.address || ''}${clinic.city ? `, ${clinic.city}` : ''}`,
+                                clinicPhone: clinic.phone || '',
+                                checkinCode: (clinic as any).checkinCode || '',
+                              });
+                              setIsStandeeModalOpen(true);
+                            }}
+                            className="flex items-center justify-center gap-1.5 text-xs font-medium text-[#1d1d1f] border border-[#e5e5ea] hover:bg-gray-100 py-2 px-3 cursor-pointer"
+                            title="View & Print Clinic QR Standee"
+                          >
+                            <QrCode className="w-3.5 h-3.5 text-[#0066cc]" />
+                            <span>QR Standee</span>
+                          </AppleButton>
+                        </div>
 
                         <div className="text-[11px] text-[#86868b] flex items-center justify-between px-1">
                           <span>Phone: {clinic.phone || 'N/A'}</span>
@@ -1864,6 +1916,19 @@ export const DoctorDashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Clinic QR Check-In Standee Modal */}
+      {selectedStandeeClinic && (
+        <ClinicQrStandeeModal
+          isOpen={isStandeeModalOpen}
+          onClose={() => setIsStandeeModalOpen(false)}
+          clinicId={selectedStandeeClinic.clinicId}
+          clinicName={selectedStandeeClinic.clinicName}
+          clinicAddress={selectedStandeeClinic.clinicAddress}
+          clinicPhone={selectedStandeeClinic.clinicPhone}
+          checkinCode={selectedStandeeClinic.checkinCode}
+        />
+      )}
     </DashboardLayout>
   );
 };

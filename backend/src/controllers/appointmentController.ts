@@ -816,6 +816,32 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
       ).catch(() => {});
     }
 
+    // Notify clinic receptionists managing this doctor
+    if (newAppointment.clinicId) {
+      prisma.receptionistProfile
+        .findMany({
+          where: { clinicId: newAppointment.clinicId, status: 'ACTIVE' },
+          include: { doctors: true },
+        })
+        .then((receptionists) => {
+          const displayPatient = patientName?.trim() || 'A patient';
+          for (const rec of receptionists) {
+            const isAssigned =
+              rec.doctors.length === 0 ||
+              rec.doctors.some((d) => d.doctorId === doctor.id);
+            if (isAssigned && rec.userId) {
+              createNotification(
+                rec.userId,
+                isPendingBooking ? 'New Appointment Request' : 'New Appointment Booking',
+                `${displayPatient} has ${isPendingBooking ? 'requested' : 'booked'} a visit with ${cleanDocName} for ${appointmentDate} (${chosenSlot.name}).`,
+                'APPOINTMENT'
+              ).catch(() => {});
+            }
+          }
+        })
+        .catch(() => {});
+    }
+
     const recContact = resolveReceptionistContact(newAppointment.clinic, newAppointment.doctorId, newAppointment.doctor);
 
     let estimatedQueueNumber = newAppointment.queueNumber > 0 ? newAppointment.queueNumber : 1;
@@ -1005,11 +1031,11 @@ export const getPatientAppointments = async (req: AuthRequest, res: Response): P
     const istTodayStr = getLocalDateString(now);
     const currentMinutes = getIndianTimeMinutes(now);
 
-    // Auto-expire past PENDING_APPROVAL and WAITING appointments whose consultation date has already passed
+    // Auto-expire past unconfirmed PENDING_APPROVAL requests whose consultation date has already passed
     await prisma.appointment.updateMany({
       where: {
         patientId: patient.id,
-        status: { in: ['PENDING_APPROVAL', 'WAITING'] },
+        status: 'PENDING_APPROVAL',
         appointmentDate: { lt: istTodayStr },
       },
       data: {
@@ -1530,6 +1556,31 @@ export const checkInAppointmentWithQR = async (req: AuthRequest, res: Response):
           'QUEUE'
         ).catch(() => {});
       }
+    }
+
+    if (updated.clinicId) {
+      prisma.receptionistProfile
+        .findMany({
+          where: { clinicId: updated.clinicId, status: 'ACTIVE' },
+          include: { doctors: true },
+        })
+        .then((receptionists) => {
+          const patientDisplayName = appointment.patientName || appointment.patient?.user?.fullName || 'Patient';
+          for (const rec of receptionists) {
+            const isAssigned =
+              rec.doctors.length === 0 ||
+              rec.doctors.some((d) => d.doctorId === updated.doctorId);
+            if (isAssigned && rec.userId) {
+              createNotification(
+                rec.userId,
+                'Patient Arrived at Clinic Desk',
+                `${patientDisplayName} (Queue #${updated.queueNumber}) has checked in on-site for Dr. ${updated.doctor?.user?.fullName || 'Doctor'}.`,
+                'QUEUE'
+              ).catch(() => {});
+            }
+          }
+        })
+        .catch(() => {});
     }
 
     res.json({

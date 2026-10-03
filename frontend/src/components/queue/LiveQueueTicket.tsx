@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { api, Appointment, getLocalDateString, getFileUrl } from '../../services/api';
-import { Clock, Calendar, MapPin, CheckCircle2, Building2, Star, Phone } from 'lucide-react';
+import { Clock, Calendar, MapPin, CheckCircle2, Building2, Star, Phone, QrCode } from 'lucide-react';
 import { AppleButton } from '../ui/AppleButton';
 import { CabinStatusBadge } from '../ui/DoctorCabinPresence';
 import { formatDisplayPhone } from '../../utils/phoneUtils';
@@ -8,11 +8,13 @@ import { formatDisplayPhone } from '../../utils/phoneUtils';
 interface LiveQueueTicketProps {
   appointment: Appointment;
   onCancel?: (id: string) => void;
+  onScanQr?: (appointment: Appointment) => void;
 }
 
 export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
   appointment,
   onCancel,
+  onScanQr,
 }) => {
   const { doctor, queueNumber, status, appointmentDate, checkingWindow, estimatedTime, liveQueue } =
     appointment;
@@ -298,18 +300,57 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
             </span>
           </div>
         ) : isToday && (status === 'WAITING' || status === 'IN_CONSULTATION') ? (
-          <div className="mt-3.5 p-3 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="mt-3.5 p-3 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-slate-400"></span>
               <span className="font-medium text-[#1d1d1f]">
                 Not Yet Checked In (En Route)
               </span>
             </div>
-            <span className="text-[11px] font-semibold text-[#0066cc] bg-white px-2.5 py-1 rounded-full border border-[#0066cc]/20 self-start sm:self-auto">
-              Scan Desk QR Upon Arrival
-            </span>
+            {onScanQr ? (
+              <button
+                type="button"
+                onClick={() => onScanQr(appointment)}
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white hover:bg-[#0066cc]/5 text-[#0066cc] border border-[#0066cc]/30 text-[11px] font-semibold active:scale-95 transition-all shadow-2xs cursor-pointer self-start sm:self-auto"
+              >
+                <QrCode className="w-3.5 h-3.5" />
+                <span>Scan Desk QR to Check In</span>
+              </button>
+            ) : (
+              <span className="text-[11px] font-semibold text-[#0066cc] bg-white px-2.5 py-1 rounded-full border border-[#0066cc]/20 self-start sm:self-auto">
+                Scan Desk QR Upon Arrival
+              </span>
+            )}
           </div>
         ) : null}
+
+        {/* Doctor Shift Concluded Notice for Confirmed WAITING Tickets */}
+        {isToday && status === 'WAITING' && liveQueue?.isShiftPassed && (
+          <div className="mt-3.5 p-4 rounded-2xl bg-amber-50/80 border border-amber-200/80 text-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 text-amber-900 font-semibold">
+                  <Clock className="w-4 h-4 text-amber-700 shrink-0" />
+                  <span>Doctor Shift Concluded • Token #{queueNumber} Remains Valid</span>
+                </div>
+                <p className="text-[#48484a] mt-1 text-[11px] leading-relaxed">
+                  If your doctor is consulting overtime, please stay nearby in the waiting area. Otherwise, please speak with the reception desk to reschedule your visit or shift your token to the next day.
+                </p>
+              </div>
+              {deskPhone && (
+                <div className="shrink-0">
+                  <a
+                    href={`tel:${deskPhone.replace(/\s+/g, '')}`}
+                    className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-full bg-amber-900 hover:bg-black text-white text-xs font-medium active:scale-95 transition-all shadow-2xs"
+                  >
+                    <Phone className="w-3 h-3 text-amber-200 shrink-0" />
+                    <span>Contact Desk: {formatDisplayPhone(deskPhone)}</span>
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Live Queue Position Tracker */}
         {(status === 'WAITING' || status === 'IN_CONSULTATION') && liveQueue && (

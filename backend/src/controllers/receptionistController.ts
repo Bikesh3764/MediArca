@@ -257,7 +257,7 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
         where: {
           doctorId: doctorId,
           appointmentDate: appointmentDate,
-          status: { in: ['WAITING', 'PENDING_APPROVAL'] },
+          status: 'PENDING_APPROVAL',
           ...(receptionist?.clinicId ? { clinicId: receptionist.clinicId } : {}),
         },
         data: { status: 'EXPIRED' },
@@ -1477,4 +1477,181 @@ export const applyReceptionist = async (req: Request, res: Response): Promise<vo
     });
   }
 };
+
+export const rescheduleAppointment = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user || req.user.role !== 'RECEPTIONIST') {
+      res.status(403).json({ success: false, message: 'Access denied' });
+      return;
+    }
+
+    const receptionist = await prisma.receptionistProfile.findUnique({
+      where: { userId: req.user.id },
+      include: {
+        doctors: true,
+        clinic: true,
+      },
+    });
+
+    if (!receptionist || receptionist.status !== 'ACTIVE') {
+      res.status(403).json({ success: false, message: 'Receptionist desk profile is inactive' });
+      return;
+    }
+
+    const rawApptId = req.params.appointmentId;
+    const appointmentId = typeof rawApptId === 'string' ? rawApptId : Array.isArray(rawApptId) ? rawApptId[0] : '';
+    const { newDate, newSlotId } = req.body;
+
+    if (!newDate) {
+      res.status(400).json({ success: false, message: 'New appointment date is required' });
+      return;
+    }
+
+    const istTodayStr = getLocalDateString();
+    if (newDate < istTodayStr) {
+      res.status(400).json({ success: false, message: 'Cannot reschedule to a past date' });
+      return;
+    }
+
+    const appointment: any = await prisma.appointment.findUnique({
+      where: { id: appointmentId },
+      include: {
+        doctor: {
+          include: {
+            user: { select: { fullName: true } },
+            clinics: true,
+          },
+        },
+        patient: {
+          include: {
+            user: true,
+          },
+        },
+        clinic: true,
+      },
+    });
+
+    if (!appointment) {
+      res.status(404).json({ success: false, message: 'Appointment not found' });
+      return;
+    }
+
+    // Verify receptionist authority
+    if (receptionist.clinicId && appointment.clinicId && receptionist.clinicId !== appointment.clinicId) {
+      res.status(403).json({ success: false, message: 'Unauthorized for this clinic facility' });
+      return;
+    }
+
+    const assignedDoctorIds = receptionist.doctors.map((d: any) => d.doctorId);
+    if (assignedDoctorIds.length > 0 && !assignedDoctorIds.includes(appointment.doctorId)) {
+      res.status(403).json({ success: false, message: 'Unauthorized for this doctor' });
+      return;
+    }
+
+    if (['COMPLETED', 'CANCELLED', 'REJECTED'].includes(appointment.status)) {
+      res.status(400).json({
+        success: false,
+        message: `Cannot reschedule appointment with status '${appointment.status}'`,
+      });
+      return;
+    }
+
+    // Find next available positive queue number on newDate
+    let attempts = 0;
+    const maxAttempts = 3;
+    let updatedAppt: any;
+
+    while (attempts < maxAttempts) {
+      try {
+        updatedAppt = await prisma.$transaction(async (tx) => {
+          await tx.$executeRaw`SELECT id FROM "DoctorProfile" WHERE id = ${appointment.doctorId} FOR UPDATE;`;
+
+          const maxQueue = await tx.appointment.findFirst({
+            where: {
+              doctorId: appointment.doctorId,
+              appointmentDate: newDate,
+              queueNumber: { gt: 0 },
+            },
+            orderBy: { queueNumber: 'desc' },
+            select: { queueNumber: true },
+          });
+
+          const nextQueueNumber = (maxQueue?.queueNumber || 0) + 1;
+
+          // Resolve slot
+          let slots = parseDoctorSlots(appointment.doctor);
+          const cd =
+            appointment.doctor?.clinics?.find((c: any) => c.clinicId === appointment.clinicId) ||
+            appointment.doctor?.clinics?.[0];
+          if (cd?.slots) {
+            try {
+              const p = typeof cd.slots === 'string' ? JSON.parse(cd.slots) : cd.slots;
+              if (Array.isArray(p) && p.length > 0) slots = p;
+            } catch {}
+          }
+          const chosenSlotId = newSlotId || appointment.slotId;
+          const slot = (chosenSlotId && slots.find((s) => s.id === chosenSlotId)) || slots[0];
+
+          const pace = slot?.avgConsultationMinutes || 3.0;
+          const slotStartMins = slot ? timeToMinutes(slot.startTime) : 9 * 60;
+          const estStartMins = slotStartMins + (nextQueueNumber - 1) * pace;
+          const estimatedTime = minutesTo12Hour(estStartMins);
+          const checkingWindow = slot ? `${slot.startTime} – ${slot.endTime}` : (appointment.checkingWindow || 'General Hours');
+
+          return await tx.appointment.update({
+            where: { id: appointment.id },
+            data: {
+              appointmentDate: newDate,
+              queueNumber: nextQueueNumber,
+              slotId: slot?.id || chosenSlotId || null,
+              checkingWindow,
+              estimatedTime,
+              status: 'WAITING',
+              isCheckedIn: false, // Reset arrival for new date
+            },
+            include: {
+              doctor: { include: { user: { select: { fullName: true } } } },
+              patient: { include: { user: true } },
+              clinic: true,
+            },
+          });
+        });
+        break;
+      } catch (err: any) {
+        attempts++;
+        if (attempts >= maxAttempts) throw err;
+        await new Promise((r) => setTimeout(r, 100 * attempts));
+      }
+    }
+
+    const docName = appointment.doctor?.user?.fullName
+      ? (appointment.doctor.user.fullName.startsWith('Dr.')
+          ? appointment.doctor.user.fullName
+          : `Dr. ${appointment.doctor.user.fullName}`)
+      : 'Doctor';
+
+    // Dispatch notification to patient
+    if (appointment.patient?.userId) {
+      createNotification(
+        appointment.patient.userId,
+        'Appointment Rescheduled',
+        `Your visit with ${docName} has been shifted to ${newDate} by the reception desk. Your new token is Queue #${updatedAppt.queueNumber}.`,
+        'APPOINTMENT'
+      ).catch(() => {});
+    }
+
+    res.json({
+      success: true,
+      message: `Appointment successfully rescheduled to ${newDate} (Queue #${updatedAppt.queueNumber}).`,
+      data: updatedAppt,
+    });
+  } catch (error: any) {
+    console.error('rescheduleAppointment error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to reschedule appointment',
+    });
+  }
+};
+
 

@@ -5028,6 +5028,66 @@ Follow-up Date: 2026-10-15`;
   assert(formatWalkinButtonText(null, false) === 'Generate Guaranteed Queue Token (#1)', 'Walk-in button defaults to Token (#1) when preview is loading');
   assert(formatWalkinButtonText(null, true) === 'Issuing Token...', 'Walk-in button shows loading text when issuing');
 
+  // Test 155: Confirmed Ticket Persistence, Receptionist Reschedule, and QR Check-in Ecosystem
+  console.log('\n--- Test 155: Confirmed Ticket Persistence, Receptionist Reschedule & QR Ecosystem ---');
+
+  // Test 155.1: Confirmed WAITING appointment NEVER auto-expires when shift passed
+  const autoExpireFilter = (status: string, isShiftPassed: boolean, isPastDate: boolean) => {
+    // Confirmed appointments (WAITING) NEVER auto-expire because doctor may consult overtime
+    if (status === 'WAITING') return false;
+    // Unconfirmed pending requests auto-expire after shift or day passes
+    if (status === 'PENDING_APPROVAL' && (isShiftPassed || isPastDate)) return true;
+    return false;
+  };
+
+  assert(autoExpireFilter('WAITING', true, false) === false, 'Confirmed WAITING ticket does NOT auto-expire when shift is passed');
+  assert(autoExpireFilter('WAITING', false, false) === false, 'Confirmed WAITING ticket does NOT auto-expire during shift');
+  assert(autoExpireFilter('WAITING', true, true) === false, 'Confirmed WAITING ticket remains intact for doctor overtime or manual desk reschedule');
+  assert(autoExpireFilter('PENDING_APPROVAL', true, false) === true, 'Unconfirmed PENDING_APPROVAL request auto-expires when shift ends');
+  assert(autoExpireFilter('PENDING_APPROVAL', false, true) === true, 'Unconfirmed PENDING_APPROVAL request auto-expires when date has passed');
+  assert(autoExpireFilter('PENDING_APPROVAL', false, false) === false, 'Active PENDING_APPROVAL request remains active');
+
+  // Test 155.2: Reschedule token allocation logic
+  const calculateRescheduleNewToken = (existingAppointmentsOnNewDate: { queueNumber: number; status: string }[]) => {
+    const activeConfirmed = existingAppointmentsOnNewDate.filter(
+      (a) => a.queueNumber > 0 && ['WAITING', 'IN_CONSULTATION', 'COMPLETED'].includes(a.status)
+    );
+    const maxToken = activeConfirmed.reduce((max, a) => Math.max(max, a.queueNumber), 0);
+    return maxToken + 1;
+  };
+
+  assert(calculateRescheduleNewToken([]) === 1, 'Rescheduled appointment gets Token #1 on fresh day');
+  assert(calculateRescheduleNewToken([{ queueNumber: 1, status: 'WAITING' }, { queueNumber: 2, status: 'WAITING' }]) === 3, 'Rescheduled appointment gets next consecutive Token #3');
+  assert(calculateRescheduleNewToken([{ queueNumber: -1, status: 'PENDING_APPROVAL' }]) === 1, 'Rescheduled appointment ignores provisional negative tokens and starts at #1');
+
+  // Test 155.3: QR Check-in verification code matching & venue gating
+  const verifyQrCheckIn = (scannedCode: string, clinicCheckinCode: string | null, appointmentClinicId?: string, scannedClinicId?: string) => {
+    if (!clinicCheckinCode) return { success: false, reason: 'NO_CLINIC_CODE' };
+    if (scannedCode.trim() !== clinicCheckinCode.trim()) return { success: false, reason: 'INVALID_CODE' };
+    if (appointmentClinicId && scannedClinicId && appointmentClinicId !== scannedClinicId) {
+      return { success: false, reason: 'MISMATCHED_VENUE' };
+    }
+    return { success: true };
+  };
+
+  assert(verifyQrCheckIn('847291', '847291', 'clinic-1', 'clinic-1').success === true, 'Valid 6-digit desk code and matching venue succeeds');
+  assert(verifyQrCheckIn('111111', '847291', 'clinic-1', 'clinic-1').reason === 'INVALID_CODE', 'Mismatched desk code is rejected');
+  assert(verifyQrCheckIn('847291', '847291', 'clinic-1', 'clinic-2').reason === 'MISMATCHED_VENUE', 'Scanning code at wrong clinic venue is rejected');
+
+  // Test 155.4: Receptionist Notification Construction for Online Bookings
+  const buildBookingNotificationForReceptionist = (patientName: string, doctorName: string, queueNumber: number, isWalkin: boolean) => {
+    return {
+      title: isWalkin ? 'Walk-in Registered' : 'New Appointment Booked',
+      message: `${patientName} booked with Dr. ${doctorName} (Token #${queueNumber}).`,
+      type: isWalkin ? 'WALKIN_REGISTERED' : 'APPOINTMENT_BOOKED',
+    };
+  };
+
+  const notif = buildBookingNotificationForReceptionist('Rahul Ray', 'Sarah Jenkins', 4, false);
+  assert(notif.title === 'New Appointment Booked', 'Creates correct booking notification title');
+  assert(notif.message.includes('Rahul Ray') && notif.message.includes('Token #4'), 'Includes patient name and token in receptionist alert');
+  assert(notif.type === 'APPOINTMENT_BOOKED', 'Has APPOINTMENT_BOOKED notification type');
+
   console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);

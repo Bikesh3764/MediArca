@@ -28,7 +28,14 @@ import {
   CreditCard,
   Check,
   Search,
+  Bell,
+  QrCode,
+  Calendar,
+  RefreshCw,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
+import { ClinicQrStandeeModal } from '../../components/common/ClinicQrStandeeModal';
 
 export interface TokenPassData {
   queueNumber: number;
@@ -61,10 +68,34 @@ export const ReceptionistDashboard: React.FC = () => {
 
   const [data, setData] = useState<ReceptionistDashboardData | null>(null);
   const [, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'walkin' | 'queue' | 'pending' | 'doctors'>('walkin');
+  const [activeTab, setActiveTab] = useState<'walkin' | 'queue' | 'pending' | 'doctors' | 'notifications'>('walkin');
 
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  // Notifications state
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [unreadNotifCount, setUnreadNotifCount] = useState(0);
+  const [expandedNotifId, setExpandedNotifId] = useState<string | null>(null);
+  const [notifFilter, setNotifFilter] = useState<'ALL' | 'UNREAD'>('ALL');
+
+  // Clinic QR Standee Modal state
+  const [isStandeeModalOpen, setIsStandeeModalOpen] = useState(false);
+
+  // Reschedule Appointment state
+  const [rescheduleTarget, setRescheduleTarget] = useState<{
+    appointmentId: string;
+    patientName: string;
+    doctorName: string;
+    currentDate: string;
+    currentQueueNumber?: number;
+    doctorId: string;
+    slotId?: string;
+  } | null>(null);
+  const [rescheduleDate, setRescheduleDate] = useState<string>('');
+  const [rescheduleSlotId, setRescheduleSlotId] = useState<string>('');
+  const [rescheduling, setRescheduling] = useState(false);
+  const [rescheduleError, setRescheduleError] = useState<string | null>(null);
 
   // Pending Approvals state
   const [pendingAppointments, setPendingAppointments] = useState<Appointment[]>([]);
@@ -101,6 +132,66 @@ export const ReceptionistDashboard: React.FC = () => {
   const [queueSearch, setQueueSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'WAITING' | 'IN_CONSULTATION' | 'COMPLETED' | 'CANCELLED' | 'EXPIRED'>('ALL');
 
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const res = await api.getNotifications();
+      const list = res?.notifications || [];
+      setNotifications(list);
+      setUnreadNotifCount(res?.unreadCount ?? list.filter((n: any) => !n.isRead).length);
+    } catch (err) {
+      console.error('Failed to load receptionist notifications:', err);
+    }
+  }, []);
+
+  const handleMarkAllNotifsRead = async () => {
+    try {
+      await api.markAllNotificationsRead();
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+      setUnreadNotifCount(0);
+    } catch (err: any) {
+      console.error('Failed to mark all notifications as read:', err);
+    }
+  };
+
+  const handleMarkOneNotifRead = async (id: string) => {
+    try {
+      await api.markNotificationRead(id);
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
+      );
+      setUnreadNotifCount((prev) => Math.max(0, prev - 1));
+    } catch (err) {
+      console.error('Failed to mark notification read:', err);
+    }
+  };
+
+  const handleConfirmReschedule = async () => {
+    if (!rescheduleTarget) return;
+    if (!rescheduleDate) {
+      setRescheduleError('Please choose a new appointment date.');
+      return;
+    }
+    setRescheduling(true);
+    setRescheduleError(null);
+    try {
+      const res = await api.rescheduleAppointment(rescheduleTarget.appointmentId, {
+        newDate: rescheduleDate,
+        newSlotId: rescheduleSlotId || undefined,
+      });
+      const newQueueNum = res?.data?.queueNumber || res?.data?.appointment?.queueNumber;
+      setSuccessMsg(
+        `Appointment for ${rescheduleTarget.patientName} successfully shifted to ${rescheduleDate}${newQueueNum ? ` (New Token #${newQueueNum})` : ''}.`
+      );
+      setRescheduleTarget(null);
+      if (activeTab === 'queue' && queueDoctorId) fetchQueue();
+      if (activeTab === 'pending') fetchPendingAppointments();
+    } catch (err: any) {
+      setRescheduleError(err.message || 'Failed to reschedule appointment');
+    } finally {
+      setRescheduling(false);
+    }
+  };
+
   const fetchPendingAppointments = useCallback(async () => {
     try {
       setPendingLoading(true);
@@ -128,15 +219,16 @@ export const ReceptionistDashboard: React.FC = () => {
           setSlotId((prev) => prev || res.doctors[0].slots[0].id);
         }
       }
-      // Refresh pending approvals badge
+      // Refresh pending approvals badge and notifications
       fetchPendingAppointments();
+      fetchNotifications();
     } catch (err: any) {
       console.error('Failed to load desk data:', err);
       setError(err.message || 'Failed to load desk details');
     } finally {
       setLoading(false);
     }
-  }, [fetchPendingAppointments]);
+  }, [fetchPendingAppointments, fetchNotifications]);
 
   useEffect(() => {
     let mounted = true;
@@ -147,6 +239,15 @@ export const ReceptionistDashboard: React.FC = () => {
       mounted = false;
     };
   }, [fetchDeskData]);
+
+  // Periodic real-time sync for notifications and desk queues
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchNotifications();
+      fetchPendingAppointments();
+    }, 15000);
+    return () => clearInterval(interval);
+  }, [fetchNotifications, fetchPendingAppointments]);
 
   // Fetch queue when queueDoctorId or queueDate changes
   const fetchQueue = useCallback(async (docId?: string, dateStr?: string) => {
@@ -193,11 +294,14 @@ export const ReceptionistDashboard: React.FC = () => {
       if (activeTab === 'pending') {
         fetchPendingAppointments();
       }
+      if (activeTab === 'notifications') {
+        fetchNotifications();
+      }
     });
     return () => {
       mounted = false;
     };
-  }, [activeTab, queueDoctorId, queueDate, fetchQueue, fetchPendingAppointments]);
+  }, [activeTab, queueDoctorId, queueDate, fetchQueue, fetchPendingAppointments, fetchNotifications]);
 
   const handleApprovePendingAppointment = async (apptId: string) => {
     try {
@@ -455,6 +559,14 @@ export const ReceptionistDashboard: React.FC = () => {
       onClick: () => setActiveTab('doctors'),
       badge: linkedDoctors.length > 0 ? linkedDoctors.length : undefined,
     },
+    {
+      id: 'notifications',
+      label: 'Notifications',
+      icon: Bell,
+      active: activeTab === 'notifications',
+      onClick: () => setActiveTab('notifications'),
+      badge: unreadNotifCount > 0 ? unreadNotifCount : undefined,
+    },
   ];
 
   const clinicCity = data?.clinic?.city?.trim();
@@ -474,6 +586,35 @@ export const ReceptionistDashboard: React.FC = () => {
       navItems={navItems}
       title={titleText}
       subtitle={subtitleText}
+      headerAction={
+        <div className="flex items-center gap-2">
+          {data?.clinic?.id && (
+            <AppleButton
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsStandeeModalOpen(true)}
+              className="flex items-center gap-1.5 text-xs text-[#0066cc] hover:text-[#0071e3] hover:bg-[#0066cc]/5 border border-[#0066cc]/20 cursor-pointer"
+            >
+              <QrCode className="w-3.5 h-3.5" />
+              <span>Clinic QR Standee</span>
+            </AppleButton>
+          )}
+          <AppleButton
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              fetchDeskData();
+              fetchNotifications();
+              if (activeTab === 'queue' && queueDoctorId) fetchQueue();
+              if (activeTab === 'pending') fetchPendingAppointments();
+            }}
+            className="flex items-center gap-1.5 text-xs cursor-pointer"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>Refresh</span>
+          </AppleButton>
+        </div>
+      }
     >
       <div className="space-y-6 print:hidden">
         {/* Banner Feedback */}
@@ -1093,6 +1234,32 @@ export const ReceptionistDashboard: React.FC = () => {
                             <button
                               type="button"
                               disabled={isRejecting || isApproving}
+                              onClick={() => {
+                                setRescheduleTarget({
+                                  appointmentId: appt.id,
+                                  patientName: patientDisplay,
+                                  doctorName: cleanDoctorName(appt.doctor?.user?.fullName),
+                                  currentDate: appt.appointmentDate,
+                                  currentQueueNumber: appt.queueNumber,
+                                  doctorId: appt.doctorId,
+                                  slotId: appt.slotId,
+                                });
+                                const d = new Date(appt.appointmentDate);
+                                d.setDate(d.getDate() + 1);
+                                setRescheduleDate(getLocalDateString(d));
+                                setRescheduleSlotId(appt.slotId || '');
+                                setRescheduleError(null);
+                              }}
+                              className="px-3.5 py-2 rounded-full text-xs font-medium text-[#0066cc] hover:bg-[#0066cc]/10 border border-[#0066cc]/30 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-1 cursor-pointer"
+                              title="Shift patient appointment to another date"
+                            >
+                              <Calendar className="w-3.5 h-3.5" />
+                              <span>Shift Date</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              disabled={isRejecting || isApproving}
                               onClick={() => handleRejectPendingAppointment(appt.id)}
                               className="flex-1 sm:flex-initial px-4 py-2 rounded-full text-xs font-medium text-[#86868b] hover:text-rose-600 hover:bg-rose-50 border border-[#e5e5ea] transition-all active:scale-[0.98] disabled:opacity-50"
                             >
@@ -1377,6 +1544,33 @@ export const ReceptionistDashboard: React.FC = () => {
                                     In Cabin
                                   </span>
                                 )}
+                                {(appt.status === 'WAITING' || appt.status === 'PENDING_APPROVAL') && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const queueDoctor = linkedDoctors.find((d) => d.doctorId === queueDoctorId);
+                                      setRescheduleTarget({
+                                        appointmentId: appt.id,
+                                        patientName: appt.patientName,
+                                        doctorName: queueDoctor?.fullName || 'Practitioner',
+                                        currentDate: queueDate,
+                                        currentQueueNumber: appt.queueNumber,
+                                        doctorId: queueDoctorId,
+                                        slotId: appt.slotId,
+                                      });
+                                      const d = new Date(queueDate);
+                                      d.setDate(d.getDate() + 1);
+                                      setRescheduleDate(getLocalDateString(d));
+                                      setRescheduleSlotId(appt.slotId || '');
+                                      setRescheduleError(null);
+                                    }}
+                                    className="px-2.5 py-1.5 rounded-full text-[#0066cc] hover:bg-[#0066cc]/10 text-[11px] font-medium border border-[#0066cc]/30 transition-all cursor-pointer inline-flex items-center gap-1"
+                                    title="Shift patient appointment to another date/shift"
+                                  >
+                                    <Calendar className="w-3 h-3" />
+                                    <span>Shift Date</span>
+                                  </button>
+                                )}
                                 {appt.status !== 'CANCELLED' && appt.status !== 'COMPLETED' && appt.status !== 'IN_CONSULTATION' && appt.status !== 'EXPIRED' && (
                                   <button
                                     onClick={() => handleStatusChange(appt.id, 'CANCELLED')}
@@ -1507,6 +1701,165 @@ export const ReceptionistDashboard: React.FC = () => {
                   </div>
                 )}
               </div>
+            </div>
+          )}
+
+          {/* 5. Notifications Tab */}
+          {activeTab === 'notifications' && (
+            <div className="space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#f0f0f0]">
+                <div>
+                  <h3 className="text-lg font-semibold text-[#1d1d1f]">Desk Notifications</h3>
+                  <p className="text-xs text-[#86868b] mt-0.5">
+                    Real-time alerts for incoming bookings and on-site patient check-ins.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  {unreadNotifCount > 0 && (
+                    <AppleButton
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleMarkAllNotifsRead}
+                      className="text-xs text-[#0066cc] hover:text-[#0071e3]"
+                    >
+                      <Check className="w-3.5 h-3.5 mr-1" />
+                      Mark all read
+                    </AppleButton>
+                  )}
+                  <div className="bg-[#f5f5f7] p-1 rounded-full border border-[#e5e5ea] flex">
+                    <button
+                      type="button"
+                      onClick={() => setNotifFilter('ALL')}
+                      className={`px-3 py-1 rounded-full text-xs transition-all cursor-pointer ${
+                        notifFilter === 'ALL'
+                          ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs'
+                          : 'text-[#86868b] hover:text-[#1d1d1f]'
+                      }`}
+                    >
+                      All ({notifications.length})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setNotifFilter('UNREAD')}
+                      className={`px-3 py-1 rounded-full text-xs transition-all cursor-pointer ${
+                        notifFilter === 'UNREAD'
+                          ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs'
+                          : 'text-[#86868b] hover:text-[#1d1d1f]'
+                      }`}
+                    >
+                      Unread ({unreadNotifCount})
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Notification List */}
+              {(() => {
+                const filtered = notifications.filter((n) =>
+                  notifFilter === 'UNREAD' ? !n.isRead : true
+                );
+
+                if (filtered.length === 0) {
+                  return (
+                    <div className="py-16 text-center">
+                      <div className="w-12 h-12 rounded-full bg-[#f5f5f7] text-[#86868b] flex items-center justify-center mx-auto mb-3">
+                        <Bell className="w-6 h-6" />
+                      </div>
+                      <h4 className="text-sm font-semibold text-[#1d1d1f]">
+                        {notifFilter === 'UNREAD' ? 'No unread desk notifications' : 'No notifications yet'}
+                      </h4>
+                      <p className="text-xs text-[#86868b] mt-1 max-w-sm mx-auto">
+                        When patients book appointments or check in at the reception desk, instant notifications will appear here.
+                      </p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="space-y-3">
+                    {filtered.map((item) => {
+                      const isExpanded = expandedNotifId === item.id;
+                      return (
+                        <div
+                          key={item.id}
+                          onClick={() => {
+                            if (!item.isRead) handleMarkOneNotifRead(item.id);
+                            setExpandedNotifId(isExpanded ? null : item.id);
+                          }}
+                          className={`p-4 rounded-2xl border transition-all cursor-pointer ${
+                            !item.isRead
+                              ? 'bg-[#0066cc]/[0.02] border-[#0066cc]/30 hover:border-[#0066cc]'
+                              : 'bg-white border-[#e5e5ea] hover:border-black/15'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex items-start gap-3 min-w-0">
+                              <div
+                                className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
+                                  !item.isRead
+                                    ? 'bg-[#0066cc]/10 text-[#0066cc]'
+                                    : 'bg-[#f5f5f7] text-[#86868b]'
+                                }`}
+                              >
+                                <Bell className="w-4 h-4" />
+                              </div>
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <h4 className="text-xs font-semibold text-[#1d1d1f] tracking-tight">
+                                    {item.title}
+                                  </h4>
+                                  {!item.isRead && (
+                                    <span className="w-2 h-2 rounded-full bg-[#0066cc] shrink-0"></span>
+                                  )}
+                                </div>
+                                <p
+                                  className={`text-xs text-[#48484a] mt-1 leading-relaxed ${
+                                    isExpanded ? '' : 'line-clamp-2'
+                                  }`}
+                                >
+                                  {item.message}
+                                </p>
+                                <div className="flex items-center gap-3 mt-2 text-[10px] text-[#86868b]">
+                                  <span>{new Date(item.createdAt).toLocaleString()}</span>
+                                  {item.type && (
+                                    <span className="uppercase font-semibold tracking-wider px-2 py-0.5 rounded-full bg-[#f5f5f7] border border-[#e5e5ea]">
+                                      {item.type.replace(/_/g, ' ')}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="shrink-0 flex items-center gap-1">
+                              {!item.isRead && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleMarkOneNotifRead(item.id);
+                                  }}
+                                  className="text-[11px] font-medium text-[#0066cc] hover:underline px-2 py-1"
+                                >
+                                  Mark read
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                className="p-1 text-[#86868b] hover:text-[#1d1d1f]"
+                              >
+                                {isExpanded ? (
+                                  <ChevronUp className="w-4 h-4" />
+                                ) : (
+                                  <ChevronDown className="w-4 h-4" />
+                                )}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
             </div>
           )}
         </div>
@@ -1744,6 +2097,158 @@ export const ReceptionistDashboard: React.FC = () => {
                 {changingPassword ? 'Updating Password...' : 'Save & Unlock Receptionist Desk'}
               </AppleButton>
             </form>
+          </div>
+        </div>
+      )}
+      {/* Clinic QR Check-In Standee Modal */}
+      {data?.clinic && (
+        <ClinicQrStandeeModal
+          isOpen={isStandeeModalOpen}
+          onClose={() => setIsStandeeModalOpen(false)}
+          clinicId={data.clinic.id}
+          clinicName={data.clinic.clinicName || 'Clinic Front Desk'}
+          clinicAddress={data.clinic.address || ''}
+          clinicPhone={data.clinic.phone || ''}
+          checkinCode={data.clinic.checkinCode || ''}
+        />
+      )}
+
+      {/* Reschedule Appointment Modal */}
+      {rescheduleTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn print:hidden">
+          <div className="bg-white rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-6 sm:p-7 shadow-2xl space-y-5">
+            <div className="flex items-center justify-between pb-3 border-b border-[#f0f0f0]">
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-9 rounded-full bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center">
+                  <Calendar className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-semibold text-[#1d1d1f]">Reschedule Appointment</h3>
+                  <p className="text-xs text-[#86868b]">Shift patient visit to another date or shift</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setRescheduleTarget(null)}
+                className="text-[#86868b] hover:text-[#1d1d1f] p-1.5 rounded-full hover:bg-black/5 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Target details card */}
+            <div className="p-3.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] space-y-1.5 text-xs">
+              <div className="flex justify-between">
+                <span className="text-[#86868b]">Patient:</span>
+                <span className="font-semibold text-[#1d1d1f]">{rescheduleTarget.patientName}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[#86868b]">Doctor:</span>
+                <span className="font-semibold text-[#1d1d1f]">{cleanDoctorName(rescheduleTarget.doctorName)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[#86868b]">Current Schedule:</span>
+                <span className="font-medium text-[#1d1d1f]">
+                  {rescheduleTarget.currentDate}
+                  {rescheduleTarget.currentQueueNumber ? ` (Token #${rescheduleTarget.currentQueueNumber})` : ''}
+                </span>
+              </div>
+            </div>
+
+            {/* Date Selection */}
+            <div>
+              <label className="text-xs font-semibold text-[#1d1d1f] block mb-1.5">
+                New Appointment Date
+              </label>
+              <input
+                type="date"
+                min={getLocalDateString()}
+                value={rescheduleDate}
+                onChange={(e) => setRescheduleDate(e.target.value)}
+                className="w-full h-10 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
+              />
+              <div className="flex gap-2 mt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const d = new Date();
+                    d.setDate(d.getDate() + 1);
+                    setRescheduleDate(getLocalDateString(d));
+                  }}
+                  className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-[#f5f5f7] hover:bg-gray-200 text-[#1d1d1f] border border-[#e5e5ea] transition-all cursor-pointer"
+                >
+                  Tomorrow
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const d = new Date();
+                    d.setDate(d.getDate() + 2);
+                    setRescheduleDate(getLocalDateString(d));
+                  }}
+                  className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-[#f5f5f7] hover:bg-gray-200 text-[#1d1d1f] border border-[#e5e5ea] transition-all cursor-pointer"
+                >
+                  Day After Tomorrow
+                </button>
+              </div>
+            </div>
+
+            {/* Shift selection if doctor has multiple slots */}
+            {(() => {
+              const doc = linkedDoctors.find((d) => d.doctorId === rescheduleTarget.doctorId);
+              if (!doc || !doc.slots || doc.slots.length <= 1) return null;
+              return (
+                <div>
+                  <label className="text-xs font-semibold text-[#1d1d1f] block mb-1.5">
+                    Select Consultation Shift
+                  </label>
+                  <select
+                    value={rescheduleSlotId}
+                    onChange={(e) => setRescheduleSlotId(e.target.value)}
+                    className="w-full h-10 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
+                  >
+                    <option value="">Standard Hours / Any Shift</option>
+                    {doc.slots.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name} ({s.startTime} - {s.endTime})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              );
+            })()}
+
+            <div className="p-3 rounded-xl bg-blue-50/60 border border-blue-100 text-[11px] text-blue-900 leading-relaxed">
+              Upon rescheduling, the system will allocate a new consecutive queue token on the chosen date and automatically dispatch an SMS/in-app alert to the patient.
+            </div>
+
+            {rescheduleError && (
+              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{rescheduleError}</span>
+              </div>
+            )}
+
+            <div className="flex gap-2.5 pt-2">
+              <AppleButton
+                variant="secondary"
+                size="md"
+                onClick={() => setRescheduleTarget(null)}
+                className="flex-1 text-xs"
+                disabled={rescheduling}
+              >
+                Cancel
+              </AppleButton>
+              <AppleButton
+                variant="primary"
+                size="md"
+                onClick={handleConfirmReschedule}
+                className="flex-1 text-xs bg-[#0066cc] hover:bg-[#0071e3] shadow-none"
+                disabled={rescheduling}
+              >
+                {rescheduling ? 'Rescheduling...' : 'Confirm Shift'}
+              </AppleButton>
+            </div>
           </div>
         </div>
       )}

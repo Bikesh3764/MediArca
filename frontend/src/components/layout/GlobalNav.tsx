@@ -44,6 +44,7 @@ export const GlobalNav: React.FC = () => {
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [expandedNotificationId, setExpandedNotificationId] = useState<string | null>(null);
 
   const fetchNotifications = React.useCallback(async () => {
     if (!user) return;
@@ -176,7 +177,7 @@ export const GlobalNav: React.FC = () => {
           <div className="flex items-center gap-2">
             <span className="font-semibold text-xs text-[#1d1d1f]">Notifications</span>
             {unreadCount > 0 && (
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#0088e8]/10 text-[#0088e8]">
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#0066cc]/10 text-[#0066cc]">
                 {unreadCount} new
               </span>
             )}
@@ -185,7 +186,7 @@ export const GlobalNav: React.FC = () => {
             <button
               type="button"
               onClick={handleMarkAllRead}
-              className="text-[11px] font-medium text-[#0088e8] hover:underline flex items-center gap-1 cursor-pointer"
+              className="text-[11px] font-medium text-[#0066cc] hover:underline flex items-center gap-1 cursor-pointer"
             >
               <CheckCheck className="w-3 h-3" />
               Mark all read
@@ -193,48 +194,86 @@ export const GlobalNav: React.FC = () => {
           )}
         </div>
 
-        <div className="max-h-80 overflow-y-auto divide-y divide-[#f5f5f7]">
+        <div className="max-h-96 overflow-y-auto divide-y divide-[#f5f5f7]">
           {notifications.length === 0 ? (
             <div className="p-8 text-center text-[#86868b]">
               <Bell className="w-6 h-6 mx-auto mb-2 text-[#d2d2d7]" />
               <p className="text-xs">No notifications yet</p>
             </div>
           ) : (
-            notifications.map((notif) => (
-              <div
-                key={notif.id}
-                onClick={() => !notif.isRead && handleMarkAsRead(notif.id)}
-                className={`p-3.5 transition-colors cursor-pointer flex items-start gap-3 ${
-                  notif.isRead ? 'bg-white hover:bg-[#fafafc]' : 'bg-[#f0f8ff]/70 hover:bg-[#e6f2fc]'
-                }`}
-              >
-                <div className="p-2 rounded-xl bg-white border border-[#e5e5ea] flex-shrink-0 mt-0.5">
-                  {notif.type === 'APPOINTMENT' && <Calendar className="w-3.5 h-3.5 text-[#0088e8]" />}
-                  {notif.type === 'QUEUE' && <Clock className="w-3.5 h-3.5 text-amber-600" />}
-                  {notif.type === 'CLINICAL' && <Stethoscope className="w-3.5 h-3.5 text-emerald-600" />}
-                  {notif.type === 'SYSTEM' && <ShieldCheck className="w-3.5 h-3.5 text-purple-600" />}
-                  {!['APPOINTMENT', 'QUEUE', 'CLINICAL', 'SYSTEM'].includes(notif.type) && (
-                    <AlertCircle className="w-3.5 h-3.5 text-[#0088e8]" />
+            notifications.map((notif) => {
+              const isExpanded = expandedNotificationId === notif.id;
+              return (
+                <div
+                  key={notif.id}
+                  onClick={() => {
+                    if (!notif.isRead) handleMarkAsRead(notif.id);
+                    setExpandedNotificationId((prev) => (prev === notif.id ? null : notif.id));
+                  }}
+                  className={`p-3.5 transition-all cursor-pointer flex items-start gap-3 ${
+                    notif.isRead ? 'bg-white hover:bg-[#fafafc]' : 'bg-[#0066cc]/[0.04] hover:bg-[#0066cc]/[0.08]'
+                  }`}
+                >
+                  <div className="p-2 rounded-xl bg-white border border-[#e5e5ea] flex-shrink-0 mt-0.5 shadow-2xs">
+                    {notif.type === 'APPOINTMENT' && <Calendar className="w-3.5 h-3.5 text-[#0066cc]" />}
+                    {notif.type === 'QUEUE' && <Clock className="w-3.5 h-3.5 text-amber-600" />}
+                    {notif.type === 'CLINICAL' && <Stethoscope className="w-3.5 h-3.5 text-emerald-600" />}
+                    {notif.type === 'SYSTEM' && <ShieldCheck className="w-3.5 h-3.5 text-purple-600" />}
+                    {!['APPOINTMENT', 'QUEUE', 'CLINICAL', 'SYSTEM'].includes(notif.type) && (
+                      <AlertCircle className="w-3.5 h-3.5 text-[#0066cc]" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-1 mb-0.5">
+                      <h4 className="text-xs font-semibold text-[#1d1d1f] truncate">
+                        {notif.title}
+                      </h4>
+                      <span className="text-[10px] text-[#86868b] flex-shrink-0">
+                        {formatNotificationTimeAgo(notif.createdAt)}
+                      </span>
+                    </div>
+
+                    {isExpanded ? (
+                      <div className="mt-1 space-y-2 animate-fadeIn">
+                        <p className="text-xs text-[#1d1d1f] leading-relaxed break-words font-normal">
+                          {notif.message}
+                        </p>
+                        <div className="flex items-center justify-between pt-1 border-t border-[#f0f0f2]">
+                          <span className="text-[10px] text-[#86868b]">
+                            {new Date(notif.createdAt).toLocaleString('en-IN', {
+                              dateStyle: 'medium',
+                              timeStyle: 'short',
+                            })}
+                          </span>
+                          {notif.type === 'APPOINTMENT' && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setNotificationsOpen(false);
+                                if (user?.role === 'PATIENT') navigate('/patient/appointments');
+                                else if (user?.role === 'DOCTOR') navigate('/doctor/dashboard');
+                                else if (user?.role === 'RECEPTIONIST') navigate('/receptionist/dashboard');
+                              }}
+                              className="text-[11px] font-semibold text-[#0066cc] hover:underline cursor-pointer"
+                            >
+                              Go to Passes →
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-[11px] text-[#86868b] leading-relaxed line-clamp-2">
+                        {notif.message}
+                      </p>
+                    )}
+                  </div>
+                  {!notif.isRead && (
+                    <span className="w-2 h-2 rounded-full bg-[#0066cc] flex-shrink-0 mt-2" />
                   )}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-1 mb-0.5">
-                    <h4 className="text-xs font-semibold text-[#1d1d1f] truncate">
-                      {notif.title}
-                    </h4>
-                    <span className="text-[10px] text-[#86868b] flex-shrink-0">
-                      {formatNotificationTimeAgo(notif.createdAt)}
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-[#86868b] leading-relaxed line-clamp-2">
-                    {notif.message}
-                  </p>
-                </div>
-                {!notif.isRead && (
-                  <span className="w-2 h-2 rounded-full bg-[#0088e8] flex-shrink-0 mt-2" />
-                )}
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>
@@ -264,91 +303,6 @@ export const GlobalNav: React.FC = () => {
           >
             Find Doctors
           </Link>
-
-          {/* More Menu Dropdown on Hover & Click */}
-          <div
-            className="relative"
-            onMouseEnter={() => setMoreMenuOpen(true)}
-            onMouseLeave={() => setMoreMenuOpen(false)}
-          >
-            <button
-              type="button"
-              onClick={() => setMoreMenuOpen((prev) => !prev)}
-              className={getNavLinkClass(
-                location.pathname === '/about' ||
-                location.pathname === '/how-it-works' ||
-                location.pathname === '/faq' ||
-                location.pathname === '/contact' ||
-                moreMenuOpen
-              )}
-              aria-expanded={moreMenuOpen}
-            >
-              <span>More</span>
-              <ChevronDown
-                className={`w-3.5 h-3.5 opacity-70 transition-transform duration-200 ${
-                  moreMenuOpen ? 'rotate-180 opacity-100' : ''
-                }`}
-              />
-            </button>
-
-            {moreMenuOpen && (
-              <div className="absolute left-0 top-full pt-1.5 z-50 animate-fadeIn">
-                <div className="bg-white/95 backdrop-blur-2xl border border-[#e5e5ea] rounded-[20px] shadow-[0_8px_30px_rgba(0,0,0,0.08)] p-2 min-w-[210px] space-y-0.5 text-xs text-left">
-                  <Link
-                    to="/about"
-                    onClick={() => setMoreMenuOpen(false)}
-                    className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-[14px] transition-colors ${
-                      location.pathname === '/about'
-                        ? 'bg-black/[0.05] text-[#1d1d1f] font-semibold'
-                        : 'text-[#48484a] hover:bg-black/[0.04] hover:text-[#1d1d1f]'
-                    }`}
-                  >
-                    <Info className="w-4 h-4 text-[#86868b]" />
-                    <span>About MediArca</span>
-                  </Link>
-
-                  <Link
-                    to="/how-it-works"
-                    onClick={() => setMoreMenuOpen(false)}
-                    className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-[14px] transition-colors ${
-                      location.pathname === '/how-it-works'
-                        ? 'bg-black/[0.05] text-[#1d1d1f] font-semibold'
-                        : 'text-[#48484a] hover:bg-black/[0.04] hover:text-[#1d1d1f]'
-                    }`}
-                  >
-                    <HelpCircle className="w-4 h-4 text-[#86868b]" />
-                    <span>How It Works</span>
-                  </Link>
-
-                  <Link
-                    to="/faq"
-                    onClick={() => setMoreMenuOpen(false)}
-                    className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-[14px] transition-colors ${
-                      location.pathname === '/faq'
-                        ? 'bg-black/[0.05] text-[#1d1d1f] font-semibold'
-                        : 'text-[#48484a] hover:bg-black/[0.04] hover:text-[#1d1d1f]'
-                    }`}
-                  >
-                    <FileQuestion className="w-4 h-4 text-[#86868b]" />
-                    <span>FAQs & Help</span>
-                  </Link>
-
-                  <Link
-                    to="/contact"
-                    onClick={() => setMoreMenuOpen(false)}
-                    className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-[14px] transition-colors ${
-                      location.pathname === '/contact'
-                        ? 'bg-black/[0.05] text-[#1d1d1f] font-semibold'
-                        : 'text-[#48484a] hover:bg-black/[0.04] hover:text-[#1d1d1f]'
-                    }`}
-                  >
-                    <Mail className="w-4 h-4 text-[#86868b]" />
-                    <span>Contact Support</span>
-                  </Link>
-                </div>
-              </div>
-            )}
-          </div>
 
           {user?.role === 'PATIENT' && (
             <>
@@ -421,6 +375,91 @@ export const GlobalNav: React.FC = () => {
               Reception Desk
             </Link>
           )}
+
+          {/* More Menu Dropdown placed at the side */}
+          <div
+            className="relative"
+            onMouseEnter={() => setMoreMenuOpen(true)}
+            onMouseLeave={() => setMoreMenuOpen(false)}
+          >
+            <button
+              type="button"
+              onClick={() => setMoreMenuOpen((prev) => !prev)}
+              className={getNavLinkClass(
+                location.pathname === '/about' ||
+                location.pathname === '/how-it-works' ||
+                location.pathname === '/faq' ||
+                location.pathname === '/contact' ||
+                moreMenuOpen
+              )}
+              aria-expanded={moreMenuOpen}
+            >
+              <span>More</span>
+              <ChevronDown
+                className={`w-3.5 h-3.5 opacity-70 transition-transform duration-200 ${
+                  moreMenuOpen ? 'rotate-180 opacity-100' : ''
+                }`}
+              />
+            </button>
+
+            {moreMenuOpen && (
+              <div className="absolute right-0 top-full pt-1.5 z-50 animate-fadeIn">
+                <div className="bg-white/95 backdrop-blur-2xl border border-[#e5e5ea] rounded-[20px] shadow-[0_8px_30px_rgba(0,0,0,0.08)] p-2 min-w-[210px] space-y-0.5 text-xs text-left">
+                  <Link
+                    to="/about"
+                    onClick={() => setMoreMenuOpen(false)}
+                    className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-[14px] transition-colors ${
+                      location.pathname === '/about'
+                        ? 'bg-black/[0.05] text-[#1d1d1f] font-semibold'
+                        : 'text-[#48484a] hover:bg-black/[0.04] hover:text-[#1d1d1f]'
+                    }`}
+                  >
+                    <Info className="w-4 h-4 text-[#86868b]" />
+                    <span>About MediArca</span>
+                  </Link>
+
+                  <Link
+                    to="/how-it-works"
+                    onClick={() => setMoreMenuOpen(false)}
+                    className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-[14px] transition-colors ${
+                      location.pathname === '/how-it-works'
+                        ? 'bg-black/[0.05] text-[#1d1d1f] font-semibold'
+                        : 'text-[#48484a] hover:bg-black/[0.04] hover:text-[#1d1d1f]'
+                    }`}
+                  >
+                    <HelpCircle className="w-4 h-4 text-[#86868b]" />
+                    <span>How It Works</span>
+                  </Link>
+
+                  <Link
+                    to="/faq"
+                    onClick={() => setMoreMenuOpen(false)}
+                    className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-[14px] transition-colors ${
+                      location.pathname === '/faq'
+                        ? 'bg-black/[0.05] text-[#1d1d1f] font-semibold'
+                        : 'text-[#48484a] hover:bg-black/[0.04] hover:text-[#1d1d1f]'
+                    }`}
+                  >
+                    <FileQuestion className="w-4 h-4 text-[#86868b]" />
+                    <span>FAQs & Help</span>
+                  </Link>
+
+                  <Link
+                    to="/contact"
+                    onClick={() => setMoreMenuOpen(false)}
+                    className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-[14px] transition-colors ${
+                      location.pathname === '/contact'
+                        ? 'bg-black/[0.05] text-[#1d1d1f] font-semibold'
+                        : 'text-[#48484a] hover:bg-black/[0.04] hover:text-[#1d1d1f]'
+                    }`}
+                  >
+                    <Mail className="w-4 h-4 text-[#86868b]" />
+                    <span>Contact Support</span>
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
         </nav>
 
         {/* Desktop User Account / Auth Actions */}

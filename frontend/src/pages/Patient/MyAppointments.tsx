@@ -4,12 +4,16 @@ import { api, Appointment, getLocalDateString } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { LiveQueueTicket } from '../../components/queue/LiveQueueTicket';
 import { AppleButton } from '../../components/ui/AppleButton';
-import { Calendar, Plus, RefreshCw } from 'lucide-react';
+import { Calendar, Plus, RefreshCw, QrCode, CheckCircle2, AlertCircle, X } from 'lucide-react';
+import { CameraQrScannerModal } from '../../components/common/CameraQrScannerModal';
 
 export const MyAppointments: React.FC = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const [selectedApptForScan, setSelectedApptForScan] = useState<Appointment | null>(null);
+  const [checkinMessage, setCheckinMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const { user, loading: loadingAuth } = useAuth();
   const navigate = useNavigate();
@@ -51,6 +55,26 @@ export const MyAppointments: React.FC = () => {
     }
   };
 
+  const handleScanSuccess = async (data: { clinicId: string; code: string }) => {
+    try {
+      const res = await api.checkInWithQR({
+        clinicId: data.clinicId,
+        code: data.code,
+        appointmentId: selectedApptForScan?.id,
+      });
+      setCheckinMessage({
+        type: 'success',
+        text: res?.message || 'Checked in successfully! You are marked as present at the clinic desk.',
+      });
+      fetchAppointments(true);
+    } catch (err: any) {
+      setCheckinMessage({
+        type: 'error',
+        text: err.message || 'Failed to complete clinic check-in. Please verify code or speak with reception desk.',
+      });
+    }
+  };
+
   const todayStr = getLocalDateString();
   const upcomingList = appointments.filter((a) => {
     if (a.status !== 'WAITING' && a.status !== 'IN_CONSULTATION' && a.status !== 'PENDING_APPROVAL') return false;
@@ -70,6 +94,18 @@ export const MyAppointments: React.FC = () => {
               <h1 className="text-2xl font-bold text-[#1d1d1f] tracking-tight">Appointments</h1>
             </div>
             <div className="flex items-center gap-2">
+              <AppleButton
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setSelectedApptForScan(null);
+                  setScannerOpen(true);
+                }}
+                className="flex items-center gap-1.5 text-xs text-[#0066cc] hover:text-[#0071e3] hover:bg-[#0066cc]/5 border border-[#0066cc]/20"
+              >
+                <QrCode className="w-3.5 h-3.5" />
+                Scan Clinic QR
+              </AppleButton>
               <AppleButton
                 variant="ghost"
                 size="sm"
@@ -94,6 +130,32 @@ export const MyAppointments: React.FC = () => {
       </div>
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        {/* Check-In Feedback Banner */}
+        {checkinMessage && (
+          <div
+            className={`p-4 rounded-2xl border text-xs flex items-center justify-between shadow-2xs ${
+              checkinMessage.type === 'success'
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
+                : 'bg-rose-50 border-rose-200 text-rose-900'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              {checkinMessage.type === 'success' ? (
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              ) : (
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+              )}
+              <span className="font-medium">{checkinMessage.text}</span>
+            </div>
+            <button
+              onClick={() => setCheckinMessage(null)}
+              className="text-[#86868b] hover:text-[#1d1d1f] p-1 cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
         {/* Apple Pill Segmented Filter */}
         <div className="flex justify-center mb-8">
           <div className="bg-[#f5f5f7] p-1 rounded-full border border-[#e5e5ea] flex shadow-2xs">
@@ -151,6 +213,10 @@ export const MyAppointments: React.FC = () => {
                   key={appt.id}
                   appointment={appt}
                   onCancel={handleCancel}
+                  onScanQr={(a) => {
+                    setSelectedApptForScan(a);
+                    setScannerOpen(true);
+                  }}
                 />
               ))}
             </div>
@@ -174,6 +240,17 @@ export const MyAppointments: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* In-App Camera QR Scanner Modal */}
+      <CameraQrScannerModal
+        isOpen={scannerOpen}
+        onClose={() => {
+          setScannerOpen(false);
+          setSelectedApptForScan(null);
+        }}
+        onScanSuccess={handleScanSuccess}
+        defaultClinicId={selectedApptForScan?.clinicId || undefined}
+      />
     </div>
   );
 };
