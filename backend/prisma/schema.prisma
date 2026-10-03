@@ -214,3 +214,14 @@ model SystemConfig {
   value     String
   updatedAt DateTime @default(now()) @updatedAt
 }
+
+model ContactMessage {
+  id        String   @id @default(uuid())
+  fullName  String
+  email     String
+  phone     String?
+  subject   String
+  message   String
+  status    String   @default("NEW") // "NEW", "READ", "RESOLVED"
+  createdAt DateTime @default(now())
+}

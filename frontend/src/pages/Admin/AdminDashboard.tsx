@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { api, Doctor, format12Hour, getFileUrl, formatDoctorDegrees } from '../../services/api';
+import { api, Doctor, format12Hour, getFileUrl, formatDoctorDegrees, ContactMessageItem } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { BrandLogo } from '../../components/ui/BrandLogo';
@@ -20,6 +20,7 @@ import {
   XCircle,
   Globe,
   LogOut,
+  Mail,
 } from 'lucide-react';
 
 export const AdminDashboard: React.FC = () => {
@@ -44,30 +45,44 @@ export const AdminDashboard: React.FC = () => {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [clinics, setClinics] = useState<any[]>([]);
   const [appointments, setAppointments] = useState<any[]>([]);
+  const [contactMessages, setContactMessages] = useState<ContactMessageItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionId, setActionId] = useState<string | null>(null);
   const [clinicActionId, setClinicActionId] = useState<string | null>(null);
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
   const [selectedClinic, setSelectedClinic] = useState<any | null>(null);
-  const [activeTab, setActiveTab] = useState<'doctors' | 'clinics' | 'appointments'>('doctors');
+  const [activeTab, setActiveTab] = useState<'doctors' | 'clinics' | 'appointments' | 'messages'>('doctors');
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [statsData, doctorsData, clinicsData, apptsData] = await Promise.all([
+      const [statsData, doctorsData, clinicsData, apptsData, messagesData] = await Promise.all([
         api.getAdminStats(),
         api.getAdminDoctors(),
         api.getAdminClinics(),
         api.getAdminAppointments(),
+        api.getAdminContactMessages().catch(() => []),
       ]);
       setStats(statsData);
       setDoctors(doctorsData);
       setClinics(clinicsData);
       setAppointments(apptsData);
+      setContactMessages(messagesData || []);
     } catch (err) {
       console.error('Failed to load admin data:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleMarkMessageRead = async (id: string) => {
+    try {
+      await api.markContactMessageRead(id);
+      setContactMessages((prev) =>
+        prev.map((m) => (m.id === id ? { ...m, status: 'READ' } : m))
+      );
+    } catch (err) {
+      console.error('Failed to mark contact message as read:', err);
     }
   };
 
@@ -368,6 +383,25 @@ export const AdminDashboard: React.FC = () => {
                 >
                   <Calendar className="w-4 h-4 text-purple-600" />
                   <span>Platform Bookings ({appointments.length})</span>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('messages')}
+                  className={`px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-2 transition-all active:scale-[0.98] cursor-pointer ${
+                    activeTab === 'messages'
+                      ? 'bg-white text-[#1d1d1f] shadow-xs'
+                      : 'text-[#86868b] hover:text-[#1d1d1f]'
+                  }`}
+                >
+                  <Mail className="w-4 h-4 text-emerald-600" />
+                  <span>Contact Inquiries</span>
+                  {contactMessages.filter((m) => m.status === 'NEW').length > 0 ? (
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-bold">
+                      {contactMessages.filter((m) => m.status === 'NEW').length} new
+                    </span>
+                  ) : (
+                    <span className="text-[10px] opacity-70">({contactMessages.length})</span>
+                  )}
                 </button>
               </div>
             </div>
@@ -711,6 +745,95 @@ export const AdminDashboard: React.FC = () => {
                     </tbody>
                   </table>
                 </div>
+              </UtilityCard>
+            )}
+
+            {/* Tab 4: Contact Form Messages & Inquiries */}
+            {activeTab === 'messages' && (
+              <UtilityCard>
+                <div className="flex justify-between items-center mb-6">
+                  <div>
+                    <h3 className="text-lg font-semibold text-[#1d1d1f]">User Contact Inquiries</h3>
+                    <p className="text-xs text-[#86868b] mt-0.5">
+                      Messages submitted by visitors, patients, doctors, or clinics via the Contact Us form.
+                    </p>
+                  </div>
+                  <span className="text-xs text-[#86868b]">{contactMessages.length} Total</span>
+                </div>
+
+                {contactMessages.length === 0 ? (
+                  <div className="p-12 text-center text-xs text-[#86868b] bg-[#fbfbfd] rounded-2xl border border-dashed border-[#e5e5ea]">
+                    No messages received yet. All new inquiries submitted through the website will appear here with instant email reply options.
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {contactMessages.map((msg) => (
+                      <div
+                        key={msg.id}
+                        className={`p-4 sm:p-5 rounded-2xl border transition-all ${
+                          msg.status === 'NEW'
+                            ? 'bg-emerald-50/30 border-emerald-200 shadow-2xs'
+                            : 'bg-white border-[#e5e5ea]'
+                        }`}
+                      >
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#f0f0f2]">
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] flex items-center justify-center font-bold text-xs text-[#1d1d1f]">
+                              {msg.fullName ? msg.fullName[0]?.toUpperCase() : 'U'}
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold text-sm text-[#1d1d1f]">{msg.fullName}</span>
+                                {msg.status === 'NEW' ? (
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                                    NEW
+                                  </span>
+                                ) : (
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#f5f5f7] text-[#86868b]">
+                                    Read
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 text-xs text-[#86868b] mt-0.5">
+                                <a href={`mailto:${msg.email}`} className="text-[#0066cc] hover:underline">
+                                  {msg.email}
+                                </a>
+                                {msg.phone && <span>• {msg.phone}</span>}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 self-end sm:self-center">
+                            <span className="text-[11px] text-[#86868b]">
+                              {new Date(msg.createdAt).toLocaleDateString()} {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                            {msg.status === 'NEW' && (
+                              <button
+                                onClick={() => handleMarkMessageRead(msg.id)}
+                                className="px-2.5 py-1 rounded-full text-[11px] font-medium border border-[#e5e5ea] bg-white text-[#1d1d1f] hover:bg-[#f5f5f7] cursor-pointer"
+                              >
+                                Mark Read
+                              </button>
+                            )}
+                            <a
+                              href={`mailto:${msg.email}?subject=Re: ${encodeURIComponent(msg.subject)}`}
+                              className="px-3 py-1 rounded-full text-[11px] font-semibold bg-[#1d1d1f] hover:bg-black text-white cursor-pointer"
+                            >
+                              Reply Email
+                            </a>
+                          </div>
+                        </div>
+
+                        <div className="mt-3">
+                          <p className="text-xs font-semibold text-[#1d1d1f]">Subject: {msg.subject}</p>
+                          <p className="text-xs text-[#48484a] mt-1 whitespace-pre-wrap leading-relaxed">
+                            {msg.message}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </UtilityCard>
             )}
         </>

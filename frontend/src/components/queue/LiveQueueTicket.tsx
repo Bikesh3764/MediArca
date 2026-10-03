@@ -24,6 +24,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
   const [submittingReview, setSubmittingReview] = useState(false);
   const [reviewError, setReviewError] = useState<string | null>(null);
   const [submittedReview, setSubmittedReview] = useState(appointment.review);
+  const [imgError, setImgError] = useState(false);
 
   const handleSubmitReview = async () => {
     setSubmittingReview(true);
@@ -76,15 +77,17 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           {/* Doctor Info */}
           <div className="flex items-center gap-3.5 sm:gap-4 min-w-0">
-            <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-[16px] bg-[#f5f5f7] border border-black/[0.06] overflow-hidden shrink-0 flex items-center justify-center">
-              {doctor.user?.avatarUrl ? (
+            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[#f5f5f7] border border-black/[0.06] overflow-hidden shrink-0 flex items-center justify-center">
+              {doctor.user?.avatarUrl && !imgError ? (
                 <img
                   src={getFileUrl(doctor.user.avatarUrl)}
                   alt={doctorDisplayName}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover object-top"
+                  onError={() => setImgError(true)}
+                  loading="lazy"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center font-semibold text-xl text-[#0066cc]">
+                <div className="w-full h-full flex items-center justify-center font-semibold text-xl text-[#0066cc] bg-[#0066cc]/10">
                   {(rawDocName || 'D')[0]}
                 </div>
               )}

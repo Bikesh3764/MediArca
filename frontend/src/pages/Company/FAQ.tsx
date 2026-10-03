@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
-import { Link } from 'react-router-dom';
 
 interface FAQItem {
   id: string;
@@ -9,7 +8,7 @@ interface FAQItem {
 }
 
 export const FAQ: React.FC = () => {
-  const [openIds, setOpenIds] = useState<string[]>(['1', '2']);
+  const [openIds, setOpenIds] = useState<string[]>([]);
 
   const toggleAccordion = (id: string) => {
     setOpenIds((prev) =>

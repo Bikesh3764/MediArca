@@ -797,6 +797,16 @@ export interface DoctorAffiliationsData {
     joinedAt: string;
   }>;
 }
+export interface ContactMessageItem {
+  id: string;
+  fullName: string;
+  email: string;
+  phone?: string | null;
+  subject: string;
+  message: string;
+  status: 'NEW' | 'READ' | 'RESOLVED' | string;
+  createdAt: string;
+}
 
 export interface Doctor {
   id: string;
@@ -1529,6 +1539,34 @@ export const api = {
 
   async getAdminAppointments(): Promise<any[]> {
     const res = await fetch(`${API_BASE_URL}/admin/appointments`, { headers: getHeaders() });
+    return handleResponse(res);
+  },
+
+  async submitContactMessage(data: {
+    fullName: string;
+    email: string;
+    phone?: string;
+    subject: string;
+    message: string;
+  }): Promise<{ success: boolean; message: string }> {
+    const res = await fetch(`${API_BASE_URL}/contact`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
+  async getAdminContactMessages(): Promise<ContactMessageItem[]> {
+    const res = await fetch(`${API_BASE_URL}/admin/contact-messages`, { headers: getHeaders() });
+    return handleResponse(res);
+  },
+
+  async markContactMessageRead(id: string): Promise<ContactMessageItem> {
+    const res = await fetch(`${API_BASE_URL}/admin/contact-messages/${id}/read`, {
+      method: 'PATCH',
+      headers: getHeaders(),
+    });
     return handleResponse(res);
   },
 

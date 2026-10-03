@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import jsQR from 'jsqr';
-import { X, Camera, AlertCircle, Sparkles, KeyRound, CheckCircle2, ArrowRight } from 'lucide-react';
+import { X, Camera, AlertCircle, CheckCircle2, ArrowRight } from 'lucide-react';
 import { AppleButton } from '../ui/AppleButton';
 
 interface CameraQrScannerModalProps {
@@ -17,10 +17,9 @@ export const CameraQrScannerModal: React.FC<CameraQrScannerModalProps> = ({
   defaultClinicId,
 }) => {
   const [mode, setMode] = useState<'camera' | 'manual'>('camera');
-  const [manualClinicId, setManualClinicId] = useState(defaultClinicId || '');
+  const manualClinicId = defaultClinicId || '';
   const [manualCode, setManualCode] = useState('');
   const [cameraError, setCameraError] = useState<string | null>(null);
-  const [isScanning, setIsScanning] = useState(false);
   const [scannedFeedback, setScannedFeedback] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -74,7 +73,6 @@ export const CameraQrScannerModal: React.FC<CameraQrScannerModalProps> = ({
   // Start Camera
   const startCamera = useCallback(async () => {
     setCameraError(null);
-    setIsScanning(true);
     try {
       if (!navigator?.mediaDevices?.getUserMedia) {
         throw new Error('Camera access is not supported on this browser/device.');
@@ -99,7 +97,6 @@ export const CameraQrScannerModal: React.FC<CameraQrScannerModalProps> = ({
         msg = 'Camera permission was denied. Please allow camera access in browser settings or enter the desk code manually.';
       }
       setCameraError(msg);
-      setIsScanning(false);
     }
   }, []);
 
@@ -113,7 +110,6 @@ export const CameraQrScannerModal: React.FC<CameraQrScannerModalProps> = ({
       cancelAnimationFrame(animationFrameRef.current);
       animationFrameRef.current = null;
     }
-    setIsScanning(false);
   }, []);
 
   // Frame scanning loop

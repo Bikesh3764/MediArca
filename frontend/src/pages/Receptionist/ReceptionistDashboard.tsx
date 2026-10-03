@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   api,
   ReceptionistDashboardData,
@@ -358,7 +358,7 @@ export const ReceptionistDashboard: React.FC = () => {
         effectiveClinicId || undefined
       );
       setWalkinPreview(preview);
-      if (preview.selectedSlotId && (!slotId || (preview.isPassed && preview.selectedSlotId !== slotId))) {
+      if (preview.selectedSlotId && !slotId) {
         setSlotId(preview.selectedSlotId);
       }
     } catch (err) {
@@ -373,6 +373,45 @@ export const ReceptionistDashboard: React.FC = () => {
       fetchWalkinPreview();
     }
   }, [activeTab, selectedDoctorId, appointmentDate, slotId, effectiveClinicId, fetchWalkinPreview]);
+
+  // Evaluate current chosen slot's status
+  const currentSlotStatus = useMemo(() => {
+    if (!walkinPreview) return null;
+    if (walkinPreview.availableSlots && walkinPreview.availableSlots.length > 0) {
+      const matched = walkinPreview.availableSlots.find((s) => s.slot.id === slotId);
+      if (matched) return matched;
+    }
+    return walkinPreview.selectedSlot || null;
+  }, [walkinPreview, slotId]);
+
+  const isSelectedShiftEnded = useMemo(() => {
+    if (currentSlotStatus?.isPassed) return true;
+    if (walkinPreview?.isPassed && (!slotId || slotId === walkinPreview.selectedSlotId)) return true;
+
+    // Local evaluation for today's date
+    const todayStr = getLocalDateString();
+    if (appointmentDate === todayStr && slotId && activeSelectedDoctor?.slots) {
+      const slotObj = activeSelectedDoctor.slots.find((s) => s.id === slotId);
+      if (slotObj?.endTime) {
+        const now = new Date();
+        const currentHours = now.getHours();
+        const currentMinutes = now.getMinutes();
+        const [endH, endM] = slotObj.endTime.split(':').map((v) => parseInt(v, 10));
+        if (Number.isFinite(endH) && Number.isFinite(endM)) {
+          if (currentHours > endH || (currentHours === endH && currentMinutes >= endM)) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }, [currentSlotStatus, walkinPreview, slotId, appointmentDate, activeSelectedDoctor]);
+
+  const isSelectedShiftFull = useMemo(() => {
+    if (currentSlotStatus?.isFull) return true;
+    if (walkinPreview?.isFull && (!slotId || slotId === walkinPreview.selectedSlotId)) return true;
+    return false;
+  }, [currentSlotStatus, walkinPreview, slotId]);
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -803,7 +842,7 @@ export const ReceptionistDashboard: React.FC = () => {
                   {/* Date & Shift */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
+                      <label className="block text-[13px] font-semibold text-[#1d1d1f] mb-1.5">
                         Consultation Date
                       </label>
                       <input
@@ -811,39 +850,69 @@ export const ReceptionistDashboard: React.FC = () => {
                         required
                         value={appointmentDate}
                         onChange={(e) => setAppointmentDate(e.target.value)}
-                        className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white focus:outline-none focus:border-[#0088e8]"
+                        className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-sm bg-white text-[#1d1d1f] focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] transition-all"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
+                      <label className="block text-[13px] font-semibold text-[#1d1d1f] mb-1.5">
                         Checking Shift
                       </label>
                       <select
                         value={slotId}
                         onChange={(e) => setSlotId(e.target.value)}
-                        className="w-full h-11 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white focus:outline-none focus:border-[#0088e8]"
+                        className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-sm bg-white text-[#1d1d1f] focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] transition-all cursor-pointer"
                       >
-                        {activeSelectedDoctor?.slots.map((s) => (
-                          <option key={s.id} value={s.id}>
-                            {s.name} ({s.startTime} – {s.endTime})
-                          </option>
-                        ))}
+                        {activeSelectedDoctor?.slots.map((s) => {
+                          const sStatus = walkinPreview?.availableSlots?.find((as) => as.slot.id === s.id);
+                          const isEnded = sStatus?.isPassed;
+                          return (
+                            <option key={s.id} value={s.id}>
+                              {s.name} ({s.startTime} – {s.endTime}) {isEnded ? '• (Ended)' : ''}
+                            </option>
+                          );
+                        })}
                       </select>
                     </div>
                   </div>
 
+                  {/* Shift Ended Notice Banner */}
+                  {isSelectedShiftEnded && (
+                    <div className="p-4 rounded-2xl bg-amber-50/90 border border-amber-200/90 text-amber-900 text-xs sm:text-[13px] flex items-start gap-3 shadow-2xs">
+                      <Clock className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-semibold text-amber-900">Shift Ended for Today</p>
+                        <p className="text-amber-700 mt-0.5 leading-relaxed">
+                          This checking shift has already ended for today. New queue tokens cannot be generated for concluded shifts. Please select an upcoming shift or choose tomorrow's date.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Shift Full Notice Banner */}
+                  {!isSelectedShiftEnded && isSelectedShiftFull && (
+                    <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 text-xs sm:text-[13px] flex items-start gap-3 shadow-2xs">
+                      <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-semibold text-rose-900">Shift Capacity Reached</p>
+                        <p className="text-rose-700 mt-0.5 leading-relaxed">
+                          This shift has reached its maximum patient capacity. Please pick another active shift or choose a different date.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Clinic / Facility Attribution */}
                   {activeSelectedDoctor?.clinics && activeSelectedDoctor.clinics.length > 0 && (
                     <div>
-                      <label className="block text-xs font-medium text-[#1d1d1f] mb-1 flex items-center gap-1.5">
-                        <Building2 className="w-3.5 h-3.5 text-[#0088e8]" />
+                      <label className="block text-[13px] font-semibold text-[#1d1d1f] mb-1.5 flex items-center gap-1.5">
+                        <Building2 className="w-3.5 h-3.5 text-[#0066cc]" />
                         Clinic / Facility Attribution
                       </label>
                       <select
                         value={walkinClinicId}
                         onChange={(e) => setWalkinClinicId(e.target.value)}
-                        className="w-full h-11 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white focus:outline-none focus:border-[#0088e8]"
+                        className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-sm bg-white text-[#1d1d1f] focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] transition-all cursor-pointer"
                       >
                         {activeSelectedDoctor.clinics.map((c) => (
                           <option key={c.clinicId} value={c.clinicId}>
@@ -862,29 +931,33 @@ export const ReceptionistDashboard: React.FC = () => {
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-semibold text-[#1d1d1f]">
+                          <span className="text-xs sm:text-[13px] font-semibold text-[#1d1d1f]">
                             Allocated Token Number
                           </span>
-                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                            Guaranteed Token
+                          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
+                            isSelectedShiftEnded
+                              ? 'bg-amber-50 text-amber-700 border-amber-200'
+                              : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                          }`}>
+                            {isSelectedShiftEnded ? 'Shift Ended' : 'Guaranteed Token'}
                           </span>
                         </div>
-                        <p className="text-[11px] text-[#86868b] mt-0.5">
-                          Assigned directly upon walk-in booking for {appointmentDate}.
+                        <p className="text-xs text-[#86868b] mt-0.5">
+                          Assigned upon walk-in booking for {appointmentDate}.
                         </p>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-4 self-end sm:self-center border-t sm:border-t-0 pt-2 sm:pt-0 border-[#e5e5ea] w-full sm:w-auto justify-between sm:justify-end">
                       <div className="text-right">
-                        <span className="text-[10px] text-[#86868b] block font-medium">Est. Time</span>
-                        <span className="text-xs font-semibold text-[#1d1d1f]">
+                        <span className="text-[11px] text-[#86868b] block font-medium">Est. Consultation</span>
+                        <span className="text-xs sm:text-[13px] font-semibold text-[#1d1d1f]">
                           {previewLoading ? 'Updating...' : walkinPreview?.estimatedTime || 'Immediate'}
                         </span>
                       </div>
                       <div className="text-right">
-                        <span className="text-[10px] text-[#86868b] block font-medium">Waiting Ahead</span>
-                        <span className="text-xs font-semibold text-[#1d1d1f]">
+                        <span className="text-[11px] text-[#86868b] block font-medium">Waiting Ahead</span>
+                        <span className="text-xs sm:text-[13px] font-semibold text-[#1d1d1f]">
                           {previewLoading ? '...' : `${walkinPreview?.patientsAhead ?? 0} patients`}
                         </span>
                       </div>
@@ -893,14 +966,14 @@ export const ReceptionistDashboard: React.FC = () => {
 
                   {/* Booking For Toggle */}
                   <div>
-                    <label className="block text-xs font-semibold text-[#1d1d1f] mb-1.5">
+                    <label className="block text-[13px] font-semibold text-[#1d1d1f] mb-1.5">
                       Booking For:
                     </label>
                     <div className="flex rounded-full bg-[#f5f5f7] p-1 border border-[#e5e5ea] max-w-xs mb-3 shadow-xs">
                       <button
                         type="button"
                         onClick={() => setBookingFor('self')}
-                        className={`flex-1 py-1.5 text-xs font-semibold rounded-full transition-all active:scale-[0.98] ${
+                        className={`flex-1 py-1.5 text-xs sm:text-[13px] font-semibold rounded-full transition-all active:scale-[0.98] ${
                           bookingFor === 'self'
                             ? 'bg-white text-[#1d1d1f] shadow-xs'
                             : 'text-[#86868b] hover:text-[#1d1d1f]'
@@ -911,7 +984,7 @@ export const ReceptionistDashboard: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setBookingFor('other')}
-                        className={`flex-1 py-1.5 text-xs font-semibold rounded-full transition-all active:scale-[0.98] ${
+                        className={`flex-1 py-1.5 text-xs sm:text-[13px] font-semibold rounded-full transition-all active:scale-[0.98] ${
                           bookingFor === 'other'
                             ? 'bg-white text-[#1d1d1f] shadow-xs'
                             : 'text-[#86868b] hover:text-[#1d1d1f]'
@@ -925,7 +998,7 @@ export const ReceptionistDashboard: React.FC = () => {
                   {/* Patient Name, Age & Phone */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div className="sm:col-span-1">
-                      <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
+                      <label className="block text-[13px] font-semibold text-[#1d1d1f] mb-1">
                         Patient Full Name *
                       </label>
                       <input
@@ -934,12 +1007,12 @@ export const ReceptionistDashboard: React.FC = () => {
                         value={patientName}
                         onChange={(e) => setPatientName(e.target.value)}
                         placeholder="e.g. Rahul Ray"
-                        className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
+                        className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-sm bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
+                      <label className="block text-[13px] font-semibold text-[#1d1d1f] mb-1">
                         Patient Age
                       </label>
                       <input
@@ -947,12 +1020,12 @@ export const ReceptionistDashboard: React.FC = () => {
                         value={patientAge}
                         onChange={(e) => setPatientAge(e.target.value)}
                         placeholder="e.g. 12"
-                        className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
+                        className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-sm bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
+                      <label className="block text-[13px] font-semibold text-[#1d1d1f] mb-1">
                         Contact Phone *
                       </label>
                       <input
@@ -962,7 +1035,7 @@ export const ReceptionistDashboard: React.FC = () => {
                         onChange={(e) => setPatientPhone(sanitizeIndianPhone(e.target.value))}
                         placeholder="10-digit mobile number"
                         maxLength={10}
-                        className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
+                        className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-sm bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
                       />
                     </div>
                   </div>
@@ -970,11 +1043,11 @@ export const ReceptionistDashboard: React.FC = () => {
                   {/* Gender & Reason */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-xs font-medium text-[#1d1d1f] mb-1">Gender</label>
+                      <label className="block text-[13px] font-semibold text-[#1d1d1f] mb-1">Gender</label>
                       <select
                         value={gender}
                         onChange={(e) => setGender(e.target.value)}
-                        className="w-full h-11 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
+                        className="w-full h-11 px-3 rounded-xl border border-[#e5e5ea] text-sm bg-white text-[#1d1d1f] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
                       >
                         <option value="Not Specified">Not Specified</option>
                         <option value="Male">Male</option>
@@ -984,7 +1057,7 @@ export const ReceptionistDashboard: React.FC = () => {
                     </div>
 
                     <div className="sm:col-span-2">
-                      <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
+                      <label className="block text-[13px] font-semibold text-[#1d1d1f] mb-1">
                         Reason for Visit / Chief Symptoms
                       </label>
                       <input
@@ -992,21 +1065,29 @@ export const ReceptionistDashboard: React.FC = () => {
                         value={reasonForVisit}
                         onChange={(e) => setReasonForVisit(e.target.value)}
                         placeholder="e.g. Acute fever, migraine, blood pressure check"
-                        className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
+                        className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-sm bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
                       />
                     </div>
                   </div>
 
                   <div className="pt-3">
                     <AppleButton
-                      variant="primary"
+                      variant={isSelectedShiftEnded || isSelectedShiftFull ? 'secondary' : 'primary'}
                       size="lg"
                       type="submit"
-                      disabled={bookingLoading}
-                      className="w-full sm:w-auto px-8"
+                      disabled={bookingLoading || isSelectedShiftEnded || isSelectedShiftFull}
+                      className={`w-full sm:w-auto px-8 transition-all ${
+                        isSelectedShiftEnded || isSelectedShiftFull
+                          ? 'opacity-60 cursor-not-allowed bg-[#e5e5ea] text-[#86868b] border border-[#d1d1d6] shadow-none hover:bg-[#e5e5ea] hover:text-[#86868b]'
+                          : 'cursor-pointer'
+                      }`}
                     >
                       {bookingLoading
                         ? 'Issuing Token...'
+                        : isSelectedShiftEnded
+                        ? 'Shift Ended — Select Another Slot or Date'
+                        : isSelectedShiftFull
+                        ? 'Shift Full — Maximum Capacity Reached'
                         : `Generate Guaranteed Queue Token (#${walkinPreview?.nextQueueNumber || 1})`}
                     </AppleButton>
                   </div>

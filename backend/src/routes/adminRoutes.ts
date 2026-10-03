@@ -6,6 +6,8 @@ import {
   getClinicsList,
   verifyClinic,
   getAllAppointments,
+  getContactMessages,
+  markContactMessageRead,
 } from '../controllers/adminController';
 import { authenticate, authorize } from '../middleware/authMiddleware';
 
@@ -19,5 +21,7 @@ router.post('/verify-doctor', verifyDoctor);
 router.get('/clinics', getClinicsList);
 router.post('/verify-clinic', verifyClinic);
 router.get('/appointments', getAllAppointments);
+router.get('/contact-messages', getContactMessages);
+router.patch('/contact-messages/:id/read', markContactMessageRead);
 
 export default router;

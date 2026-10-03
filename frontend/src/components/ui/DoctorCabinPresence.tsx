@@ -74,7 +74,7 @@ export const CabinStatusControl: React.FC<CabinStatusControlProps> = ({
   currentStatus = 'IN_CABIN',
   expectedReturnTime: initialReturnTime,
   doctorId,
-  doctorName,
+  doctorName: _doctorName,
   onStatusChange,
   className = '',
 }) => {

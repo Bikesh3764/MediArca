@@ -17,6 +17,7 @@ import notificationRoutes from './routes/notificationRoutes';
 import prisma from './config/database';
 import { authenticate } from './middleware/authMiddleware';
 import { updateProfile } from './controllers/authController';
+import { submitContactMessage } from './controllers/adminController';
 
 // Non-blocking automatic schema sync for multi-slot, clinic, and receptionist support
 async function safeExecute(primarySql: string, fallbackSql?: string) {
@@ -42,6 +43,12 @@ async function ensureSchema() {
     [
       `CREATE TABLE IF NOT EXISTS "SystemConfig" ("key" TEXT PRIMARY KEY, "value" TEXT NOT NULL, "updatedAt" TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP);`,
       `CREATE TABLE IF NOT EXISTS "SystemConfig" ("key" TEXT PRIMARY KEY, "value" TEXT NOT NULL, "updatedAt" DATETIME DEFAULT CURRENT_TIMESTAMP);`
+    ],
+
+    // ContactMessage table for user feedback and contact form submissions
+    [
+      `CREATE TABLE IF NOT EXISTS "ContactMessage" ("id" TEXT PRIMARY KEY, "fullName" TEXT NOT NULL, "email" TEXT NOT NULL, "phone" TEXT, "subject" TEXT NOT NULL, "message" TEXT NOT NULL, "status" TEXT NOT NULL DEFAULT 'NEW', "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP);`,
+      `CREATE TABLE IF NOT EXISTS "ContactMessage" ("id" TEXT PRIMARY KEY, "fullName" TEXT NOT NULL, "email" TEXT NOT NULL, "phone" TEXT, "subject" TEXT NOT NULL, "message" TEXT NOT NULL, "status" TEXT NOT NULL DEFAULT 'NEW', "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP);`
     ],
 
     // DoctorProfile columns
@@ -315,6 +322,7 @@ const publicApiLimiter = authRateLimiter(120, 60);
 app.use(['/api/doctors', '/api/appointments/queue-preview', '/api/clinics'], publicApiLimiter);
 
 app.use('/api/auth', authRoutes);
+app.post(['/api/contact', '/api/contact-us'], submitContactMessage);
 app.put(['/api/users/profile', '/api/user/profile'], authenticate, updateProfile);
 app.put(['/api/doctors/profile', '/api/doctor/profile'], authenticate, updateProfile);
 app.use('/api/doctors', doctorRoutes);

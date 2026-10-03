@@ -296,3 +296,117 @@ export const verifyClinic = async (req: AuthRequest, res: Response): Promise<voi
     });
   }
 };
+
+// Public contact form submission
+export const submitContactMessage = async (req: any, res: Response): Promise<void> => {
+  try {
+    const { fullName, email, phone, subject, message } = req.body;
+
+    if (!fullName || !email || !message) {
+      res.status(400).json({
+        success: false,
+        message: 'Name, email, and message are required.',
+      });
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(String(email).trim())) {
+      res.status(400).json({
+        success: false,
+        message: 'Please provide a valid email address.',
+      });
+      return;
+    }
+
+    const cleanSubject = subject ? String(subject).trim() : 'General Inquiry';
+    const cleanMessage = String(message).trim();
+    const cleanName = String(fullName).trim();
+    const cleanPhone = phone ? String(phone).trim() : null;
+
+    const contactMsg = await prisma.contactMessage.create({
+      data: {
+        fullName: cleanName,
+        email: String(email).trim().toLowerCase(),
+        phone: cleanPhone,
+        subject: cleanSubject,
+        message: cleanMessage,
+        status: 'NEW',
+      },
+    });
+
+    // Notify all admin users
+    try {
+      const admins = await prisma.user.findMany({
+        where: { role: 'ADMIN' },
+        select: { id: true },
+      });
+      for (const admin of admins) {
+        await createNotification(
+          admin.id,
+          `New Contact Inquiry: ${cleanSubject}`,
+          `From: ${cleanName} (${email})${cleanPhone ? ` | Phone: ${cleanPhone}` : ''}\n\n${cleanMessage}`,
+          'CONTACT_INQUIRY'
+        );
+      }
+    } catch (notifErr) {
+      console.error('Failed to dispatch admin notification for contact message:', notifErr);
+    }
+
+    res.status(201).json({
+      success: true,
+      message: 'Thank you! Your message has been received. Our team will get back to you shortly.',
+      data: contactMsg,
+    });
+  } catch (error: any) {
+    console.error('submitContactMessage error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to submit contact message. Please try again.',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
+  }
+};
+
+// Admin retrieve contact inquiries
+export const getContactMessages = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const messages = await prisma.contactMessage.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    });
+    res.json({
+      success: true,
+      data: messages,
+    });
+  } catch (error: any) {
+    console.error('getContactMessages error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve contact messages',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
+  }
+};
+
+// Admin mark message as read
+export const markContactMessageRead = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const updated = await prisma.contactMessage.update({
+      where: { id: String(id) },
+      data: { status: 'READ' },
+    });
+    res.json({
+      success: true,
+      data: updated,
+    });
+  } catch (error: any) {
+    console.error('markContactMessageRead error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update contact message status',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
+  }
+};

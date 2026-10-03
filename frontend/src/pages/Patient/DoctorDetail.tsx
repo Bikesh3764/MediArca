@@ -145,7 +145,7 @@ export const DoctorDetail: React.FC = () => {
                 <img
                   src={getFileUrl(doctor.user.avatarUrl)}
                   alt={doctor.user?.fullName || 'Doctor'}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover object-top"
                   onError={(e) => {
                     (e.currentTarget as HTMLElement).style.display = 'none';
                     const fallback = e.currentTarget.parentElement?.querySelector('.doc-detail-fallback');

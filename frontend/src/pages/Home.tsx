@@ -11,9 +11,9 @@ import {
   ALL_SPECIALTIES,
   getFileUrl,
 } from '../services/api';
-import { useAuth } from '../context/AuthContext';
 import { AppleButton } from '../components/ui/AppleButton';
 import { SearchableSpecialtySelect } from '../components/ui/SearchableSpecialtySelect';
+import { AppleFilterSelect } from '../components/ui/AppleFilterSelect';
 import clinicLobbyBg from '../assets/clinic-lobby-bg.jpg';
 import { INDIAN_STATES, getCitiesForState } from '../utils/indiaStates';
 import { formatDisplayPhone } from '../utils/phoneUtils';
@@ -29,6 +29,7 @@ import {
   Phone,
   RotateCcw,
   ChevronRight,
+  ShieldCheck,
 } from 'lucide-react';
 
 const getClinicLocationDisplay = (clinic?: { address?: string; city?: string | null; state?: string | null } | null): string => {
@@ -46,7 +47,6 @@ const getClinicLocationDisplay = (clinic?: { address?: string; city?: string | n
 };
 
 export const Home: React.FC = () => {
-  const { user } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -129,21 +129,140 @@ export const Home: React.FC = () => {
     fetchData();
   }, []);
 
-  // Available Cities for Clinics - only populated when a specific state is selected
-  const availableClinicCities = useMemo(() => {
-    if (clinicSelectedState === 'All') {
-      return [];
-    }
-    return getCitiesForState(clinicSelectedState);
-  }, [clinicSelectedState]);
+  // Clinic State Options with dynamic facility counts
+  const clinicStateOptions = useMemo(() => {
+    const counts: Record<string, number> = {};
+    clinics.forEach((c) => {
+      let matchedState = c.state?.trim();
+      if (!matchedState && c.address) {
+        for (const st of INDIAN_STATES) {
+          if (c.address.toLowerCase().includes(st.toLowerCase())) {
+            matchedState = st;
+            break;
+          }
+        }
+      }
+      if (matchedState) {
+        counts[matchedState] = (counts[matchedState] || 0) + 1;
+      }
+    });
 
-  // Available Cities for Doctors - only populated when a specific state is selected
-  const availableDoctorCities = useMemo(() => {
-    if (selectedState === 'All') {
-      return [];
-    }
-    return getCitiesForState(selectedState);
-  }, [selectedState]);
+    return INDIAN_STATES.map((st) => ({
+      label: st,
+      value: st,
+      count: counts[st] || 0,
+    })).sort((a, b) => {
+      if (b.count !== a.count) return b.count - a.count;
+      return a.label.localeCompare(b.label);
+    });
+  }, [clinics]);
+
+  // Clinic City Options with counts for currently selected state
+  const clinicCityOptions = useMemo(() => {
+    if (clinicSelectedState === 'All') return [];
+    const counts: Record<string, number> = {};
+    const cities = getCitiesForState(clinicSelectedState);
+
+    clinics.forEach((c) => {
+      const isMatchingState =
+        (c.state && c.state.toLowerCase() === clinicSelectedState.toLowerCase()) ||
+        (c.address && c.address.toLowerCase().includes(clinicSelectedState.toLowerCase()));
+      if (!isMatchingState) return;
+
+      let matchedCity = c.city?.trim();
+      if (!matchedCity && c.address) {
+        for (const ct of cities) {
+          if (c.address.toLowerCase().includes(ct.toLowerCase())) {
+            matchedCity = ct;
+            break;
+          }
+        }
+      }
+      if (matchedCity) {
+        counts[matchedCity] = (counts[matchedCity] || 0) + 1;
+      }
+    });
+
+    return cities.map((ct) => ({
+      label: ct,
+      value: ct,
+      count: counts[ct] || 0,
+    })).sort((a, b) => {
+      if (b.count !== a.count) return b.count - a.count;
+      return a.label.localeCompare(b.label);
+    });
+  }, [clinics, clinicSelectedState]);
+
+  // Doctor State Options with specialist counts
+  const doctorStateOptions = useMemo(() => {
+    const counts: Record<string, number> = {};
+    doctors.forEach((doc) => {
+      const statesFound = new Set<string>();
+      doc.clinics?.forEach((c) => {
+        if (c.clinic?.state) statesFound.add(c.clinic.state.trim());
+      });
+      if (statesFound.size === 0 && doc.clinicAddress) {
+        for (const st of INDIAN_STATES) {
+          if (doc.clinicAddress.toLowerCase().includes(st.toLowerCase())) {
+            statesFound.add(st);
+            break;
+          }
+        }
+      }
+      statesFound.forEach((st) => {
+        counts[st] = (counts[st] || 0) + 1;
+      });
+    });
+
+    return INDIAN_STATES.map((st) => ({
+      label: st,
+      value: st,
+      count: counts[st] || 0,
+    })).sort((a, b) => {
+      if (b.count !== a.count) return b.count - a.count;
+      return a.label.localeCompare(b.label);
+    });
+  }, [doctors]);
+
+  // Doctor City Options with specialist counts
+  const doctorCityOptions = useMemo(() => {
+    if (selectedState === 'All') return [];
+    const counts: Record<string, number> = {};
+    const cities = getCitiesForState(selectedState);
+
+    doctors.forEach((doc) => {
+      const citiesFound = new Set<string>();
+      doc.clinics?.forEach((c) => {
+        const isMatchState =
+          !c.clinic?.state ||
+          c.clinic.state.toLowerCase() === selectedState.toLowerCase() ||
+          (c.clinic.address && c.clinic.address.toLowerCase().includes(selectedState.toLowerCase()));
+        if (isMatchState && c.clinic?.city) {
+          citiesFound.add(c.clinic.city.trim());
+        }
+      });
+      if (citiesFound.size === 0 && doc.clinicAddress) {
+        for (const ct of cities) {
+          if (doc.clinicAddress.toLowerCase().includes(ct.toLowerCase())) {
+            citiesFound.add(ct);
+            break;
+          }
+        }
+      }
+      citiesFound.forEach((ct) => {
+        counts[ct] = (counts[ct] || 0) + 1;
+      });
+    });
+
+    return cities.map((ct) => ({
+      label: ct,
+      value: ct,
+      count: counts[ct] || 0,
+    })).sort((a, b) => {
+      if (b.count !== a.count) return b.count - a.count;
+      return a.label.localeCompare(b.label);
+    });
+  }, [doctors, selectedState]);
 
   // Compute specialty counts for doctors
   const specialtyCounts = useMemo(() => {
@@ -428,42 +547,43 @@ export const Home: React.FC = () => {
               <div className="hidden sm:block w-px h-5 bg-[#e5e5ea] shrink-0" />
 
               {/* State Filter */}
-              <div className="w-32 sm:w-36 h-full flex items-center shrink-0">
-                <select
+              <div className="w-36 sm:w-44 h-full flex items-center shrink-0">
+                <AppleFilterSelect
                   value={clinicSelectedState}
-                  onChange={(e) => {
-                    setClinicSelectedState(e.target.value);
+                  onChange={(val) => {
+                    setClinicSelectedState(val);
                     setClinicSelectedCity('All');
                   }}
-                  className="w-full h-full bg-transparent text-xs sm:text-sm font-normal text-[#1d1d1f] focus:outline-none cursor-pointer pr-1"
-                >
-                  <option value="All">All States</option>
-                  {INDIAN_STATES.map((st) => (
-                    <option key={st} value={st}>
-                      {st}
-                    </option>
-                  ))}
-                </select>
+                  options={clinicStateOptions}
+                  placeholder="All States"
+                  allLabel="All States"
+                  allCount={clinics.length}
+                  variant="bar"
+                  searchable={true}
+                />
               </div>
 
               <div className="hidden sm:block w-px h-5 bg-[#e5e5ea] shrink-0" />
 
               {/* City Filter */}
-              <div className="w-32 sm:w-36 h-full flex items-center shrink-0">
-                <select
+              <div className="w-36 sm:w-44 h-full flex items-center shrink-0">
+                <AppleFilterSelect
                   value={clinicSelectedCity}
-                  onChange={(e) => setClinicSelectedCity(e.target.value)}
-                  className="w-full h-full bg-transparent text-xs sm:text-sm font-normal text-[#1d1d1f] focus:outline-none cursor-pointer pr-1"
-                >
-                  <option value="All">
-                    {clinicSelectedState !== 'All' ? `All in ${clinicSelectedState}` : 'All Cities'}
-                  </option>
-                  {availableClinicCities.map((ct) => (
-                    <option key={ct} value={ct}>
-                      {ct}
-                    </option>
-                  ))}
-                </select>
+                  onChange={setClinicSelectedCity}
+                  options={clinicCityOptions}
+                  placeholder={clinicSelectedState !== 'All' ? `All in ${clinicSelectedState}` : 'All Cities'}
+                  allLabel={clinicSelectedState !== 'All' ? `All in ${clinicSelectedState}` : 'All Cities'}
+                  allCount={
+                    clinicSelectedState !== 'All'
+                      ? clinics.filter((c) =>
+                          (c.state && c.state.toLowerCase() === clinicSelectedState.toLowerCase()) ||
+                          (c.address && c.address.toLowerCase().includes(clinicSelectedState.toLowerCase()))
+                        ).length
+                      : clinics.length
+                  }
+                  variant="bar"
+                  searchable={clinicCityOptions.length > 5}
+                />
               </div>
 
               {(clinicSearchQuery || clinicSelectedCity !== 'All' || clinicSelectedState !== 'All') && (
@@ -551,40 +671,55 @@ export const Home: React.FC = () => {
             {/* If a clinic is selected, show its full dedicated view with practicing doctors & time slots */}
             {selectedClinic ? (
               <div className="space-y-8 animate-fadeIn">
-                {/* Back button */}
-                <div className="flex items-center justify-between">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedClinic(null)}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-[#e5e5ea] text-xs font-semibold text-[#1d1d1f] hover:border-[#0066cc] hover:text-[#0066cc] transition-all cursor-pointer shadow-2xs"
-                  >
-                    <ArrowLeft className="w-3.5 h-3.5" />
-                    <span>Back to Clinics</span>
-                  </button>
-                </div>
-
                 {/* Selected Clinic Header Card */}
-                <div className="bg-white rounded-[20px] border border-[#e0e0e0] p-6 sm:p-8">
-                  <div>
-                    <h2 className="text-2xl sm:text-3xl font-semibold text-[#1d1d1f] tracking-tight mb-2.5">
-                      {selectedClinic.clinicName}
-                    </h2>
-                    <div className="space-y-2 text-sm">
-                      <p className="flex items-center gap-2">
-                        <MapPin className="w-4 h-4 text-[#0066cc] shrink-0" />
-                        <span className="font-semibold text-[#1d1d1f] tracking-tight">
-                          {getClinicLocationDisplay(selectedClinic)}
-                        </span>
-                      </p>
-                      {selectedClinic.phone && (
-                        <p className="flex items-center gap-2 text-[14px]">
-                          <Phone className="w-4 h-4 text-[#0066cc] shrink-0" />
-                          <span className="font-semibold text-[#1d1d1f] tracking-tight">
-                            {selectedClinic.phone}
+                <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-5 sm:p-6 shadow-xs">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-start sm:items-center gap-4 min-w-0">
+                      <div className="w-12 h-12 rounded-2xl bg-[#0066cc]/10 flex items-center justify-center text-[#0066cc] shrink-0">
+                        <Building2 className="w-6 h-6" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 mb-1">
+                          <h2 className="text-xl sm:text-2xl font-semibold text-[#1d1d1f] tracking-tight truncate">
+                            {selectedClinic.clinicName}
+                          </h2>
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/60 text-[11px] font-medium shrink-0">
+                            <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                            Verified Facility
                           </span>
-                        </p>
-                      )}
+                        </div>
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-[#86868b]">
+                          <span className="inline-flex items-center gap-1.5 font-medium text-[#48484a]">
+                            <MapPin className="w-3.5 h-3.5 text-[#0066cc] shrink-0" />
+                            <span className="truncate max-w-xs sm:max-w-md">
+                              {getClinicLocationDisplay(selectedClinic)}
+                            </span>
+                          </span>
+                          {selectedClinic.phone && (
+                            <a
+                              href={`tel:${selectedClinic.phone}`}
+                              className="inline-flex items-center gap-1.5 font-medium text-[#48484a] hover:text-[#0066cc] transition-colors"
+                            >
+                              <Phone className="w-3.5 h-3.5 text-[#0066cc] shrink-0" />
+                              <span>{formatDisplayPhone(selectedClinic.phone)}</span>
+                            </a>
+                          )}
+                          <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md bg-[#f5f5f7] text-[#1d1d1f] font-medium border border-[#e5e5ea]">
+                            <Stethoscope className="w-3 h-3 text-[#0066cc]" />
+                            {clinicPracticingDoctors.length} {clinicPracticingDoctors.length === 1 ? 'Specialist' : 'Specialists'}
+                          </span>
+                        </div>
+                      </div>
                     </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setSelectedClinic(null)}
+                      className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-xs font-semibold text-[#1d1d1f] transition-all cursor-pointer self-start sm:self-center shrink-0 border border-[#e5e5ea]"
+                    >
+                      <ArrowLeft className="w-3.5 h-3.5" />
+                      <span>All Clinics</span>
+                    </button>
                   </div>
                 </div>
 
@@ -634,7 +769,7 @@ export const Home: React.FC = () => {
                                 <img
                                   src={getFileUrl(doctor.user.avatarUrl)}
                                   alt={doctor.user.fullName}
-                                  className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
+                                  className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
                                   onError={(e) => {
                                     e.currentTarget.style.display = 'none';
                                     const fallback = e.currentTarget.parentElement?.querySelector('.doc-fallback-banner');
@@ -853,45 +988,30 @@ export const Home: React.FC = () => {
               <div className="space-y-4">
                 {/* State */}
                 <div>
-                  <label className="block text-xs font-medium text-[#86868b] mb-1.5">
-                    State
-                  </label>
-                  <select
+                  <AppleFilterSelect
+                    label="State"
                     value={selectedState}
-                    onChange={(e) => {
-                      setSelectedState(e.target.value);
+                    onChange={(st) => {
+                      setSelectedState(st);
                       setSelectedCity('All');
                     }}
-                    className="w-full py-2 px-3 rounded-xl border border-[#e0e0e0] bg-[#f5f5f7] text-xs font-medium text-[#1d1d1f] focus:outline-none focus:border-[#0066cc] focus:ring-2 focus:ring-[#0066cc]/20 cursor-pointer"
-                  >
-                    <option value="All">All States</option>
-                    {INDIAN_STATES.map((st) => (
-                      <option key={st} value={st}>
-                        {st}
-                      </option>
-                    ))}
-                  </select>
+                    options={doctorStateOptions}
+                    placeholder="All States"
+                    variant="form"
+                  />
                 </div>
 
                 {/* City */}
                 <div>
-                  <label className="block text-xs font-medium text-[#86868b] mb-1.5">
-                    City
-                  </label>
-                  <select
+                  <AppleFilterSelect
+                    label="City"
                     value={selectedCity}
-                    onChange={(e) => setSelectedCity(e.target.value)}
-                    className="w-full py-2 px-3 rounded-xl border border-[#e0e0e0] bg-[#f5f5f7] text-xs font-medium text-[#1d1d1f] focus:outline-none focus:border-[#0066cc] focus:ring-2 focus:ring-[#0066cc]/20 cursor-pointer"
-                  >
-                    <option value="All">
-                      {selectedState !== 'All' ? `All Cities in ${selectedState}` : 'All Cities'}
-                    </option>
-                    {availableDoctorCities.map((ct) => (
-                      <option key={ct} value={ct}>
-                        {ct}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={setSelectedCity}
+                    options={doctorCityOptions}
+                    placeholder={selectedState !== 'All' ? `All Cities in ${selectedState}` : 'All Cities'}
+                    disabled={selectedState === 'All'}
+                    variant="form"
+                  />
                 </div>
 
                 {/* Specialty */}
@@ -992,43 +1112,28 @@ export const Home: React.FC = () => {
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-xs font-medium text-[#86868b] mb-1">
-                        State
-                      </label>
-                      <select
+                      <AppleFilterSelect
+                        label="State"
                         value={selectedState}
-                        onChange={(e) => {
-                          setSelectedState(e.target.value);
+                        onChange={(st) => {
+                          setSelectedState(st);
                           setSelectedCity('All');
                         }}
-                        className="w-full py-2 px-2.5 rounded-xl border border-[#e0e0e0] bg-[#f5f5f7] text-xs font-medium text-[#1d1d1f] focus:outline-none"
-                      >
-                        <option value="All">All States</option>
-                        {INDIAN_STATES.map((st) => (
-                          <option key={st} value={st}>
-                            {st}
-                          </option>
-                        ))}
-                      </select>
+                        options={doctorStateOptions}
+                        placeholder="All States"
+                        variant="form"
+                      />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-[#86868b] mb-1">
-                        City
-                      </label>
-                      <select
+                      <AppleFilterSelect
+                        label="City"
                         value={selectedCity}
-                        onChange={(e) => setSelectedCity(e.target.value)}
-                        className="w-full py-2 px-2.5 rounded-xl border border-[#e0e0e0] bg-[#f5f5f7] text-xs font-medium text-[#1d1d1f] focus:outline-none"
-                      >
-                        <option value="All">
-                          {selectedState !== 'All' ? `All Cities in ${selectedState}` : 'All Cities'}
-                        </option>
-                        {availableDoctorCities.map((ct) => (
-                          <option key={ct} value={ct}>
-                            {ct}
-                          </option>
-                        ))}
-                      </select>
+                        onChange={setSelectedCity}
+                        options={doctorCityOptions}
+                        placeholder={selectedState !== 'All' ? `All Cities` : 'All Cities'}
+                        disabled={selectedState === 'All'}
+                        variant="form"
+                      />
                     </div>
                   </div>
 
@@ -1126,7 +1231,7 @@ export const Home: React.FC = () => {
                             <img
                               src={getFileUrl(doctor.user.avatarUrl)}
                               alt={doctor.user.fullName}
-                              className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
+                              className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
                               onError={(e) => {
                                 e.currentTarget.style.display = 'none';
                                 const fallback = e.currentTarget.parentElement?.querySelector('.doc-cat-fallback-banner');

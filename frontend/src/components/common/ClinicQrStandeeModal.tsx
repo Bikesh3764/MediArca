@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Printer, Copy, Check, QrCode, Building2, MapPin, ShieldCheck } from 'lucide-react';
+import { X, Printer, Copy, Check, QrCode, Building2, MapPin } from 'lucide-react';
 import { AppleButton } from '../ui/AppleButton';
 
 interface ClinicQrStandeeModalProps {
