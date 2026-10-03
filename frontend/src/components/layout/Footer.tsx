@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { BrandLogo } from '../ui/BrandLogo';
 import { useAuth } from '../../context/AuthContext';
-import { Phone, Mail, Clock, ShieldCheck } from 'lucide-react';
+import { Mail, ShieldCheck } from 'lucide-react';
 
 export const Footer: React.FC = () => {
   const { user } = useAuth();
@@ -33,28 +33,11 @@ export const Footer: React.FC = () => {
                 <div className="w-8 h-8 rounded-full bg-white border border-[#e5e5ea] flex items-center justify-center shrink-0 shadow-2xs group-hover:border-[#0066cc]/30 transition-colors">
                   <Mail className="w-4 h-4 text-[#0066cc]" />
                 </div>
-                <span className="font-medium">support@mediarca.com</span>
-              </a>
-
-              <a
-                href="tel:+919876543210"
-                className="flex items-center gap-3 text-[#48484a] hover:text-[#0066cc] transition-colors group"
-              >
-                <div className="w-8 h-8 rounded-full bg-white border border-[#e5e5ea] flex items-center justify-center shrink-0 shadow-2xs group-hover:border-[#0066cc]/30 transition-colors">
-                  <Phone className="w-4 h-4 text-[#0066cc]" />
-                </div>
-                <div className="flex flex-col sm:flex-row sm:items-center sm:gap-1.5">
-                  <span className="font-medium">+91 98765 43210</span>
-                  <span className="text-xs text-[#86868b]">(8 AM – 8 PM)</span>
+                <div>
+                  <p className="text-[11px] text-[#86868b] font-normal">Support & Inquiries</p>
+                  <p className="font-medium text-[#1d1d1f] group-hover:text-[#0066cc] transition-colors">support@mediarca.com</p>
                 </div>
               </a>
-
-              <div className="flex items-center gap-3 text-[#6e6e73]">
-                <div className="w-8 h-8 rounded-full bg-white border border-[#e5e5ea] flex items-center justify-center shrink-0 shadow-2xs">
-                  <Clock className="w-4 h-4 text-[#86868b]" />
-                </div>
-                <span className="text-xs sm:text-sm">Monday – Saturday: 8:00 AM – 8:00 PM</span>
-              </div>
             </div>
           </div>
 
@@ -226,7 +209,7 @@ export const Footer: React.FC = () => {
 
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pt-2">
             <p className="text-xs sm:text-sm text-[#48484a]">
-              © {currentYear} MediArca Health Technologies Private Limited. All rights reserved.
+              © {currentYear} MediArca. All rights reserved.
             </p>
             <div className="flex flex-wrap items-center gap-5 text-xs sm:text-sm text-[#48484a]">
               <Link to="/terms" className="hover:text-[#0066cc] transition-colors">
