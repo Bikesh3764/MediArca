@@ -26,6 +26,17 @@ import { ReceptionistDashboard } from './pages/Receptionist/ReceptionistDashboar
 import { ClinicCheckIn } from './pages/Patient/ClinicCheckIn';
 import { ProfileCompletionModal } from './components/auth/ProfileCompletionModal';
 
+// Company & Informational Pages
+import { AboutUs } from './pages/Company/AboutUs';
+import { ContactUs } from './pages/Company/ContactUs';
+import { HowItWorks } from './pages/Company/HowItWorks';
+import { FAQ } from './pages/Company/FAQ';
+
+// Legal & Compliance Pages
+import { Terms } from './pages/Legal/Terms';
+import { PrivacyPolicy } from './pages/Legal/PrivacyPolicy';
+import { RefundPolicy } from './pages/Legal/RefundPolicy';
+
 // Protected Route Helpers
 const ProtectedRoute: React.FC<{
   children: React.ReactNode;
@@ -104,6 +115,19 @@ function AppShell() {
           <Route path="/doctor/login" element={<Login portal="DOCTOR" />} />
           <Route path="/doctor/signup" element={<Signup initialRole="DOCTOR" />} />
           <Route path="/clinic-checkin" element={<ClinicCheckIn />} />
+
+          {/* Company & Informational Pages */}
+          <Route path="/about" element={<AboutUs />} />
+          <Route path="/contact" element={<ContactUs />} />
+          <Route path="/how-it-works" element={<HowItWorks />} />
+          <Route path="/faq" element={<FAQ />} />
+
+          {/* Legal & Compliance Pages */}
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/refund-policy" element={<RefundPolicy />} />
+          <Route path="/refunds" element={<Navigate to="/refund-policy" replace />} />
+          <Route path="/cancellation-policy" element={<Navigate to="/refund-policy" replace />} />
 
           {/* Directory & Booking */}
           <Route path="/doctors" element={<DoctorDiscovery />} />

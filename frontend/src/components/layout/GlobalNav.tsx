@@ -251,6 +251,20 @@ export const GlobalNav: React.FC = () => {
             Home
           </Link>
 
+          <Link
+            to="/doctors"
+            className={getNavLinkClass(isActive('/doctors'))}
+          >
+            Find Doctors
+          </Link>
+
+          <Link
+            to="/how-it-works"
+            className={getNavLinkClass(isActive('/how-it-works'))}
+          >
+            How It Works
+          </Link>
+
           {user?.role === 'PATIENT' && (
             <>
               <Link
@@ -464,6 +478,22 @@ export const GlobalNav: React.FC = () => {
               className={getMobileNavLinkClass(isActive('/'))}
             >
               Home
+            </Link>
+
+            <Link
+              to="/doctors"
+              onClick={closeMenu}
+              className={getMobileNavLinkClass(isActive('/doctors'))}
+            >
+              Find Doctors
+            </Link>
+
+            <Link
+              to="/how-it-works"
+              onClick={closeMenu}
+              className={getMobileNavLinkClass(isActive('/how-it-works'))}
+            >
+              How It Works
             </Link>
 
             {user?.role === 'PATIENT' && (
