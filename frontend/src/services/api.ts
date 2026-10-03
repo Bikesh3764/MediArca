@@ -906,6 +906,7 @@ export interface Appointment {
   clinic?: ClinicProfile;
   appointmentDate: string;
   queueNumber: number;
+  estimatedQueueNumber?: number;
   slotId?: string;
   checkingWindow: string;
   estimatedTime: string;
@@ -957,6 +958,7 @@ export interface Appointment {
     isShiftActive?: boolean;
     isShiftPassed?: boolean;
     liveEstimatedTime?: string;
+    estimatedQueueNumber?: number;
   };
 }
 

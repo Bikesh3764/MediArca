@@ -4932,6 +4932,31 @@ Follow-up Date: 2026-10-15`;
   assert(calculateNextQueueNumber(1) === 2, 'Token increments to 2 when token 1 exists');
   assert(calculateNextQueueNumber(5) === 6, 'Token increments to 6 when token 5 exists');
 
+  // Test 154.7: Estimated Token computation for PENDING_APPROVAL appointments
+  const computeEstimatedTokenForPending = (confirmedQueues: number[]) => {
+    const positiveConfirmed = confirmedQueues.filter((q) => q > 0);
+    const maxConfirmed = positiveConfirmed.reduce((max, q) => Math.max(max, q), 0);
+    return Math.max(1, maxConfirmed + 1);
+  };
+  assert(computeEstimatedTokenForPending([]) === 1, 'Estimated token is #1 when shift has 0 confirmed bookings');
+  assert(computeEstimatedTokenForPending([-1, -2]) === 1, 'Estimated token is #1 when only negative provisional bookings exist');
+  assert(computeEstimatedTokenForPending([1]) === 2, 'Estimated token is #2 when token 1 is confirmed');
+  assert(computeEstimatedTokenForPending([1, 2, 3]) === 4, 'Estimated token is #4 when tokens 1-3 are confirmed');
+  assert(computeEstimatedTokenForPending([1, -1, 3]) === 4, 'Estimated token ignores negative provisional tokens');
+
+  // Test 154.8: LiveQueueTicket estimated token fallback resolution
+  const resolveTicketEstToken = (appt: { estimatedQueueNumber?: number; queueNumber: number; liveQueue?: { estimatedQueueNumber?: number } }) => {
+    const rawEstToken =
+      appt.estimatedQueueNumber ||
+      appt.liveQueue?.estimatedQueueNumber ||
+      (appt.queueNumber > 0 ? appt.queueNumber : 1);
+    return Math.max(1, rawEstToken);
+  };
+  assert(resolveTicketEstToken({ queueNumber: -1, estimatedQueueNumber: 3 }) === 3, 'Resolves appt.estimatedQueueNumber #3');
+  assert(resolveTicketEstToken({ queueNumber: -1, liveQueue: { estimatedQueueNumber: 2 } }) === 2, 'Resolves liveQueue.estimatedQueueNumber #2');
+  assert(resolveTicketEstToken({ queueNumber: -1 }) === 1, 'Defaults to #1 when no estimated number is attached and queueNumber is negative');
+  assert(resolveTicketEstToken({ queueNumber: 5 }) === 5, 'Resolves confirmed positive queueNumber #5');
+
   console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);

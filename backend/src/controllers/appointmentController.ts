@@ -811,14 +811,31 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
     }
 
     const recContact = resolveReceptionistContact(newAppointment.clinic, newAppointment.doctorId, newAppointment.doctor);
+
+    let estimatedQueueNumber = newAppointment.queueNumber > 0 ? newAppointment.queueNumber : 1;
+    if (isPendingBooking) {
+      const maxConfirmed = await prisma.appointment.findFirst({
+        where: {
+          doctorId: doctor.id,
+          appointmentDate,
+          queueNumber: { gt: 0 },
+          ...(chosenSlot?.id ? { slotId: chosenSlot.id } : {}),
+        },
+        orderBy: { queueNumber: 'desc' },
+        select: { queueNumber: true },
+      });
+      estimatedQueueNumber = Math.max(1, (maxConfirmed?.queueNumber || 0) + 1);
+    }
+
     const appointmentResponseData = {
       ...newAppointment,
       receptionistPhone: recContact.phone || null,
       receptionistName: recContact.name || null,
+      estimatedQueueNumber,
     };
 
     const responseMsg = isPendingBooking
-      ? `Appointment request submitted for ${chosenSlot.name}. Pay receptionist at desk to confirm your queue token.`
+      ? `Appointment request submitted for ${chosenSlot.name}. Estimated Token #${estimatedQueueNumber}. Pay receptionist at desk to confirm your queue token.`
       : `Appointment confirmed! You are Queue #${newAppointment.queueNumber} (${chosenSlot.name})`;
 
     res.status(201).json({
@@ -926,6 +943,21 @@ export const getAppointmentById = async (req: AuthRequest, res: Response): Promi
         return;
       }
 
+    let estimatedQueueNumber = appointment.queueNumber > 0 ? appointment.queueNumber : 1;
+    if (appointment.status === 'PENDING_APPROVAL') {
+      const maxConfirmed = await prisma.appointment.findFirst({
+        where: {
+          doctorId: appointment.doctorId,
+          appointmentDate: appointment.appointmentDate,
+          queueNumber: { gt: 0 },
+          ...(appointment.slotId ? { slotId: appointment.slotId } : {}),
+        },
+        orderBy: { queueNumber: 'desc' },
+        select: { queueNumber: true },
+      });
+      estimatedQueueNumber = Math.max(1, (maxConfirmed?.queueNumber || 0) + 1);
+    }
+
     const recContact = resolveReceptionistContact(appointment.clinic, appointment.doctorId, appointment.doctor);
     res.json({
       success: true,
@@ -933,6 +965,7 @@ export const getAppointmentById = async (req: AuthRequest, res: Response): Promi
         ...appointment,
         receptionistPhone: recContact.phone || null,
         receptionistName: recContact.name || null,
+        estimatedQueueNumber,
       },
     });
   } catch (error: any) {
@@ -1030,7 +1063,7 @@ export const getPatientAppointments = async (req: AuthRequest, res: Response): P
 
     // Batch active appointments to eliminate N+1 polling query explosion on Supabase (BUG-14)
     const activeAppts = appointments.filter(
-      (a) => a.status === 'WAITING' || a.status === 'IN_CONSULTATION'
+      (a) => a.status === 'WAITING' || a.status === 'IN_CONSULTATION' || a.status === 'PENDING_APPROVAL'
     );
     const doctorIds = Array.from(new Set(activeAppts.map((a) => a.doctorId)));
     const dates = Array.from(new Set(activeAppts.map((a) => a.appointmentDate)));
@@ -1129,6 +1162,7 @@ export const getPatientAppointments = async (req: AuthRequest, res: Response): P
         return {
           ...apptWithRec,
           fee: clinicFee,
+          estimatedQueueNumber: appt.queueNumber,
           liveQueue: {
             currentServingQueueNumber: currentServingQueueNumber || (isShiftActive ? 1 : 0),
             patientsAway: patientsAhead,
@@ -1137,6 +1171,7 @@ export const getPatientAppointments = async (req: AuthRequest, res: Response): P
             isShiftActive,
             isShiftPassed,
             liveEstimatedTime,
+            estimatedQueueNumber: appt.queueNumber,
           },
         };
       }
@@ -1153,6 +1188,16 @@ export const getPatientAppointments = async (req: AuthRequest, res: Response): P
         const slot = (appt.slotId && slots.find((s) => s.id === appt.slotId)) || slots[0];
         let isShiftPassed = false;
         let effectiveStatus = appt.status;
+
+        // Calculate estimated token / queue number for this shift based on confirmed queue numbers
+        const confirmedForShift = activeBatchAppointments.filter((a) =>
+          a.doctorId === appt.doctorId &&
+          a.appointmentDate === appt.appointmentDate &&
+          (appt.clinicId ? a.clinicId === appt.clinicId : true) &&
+          (appt.slotId ? a.slotId === appt.slotId : appt.checkingWindow ? a.checkingWindow === appt.checkingWindow : true)
+        );
+        const maxConfirmedQueue = confirmedForShift.reduce((max, a) => Math.max(max, a.queueNumber), 0);
+        const estimatedQueueNumber = Math.max(1, maxConfirmedQueue + 1);
 
         if (slot) {
           const slotStartMins = timeToMinutes(slot.startTime);
@@ -1174,14 +1219,16 @@ export const getPatientAppointments = async (req: AuthRequest, res: Response): P
           ...apptWithRec,
           status: effectiveStatus,
           fee: clinicFee,
+          estimatedQueueNumber,
           liveQueue: {
             currentServingQueueNumber: 0,
-            patientsAway: 0,
-            estimatedWaitMinutes: 0,
+            patientsAway: maxConfirmedQueue,
+            estimatedWaitMinutes: Math.round(maxConfirmedQueue * (slot?.avgConsultationMinutes || 3.0)),
             isYourTurn: false,
             isShiftActive: false,
             isShiftPassed,
             liveEstimatedTime: isShiftPassed ? 'Shift Ended' : appt.estimatedTime,
+            estimatedQueueNumber,
           },
         };
       }

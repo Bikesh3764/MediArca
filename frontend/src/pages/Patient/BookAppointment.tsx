@@ -315,6 +315,12 @@ export const BookAppointment: React.FC = () => {
               <p className="text-xs text-[#86868b] mt-1 font-medium">
                 {confirmedAppointment.appointmentDate} · {confirmedAppointment.checkingWindow}
               </p>
+              <div className="mt-3 inline-flex items-baseline gap-2 px-4 py-1.5 rounded-2xl bg-amber-50 border border-amber-200/80">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-amber-700">Estimated Token</span>
+                <span className="text-xl font-bold text-amber-800 tracking-tight">
+                  #{confirmedAppointment.estimatedQueueNumber || (confirmedAppointment.queueNumber > 0 ? confirmedAppointment.queueNumber : 1)}
+                </span>
+              </div>
             </div>
 
             {/* Receptionist Contact Details Card (NOW REVEALED!) */}
