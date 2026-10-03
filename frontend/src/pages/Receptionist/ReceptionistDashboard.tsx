@@ -1038,10 +1038,7 @@ export const ReceptionistDashboard: React.FC = () => {
             <div>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <div>
-                  <h3 className="text-base font-semibold text-[#1d1d1f]">Live Patient Queue</h3>
-                  <p className="text-xs text-[#86868b] mt-0.5">
-                    Advance consultations, monitor waiting times, and manage patient flow in real time.
-                  </p>
+                  <h3 className="text-base font-semibold text-[#1d1d1f]">Live Queue</h3>
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full sm:w-auto">
@@ -1194,13 +1191,13 @@ export const ReceptionistDashboard: React.FC = () => {
                     <table className="w-full text-left text-xs">
                       <thead>
                         <tr className="border-b border-[#e5e5ea] text-[#86868b] font-medium">
-                          <th className="pb-3 pl-2">Token #</th>
+                          <th className="pb-3 pl-2">Token</th>
                           <th className="pb-3">Patient</th>
                           <th className="pb-3">Contact</th>
-                          <th className="pb-3">Est. Time / Window</th>
-                          <th className="pb-3 text-center">Clinic Arrival</th>
+                          <th className="pb-3">Time</th>
+                          <th className="pb-3 text-center">Arrival</th>
                           <th className="pb-3">Status</th>
-                          <th className="pb-3 text-right pr-2">Dispatch Action</th>
+                          <th className="pb-3 text-right pr-2">Action</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-[#f0f0f0]">
@@ -1214,7 +1211,7 @@ export const ReceptionistDashboard: React.FC = () => {
 
                             <td className="py-3">
                               <div className="font-medium text-[#1d1d1f]">{appt.patientName}</div>
-                              {appt.reasonForVisit && (
+                              {appt.reasonForVisit && appt.reasonForVisit !== 'General Medical Consultation' && (
                                 <div className="text-[10px] text-[#86868b]">{appt.reasonForVisit}</div>
                               )}
                             </td>
@@ -1222,8 +1219,7 @@ export const ReceptionistDashboard: React.FC = () => {
                             <td className="py-3 text-[#86868b] font-mono">{appt.patientPhone}</td>
 
                             <td className="py-3 text-[#1d1d1f]">
-                              <div>{appt.estimatedTime || 'Pending'}</div>
-                              <div className="text-[10px] text-[#86868b]">{appt.checkingWindow}</div>
+                              <div className="font-medium">{appt.estimatedTime || 'Pending'}</div>
                             </td>
 
                             <td className="py-3 text-center">

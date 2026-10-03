@@ -601,7 +601,9 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
               ) : (
                 <div className="grid grid-cols-1 md:[grid-template-columns:repeat(auto-fill,minmax(330px,1fr))] gap-5 sm:gap-6 w-full">
                   {filteredClinics.map((clinic) => {
-                    const docCount = clinic._count?.doctors ?? (clinic.doctors?.length || 0);
+                    const docCount = (clinic.doctors && Array.isArray(clinic.doctors))
+                      ? clinic.doctors.length
+                      : (clinic._count?.doctors ?? 0);
                     const locationDisplay = getClinicLocationDisplay(clinic);
 
                     return (

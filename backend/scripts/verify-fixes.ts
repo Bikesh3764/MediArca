@@ -4968,6 +4968,43 @@ Follow-up Date: 2026-10-15`;
   assert(resolveTicketEstToken({ queueNumber: -1 }) === 1, 'Defaults to #1 when no estimated number is attached and queueNumber is negative');
   assert(resolveTicketEstToken({ queueNumber: 5 }) === 5, 'Resolves confirmed positive queueNumber #5');
 
+  // Test 154.9: Clinic active verified doctor count filtering
+  const filterActiveVerifiedDoctors = (affiliations: Array<{ status: string; doctor: { isVerified: boolean; verificationStatus: string } }>) => {
+    return affiliations.filter(
+      (a) =>
+        ['ACTIVE', 'ACCEPTED'].includes(a.status) &&
+        a.doctor.isVerified === true &&
+        a.doctor.verificationStatus !== 'SUSPENDED'
+    ).length;
+  };
+
+  const sampleAffiliations = [
+    { status: 'ACCEPTED', doctor: { isVerified: true, verificationStatus: 'VERIFIED' } },
+    { status: 'ACCEPTED', doctor: { isVerified: false, verificationStatus: 'PENDING' } }, // unverified
+    { status: 'ACCEPTED', doctor: { isVerified: true, verificationStatus: 'SUSPENDED' } }, // suspended
+    { status: 'PENDING', doctor: { isVerified: true, verificationStatus: 'VERIFIED' } }, // pending affiliation
+  ];
+  assert(filterActiveVerifiedDoctors(sampleAffiliations) === 1, 'Excludes unverified, suspended, or pending affiliations from doctor count (1 valid doctor)');
+
+  // Test 154.10: Frontend clinic card doctor count calculation prioritizes loaded verified doctors array
+  const resolveClinicDocCount = (clinic: { doctors?: any[]; _count?: { doctors: number } }) => {
+    return (clinic.doctors && Array.isArray(clinic.doctors))
+      ? clinic.doctors.length
+      : (clinic._count?.doctors ?? 0);
+  };
+  assert(resolveClinicDocCount({ doctors: [{ id: 'doc-1' }], _count: { doctors: 2 } }) === 1, 'Prioritizes loaded verified doctors array length (1) over raw _count (2)');
+  assert(resolveClinicDocCount({ _count: { doctors: 3 } }) === 3, 'Falls back to _count when doctors array is not loaded');
+  assert(resolveClinicDocCount({}) === 0, 'Defaults to 0 when no doctors array or _count exists');
+
+  // Test 154.11: Receptionist table reason-for-visit fluff suppression
+  const shouldDisplayReason = (reason?: string) => {
+    return Boolean(reason && reason !== 'General Medical Consultation');
+  };
+  assert(shouldDisplayReason('General Medical Consultation') === false, 'Suppresses default General Medical Consultation fluff text');
+  assert(shouldDisplayReason('Severe chest pain') === true, 'Displays custom specific reason for visit');
+  assert(shouldDisplayReason('') === false, 'Suppresses empty reason for visit');
+  assert(shouldDisplayReason(undefined) === false, 'Suppresses undefined reason for visit');
+
   console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);

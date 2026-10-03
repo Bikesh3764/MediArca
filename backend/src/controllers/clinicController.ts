@@ -692,7 +692,10 @@ export const getPublicClinics = async (req: any, res: Response): Promise<void> =
         _count: {
           select: {
             doctors: {
-              where: { status: { in: ['ACTIVE', 'ACCEPTED'] } },
+              where: {
+                status: { in: ['ACTIVE', 'ACCEPTED'] },
+                doctor: { isVerified: true, verificationStatus: { not: 'SUSPENDED' } },
+              },
             },
           },
         },
@@ -779,7 +782,10 @@ export const getPublicClinicById = async (req: any, res: Response): Promise<void
         _count: {
           select: {
             doctors: {
-              where: { status: { in: ['ACTIVE', 'ACCEPTED'] } },
+              where: {
+                status: { in: ['ACTIVE', 'ACCEPTED'] },
+                doctor: { isVerified: true, verificationStatus: { not: 'SUSPENDED' } },
+              },
             },
           },
         },

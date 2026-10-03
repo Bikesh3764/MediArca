@@ -180,16 +180,11 @@ export const CabinStatusControl: React.FC<CabinStatusControlProps> = ({
   return (
     <div className={`p-3.5 sm:p-4 rounded-2xl bg-[#fafafc] border border-[#f0f0f0] ${className}`}>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-2.5">
-        <div className="flex items-center gap-2">
-          <h4 className="text-xs font-semibold text-[#1d1d1f]">
-            Cabin Presence
-          </h4>
-          {doctorName && (
-            <span className="text-xs text-[#86868b]">• {doctorName}</span>
-          )}
-        </div>
+        <h4 className="text-xs font-semibold text-[#1d1d1f]">
+          Cabin Presence
+        </h4>
 
-        {/* Live Active Badge & Feedback */}
+        {/* Feedback & Notifications */}
         <div className="flex items-center gap-2 self-start sm:self-auto">
           {feedback && (
             <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[#1d1d1f] bg-white px-2 py-0.5 rounded-full border border-[#e5e5ea] shadow-xs">
@@ -203,7 +198,6 @@ export const CabinStatusControl: React.FC<CabinStatusControlProps> = ({
               {errorMsg}
             </span>
           )}
-          <CabinStatusBadge status={status} expectedReturnTime={returnTime} size="sm" />
         </div>
       </div>
 
