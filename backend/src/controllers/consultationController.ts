@@ -152,6 +152,18 @@ export const callPatient = async (req: AuthRequest, res: Response): Promise<void
       return;
     }
 
+    // Verify doctor is physically present in the cabin (cannot call if stepped out or not in cabin)
+    if (doctor.cabinStatus && doctor.cabinStatus !== 'IN_CABIN') {
+      const statusLabel = doctor.cabinStatus === 'STEPPED_OUT'
+        ? `stepped out${doctor.expectedReturnTime ? ` (expected return ~${doctor.expectedReturnTime})` : ''}`
+        : 'not in cabin';
+      res.status(400).json({
+        success: false,
+        message: `Doctor has ${statusLabel}. Cabin presence must be set to 'In Cabin' before calling patients into consultation.`,
+      });
+      return;
+    }
+
     // Set any currently in_consultation appointment to WAITING or leave as is, or mark target as IN_CONSULTATION
     const targetAppointment = await prisma.appointment.findUnique({
       where: { id: appointmentId },

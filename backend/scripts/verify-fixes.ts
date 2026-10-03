@@ -5206,6 +5206,60 @@ Follow-up Date: 2026-10-15`;
     'Future appointment cannot be checked in today'
   );
 
+  // 4. Doctor Cabin Presence Validation for Call In / IN_CONSULTATION
+  const validateDoctorCabinPresenceForCall = (
+    doctor: { cabinStatus: string; expectedReturnTime?: string | null },
+    appointment: { appointmentDate: string; isCheckedIn: boolean },
+    todayIso: string
+  ) => {
+    if (doctor.cabinStatus && doctor.cabinStatus !== 'IN_CABIN') {
+      const statusLabel = doctor.cabinStatus === 'STEPPED_OUT'
+        ? `stepped out${doctor.expectedReturnTime ? ` (expected return ~${doctor.expectedReturnTime})` : ''}`
+        : 'not in cabin';
+      return { allowed: false, message: `Doctor has ${statusLabel}. Patient cannot be called into consultation while doctor is away from cabin.` };
+    }
+    if (appointment.appointmentDate !== todayIso) {
+      return { allowed: false, message: `Cannot call appointment scheduled for ${appointment.appointmentDate}. Only patients scheduled for today can be called.` };
+    }
+    if (!appointment.isCheckedIn) {
+      return { allowed: false, message: 'Patient is not in the cabin yet.' };
+    }
+    return { allowed: true };
+  };
+
+  assert(
+    validateDoctorCabinPresenceForCall(
+      { cabinStatus: 'IN_CABIN' },
+      { appointmentDate: todayDateStr, isCheckedIn: true },
+      todayDateStr
+    ).allowed === true,
+    'Can call patient when doctor is IN_CABIN and patient is checked in today'
+  );
+  assert(
+    validateDoctorCabinPresenceForCall(
+      { cabinStatus: 'STEPPED_OUT', expectedReturnTime: '11:50 PM' },
+      { appointmentDate: todayDateStr, isCheckedIn: true },
+      todayDateStr
+    ).allowed === false,
+    'CANNOT call patient when doctor is STEPPED_OUT even if patient is in cabin'
+  );
+  assert(
+    validateDoctorCabinPresenceForCall(
+      { cabinStatus: 'NOT_IN_CABIN' },
+      { appointmentDate: todayDateStr, isCheckedIn: true },
+      todayDateStr
+    ).allowed === false,
+    'CANNOT call patient when doctor is NOT_IN_CABIN even if patient is in cabin'
+  );
+  assert(
+    validateDoctorCabinPresenceForCall(
+      { cabinStatus: 'STEPPED_OUT' },
+      { appointmentDate: todayDateStr, isCheckedIn: false },
+      todayDateStr
+    ).allowed === false,
+    'CANNOT call patient when doctor is STEPPED_OUT and patient is not checked in'
+  );
+
   console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);

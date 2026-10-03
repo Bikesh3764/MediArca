@@ -339,6 +339,7 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
           symptoms: a.symptoms,
           isForOther: Boolean(a.isForOther),
           patientAge: a.patientAge,
+          appointmentDate: a.appointmentDate,
           createdAt: a.createdAt,
         })),
       },
@@ -753,6 +754,11 @@ export const updateAppointmentStatus = async (req: AuthRequest, res: Response): 
 
     const targetAppointment = await prisma.appointment.findUnique({
       where: { id: appointmentId },
+      include: {
+        doctor: {
+          select: { id: true, cabinStatus: true, expectedReturnTime: true },
+        },
+      },
     });
 
     if (!targetAppointment) {
@@ -799,6 +805,18 @@ export const updateAppointmentStatus = async (req: AuthRequest, res: Response): 
     }
 
     if (status === 'IN_CONSULTATION') {
+      // Verify doctor is physically present in the cabin (cannot call if stepped out or not in cabin)
+      if (targetAppointment.doctor?.cabinStatus && targetAppointment.doctor.cabinStatus !== 'IN_CABIN') {
+        const statusLabel = targetAppointment.doctor.cabinStatus === 'STEPPED_OUT'
+          ? `stepped out${targetAppointment.doctor.expectedReturnTime ? ` (expected return ~${targetAppointment.doctor.expectedReturnTime})` : ''}`
+          : 'not in cabin';
+        res.status(400).json({
+          success: false,
+          message: `Doctor has ${statusLabel}. Patient cannot be called into consultation while doctor is away from cabin.`,
+        });
+        return;
+      }
+
       const todayIso = getLocalDateString();
       if (targetAppointment.appointmentDate !== todayIso) {
         res.status(400).json({

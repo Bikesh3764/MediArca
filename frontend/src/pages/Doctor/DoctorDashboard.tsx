@@ -311,6 +311,14 @@ export const DoctorDashboard: React.FC = () => {
   };
 
   const handleCallPatient = async (appointmentId: string) => {
+    if (user?.doctorProfile?.cabinStatus && user.doctorProfile.cabinStatus !== 'IN_CABIN') {
+      const awayMsg = user.doctorProfile.cabinStatus === 'STEPPED_OUT'
+        ? `You are currently marked as 'Stepped Out'${user.doctorProfile.expectedReturnTime ? ` (expected return ~${user.doctorProfile.expectedReturnTime})` : ''}. Please set your presence to 'In Cabin' before calling a patient.`
+        : "You are currently marked as 'Not in Cabin'. Please set your presence to 'In Cabin' before calling a patient.";
+      alert(awayMsg);
+      return;
+    }
+
     const target = queueData?.waitingQueue?.find((a) => a.id === appointmentId);
     if (target) {
       if (target.appointmentDate !== getLocalDateString()) {
@@ -362,6 +370,7 @@ export const DoctorDashboard: React.FC = () => {
   };
 
   const isVerified = user?.doctorProfile?.isVerified ?? true;
+  const isDoctorAway = Boolean(user?.doctorProfile?.cabinStatus && user.doctorProfile.cabinStatus !== 'IN_CABIN');
   const totalPendingRequests = affiliations?.incomingRequests?.length || 0;
 
   const doctorDisplayName = (user?.fullName || 'Doctor').replace(/^Dr\.?\s+/i, '');
@@ -1448,6 +1457,7 @@ export const DoctorDashboard: React.FC = () => {
                       const token = String(appt.queueNumber || '');
                       return name.includes(q) || phone.includes(q) || token.includes(q);
                     }) || [];
+                    const isDoctorAway = user?.doctorProfile?.cabinStatus && user.doctorProfile.cabinStatus !== 'IN_CABIN';
                     const nextPresentTarget = filteredWaiting.find(
                       (appt) => appt.isCheckedIn && appt.appointmentDate === getLocalDateString()
                     );
@@ -1461,7 +1471,18 @@ export const DoctorDashboard: React.FC = () => {
                           placeholder="Search patient, phone, token..."
                           className="h-9 px-3.5 rounded-full border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] w-full sm:w-56"
                         />
-                        {nextPresentTarget ? (
+                        {isDoctorAway ? (
+                          <AppleButton
+                            variant="ghost"
+                            size="sm"
+                            disabled={true}
+                            className="flex items-center justify-center gap-1.5 whitespace-nowrap w-full sm:w-auto opacity-70 cursor-not-allowed bg-[#f5f5f7] text-[#86868b] border-[#e5e5ea]"
+                            title="You have stepped out of the cabin. Change cabin presence to 'In Cabin' to resume calling patients."
+                          >
+                            <Clock className="w-3.5 h-3.5 text-amber-500" />
+                            <span>Doctor {user?.doctorProfile?.cabinStatus === 'STEPPED_OUT' ? 'Stepped Out' : 'Away'}</span>
+                          </AppleButton>
+                        ) : nextPresentTarget ? (
                           <AppleButton
                             variant="primary"
                             size="sm"
@@ -1621,7 +1642,18 @@ export const DoctorDashboard: React.FC = () => {
 
                         <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
                           {appt.appointmentDate === getLocalDateString() ? (
-                            appt.isCheckedIn ? (
+                            isDoctorAway ? (
+                              <AppleButton
+                                variant="ghost"
+                                size="sm"
+                                disabled={true}
+                                className="opacity-60 cursor-not-allowed text-xs text-[#86868b] bg-[#f5f5f7] border border-[#e5e5ea] flex items-center gap-1 whitespace-nowrap"
+                                title={`Doctor has ${user?.doctorProfile?.cabinStatus === 'STEPPED_OUT' ? 'stepped out' : 'not entered cabin'}. Set presence to 'In Cabin' to call patient.`}
+                              >
+                                <Clock className="w-3 h-3 text-amber-500" />
+                                <span>Doctor {user?.doctorProfile?.cabinStatus === 'STEPPED_OUT' ? 'Stepped Out' : 'Away'}</span>
+                              </AppleButton>
+                            ) : appt.isCheckedIn ? (
                               <AppleButton
                                 variant="primary"
                                 size="sm"

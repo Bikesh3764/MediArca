@@ -759,6 +759,7 @@ export interface ReceptionistQueueItem {
   symptoms?: string;
   isForOther?: boolean;
   patientAge?: string;
+  appointmentDate?: string;
   createdAt: string;
 }
 

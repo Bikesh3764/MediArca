@@ -531,6 +531,30 @@ export const ReceptionistDashboard: React.FC = () => {
 
   // Handle status updates
   const handleStatusChange = async (appointmentId: string, status: string) => {
+    if (status === 'IN_CONSULTATION') {
+      const targetDoctor = linkedDoctors.find((d) => d.doctorId === queueDoctorId);
+      if (targetDoctor?.cabinStatus && targetDoctor.cabinStatus !== 'IN_CABIN') {
+        const awayMsg = targetDoctor.cabinStatus === 'STEPPED_OUT'
+          ? `Dr. ${targetDoctor.fullName} has stepped out of the cabin${targetDoctor.expectedReturnTime ? ` (expected return ~${targetDoctor.expectedReturnTime})` : ''}. Doctor must be 'In Cabin' before calling patients into consultation.`
+          : `Dr. ${targetDoctor.fullName} is currently marked as 'Not in Cabin'. Doctor must be 'In Cabin' before calling patients into consultation.`;
+        alert(awayMsg);
+        return;
+      }
+
+      const targetAppt = queueAppointments.find((a) => a.id === appointmentId);
+      if (targetAppt) {
+        const targetDate = targetAppt.appointmentDate || queueDate;
+        if (targetDate !== getLocalDateString()) {
+          alert(`Cannot call in an appointment scheduled for ${targetDate}. Only patients scheduled for today can be called into consultation.`);
+          return;
+        }
+        if (!targetAppt.isCheckedIn) {
+          alert('Patient has not checked in at the clinic yet. Please mark patient arrival first.');
+          return;
+        }
+      }
+    }
+
     try {
       await api.updateAppointmentStatus(appointmentId, status);
       fetchQueue();
@@ -1520,6 +1544,9 @@ export const ReceptionistDashboard: React.FC = () => {
                   );
                 }
 
+                const queueDoctor = linkedDoctors.find((d) => d.doctorId === queueDoctorId);
+                const isDoctorAway = queueDoctor?.cabinStatus && queueDoctor.cabinStatus !== 'IN_CABIN';
+
                 return (
                   <div className="overflow-x-auto">
                     <table className="w-full text-left text-xs">
@@ -1613,12 +1640,41 @@ export const ReceptionistDashboard: React.FC = () => {
                             <td className="py-3 text-right pr-2">
                               <div className="inline-flex items-center gap-1.5">
                                 {appt.status === 'WAITING' && (
-                                  <button
-                                    onClick={() => handleStatusChange(appt.id, 'IN_CONSULTATION')}
-                                    className="px-3.5 py-1.5 rounded-full bg-[#0088e8] hover:bg-[#0077cc] text-white text-[11px] font-semibold shadow-xs transition-all active:scale-[0.98] cursor-pointer"
-                                  >
-                                    Call In
-                                  </button>
+                                  isDoctorAway ? (
+                                    <button
+                                      type="button"
+                                      disabled={true}
+                                      className="px-3.5 py-1.5 rounded-full bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea] text-[11px] font-medium opacity-60 cursor-not-allowed whitespace-nowrap"
+                                      title={`Doctor has ${queueDoctor?.cabinStatus === 'STEPPED_OUT' ? 'stepped out' : 'not entered cabin'}. Patient cannot be called in until doctor returns.`}
+                                    >
+                                      Doctor {queueDoctor?.cabinStatus === 'STEPPED_OUT' ? 'Stepped Out' : 'Away'}
+                                    </button>
+                                  ) : !appt.isCheckedIn ? (
+                                    <button
+                                      type="button"
+                                      disabled={true}
+                                      className="px-3.5 py-1.5 rounded-full bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea] text-[11px] font-medium opacity-60 cursor-not-allowed whitespace-nowrap"
+                                      title="Patient has not checked in at clinic yet. Mark patient arrival first."
+                                    >
+                                      Not in Cabin
+                                    </button>
+                                  ) : (appt.appointmentDate || queueDate) !== getLocalDateString() ? (
+                                    <button
+                                      type="button"
+                                      disabled={true}
+                                      className="px-3.5 py-1.5 rounded-full bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea] text-[11px] font-medium opacity-60 cursor-not-allowed whitespace-nowrap"
+                                      title="Cannot call in an appointment scheduled for another date."
+                                    >
+                                      Scheduled for {appt.appointmentDate || queueDate}
+                                    </button>
+                                  ) : (
+                                    <button
+                                      onClick={() => handleStatusChange(appt.id, 'IN_CONSULTATION')}
+                                      className="px-3.5 py-1.5 rounded-full bg-[#0088e8] hover:bg-[#0077cc] text-white text-[11px] font-semibold shadow-xs transition-all active:scale-[0.98] cursor-pointer whitespace-nowrap"
+                                    >
+                                      Call In
+                                    </button>
+                                  )
                                 )}
                                 {appt.status === 'IN_CONSULTATION' && (
                                   <button
