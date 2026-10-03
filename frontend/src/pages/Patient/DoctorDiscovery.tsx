@@ -28,7 +28,6 @@ import {
   Phone,
   ArrowLeft,
   ChevronRight,
-  ShieldCheck,
 } from 'lucide-react';
 
 import { SearchableSpecialtySelect } from '../../components/ui/SearchableSpecialtySelect';
@@ -538,15 +537,9 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                       <Building2 className="w-6 h-6" />
                     </div>
                     <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2 mb-1">
-                        <h2 className="text-xl sm:text-2xl font-semibold text-[#1d1d1f] tracking-tight truncate">
-                          {selectedClinic.clinicName}
-                        </h2>
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/60 text-[11px] font-medium shrink-0">
-                          <ShieldCheck className="w-3 h-3 text-emerald-600" />
-                          Verified Facility
-                        </span>
-                      </div>
+                      <h2 className="text-xl sm:text-2xl font-semibold text-[#1d1d1f] tracking-tight truncate mb-1">
+                        {selectedClinic.clinicName}
+                      </h2>
                       <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-[#86868b]">
                         <span className="inline-flex items-center gap-1.5 font-medium text-[#48484a]">
                           <MapPin className="w-3.5 h-3.5 text-[#0066cc] shrink-0" />
