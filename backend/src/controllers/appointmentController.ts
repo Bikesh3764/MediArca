@@ -49,15 +49,15 @@ export const resolveReceptionistContact = (
         r.doctors?.some((d: any) => d.doctorId === doctorId && (d.status === 'ACTIVE' || !d.status))
       );
       if (assigned) {
-        const phone = assigned.phone || assigned.user?.phone || null;
-        const name = assigned.user?.fullName || null;
-        if (phone) return { phone, name };
+        const phone = assigned.phone || assigned.user?.phone || clinic?.phone || null;
+        const name = assigned.user?.fullName || assigned.fullName || null;
+        if (phone || name) return { phone, name };
       }
     }
     for (const r of clinic.receptionists) {
-      const phone = r.phone || r.user?.phone || null;
-      const name = r.user?.fullName || null;
-      if (phone) return { phone, name };
+      const phone = r.phone || r.user?.phone || clinic?.phone || null;
+      const name = r.user?.fullName || r.fullName || null;
+      if (phone || name) return { phone, name };
     }
   }
 
@@ -66,14 +66,20 @@ export const resolveReceptionistContact = (
     const docRec = doctor.receptionists.find(
       (dr: any) =>
         (!dr.receptionist?.clinicId || !clinic?.id || dr.receptionist.clinicId === clinic.id) &&
-        (dr.receptionist?.phone || dr.receptionist?.user?.phone)
+        (dr.receptionist?.phone || dr.receptionist?.user?.phone || dr.receptionist?.user?.fullName)
     );
     if (docRec?.receptionist) {
       return {
-        phone: docRec.receptionist.phone || docRec.receptionist.user?.phone || null,
+        phone: docRec.receptionist.phone || docRec.receptionist.user?.phone || clinic?.phone || null,
         name: docRec.receptionist.user?.fullName || null,
       };
     }
+  }
+
+  // Fallback to clinic contact with clean front desk title
+  if (clinic?.phone || clinic?.clinicName) {
+    const deskName = clinic.clinicName ? `${clinic.clinicName} Front Desk` : 'Front Desk Receptionist';
+    return { phone: clinic.phone || null, name: deskName };
   }
 
   return { phone: null, name: null };

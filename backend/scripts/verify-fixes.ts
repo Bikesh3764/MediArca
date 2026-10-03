@@ -4908,6 +4908,17 @@ Follow-up Date: 2026-10-15`;
   const recContact4 = resolveReceptionistContact(mockClinicWithoutRecs, 'doc-4', mockDoctorWithRecs);
   assert(recContact4.phone === '+91 9876543299', 'Resolves receptionist from doctor.receptionists when clinic.receptionists is empty');
 
+  // Test 154.3b: Clinic has no receptionist, falls back to clinic front desk
+  const mockClinicOnly = {
+    id: 'clinic-only',
+    clinicName: 'Bikesh Clinic',
+    phone: '+91 9876543210',
+    receptionists: [],
+  };
+  const recContact5 = resolveReceptionistContact(mockClinicOnly, 'doc-5');
+  assert(recContact5.phone === '+91 9876543210', 'Falls back to clinic phone when no receptionist is created');
+  assert(recContact5.name === 'Bikesh Clinic Front Desk', 'Falls back to clinic front desk name');
+
   // Test 154.4: Notification titles: PENDING_APPROVAL gets "Appointment Request Received", approval gets "Appointment Booking Confirmed"
   const getBookingNotificationTitle = (status: string) => {
     return status === 'PENDING_APPROVAL' ? 'Appointment Request Received' : 'Appointment Booking Confirmed';

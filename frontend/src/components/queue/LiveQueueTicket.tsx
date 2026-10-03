@@ -46,6 +46,11 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
   const clinicPhone = appointment.clinic?.phone;
   const deskPhone = receptionistPhone || clinicPhone;
 
+  // Resolved receptionist / front desk name
+  const receptionistName =
+    appointment.receptionistName ||
+    (appointment.clinic?.clinicName ? `${appointment.clinic.clinicName} Front Desk` : 'Front Desk Receptionist');
+
   // Estimated token number calculation (guaranteed to start from 1, never 0 or negative)
   const rawEstToken =
     appointment.estimatedQueueNumber ||
@@ -113,12 +118,12 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
           <div className="shrink-0 self-start sm:self-center">
             {status === 'PENDING_APPROVAL' ? (
               <div className="flex flex-col items-end gap-1.5">
-                <div className="bg-amber-50 border border-amber-200/80 px-4 py-1.5 rounded-2xl flex items-baseline gap-2 shadow-2xs">
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-amber-700">Est. Token</span>
-                  <span className="text-2xl font-bold text-amber-800 tracking-tight">#{estToken}</span>
+                <div className="bg-[#f5f5f7] border border-[#e5e5ea] px-4 py-1.5 rounded-2xl flex items-baseline gap-2">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">Est. Token</span>
+                  <span className="text-2xl font-bold text-[#1d1d1f] tracking-tight">#{estToken}</span>
                 </div>
-                <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/10 text-[11px] font-medium text-amber-800">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-[11px] font-medium text-[#86868b]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#86868b]"></span>
                   <span>Pending Approval</span>
                 </div>
               </div>
@@ -233,18 +238,18 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
         {status === 'PENDING_APPROVAL' && (
           <div className="mt-4 p-4 rounded-[16px] bg-[#f5f5f7] border border-[#e5e5ea]">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Clock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-3.5 h-3.5 text-[#86868b] shrink-0" />
                   <span className="text-xs font-semibold text-[#1d1d1f]">
                     Desk Confirmation Pending • Estimated Token #{estToken}
                   </span>
-                  <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200/80">
-                    ₹{appointment.fee || (appointment as any).consultationFee || doctor.consultationFee || 0}
-                  </span>
                 </div>
-                <p className="text-xs text-[#86868b] mt-1">
-                  Pay receptionist at desk to confirm token #{estToken}. First come, first confirmed.
+                <p className="text-xs text-[#1d1d1f] font-medium mt-1">
+                  Receptionist: <span className="font-semibold">{receptionistName}</span>
+                </p>
+                <p className="text-xs text-[#86868b] mt-0.5">
+                  Pay at receptionist desk to confirm token #{estToken}. First come, first confirmed.
                 </p>
               </div>
 
@@ -252,10 +257,10 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
                 <div className="shrink-0">
                   <a
                     href={`tel:${deskPhone.replace(/\s+/g, '')}`}
-                    className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-full bg-[#1d1d1f] hover:bg-black text-white text-xs font-medium active:scale-95 transition-all shadow-2xs"
+                    className="inline-flex items-center gap-1.5 h-8 px-4 rounded-full bg-[#1d1d1f] hover:bg-black text-white text-xs font-medium active:scale-95 transition-all shadow-2xs"
                   >
                     <Phone className="w-3 h-3 text-[#86868b] shrink-0" />
-                    <span>Call Receptionist: {formatDisplayPhone(deskPhone)}</span>
+                    <span>Call {receptionistName}: {formatDisplayPhone(deskPhone)}</span>
                   </a>
                 </div>
               )}

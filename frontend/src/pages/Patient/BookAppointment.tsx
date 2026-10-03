@@ -301,12 +301,12 @@ export const BookAppointment: React.FC = () => {
 
         <div className="max-w-xl mx-auto px-4 sm:px-6 pt-6 sm:pt-10">
           <UtilityCard className="text-center py-8 px-5 sm:px-8 space-y-6">
-            <div className="w-16 h-16 rounded-full bg-amber-50 text-amber-600 border border-amber-200/80 flex items-center justify-center mx-auto shadow-xs">
+            <div className="w-16 h-16 rounded-full bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea] flex items-center justify-center mx-auto shadow-2xs">
               <Clock className="w-8 h-8" />
             </div>
 
             <div>
-              <span className="text-xs font-semibold uppercase tracking-wider text-amber-700 block mb-1">
+              <span className="text-xs font-semibold uppercase tracking-wider text-[#86868b] block mb-1">
                 Request Submitted
               </span>
               <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#1d1d1f]">
@@ -315,9 +315,9 @@ export const BookAppointment: React.FC = () => {
               <p className="text-xs text-[#86868b] mt-1 font-medium">
                 {confirmedAppointment.appointmentDate} · {confirmedAppointment.checkingWindow}
               </p>
-              <div className="mt-3 inline-flex items-baseline gap-2 px-4 py-1.5 rounded-2xl bg-amber-50 border border-amber-200/80">
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-amber-700">Estimated Token</span>
-                <span className="text-xl font-bold text-amber-800 tracking-tight">
+              <div className="mt-3 inline-flex items-baseline gap-2 px-4 py-1.5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea]">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">Estimated Token</span>
+                <span className="text-xl font-bold text-[#1d1d1f] tracking-tight">
                   #{confirmedAppointment.estimatedQueueNumber || (confirmedAppointment.queueNumber > 0 ? confirmedAppointment.queueNumber : 1)}
                 </span>
               </div>
@@ -338,7 +338,7 @@ export const BookAppointment: React.FC = () => {
                   </p>
                 </div>
                 <div className="text-right shrink-0">
-                  <span className="text-base font-bold text-emerald-700 block">
+                  <span className="text-base font-bold text-[#1d1d1f] block">
                     ₹{activeFee}
                   </span>
                   <span className="text-[10px] text-[#86868b]">Fee</span>
