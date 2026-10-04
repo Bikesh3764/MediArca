@@ -15,6 +15,7 @@ import { AppleButton } from '../components/ui/AppleButton';
 import { SearchableSpecialtySelect } from '../components/ui/SearchableSpecialtySelect';
 import { AppleFilterSelect } from '../components/ui/AppleFilterSelect';
 import clinicLobbyBg from '../assets/clinic-lobby-bg.jpg';
+import healthcareHeroBg from '../assets/healthcare-hero-bg.jpg';
 import { INDIAN_STATES, getCitiesForState } from '../utils/indiaStates';
 import { formatDisplayPhone } from '../utils/phoneUtils';
 import {
@@ -424,15 +425,31 @@ export const Home: React.FC = () => {
 
   return (
     <div className="flex flex-col min-h-screen bg-[#f5f5f7]">
-      {/* 1. Hero Section - Apple HIG Minimalist Canvas */}
-      <section className="relative overflow-hidden border-b border-[#e5e5ea] bg-[#f5f5f7] py-16 sm:py-20 md:py-24 px-4 sm:px-6 flex items-center justify-center">
+      {/* 1. Hero Section - Healthcare Themed Canvas with Queue Booking Focus */}
+      <section className="relative overflow-hidden border-b border-[#e5e5ea] py-16 sm:py-20 md:py-24 px-4 sm:px-6 flex items-center justify-center min-h-[440px] sm:min-h-[480px]">
+        {/* Healthcare Themed Hero Background Photo */}
+        <div className="absolute inset-0 pointer-events-none select-none overflow-hidden">
+          <img
+            src={healthcareHeroBg}
+            alt="Healthcare clinical facility"
+            className="w-full h-full object-cover object-center filter saturate-[1.05] scale-105"
+          />
+          {/* Apple Frosted Soft Overlay for Optimal Contrast & Calm Texture */}
+          <div className="absolute inset-0 bg-gradient-to-b from-white/90 via-white/80 to-[#f5f5f7]/95" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.65)_0%,rgba(255,255,255,0.92)_100%)]" />
+        </div>
+
         <div className="relative z-10 max-w-4xl mx-auto text-center w-full">
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-semibold text-[#1d1d1f] tracking-tight leading-[1.07]">
-            Certified clinics & <span className="text-[#0066cc]">specialists</span> across India.
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-semibold text-[#1d1d1f] tracking-tight leading-[1.08] max-w-3xl mx-auto">
+            Book doctor queue tokens. <span className="text-[#0066cc]">Skip the waiting room.</span>
           </h1>
 
+          <p className="mt-3.5 text-sm sm:text-base text-[#48484a] max-w-xl mx-auto font-normal leading-relaxed">
+            Get your live token online, see live queue status, and visit only when it's your turn.
+          </p>
+
           {/* Unified Apple Dual Search Bar (Two Searches in One Bar) */}
-          <div className="mt-8 sm:mt-10 max-w-2xl mx-auto bg-white p-2 sm:p-2.5 rounded-[24px] sm:rounded-full border border-[#e0e0e0] shadow-[0_4px_24px_rgba(0,0,0,0.06)] flex flex-col sm:flex-row items-center gap-2">
+          <div className="mt-8 sm:mt-10 max-w-2xl mx-auto backdrop-blur-md bg-white/95 p-2 sm:p-2.5 rounded-[24px] sm:rounded-full border border-black/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.06)] flex flex-col sm:flex-row items-center gap-2">
             <div className="flex items-center gap-2.5 flex-1 w-full px-3.5 py-1">
               <Search className="w-4 h-4 text-[#86868b] shrink-0" />
               <input
@@ -480,7 +497,7 @@ export const Home: React.FC = () => {
             <button
               type="button"
               onClick={handleHeroSearch}
-              className="w-full sm:w-auto h-10 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-sm font-medium transition-all active:scale-95 inline-flex items-center justify-center gap-2 cursor-pointer shrink-0"
+              className="w-full sm:w-auto h-10 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-sm font-medium transition-all duration-150 active:scale-[0.97] inline-flex items-center justify-center gap-2 cursor-pointer select-none shrink-0 shadow-[0_1px_2px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,102,204,0.15)]"
             >
               <Search className="w-4 h-4" />
               <span>Search</span>
