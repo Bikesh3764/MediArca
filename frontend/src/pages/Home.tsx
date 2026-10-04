@@ -787,52 +787,59 @@ export const Home: React.FC = () => {
                                   <div className="min-w-0">
                                     <h3
                                       onClick={() => navigate(getDoctorDetailPath(doctor.id))}
-                                      className="text-[16px] sm:text-[17px] font-bold text-[#1d1d1f] tracking-tight hover:text-[#0066cc] transition-colors cursor-pointer truncate"
+                                      className="text-[17px] font-semibold text-[#1d1d1f] hover:text-[#0066cc] cursor-pointer tracking-tight transition-colors duration-150 truncate leading-snug"
                                       title={doctor.user.fullName}
                                     >
                                       {doctor.user.fullName}
                                     </h3>
-                                    <p className="mt-1 text-xs tracking-tight truncate">
-                                      <span className="font-semibold text-[#0066cc]">{doctor.specialty}</span>
-                                      {cleanDegrees && <span className="font-semibold text-[#48484a]"> • {cleanDegrees}</span>}
-                                    </p>
+                                    <div className="mt-1 flex items-center gap-1.5 text-xs text-[#86868b] truncate">
+                                      <span className="font-medium text-[#0066cc]">{doctor.specialty}</span>
+                                      {cleanDegrees && (
+                                        <>
+                                          <span className="text-[#c7c7cc] select-none">•</span>
+                                          <span className="font-medium text-[#48484a]">{cleanDegrees}</span>
+                                        </>
+                                      )}
+                                    </div>
                                   </div>
-                                  <span className="text-[11px] font-semibold text-[#1d1d1f] bg-[#f5f5f7] px-2.5 py-0.5 rounded-full border border-[#e5e5ea] shrink-0 whitespace-nowrap">
+                                  <span className="text-[11px] font-medium text-[#48484a] bg-[#f5f5f7] px-2.5 py-0.5 rounded-full border border-[#e5e5ea] shrink-0 whitespace-nowrap select-none">
                                     {doctor.experienceYears} yrs exp
                                   </span>
                                 </div>
 
                                 {/* Shift Timing: Bold, Clear Apple Row */}
-                                <div className="mt-3.5 flex items-center gap-2 text-xs text-[#1d1d1f]">
-                                  <Clock className="w-3.5 h-3.5 text-[#0066cc] shrink-0" />
-                                  <span className="font-semibold text-[#1d1d1f] tracking-tight truncate">
-                                    {slots.length > 0
-                                      ? `${format12Hour(slots[0].startTime)} – ${format12Hour(slots[0].endTime)}`
-                                      : doctor.checkingStartTime
-                                      ? `${format12Hour(doctor.checkingStartTime)} – ${format12Hour(doctor.checkingEndTime)}`
-                                      : 'Consultation hours'}
-                                  </span>
-                                  {slots.length > 1 && (
-                                    <span className="text-[10px] font-semibold text-[#0066cc] bg-[#0066cc]/10 px-2 py-0.5 rounded-full border border-[#0066cc]/25 shrink-0">
-                                      +{slots.length - 1} slots
+                                <div className="mt-3.5 space-y-2 text-xs">
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <Clock className="w-3.5 h-3.5 text-[#86868b] shrink-0" />
+                                    <span className="truncate text-[#48484a] font-medium tracking-tight">
+                                      {slots.length > 0
+                                        ? `${format12Hour(slots[0].startTime)} – ${format12Hour(slots[0].endTime)}`
+                                        : doctor.checkingStartTime
+                                        ? `${format12Hour(doctor.checkingStartTime)} – ${format12Hour(doctor.checkingEndTime)}`
+                                        : 'Consultation hours'}
                                     </span>
-                                  )}
+                                    {slots.length > 1 && (
+                                      <span className="text-[10px] font-medium text-[#0066cc] bg-[#0066cc]/8 px-2 py-0.5 rounded-full border border-[#0066cc]/15 shrink-0 select-none">
+                                        +{slots.length - 1} slots
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
 
                               {/* Card Footer: Fee & Apple Action Blue Pill Button */}
                               <div className="mt-4 pt-3.5 border-t border-[#f0f0f2] flex items-center justify-between gap-3">
                                 <div className="flex items-baseline gap-1">
-                                  <span className="text-[20px] sm:text-[22px] font-bold text-[#1d1d1f] tracking-tight">
+                                  <span className="text-[21px] font-bold text-[#1d1d1f] tracking-tight">
                                     ₹{effectiveFee.toFixed(0)}
                                   </span>
-                                  <span className="text-xs text-[#86868b] font-medium">/ visit</span>
+                                  <span className="text-xs text-[#86868b] font-normal">/ visit</span>
                                 </div>
 
                                 <button
                                   type="button"
                                   onClick={() => navigate(getDoctorBookPath(doctor.id, selectedClinic.id, slots[0]?.id))}
-                                  className="h-8 min-w-[76px] px-5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-[13px] font-semibold tracking-tight transition-all duration-200 active:scale-95 inline-flex items-center justify-center shadow-none cursor-pointer"
+                                  className="h-8 min-w-[78px] px-5 rounded-full text-xs font-medium text-white bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.97] transition-all duration-150 ease-out cursor-pointer select-none shadow-[0_1px_2px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,102,204,0.15)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066cc]/40 inline-flex items-center justify-center"
                                 >
                                   Book
                                 </button>
@@ -1249,36 +1256,46 @@ export const Home: React.FC = () => {
                               <div className="min-w-0">
                                 <h3
                                   onClick={() => navigate(getDoctorDetailPath(doctor.id))}
-                                  className="text-[16px] sm:text-[17px] font-bold text-[#1d1d1f] tracking-tight hover:text-[#0066cc] transition-colors cursor-pointer truncate"
+                                  className="text-[17px] font-semibold text-[#1d1d1f] hover:text-[#0066cc] cursor-pointer tracking-tight transition-colors duration-150 truncate leading-snug"
                                   title={doctor.user.fullName}
                                 >
                                   {doctor.user.fullName}
                                 </h3>
-                                <p className="mt-1 text-xs text-[#86868b] font-normal truncate">
-                                  <span className="font-semibold text-[#0066cc]">{doctor.specialty}</span>
-                                  {cleanDegrees && <span className="font-semibold text-[#48484a]"> • {cleanDegrees}</span>}
-                                </p>
+                                <div className="mt-1 flex items-center gap-1.5 text-xs text-[#86868b] truncate">
+                                  <span className="font-medium text-[#0066cc]">{doctor.specialty}</span>
+                                  {cleanDegrees && (
+                                    <>
+                                      <span className="text-[#c7c7cc] select-none">•</span>
+                                      <span className="font-medium text-[#48484a]">{cleanDegrees}</span>
+                                    </>
+                                  )}
+                                </div>
                               </div>
-                              <span className="text-[11px] font-semibold text-[#1d1d1f] bg-[#f5f5f7] px-2.5 py-0.5 rounded-full border border-[#e5e5ea] shrink-0 whitespace-nowrap">
+                              <span className="text-[11px] font-medium text-[#48484a] bg-[#f5f5f7] px-2.5 py-0.5 rounded-full border border-[#e5e5ea] shrink-0 whitespace-nowrap select-none">
                                 {doctor.experienceYears} yrs exp
                               </span>
                             </div>
 
                             {/* Practice Clinic & Shift Timing */}
-                            <div className="mt-3.5 space-y-1.5 text-xs text-[#1d1d1f]">
+                            <div className="mt-3.5 space-y-2 text-xs">
                               {primaryClinic && (
                                 <div className="flex items-center gap-2 min-w-0">
-                                  <MapPin className="w-3.5 h-3.5 text-[#0066cc] shrink-0" />
-                                  <span className="truncate text-[#1d1d1f] font-semibold">
+                                  <MapPin className="w-3.5 h-3.5 text-[#86868b] shrink-0" />
+                                  <span className="truncate text-[#1d1d1f] font-medium">
                                     {primaryClinic.clinicName}
-                                    {primaryClinic.city ? <span className="text-[#86868b] font-medium"> • {primaryClinic.city}</span> : ''}
+                                    {primaryClinic.city ? <span className="text-[#86868b] font-normal"> · {primaryClinic.city}</span> : ''}
                                   </span>
+                                  {(doctor.clinics?.length ?? 0) > 1 && (
+                                    <span className="text-[10px] font-medium text-[#0066cc] bg-[#0066cc]/8 px-2 py-0.5 rounded-full border border-[#0066cc]/15 shrink-0 select-none">
+                                      +{(doctor.clinics?.length ?? 0) - 1} more
+                                    </span>
+                                  )}
                                 </div>
                               )}
 
                               <div className="flex items-center gap-2 min-w-0">
-                                <Clock className="w-3.5 h-3.5 text-[#0066cc] shrink-0" />
-                                <span className="truncate text-[#1d1d1f] font-semibold tracking-tight">
+                                <Clock className="w-3.5 h-3.5 text-[#86868b] shrink-0" />
+                                <span className="truncate text-[#48484a] font-medium tracking-tight">
                                   {slots.length > 0
                                     ? `${format12Hour(slots[0].startTime)} – ${format12Hour(slots[0].endTime)}`
                                     : doctor.checkingStartTime
@@ -1292,16 +1309,16 @@ export const Home: React.FC = () => {
                           {/* Card Footer: Fee & Apple Action Blue Pill Button */}
                           <div className="mt-4 pt-3.5 border-t border-[#f0f0f2] flex items-center justify-between gap-3">
                             <div className="flex items-baseline gap-1">
-                              <span className="text-[20px] sm:text-[22px] font-bold text-[#1d1d1f] tracking-tight">
+                              <span className="text-[21px] font-bold text-[#1d1d1f] tracking-tight">
                                 ₹{doctor.consultationFee.toFixed(0)}
                               </span>
-                              <span className="text-xs text-[#86868b] font-medium">/ visit</span>
+                              <span className="text-xs text-[#86868b] font-normal">/ visit</span>
                             </div>
 
                             <button
                               type="button"
                               onClick={() => navigate(getDoctorBookPath(doctor.id, primaryClinic?.id))}
-                              className="h-8 min-w-[76px] px-5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-[13px] font-semibold tracking-tight transition-all duration-200 active:scale-95 inline-flex items-center justify-center shadow-none cursor-pointer"
+                              className="h-8 min-w-[78px] px-5 rounded-full text-xs font-medium text-white bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.97] transition-all duration-150 ease-out cursor-pointer select-none shadow-[0_1px_2px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,102,204,0.15)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066cc]/40 inline-flex items-center justify-center"
                             >
                               Book
                             </button>
