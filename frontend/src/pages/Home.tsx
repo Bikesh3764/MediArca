@@ -430,6 +430,9 @@ export const Home: React.FC = () => {
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-semibold text-[#1d1d1f] tracking-tight leading-[1.07]">
             Certified clinics & <span className="text-[#0066cc]">specialists</span> across India.
           </h1>
+          <p className="mt-3.5 sm:mt-4 text-base sm:text-lg text-[#86868b] max-w-xl mx-auto font-normal tracking-tight">
+            Live outpatient queue passes and doctor appointments across certified clinics.
+          </p>
 
           {/* Unified Apple Dual Search Bar (Two Searches in One Bar) */}
           <div className="mt-8 sm:mt-10 max-w-2xl mx-auto bg-white p-2 sm:p-2.5 rounded-[24px] sm:rounded-full border border-[#e0e0e0] shadow-[0_2px_8px_rgba(0,0,0,0.04),0_16px_36px_rgba(0,0,0,0.06)] focus-within:border-[#0066cc]/50 focus-within:ring-4 focus-within:ring-[#0066cc]/10 transition-all duration-200 flex flex-col sm:flex-row items-center gap-2">
