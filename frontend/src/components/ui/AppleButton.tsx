@@ -20,35 +20,30 @@ export const AppleButton: React.FC<AppleButtonProps> = ({
   ...props
 }) => {
   let baseClass =
-    'inline-flex items-center justify-center font-normal select-none transition-all duration-150 ease-out active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066cc]/40 focus-visible:ring-offset-2 disabled:opacity-40 disabled:pointer-events-none cursor-pointer';
+    'inline-flex items-center justify-center font-normal transition-all duration-200 active:scale-95 disabled:opacity-40 disabled:pointer-events-none cursor-pointer';
 
   let variantClass = '';
   switch (variant) {
     case 'primary':
-      // Apple Action Blue (#0066cc) with dual ambient glow shadow per Emil Kowalski craft
-      variantClass =
-        'bg-[#0066cc] hover:bg-[#0071e3] text-white shadow-[0_1px_2px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,102,204,0.18)] hover:shadow-[0_2px_4px_rgba(0,0,0,0.08),0_4px_16px_rgba(0,102,204,0.24)] rounded-full font-medium';
+      // Apple Action Blue (#0066cc) per DESIGN.md
+      variantClass = 'bg-[#0066cc] hover:bg-[#0071e3] text-white shadow-2xs hover:shadow-xs rounded-full font-medium';
       break;
     case 'secondary':
-      // Apple secondary pill per DESIGN.md & Impeccable contrast
-      variantClass =
-        'bg-white text-[#1d1d1f] border border-[#e5e5ea] hover:bg-[#fafafc] hover:border-[#d2d2d7] shadow-2xs rounded-full font-medium';
+      // Apple secondary pill per DESIGN.md
+      variantClass = 'bg-white text-[#0066cc] border border-[#0066cc] hover:bg-[#0066cc]/5 rounded-full font-medium';
       break;
     case 'secondary-dark':
     case 'glass':
       // Apple translucent glass pill for dark backgrounds with high contrast white text
-      variantClass =
-        'bg-white/12 text-white border border-white/30 hover:bg-white/20 hover:border-white backdrop-blur-md rounded-full shadow-2xs font-medium';
+      variantClass = 'bg-white/12 text-white border border-white/30 hover:bg-white/20 hover:border-white backdrop-blur-md rounded-full shadow-2xs font-medium';
       break;
     case 'ghost':
       // Apple Pearl/Parchment Button capsule per DESIGN.md
-      variantClass =
-        'bg-[#fafafc] text-[#1d1d1f] border border-[#e5e5ea] hover:bg-white hover:border-[#d2d2d7] rounded-full font-medium';
+      variantClass = 'bg-[#fafafc] text-[#1d1d1f] border border-[#e5e5ea] hover:bg-white hover:border-[#d2d2d7] rounded-full font-medium';
       break;
     case 'dark':
       // Dark utility button (SF Pro Text 14px / 400)
-      variantClass =
-        'bg-[#1d1d1f] text-white hover:bg-[#333333] shadow-[0_1px_3px_rgba(0,0,0,0.12)] rounded-[8px] font-medium';
+      variantClass = 'bg-[#1d1d1f] text-white hover:bg-[#333333] rounded-[8px] font-medium';
       break;
     case 'icon':
       variantClass = 'bg-[#d2d2d7]/40 hover:bg-[#d2d2d7]/70 text-[#1d1d1f] rounded-full p-2';

@@ -147,14 +147,14 @@ export const GlobalNav: React.FC = () => {
   };
 
   const getNavLinkClass = (active: boolean) =>
-    `px-3.5 py-1.5 rounded-full select-none transition-all duration-150 ease-out active:scale-[0.97] text-xs flex items-center gap-1.5 cursor-pointer ${
+    `px-3.5 py-1.5 rounded-full transition-all duration-200 text-xs flex items-center gap-1.5 cursor-pointer ${
       active
-        ? 'bg-black/[0.06] text-[#1d1d1f] font-semibold shadow-[0_1px_2px_rgba(0,0,0,0.04)]'
+        ? 'bg-black/[0.06] text-[#1d1d1f] font-semibold'
         : 'text-[#86868b] hover:text-[#1d1d1f] hover:bg-black/[0.03] font-medium'
     }`;
 
   const getMobileNavLinkClass = (active: boolean) =>
-    `py-2.5 px-3.5 rounded-xl select-none transition-all duration-150 ease-out active:scale-[0.97] flex items-center gap-2 text-xs cursor-pointer ${
+    `py-2.5 px-3.5 rounded-xl transition-colors flex items-center gap-2 text-xs cursor-pointer ${
       active
         ? 'bg-black/[0.06] text-[#1d1d1f] font-semibold'
         : 'text-[#86868b] hover:bg-black/[0.03] hover:text-[#1d1d1f] font-medium'
@@ -527,13 +527,13 @@ export const GlobalNav: React.FC = () => {
             <div className="flex items-center gap-2">
               <Link
                 to="/login"
-                className="text-[#1d1d1f] hover:text-[#0066cc] px-3.5 py-1.5 text-xs font-medium select-none transition-all duration-150 ease-out hover:bg-black/[0.04] active:scale-[0.97] rounded-full cursor-pointer"
+                className="text-[#1d1d1f] hover:text-[#0066cc] px-3.5 py-1.5 text-xs font-medium transition-colors hover:bg-black/[0.04] rounded-full"
               >
                 Sign In
               </Link>
               <Link
                 to="/signup"
-                className="bg-[#0066cc] hover:bg-[#0071e3] text-white px-4 py-1.5 rounded-full text-xs font-medium select-none transition-all duration-150 ease-out active:scale-[0.97] shadow-[0_1px_2px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,102,204,0.18)] hover:shadow-[0_2px_4px_rgba(0,0,0,0.08),0_4px_16px_rgba(0,102,204,0.24)] cursor-pointer"
+                className="bg-[#0066cc] hover:bg-[#0071e3] text-white px-4 py-1.5 rounded-full text-xs font-medium active:scale-95 transition-all"
               >
                 Register
               </Link>

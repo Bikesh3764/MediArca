@@ -430,12 +430,9 @@ export const Home: React.FC = () => {
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-semibold text-[#1d1d1f] tracking-tight leading-[1.07]">
             Certified clinics & <span className="text-[#0066cc]">specialists</span> across India.
           </h1>
-          <p className="mt-3.5 sm:mt-4 text-base sm:text-lg text-[#86868b] max-w-xl mx-auto font-normal tracking-tight">
-            Live outpatient queue passes and doctor appointments across certified clinics.
-          </p>
 
           {/* Unified Apple Dual Search Bar (Two Searches in One Bar) */}
-          <div className="mt-8 sm:mt-10 max-w-2xl mx-auto bg-white p-2 sm:p-2.5 rounded-[24px] sm:rounded-full border border-[#e0e0e0] shadow-[0_2px_8px_rgba(0,0,0,0.04),0_16px_36px_rgba(0,0,0,0.06)] focus-within:border-[#0066cc]/50 focus-within:ring-4 focus-within:ring-[#0066cc]/10 transition-all duration-200 flex flex-col sm:flex-row items-center gap-2">
+          <div className="mt-8 sm:mt-10 max-w-2xl mx-auto bg-white p-2 sm:p-2.5 rounded-[24px] sm:rounded-full border border-[#e0e0e0] shadow-[0_4px_24px_rgba(0,0,0,0.06)] flex flex-col sm:flex-row items-center gap-2">
             <div className="flex items-center gap-2.5 flex-1 w-full px-3.5 py-1">
               <Search className="w-4 h-4 text-[#86868b] shrink-0" />
               <input
@@ -483,7 +480,7 @@ export const Home: React.FC = () => {
             <button
               type="button"
               onClick={handleHeroSearch}
-              className="w-full sm:w-auto h-10 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-sm font-medium select-none transition-all duration-150 ease-out active:scale-[0.97] shadow-[0_1px_2px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,102,204,0.18)] hover:shadow-[0_2px_4px_rgba(0,0,0,0.08),0_4px_16px_rgba(0,102,204,0.24)] inline-flex items-center justify-center gap-2 cursor-pointer shrink-0"
+              className="w-full sm:w-auto h-10 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-sm font-medium transition-all active:scale-95 inline-flex items-center justify-center gap-2 cursor-pointer shrink-0"
             >
               <Search className="w-4 h-4" />
               <span>Search</span>
@@ -496,13 +493,13 @@ export const Home: React.FC = () => {
       <section id="catalog-section" className="w-full px-4 sm:px-6 lg:px-10 xl:px-14 py-8 sm:py-10 flex-1">
         {/* Navigation & Search Bar Header */}
         <div className="flex flex-col sm:flex-row items-center gap-3.5 sm:gap-4 pb-6 mb-8 border-b border-[#e5e5ea]">
-          <div className="h-11 inline-flex items-center p-1 bg-[#f5f5f7] rounded-full border border-[#e5e5ea] shrink-0 select-none">
+          <div className="h-11 inline-flex items-center p-1 bg-[#f5f5f7] rounded-full border border-[#e5e5ea] shrink-0">
             <button
               type="button"
               onClick={() => handleSectionSwitch('clinics')}
-              className={`h-full flex items-center gap-2 px-5 rounded-full text-xs sm:text-sm font-semibold select-none transition-all duration-150 ease-out cursor-pointer active:scale-[0.97] ${
+              className={`h-full flex items-center gap-2 px-5 rounded-full text-xs sm:text-sm font-semibold transition-all cursor-pointer active:scale-95 ${
                 activeSection === 'clinics'
-                  ? 'bg-white text-[#1d1d1f] shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)]'
+                  ? 'bg-white text-[#1d1d1f] shadow-xs'
                   : 'text-[#86868b] hover:text-[#1d1d1f]'
               }`}
             >
@@ -512,9 +509,9 @@ export const Home: React.FC = () => {
             <button
               type="button"
               onClick={() => handleSectionSwitch('doctors')}
-              className={`h-full flex items-center gap-2 px-5 rounded-full text-xs sm:text-sm font-semibold select-none transition-all duration-150 ease-out cursor-pointer active:scale-[0.97] ${
+              className={`h-full flex items-center gap-2 px-5 rounded-full text-xs sm:text-sm font-semibold transition-all cursor-pointer active:scale-95 ${
                 activeSection === 'doctors'
-                  ? 'bg-white text-[#1d1d1f] shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)]'
+                  ? 'bg-white text-[#1d1d1f] shadow-xs'
                   : 'text-[#86868b] hover:text-[#1d1d1f]'
               }`}
             >
@@ -525,7 +522,7 @@ export const Home: React.FC = () => {
 
           {/* Search bar beside Clinics & Doctors Switch */}
           {activeSection === 'clinics' && !selectedClinic && (
-            <div className="flex-1 h-11 bg-white px-3.5 rounded-full border border-[#e5e5ea] focus-within:border-[#0066cc]/40 focus-within:ring-2 focus-within:ring-[#0066cc]/10 shadow-[0_1px_3px_rgba(0,0,0,0.03)] transition-all duration-200 flex items-center gap-2.5 sm:gap-3">
+            <div className="flex-1 h-11 bg-white px-3.5 rounded-full border border-[#e5e5ea] flex items-center gap-2.5 sm:gap-3">
               <div className="flex items-center gap-2 flex-1 h-full min-w-0">
                 <Search className="w-4 h-4 text-[#86868b] shrink-0" />
                 <input
@@ -592,7 +589,7 @@ export const Home: React.FC = () => {
                 <button
                   type="button"
                   onClick={resetClinicFilters}
-                  className="h-7 px-2.5 rounded-full text-xs font-normal text-[#86868b] hover:text-[#1d1d1f] hover:bg-black/[0.04] cursor-pointer select-none transition-all duration-150 ease-out active:scale-[0.97] shrink-0"
+                  className="h-7 px-2.5 rounded-full text-xs font-normal text-[#86868b] hover:text-[#1d1d1f] hover:bg-black/[0.04] cursor-pointer active:scale-95 shrink-0"
                 >
                   Reset
                 </button>
@@ -601,7 +598,7 @@ export const Home: React.FC = () => {
           )}
 
           {activeSection === 'doctors' && (
-            <div className="flex-1 h-11 bg-white px-3.5 rounded-full border border-[#e5e5ea] focus-within:border-[#0066cc]/40 focus-within:ring-2 focus-within:ring-[#0066cc]/10 shadow-[0_1px_3px_rgba(0,0,0,0.03)] transition-all duration-200 flex items-center gap-2.5 sm:gap-3">
+            <div className="flex-1 h-11 bg-white px-3.5 rounded-full border border-[#e5e5ea] flex items-center gap-2.5 sm:gap-3">
               <div className="flex items-center gap-2 flex-1 h-full min-w-0">
                 <Search className="w-4 h-4 text-[#86868b] shrink-0" />
                 <input
@@ -658,7 +655,7 @@ export const Home: React.FC = () => {
                 <button
                   type="button"
                   onClick={resetDoctorFilters}
-                  className="h-7 px-2.5 rounded-full text-xs font-normal text-[#86868b] hover:text-[#1d1d1f] hover:bg-black/[0.04] cursor-pointer select-none transition-all duration-150 ease-out active:scale-[0.97] shrink-0"
+                  className="h-7 px-2.5 rounded-full text-xs font-normal text-[#86868b] hover:text-[#1d1d1f] hover:bg-black/[0.04] cursor-pointer active:scale-95 shrink-0"
                 >
                   Reset
                 </button>
@@ -754,7 +751,7 @@ export const Home: React.FC = () => {
                         return (
                           <div
                             key={doctor.id}
-                            className="w-full bg-white rounded-[20px] border border-[#e0e0e0] overflow-hidden hover:border-[#0066cc]/30 hover:shadow-[0_4px_20px_rgba(0,0,0,0.06)] hover:-translate-y-0.5 transition-all duration-200 flex flex-col justify-between group"
+                            className="w-full bg-white rounded-[20px] border border-[#e0e0e0] overflow-hidden hover:border-[#0066cc]/40 transition-all duration-200 flex flex-col justify-between group"
                           >
                             {/* Doctor Photo Banner - Natural 16:10 proportion displaying the full photo */}
                             <div
@@ -835,7 +832,7 @@ export const Home: React.FC = () => {
                                 <button
                                   type="button"
                                   onClick={() => navigate(getDoctorBookPath(doctor.id, selectedClinic.id, slots[0]?.id))}
-                                  className="h-8 min-w-[76px] px-5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-[13px] font-semibold tracking-tight select-none transition-all duration-150 ease-out active:scale-[0.97] shadow-[0_1px_2px_rgba(0,0,0,0.06),0_2px_6px_rgba(0,102,204,0.18)] hover:shadow-[0_2px_4px_rgba(0,0,0,0.08),0_4px_12px_rgba(0,102,204,0.24)] inline-flex items-center justify-center cursor-pointer"
+                                  className="h-8 min-w-[76px] px-5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-[13px] font-semibold tracking-tight transition-all duration-200 active:scale-95 inline-flex items-center justify-center shadow-none cursor-pointer"
                                 >
                                   Book
                                 </button>
@@ -886,7 +883,7 @@ export const Home: React.FC = () => {
                         <div
                           key={clinic.id}
                           onClick={() => setSelectedClinic(clinic)}
-                          className="w-full bg-white rounded-[20px] border border-[#e0e0e0] overflow-hidden hover:border-[#0066cc]/30 hover:shadow-[0_4px_20px_rgba(0,0,0,0.06)] hover:-translate-y-0.5 transition-all duration-200 flex flex-col justify-between group cursor-pointer"
+                          className="w-full bg-white rounded-[20px] border border-[#e0e0e0] overflow-hidden hover:border-[#0066cc]/40 transition-all duration-200 flex flex-col justify-between group cursor-pointer"
                         >
                           {/* Top Facility Photography Banner */}
                           <div className="relative w-full aspect-[16/10] bg-[#f5f5f7] border-b border-[#f0f0f2] overflow-hidden flex items-center justify-center">
@@ -941,7 +938,7 @@ export const Home: React.FC = () => {
                                   e.stopPropagation();
                                   setSelectedClinic(clinic);
                                 }}
-                                className="w-full h-9 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-[13px] font-semibold tracking-tight select-none transition-all duration-150 ease-out active:scale-[0.97] shadow-[0_1px_2px_rgba(0,0,0,0.06),0_2px_6px_rgba(0,102,204,0.18)] hover:shadow-[0_2px_4px_rgba(0,0,0,0.08),0_4px_12px_rgba(0,102,204,0.24)] inline-flex items-center justify-center gap-1.5 cursor-pointer"
+                                className="w-full h-9 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-[13px] font-semibold tracking-tight transition-all duration-200 active:scale-[0.98] inline-flex items-center justify-center gap-1.5 cursor-pointer shadow-none group-hover:bg-[#0071e3]"
                               >
                                 <span>View Doctors</span>
                                 <ChevronRight className="w-3.5 h-3.5 text-white/90 transition-transform duration-200 group-hover:translate-x-0.5" />
@@ -1216,7 +1213,7 @@ export const Home: React.FC = () => {
                     return (
                       <div
                         key={doctor.id}
-                        className="w-full bg-white rounded-[20px] border border-[#e0e0e0] overflow-hidden hover:border-[#0066cc]/30 hover:shadow-[0_4px_20px_rgba(0,0,0,0.06)] hover:-translate-y-0.5 transition-all duration-200 flex flex-col justify-between group"
+                        className="w-full bg-white rounded-[20px] border border-[#e0e0e0] overflow-hidden hover:border-[#0066cc]/40 transition-all duration-200 flex flex-col justify-between group"
                       >
                         {/* Doctor Photo Banner - Natural 16:10 proportion displaying the full photo */}
                         <div
@@ -1304,7 +1301,7 @@ export const Home: React.FC = () => {
                             <button
                               type="button"
                               onClick={() => navigate(getDoctorBookPath(doctor.id, primaryClinic?.id))}
-                              className="h-8 min-w-[76px] px-5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-[13px] font-semibold tracking-tight select-none transition-all duration-150 ease-out active:scale-[0.97] shadow-[0_1px_2px_rgba(0,0,0,0.06),0_2px_6px_rgba(0,102,204,0.18)] hover:shadow-[0_2px_4px_rgba(0,0,0,0.08),0_4px_12px_rgba(0,102,204,0.24)] inline-flex items-center justify-center cursor-pointer"
+                              className="h-8 min-w-[76px] px-5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-[13px] font-semibold tracking-tight transition-all duration-200 active:scale-95 inline-flex items-center justify-center shadow-none cursor-pointer"
                             >
                               Book
                             </button>
