@@ -149,7 +149,7 @@ export const AppleFilterSelect: React.FC<AppleFilterSelectProps> = ({
 
       {/* Floating Popover Menu */}
       {isOpen && (
-        <div className="absolute top-full mt-2 left-0 z-50 min-w-[220px] max-w-[300px] w-auto bg-white/95 backdrop-blur-xl rounded-[20px] border border-[#e5e5ea] shadow-xl p-2 animate-fadeIn space-y-1.5">
+        <div className="absolute top-full mt-2 left-0 z-50 min-w-[220px] max-w-[300px] w-auto bg-white/95 backdrop-blur-xl rounded-[20px] border border-[#e5e5ea] shadow-[0_4px_24px_rgba(0,0,0,0.08),0_1px_3px_rgba(0,0,0,0.04)] p-2 animate-fadeIn space-y-1.5">
           {/* Quick Search */}
           {searchable && options.length > 5 && (
             <div className="relative mb-1">
