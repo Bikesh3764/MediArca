@@ -5190,7 +5190,7 @@ Follow-up Date: 2026-10-15`;
       return { allowed: false, message: `Cannot call appointment scheduled for ${appointment.appointmentDate}. Only patients scheduled for today (${todayIso}) can be called into the active cabin.` };
     }
     if (!appointment.isCheckedIn) {
-      return { allowed: false, message: 'Patient is not in the cabin yet. The patient must check in / arrive at the clinic before being called into consultation.' };
+      return { allowed: false, message: 'Patient has not checked in at the clinic yet. The patient must arrive at the clinic before being called into consultation.' };
     }
     return { allowed: true };
   };
@@ -5200,11 +5200,11 @@ Follow-up Date: 2026-10-15`;
 
   assert(
     validateCanCallPatient({ appointmentDate: todayDateStr, isCheckedIn: true }, todayDateStr).allowed === true,
-    'Patient present in cabin today can be called into consultation'
+    'Patient checked in at clinic today can be called into consultation'
   );
   assert(
     validateCanCallPatient({ appointmentDate: todayDateStr, isCheckedIn: false }, todayDateStr).allowed === false,
-    'Patient NOT in cabin today cannot be called into consultation'
+    'Patient NOT checked in at clinic today cannot be called into consultation'
   );
   assert(
     validateCanCallPatient({ appointmentDate: tomorrowDateStr, isCheckedIn: true }, todayDateStr).allowed === false,

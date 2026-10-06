@@ -771,7 +771,7 @@ export const ReceptionistDashboard: React.FC = () => {
             <div className="text-xl sm:text-3xl font-bold tracking-tight text-[#1d1d1f]">
               {linkedDoctors.reduce((sum, d) => sum + d.todayWaitingPatients, 0)}
             </div>
-            <p className="text-[11px] sm:text-xs text-[#86868b] mt-1">In clinic waiting area</p>
+            <p className="text-[11px] sm:text-xs text-[#86868b] mt-1">In today's queue</p>
           </div>
         </div>
 
@@ -1656,7 +1656,7 @@ export const ReceptionistDashboard: React.FC = () => {
                                       className="px-3.5 py-1.5 rounded-full bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea] text-[11px] font-medium opacity-60 cursor-not-allowed whitespace-nowrap"
                                       title="Patient has not checked in at clinic yet. Mark patient arrival first."
                                     >
-                                      Not in Cabin
+                                      Awaiting Arrival
                                     </button>
                                   ) : (appt.appointmentDate || queueDate) !== getLocalDateString() ? (
                                     <button

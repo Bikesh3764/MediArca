@@ -829,7 +829,7 @@ export const updateAppointmentStatus = async (req: AuthRequest, res: Response): 
       if (!targetAppointment.isCheckedIn) {
         res.status(400).json({
           success: false,
-          message: 'Patient has not checked in at the clinic yet. Patient must be in cabin before consultation begins.',
+          message: 'Patient has not checked in at the clinic yet. Patient must arrive at the clinic before being called into consultation.',
         });
         return;
       }

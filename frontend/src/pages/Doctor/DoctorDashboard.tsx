@@ -334,7 +334,7 @@ export const DoctorDashboard: React.FC = () => {
         return;
       }
       if (!target.isCheckedIn) {
-        alert('Patient is not in the cabin yet. Patient must check in / arrive in the cabin before consultation can begin.');
+        alert('Patient has not arrived at the clinic yet. Patient must check in / mark arrival before being called into consultation.');
         return;
       }
     }
@@ -371,7 +371,7 @@ export const DoctorDashboard: React.FC = () => {
       await api.checkInAppointmentDirect(appointmentId, nextStatus);
       await fetchQueue();
     } catch (err: any) {
-      alert(err.message || 'Failed to update patient cabin presence status');
+      alert(err.message || 'Failed to update patient arrival status');
     } finally {
       setTogglingCheckinId(null);
     }
@@ -1497,7 +1497,7 @@ export const DoctorDashboard: React.FC = () => {
                             <Play className="w-3.5 h-3.5 fill-current" />
                             {callingId === nextPresentTarget.id
                               ? 'Calling...'
-                              : `Next Patient: Call Queue #${nextPresentTarget.queueNumber} (In Cabin 📍)`}
+                              : `Next Patient: Call Queue #${nextPresentTarget.queueNumber} (Arrived 📍)`}
                           </AppleButton>
                         ) : filteredWaiting.length > 0 ? (
                           <AppleButton
@@ -1505,10 +1505,10 @@ export const DoctorDashboard: React.FC = () => {
                             size="sm"
                             disabled={true}
                             className="flex items-center justify-center gap-1.5 whitespace-nowrap w-full sm:w-auto opacity-60 cursor-not-allowed bg-[#f5f5f7] text-[#86868b] border-[#e5e5ea]"
-                            title="No waiting patients are currently present in cabin"
+                            title="Waiting patients have not arrived at the clinic yet. Once marked arrived, they can be called into consultation."
                           >
                             <Clock className="w-3.5 h-3.5 text-[#86868b]" />
-                            <span>Awaiting Patient in Cabin</span>
+                            <span>Awaiting Patient Arrival</span>
                           </AppleButton>
                         ) : null}
                       </div>
@@ -1625,12 +1625,12 @@ export const DoctorDashboard: React.FC = () => {
                               {appt.isCheckedIn ? (
                                 <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20 flex items-center gap-1">
                                   <span className="w-1.5 h-1.5 rounded-full bg-[#0066cc]"></span>
-                                  <span>In Cabin 📍</span>
+                                  <span>At Clinic 📍</span>
                                 </span>
                               ) : (
                                 <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea] flex items-center gap-1">
                                   <span className="w-1.5 h-1.5 rounded-full bg-[#86868b]"></span>
-                                  <span>Not in Cabin</span>
+                                  <span>Awaiting Arrival</span>
                                 </span>
                               )}
                             </div>
@@ -1666,7 +1666,7 @@ export const DoctorDashboard: React.FC = () => {
                                 className="flex items-center gap-1.5 cursor-pointer shadow-sm whitespace-nowrap"
                               >
                                 <Play className="w-3.5 h-3.5 fill-current" />
-                                {callingId === appt.id ? 'Calling...' : 'Call Patient (In Cabin 📍)'}
+                                {callingId === appt.id ? 'Calling...' : 'Call Patient'}
                               </AppleButton>
                             ) : (
                               <div className="flex items-center gap-1.5 flex-wrap sm:flex-nowrap justify-end">
@@ -1675,10 +1675,10 @@ export const DoctorDashboard: React.FC = () => {
                                   size="sm"
                                   disabled={true}
                                   className="opacity-60 cursor-not-allowed text-xs text-[#86868b] bg-[#f5f5f7] border border-[#e5e5ea] flex items-center gap-1 whitespace-nowrap"
-                                  title="Patient must be inside the cabin before they can be called into consultation"
+                                  title="Patient has not arrived at the clinic yet. Mark patient arrival first."
                                 >
                                   <Clock className="w-3 h-3 text-[#86868b]" />
-                                  <span>Not in Cabin</span>
+                                  <span>Awaiting Arrival</span>
                                 </AppleButton>
                                 <AppleButton
                                   variant="secondary"
@@ -1686,10 +1686,10 @@ export const DoctorDashboard: React.FC = () => {
                                   disabled={togglingCheckinId === appt.id}
                                   onClick={() => handleToggleCheckIn(appt.id, false)}
                                   className="flex items-center gap-1 text-xs text-[#0066cc] cursor-pointer whitespace-nowrap"
-                                  title="Mark patient as arrived in cabin"
+                                  title="Mark patient as arrived at clinic"
                                 >
                                   <CheckCircle2 className="w-3.5 h-3.5 text-[#0066cc]" />
-                                  <span>{togglingCheckinId === appt.id ? 'Updating...' : 'Mark in Cabin'}</span>
+                                  <span>{togglingCheckinId === appt.id ? 'Updating...' : 'Mark Arrived'}</span>
                                 </AppleButton>
                               </div>
                             )
@@ -1699,7 +1699,7 @@ export const DoctorDashboard: React.FC = () => {
                               size="sm"
                               disabled={true}
                               className="opacity-50 cursor-not-allowed text-xs text-[#86868b] bg-[#f5f5f7] border border-[#e5e5ea] flex items-center gap-1 whitespace-nowrap"
-                              title="Scheduled for a future date. Only today's patients in cabin can be called."
+                              title="Scheduled for a future date. Only today's arrived patients can be called."
                             >
                               <Clock className="w-3 h-3 text-[#86868b]" />
                               <span>Scheduled for {appt.appointmentDate === queueData?.upcomingSummary?.tomorrowDate ? 'Tomorrow' : appt.appointmentDate}</span>

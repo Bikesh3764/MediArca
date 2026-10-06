@@ -202,11 +202,11 @@ export const callPatient = async (req: AuthRequest, res: Response): Promise<void
       return;
     }
 
-    // Verify patient is in cabin / checked in before calling
+    // Verify patient is checked in / arrived at clinic before calling
     if (!targetAppointment.isCheckedIn) {
       res.status(400).json({
         success: false,
-        message: 'Patient is not in the cabin yet. The patient must check in / arrive at the clinic before being called into consultation.',
+        message: 'Patient has not checked in at the clinic yet. The patient must arrive at the clinic before being called into consultation.',
       });
       return;
     }
