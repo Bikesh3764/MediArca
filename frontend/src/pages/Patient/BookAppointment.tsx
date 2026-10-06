@@ -81,11 +81,11 @@ export const BookAppointment: React.FC = () => {
     if (doctor.receptionists && doctor.receptionists.length > 0) {
       doctor.receptionists.forEach((r) => {
         if (!selectedClinicId || !r.clinicId || r.clinicId === selectedClinicId) {
-          if (!list.some((item) => item.phone === r.phone && item.name === r.name)) {
+          if (!list.some((item) => (r.phone && item.phone === r.phone) || item.name === r.name)) {
             list.push({
               id: r.id,
               name: r.name,
-              phone: r.phone || selectedClinic?.clinic.phone,
+              phone: r.phone || undefined,
               clinicName: r.clinicName || selectedClinic?.clinic.clinicName,
             });
           }
@@ -93,15 +93,14 @@ export const BookAppointment: React.FC = () => {
       });
     }
 
-    // 2. Selected clinic's receptionists
+    // 2. Selected clinic's receptionists assigned to this doctor
     if (selectedClinic?.receptionists && selectedClinic.receptionists.length > 0) {
       selectedClinic.receptionists.forEach((r) => {
-        const phone = r.phone || selectedClinic.clinic.phone;
-        if (!list.some((item) => item.phone === phone && item.name === r.name)) {
+        if (!list.some((item) => (r.phone && item.phone === r.phone) || item.name === r.name)) {
           list.push({
             id: r.id,
             name: r.name,
-            phone,
+            phone: r.phone || undefined,
             clinicName: selectedClinic.clinic.clinicName,
           });
         }
@@ -110,6 +109,12 @@ export const BookAppointment: React.FC = () => {
 
     return list;
   }, [doctor, selectedClinic, selectedClinicId]);
+
+  const hasActiveReceptionist = Boolean(
+    (queuePreview && typeof queuePreview.hasReceptionist === 'boolean')
+      ? queuePreview.hasReceptionist
+      : (attachedReceptionists.length > 0 || selectedClinic?.hasReceptionist)
+  );
 
   useEffect(() => {
     const fetchDoctor = async () => {
@@ -207,6 +212,12 @@ export const BookAppointment: React.FC = () => {
       return;
     }
 
+    if (!hasActiveReceptionist) {
+      setError('Online booking is unavailable because no front-desk receptionist is currently assigned at this facility.');
+      setSubmitting(false);
+      return;
+    }
+
     const isForOther = bookingFor === 'other';
     if (isForOther && !patientName.trim()) {
       setError('Please provide the patient full name.');
@@ -280,8 +291,8 @@ export const BookAppointment: React.FC = () => {
 
   // Receptionist Contact Info resolved for confirmation screen
   const primaryReceptionist = attachedReceptionists[0];
-  const deskPhone = primaryReceptionist?.phone || selectedClinic?.clinic.phone;
-  const deskName = primaryReceptionist?.name || 'Clinic Reception Desk';
+  const deskPhone = confirmedAppointment?.receptionistPhone || primaryReceptionist?.phone || null;
+  const deskName = confirmedAppointment?.receptionistName || primaryReceptionist?.name || 'Clinic Front Desk';
 
   // 1. Post-Booking Success & Receptionist Details Screen
   if (confirmedAppointment) {
@@ -349,7 +360,7 @@ export const BookAppointment: React.FC = () => {
                 Your token will be officially assigned by the receptionist upon payment. If another patient pays earlier, their token will be confirmed before yours.
               </p>
 
-              {deskPhone && (
+              {deskPhone ? (
                 <div className="pt-1">
                   <a
                     href={`tel:${deskPhone.replace(/\s+/g, '')}`}
@@ -358,6 +369,10 @@ export const BookAppointment: React.FC = () => {
                     <Phone className="w-4 h-4" />
                     <span>Call Receptionist: {formatDisplayPhone(deskPhone)}</span>
                   </a>
+                </div>
+              ) : (
+                <div className="pt-1 text-center text-xs text-[#86868b]">
+                  Please visit the clinic front desk in person to pay the consultation fee and confirm your token.
                 </div>
               )}
             </div>
@@ -776,6 +791,16 @@ export const BookAppointment: React.FC = () => {
               </p>
             </div>
 
+            {!hasActiveReceptionist && (
+              <div className="p-3.5 rounded-2xl bg-amber-50/90 border border-amber-200 text-amber-900 text-xs flex items-start gap-2.5">
+                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-semibold block text-amber-950 mb-0.5">Booking Unavailable at this Clinic</span>
+                  Online queue booking is currently closed for this doctor at {selectedClinic?.clinic.clinicName || 'this facility'} because no front-desk receptionist is currently assigned at this clinic.
+                </div>
+              </div>
+            )}
+
             {isSelectedSlotPassed && (
               <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs">
                 This shift has ended for today. Pick an upcoming shift or future date.
@@ -793,11 +818,13 @@ export const BookAppointment: React.FC = () => {
                 variant="primary"
                 size="lg"
                 type="submit"
-                disabled={submitting || isSelectedSlotPassed || isSelectedSlotFull || !doctor.clinics || doctor.clinics.length === 0}
+                disabled={submitting || isSelectedSlotPassed || isSelectedSlotFull || !doctor.clinics || doctor.clinics.length === 0 || !hasActiveReceptionist}
                 className="w-full sm:w-auto font-semibold"
               >
                 {!doctor.clinics || doctor.clinics.length === 0
                   ? 'Booking Unavailable'
+                  : !hasActiveReceptionist
+                  ? 'Booking Unavailable (No Desk Staff)'
                   : submitting
                   ? 'Submitting Request...'
                   : isSelectedSlotPassed

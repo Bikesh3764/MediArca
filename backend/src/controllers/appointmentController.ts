@@ -49,14 +49,16 @@ export const resolveReceptionistContact = (
         r.doctors?.some((d: any) => d.doctorId === doctorId && (d.status === 'ACTIVE' || !d.status))
       );
       if (assigned) {
-        const phone = assigned.phone || assigned.user?.phone || clinic?.phone || null;
+        const phone = assigned.phone || assigned.user?.phone || null;
         const name = assigned.user?.fullName || assigned.fullName || null;
         if (phone || name) return { phone, name };
       }
     }
-    for (const r of clinic.receptionists) {
-      const phone = r.phone || r.user?.phone || clinic?.phone || null;
-      const name = r.user?.fullName || r.fullName || null;
+    // Check for general receptionist covering this clinic without doctor restriction
+    const general = clinic.receptionists.find((r: any) => !r.doctors || r.doctors.length === 0);
+    if (general) {
+      const phone = general.phone || general.user?.phone || null;
+      const name = general.user?.fullName || general.fullName || null;
       if (phone || name) return { phone, name };
     }
   }
@@ -70,18 +72,13 @@ export const resolveReceptionistContact = (
     );
     if (docRec?.receptionist) {
       return {
-        phone: docRec.receptionist.phone || docRec.receptionist.user?.phone || clinic?.phone || null,
+        phone: docRec.receptionist.phone || docRec.receptionist.user?.phone || null,
         name: docRec.receptionist.user?.fullName || null,
       };
     }
   }
 
-  // Fallback to clinic contact with clean front desk title
-  if (clinic?.phone || clinic?.clinicName) {
-    const deskName = clinic.clinicName ? `${clinic.clinicName} Front Desk` : 'Front Desk Receptionist';
-    return { phone: clinic.phone || null, name: deskName };
-  }
-
+  // Strictly return null if no actual receptionist is assigned; never substitute clinic phone
   return { phone: null, name: null };
 };
 
@@ -108,7 +105,19 @@ export const getQueuePreview = async (req: AuthRequest, res: Response): Promise<
         user: { select: { fullName: true } },
         clinics: {
           where: { clinic: { isVerified: true, verificationStatus: 'VERIFIED' }, status: { in: ['ACTIVE', 'ACCEPTED'] } },
-          include: { clinic: true },
+          include: {
+            clinic: {
+              include: {
+                receptionists: {
+                  where: { status: 'ACTIVE' },
+                  include: {
+                    user: { select: { fullName: true, phone: true } },
+                    doctors: { select: { doctorId: true, status: true } },
+                  },
+                },
+              },
+            },
+          },
         },
       },
     });
@@ -249,6 +258,13 @@ export const getQueuePreview = async (req: AuthRequest, res: Response): Promise<
         consultationFee: effectiveConsultationFee,
         clinicId: selectedAffiliation?.clinicId || null,
         clinicName: selectedAffiliation?.clinic?.clinicName || null,
+        hasReceptionist: (() => {
+          const recs = selectedAffiliation?.clinic?.receptionists || [];
+          return recs.some((r: any) =>
+            !r.doctors || r.doctors.length === 0 ||
+            r.doctors.some((d: any) => d.doctorId === doctor.id && (d.status === 'ACTIVE' || !d.status))
+          );
+        })(),
         selectedClinic: selectedAffiliation
           ? {
               clinicId: selectedAffiliation.clinicId,
@@ -257,6 +273,10 @@ export const getQueuePreview = async (req: AuthRequest, res: Response): Promise<
               city: selectedAffiliation.clinic.city,
               phone: selectedAffiliation.clinic.phone,
               consultationFee: effectiveConsultationFee,
+              hasReceptionist: (selectedAffiliation.clinic.receptionists || []).some((r: any) =>
+                !r.doctors || r.doctors.length === 0 ||
+                r.doctors.some((d: any) => d.doctorId === doctor.id && (d.status === 'ACTIVE' || !d.status))
+              ),
             }
           : null,
         hasClinics: activeClinics.length > 0,
@@ -269,6 +289,10 @@ export const getQueuePreview = async (req: AuthRequest, res: Response): Promise<
               if (Array.isArray(p) && p.length > 0) cSlots = p;
             } catch {}
           }
+          const cHasReceptionist = (c.clinic?.receptionists || []).some((r: any) =>
+            !r.doctors || r.doctors.length === 0 ||
+            r.doctors.some((d: any) => d.doctorId === doctor.id && (d.status === 'ACTIVE' || !d.status))
+          );
           return {
             clinicId: c.clinicId,
             clinicName: c.clinic.clinicName,
@@ -277,6 +301,7 @@ export const getQueuePreview = async (req: AuthRequest, res: Response): Promise<
             phone: c.clinic.phone,
             consultationFee: c.consultationFee ?? doctor.consultationFee,
             slots: cSlots,
+            hasReceptionist: cHasReceptionist,
           };
         }),
       },
@@ -493,6 +518,34 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
         res.status(400).json({
           success: false,
           message: 'This doctor practices at multiple clinics. Please select which clinic venue you wish to book an appointment at.',
+        });
+        return;
+      }
+    }
+
+    // Enforce receptionist requirement: patient online queue booking REQUIRES an active front desk receptionist assigned to the doctor at the clinic facility
+    if (req.user?.role === 'PATIENT') {
+      const activeReceptionist = await prisma.receptionistProfile.findFirst({
+        where: {
+          clinicId: targetClinicId,
+          status: 'ACTIVE',
+          OR: [
+            { doctors: { none: {} } },
+            { doctors: { some: { doctorId: doctor.id, status: 'ACTIVE' } } },
+          ],
+        },
+        include: {
+          user: { select: { fullName: true, phone: true } },
+        },
+      });
+
+      if (!activeReceptionist) {
+        const rawDocName = doctor.user?.fullName || 'this practitioner';
+        const docDisplayName = rawDocName.startsWith('Dr.') ? rawDocName : `Dr. ${rawDocName}`;
+        const clinicDisplayName = targetAffiliation?.clinic?.clinicName || 'this facility';
+        res.status(400).json({
+          success: false,
+          message: `Online queue booking is currently unavailable for ${docDisplayName} at ${clinicDisplayName} because no front-desk receptionist is currently assigned at this facility.`,
         });
         return;
       }

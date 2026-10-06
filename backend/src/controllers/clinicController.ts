@@ -741,13 +741,34 @@ export const getPublicClinics = async (req: any, res: Response): Promise<void> =
             },
           },
         },
+        receptionists: {
+          where: { status: 'ACTIVE' },
+          select: {
+            id: true,
+            phone: true,
+            user: { select: { fullName: true, phone: true } },
+            doctors: { select: { doctorId: true, status: true } },
+          },
+        },
       },
       orderBy: { clinicName: 'asc' },
     });
 
+    const formattedClinics = clinics.map((c: any) => ({
+      ...c,
+      hasReceptionist: (c.receptionists || []).length > 0,
+      doctors: (c.doctors || []).map((cd: any) => ({
+        ...cd,
+        hasReceptionist: (c.receptionists || []).some((r: any) => {
+          if (!r.doctors || r.doctors.length === 0) return true;
+          return r.doctors.some((d: any) => d.doctorId === cd.doctorId && (d.status === 'ACTIVE' || !d.status));
+        }),
+      })),
+    }));
+
     res.json({
       success: true,
-      data: clinics,
+      data: formattedClinics,
     });
   } catch (error: any) {
     console.error('getPublicClinics error:', error);
@@ -831,6 +852,15 @@ export const getPublicClinicById = async (req: any, res: Response): Promise<void
             },
           },
         },
+        receptionists: {
+          where: { status: 'ACTIVE' },
+          select: {
+            id: true,
+            phone: true,
+            user: { select: { fullName: true, phone: true } },
+            doctors: { select: { doctorId: true, status: true } },
+          },
+        },
       },
     });
 
@@ -839,9 +869,21 @@ export const getPublicClinicById = async (req: any, res: Response): Promise<void
       return;
     }
 
+    const formattedClinic = {
+      ...clinic,
+      hasReceptionist: (clinic.receptionists || []).length > 0,
+      doctors: (clinic.doctors || []).map((cd: any) => ({
+        ...cd,
+        hasReceptionist: (clinic.receptionists || []).some((r: any) => {
+          if (!r.doctors || r.doctors.length === 0) return true;
+          return r.doctors.some((d: any) => d.doctorId === cd.doctorId && (d.status === 'ACTIVE' || !d.status));
+        }),
+      })),
+    };
+
     res.json({
       success: true,
-      data: clinic,
+      data: formattedClinic,
     });
   } catch (error: any) {
     console.error('getPublicClinicById error:', error);

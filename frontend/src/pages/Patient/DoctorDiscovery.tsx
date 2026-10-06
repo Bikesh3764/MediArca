@@ -685,13 +685,22 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                                 <span className="text-xs text-[#86868b] font-normal">/ visit</span>
                               </div>
 
-                              <button
-                                type="button"
-                                onClick={() => navigate(getBookPath(doctor.id) + `?clinicId=${selectedClinic.id}`)}
-                                className="h-8 min-w-[78px] px-5 rounded-full text-xs font-medium text-white bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.97] transition-all duration-150 ease-out cursor-pointer select-none shadow-[0_1px_2px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,102,204,0.15)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066cc]/40 inline-flex items-center justify-center"
-                              >
-                                Book
-                              </button>
+                              {docItem.hasReceptionist === false ? (
+                                <span
+                                  className="h-8 px-3.5 rounded-full text-[11px] font-medium text-[#86868b] bg-[#f5f5f7] border border-[#e5e5ea] inline-flex items-center justify-center select-none"
+                                  title="Online booking is closed because no receptionist is currently assigned for this doctor at this facility."
+                                >
+                                  No Desk Staff
+                                </span>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => navigate(getBookPath(doctor.id) + `?clinicId=${selectedClinic.id}`)}
+                                  className="h-8 min-w-[78px] px-5 rounded-full text-xs font-medium text-white bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.97] transition-all duration-150 ease-out cursor-pointer select-none shadow-[0_1px_2px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,102,204,0.15)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066cc]/40 inline-flex items-center justify-center"
+                                >
+                                  Book
+                                </button>
+                              )}
                             </div>
                           </div>
                         </div>

@@ -23,10 +23,16 @@ export const formatDoctorClinics = (doc: any) => {
         }
       } catch {}
     }
-    const receptionists = (cd.clinic?.receptionists || []).map((r: any) => ({
+    const activeReceptionists = (cd.clinic?.receptionists || []).filter((r: any) => {
+      if (r.status && r.status !== 'ACTIVE') return false;
+      if (!r.doctors || r.doctors.length === 0) return true;
+      return r.doctors.some((d: any) => d.doctorId === doc.id && (d.status === 'ACTIVE' || !d.status));
+    });
+
+    const receptionists = activeReceptionists.map((r: any) => ({
       id: r.id,
       name: r.user?.fullName || 'Reception Desk',
-      phone: r.phone || r.user?.phone || cd.clinic?.phone || null,
+      phone: r.phone || r.user?.phone || null,
     }));
 
     return {
@@ -34,6 +40,7 @@ export const formatDoctorClinics = (doc: any) => {
       consultationFee: cd.consultationFee ?? doc.consultationFee,
       slots: clinicSlots,
       receptionists,
+      hasReceptionist: receptionists.length > 0,
     };
   });
 };
@@ -209,6 +216,12 @@ export const getDoctorById = async (req: Request, res: Response): Promise<void> 
                       phone: true,
                     },
                   },
+                  doctors: {
+                    select: {
+                      doctorId: true,
+                      status: true,
+                    },
+                  },
                 },
               },
             },
@@ -276,13 +289,15 @@ export const getDoctorById = async (req: Request, res: Response): Promise<void> 
       }
     }
 
-    const doctorReceptionists = (doctor.receptionists || []).map((dr: any) => ({
-      id: dr.receptionist?.id,
-      name: dr.receptionist?.user?.fullName || 'Reception Desk',
-      phone: dr.receptionist?.phone || dr.receptionist?.user?.phone || dr.receptionist?.clinic?.phone || null,
-      clinicId: dr.receptionist?.clinicId,
-      clinicName: dr.receptionist?.clinic?.clinicName,
-    }));
+    const doctorReceptionists = (doctor.receptionists || [])
+      .filter((dr: any) => dr.status === 'ACTIVE' || !dr.status)
+      .map((dr: any) => ({
+        id: dr.receptionist?.id,
+        name: dr.receptionist?.user?.fullName || 'Reception Desk',
+        phone: dr.receptionist?.phone || dr.receptionist?.user?.phone || null,
+        clinicId: dr.receptionist?.clinicId,
+        clinicName: dr.receptionist?.clinic?.clinicName,
+      }));
 
     res.json({
       success: true,

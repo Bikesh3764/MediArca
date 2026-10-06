@@ -613,6 +613,7 @@ export interface PublicClinicDoctor {
   status: string;
   consultationFee?: number | null;
   slots?: DoctorSlot[] | string | null;
+  hasReceptionist?: boolean;
   doctor: Doctor;
 }
 
@@ -836,6 +837,7 @@ export interface Doctor {
     clinic: ClinicProfile;
     consultationFee?: number;
     slots?: DoctorSlot[];
+    hasReceptionist?: boolean;
     receptionists?: Array<{
       id: string;
       name: string;
@@ -888,6 +890,7 @@ export interface QueuePreview {
   consultationFee?: number;
   clinicId?: string | null;
   clinicName?: string | null;
+  hasReceptionist?: boolean;
   selectedClinic?: {
     clinicId: string;
     clinicName: string;
@@ -895,6 +898,7 @@ export interface QueuePreview {
     city?: string;
     phone?: string;
     consultationFee?: number;
+    hasReceptionist?: boolean;
   } | null;
   hasClinics?: boolean;
   clinicsCount?: number;
@@ -906,6 +910,7 @@ export interface QueuePreview {
     phone?: string;
     consultationFee?: number;
     slots?: DoctorSlot[];
+    hasReceptionist?: boolean;
   }>;
 }
 

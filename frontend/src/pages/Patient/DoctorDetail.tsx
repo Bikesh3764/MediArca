@@ -321,7 +321,14 @@ export const DoctorDetail: React.FC = () => {
                             : 'bg-white border-[#e5e5ea] text-[#1d1d1f] hover:border-[#d2d2d7]'
                         }`}
                       >
-                        <span className="truncate">{cd.clinic.clinicName}</span>
+                        <span className="truncate flex items-center gap-1.5">
+                          <span>{cd.clinic.clinicName}</span>
+                          {cd.hasReceptionist === false && (
+                            <span className="text-[10px] text-[#86868b] bg-[#f5f5f7] px-1.5 py-0.5 rounded border border-[#e5e5ea]">
+                              No Desk Staff
+                            </span>
+                          )}
+                        </span>
                         {isSelected && <Check className="w-3.5 h-3.5 text-[#0066cc] shrink-0 ml-1.5" />}
                       </button>
                     );
@@ -331,7 +338,14 @@ export const DoctorDetail: React.FC = () => {
             ) : (
               <div className="mb-4">
                 <span className="text-xs text-[#86868b] block mb-1">Clinic</span>
-                <p className="text-xs font-semibold text-[#1d1d1f]">{selectedClinic?.clinic.clinicName}</p>
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-semibold text-[#1d1d1f] truncate">{selectedClinic?.clinic.clinicName}</p>
+                  {selectedClinic?.hasReceptionist === false && (
+                    <span className="text-[10px] text-[#86868b] bg-[#f5f5f7] px-2 py-0.5 rounded-full border border-[#e5e5ea] shrink-0">
+                      No Desk Staff
+                    </span>
+                  )}
+                </div>
               </div>
             )
           )}
@@ -455,7 +469,12 @@ export const DoctorDetail: React.FC = () => {
             </div>
           </div>
 
-          {queuePreview?.isPassed ? (
+          {queuePreview?.hasReceptionist === false ? (
+            <div className="mb-3 p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start gap-2">
+              <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
+              <span>Online booking closed: No front-desk receptionist currently assigned at this facility.</span>
+            </div>
+          ) : queuePreview?.isPassed ? (
             <div className="mb-3 p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs">
               Shift ended. Pick upcoming shift or date.
             </div>
@@ -468,7 +487,7 @@ export const DoctorDetail: React.FC = () => {
           <AppleButton
             variant="primary"
             size="lg"
-            disabled={Boolean(!doctor.clinics || doctor.clinics.length === 0 || queuePreview?.isFull || queuePreview?.isPassed)}
+            disabled={Boolean(!doctor.clinics || doctor.clinics.length === 0 || queuePreview?.isFull || queuePreview?.isPassed || queuePreview?.hasReceptionist === false)}
             onClick={() =>
               navigate(
                 `/book/${doctor.id}?date=${selectedDate}${selectedSlotId ? `&slot=${selectedSlotId}` : ''}${selectedClinicId ? `&clinic=${selectedClinicId}` : ''}`
@@ -478,6 +497,8 @@ export const DoctorDetail: React.FC = () => {
           >
             {!doctor.clinics || doctor.clinics.length === 0
               ? 'Booking Unavailable'
+              : queuePreview?.hasReceptionist === false
+              ? 'No Desk Staff at Clinic'
               : queuePreview?.isPassed
               ? 'Shift Ended'
               : queuePreview?.isFull

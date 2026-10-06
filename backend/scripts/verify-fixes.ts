@@ -4880,9 +4880,28 @@ Follow-up Date: 2026-10-15`;
   const recContact2 = resolveReceptionistContact(mockClinicWithAssignedRec, 'doc-2');
   assert(recContact2.phone === '+91 9876543220', 'Resolves second assigned receptionist phone for doctor 2');
 
-  // Test 154.2: Doctor not explicitly assigned, falls back to first active receptionist
+  // Test 154.2: Doctor not assigned to specific receptionist returns null when all receptionists are assigned to other doctors
   const recContact3 = resolveReceptionistContact(mockClinicWithAssignedRec, 'doc-3');
-  assert(recContact3.phone === '+91 9876543219', 'Falls back to first active receptionist when doctor has no specific assignment');
+  assert(recContact3.phone === null, 'Returns null when no receptionist is assigned to doctor 3 (prevents cross-doctor fake receptionist)');
+  assert(recContact3.name === null, 'Returns null name when no receptionist is assigned to doctor 3');
+
+  // Test 154.2b: Clinic with general receptionist (no doctor restrictions) covers unassigned doctor
+  const mockClinicWithGeneralRec = {
+    id: 'clinic-gen',
+    clinicName: 'General Care Clinic',
+    phone: '+91 9820011223',
+    receptionists: [
+      {
+        id: 'rec-gen',
+        phone: '+91 9876543230',
+        user: { fullName: 'Donna Noble', phone: '+91 9876543230' },
+        doctors: [], // General desk staff
+      },
+    ],
+  };
+  const recContactGen = resolveReceptionistContact(mockClinicWithGeneralRec, 'doc-3');
+  assert(recContactGen.phone === '+91 9876543230', 'General front desk receptionist covers doctor without specific restriction');
+  assert(recContactGen.name === 'Donna Noble', 'General front desk receptionist name resolved');
 
   // Test 154.3: Doctor has receptionist via doctor.receptionists
   const mockClinicWithoutRecs = {
@@ -4908,7 +4927,7 @@ Follow-up Date: 2026-10-15`;
   const recContact4 = resolveReceptionistContact(mockClinicWithoutRecs, 'doc-4', mockDoctorWithRecs);
   assert(recContact4.phone === '+91 9876543299', 'Resolves receptionist from doctor.receptionists when clinic.receptionists is empty');
 
-  // Test 154.3b: Clinic has no receptionist, falls back to clinic front desk
+  // Test 154.3b: Clinic has no receptionist, strictly returns null (NEVER returns clinic phone as fake receptionist)
   const mockClinicOnly = {
     id: 'clinic-only',
     clinicName: 'Bikesh Clinic',
@@ -4916,8 +4935,15 @@ Follow-up Date: 2026-10-15`;
     receptionists: [],
   };
   const recContact5 = resolveReceptionistContact(mockClinicOnly, 'doc-5');
-  assert(recContact5.phone === '+91 9876543210', 'Falls back to clinic phone when no receptionist is created');
-  assert(recContact5.name === 'Bikesh Clinic Front Desk', 'Falls back to clinic front desk name');
+  assert(recContact5.phone === null, 'Never falls back to clinic phone as fake receptionist when no receptionist is created');
+  assert(recContact5.name === null, 'Never fabricates receptionist name when no receptionist is created');
+
+  // Test 154.3c: Patient online booking gating when no receptionist is assigned
+  const canPatientBookOnlineWithoutReceptionist = (hasActiveReceptionist: boolean) => {
+    return hasActiveReceptionist;
+  };
+  assert(canPatientBookOnlineWithoutReceptionist(false) === false, 'Patient booking strictly blocked when doctor has no receptionist at clinic');
+  assert(canPatientBookOnlineWithoutReceptionist(true) === true, 'Patient booking allowed when active receptionist is assigned');
 
   // Test 154.4: Notification titles: PENDING_APPROVAL gets "Appointment Request Received", approval gets "Appointment Booking Confirmed"
   const getBookingNotificationTitle = (status: string) => {
