@@ -171,11 +171,22 @@ export const getAllAppointments = async (_req: AuthRequest, res: Response): Prom
   try {
     const appointments = await prisma.appointment.findMany({
       include: {
-        doctor: { include: { user: { select: { fullName: true } } } },
-        patient: { include: { user: { select: { fullName: true, email: true } } } },
+        doctor: {
+          include: {
+            user: { select: { fullName: true, email: true, phone: true } },
+          },
+        },
+        patient: {
+          include: {
+            user: { select: { fullName: true, email: true, phone: true } },
+          },
+        },
+        clinic: {
+          select: { id: true, clinicName: true, city: true, address: true, phone: true },
+        },
       },
       orderBy: { createdAt: 'desc' },
-      take: 100,
+      take: 250,
     });
 
     res.json({ success: true, count: appointments.length, data: appointments });
