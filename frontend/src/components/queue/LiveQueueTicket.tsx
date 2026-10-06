@@ -334,28 +334,29 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-[#86868b]"></span>
                 <span className="font-medium text-[#48484a]">
-                  Not in Cabin (En Route / Outside)
+                  Not Checked In (En Route / Outside)
                 </span>
               </div>
               <div className="flex items-center gap-2 self-start sm:self-auto">
-                {onScanQr && (
+                {onScanQr ? (
                   <button
                     type="button"
                     onClick={() => onScanQr(appointment)}
                     className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-[11px] font-semibold active:scale-[0.97] transition-all duration-150 shadow-2xs cursor-pointer select-none"
                   >
                     <QrCode className="w-3.5 h-3.5" />
-                    <span>Scan QR</span>
+                    <span>Scan Clinic QR to Check In</span>
                   </button>
+                ) : (
+                  <a
+                    href={`#/clinic-checkin?clinicId=${appointment.clinicId || ''}`}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-[11px] font-semibold active:scale-[0.97] transition-all duration-150 shadow-2xs select-none"
+                  >
+                    <QrCode className="w-3.5 h-3.5" />
+                    <span>Scan Clinic QR to Check In</span>
+                  </a>
                 )}
-                <button
-                  type="button"
-                  disabled={togglingPresence}
-                  onClick={() => handleTogglePresence(true)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white hover:bg-[#fafafc] text-[#1d1d1f] border border-[#e5e5ea] text-[11px] font-medium active:scale-[0.97] transition-all duration-150 shadow-2xs cursor-pointer select-none"
-                >
-                  <span>{togglingPresence ? 'Updating...' : 'Mark in Cabin'}</span>
-                </button>
+
               </div>
             </div>
           )

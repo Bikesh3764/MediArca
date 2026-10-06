@@ -1640,6 +1640,16 @@ export const checkInAppointmentDirect = async (req: AuthRequest, res: Response):
         res.status(403).json({ success: false, message: "Unauthorized for another patient's appointment" });
         return;
       }
+
+      // Security: Patients cannot self-attest physical arrival. They must scan the on-site clinic QR standee!
+      const targetState = req.body.isCheckedIn !== undefined ? Boolean(req.body.isCheckedIn) : !appointment.isCheckedIn;
+      if (targetState) {
+        res.status(403).json({
+          success: false,
+          message: 'Patients must scan the on-site clinic QR standee to verify physical arrival.',
+        });
+        return;
+      }
     }
 
     if (['EXPIRED', 'CANCELLED', 'REJECTED'].includes(appointment.status)) {
