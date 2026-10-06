@@ -30,6 +30,7 @@ import {
   Plus,
   AlertCircle,
   X,
+  Search,
   MapPin,
   IndianRupee,
   Settings,
@@ -78,8 +79,12 @@ export const DoctorDashboard: React.FC = () => {
   const [publicClinics, setPublicClinics] = useState<ClinicProfile[]>([]);
   const [affiliationsLoading, setAffiliationsLoading] = useState(false);
 
-  // Form states for clinic affiliation
-  const [selectedClinicId, setSelectedClinicId] = useState('');
+  // Form and modal states for clinic affiliation
+  const [isAffiliateModalOpen, setIsAffiliateModalOpen] = useState(false);
+  const [clinicSearchQuery, setClinicSearchQuery] = useState('');
+  const [clinicStateFilter, setClinicStateFilter] = useState('All');
+  const [clinicCityFilter, setClinicCityFilter] = useState('All');
+  const [affiliatingClinicId, setAffiliatingClinicId] = useState<string | null>(null);
   const [feedbackSuccess, setFeedbackSuccess] = useState<string | null>(null);
   const [feedbackError, setFeedbackError] = useState<string | null>(null);
 
@@ -263,12 +268,15 @@ export const DoctorDashboard: React.FC = () => {
   const handleAddClinic = async (clinicId: string) => {
     setFeedbackError(null);
     setFeedbackSuccess(null);
+    setAffiliatingClinicId(clinicId);
     try {
       const res = await api.addDoctorClinic({ clinicId });
       setFeedbackSuccess(res.message || 'Clinic affiliated successfully');
-      fetchAffiliations();
+      await fetchAffiliations();
     } catch (err: any) {
       setFeedbackError(err.message || 'Failed to affiliate clinic');
+    } finally {
+      setAffiliatingClinicId(null);
     }
   };
 
@@ -683,42 +691,20 @@ export const DoctorDashboard: React.FC = () => {
                   </span>
                 </div>
 
-                {/* Quick Add Clinic Dropdown */}
-                {(() => {
-                  const unaffiliatedClinics = publicClinics.filter(
-                    (pc: ClinicProfile) => pc.isVerified && !affiliations?.clinics.some((ac) => ac.clinicId === pc.id)
-                  );
-                  return unaffiliatedClinics.length > 0 ? (
-                    <div className="flex items-center gap-2 w-full sm:w-auto">
-                      <select
-                        value={selectedClinicId}
-                        onChange={(e) => setSelectedClinicId(e.target.value)}
-                        className="h-9 px-3 rounded-full border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] focus:outline-none focus:border-[#0088e8] w-full sm:w-64"
-                      >
-                        <option value="">Select Verified Clinic to Affiliate...</option>
-                        {unaffiliatedClinics.map((c: ClinicProfile) => (
-                          <option key={c.id} value={c.id}>
-                            {c.clinicName} {c.city ? `(${c.city})` : ''}
-                          </option>
-                        ))}
-                      </select>
-                      <button
-                        type="button"
-                        disabled={!selectedClinicId}
-                        onClick={() => {
-                          if (selectedClinicId) {
-                            handleAddClinic(selectedClinicId);
-                            setSelectedClinicId('');
-                          }
-                        }}
-                        className="h-9 px-4 rounded-full bg-[#0088e8] hover:bg-[#0077cc] disabled:opacity-40 disabled:hover:bg-[#0088e8] text-white text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all active:scale-[0.98] shadow-xs"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                        Affiliate
-                      </button>
-                    </div>
-                  ) : null;
-                })()}
+                <AppleButton
+                  size="sm"
+                  variant="primary"
+                  onClick={() => {
+                    setClinicSearchQuery('');
+                    setClinicStateFilter('All');
+                    setClinicCityFilter('All');
+                    setIsAffiliateModalOpen(true);
+                  }}
+                  className="flex items-center gap-1.5 text-xs font-semibold py-2 px-4 shadow-xs"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Affiliate New Clinic</span>
+                </AppleButton>
               </div>
 
               {affiliationsLoading ? (
@@ -729,11 +715,29 @@ export const DoctorDashboard: React.FC = () => {
                 </div>
               ) : affiliations?.clinics.length === 0 ? (
                 <div className="p-8 text-center bg-[#f5f5f7]/50 rounded-2xl border border-dashed border-[#e5e5ea]">
-                  <Building2 className="w-10 h-10 text-[#86868b] mx-auto mb-2 opacity-60" />
+                  <div className="w-12 h-12 rounded-2xl bg-[#0088e8]/10 text-[#0088e8] flex items-center justify-center mx-auto mb-3">
+                    <Building2 className="w-6 h-6" />
+                  </div>
                   <h4 className="text-sm font-semibold text-[#1d1d1f]">No Clinics Affiliated</h4>
                   <p className="text-xs text-[#86868b] mt-1 max-w-md mx-auto">
-                    Select a clinic from the dropdown above to affiliate your practice and receive patient bookings.
+                    Search and affiliate your practice with verified clinics to configure shift timings and receive patient queue bookings.
                   </p>
+                  <div className="mt-4">
+                    <AppleButton
+                      size="sm"
+                      variant="primary"
+                      onClick={() => {
+                        setClinicSearchQuery('');
+                        setClinicStateFilter('All');
+                        setClinicCityFilter('All');
+                        setIsAffiliateModalOpen(true);
+                      }}
+                      className="inline-flex items-center gap-2 text-xs font-semibold py-2 px-4 shadow-xs"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Find & Affiliate Clinic</span>
+                    </AppleButton>
+                  </div>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -2047,6 +2051,294 @@ export const DoctorDashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Affiliate Clinic Modal */}
+      {isAffiliateModalOpen && (() => {
+        const availableStates = Array.from(
+          new Set(publicClinics.map((c) => c.state).filter(Boolean) as string[])
+        ).sort();
+
+        const availableCities = Array.from(
+          new Set(
+            publicClinics
+              .filter((c) => clinicStateFilter === 'All' || c.state === clinicStateFilter)
+              .map((c) => c.city)
+              .filter(Boolean) as string[]
+          )
+        ).sort();
+
+        const filteredPublicClinics = publicClinics
+          .filter((c) => c.isVerified)
+          .filter((c) => {
+            if (clinicStateFilter !== 'All' && c.state !== clinicStateFilter) return false;
+            if (clinicCityFilter !== 'All' && c.city !== clinicCityFilter) return false;
+            if (clinicSearchQuery.trim()) {
+              const q = clinicSearchQuery.toLowerCase().trim();
+              const name = (c.clinicName || '').toLowerCase();
+              const addr = (c.address || '').toLowerCase();
+              const city = (c.city || '').toLowerCase();
+              const state = (c.state || '').toLowerCase();
+              return name.includes(q) || addr.includes(q) || city.includes(q) || state.includes(q);
+            }
+            return true;
+          });
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
+            <div className="relative w-full max-w-2xl bg-white rounded-[24px] border border-[#e5e5ea] shadow-2xl overflow-hidden flex flex-col max-h-[88vh]">
+              {/* Modal Header */}
+              <div className="p-5 sm:p-6 border-b border-[#e5e5ea] flex items-start justify-between gap-4 bg-[#fbfbfd]">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-2xl bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center flex-shrink-0">
+                    <Building2 className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-[#1d1d1f] tracking-tight">
+                      Affiliate Clinic or Hospital
+                    </h3>
+                    <p className="text-xs text-[#86868b] mt-0.5">
+                      Search verified clinics and associate your practice to receive outpatient bookings.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsAffiliateModalOpen(false)}
+                  className="p-2 rounded-full text-[#86868b] hover:text-[#1d1d1f] hover:bg-black/[0.05] transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* In-Modal Feedback Alerts */}
+              {feedbackSuccess && (
+                <div className="mx-5 mt-4 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>{feedbackSuccess}</span>
+                  </div>
+                  <button onClick={() => setFeedbackSuccess(null)} className="text-emerald-700 hover:text-emerald-900">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+              {feedbackError && (
+                <div className="mx-5 mt-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                    <span>{feedbackError}</span>
+                  </div>
+                  <button onClick={() => setFeedbackError(null)} className="text-rose-700 hover:text-rose-900">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+
+              {/* Search & Location Filter Bar */}
+              <div className="p-4 sm:p-5 border-b border-[#e5e5ea] bg-white space-y-3">
+                <div className="relative">
+                  <Search className="w-4 h-4 text-[#86868b] absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={clinicSearchQuery}
+                    onChange={(e) => setClinicSearchQuery(e.target.value)}
+                    placeholder="Search clinic by name, address, or area..."
+                    className="w-full h-10 pl-10 pr-9 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-xs text-[#1d1d1f] placeholder:text-[#86868b] focus:outline-none focus:border-[#0066cc] focus:bg-white transition-all"
+                    autoFocus
+                  />
+                  {clinicSearchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setClinicSearchQuery('')}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#86868b] hover:text-[#1d1d1f] p-1 cursor-pointer"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                {/* State & City Cascading Dropdowns */}
+                <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
+                  {availableStates.length > 0 && (
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[11px] font-medium text-[#86868b]">State:</span>
+                      <select
+                        value={clinicStateFilter}
+                        onChange={(e) => {
+                          setClinicStateFilter(e.target.value);
+                          setClinicCityFilter('All');
+                        }}
+                        className="h-8 px-2.5 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-xs text-[#1d1d1f] focus:outline-none focus:border-[#0066cc]"
+                      >
+                        <option value="All">All States</option>
+                        {availableStates.map((st) => (
+                          <option key={st} value={st}>
+                            {st}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {(availableCities.length > 0 || clinicStateFilter !== 'All') && (
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[11px] font-medium text-[#86868b]">City:</span>
+                      <select
+                        value={clinicCityFilter}
+                        onChange={(e) => setClinicCityFilter(e.target.value)}
+                        className="h-8 px-2.5 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-xs text-[#1d1d1f] focus:outline-none focus:border-[#0066cc]"
+                      >
+                        <option value="All">All Cities</option>
+                        {availableCities.map((city) => (
+                          <option key={city} value={city}>
+                            {city}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  <span className="text-[11px] text-[#86868b] ml-auto">
+                    {filteredPublicClinics.length} verified {filteredPublicClinics.length === 1 ? 'clinic' : 'clinics'} found
+                  </span>
+                </div>
+              </div>
+
+              {/* Clinics List */}
+              <div className="p-4 sm:p-5 overflow-y-auto space-y-3 flex-1 bg-[#fafafc]">
+                {filteredPublicClinics.length === 0 ? (
+                  <div className="py-12 text-center">
+                    <Building2 className="w-10 h-10 text-[#86868b] mx-auto mb-2 opacity-50" />
+                    <p className="text-sm font-semibold text-[#1d1d1f]">No Verified Clinics Found</p>
+                    <p className="text-xs text-[#86868b] mt-1 max-w-sm mx-auto">
+                      {clinicSearchQuery || clinicStateFilter !== 'All' || clinicCityFilter !== 'All'
+                        ? 'No clinics match your current search or location filters. Try clearing your search.'
+                        : 'No verified clinics are currently registered in the network.'}
+                    </p>
+                    {(clinicSearchQuery || clinicStateFilter !== 'All' || clinicCityFilter !== 'All') && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setClinicSearchQuery('');
+                          setClinicStateFilter('All');
+                          setClinicCityFilter('All');
+                        }}
+                        className="mt-3 px-3 py-1 rounded-full text-xs font-medium text-[#0066cc] bg-[#0066cc]/10 hover:bg-[#0066cc]/20 transition-all cursor-pointer"
+                      >
+                        Clear Filters
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  filteredPublicClinics.map((c) => {
+                    const isAffiliated = affiliations?.clinics.some((ac) => ac.clinicId === c.id);
+                    const isPending = affiliations?.outgoingRequests?.some(
+                      (req) => req.clinicId === c.id || req.clinicName === c.clinicName
+                    );
+                    const hasIncoming = affiliations?.incomingRequests?.some((req) => req.clinicId === c.id);
+                    const isAddingThis = affiliatingClinicId === c.id;
+
+                    return (
+                      <div
+                        key={c.id}
+                        className="p-4 rounded-[18px] bg-white border border-[#e5e5ea] hover:border-[#0066cc]/40 hover:shadow-xs transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h4 className="font-semibold text-sm text-[#1d1d1f] tracking-tight">
+                              {c.clinicName}
+                            </h4>
+                            <span
+                              title="Verified Healthcare Facility"
+                              className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-blue-50 text-[#0066cc] border border-blue-200"
+                            >
+                              <CheckCircle2 className="w-3 h-3 text-[#0066cc]" />
+                              Verified
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 text-xs text-[#86868b] mt-1 truncate">
+                            <MapPin className="w-3.5 h-3.5 shrink-0 text-[#86868b]" />
+                            <span className="truncate">
+                              {c.address}
+                              {c.city ? `, ${c.city}` : ''}
+                              {c.state ? `, ${c.state}` : ''}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-3 text-[11px] text-[#86868b] mt-2">
+                            {c.phone && (
+                              <span className="flex items-center gap-1">
+                                <Phone className="w-3 h-3" />
+                                {c.phone}
+                              </span>
+                            )}
+                            <span className="flex items-center gap-1">
+                              <Users className="w-3 h-3" />
+                              {c._count?.doctors ?? c.doctors?.length ?? 0} Specialist{c._count?.doctors === 1 ? '' : 's'}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="shrink-0 flex items-center justify-end pt-2 sm:pt-0 border-t sm:border-t-0 border-[#f0f0f2]">
+                          {isAffiliated ? (
+                            <span className="px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold flex items-center gap-1.5 shadow-2xs">
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              Affiliated
+                            </span>
+                          ) : isPending ? (
+                            <span className="px-3 py-1.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-xs font-semibold flex items-center gap-1.5 shadow-2xs">
+                              <Clock3 className="w-3.5 h-3.5" />
+                              Request Pending
+                            </span>
+                          ) : hasIncoming ? (
+                            <span className="px-3 py-1.5 rounded-full bg-blue-50 text-[#0066cc] border border-blue-200 text-xs font-semibold flex items-center gap-1.5 shadow-2xs">
+                              Clinic Requested You
+                            </span>
+                          ) : (
+                            <AppleButton
+                              size="sm"
+                              variant="primary"
+                              disabled={isAddingThis}
+                              onClick={() => handleAddClinic(c.id)}
+                              className="flex items-center gap-1.5 text-xs font-semibold py-1.5 px-3.5 shadow-xs"
+                            >
+                              {isAddingThis ? (
+                                <>
+                                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                  <span>Affiliating...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Plus className="w-3.5 h-3.5" />
+                                  <span>+ Affiliate</span>
+                                </>
+                              )}
+                            </AppleButton>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Modal Footer */}
+              <div className="p-3 sm:p-4 border-t border-[#e5e5ea] bg-[#fbfbfd] flex items-center justify-between text-xs text-[#86868b] px-6">
+                <span>Only administrator-verified clinics can be affiliated.</span>
+                <AppleButton
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setIsAffiliateModalOpen(false)}
+                  className="text-xs font-medium text-[#1d1d1f]"
+                >
+                  Close
+                </AppleButton>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Clinic QR Check-In Standee Modal */}
       {selectedStandeeClinic && (
