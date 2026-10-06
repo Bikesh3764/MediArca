@@ -121,13 +121,19 @@ export const ClinicDashboard: React.FC = () => {
     }
   };
 
-  const handleQuickAdd = async (email: string) => {
+  const handleQuickAdd = async (email?: string, docId?: string) => {
     setAdding(true);
     setError(null);
     setSuccessMsg(null);
     try {
-      const res = await api.addDoctorToClinic({ doctorEmail: email });
+      const res = await api.addDoctorToClinic({
+        doctorEmail: email?.trim() || undefined,
+        doctorId: docId || undefined,
+      });
       setSuccessMsg(res.message || 'Doctor onboarded successfully');
+      setShowAddModal(false);
+      setDoctorEmail('');
+      setDoctorSearchQuery('');
       fetchClinicData();
     } catch (err: any) {
       setError(err.message || 'Failed to onboard doctor');
@@ -1029,37 +1035,42 @@ export const ClinicDashboard: React.FC = () => {
                       .filter((d) => {
                         if (!doctorSearchQuery.trim()) return true;
                         const q = doctorSearchQuery.toLowerCase().trim();
-                        return (
-                          d.user.fullName.toLowerCase().includes(q) ||
-                          d.specialty.toLowerCase().includes(q) ||
-                          d.user.email.toLowerCase().includes(q)
-                        );
+                        const name = (d.user?.fullName || '').toLowerCase();
+                        const spec = (d.specialty || '').toLowerCase();
+                        const email = (d.user?.email || '').toLowerCase();
+                        return name.includes(q) || spec.includes(q) || email.includes(q);
                       })
                       .map((d) => {
                         const isAlreadyAdded = doctors.some((doc) => doc.doctorId === d.id);
+                        const docEmail = d.user?.email || '';
+                        const docName = d.user?.fullName || 'Dr. Specialist';
                         return (
                           <div
                             key={d.id}
-                            className="p-2 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] flex items-center justify-between text-xs"
+                            className="p-2.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] flex items-center justify-between text-xs hover:border-[#0088e8]/30 transition-all"
                           >
-                            <div>
-                              <div className="font-medium text-[#1d1d1f]">{d.user.fullName}</div>
-                              <div className="text-[10px] text-[#86868b]">
-                                {d.specialty} • {d.user.email}
+                            <div
+                              className="cursor-pointer flex-1 mr-2"
+                              onClick={() => docEmail && setDoctorEmail(docEmail)}
+                              title={docEmail ? 'Click to select email' : undefined}
+                            >
+                              <div className="font-semibold text-[#1d1d1f] hover:text-[#0088e8] transition-colors">{docName}</div>
+                              <div className="text-[10px] text-[#86868b] mt-0.5">
+                                {d.specialty}{docEmail ? ` • ${docEmail}` : ''}
                               </div>
                             </div>
                             {isAlreadyAdded ? (
-                              <span className="text-[10px] text-[#86868b] px-2 py-0.5 rounded-full bg-[#e5e5ea]">
+                              <span className="text-[10px] text-[#86868b] px-2.5 py-1 rounded-full bg-[#e5e5ea] font-medium shrink-0">
                                 Affiliated
                               </span>
                             ) : (
                               <button
                                 type="button"
                                 disabled={adding}
-                                onClick={() => handleQuickAdd(d.user.email)}
-                                className="px-2.5 py-1 rounded-full bg-[#0088e8] hover:bg-[#0077cc] text-white text-[11px] font-medium shadow-2xs cursor-pointer transition-all active:scale-[0.98]"
+                                onClick={() => handleQuickAdd(docEmail, d.id)}
+                                className="px-3 py-1 rounded-full bg-[#0088e8] hover:bg-[#0077cc] text-white text-[11px] font-medium shadow-2xs cursor-pointer transition-all active:scale-[0.98] shrink-0"
                               >
-                                Add
+                                {adding ? 'Adding...' : 'Add'}
                               </button>
                             )}
                           </div>

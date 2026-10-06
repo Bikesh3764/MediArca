@@ -137,6 +137,7 @@ export const getDoctors = async (req: Request, res: Response): Promise<void> => 
           select: {
             id: true,
             fullName: true,
+            email: true,
             avatarUrl: true,
           },
         },
