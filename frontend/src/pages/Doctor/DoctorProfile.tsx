@@ -220,7 +220,7 @@ export const DoctorProfile: React.FC = () => {
         >
           <div className="flex flex-col sm:flex-row items-center gap-5 pt-2">
             <div className="relative group">
-              <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-[#0088e8] shadow-sm bg-[#f5f5f7] flex items-center justify-center">
+              <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-[#0066cc] shadow-sm bg-[#f5f5f7] flex items-center justify-center">
                 {user?.avatarUrl ? (
                   <img
                     src={getFileUrl(user.avatarUrl)}
@@ -235,7 +235,7 @@ export const DoctorProfile: React.FC = () => {
                 type="button"
                 disabled={avatarLoading}
                 onClick={() => avatarInputRef.current?.click()}
-                className="absolute -bottom-1 -right-1 bg-[#0088e8] hover:bg-[#0077cc] text-white p-2 rounded-full shadow-md transition-all disabled:opacity-50"
+                className="absolute -bottom-1 -right-1 bg-[#0066cc] hover:bg-[#0071e3] text-white p-2 rounded-full shadow-md transition-all disabled:opacity-50"
                 title="Change doctor headshot"
               >
                 <Camera className="w-3.5 h-3.5" />
@@ -268,8 +268,8 @@ export const DoctorProfile: React.FC = () => {
               </div>
 
               {avatarOptimization && (
-                <div className="inline-flex items-center gap-1.5 text-[11px] font-medium text-[#0088e8] bg-[#0088e8]/8 px-2.5 py-1 rounded-full border border-[#0088e8]/20 animate-fadeIn">
-                  <Sparkles className="w-3.5 h-3.5 text-[#0088e8]" />
+                <div className="inline-flex items-center gap-1.5 text-[11px] font-medium text-[#0066cc] bg-[#0066cc]/10 px-2.5 py-1 rounded-full border border-[#0066cc]/20 animate-fadeIn">
+                  <Sparkles className="w-3.5 h-3.5 text-[#0066cc]" />
                   <span>{avatarOptimization}</span>
                 </div>
               )}
@@ -293,7 +293,7 @@ export const DoctorProfile: React.FC = () => {
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     placeholder="e.g. Dr. Rajesh Verma"
-                    className="w-full h-11 pl-9 pr-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
+                    className="w-full h-11 pl-9 pr-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
                   />
                 </div>
               </div>
@@ -302,7 +302,7 @@ export const DoctorProfile: React.FC = () => {
                 <label className="block text-xs font-semibold text-[#1d1d1f] mb-1.5">
                   Primary Phone Number (India)
                 </label>
-                <div className="flex rounded-xl border border-[#e5e5ea] overflow-hidden focus-within:ring-2 focus-within:ring-[#0088e8]/20 focus-within:border-[#0088e8] transition-all">
+                <div className="flex rounded-xl border border-[#e5e5ea] overflow-hidden focus-within:ring-2 focus-within:ring-[#0066cc]/20 focus-within:border-[#0066cc] transition-all">
                   <span className="inline-flex items-center px-3 border-r border-[#e5e5ea] bg-[#f5f5f7] text-[#1d1d1f] font-semibold text-xs select-none">
                     +91
                   </span>
@@ -346,7 +346,7 @@ export const DoctorProfile: React.FC = () => {
                     value={qualifications}
                     onChange={(e) => setQualifications(e.target.value)}
                     placeholder="e.g. MBBS, MD (Medicine), DM (Cardiology)"
-                    className="w-full h-11 pl-9 pr-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
+                    className="w-full h-11 pl-9 pr-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
                   />
                 </div>
               </div>
@@ -362,7 +362,7 @@ export const DoctorProfile: React.FC = () => {
                     min={0}
                     value={experienceYears}
                     onChange={(e) => setExperienceYears(Number(e.target.value))}
-                    className="w-full h-11 pl-9 pr-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
+                    className="w-full h-11 pl-9 pr-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
                   />
                 </div>
               </div>
@@ -377,7 +377,7 @@ export const DoctorProfile: React.FC = () => {
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
                 placeholder="Share your background, clinical expertise, and approach to patient care..."
-                className="w-full p-3 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
+                className="w-full p-3 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
               />
             </div>
           </UtilityCard>
@@ -390,7 +390,7 @@ export const DoctorProfile: React.FC = () => {
             <div className="p-5 rounded-[20px] bg-[#f5f5f7] border border-[#e5e5ea] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-2xs">
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <Building2 className="w-4 h-4 text-[#0088e8]" />
+                  <Building2 className="w-4 h-4 text-[#0066cc]" />
                   <h4 className="text-xs font-bold text-[#1d1d1f] tracking-tight">
                     Facility-Specific Practice Schedules
                   </h4>

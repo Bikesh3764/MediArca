@@ -124,6 +124,44 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
   }
 };
 
+export const executeCallPatientTransaction = async (
+  prismaClient: any,
+  doctorId: string,
+  appointmentDate: string,
+  appointmentId: string
+) => {
+  return await prismaClient.$transaction(async (tx: any) => {
+    // Concurrency control: acquire exclusive row lock on DoctorProfile to serialize queue transitions
+    if (typeof tx.$executeRaw === 'function') {
+      await tx.$executeRaw`SELECT id FROM "DoctorProfile" WHERE id = ${doctorId} FOR UPDATE;`;
+    }
+
+    // Reset any other currently IN_CONSULTATION appointments on this date back to WAITING for this doctor
+    await tx.appointment.updateMany({
+      where: {
+        doctorId,
+        appointmentDate,
+        status: 'IN_CONSULTATION',
+        id: { not: appointmentId },
+      },
+      data: { status: 'WAITING' },
+    });
+
+    // Atomically update target appointment to IN_CONSULTATION
+    return await tx.appointment.update({
+      where: { id: appointmentId },
+      data: { status: 'IN_CONSULTATION' },
+      include: {
+        patient: {
+          include: {
+            user: { select: { id: true, fullName: true, email: true, phone: true } },
+          },
+        },
+      },
+    });
+  });
+};
+
 export const callPatient = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     if (!req.user || req.user.role !== 'DOCTOR') {
@@ -211,29 +249,13 @@ export const callPatient = async (req: AuthRequest, res: Response): Promise<void
       return;
     }
 
-    // Reset any currently IN_CONSULTATION appointments on this date back to WAITING for this doctor
-    await prisma.appointment.updateMany({
-      where: {
-        doctorId: doctor.id,
-        appointmentDate: targetAppointment.appointmentDate,
-        status: 'IN_CONSULTATION',
-        id: { not: appointmentId },
-      },
-      data: { status: 'WAITING' },
-    });
-
-    // Update target to IN_CONSULTATION
-    const updated = await prisma.appointment.update({
-      where: { id: appointmentId },
-      data: { status: 'IN_CONSULTATION' },
-      include: {
-        patient: {
-          include: {
-            user: { select: { id: true, fullName: true, email: true, phone: true } },
-          },
-        },
-      },
-    });
+    // Concurrency: Atomically reset previous IN_CONSULTATION appointments and set target appointment to IN_CONSULTATION inside prisma.$transaction
+    const updated = await executeCallPatientTransaction(
+      prisma,
+      doctor.id,
+      targetAppointment.appointmentDate,
+      appointmentId
+    );
 
     if (updated?.patient?.user) {
       const doctorName = (doctor as any)?.user?.fullName || req.user.fullName || 'Practitioner';
@@ -362,6 +384,33 @@ export const updateNotesAndVitals = async (req: AuthRequest, res: Response): Pro
   }
 };
 
+export const executeCompleteConsultationAtomic = async (
+  prismaClient: any,
+  doctorId: string,
+  appointmentId: string,
+  updateData: { clinicalNotes?: string; vitals?: string }
+) => {
+  const result = await prismaClient.appointment.updateMany({
+    where: {
+      id: appointmentId,
+      doctorId,
+      status: 'IN_CONSULTATION',
+    },
+    data: {
+      status: 'COMPLETED',
+      ...updateData,
+    },
+  });
+
+  if (result.count === 0) {
+    return null;
+  }
+
+  return await prismaClient.appointment.findUnique({
+    where: { id: appointmentId },
+  });
+};
+
 export const completeConsultation = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     if (!req.user || req.user.role !== 'DOCTOR') {
@@ -452,14 +501,24 @@ export const completeConsultation = async (req: AuthRequest, res: Response): Pro
       finalNotes = notesParts.join('\n\n');
     }
 
-    const appt = await prisma.appointment.update({
-      where: { id: appointmentId },
-      data: {
-        status: 'COMPLETED',
+    // Concurrency: Atomically ensure only appointments actively in IN_CONSULTATION are marked COMPLETED
+    const appt = await executeCompleteConsultationAtomic(
+      prisma,
+      doctor.id,
+      appointmentId,
+      {
         ...(finalNotes !== undefined && { clinicalNotes: finalNotes }),
         ...(vitals && { vitals: typeof vitals === 'object' ? JSON.stringify(vitals) : vitals }),
-      },
-    });
+      }
+    );
+
+    if (!appt) {
+      res.status(400).json({
+        success: false,
+        message: 'Cannot complete consultation: Appointment is no longer in active consultation.',
+      });
+      return;
+    }
 
     const patProfile = await prisma.patientProfile.findUnique({
       where: { id: targetAppointment.patientId },

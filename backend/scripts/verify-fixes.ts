@@ -1,3 +1,5 @@
+process.env.MEDIARCA_TEST_SUITE = 'true';
+import fs from 'fs';
 import path from 'path';
 import {
   timeToMinutes,
@@ -43,8 +45,17 @@ import jwt from 'jsonwebtoken';
 import { canTransition } from '../src/utils/appointmentStateMachine';
 import { isDoctorEligibleForClinicalPractice, isClinicActive } from '../src/utils/authGuards';
 import { sanitizeClinicalHistoryList, checkNeedsProfileCompletion } from '../src/controllers/authController';
+import { registerProcessHandlers, checkCorsOrigin as checkCorsOriginServer } from '../src/server';
+import {
+  executeCallPatientTransaction,
+  executeCompleteConsultationAtomic,
+} from '../src/controllers/consultationController';
+import {
+  executeReceptionistInConsultationTransaction,
+  determineRescheduleTarget,
+} from '../src/controllers/receptionistController';
 
-function runTests() {
+async function runTests() {
   console.log('=== RUNNING MEDIARCA VERIFICATION SUITE ===\n');
   let passed = 0;
   let failed = 0;
@@ -5286,6 +5297,281 @@ Follow-up Date: 2026-10-15`;
     'CANNOT call patient when doctor is STEPPED_OUT and patient is not checked in'
   );
 
+  // --- Test 159: Database Datasource Protocol & URL Reconciliation ---
+  console.log('\n--- Test 159: Database Datasource Protocol & URL Reconciliation ---');
+  const dbUrl = process.env.DATABASE_URL || '';
+  const isPostgresUrl = dbUrl.startsWith('postgresql://') || dbUrl.startsWith('postgres://');
+  assert(isPostgresUrl, 'DATABASE_URL starts with postgresql:// or postgres:// protocol');
+
+  const schemaPath = path.resolve(__dirname, '../prisma/schema.prisma');
+  const schemaContent = fs.readFileSync(schemaPath, 'utf8');
+  const hasPostgresProvider = /provider\s*=\s*"postgresql"/.test(schemaContent);
+  assert(hasPostgresProvider, 'schema.prisma specifies provider = "postgresql"');
+  assert(!schemaContent.includes('provider = "sqlite"'), 'schema.prisma does not mismatch with sqlite provider');
+
+  // --- Test 160: Node.js Process Crash Resilience & CORS Error Status Code (403) ---
+  console.log('\n--- Test 160: Node.js Process Crash Resilience & CORS Error Status Code (403) ---');
+  registerProcessHandlers();
+  const unhandledRejectionCount = process.listenerCount('unhandledRejection');
+  const uncaughtExceptionCount = process.listenerCount('uncaughtException');
+  assert(unhandledRejectionCount >= 1, 'Top-level unhandledRejection process event handler is registered');
+  assert(uncaughtExceptionCount >= 1, 'Top-level uncaughtException process event handler is registered');
+
+  // CORS check with disallowed origin in production
+  let corsError: any = null;
+  checkCorsOriginServer('https://unauthorized-domain.com', true, ['https://mediarca.vercel.app'], (err: any) => {
+    corsError = err;
+  });
+  assert(corsError !== null, 'checkCorsOriginServer rejects disallowed origin in production');
+  assert(corsError?.status === 403, 'checkCorsOriginServer sets HTTP status 403 on CORS rejection error object');
+  assert(corsError?.message.includes('Blocked by CORS policy'), 'checkCorsOriginServer error contains Blocked by CORS policy');
+
+  // CORS check with allowed origin
+  let corsAllowed: any = false;
+  checkCorsOriginServer('https://mediarca.vercel.app', true, ['https://mediarca.vercel.app'], (err: any, allow?: boolean) => {
+    corsAllowed = !err && !!allow;
+  });
+  assert(Boolean(corsAllowed), 'checkCorsOriginServer allows origin in allowed list');
+
+  // CORS check in development mode
+  let devAllowed: any = false;
+  checkCorsOriginServer('https://random-dev-origin.local', false, ['https://mediarca.vercel.app'], (err: any, allow?: boolean) => {
+    devAllowed = !err && !!allow;
+  });
+  assert(Boolean(devAllowed), 'checkCorsOriginServer permits all origins in development mode');
+
+  // --- Test 161: Atomic Queue Consultation Concurrency & Atomic Status Guard ---
+  console.log('\n--- Test 161: Atomic Queue Consultation Concurrency & Atomic Status Guard ---');
+  const mockDbState: {
+    appointments: any[];
+    transactionCalled: boolean;
+    rawQueries: { query: string; values: any[] }[];
+  } = {
+    appointments: [
+      { id: 'appt-1', doctorId: 'doc-1', appointmentDate: todayDateStr, status: 'IN_CONSULTATION', queueNumber: 1, patient: { user: { id: 'u1', fullName: 'Patient A', email: 'a@test.com', phone: '9876543210' } } },
+      { id: 'appt-2', doctorId: 'doc-1', appointmentDate: todayDateStr, status: 'WAITING', queueNumber: 2, patient: { user: { id: 'u2', fullName: 'Patient B', email: 'b@test.com', phone: '9876543211' } } },
+      { id: 'appt-3', doctorId: 'doc-1', appointmentDate: todayDateStr, status: 'WAITING', queueNumber: 3, patient: { user: { id: 'u3', fullName: 'Patient C', email: 'c@test.com', phone: '9876543212' } } },
+    ],
+    transactionCalled: false,
+    rawQueries: [],
+  };
+
+  const createMockPrisma = (state: { appointments: any[]; transactionCalled: boolean; rawQueries: { query: string; values: any[] }[] }) => {
+    const doctorLocks: Map<string, Promise<void>> = new Map();
+
+    return {
+      $transaction: async (callback: any) => {
+        state.transactionCalled = true;
+        const releaseFns: (() => void)[] = [];
+
+        const tx = {
+          $executeRaw: async (strings: any, ...values: any[]) => {
+            const queryStr = Array.isArray(strings) ? strings.join('?') : String(strings);
+            state.rawQueries.push({ query: queryStr, values });
+
+            // Emulate PostgreSQL SELECT ... FOR UPDATE row-level mutual exclusion per doctor
+            if (queryStr.includes('DoctorProfile') && queryStr.includes('FOR UPDATE')) {
+              const doctorId = values[0] || (queryStr.match(/WHERE id = ([^\s;]+)/)?.[1]);
+              if (doctorId) {
+                const prevLock = doctorLocks.get(doctorId) || Promise.resolve();
+                let releaseLock: () => void = () => {};
+                const nextLock = new Promise<void>((resolve) => {
+                  releaseLock = resolve;
+                });
+                doctorLocks.set(doctorId, nextLock);
+                releaseFns.push(releaseLock);
+                await prevLock;
+              }
+            }
+            return 1;
+          },
+          appointment: {
+            updateMany: async ({ where, data }: any) => {
+              // Asynchronous query latency jitter to simulate interleaving under uncoordinated concurrency
+              await new Promise((r) => setTimeout(r, Math.floor(Math.random() * 4) + 1));
+              let matched = 0;
+              state.appointments.forEach((a) => {
+                const matchDoctor = !where.doctorId || a.doctorId === where.doctorId;
+                const matchDate = !where.appointmentDate || a.appointmentDate === where.appointmentDate;
+                const matchStatus = !where.status || a.status === where.status;
+                const matchIdNot = !where.id?.not || a.id !== where.id.not;
+                const matchId = !where.id || (typeof where.id === 'string' ? a.id === where.id : true);
+                if (matchDoctor && matchDate && matchStatus && matchIdNot && matchId) {
+                  a.status = data.status;
+                  matched++;
+                }
+              });
+              return { count: matched };
+            },
+            update: async ({ where, data }: any) => {
+              await new Promise((r) => setTimeout(r, Math.floor(Math.random() * 4) + 1));
+              const target = state.appointments.find((a) => a.id === where.id);
+              if (target) {
+                Object.assign(target, data);
+                return target;
+              }
+              throw new Error('Not found');
+            },
+            findUnique: async ({ where }: any) => {
+              await new Promise((r) => setTimeout(r, 1));
+              return state.appointments.find((a) => a.id === where.id) || null;
+            },
+          },
+        };
+
+        try {
+          return await callback(tx);
+        } finally {
+          releaseFns.forEach((release) => release());
+        }
+      },
+      appointment: {
+        updateMany: async ({ where, data }: any) => {
+          let matched = 0;
+          state.appointments.forEach((a) => {
+            const matchDoctor = !where.doctorId || a.doctorId === where.doctorId;
+            const matchId = !where.id || a.id === where.id;
+            const matchStatus = !where.status || a.status === where.status;
+            if (matchDoctor && matchId && matchStatus) {
+              Object.assign(a, data);
+              matched++;
+            }
+          });
+          return { count: matched };
+        },
+        findUnique: async ({ where }: any) => {
+          return state.appointments.find((a) => a.id === where.id) || null;
+        },
+      },
+    };
+  };
+
+  const mockClient1 = createMockPrisma(mockDbState);
+  await executeCallPatientTransaction(mockClient1, 'doc-1', todayDateStr, 'appt-2');
+  assert(mockDbState.transactionCalled === true, 'executeCallPatientTransaction runs inside atomic prisma.$transaction');
+  const inConsultationAppts = mockDbState.appointments.filter((a) => a.status === 'IN_CONSULTATION');
+  assert(inConsultationAppts.length === 1, 'Only one appointment is IN_CONSULTATION after executeCallPatientTransaction');
+  assert(inConsultationAppts[0].id === 'appt-2', 'Target appointment appt-2 transitioned to IN_CONSULTATION');
+  const prevAppt = mockDbState.appointments.find((a) => a.id === 'appt-1');
+  assert(prevAppt?.status === 'WAITING', 'Previous active consultation appt-1 reset back to WAITING');
+
+  // Receptionist transaction test
+  (mockDbState as any).transactionCalled = false;
+  await executeReceptionistInConsultationTransaction(mockClient1, 'doc-1', todayDateStr, 'appt-3', { status: 'IN_CONSULTATION' });
+  assert((mockDbState as any).transactionCalled === true, 'executeReceptionistInConsultationTransaction runs inside atomic prisma.$transaction');
+  const recConsultationAppts = mockDbState.appointments.filter((a) => a.status === 'IN_CONSULTATION');
+  assert(recConsultationAppts.length === 1 && recConsultationAppts[0].id === 'appt-3', 'Receptionist call atomically set appt-3 to IN_CONSULTATION and reset appt-2');
+
+  // Doctor row-locking query execution assertion
+  const hasRowLockDoctor = mockDbState.rawQueries.some(
+    (q) => q.query.includes('DoctorProfile') && q.query.includes('FOR UPDATE')
+  );
+  assert(hasRowLockDoctor, 'Queue consultation transactions execute SELECT id FROM "DoctorProfile" ... FOR UPDATE row-level lock');
+
+  // Concurrent Stress Test: Simultaneous Doctor callPatient and Receptionist inConsultation via Promise.all
+  const concurrentState: { appointments: any[]; transactionCalled: boolean; rawQueries: { query: string; values: any[] }[] } = {
+    appointments: [
+      { id: 'conc-1', doctorId: 'doc-conc', appointmentDate: todayDateStr, status: 'IN_CONSULTATION', queueNumber: 1, patient: { user: { id: 'u1', fullName: 'Concurrent A' } } },
+      { id: 'conc-2', doctorId: 'doc-conc', appointmentDate: todayDateStr, status: 'WAITING', queueNumber: 2, patient: { user: { id: 'u2', fullName: 'Concurrent B' } } },
+      { id: 'conc-3', doctorId: 'doc-conc', appointmentDate: todayDateStr, status: 'WAITING', queueNumber: 3, patient: { user: { id: 'u3', fullName: 'Concurrent C' } } },
+      { id: 'conc-4', doctorId: 'doc-conc', appointmentDate: todayDateStr, status: 'WAITING', queueNumber: 4, patient: { user: { id: 'u4', fullName: 'Concurrent D' } } },
+    ],
+    transactionCalled: false,
+    rawQueries: [],
+  };
+  const concurrentMock = createMockPrisma(concurrentState);
+
+  await Promise.all([
+    executeCallPatientTransaction(concurrentMock, 'doc-conc', todayDateStr, 'conc-2'),
+    executeReceptionistInConsultationTransaction(concurrentMock, 'doc-conc', todayDateStr, 'conc-3', { status: 'IN_CONSULTATION' }),
+  ]);
+
+  const concurrentInConsult = concurrentState.appointments.filter((a) => a.status === 'IN_CONSULTATION');
+  assert(concurrentInConsult.length === 1, 'Concurrent Doctor and Receptionist calls are serialized: exactly 1 appointment holds IN_CONSULTATION');
+  assert(
+    concurrentInConsult[0].id === 'conc-2' || concurrentInConsult[0].id === 'conc-3',
+    'Active consultation belongs to one of the concurrent callers'
+  );
+  assert(
+    concurrentState.appointments.find((a) => a.id === 'conc-1')?.status === 'WAITING',
+    'Prior active consultation conc-1 reset back to WAITING during concurrent execution'
+  );
+  assert(
+    concurrentState.rawQueries.filter((q) => q.query.includes('DoctorProfile') && q.query.includes('FOR UPDATE')).length === 2,
+    'Both concurrent transactions acquired DoctorProfile FOR UPDATE lock'
+  );
+
+  // Tri-call high concurrency stress test (3 concurrent callers for the same doctor)
+  const triState: { appointments: any[]; transactionCalled: boolean; rawQueries: { query: string; values: any[] }[] } = {
+    appointments: [
+      { id: 'tri-1', doctorId: 'doc-tri', appointmentDate: todayDateStr, status: 'WAITING', queueNumber: 1, patient: { user: { fullName: 'T1' } } },
+      { id: 'tri-2', doctorId: 'doc-tri', appointmentDate: todayDateStr, status: 'WAITING', queueNumber: 2, patient: { user: { fullName: 'T2' } } },
+      { id: 'tri-3', doctorId: 'doc-tri', appointmentDate: todayDateStr, status: 'WAITING', queueNumber: 3, patient: { user: { fullName: 'T3' } } },
+    ],
+    transactionCalled: false,
+    rawQueries: [],
+  };
+  const triMock = createMockPrisma(triState);
+
+  await Promise.all([
+    executeCallPatientTransaction(triMock, 'doc-tri', todayDateStr, 'tri-1'),
+    executeReceptionistInConsultationTransaction(triMock, 'doc-tri', todayDateStr, 'tri-2', { status: 'IN_CONSULTATION' }),
+    executeCallPatientTransaction(triMock, 'doc-tri', todayDateStr, 'tri-3'),
+  ]);
+
+  const triActive = triState.appointments.filter((a) => a.status === 'IN_CONSULTATION');
+  assert(triActive.length === 1, 'Tri-call high concurrency guarantees strictly 1 active consultation holds IN_CONSULTATION');
+  assert(
+    triState.appointments.filter((a) => a.status === 'WAITING').length === 2,
+    'Remaining 2 appointments remain in WAITING state'
+  );
+
+  // Atomic completeConsultation guard test
+  const completedAppt = await executeCompleteConsultationAtomic(mockClient1, 'doc-1', 'appt-3', { clinicalNotes: 'Recovered completely' });
+  assert(completedAppt !== null, 'executeCompleteConsultationAtomic successfully completes active IN_CONSULTATION appointment');
+  assert(completedAppt?.status === 'COMPLETED', 'Appointment marked COMPLETED');
+
+  // Attempting to complete an appointment that is CANCELLED or WAITING (not IN_CONSULTATION)
+  mockDbState.appointments.push({
+    id: 'appt-cancelled',
+    doctorId: 'doc-1',
+    appointmentDate: todayDateStr,
+    status: 'CANCELLED',
+    queueNumber: 99,
+    patient: { user: { id: 'u4', fullName: 'Patient D', email: 'd@test.com', phone: '9876543213' } },
+  });
+  const rejectedComplete = await executeCompleteConsultationAtomic(mockClient1, 'doc-1', 'appt-cancelled', { clinicalNotes: 'Notes' });
+  assert(rejectedComplete === null, 'executeCompleteConsultationAtomic rejects appointment that is not IN_CONSULTATION (atomic status guard)');
+  const cancelledCheck = mockDbState.appointments.find((a) => a.id === 'appt-cancelled');
+  assert(cancelledCheck?.status === 'CANCELLED', 'Cancelled appointment status is preserved and not overwritten to COMPLETED');
+
+  // --- Test 162: Receptionist Reschedule Status Preservation & Negative Token Assignment ---
+  console.log('\n--- Test 162: Receptionist Reschedule Status Preservation & Negative Token Assignment ---');
+  // Case 1: Unconfirmed booking in PENDING_APPROVAL on clean day
+  const res1 = determineRescheduleTarget('PENDING_APPROVAL', null, 5, 'PENDING');
+  assert(res1.targetStatus === 'PENDING_APPROVAL', 'Unconfirmed appointment preserves status PENDING_APPROVAL on reschedule');
+  assert(res1.queueNumber === -1, 'Unconfirmed appointment receives first provisional token -1 on target date');
+
+  // Case 2: Unconfirmed booking in PENDING_APPROVAL with existing negative provisional bookings (-1, -2)
+  const res2 = determineRescheduleTarget('PENDING_APPROVAL', -2, 5, 'PENDING');
+  assert(res2.targetStatus === 'PENDING_APPROVAL', 'Preserves PENDING_APPROVAL with existing negative provisional bookings');
+  assert(res2.queueNumber === -3, 'Decrements to next provisional token -3 when min is -2');
+
+  // Case 3: Unpaid appointment with paymentStatus PENDING preserves PENDING_APPROVAL
+  const res3 = determineRescheduleTarget('WAITING', null, 5, 'PENDING');
+  assert(res3.targetStatus === 'PENDING_APPROVAL', 'Unpaid appointment preserves PENDING_APPROVAL even if status was WAITING');
+  assert(res3.queueNumber === -1, 'Unpaid appointment allocates negative provisional token');
+
+  // Case 4: Confirmed & Paid appointment (WAITING, paymentStatus: 'PAID') receives positive queue number
+  const res4 = determineRescheduleTarget('WAITING', -3, 8, 'PAID');
+  assert(res4.targetStatus === 'WAITING', 'Confirmed and paid appointment transitions to WAITING on reschedule');
+  assert(res4.queueNumber === 9, 'Confirmed appointment receives next positive sequential token 9');
+
+  // Case 5: Confirmed & Paid appointment on clean day with no prior tokens
+  const res5 = determineRescheduleTarget('WAITING', null, null, 'PAID');
+  assert(res5.targetStatus === 'WAITING', 'Confirmed appointment on fresh day gets status WAITING');
+  assert(res5.queueNumber === 1, 'Confirmed appointment on fresh day receives token #1');
+
   console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);
@@ -5296,6 +5582,9 @@ Follow-up Date: 2026-10-15`;
   }
 }
 
-runTests();
+runTests().catch((e) => {
+  console.error('Verification failed:', e);
+  process.exit(1);
+});
 
 

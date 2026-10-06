@@ -738,6 +738,42 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
   }
 };
 
+export const executeReceptionistInConsultationTransaction = async (
+  prismaClient: any,
+  doctorId: string,
+  appointmentDate: string,
+  appointmentId: string,
+  updatePayload: any
+) => {
+  return await prismaClient.$transaction(async (tx: any) => {
+    // Concurrency control: acquire exclusive row lock on DoctorProfile to serialize queue transitions
+    if (typeof tx.$executeRaw === 'function') {
+      await tx.$executeRaw`SELECT id FROM "DoctorProfile" WHERE id = ${doctorId} FOR UPDATE;`;
+    }
+
+    // Reset any other active consultations for this doctor on this date to WAITING
+    await tx.appointment.updateMany({
+      where: {
+        doctorId,
+        appointmentDate,
+        status: 'IN_CONSULTATION',
+        id: { not: appointmentId },
+      },
+      data: { status: 'WAITING' },
+    });
+
+    // Atomically set target appointment to IN_CONSULTATION
+    return await tx.appointment.update({
+      where: { id: appointmentId },
+      data: updatePayload,
+      include: {
+        doctor: { include: { user: { select: { fullName: true } } } },
+        patient: { include: { user: { select: { id: true, fullName: true, phone: true } } } },
+      },
+    });
+  });
+};
+
 /**
  * Update appointment status (WAITING -> IN_CONSULTATION -> COMPLETED / CANCELLED)
  */
@@ -834,27 +870,29 @@ export const updateAppointmentStatus = async (req: AuthRequest, res: Response): 
         return;
       }
 
-      await prisma.appointment.updateMany({
-        where: {
-          doctorId: targetAppointment.doctorId,
-          appointmentDate: targetAppointment.appointmentDate,
-          status: 'IN_CONSULTATION',
-          id: { not: appointmentId },
-        },
-        data: { status: 'WAITING' },
-      });
     }
 
     const updatePayload: any = { status };
+    let updated: any;
 
-    const updated = await prisma.appointment.update({
-      where: { id: appointmentId },
-      data: updatePayload,
-      include: {
-        doctor: { include: { user: { select: { fullName: true } } } },
-        patient: { include: { user: { select: { id: true, fullName: true, phone: true } } } },
-      },
-    });
+    if (status === 'IN_CONSULTATION') {
+      updated = await executeReceptionistInConsultationTransaction(
+        prisma,
+        targetAppointment.doctorId,
+        targetAppointment.appointmentDate,
+        appointmentId,
+        updatePayload
+      );
+    } else {
+      updated = await prisma.appointment.update({
+        where: { id: appointmentId },
+        data: updatePayload,
+        include: {
+          doctor: { include: { user: { select: { fullName: true } } } },
+          patient: { include: { user: { select: { id: true, fullName: true, phone: true } } } },
+        },
+      });
+    }
 
     if (updated?.patient) {
       const patientUserId = (updated.patient as any).userId || (updated.patient.user as any)?.id;
@@ -1522,6 +1560,28 @@ export const applyReceptionist = async (req: Request, res: Response): Promise<vo
   }
 };
 
+export const determineRescheduleTarget = (
+  currentStatus: string,
+  minProvisionalQueue: number | null | undefined,
+  maxConfirmedQueue: number | null | undefined,
+  paymentStatus?: string
+): { targetStatus: string; queueNumber: number } => {
+  const isPending =
+    currentStatus === 'PENDING_APPROVAL' ||
+    (paymentStatus !== undefined && paymentStatus !== 'PAID');
+
+  if (isPending) {
+    const nextNegative = typeof minProvisionalQueue === 'number' && minProvisionalQueue < 0
+      ? minProvisionalQueue - 1
+      : -1;
+    return { targetStatus: 'PENDING_APPROVAL', queueNumber: nextNegative };
+  }
+  const nextPositive = typeof maxConfirmedQueue === 'number' && maxConfirmedQueue > 0
+    ? maxConfirmedQueue + 1
+    : 1;
+  return { targetStatus: 'WAITING', queueNumber: nextPositive };
+};
+
 export const rescheduleAppointment = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     if (!req.user || req.user.role !== 'RECEPTIONIST') {
@@ -1610,17 +1670,34 @@ export const rescheduleAppointment = async (req: AuthRequest, res: Response): Pr
         updatedAppt = await prisma.$transaction(async (tx) => {
           await tx.$executeRaw`SELECT id FROM "DoctorProfile" WHERE id = ${appointment.doctorId} FOR UPDATE;`;
 
-          const maxQueue = await tx.appointment.findFirst({
-            where: {
-              doctorId: appointment.doctorId,
-              appointmentDate: newDate,
-              queueNumber: { gt: 0 },
-            },
-            orderBy: { queueNumber: 'desc' },
-            select: { queueNumber: true },
-          });
+          const isPending =
+            appointment.status === 'PENDING_APPROVAL' ||
+            appointment.paymentStatus !== 'PAID';
+          let nextQueueNumber: number;
 
-          const nextQueueNumber = (maxQueue?.queueNumber || 0) + 1;
+          if (isPending) {
+            const minQueue = await tx.appointment.findFirst({
+              where: {
+                doctorId: appointment.doctorId,
+                appointmentDate: newDate,
+                queueNumber: { lt: 0 },
+              },
+              orderBy: { queueNumber: 'asc' },
+              select: { queueNumber: true },
+            });
+            nextQueueNumber = minQueue ? minQueue.queueNumber - 1 : -1;
+          } else {
+            const maxQueue = await tx.appointment.findFirst({
+              where: {
+                doctorId: appointment.doctorId,
+                appointmentDate: newDate,
+                queueNumber: { gt: 0 },
+              },
+              orderBy: { queueNumber: 'desc' },
+              select: { queueNumber: true },
+            });
+            nextQueueNumber = (maxQueue?.queueNumber || 0) + 1;
+          }
 
           // Resolve slot
           let slots = parseDoctorSlots(appointment.doctor);
@@ -1638,7 +1715,8 @@ export const rescheduleAppointment = async (req: AuthRequest, res: Response): Pr
 
           const pace = slot?.avgConsultationMinutes || 3.0;
           const slotStartMins = slot ? timeToMinutes(slot.startTime) : 9 * 60;
-          const estStartMins = slotStartMins + (nextQueueNumber - 1) * pace;
+          const tokenOffset = isPending ? 0 : Math.max(0, nextQueueNumber - 1);
+          const estStartMins = slotStartMins + tokenOffset * pace;
           const estimatedTime = minutesTo12Hour(estStartMins);
           const checkingWindow = slot ? `${slot.startTime} – ${slot.endTime}` : (appointment.checkingWindow || 'General Hours');
 
@@ -1650,7 +1728,7 @@ export const rescheduleAppointment = async (req: AuthRequest, res: Response): Pr
               slotId: slot?.id || chosenSlotId || null,
               checkingWindow,
               estimatedTime,
-              status: 'WAITING',
+              status: isPending ? 'PENDING_APPROVAL' : 'WAITING',
               isCheckedIn: false, // Reset arrival for new date
             },
             include: {
@@ -1674,19 +1752,23 @@ export const rescheduleAppointment = async (req: AuthRequest, res: Response): Pr
           : `Dr. ${appointment.doctor.user.fullName}`)
       : 'Doctor';
 
+    const tokenDisplay = updatedAppt.queueNumber > 0
+      ? `Queue #${updatedAppt.queueNumber}`
+      : `Provisional Token #${Math.abs(updatedAppt.queueNumber)} (Pending Approval)`;
+
     // Dispatch notification to patient
     if (appointment.patient?.userId) {
       createNotification(
         appointment.patient.userId,
         'Appointment Rescheduled',
-        `Your visit with ${docName} has been shifted to ${newDate} by the reception desk. Your new token is Queue #${updatedAppt.queueNumber}.`,
+        `Your visit with ${docName} has been shifted to ${newDate} by the reception desk. Your token is ${tokenDisplay}.`,
         'APPOINTMENT'
       ).catch(() => {});
     }
 
     res.json({
       success: true,
-      message: `Appointment successfully rescheduled to ${newDate} (Queue #${updatedAppt.queueNumber}).`,
+      message: `Appointment successfully rescheduled to ${newDate} (${tokenDisplay}).`,
       data: updatedAppt,
     });
   } catch (error: any) {

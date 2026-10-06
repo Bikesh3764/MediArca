@@ -220,15 +220,27 @@ export const ReceptionistDashboard: React.FC = () => {
         }
       }
       // Refresh pending approvals badge and notifications
-      fetchPendingAppointments();
-      fetchNotifications();
+      try {
+        const pendingRes = await api.getPendingAppointments();
+        setPendingAppointments(pendingRes);
+      } catch {
+        // non-blocking
+      }
+      try {
+        const notifRes = await api.getNotifications();
+        const list = notifRes?.notifications || [];
+        setNotifications(list);
+        setUnreadNotifCount(notifRes?.unreadCount ?? list.filter((n: any) => !n.isRead).length);
+      } catch {
+        // non-blocking
+      }
     } catch (err: any) {
       console.error('Failed to load desk data:', err);
       setError(err.message || 'Failed to load desk details');
     } finally {
       setLoading(false);
     }
-  }, [fetchPendingAppointments, fetchNotifications]);
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -370,7 +382,9 @@ export const ReceptionistDashboard: React.FC = () => {
 
   useEffect(() => {
     if (activeTab === 'walkin' && selectedDoctorId && appointmentDate) {
-      fetchWalkinPreview();
+      queueMicrotask(() => {
+        fetchWalkinPreview();
+      });
     }
   }, [activeTab, selectedDoctorId, appointmentDate, slotId, effectiveClinicId, fetchWalkinPreview]);
 
@@ -684,7 +698,7 @@ export const ReceptionistDashboard: React.FC = () => {
         {successMsg && (
           <div className="p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] text-xs flex items-center justify-between shadow-xs">
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-[#0088e8] flex-shrink-0" />
+              <CheckCircle2 className="w-4 h-4 text-[#0066cc] flex-shrink-0" />
               <span>{successMsg}</span>
             </div>
             <button onClick={() => setSuccessMsg(null)} className="text-[#86868b] hover:text-[#1d1d1f]">
@@ -710,7 +724,7 @@ export const ReceptionistDashboard: React.FC = () => {
           <div
             onClick={() => setActiveTab('doctors')}
             className={`bg-white rounded-[18px] sm:rounded-2xl border p-3.5 sm:p-5 shadow-xs cursor-pointer transition-all active:scale-[0.99] ${
-              activeTab === 'doctors' ? 'border-[#0088e8]/50 ring-1 ring-[#0088e8]/20' : 'border-[#e5e5ea] hover:border-black/15'
+              activeTab === 'doctors' ? 'border-[#0066cc]/50 ring-1 ring-[#0066cc]/20' : 'border-[#e5e5ea] hover:border-black/15'
             }`}
           >
             <span className="text-[10px] sm:text-[11px] font-semibold text-[#86868b] uppercase tracking-wider block mb-1.5 sm:mb-2">
@@ -725,7 +739,7 @@ export const ReceptionistDashboard: React.FC = () => {
           <div
             onClick={() => setActiveTab('pending')}
             className={`bg-white rounded-[18px] sm:rounded-2xl border p-3.5 sm:p-5 shadow-xs cursor-pointer transition-all active:scale-[0.99] ${
-              activeTab === 'pending' ? 'border-[#0088e8]/50 ring-1 ring-[#0088e8]/20' : 'border-[#e5e5ea] hover:border-black/15'
+              activeTab === 'pending' ? 'border-[#0066cc]/50 ring-1 ring-[#0066cc]/20' : 'border-[#e5e5ea] hover:border-black/15'
             }`}
           >
             <div className="flex items-center justify-between mb-1.5 sm:mb-2">
@@ -733,7 +747,7 @@ export const ReceptionistDashboard: React.FC = () => {
                 Pending Approvals
               </span>
               {pendingAppointments.length > 0 && (
-                <span className="w-2 h-2 rounded-full bg-[#0088e8]"></span>
+                <span className="w-2 h-2 rounded-full bg-[#0066cc]"></span>
               )}
             </div>
             <div className="text-xl sm:text-3xl font-bold tracking-tight text-[#1d1d1f]">
@@ -747,7 +761,7 @@ export const ReceptionistDashboard: React.FC = () => {
           <div
             onClick={() => setActiveTab('queue')}
             className={`bg-white rounded-[18px] sm:rounded-2xl border p-3.5 sm:p-5 shadow-xs cursor-pointer transition-all active:scale-[0.99] ${
-              activeTab === 'queue' ? 'border-[#0088e8]/50 ring-1 ring-[#0088e8]/20' : 'border-[#e5e5ea] hover:border-black/15'
+              activeTab === 'queue' ? 'border-[#0066cc]/50 ring-1 ring-[#0066cc]/20' : 'border-[#e5e5ea] hover:border-black/15'
             }`}
           >
             <span className="text-[10px] sm:text-[11px] font-semibold text-[#86868b] uppercase tracking-wider block mb-1.5 sm:mb-2">
@@ -762,7 +776,7 @@ export const ReceptionistDashboard: React.FC = () => {
           <div
             onClick={() => setActiveTab('queue')}
             className={`bg-white rounded-[18px] sm:rounded-2xl border p-3.5 sm:p-5 shadow-xs cursor-pointer transition-all active:scale-[0.99] ${
-              activeTab === 'queue' ? 'border-[#0088e8]/50 ring-1 ring-[#0088e8]/20' : 'border-[#e5e5ea] hover:border-black/15'
+              activeTab === 'queue' ? 'border-[#0066cc]/50 ring-1 ring-[#0066cc]/20' : 'border-[#e5e5ea] hover:border-black/15'
             }`}
           >
             <span className="text-[10px] sm:text-[11px] font-semibold text-[#86868b] uppercase tracking-wider block mb-1.5 sm:mb-2">
@@ -821,7 +835,7 @@ export const ReceptionistDashboard: React.FC = () => {
                             }}
                             className={`p-3.5 rounded-2xl border cursor-pointer transition-all flex items-center gap-3 ${
                               isSelected
-                                ? 'bg-[#0088e8]/5 border-[#0088e8] shadow-xs'
+                                ? 'bg-[#0066cc]/5 border-[#0066cc] shadow-xs'
                                 : 'bg-[#fafafc] border-[#e5e5ea] hover:border-gray-300'
                             }`}
                           >
@@ -833,7 +847,7 @@ export const ReceptionistDashboard: React.FC = () => {
                                   className="w-full h-full object-cover"
                                 />
                               ) : (
-                                <div className="w-full h-full flex items-center justify-center font-semibold text-xs text-[#0088e8]">
+                                <div className="w-full h-full flex items-center justify-center font-semibold text-xs text-[#0066cc]">
                                   {doc.fullName[0]}
                                 </div>
                               )}
@@ -849,7 +863,7 @@ export const ReceptionistDashboard: React.FC = () => {
                                   </span>
                                 )}
                               </div>
-                              <div className="text-[11px] text-[#0088e8] font-medium">{doc.specialty}</div>
+                              <div className="text-[11px] text-[#0066cc] font-medium">{doc.specialty}</div>
                               <div className="mt-1 flex items-center gap-1.5 flex-wrap">
                                 <CabinStatusBadge status={doc.cabinStatus} expectedReturnTime={doc.expectedReturnTime} size="sm" />
                                 <span className="text-[10px] text-[#86868b]">
@@ -1159,7 +1173,7 @@ export const ReceptionistDashboard: React.FC = () => {
                       value={pendingSearch}
                       onChange={(e) => setPendingSearch(e.target.value)}
                       placeholder="Search by patient name, phone, or doctor..."
-                      className="w-full h-9 pl-9 pr-8 rounded-full border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
+                      className="w-full h-9 pl-9 pr-8 rounded-full border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
                     />
                     {pendingSearch && (
                       <button
@@ -1197,7 +1211,7 @@ export const ReceptionistDashboard: React.FC = () => {
               ) : pendingAppointments.length === 0 ? (
                 <div className="py-16 text-center text-xs text-[#86868b] bg-[#fafafc] rounded-2xl border border-dashed border-[#e5e5ea]">
                   <div className="w-10 h-10 rounded-full bg-[#f5f5f7] text-[#1d1d1f] flex items-center justify-center mx-auto mb-3">
-                    <CheckCircle2 className="w-5 h-5 text-[#0088e8]" />
+                    <CheckCircle2 className="w-5 h-5 text-[#0066cc]" />
                   </div>
                   <p className="font-semibold text-sm text-[#1d1d1f]">All Bookings Processed</p>
                   <p className="mt-1 text-xs max-w-sm mx-auto text-[#86868b]">
@@ -1277,7 +1291,7 @@ export const ReceptionistDashboard: React.FC = () => {
                             </span>
                             <div className="font-semibold text-sm text-[#1d1d1f]">{patientDisplay}</div>
                             {appt.isForOther && (
-                              <div className="text-[11px] text-[#0088e8] font-medium">
+                              <div className="text-[11px] text-[#0066cc] font-medium">
                                 Dependent / Family • Age: {appt.patientAge || 'N/A'} {appt.patientGender ? `• ${appt.patientGender}` : ''}
                               </div>
                             )}
@@ -1302,7 +1316,7 @@ export const ReceptionistDashboard: React.FC = () => {
                             <div className="font-semibold text-sm text-[#1d1d1f]">
                               {cleanDoctorName(appt.doctor?.user?.fullName)}
                             </div>
-                            <div className="text-[#0088e8] font-medium">{appt.doctor?.specialty}</div>
+                            <div className="text-[#0066cc] font-medium">{appt.doctor?.specialty}</div>
                             <div className="text-[#86868b] flex items-center gap-1">
                               <Clock className="w-3 h-3" />
                               {appt.appointmentDate} • {appt.checkingWindow || 'General Shift'}
@@ -1375,7 +1389,7 @@ export const ReceptionistDashboard: React.FC = () => {
                               type="button"
                               disabled={isApproving || isRejecting}
                               onClick={() => handleApprovePendingAppointment(appt.id)}
-                              className="flex-1 sm:flex-initial px-5 py-2 rounded-full text-xs font-semibold text-white bg-[#0088e8] hover:bg-[#0077cc] shadow-xs transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-1.5"
+                              className="flex-1 sm:flex-initial px-5 py-2 rounded-full text-xs font-semibold text-white bg-[#0066cc] hover:bg-[#0055b3] shadow-xs transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-1.5"
                             >
                               <Check className="w-3.5 h-3.5" />
                               {isApproving ? 'Confirming...' : `Confirm & Issue Token (₹${fee})`}
@@ -1403,7 +1417,7 @@ export const ReceptionistDashboard: React.FC = () => {
                   <select
                     value={queueDoctorId}
                     onChange={(e) => setQueueDoctorId(e.target.value)}
-                    className="h-10 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] text-[#1d1d1f] transition-all focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] w-full sm:w-auto"
+                    className="h-10 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] text-[#1d1d1f] transition-all focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] w-full sm:w-auto"
                   >
                     {linkedDoctors.map((doc) => (
                       <option key={doc.doctorId} value={doc.doctorId}>
@@ -1416,7 +1430,7 @@ export const ReceptionistDashboard: React.FC = () => {
                     type="date"
                     value={queueDate}
                     onChange={(e) => setQueueDate(e.target.value)}
-                    className="h-10 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] text-[#1d1d1f] transition-all focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] w-full sm:w-auto"
+                    className="h-10 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] text-[#1d1d1f] transition-all focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] w-full sm:w-auto"
                   />
 
                   <AppleButton
@@ -1484,7 +1498,7 @@ export const ReceptionistDashboard: React.FC = () => {
                     value={queueSearch}
                     onChange={(e) => setQueueSearch(e.target.value)}
                     placeholder="Search patient, phone, token #..."
-                    className="h-9 px-4 rounded-full border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] w-full sm:w-64"
+                    className="h-9 px-4 rounded-full border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] w-full sm:w-64"
                   />
                   {queueSearch && (
                     <button
@@ -1536,7 +1550,7 @@ export const ReceptionistDashboard: React.FC = () => {
                           setStatusFilter('ALL');
                           setQueueSearch('');
                         }}
-                        className="mt-2 text-xs text-[#0088e8] font-semibold hover:underline"
+                        className="mt-2 text-xs text-[#0066cc] font-semibold hover:underline"
                       >
                         Reset Filters
                       </button>
@@ -1565,7 +1579,7 @@ export const ReceptionistDashboard: React.FC = () => {
                         {filteredAppointments.map((appt) => (
                           <tr key={appt.id} className="hover:bg-[#fafafc]">
                             <td className="py-3 pl-2">
-                              <span className="font-mono font-bold text-sm text-[#0088e8]">
+                              <span className="font-mono font-bold text-sm text-[#0066cc]">
                                 #{appt.queueNumber}
                               </span>
                             </td>
@@ -1607,7 +1621,7 @@ export const ReceptionistDashboard: React.FC = () => {
                                   <span className="w-3 h-3 rounded-full border-2 border-current border-t-transparent animate-spin inline-block"></span>
                                 ) : appt.isCheckedIn ? (
                                   <>
-                                    <span className="w-1.5 h-1.5 rounded-full bg-[#0088e8]"></span>
+                                    <span className="w-1.5 h-1.5 rounded-full bg-[#0066cc]"></span>
                                     <span>At Clinic</span>
                                   </>
                                 ) : (
@@ -1625,7 +1639,7 @@ export const ReceptionistDashboard: React.FC = () => {
                                   appt.status === 'COMPLETED'
                                     ? 'bg-[#f5f5f7] text-[#86868b] border-[#e5e5ea]'
                                     : appt.status === 'IN_CONSULTATION'
-                                    ? 'bg-[#0088e8]/10 text-[#0088e8] border border-[#0088e8]/20'
+                                    ? 'bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20'
                                     : appt.status === 'WAITING'
                                     ? 'bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea]'
                                     : appt.status === 'EXPIRED'
@@ -1670,7 +1684,7 @@ export const ReceptionistDashboard: React.FC = () => {
                                   ) : (
                                     <button
                                       onClick={() => handleStatusChange(appt.id, 'IN_CONSULTATION')}
-                                      className="px-3.5 py-1.5 rounded-full bg-[#0088e8] hover:bg-[#0077cc] text-white text-[11px] font-semibold shadow-xs transition-all active:scale-[0.98] cursor-pointer whitespace-nowrap"
+                                      className="px-3.5 py-1.5 rounded-full bg-[#0066cc] hover:bg-[#0055b3] text-white text-[11px] font-semibold shadow-xs transition-all active:scale-[0.98] cursor-pointer whitespace-nowrap"
                                     >
                                       Call In
                                     </button>
@@ -1736,7 +1750,7 @@ export const ReceptionistDashboard: React.FC = () => {
                                       clinicAddress: data?.clinic?.address,
                                     });
                                   }}
-                                  className="p-1.5 rounded-full text-[#86868b] hover:text-[#0088e8] hover:bg-gray-100 border border-[#e5e5ea] transition-colors"
+                                  className="p-1.5 rounded-full text-[#86868b] hover:text-[#0066cc] hover:bg-gray-100 border border-[#e5e5ea] transition-colors"
                                   title="Reprint Token Pass"
                                 >
                                   <Printer className="w-3.5 h-3.5" />
@@ -1790,7 +1804,7 @@ export const ReceptionistDashboard: React.FC = () => {
                               {doc.avatarUrl ? (
                                 <img src={getFileUrl(doc.avatarUrl)} alt={doc.fullName} className="w-full h-full object-cover" />
                               ) : (
-                                <div className="w-full h-full flex items-center justify-center font-bold text-sm text-[#0088e8]">
+                                <div className="w-full h-full flex items-center justify-center font-bold text-sm text-[#0066cc]">
                                   {doc.fullName[0]}
                                 </div>
                               )}
@@ -1799,7 +1813,7 @@ export const ReceptionistDashboard: React.FC = () => {
                               <div className="font-semibold text-sm text-[#1d1d1f] tracking-tight">
                                 {cleanDoctorName(doc.fullName)}
                               </div>
-                              <div className="text-xs text-[#0088e8] font-medium">{doc.specialty}</div>
+                              <div className="text-xs text-[#0066cc] font-medium">{doc.specialty}</div>
                               <div className="text-[11px] text-[#86868b] mt-0.5">{data?.clinic?.clinicName || 'Clinic Desk'}</div>
                             </div>
                           </div>
@@ -2011,7 +2025,7 @@ export const ReceptionistDashboard: React.FC = () => {
           <div className="bg-white rounded-[20px] sm:rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-5 sm:p-8 shadow-2xl">
             <div className="text-center pb-4 border-b border-[#f0f0f0]">
               <div className="w-10 h-10 rounded-full bg-[#f5f5f7] text-[#1d1d1f] flex items-center justify-center mx-auto mb-3">
-                <CheckCircle2 className="w-5 h-5 text-[#0088e8]" />
+                <CheckCircle2 className="w-5 h-5 text-[#0066cc]" />
               </div>
               <h3 className="text-lg font-semibold text-[#1d1d1f]">Walk-in Token Issued</h3>
               <p className="text-xs text-[#86868b] mt-0.5">Live consultation queue pass</p>
@@ -2022,7 +2036,7 @@ export const ReceptionistDashboard: React.FC = () => {
               <span className="text-xs font-semibold text-[#86868b] uppercase tracking-wider block">
                 Queue Token Number
               </span>
-              <div className="text-5xl font-mono font-bold text-[#0088e8] tracking-tight">
+              <div className="text-5xl font-mono font-bold text-[#0066cc] tracking-tight">
                 #{bookedPass.queueNumber}
               </div>
               <div className="pt-2 border-t border-[#e5e5ea] grid grid-cols-2 gap-2 text-xs">
@@ -2186,7 +2200,7 @@ export const ReceptionistDashboard: React.FC = () => {
                     value={currentPassword}
                     onChange={(e) => setCurrentPassword(e.target.value)}
                     placeholder="Enter temporary password"
-                    className="w-full h-11 px-3.5 pl-9 rounded-xl border border-[#e5e5ea] text-sm focus:outline-none focus:border-[#0088e8]"
+                    className="w-full h-11 px-3.5 pl-9 rounded-xl border border-[#e5e5ea] text-sm focus:outline-none focus:border-[#0066cc]"
                   />
                   <Lock className="w-4 h-4 text-[#86868b] absolute left-3 top-3.5" />
                 </div>
@@ -2204,7 +2218,7 @@ export const ReceptionistDashboard: React.FC = () => {
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder="Enter new password (min. 8 characters)"
-                    className="w-full h-11 px-3.5 pl-9 rounded-xl border border-[#e5e5ea] text-sm focus:outline-none focus:border-[#0088e8]"
+                    className="w-full h-11 px-3.5 pl-9 rounded-xl border border-[#e5e5ea] text-sm focus:outline-none focus:border-[#0066cc]"
                   />
                   <Lock className="w-4 h-4 text-[#86868b] absolute left-3 top-3.5" />
                 </div>
@@ -2221,7 +2235,7 @@ export const ReceptionistDashboard: React.FC = () => {
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="Re-enter new password"
-                    className="w-full h-11 px-3.5 pl-9 rounded-xl border border-[#e5e5ea] text-sm focus:outline-none focus:border-[#0088e8]"
+                    className="w-full h-11 px-3.5 pl-9 rounded-xl border border-[#e5e5ea] text-sm focus:outline-none focus:border-[#0066cc]"
                   />
                   <Lock className="w-4 h-4 text-[#86868b] absolute left-3 top-3.5" />
                 </div>

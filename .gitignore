@@ -36,3 +36,6 @@ Thumbs.db
 # IDE files
 .vscode/
 .idea/
+
+# Multi-agent teamwork logs
+.agents/teamwork/

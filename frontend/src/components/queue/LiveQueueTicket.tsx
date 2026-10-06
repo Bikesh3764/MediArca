@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { api, Appointment, getLocalDateString, getFileUrl } from '../../services/api';
 import { Clock, Calendar, MapPin, CheckCircle2, Building2, Star, Phone, QrCode } from 'lucide-react';
 import { AppleButton } from '../ui/AppleButton';
@@ -29,6 +30,13 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
   const [imgError, setImgError] = useState(false);
   const [togglingPresence, setTogglingPresence] = useState(false);
   const [presenceOverride, setPresenceOverride] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      setPresenceOverride(null);
+    });
+  }, [appointment.doctor?.cabinStatus]);
+
   const localCheckedIn = presenceOverride !== null ? presenceOverride : Boolean(appointment.isCheckedIn);
 
   const handleTogglePresence = async (newState: boolean) => {
@@ -301,12 +309,12 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
               <Clock className="w-4 h-4 text-[#86868b] shrink-0" />
               <span>Shift ended on {appointmentDate} before confirmation.</span>
             </div>
-            <a
-              href={`#/book/${doctor.id}?clinicId=${appointment.clinicId || ''}`}
+            <Link
+              to={`/book/${doctor.id}?clinicId=${appointment.clinicId || ''}`}
               className="inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-[#0066cc] text-white text-xs font-medium hover:bg-[#0071e3] active:scale-[0.97] transition-all duration-150 select-none cursor-pointer self-start sm:self-auto"
             >
               Book Again
-            </a>
+            </Link>
           </div>
         )}
 
@@ -348,13 +356,13 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
                     <span>Scan Clinic QR to Check In</span>
                   </button>
                 ) : (
-                  <a
-                    href={`#/clinic-checkin?clinicId=${appointment.clinicId || ''}`}
+                  <Link
+                    to={`/clinic-checkin?clinicId=${appointment.clinicId || ''}`}
                     className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-[11px] font-semibold active:scale-[0.97] transition-all duration-150 shadow-2xs select-none"
                   >
                     <QrCode className="w-3.5 h-3.5" />
                     <span>Scan Clinic QR to Check In</span>
-                  </a>
+                  </Link>
                 )}
 
               </div>

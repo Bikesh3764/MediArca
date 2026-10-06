@@ -1008,16 +1008,35 @@ const getHeaders = (isMultipart = false) => {
 };
 
 async function handleResponse<T>(res: Response): Promise<T> {
-  const data = await res.json();
-  if (!res.ok || !data.success) {
-    const error: any = new Error(data.message || 'API request failed');
-    if (data.requiresVerification) {
+  let data: any = null;
+  const text = await res.text();
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch {
+    if (!res.ok) {
+      const error: any = new Error(
+        `Server returned error ${res.status}: ${res.statusText || 'Unexpected error'}`
+      );
+      error.status = res.status;
+      throw error;
+    }
+    data = text;
+  }
+
+  if (!res.ok || (data && typeof data === 'object' && data.success === false)) {
+    const error: any = new Error(
+      data?.message ||
+        data?.error ||
+        `Request failed with status ${res.status}${res.statusText ? `: ${res.statusText}` : ''}`
+    );
+    error.status = res.status;
+    if (data?.requiresVerification) {
       error.requiresVerification = true;
       error.email = data.email;
     }
     throw error;
   }
-  return data.data !== undefined ? data.data : data;
+  return data?.data !== undefined ? data.data : data;
 }
 
 export const api = {

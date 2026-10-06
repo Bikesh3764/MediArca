@@ -765,7 +765,7 @@ export const AdminDashboard: React.FC = () => {
                               ? `${format12Hour(doc.checkingStartTime)} – ${format12Hour(doc.checkingEndTime)}`
                               : 'Flexible'}
                           </td>
-                          <td className="py-3.5 px-3 font-semibold text-[#1d1d1f]">${doc.consultationFee}</td>
+                          <td className="py-3.5 px-3 font-semibold text-[#1d1d1f]">₹{doc.consultationFee}</td>
                           <td className="py-3.5 px-3">
                             {renderStatusBadge(getPractitionerStatus(doc))}
                           </td>
@@ -1743,7 +1743,7 @@ export const AdminDashboard: React.FC = () => {
                 </div>
                 <div>
                   <span className="text-[#86868b] block">Consultation Fee:</span>
-                  <strong className="text-[#1d1d1f]">${selectedDoctor.consultationFee}</strong>
+                  <strong className="text-[#1d1d1f]">₹{selectedDoctor.consultationFee}</strong>
                 </div>
                 <div>
                   <span className="text-[#86868b] block">Checking Window:</span>

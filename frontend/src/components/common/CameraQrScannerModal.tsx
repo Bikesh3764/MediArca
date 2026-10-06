@@ -119,7 +119,9 @@ export const CameraQrScannerModal: React.FC<CameraQrScannerModalProps> = ({
       return;
     }
 
-    startCamera();
+    queueMicrotask(() => {
+      startCamera();
+    });
 
     const scanFrame = () => {
       const video = videoRef.current;

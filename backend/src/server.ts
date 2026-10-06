@@ -5,6 +5,19 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+// Top-level process crash handlers to prevent silent crashes and ensure runtime resilience
+export const registerProcessHandlers = (): void => {
+  process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
+    console.error('🚨 Unhandled Promise Rejection at:', promise, 'reason:', reason);
+  });
+
+  process.on('uncaughtException', (error: Error) => {
+    console.error('🚨 Uncaught Exception caught by runtime resilience handler:', error);
+  });
+};
+
+registerProcessHandlers();
+
 import fs from 'fs';
 import authRoutes from './routes/authRoutes';
 import doctorRoutes from './routes/doctorRoutes';
@@ -180,7 +193,7 @@ async function ensureSchema() {
 
 const isProduction = process.env.NODE_ENV === 'production';
 
-if (!isProduction || process.env.AUTO_SCHEMA_SYNC === 'true') {
+if ((!isProduction || process.env.AUTO_SCHEMA_SYNC === 'true') && process.env.NODE_ENV !== 'test' && !process.env.MEDIARCA_TEST_SUITE) {
   ensureSchema().catch((e) => console.warn('Schema sync notice:', e?.message));
 }
 
@@ -211,17 +224,28 @@ const allowedOrigins = [
   'http://127.0.0.1:5173',
 ].filter(Boolean) as string[];
 
+export const checkCorsOrigin = (
+  origin: string | undefined,
+  isProd: boolean,
+  allowed: string[],
+  callback: (err: any, allow?: boolean) => void
+): void => {
+  if (!origin) return callback(null, true);
+  if (!isProd) {
+    return callback(null, true);
+  }
+  if (allowed.includes(origin)) {
+    return callback(null, true);
+  }
+  const err = new Error('Blocked by CORS policy: Origin not allowed');
+  (err as any).status = 403;
+  return callback(err);
+};
+
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin) return callback(null, true);
-      if (!isProduction) {
-        return callback(null, true);
-      }
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-      return callback(new Error('Blocked by CORS policy: Origin not allowed'));
+      checkCorsOrigin(origin, isProduction, allowedOrigins, callback);
     },
     credentials: true,
   })
@@ -344,18 +368,21 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     });
     return;
   }
+  const statusCode = err.status || 500;
   console.error('Unhandled Error:', err);
-  res.status(err.status || 500).json({
+  res.status(statusCode).json({
     success: false,
-    message: isProduction ? 'Internal server error occurred' : (err.message || 'Internal server error occurred'),
+    message: isProduction && statusCode >= 500 ? 'Internal server error occurred' : (err.message || 'Internal server error occurred'),
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`=========================================`);
-  console.log(`🚀 MediArca API running on port ${PORT}`);
-  console.log(`Health: http://localhost:${PORT}/api/health`);
-  console.log(`=========================================`);
-});
+if (process.env.NODE_ENV !== 'test' && !process.env.MEDIARCA_TEST_SUITE) {
+  app.listen(PORT, () => {
+    console.log(`=========================================`);
+    console.log(`🚀 MediArca API running on port ${PORT}`);
+    console.log(`Health: http://localhost:${PORT}/api/health`);
+    console.log(`=========================================`);
+  });
+}
 
 export default app;

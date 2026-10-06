@@ -133,7 +133,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
         {/* User Capsule Card */}
         <div className="bg-[#f5f5f7] border border-[#e5e5ea] rounded-2xl p-3 flex items-center gap-3 transition-all hover:bg-[#ebebeb]">
-          <div className="w-9 h-9 rounded-full bg-[#0088e8] text-white flex items-center justify-center font-bold text-sm shadow-xs flex-shrink-0">
+          <div className="w-9 h-9 rounded-full bg-[#0066cc] text-white flex items-center justify-center font-bold text-sm shadow-xs flex-shrink-0">
             {initialLetter}
           </div>
           <div className="min-w-0 flex-1">
@@ -167,14 +167,14 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 <div
                   className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-full text-xs font-medium transition-all active:scale-[0.99] ${
                     isItemActive
-                      ? 'bg-[#0088e8]/10 text-[#0088e8] font-semibold border border-[#0088e8]/20'
+                      ? 'bg-[#0066cc]/10 text-[#0066cc] font-semibold border border-[#0066cc]/20'
                       : 'text-[#48484a] hover:bg-[#f5f5f7] hover:text-[#1d1d1f]'
                   }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <Icon
                       className={`w-4 h-4 flex-shrink-0 ${
-                        isItemActive ? 'text-[#0088e8]' : 'text-[#86868b]'
+                        isItemActive ? 'text-[#0066cc]' : 'text-[#86868b]'
                       }`}
                     />
                     <span className="truncate">{item.label}</span>
@@ -184,7 +184,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                       <span
                         className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
                           isItemActive
-                            ? 'bg-[#0088e8] text-white shadow-2xs'
+                            ? 'bg-[#0066cc] text-white shadow-2xs'
                             : 'bg-[#e5e5ea] text-[#48484a]'
                         }`}
                       >
@@ -192,7 +192,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                       </span>
                     )}
                     {isItemActive && (
-                      <div className="w-1.5 h-1.5 rounded-full bg-[#0088e8]" />
+                      <div className="w-1.5 h-1.5 rounded-full bg-[#0066cc]" />
                     )}
                   </div>
                 </div>

@@ -55,7 +55,7 @@ export const CabinStatusBadge: React.FC<CabinStatusBadgeProps> = ({
         size === 'sm' ? 'px-2.5 py-0.5 text-[11px]' : 'px-3 py-1 text-xs'
       } ${className}`}
     >
-      <span className="w-1.5 h-1.5 rounded-full bg-[#0088e8] flex-shrink-0"></span>
+      <span className="w-1.5 h-1.5 rounded-full bg-[#0066cc] flex-shrink-0"></span>
       <span>In Cabin</span>
     </span>
   );
@@ -188,7 +188,7 @@ export const CabinStatusControl: React.FC<CabinStatusControlProps> = ({
         <div className="flex items-center gap-2 self-start sm:self-auto">
           {feedback && (
             <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[#1d1d1f] bg-white px-2 py-0.5 rounded-full border border-[#e5e5ea] shadow-xs">
-              <Check className="w-3 h-3 text-[#0088e8]" />
+              <Check className="w-3 h-3 text-[#0066cc]" />
               {feedback}
             </span>
           )}
@@ -213,7 +213,7 @@ export const CabinStatusControl: React.FC<CabinStatusControlProps> = ({
               : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
           }`}
         >
-          <span className="w-1.5 h-1.5 rounded-full bg-[#0088e8]"></span>
+          <span className="w-1.5 h-1.5 rounded-full bg-[#0066cc]"></span>
           <span>In Cabin</span>
         </button>
 
@@ -288,7 +288,7 @@ export const CabinStatusControl: React.FC<CabinStatusControlProps> = ({
                 type="time"
                 value={customTimeInput}
                 onChange={(e) => setCustomTimeInput(e.target.value)}
-                className="h-6 px-2 rounded-lg border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] focus:outline-none focus:border-[#0088e8]"
+                className="h-6 px-2 rounded-lg border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] focus:outline-none focus:border-[#0066cc]"
                 title="Specific Return Time"
               />
               <button
