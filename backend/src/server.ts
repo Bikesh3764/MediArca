@@ -218,6 +218,9 @@ const allowedOrigins = [
   ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim()) : []),
   'https://bikesh3764.github.io',
   'https://mediarca.vercel.app',
+  'https://mediarca.in',
+  'https://www.mediarca.in',
+  'https://mediarca.pages.dev',
   'http://localhost:5173',
   'http://localhost:3000',
   'http://localhost:5000',
@@ -234,7 +237,13 @@ export const checkCorsOrigin = (
   if (!isProd) {
     return callback(null, true);
   }
-  if (allowed.includes(origin)) {
+  if (
+    allowed.includes(origin) ||
+    origin === 'https://mediarca.in' ||
+    origin === 'https://www.mediarca.in' ||
+    origin === 'https://mediarca.pages.dev' ||
+    /^https:\/\/[a-z0-9-]+\.mediarca\.pages\.dev$/.test(origin)
+  ) {
     return callback(null, true);
   }
   const err = new Error('Blocked by CORS policy: Origin not allowed');
