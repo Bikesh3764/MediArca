@@ -8918,6 +8918,75 @@ Follow-up Date: 2026-10-15`;
     'Bug 5: rescheduleAppointment validates target slot with evaluateSlotStatus for full and passed slots'
   );
 
+  // --- Category 2 High-Priority Bugs Verification ---
+  console.log('\n--- Test: Category 2 High-Priority Bugs Verification ---');
+  const authControllerContent = fs.readFileSync(path.join(__dirname, '../src/controllers/authController.ts'), 'utf8');
+  const doctorControllerContent = fs.readFileSync(path.join(__dirname, '../src/controllers/doctorController.ts'), 'utf8');
+  const frontendApiContentCat2 = fs.readFileSync(path.join(__dirname, '../../frontend/src/services/api.ts'), 'utf8');
+
+  // Bug 6: updateProfile transactional write & validation before write
+  assert(
+    authControllerContent.includes('// Role-specific validation BEFORE any database write (Bug 6: Fix partial-write)') &&
+    authControllerContent.includes('await prisma.$transaction(async (tx) => {') &&
+    authControllerContent.includes('await tx.user.update({') &&
+    authControllerContent.includes('Base64 image data URLs are not permitted'),
+    'Bug 6: updateProfile executes all validations first and wraps updates in an atomic transaction'
+  );
+
+  // Bug 7: Login OTP spam cooldown
+  assert(
+    authControllerContent.includes('const cooldown = checkResendCooldown(cleanEmail, 60)') &&
+    authControllerContent.includes('cooldownSeconds: cooldown.remainingSeconds') &&
+    authControllerContent.includes('recordResendAttempt(cleanEmail)'),
+    'Bug 7: login enforces 60-second cooldown on unverified login before generating fresh OTP'
+  );
+
+  // Bug 8: Weak OTP generation
+  assert(
+    !authControllerContent.includes('Math.floor(100000 + Math.random()') &&
+    authControllerContent.includes('crypto.randomInt(100000, 1000000)'),
+    'Bug 8: OTP generation uses crypto.randomInt and zero Math.random'
+  );
+
+  // Bug 9: Receptionist privacy across clinics
+  assert(
+    appointmentControllerContent.includes('delete (sanitizedDoctor as any).receptionists') &&
+    appointmentControllerContent.includes('delete (sanitizedClinic as any).receptionists'),
+    'Bug 9: appointmentController strips raw receptionists arrays from doctor and clinic responses'
+  );
+
+  // Bug 10: Review rating race condition
+  assert(
+    appointmentControllerContent.includes('await tx.review.aggregate({') &&
+    appointmentControllerContent.includes('_avg: { rating: true }') &&
+    appointmentControllerContent.includes('_count: { _all: true }') &&
+    appointmentControllerContent.includes('SELECT id FROM "DoctorProfile" WHERE id = ${appointment.doctorId} FOR UPDATE'),
+    'Bug 10: submitAppointmentReview executes atomic transaction with row locking and PostgreSQL aggregate'
+  );
+
+  // Bug 11: Public reviews unbounded query
+  assert(
+    doctorControllerContent.includes('parsePaginationParams(req.query, 20, 50)') &&
+    doctorControllerContent.includes('take: limit') &&
+    doctorControllerContent.includes('skip') &&
+    doctorControllerContent.includes('buildPaginationMetadata(total, page, limit)'),
+    'Bug 11: getDoctorReviews implements bounded pagination with limit and skip'
+  );
+
+  // Bug 12: Avatar DB-bloat base64 fallback removed
+  assert(
+    !frontendApiContentCat2.includes('reader.readAsDataURL(file)') &&
+    !frontendApiContentCat2.includes('this.updateProfile({ avatarUrl: dataUrl })'),
+    'Bug 12: frontend uploadAvatar does NOT fall back to storing base64 data URLs in PostgreSQL'
+  );
+
+  // Bug 13: Walk-in multi-family duplicate booking collision
+  assert(
+    receptionistControllerContent.includes('isForOther: Boolean(isOther)') &&
+    receptionistControllerContent.includes('patientName: { equals: cleanPatientName, mode: \'insensitive\' }'),
+    'Bug 13: bookWalkin includes isForOther and patientName in duplicate active booking check'
+  );
+
   console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);

@@ -1130,13 +1130,20 @@ export const getDoctorReviews = async (req: Request, res: Response): Promise<voi
       return;
     }
 
-    const reviews = await prisma.review.findMany({
-      where: { doctorId: id },
-      orderBy: { createdAt: 'desc' },
-      include: {
-        patientUser: { select: { fullName: true } },
-      },
-    });
+    const { page, limit, skip } = parsePaginationParams(req.query, 20, 50);
+
+    const [total, reviews] = await prisma.$transaction([
+      prisma.review.count({ where: { doctorId: id } }),
+      prisma.review.findMany({
+        where: { doctorId: id },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        skip,
+        include: {
+          patientUser: { select: { fullName: true } },
+        },
+      }),
+    ]);
 
     const maskedReviews = reviews.map((r) => ({
       id: r.id,
@@ -1154,6 +1161,7 @@ export const getDoctorReviews = async (req: Request, res: Response): Promise<voi
         rating: doctor.rating,
         totalReviews: doctor.totalReviews,
         reviews: maskedReviews,
+        pagination: buildPaginationMetadata(total, page, limit),
       },
     });
   } catch (error: any) {

@@ -574,12 +574,17 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
           // Concurrency control: lock practitioner row for this booking without swallowing errors (BUG-05)
           await tx.$executeRaw`SELECT id FROM "DoctorProfile" WHERE id = ${doctor.id} FOR UPDATE;`;
 
-          // Duplicate booking check within transaction (Finding H7)
+          // Duplicate booking check within transaction (Finding H7, Bug 13: allow distinct family members on same phone)
+          const cleanPatientName = patientName ? String(patientName).trim() : null;
           const existingInTx = await tx.appointment.findFirst({
             where: {
               patientId: patientProfile!.id,
               doctorId: doctor.id,
               appointmentDate,
+              isForOther: Boolean(isOther),
+              ...(cleanPatientName
+                ? { patientName: { equals: cleanPatientName, mode: 'insensitive' } }
+                : {}),
               status: { in: ['PENDING_APPROVAL', 'WAITING', 'IN_CONSULTATION'] },
             },
           });
@@ -607,8 +612,9 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
                 data: { status: 'EXPIRED' },
               });
             } else {
+              const recipient = isOther && cleanPatientName ? `for ${cleanPatientName}` : 'for this patient';
               throw new Error(
-                `DUPLICATE_ACTIVE_BOOKING: Patient already has an active booking (Queue #${existingInTx.queueNumber}) with this doctor on ${appointmentDate}.`
+                `DUPLICATE_ACTIVE_BOOKING: Patient already has an active booking (Queue #${existingInTx.queueNumber}) ${recipient} with this doctor on ${appointmentDate}.`
               );
             }
           }

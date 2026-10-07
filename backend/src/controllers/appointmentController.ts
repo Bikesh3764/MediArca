@@ -1055,10 +1055,19 @@ export const getAppointmentById = async (req: AuthRequest, res: Response): Promi
     }
 
     const recContact = resolveReceptionistContact(appointment.clinic, appointment.doctorId, appointment.doctor);
+    const sanitizedDoctor = { ...appointment.doctor };
+    delete (sanitizedDoctor as any).receptionists;
+    const sanitizedClinic = appointment.clinic ? { ...appointment.clinic } : null;
+    if (sanitizedClinic) {
+      delete (sanitizedClinic as any).receptionists;
+    }
+
     res.json({
       success: true,
       data: {
         ...appointment,
+        doctor: sanitizedDoctor,
+        clinic: sanitizedClinic,
         receptionistPhone: recContact.phone || null,
         receptionistName: recContact.name || null,
         estimatedQueueNumber,
@@ -1193,8 +1202,17 @@ export const getPatientAppointments = async (req: AuthRequest, res: Response): P
       const clinicFee = targetClinicAffiliation?.consultationFee ?? appt.doctor.consultationFee;
 
       const recContact = resolveReceptionistContact(appt.clinic, appt.doctorId, appt.doctor);
+      const sanitizedDoctor = { ...appt.doctor };
+      delete (sanitizedDoctor as any).receptionists;
+      const sanitizedClinic = appt.clinic ? { ...appt.clinic } : null;
+      if (sanitizedClinic) {
+        delete (sanitizedClinic as any).receptionists;
+      }
+
       const apptWithRec = {
         ...appt,
+        doctor: sanitizedDoctor,
+        clinic: sanitizedClinic,
         receptionistPhone: recContact.phone || null,
         receptionistName: recContact.name || null,
       };
@@ -1813,33 +1831,40 @@ export const submitAppointmentReview = async (req: AuthRequest, res: Response): 
       return;
     }
 
-    const review = await prisma.review.create({
-      data: {
-        appointmentId: appointment.id,
-        doctorId: appointment.doctorId,
-        patientId: req.user.id,
-        rating: numRating,
-        comment: comment ? String(comment).trim() : null,
-      },
-    });
+    // Atomic review creation and rating aggregation with concurrency lock (Bug 10: Fix race condition)
+    const { review } = await prisma.$transaction(async (tx) => {
+      if (typeof tx.$executeRaw === 'function') {
+        await tx.$executeRaw`SELECT id FROM "DoctorProfile" WHERE id = ${appointment.doctorId} FOR UPDATE;`;
+      }
 
-    // Recompute doctor's average rating and totalReviews
-    const allReviews = await prisma.review.findMany({
-      where: { doctorId: appointment.doctorId },
-      select: { rating: true },
-    });
+      const createdReview = await tx.review.create({
+        data: {
+          appointmentId: appointment.id,
+          doctorId: appointment.doctorId,
+          patientId: req.user!.id,
+          rating: numRating,
+          comment: comment ? String(comment).trim() : null,
+        },
+      });
 
-    const totalReviews = allReviews.length;
-    const avgRating = totalReviews > 0
-      ? Number((allReviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews).toFixed(1))
-      : 5.0;
+      const stats = await tx.review.aggregate({
+        where: { doctorId: appointment.doctorId },
+        _avg: { rating: true },
+        _count: { _all: true },
+      });
 
-    await prisma.doctorProfile.update({
-      where: { id: appointment.doctorId },
-      data: {
-        rating: avgRating,
-        totalReviews,
-      },
+      const totalReviews = stats._count._all;
+      const avgRating = stats._avg.rating !== null ? Number(stats._avg.rating.toFixed(1)) : 5.0;
+
+      await tx.doctorProfile.update({
+        where: { id: appointment.doctorId },
+        data: {
+          rating: avgRating,
+          totalReviews,
+        },
+      });
+
+      return { review: createdReview };
     });
 
     // Notify doctor

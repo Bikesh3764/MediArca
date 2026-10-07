@@ -1161,25 +1161,13 @@ export const api = {
   async uploadAvatar(file: File): Promise<{ avatarUrl: string; user: User }> {
     const formData = new FormData();
     formData.append('avatar', file);
-    try {
-      const res = await safeFetch(`${API_BASE_URL}/auth/avatar`, {
-        method: 'POST',
-        headers: getHeaders(true),
-        body: formData,
-        timeoutMs: 30000,
-      });
-      return await handleResponse(res);
-    } catch (err) {
-      console.warn('Backend multipart avatar upload failed, attempting fallback to base64 profile update', err);
-      const dataUrl = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-      const updated = await this.updateProfile({ avatarUrl: dataUrl });
-      return { avatarUrl: dataUrl, user: updated };
-    }
+    const res = await safeFetch(`${API_BASE_URL}/auth/avatar`, {
+      method: 'POST',
+      headers: getHeaders(true),
+      body: formData,
+      timeoutMs: 30000,
+    });
+    return await handleResponse(res);
   },
 
   // Doctors

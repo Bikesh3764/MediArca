@@ -501,6 +501,29 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     }
 
     if (!user.isEmailVerified) {
+      const cleanEmail = user.email.toLowerCase().trim();
+      const cooldown = checkResendCooldown(cleanEmail, 60);
+      const isExistingOtpValid = Boolean(
+        user.emailVerificationOtp &&
+        user.emailVerificationOtpExpiresAt &&
+        user.emailVerificationOtpExpiresAt > new Date()
+      );
+
+      if (!cooldown.allowed && isExistingOtpValid) {
+        res.status(403).json({
+          success: false,
+          requiresVerification: true,
+          email: user.email,
+          message: `Your email address is not verified yet. A verification code was recently sent. Please check your inbox or wait ${cooldown.remainingSeconds}s before requesting a new code.`,
+          data: {
+            requiresVerification: true,
+            email: user.email,
+            cooldownSeconds: cooldown.remainingSeconds,
+          },
+        });
+        return;
+      }
+
       const otp = crypto.randomInt(100000, 1000000).toString();
       const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
       await prisma.user.update({
@@ -510,6 +533,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
           emailVerificationOtpExpiresAt: otpExpiresAt,
         },
       });
+      recordResendAttempt(cleanEmail);
       sendVerificationOtpEmail(user.email, otp, user.fullName).catch((mailErr) => {
         console.error('Async OTP email dispatch failed on login:', mailErr);
       });
@@ -912,6 +936,17 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
 
     const { fullName, phone, avatarUrl, ...roleSpecificData } = req.body;
 
+    // Validate avatarUrl: Disallow base64 data URLs in profile updates to prevent Postgres database bloat (Bug 12)
+    if (avatarUrl !== undefined && avatarUrl !== null) {
+      if (typeof avatarUrl === 'string' && avatarUrl.startsWith('data:image/')) {
+        res.status(400).json({
+          success: false,
+          message: 'Base64 image data URLs are not permitted. Please upload your avatar via the official avatar upload endpoint.',
+        });
+        return;
+      }
+    }
+
     let formattedPhone: string | null | undefined = undefined;
     if (phone !== undefined) {
       if (phone === null || String(phone).trim() === '') {
@@ -929,14 +964,10 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
       }
     }
 
-    const updatedUser = await prisma.user.update({
-      where: { id: req.user.id },
-      data: {
-        ...(fullName && { fullName: String(fullName).trim() }),
-        ...(formattedPhone !== undefined && { phone: formattedPhone }),
-        ...(avatarUrl && { avatarUrl }),
-      },
-    });
+    // Role-specific validation BEFORE any database write (Bug 6: Fix partial-write)
+    const safePatientData: any = {};
+    const safeDoctorData: any = {};
+    const safeClinicData: any = {};
 
     if (req.user.role === 'PATIENT') {
       const {
@@ -950,7 +981,7 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
         currentMedications,
         emergencyContact,
       } = roleSpecificData;
-      const safePatientData: any = {};
+
       if (dateOfBirth !== undefined) {
         if (!dateOfBirth) {
           safePatientData.dateOfBirth = null;
@@ -985,19 +1016,6 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
 
       if (currentMedications !== undefined) safePatientData.currentMedications = sanitizeClinicalHistoryList(currentMedications);
       if (emergencyContact !== undefined) safePatientData.emergencyContact = emergencyContact ? String(emergencyContact).trim() : null;
-
-      await prisma.patientProfile.upsert({
-        where: { userId: req.user.id },
-        update: safePatientData,
-        create: {
-          userId: req.user.id,
-          ...safePatientData,
-        },
-      });
-
-      if (formattedPhone) {
-        await migrateSyntheticWalkinAppointments(req.user.id, formattedPhone);
-      }
     } else if (req.user.role === 'DOCTOR') {
       // Strict allowlist: Prevent doctors from modifying isVerified, verificationStatus, rating, totalReviews, userId, id
       const {
@@ -1014,7 +1032,6 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
         slots,
       } = roleSpecificData;
 
-      const safeDoctorData: any = {};
       if (specialty !== undefined) safeDoctorData.specialty = String(specialty).trim();
       if (qualifications !== undefined) safeDoctorData.qualifications = String(qualifications).trim();
       const numBounds = validateDoctorNumericBounds({
@@ -1031,7 +1048,7 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
       if (consultationFee !== undefined) safeDoctorData.consultationFee = numBounds.sanitized.consultationFee;
       if (bio !== undefined) safeDoctorData.bio = bio ? String(bio).trim() : null;
       if (clinicAddress !== undefined) safeDoctorData.clinicAddress = clinicAddress ? String(clinicAddress).trim() : null;
-      
+
       const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
       if (checkingStartTime !== undefined) {
         const sTime = String(checkingStartTime).trim();
@@ -1058,7 +1075,7 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
 
       if (avgConsultationMinutes !== undefined) safeDoctorData.avgConsultationMinutes = numBounds.sanitized.avgConsultationMinutes;
       if (maxDailyPatients !== undefined) safeDoctorData.maxDailyPatients = numBounds.sanitized.maxDailyPatients;
-      
+
       if (slots !== undefined) {
         let parsed: any[] = [];
         try {
@@ -1074,39 +1091,68 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
         }
         safeDoctorData.slots = JSON.stringify(validation.formatted);
       }
-
-      await prisma.doctorProfile.upsert({
-        where: { userId: req.user.id },
-        update: safeDoctorData,
-        create: {
-          userId: req.user.id,
-          specialty: safeDoctorData.specialty || 'General Physician',
-          qualifications: safeDoctorData.qualifications || 'MBBS',
-          ...safeDoctorData,
-        },
-      });
     } else if (req.user.role === 'CLINIC') {
       const { clinicName, address, city, state } = roleSpecificData;
-      const safeClinicData: any = {};
       if (clinicName !== undefined) safeClinicData.clinicName = String(clinicName).trim();
       if (address !== undefined) safeClinicData.address = String(address).trim();
       if (city !== undefined) safeClinicData.city = city ? String(city).trim() : null;
       if (state !== undefined) safeClinicData.state = state ? String(state).trim() : null;
       if (formattedPhone !== undefined) safeClinicData.phone = formattedPhone;
+    }
 
-      await prisma.clinicProfile.upsert({
-        where: { userId: req.user.id },
-        update: safeClinicData,
-        create: {
-          userId: req.user.id,
-          clinicName: safeClinicData.clinicName || req.user.fullName,
-          address: safeClinicData.address || '',
-          city: safeClinicData.city || null,
-          state: safeClinicData.state || null,
-          phone: formattedPhone || null,
-          checkinCode: crypto.randomInt(100000, 1000000).toString(),
-        },
-      });
+    // Now execute ALL user and profile modifications inside a single atomic transaction (Bug 6)
+    const userUpdatePayload: any = {};
+    if (fullName) userUpdatePayload.fullName = String(fullName).trim();
+    if (formattedPhone !== undefined) userUpdatePayload.phone = formattedPhone;
+    if (avatarUrl !== undefined) userUpdatePayload.avatarUrl = avatarUrl;
+
+    await prisma.$transaction(async (tx) => {
+      if (Object.keys(userUpdatePayload).length > 0) {
+        await tx.user.update({
+          where: { id: req.user!.id },
+          data: userUpdatePayload,
+        });
+      }
+
+      if (req.user!.role === 'PATIENT') {
+        await tx.patientProfile.upsert({
+          where: { userId: req.user!.id },
+          update: safePatientData,
+          create: {
+            userId: req.user!.id,
+            ...safePatientData,
+          },
+        });
+      } else if (req.user!.role === 'DOCTOR') {
+        await tx.doctorProfile.upsert({
+          where: { userId: req.user!.id },
+          update: safeDoctorData,
+          create: {
+            userId: req.user!.id,
+            specialty: safeDoctorData.specialty || 'General Physician',
+            qualifications: safeDoctorData.qualifications || 'MBBS',
+            ...safeDoctorData,
+          },
+        });
+      } else if (req.user!.role === 'CLINIC') {
+        await tx.clinicProfile.upsert({
+          where: { userId: req.user!.id },
+          update: safeClinicData,
+          create: {
+            userId: req.user!.id,
+            clinicName: safeClinicData.clinicName || req.user!.fullName,
+            address: safeClinicData.address || '',
+            city: safeClinicData.city || null,
+            state: safeClinicData.state || null,
+            phone: formattedPhone || null,
+            checkinCode: crypto.randomInt(100000, 1000000).toString(),
+          },
+        });
+      }
+    });
+
+    if (req.user.role === 'PATIENT' && formattedPhone) {
+      await migrateSyntheticWalkinAppointments(req.user.id, formattedPhone);
     }
 
     const refreshedUser = await prisma.user.findUnique({
