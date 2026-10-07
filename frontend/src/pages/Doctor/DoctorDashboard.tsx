@@ -12,6 +12,7 @@ import {
   formatDoctorDegrees,
 } from '../../services/api';
 import { sanitizeIndianPhone, formatIndianPhone, isValidIndianPhone } from '../../utils/phoneUtils';
+import { useVisibilityPolling } from '../../utils/useVisibilityPolling';
 import { useAuth } from '../../context/AuthContext';
 import { DashboardLayout, DashboardNavItem } from '../../components/layout/DashboardLayout';
 import { AppleButton } from '../../components/ui/AppleButton';
@@ -156,13 +157,17 @@ export const DoctorDashboard: React.FC = () => {
       }
     });
 
-    // Auto refresh every 10 seconds for real-time clinic updates
-    const interval = setInterval(() => fetchQueue(false), 10000);
     return () => {
       mounted = false;
-      clearInterval(interval);
     };
   }, [fetchQueue, fetchAffiliations, user, loadingAuth, navigate]);
+
+  // Auto-refresh queue every 10 seconds only while tab is active/visible (FIX-012)
+  useVisibilityPolling(
+    () => fetchQueue(false),
+    10000,
+    Boolean(user) && user?.role?.toUpperCase() === 'DOCTOR' && !loadingAuth
+  );
 
   useEffect(() => {
     let mounted = true;
@@ -1916,16 +1921,22 @@ export const DoctorDashboard: React.FC = () => {
 
               <div>
                 <label className="block text-[11px] font-semibold text-[#86868b] uppercase mb-1">
-                  Phone (Optional)
+                  Mobile Number (Optional)
                 </label>
-                <input
-                  type="tel"
-                  placeholder="10-digit mobile number"
-                  maxLength={10}
-                  value={walkinPhone}
-                  onChange={(e) => setWalkinPhone(sanitizeIndianPhone(e.target.value))}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
-                />
+                <div className="flex rounded-xl border border-[#e5e5ea] overflow-hidden focus-within:ring-2 focus-within:ring-[#0088e8]/20 focus-within:border-[#0088e8] bg-white transition-all h-10">
+                  <span className="inline-flex items-center px-3 bg-[#f5f5f7] border-r border-[#e5e5ea] text-[#1d1d1f] font-semibold text-[13px] select-none">
+                    +91
+                  </span>
+                  <input
+                    type="tel"
+                    inputMode="numeric"
+                    placeholder="98765 43210"
+                    maxLength={10}
+                    value={sanitizeIndianPhone(walkinPhone)}
+                    onChange={(e) => setWalkinPhone(sanitizeIndianPhone(e.target.value))}
+                    className="flex-1 h-full px-3.5 text-xs bg-transparent text-[#1d1d1f] placeholder:text-[#86868b] focus:outline-none"
+                  />
+                </div>
               </div>
 
               {/* Clinic Affiliation Venue Selector */}
@@ -2046,7 +2057,7 @@ export const DoctorDashboard: React.FC = () => {
           <p className="text-xs text-gray-600 leading-relaxed">
             No account creation required. Point your smartphone camera at this code to get a live guaranteed queue token.
           </p>
-          <div className="pt-4 border-t border-gray-200 mt-4 text-[11px] text-gray-500 font-mono break-all">
+          <div className="pt-4 border-t border-gray-200 mt-4 text-[11px] text-gray-500 font-medium break-all">
             {bookingUrl}
           </div>
         </div>

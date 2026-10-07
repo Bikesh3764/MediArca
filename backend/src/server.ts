@@ -1,11 +1,35 @@
+import http from 'http';
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import path from 'path';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Top-level process crash handlers to prevent silent crashes and ensure runtime resilience
+export interface GracefulShutdownOptions {
+  timeoutMs?: number;
+  exitProcess?: boolean;
+}
+
+export let server: http.Server | null = null;
+export let isShuttingDown = false;
+let shutdownPromise: Promise<void> | null = null;
+
+export const setServerInstance = (srv: http.Server | null): void => {
+  server = srv;
+};
+
+export const resetShutdownStateForTesting = (): void => {
+  isShuttingDown = false;
+  shutdownPromise = null;
+};
+
+export const setIsShuttingDownForTesting = (val: boolean): void => {
+  isShuttingDown = val;
+};
+
+// Top-level process crash & termination handlers to ensure runtime resilience and graceful shutdown (FIX-018)
 export const registerProcessHandlers = (): void => {
   process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
     console.error('🚨 Unhandled Promise Rejection at:', promise, 'reason:', reason);
@@ -13,6 +37,20 @@ export const registerProcessHandlers = (): void => {
 
   process.on('uncaughtException', (error: Error) => {
     console.error('🚨 Uncaught Exception caught by runtime resilience handler:', error);
+  });
+
+  process.on('SIGTERM', () => {
+    gracefulShutdown('SIGTERM').catch((err) => {
+      console.error('[Graceful Shutdown] Fatal error during SIGTERM shutdown:', err);
+      process.exit(1);
+    });
+  });
+
+  process.on('SIGINT', () => {
+    gracefulShutdown('SIGINT').catch((err) => {
+      console.error('[Graceful Shutdown] Fatal error during SIGINT shutdown:', err);
+      process.exit(1);
+    });
   });
 };
 
@@ -32,170 +70,7 @@ import { authenticate } from './middleware/authMiddleware';
 import { updateProfile } from './controllers/authController';
 import { submitContactMessage } from './controllers/adminController';
 
-// Non-blocking automatic schema sync for multi-slot, clinic, and receptionist support
-async function safeExecute(primarySql: string, fallbackSql?: string) {
-  try {
-    await prisma.$executeRawUnsafe(primarySql);
-  } catch {
-    if (fallbackSql) {
-      try {
-        await prisma.$executeRawUnsafe(fallbackSql);
-      } catch {}
-    }
-  }
-}
-
-async function ensureSchema() {
-  const migrations: [string, string?][] = [
-    // User email verification columns
-    [`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "isEmailVerified" BOOLEAN NOT NULL DEFAULT TRUE;`, `ALTER TABLE "User" ADD COLUMN "isEmailVerified" BOOLEAN DEFAULT 1;`],
-    [`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "emailVerificationOtp" TEXT;`, `ALTER TABLE "User" ADD COLUMN "emailVerificationOtp" TEXT;`],
-    [`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "emailVerificationOtpExpiresAt" TIMESTAMP(3);`, `ALTER TABLE "User" ADD COLUMN "emailVerificationOtpExpiresAt" DATETIME;`],
-
-    // SystemConfig table for cloud configuration fallback (SMTP, etc.)
-    [
-      `CREATE TABLE IF NOT EXISTS "SystemConfig" ("key" TEXT PRIMARY KEY, "value" TEXT NOT NULL, "updatedAt" TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP);`,
-      `CREATE TABLE IF NOT EXISTS "SystemConfig" ("key" TEXT PRIMARY KEY, "value" TEXT NOT NULL, "updatedAt" DATETIME DEFAULT CURRENT_TIMESTAMP);`
-    ],
-
-    // ContactMessage table for user feedback and contact form submissions
-    [
-      `CREATE TABLE IF NOT EXISTS "ContactMessage" ("id" TEXT PRIMARY KEY, "fullName" TEXT NOT NULL, "email" TEXT NOT NULL, "phone" TEXT, "subject" TEXT NOT NULL, "message" TEXT NOT NULL, "status" TEXT NOT NULL DEFAULT 'NEW', "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP);`,
-      `CREATE TABLE IF NOT EXISTS "ContactMessage" ("id" TEXT PRIMARY KEY, "fullName" TEXT NOT NULL, "email" TEXT NOT NULL, "phone" TEXT, "subject" TEXT NOT NULL, "message" TEXT NOT NULL, "status" TEXT NOT NULL DEFAULT 'NEW', "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP);`
-    ],
-
-    // DoctorProfile columns
-    [`ALTER TABLE "DoctorProfile" ADD COLUMN IF NOT EXISTS "slots" TEXT;`, `ALTER TABLE "DoctorProfile" ADD COLUMN "slots" TEXT;`],
-    [`ALTER TABLE "DoctorProfile" ADD COLUMN IF NOT EXISTS "cabinStatus" TEXT NOT NULL DEFAULT 'IN_CABIN';`, `ALTER TABLE "DoctorProfile" ADD COLUMN "cabinStatus" TEXT DEFAULT 'IN_CABIN';`],
-    [`ALTER TABLE "DoctorProfile" ADD COLUMN IF NOT EXISTS "expectedReturnTime" TEXT;`, `ALTER TABLE "DoctorProfile" ADD COLUMN "expectedReturnTime" TEXT;`],
-    [`ALTER TABLE "DoctorProfile" ADD COLUMN IF NOT EXISTS "cabinStatusUpdatedAt" TIMESTAMP(3);`, `ALTER TABLE "DoctorProfile" ADD COLUMN "cabinStatusUpdatedAt" DATETIME;`],
-    [`ALTER TABLE "DoctorProfile" ADD COLUMN IF NOT EXISTS "verificationStatus" TEXT NOT NULL DEFAULT 'PENDING';`, `ALTER TABLE "DoctorProfile" ADD COLUMN "verificationStatus" TEXT NOT NULL DEFAULT 'PENDING';`],
-
-    // Appointment columns
-    [`ALTER TABLE "Appointment" ADD COLUMN IF NOT EXISTS "slotId" TEXT;`, `ALTER TABLE "Appointment" ADD COLUMN "slotId" TEXT;`],
-    [`ALTER TABLE "Appointment" ADD COLUMN IF NOT EXISTS "clinicId" TEXT;`, `ALTER TABLE "Appointment" ADD COLUMN "clinicId" TEXT;`],
-    [`ALTER TABLE "Appointment" ADD COLUMN IF NOT EXISTS "isForOther" BOOLEAN NOT NULL DEFAULT FALSE;`, `ALTER TABLE "Appointment" ADD COLUMN "isForOther" BOOLEAN NOT NULL DEFAULT 0;`],
-    [`ALTER TABLE "Appointment" ADD COLUMN IF NOT EXISTS "patientName" TEXT;`, `ALTER TABLE "Appointment" ADD COLUMN "patientName" TEXT;`],
-    [`ALTER TABLE "Appointment" ADD COLUMN IF NOT EXISTS "patientAge" TEXT;`, `ALTER TABLE "Appointment" ADD COLUMN "patientAge" TEXT;`],
-    [`ALTER TABLE "Appointment" ADD COLUMN IF NOT EXISTS "patientGender" TEXT;`, `ALTER TABLE "Appointment" ADD COLUMN "patientGender" TEXT;`],
-    [`ALTER TABLE "Appointment" ADD COLUMN IF NOT EXISTS "paymentStatus" TEXT NOT NULL DEFAULT 'PENDING';`, `ALTER TABLE "Appointment" ADD COLUMN "paymentStatus" TEXT NOT NULL DEFAULT 'PENDING';`],
-    [`ALTER TABLE "Appointment" ADD COLUMN IF NOT EXISTS "approvedBy" TEXT;`, `ALTER TABLE "Appointment" ADD COLUMN "approvedBy" TEXT;`],
-    [`ALTER TABLE "Appointment" ADD COLUMN IF NOT EXISTS "approvedAt" TIMESTAMP(3);`, `ALTER TABLE "Appointment" ADD COLUMN "approvedAt" DATETIME;`],
-    [`ALTER TABLE "Appointment" ADD COLUMN IF NOT EXISTS "isCheckedIn" BOOLEAN NOT NULL DEFAULT FALSE;`, `ALTER TABLE "Appointment" ADD COLUMN "isCheckedIn" BOOLEAN NOT NULL DEFAULT 0;`],
-    [`ALTER TABLE "Appointment" ADD COLUMN IF NOT EXISTS "checkedInAt" TIMESTAMP(3);`, `ALTER TABLE "Appointment" ADD COLUMN "checkedInAt" DATETIME;`],
-
-    // ClinicProfile table & columns
-    [
-      `CREATE TABLE IF NOT EXISTS "ClinicProfile" (
-        "id" TEXT PRIMARY KEY,
-        "userId" TEXT UNIQUE NOT NULL,
-        "clinicName" TEXT NOT NULL,
-        "address" TEXT NOT NULL,
-        "city" TEXT,
-        "phone" TEXT,
-        "isVerified" BOOLEAN NOT NULL DEFAULT FALSE,
-        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
-      );`,
-      `CREATE TABLE IF NOT EXISTS "ClinicProfile" (
-        "id" TEXT PRIMARY KEY,
-        "userId" TEXT UNIQUE NOT NULL,
-        "clinicName" TEXT NOT NULL,
-        "address" TEXT NOT NULL,
-        "city" TEXT,
-        "phone" TEXT,
-        "isVerified" BOOLEAN NOT NULL DEFAULT 0,
-        "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-      );`
-    ],
-    [`ALTER TABLE "ClinicProfile" ADD COLUMN IF NOT EXISTS "isVerified" BOOLEAN NOT NULL DEFAULT FALSE;`, `ALTER TABLE "ClinicProfile" ADD COLUMN "isVerified" BOOLEAN NOT NULL DEFAULT 0;`],
-    [`ALTER TABLE "ClinicProfile" ADD COLUMN IF NOT EXISTS "verificationStatus" TEXT NOT NULL DEFAULT 'PENDING';`, `ALTER TABLE "ClinicProfile" ADD COLUMN "verificationStatus" TEXT NOT NULL DEFAULT 'PENDING';`],
-    [`ALTER TABLE "ClinicProfile" ADD COLUMN IF NOT EXISTS "checkinCode" TEXT;`, `ALTER TABLE "ClinicProfile" ADD COLUMN "checkinCode" TEXT;`],
-
-    // Sync verified flags
-    [`UPDATE "DoctorProfile" SET "verificationStatus" = 'VERIFIED' WHERE "isVerified" = TRUE AND ("verificationStatus" IS NULL OR "verificationStatus" = 'PENDING');`, `UPDATE "DoctorProfile" SET "verificationStatus" = 'VERIFIED' WHERE "isVerified" = 1 AND ("verificationStatus" IS NULL OR "verificationStatus" = 'PENDING');`],
-    [`UPDATE "ClinicProfile" SET "verificationStatus" = 'VERIFIED' WHERE "isVerified" = TRUE AND ("verificationStatus" IS NULL OR "verificationStatus" = 'PENDING');`, `UPDATE "ClinicProfile" SET "verificationStatus" = 'VERIFIED' WHERE "isVerified" = 1 AND ("verificationStatus" IS NULL OR "verificationStatus" = 'PENDING');`],
-
-    // ReceptionistProfile table & columns
-    [
-      `CREATE TABLE IF NOT EXISTS "ReceptionistProfile" (
-        "id" TEXT PRIMARY KEY,
-        "userId" TEXT UNIQUE NOT NULL,
-        "clinicId" TEXT,
-        "phone" TEXT,
-        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
-      );`,
-      `CREATE TABLE IF NOT EXISTS "ReceptionistProfile" (
-        "id" TEXT PRIMARY KEY,
-        "userId" TEXT UNIQUE NOT NULL,
-        "clinicId" TEXT,
-        "phone" TEXT,
-        "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-      );`
-    ],
-    [`ALTER TABLE "ReceptionistProfile" ADD COLUMN IF NOT EXISTS "clinicId" TEXT;`, `ALTER TABLE "ReceptionistProfile" ADD COLUMN "clinicId" TEXT;`],
-    [`ALTER TABLE "ReceptionistProfile" ADD COLUMN IF NOT EXISTS "status" TEXT NOT NULL DEFAULT 'ACTIVE';`, `ALTER TABLE "ReceptionistProfile" ADD COLUMN "status" TEXT NOT NULL DEFAULT 'ACTIVE';`],
-
-    // ClinicDoctor table & columns
-    [
-      `CREATE TABLE IF NOT EXISTS "ClinicDoctor" (
-        "id" TEXT PRIMARY KEY,
-        "clinicId" TEXT NOT NULL,
-        "doctorId" TEXT NOT NULL,
-        "status" TEXT NOT NULL DEFAULT 'ACTIVE',
-        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        CONSTRAINT "ClinicDoctor_clinicId_doctorId_key" UNIQUE ("clinicId", "doctorId")
-      );`,
-      `CREATE TABLE IF NOT EXISTS "ClinicDoctor" (
-        "id" TEXT PRIMARY KEY,
-        "clinicId" TEXT NOT NULL,
-        "doctorId" TEXT NOT NULL,
-        "status" TEXT NOT NULL DEFAULT 'ACTIVE',
-        "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE ("clinicId", "doctorId")
-      );`
-    ],
-    [`ALTER TABLE "ClinicDoctor" ADD COLUMN IF NOT EXISTS "consultationFee" DOUBLE PRECISION;`, `ALTER TABLE "ClinicDoctor" ADD COLUMN "consultationFee" REAL;`],
-    [`ALTER TABLE "ClinicDoctor" ADD COLUMN IF NOT EXISTS "slots" TEXT;`, `ALTER TABLE "ClinicDoctor" ADD COLUMN "slots" TEXT;`],
-    [`ALTER TABLE "ClinicDoctor" ADD COLUMN IF NOT EXISTS "requestedBy" TEXT NOT NULL DEFAULT 'CLINIC';`, `ALTER TABLE "ClinicDoctor" ADD COLUMN "requestedBy" TEXT NOT NULL DEFAULT 'CLINIC';`],
-
-    // DoctorReceptionist table
-    [
-      `CREATE TABLE IF NOT EXISTS "DoctorReceptionist" (
-        "id" TEXT PRIMARY KEY,
-        "doctorId" TEXT NOT NULL,
-        "receptionistId" TEXT NOT NULL,
-        "status" TEXT NOT NULL DEFAULT 'ACTIVE',
-        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        CONSTRAINT "DoctorReceptionist_doctorId_receptionistId_key" UNIQUE ("doctorId", "receptionistId")
-      );`,
-      `CREATE TABLE IF NOT EXISTS "DoctorReceptionist" (
-        "id" TEXT PRIMARY KEY,
-        "doctorId" TEXT NOT NULL,
-        "receptionistId" TEXT NOT NULL,
-        "status" TEXT NOT NULL DEFAULT 'ACTIVE',
-        "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE ("doctorId", "receptionistId")
-      );`
-    ],
-
-    // User table columns
-    [`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "mustChangePassword" BOOLEAN NOT NULL DEFAULT FALSE;`, `ALTER TABLE "User" ADD COLUMN "mustChangePassword" BOOLEAN NOT NULL DEFAULT 0;`]
-  ];
-
-  for (const [primary, fallback] of migrations) {
-    await safeExecute(primary, fallback);
-  }
-}
-
 const isProduction = process.env.NODE_ENV === 'production';
-
-if ((!isProduction || process.env.AUTO_SCHEMA_SYNC === 'true') && process.env.NODE_ENV !== 'test' && !process.env.MEDIARCA_TEST_SUITE) {
-  ensureSchema().catch((e) => console.warn('Schema sync notice:', e?.message));
-}
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -211,6 +86,14 @@ if (isProduction) {
 
 // Trust proxy for accurate client IP behind Render / reverse proxies (Finding #34)
 app.set('trust proxy', 1);
+
+// Mount Helmet HTTP security headers (FIX-007)
+// crossOriginResourcePolicy: 'cross-origin' allows cross-origin clients (e.g. GitHub Pages) to load static assets/avatars
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  })
+);
 
 // Security & CORS (Finding M11)
 const allowedOrigins = [
@@ -263,7 +146,9 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Prevent aggressive client-side caching of dynamic live queue & medical data (BUG-30)
+// Safe default caching policy for all API endpoints (BUG-30, FIX-015)
+// Unspecified, private, authenticated, or dynamic endpoints default to 'no-store'.
+// Only genuinely public discovery endpoints explicitly override this with publicCache().
 app.use('/api', (_req: Request, res: Response, next: NextFunction) => {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   res.setHeader('Pragma', 'no-cache');
@@ -284,6 +169,13 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 // Health Check (Supports Render /healthz and /api/health)
 // Touches PostgreSQL database so Supabase resets 7-day inactivity countdown (Finding L2)
 app.get(['/healthz', '/api/health', '/'], async (_req: Request, res: Response) => {
+  if (isShuttingDown) {
+    res.status(503).json({
+      status: 'shutting_down',
+      message: 'Server is undergoing graceful shutdown',
+    });
+    return;
+  }
   let dbStatus = 'connected';
   try {
     await prisma.$queryRawUnsafe('SELECT 1;');
@@ -306,25 +198,37 @@ app.get(['/healthz', '/api/health', '/'], async (_req: Request, res: Response) =
 });
 
 // Lightweight sliding-window rate limiter with periodic cleanup (BUG-10)
-const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+export const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 
 // Periodic pruning of stale rate limit entries to prevent unbounded memory growth (BUG-10)
-const rateLimitPruneTimer = setInterval(() => {
+export const pruneStaleRateLimits = (): number => {
   const now = Date.now();
+  let pruned = 0;
   for (const [key, entry] of rateLimitMap.entries()) {
     if (now >= entry.resetTime) {
       rateLimitMap.delete(key);
+      pruned += 1;
     }
   }
-}, 60000);
+  return pruned;
+};
+
+export const rateLimitPruneTimer = setInterval(pruneStaleRateLimits, 60000);
 if (rateLimitPruneTimer.unref) {
   rateLimitPruneTimer.unref();
 }
 
-const authRateLimiter = (maxRequests = 40, windowSeconds = 60) => {
+export const authRateLimiter = (maxRequests = 40, windowSeconds = 60, customScope?: string) => {
   return (req: Request, res: Response, next: NextFunction): void => {
-    const ip = req.ip || req.headers['x-forwarded-for'] || 'client';
-    const key = `${ip}:${req.path}`;
+    const rawForwarded = req.headers['x-forwarded-for'];
+    const forwardedIp = Array.isArray(rawForwarded)
+      ? rawForwarded[0]
+      : typeof rawForwarded === 'string'
+        ? rawForwarded.split(',')[0].trim()
+        : undefined;
+    const ip = req.ip || forwardedIp || 'client';
+    const pathKey = customScope || (req.originalUrl ? req.originalUrl.split('?')[0] : (req.baseUrl || req.path));
+    const key = `${ip}:${pathKey}`;
     const now = Date.now();
     const entry = rateLimitMap.get(String(key));
 
@@ -350,12 +254,20 @@ app.use(
   authRateLimiter(40, 60)
 );
 
+// Mount dedicated rate limiting on OTP verification & resend endpoints (FIX-005)
+app.use(['/api/auth/verify-otp'], authRateLimiter(10, 60));
+app.use(['/api/auth/resend-otp'], authRateLimiter(5, 60));
+
 // Rate Limiting for public directory & queue preview endpoints (Finding #33)
 const publicApiLimiter = authRateLimiter(120, 60);
 app.use(['/api/doctors', '/api/appointments/queue-preview', '/api/clinics'], publicApiLimiter);
 
+// Mount dedicated rate limiting on public contact form submissions (FIX-017)
+// 5 submissions per 10 minutes (600 seconds) per IP/client scope
+export const contactRateLimiter = authRateLimiter(5, 600, 'contact');
+
 app.use('/api/auth', authRoutes);
-app.post(['/api/contact', '/api/contact-us'], submitContactMessage);
+app.post(['/api/contact', '/api/contact-us'], contactRateLimiter, submitContactMessage);
 app.put(['/api/users/profile', '/api/user/profile'], authenticate, updateProfile);
 app.put(['/api/doctors/profile', '/api/doctor/profile'], authenticate, updateProfile);
 app.use('/api/doctors', doctorRoutes);
@@ -385,8 +297,80 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   });
 });
 
+// Graceful shutdown sequence handling HTTP close, in-flight completion, and database disconnection (FIX-018)
+export const gracefulShutdown = (
+  signal = 'SIGTERM',
+  options: GracefulShutdownOptions = {}
+): Promise<void> => {
+  if (shutdownPromise) {
+    return shutdownPromise;
+  }
+
+  isShuttingDown = true;
+  const timeoutMs = options.timeoutMs ?? parseInt(process.env.SHUTDOWN_TIMEOUT_MS || '10000', 10);
+  const shouldExit = options.exitProcess ?? (process.env.NODE_ENV !== 'test' && !process.env.MEDIARCA_TEST_SUITE);
+
+  shutdownPromise = (async () => {
+    console.log(`[Graceful Shutdown] Received ${signal}. Initiating graceful shutdown sequence (timeout: ${timeoutMs}ms)...`);
+
+    // 1. Clear background rate-limit pruning timer
+    if (rateLimitPruneTimer) {
+      clearInterval(rateLimitPruneTimer);
+    }
+
+    // 2. Stop accepting new HTTP requests and allow in-flight requests to complete
+    await new Promise<void>((resolve) => {
+      let closed = false;
+      const timer = setTimeout(() => {
+        if (!closed) {
+          closed = true;
+          console.warn(`[Graceful Shutdown] HTTP server close timed out after ${timeoutMs}ms. Forcing database disconnect.`);
+          resolve();
+        }
+      }, timeoutMs);
+
+      if (server && server.listening) {
+        server.close((err) => {
+          if (!closed) {
+            closed = true;
+            clearTimeout(timer);
+            if (err) {
+              console.error('[Graceful Shutdown] Error closing HTTP server:', err);
+            } else {
+              console.log('[Graceful Shutdown] HTTP server closed successfully.');
+            }
+            resolve();
+          }
+        });
+      } else {
+        if (!closed) {
+          closed = true;
+          clearTimeout(timer);
+          resolve();
+        }
+      }
+    });
+
+    // 3. Disconnect Prisma connection pool after in-flight requests finish
+    try {
+      await prisma.$disconnect();
+      console.log('[Graceful Shutdown] Database client disconnected successfully.');
+    } catch (dbErr) {
+      console.error('[Graceful Shutdown] Error disconnecting Prisma database client:', dbErr);
+    }
+
+    console.log('[Graceful Shutdown] Graceful shutdown sequence completed.');
+
+    if (shouldExit) {
+      process.exit(0);
+    }
+  })();
+
+  return shutdownPromise;
+};
+
 if (process.env.NODE_ENV !== 'test' && !process.env.MEDIARCA_TEST_SUITE) {
-  app.listen(PORT, () => {
+  server = app.listen(PORT, () => {
     console.log(`=========================================`);
     console.log(`🚀 MediArca API running on port ${PORT}`);
     console.log(`Health: http://localhost:${PORT}/api/health`);

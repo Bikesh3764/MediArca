@@ -112,11 +112,12 @@ export const PatientProfile: React.FC = () => {
                   </span>
                   <input
                     type="tel"
+                    inputMode="numeric"
                     value={sanitizeIndianPhone(phone)}
                     onChange={handlePhoneInputChange}
                     placeholder="98765 43210"
                     maxLength={10}
-                    className="w-full h-11 px-3.5 text-xs bg-white focus:outline-none tracking-wider font-mono text-[#1d1d1f]"
+                    className="w-full h-11 px-3.5 text-sm bg-white focus:outline-none text-[#1d1d1f]"
                   />
                 </div>
               </div>

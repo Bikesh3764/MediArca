@@ -563,7 +563,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
         <div className="mt-4 pt-3.5 border-t border-[#f0f0f2] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="text-xs text-[#86868b] flex items-center gap-1.5">
             <span>Pass ID:</span>
-            <span className="font-mono text-[11px] font-medium text-[#1d1d1f] bg-[#f5f5f7] border border-[#e5e5ea] px-2 py-0.5 rounded-md select-all">
+            <span className="font-semibold tracking-wide text-[11px] text-[#1d1d1f] bg-[#f5f5f7] border border-[#e5e5ea] px-2 py-0.5 rounded-md select-all uppercase">
               {appointment.id.slice(0, 8)}
             </span>
           </div>

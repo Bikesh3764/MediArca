@@ -22,7 +22,30 @@ export const getFileUrl = (filePath?: string): string => {
   return `${backendBase}${filePath.startsWith('/') ? '' : '/'}${filePath}`;
 };
 
+import {
+  safeFetch,
+  ApiTimeoutError,
+  DEFAULT_REQUEST_TIMEOUT_MS,
+  DEFAULT_MAX_RETRIES,
+  RETRYABLE_STATUS_CODES,
+  NON_RETRYABLE_STATUS_CODES,
+  isSafeToRetryMethod,
+  isRetryableStatusCode,
+  isRetryableError,
+} from './safeFetch';
 
+export {
+  safeFetch,
+  ApiTimeoutError,
+  DEFAULT_REQUEST_TIMEOUT_MS,
+  DEFAULT_MAX_RETRIES,
+  RETRYABLE_STATUS_CODES,
+  NON_RETRYABLE_STATUS_CODES,
+  isSafeToRetryMethod,
+  isRetryableStatusCode,
+  isRetryableError,
+};
+export type { SafeFetchOptions } from './safeFetch';
 
 export interface DoctorSlot {
   id: string;
@@ -1039,10 +1062,25 @@ async function handleResponse<T>(res: Response): Promise<T> {
   return data?.data !== undefined ? data.data : data;
 }
 
+export interface PaginationMeta {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+}
+
+export interface PaginatedResult<T> {
+  data: T[];
+  count: number;
+  pagination: PaginationMeta;
+}
+
 export const api = {
   // Auth
   async register(body: any): Promise<{ user?: User; token?: string; requiresVerification?: boolean; email?: string; message?: string }> {
-    const res = await fetch(`${API_BASE_URL}/auth/register`, {
+    const res = await safeFetch(`${API_BASE_URL}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
@@ -1051,7 +1089,7 @@ export const api = {
   },
 
   async verifyEmailOtp(body: { email: string; otp: string }): Promise<{ user: User; token: string }> {
-    const res = await fetch(`${API_BASE_URL}/auth/verify-otp`, {
+    const res = await safeFetch(`${API_BASE_URL}/auth/verify-otp`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
@@ -1060,7 +1098,7 @@ export const api = {
   },
 
   async resendEmailOtp(email: string): Promise<{ success: boolean; message: string }> {
-    const res = await fetch(`${API_BASE_URL}/auth/resend-otp`, {
+    const res = await safeFetch(`${API_BASE_URL}/auth/resend-otp`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email }),
@@ -1069,7 +1107,7 @@ export const api = {
   },
 
   async login(body: any): Promise<{ user: User; token: string }> {
-    const res = await fetch(`${API_BASE_URL}/auth/login`, {
+    const res = await safeFetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
@@ -1078,7 +1116,7 @@ export const api = {
   },
 
   async googleAuth(credential: string, role = 'PATIENT'): Promise<{ user: User; token: string }> {
-    const res = await fetch(`${API_BASE_URL}/auth/google`, {
+    const res = await safeFetch(`${API_BASE_URL}/auth/google`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ credential, role }),
@@ -1087,14 +1125,14 @@ export const api = {
   },
 
   async getMe(): Promise<User> {
-    const res = await fetch(`${API_BASE_URL}/auth/me`, {
+    const res = await safeFetch(`${API_BASE_URL}/auth/me`, {
       headers: getHeaders(),
     });
     return handleResponse(res);
   },
 
   async updateProfile(body: any): Promise<User> {
-    const res = await fetch(`${API_BASE_URL}/auth/profile`, {
+    const res = await safeFetch(`${API_BASE_URL}/auth/profile`, {
       method: 'PUT',
       headers: getHeaders(),
       body: JSON.stringify(body),
@@ -1103,7 +1141,7 @@ export const api = {
   },
 
   async updateUserProfile(body: any): Promise<User> {
-    const res = await fetch(`${API_BASE_URL}/users/profile`, {
+    const res = await safeFetch(`${API_BASE_URL}/users/profile`, {
       method: 'PUT',
       headers: getHeaders(),
       body: JSON.stringify(body),
@@ -1112,7 +1150,7 @@ export const api = {
   },
 
   async updateDoctorProfile(body: any): Promise<User> {
-    const res = await fetch(`${API_BASE_URL}/doctors/profile`, {
+    const res = await safeFetch(`${API_BASE_URL}/doctors/profile`, {
       method: 'PUT',
       headers: getHeaders(),
       body: JSON.stringify(body),
@@ -1124,10 +1162,11 @@ export const api = {
     const formData = new FormData();
     formData.append('avatar', file);
     try {
-      const res = await fetch(`${API_BASE_URL}/auth/avatar`, {
+      const res = await safeFetch(`${API_BASE_URL}/auth/avatar`, {
         method: 'POST',
         headers: getHeaders(true),
         body: formData,
+        timeoutMs: 30000,
       });
       return await handleResponse(res);
     } catch (err) {
@@ -1154,6 +1193,8 @@ export const api = {
     clinicId?: string;
     state?: string;
     city?: string;
+    page?: number;
+    limit?: number;
   }): Promise<Doctor[]> {
     try {
       const query = new URLSearchParams();
@@ -1166,8 +1207,10 @@ export const api = {
       if (params?.clinicId) query.append('clinicId', params.clinicId);
       if (params?.state && params.state !== 'All') query.append('state', params.state);
       if (params?.city && params.city !== 'All') query.append('city', params.city);
+      if (params?.page) query.append('page', String(params.page));
+      if (params?.limit) query.append('limit', String(params.limit));
 
-      const res = await fetch(`${API_BASE_URL}/doctors?${query.toString()}`);
+      const res = await safeFetch(`${API_BASE_URL}/doctors?${query.toString()}`);
       return await handleResponse(res);
     } catch (err) {
       if (import.meta.env.DEV && import.meta.env.VITE_ENABLE_DEMO_FALLBACK === 'true') {
@@ -1200,9 +1243,74 @@ export const api = {
     }
   },
 
+  async getDoctorsPaginated(params?: {
+    search?: string;
+    specialty?: string;
+    minExp?: number;
+    maxFee?: number;
+    sortBy?: string;
+    clinicOnly?: boolean;
+    clinicId?: string;
+    state?: string;
+    city?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<PaginatedResult<Doctor>> {
+    try {
+      const query = new URLSearchParams();
+      if (params?.search) query.append('search', params.search);
+      if (params?.specialty && params.specialty !== 'All') query.append('specialty', params.specialty);
+      if (params?.minExp) query.append('minExp', String(params.minExp));
+      if (params?.maxFee) query.append('maxFee', String(params.maxFee));
+      if (params?.sortBy) query.append('sortBy', params.sortBy);
+      if (params?.clinicOnly !== undefined) query.append('clinicOnly', String(params.clinicOnly));
+      if (params?.clinicId) query.append('clinicId', params.clinicId);
+      if (params?.state && params.state !== 'All') query.append('state', params.state);
+      if (params?.city && params.city !== 'All') query.append('city', params.city);
+      if (params?.page) query.append('page', String(params.page));
+      if (params?.limit) query.append('limit', String(params.limit));
+
+      const res = await safeFetch(`${API_BASE_URL}/doctors?${query.toString()}`);
+      const text = await res.text();
+      const json = text ? JSON.parse(text) : {};
+      if (!res.ok || json?.success === false) {
+        throw new Error(json?.message || 'Failed to fetch doctors');
+      }
+      return {
+        data: Array.isArray(json.data) ? json.data : [],
+        count: json.count || (Array.isArray(json.data) ? json.data.length : 0),
+        pagination: json.pagination || {
+          page: params?.page || 1,
+          limit: params?.limit || 20,
+          total: Array.isArray(json.data) ? json.data.length : 0,
+          totalPages: 1,
+          hasNextPage: false,
+          hasPrevPage: false,
+        },
+      };
+    } catch (err) {
+      if (import.meta.env.DEV && import.meta.env.VITE_ENABLE_DEMO_FALLBACK === 'true') {
+        const list = await this.getDoctors(params);
+        return {
+          data: list,
+          count: list.length,
+          pagination: {
+            page: 1,
+            limit: 20,
+            total: list.length,
+            totalPages: 1,
+            hasNextPage: false,
+            hasPrevPage: false,
+          },
+        };
+      }
+      throw err;
+    }
+  },
+
   async getDoctorById(id: string): Promise<Doctor> {
     try {
-      const res = await fetch(`${API_BASE_URL}/doctors/${id}`, {
+      const res = await safeFetch(`${API_BASE_URL}/doctors/${id}`, {
         headers: getHeaders(),
       });
       return await handleResponse(res);
@@ -1227,12 +1335,12 @@ export const api = {
       patientUser: { fullName: string };
     }>;
   }> {
-    const res = await fetch(`${API_BASE_URL}/doctors/${doctorId}/reviews`);
+    const res = await safeFetch(`${API_BASE_URL}/doctors/${doctorId}/reviews`);
     return await handleResponse(res);
   },
 
   async updateDoctorSchedule(body: any): Promise<Doctor> {
-    const res = await fetch(`${API_BASE_URL}/doctors/schedule`, {
+    const res = await safeFetch(`${API_BASE_URL}/doctors/schedule`, {
       method: 'PUT',
       headers: getHeaders(),
       body: JSON.stringify(body),
@@ -1251,7 +1359,7 @@ export const api = {
     expectedReturnTime: string | null;
     cabinStatusUpdatedAt: string | null;
   }> {
-    const res = await fetch(`${API_BASE_URL}/doctors/cabin-status`, {
+    const res = await safeFetch(`${API_BASE_URL}/doctors/cabin-status`, {
       method: 'PUT',
       headers: getHeaders(),
       body: JSON.stringify(data),
@@ -1264,7 +1372,7 @@ export const api = {
     try {
       const slotQuery = slotId ? `&slotId=${encodeURIComponent(slotId)}` : '';
       const clinicQuery = clinicId ? `&clinicId=${encodeURIComponent(clinicId)}` : '';
-      const res = await fetch(
+      const res = await safeFetch(
         `${API_BASE_URL}/appointments/queue-preview?doctorId=${doctorId}&appointmentDate=${appointmentDate}${slotQuery}${clinicQuery}`
       );
       return await handleResponse(res);
@@ -1351,7 +1459,7 @@ export const api = {
     patientGender?: string;
     patientPhone?: string;
   }): Promise<Appointment> {
-    const res = await fetch(`${API_BASE_URL}/appointments/book`, {
+    const res = await safeFetch(`${API_BASE_URL}/appointments/book`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(body),
@@ -1360,14 +1468,14 @@ export const api = {
   },
 
   async getPatientAppointments(): Promise<Appointment[]> {
-    const res = await fetch(`${API_BASE_URL}/appointments/patient`, {
+    const res = await safeFetch(`${API_BASE_URL}/appointments/patient`, {
       headers: getHeaders(),
     });
     return handleResponse(res);
   },
 
   async cancelAppointment(id: string): Promise<Appointment> {
-    const res = await fetch(`${API_BASE_URL}/appointments/${id}/cancel`, {
+    const res = await safeFetch(`${API_BASE_URL}/appointments/${id}/cancel`, {
       method: 'PATCH',
       headers: getHeaders(),
     });
@@ -1375,14 +1483,14 @@ export const api = {
   },
 
   async getAppointmentById(id: string): Promise<Appointment> {
-    const res = await fetch(`${API_BASE_URL}/appointments/${id}`, {
+    const res = await safeFetch(`${API_BASE_URL}/appointments/${id}`, {
       headers: getHeaders(),
     });
     return handleResponse(res);
   },
 
   async checkInWithQR(data: { clinicId: string; code: string; appointmentId?: string }): Promise<any> {
-    const res = await fetch(`${API_BASE_URL}/appointments/check-in`, {
+    const res = await safeFetch(`${API_BASE_URL}/appointments/check-in`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(data),
@@ -1391,7 +1499,7 @@ export const api = {
   },
 
   async checkInAppointmentDirect(appointmentId: string, isCheckedIn?: boolean): Promise<any> {
-    const res = await fetch(`${API_BASE_URL}/appointments/${appointmentId}/check-in`, {
+    const res = await safeFetch(`${API_BASE_URL}/appointments/${appointmentId}/check-in`, {
       method: 'PATCH',
       headers: getHeaders(),
       body: JSON.stringify(isCheckedIn !== undefined ? { isCheckedIn } : {}),
@@ -1403,7 +1511,7 @@ export const api = {
     appointmentId: string,
     data: { rating: number; comment?: string }
   ): Promise<any> {
-    const res = await fetch(`${API_BASE_URL}/appointments/${appointmentId}/review`, {
+    const res = await safeFetch(`${API_BASE_URL}/appointments/${appointmentId}/review`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(data),
@@ -1436,12 +1544,12 @@ export const api = {
     if (scope) params.append('scope', scope);
     const qs = params.toString();
     const url = qs ? `${API_BASE_URL}/consultations/queue?${qs}` : `${API_BASE_URL}/consultations/queue`;
-    const res = await fetch(url, { headers: getHeaders() });
+    const res = await safeFetch(url, { headers: getHeaders() });
     return handleResponse(res);
   },
 
   async callPatient(appointmentId: string): Promise<Appointment> {
-    const res = await fetch(`${API_BASE_URL}/consultations/call-patient`, {
+    const res = await safeFetch(`${API_BASE_URL}/consultations/call-patient`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify({ appointmentId }),
@@ -1458,7 +1566,7 @@ export const api = {
     advice?: string;
     followUpDate?: string;
   }): Promise<Appointment> {
-    const res = await fetch(`${API_BASE_URL}/consultations/notes`, {
+    const res = await safeFetch(`${API_BASE_URL}/consultations/notes`, {
       method: 'PUT',
       headers: getHeaders(),
       body: JSON.stringify(body),
@@ -1487,7 +1595,7 @@ export const api = {
     vitals?: any;
     medicines?: any[];
   }): Promise<{ appointment: Appointment }> {
-    const res = await fetch(`${API_BASE_URL}/consultations/complete`, {
+    const res = await safeFetch(`${API_BASE_URL}/consultations/complete`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(body),
@@ -1517,12 +1625,12 @@ export const api = {
     totalAppointments: number;
     todayAppointments: number;
   }> {
-    const res = await fetch(`${API_BASE_URL}/admin/stats`, { headers: getHeaders() });
+    const res = await safeFetch(`${API_BASE_URL}/admin/stats`, { headers: getHeaders() });
     return handleResponse(res);
   },
 
   async getAdminDoctors(): Promise<Doctor[]> {
-    const res = await fetch(`${API_BASE_URL}/admin/doctors`, { headers: getHeaders() });
+    const res = await safeFetch(`${API_BASE_URL}/admin/doctors`, { headers: getHeaders() });
     return handleResponse(res);
   },
 
@@ -1534,7 +1642,7 @@ export const api = {
       typeof action === 'boolean'
         ? { doctorId, isVerified: action, status: action ? 'VERIFIED' : 'SUSPENDED' }
         : { doctorId, isVerified: action === 'VERIFIED', status: action };
-    const res = await fetch(`${API_BASE_URL}/admin/verify-doctor`, {
+    const res = await safeFetch(`${API_BASE_URL}/admin/verify-doctor`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(payload),
@@ -1543,7 +1651,7 @@ export const api = {
   },
 
   async getAdminClinics(): Promise<any[]> {
-    const res = await fetch(`${API_BASE_URL}/admin/clinics`, { headers: getHeaders() });
+    const res = await safeFetch(`${API_BASE_URL}/admin/clinics`, { headers: getHeaders() });
     return handleResponse(res);
   },
 
@@ -1555,7 +1663,7 @@ export const api = {
       typeof action === 'boolean'
         ? { clinicId, isVerified: action, status: action ? 'VERIFIED' : 'SUSPENDED' }
         : { clinicId, isVerified: action === 'VERIFIED', status: action };
-    const res = await fetch(`${API_BASE_URL}/admin/verify-clinic`, {
+    const res = await safeFetch(`${API_BASE_URL}/admin/verify-clinic`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(payload),
@@ -1564,7 +1672,7 @@ export const api = {
   },
 
   async getAdminAppointments(): Promise<any[]> {
-    const res = await fetch(`${API_BASE_URL}/admin/appointments`, { headers: getHeaders() });
+    const res = await safeFetch(`${API_BASE_URL}/admin/appointments`, { headers: getHeaders() });
     return handleResponse(res);
   },
 
@@ -1575,7 +1683,7 @@ export const api = {
     subject: string;
     message: string;
   }): Promise<{ success: boolean; message: string }> {
-    const res = await fetch(`${API_BASE_URL}/contact`, {
+    const res = await safeFetch(`${API_BASE_URL}/contact`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
@@ -1584,12 +1692,12 @@ export const api = {
   },
 
   async getAdminContactMessages(): Promise<ContactMessageItem[]> {
-    const res = await fetch(`${API_BASE_URL}/admin/contact-messages`, { headers: getHeaders() });
+    const res = await safeFetch(`${API_BASE_URL}/admin/contact-messages`, { headers: getHeaders() });
     return handleResponse(res);
   },
 
   async markContactMessageRead(id: string): Promise<ContactMessageItem> {
-    const res = await fetch(`${API_BASE_URL}/admin/contact-messages/${id}/read`, {
+    const res = await safeFetch(`${API_BASE_URL}/admin/contact-messages/${id}/read`, {
       method: 'PATCH',
       headers: getHeaders(),
     });
@@ -1598,12 +1706,12 @@ export const api = {
 
   // Clinic Portal
   async getMyClinic(): Promise<ClinicDashboardData> {
-    const res = await fetch(`${API_BASE_URL}/clinics/my-clinic`, { headers: getHeaders() });
+    const res = await safeFetch(`${API_BASE_URL}/clinics/my-clinic`, { headers: getHeaders() });
     return handleResponse(res);
   },
 
   async addDoctorToClinic(data: { doctorEmail?: string; doctorId?: string }): Promise<any> {
-    const res = await fetch(`${API_BASE_URL}/clinics/doctors`, {
+    const res = await safeFetch(`${API_BASE_URL}/clinics/doctors`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(data),
@@ -1612,7 +1720,7 @@ export const api = {
   },
 
   async removeDoctorFromClinic(doctorId: string): Promise<any> {
-    const res = await fetch(`${API_BASE_URL}/clinics/doctors/${doctorId}`, {
+    const res = await safeFetch(`${API_BASE_URL}/clinics/doctors/${doctorId}`, {
       method: 'DELETE',
       headers: getHeaders(),
     });
@@ -1627,7 +1735,7 @@ export const api = {
     doctorIds?: string[];
     assignedDoctorIds?: string[];
   }): Promise<any> {
-    const res = await fetch(`${API_BASE_URL}/clinics/receptionists`, {
+    const res = await safeFetch(`${API_BASE_URL}/clinics/receptionists`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(data),
@@ -1636,12 +1744,12 @@ export const api = {
   },
 
   async getClinicReceptionists(): Promise<ClinicReceptionistItem[]> {
-    const res = await fetch(`${API_BASE_URL}/clinics/receptionists`, { headers: getHeaders() });
+    const res = await safeFetch(`${API_BASE_URL}/clinics/receptionists`, { headers: getHeaders() });
     return handleResponse(res);
   },
 
   async updateClinicReceptionistDoctors(receptionistId: string, doctorIds: string[]): Promise<any> {
-    const res = await fetch(`${API_BASE_URL}/clinics/receptionists/${receptionistId}/doctors`, {
+    const res = await safeFetch(`${API_BASE_URL}/clinics/receptionists/${receptionistId}/doctors`, {
       method: 'PUT',
       headers: getHeaders(),
       body: JSON.stringify({ doctorIds }),
@@ -1650,22 +1758,24 @@ export const api = {
   },
 
   async removeClinicReceptionist(receptionistId: string): Promise<any> {
-    const res = await fetch(`${API_BASE_URL}/clinics/receptionists/${receptionistId}`, {
+    const res = await safeFetch(`${API_BASE_URL}/clinics/receptionists/${receptionistId}`, {
       method: 'DELETE',
       headers: getHeaders(),
     });
     return handleResponse(res);
   },
 
-  async getPublicClinics(params?: { search?: string; city?: string; state?: string }): Promise<ClinicProfile[]> {
+  async getPublicClinics(params?: { search?: string; city?: string; state?: string; page?: number; limit?: number }): Promise<ClinicProfile[]> {
     try {
       const query = new URLSearchParams();
       if (params?.search) query.append('search', params.search);
       if (params?.city && params.city !== 'All') query.append('city', params.city);
       if (params?.state && params.state !== 'All') query.append('state', params.state);
+      if (params?.page) query.append('page', String(params.page));
+      if (params?.limit) query.append('limit', String(params.limit));
       const qs = query.toString();
       const url = qs ? `${API_BASE_URL}/clinics/public?${qs}` : `${API_BASE_URL}/clinics/public`;
-      const res = await fetch(url, { headers: getHeaders() });
+      const res = await safeFetch(url, { headers: getHeaders() });
       return await handleResponse(res);
     } catch (err) {
       if (import.meta.env.DEV && import.meta.env.VITE_ENABLE_DEMO_FALLBACK === 'true') {
@@ -1725,9 +1835,64 @@ export const api = {
     }
   },
 
+  async getPublicClinicsPaginated(params?: {
+    search?: string;
+    city?: string;
+    state?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<PaginatedResult<ClinicProfile>> {
+    try {
+      const query = new URLSearchParams();
+      if (params?.search) query.append('search', params.search);
+      if (params?.city && params.city !== 'All') query.append('city', params.city);
+      if (params?.state && params.state !== 'All') query.append('state', params.state);
+      if (params?.page) query.append('page', String(params.page));
+      if (params?.limit) query.append('limit', String(params.limit));
+
+      const qs = query.toString();
+      const url = qs ? `${API_BASE_URL}/clinics/public?${qs}` : `${API_BASE_URL}/clinics/public`;
+      const res = await safeFetch(url, { headers: getHeaders() });
+      const text = await res.text();
+      const json = text ? JSON.parse(text) : {};
+      if (!res.ok || json?.success === false) {
+        throw new Error(json?.message || 'Failed to retrieve clinics');
+      }
+      return {
+        data: Array.isArray(json.data) ? json.data : [],
+        count: json.count || (Array.isArray(json.data) ? json.data.length : 0),
+        pagination: json.pagination || {
+          page: params?.page || 1,
+          limit: params?.limit || 20,
+          total: Array.isArray(json.data) ? json.data.length : 0,
+          totalPages: 1,
+          hasNextPage: false,
+          hasPrevPage: false,
+        },
+      };
+    } catch (err) {
+      if (import.meta.env.DEV && import.meta.env.VITE_ENABLE_DEMO_FALLBACK === 'true') {
+        const list = await this.getPublicClinics(params);
+        return {
+          data: list,
+          count: list.length,
+          pagination: {
+            page: 1,
+            limit: 20,
+            total: list.length,
+            totalPages: 1,
+            hasNextPage: false,
+            hasPrevPage: false,
+          },
+        };
+      }
+      throw err;
+    }
+  },
+
   async getPublicClinicById(id: string): Promise<ClinicProfile> {
     try {
-      const res = await fetch(`${API_BASE_URL}/clinics/public/${id}`, { headers: getHeaders() });
+      const res = await safeFetch(`${API_BASE_URL}/clinics/public/${id}`, { headers: getHeaders() });
       return await handleResponse(res);
     } catch (err) {
       if (import.meta.env.DEV && import.meta.env.VITE_ENABLE_DEMO_FALLBACK === 'true') {
@@ -1741,12 +1906,12 @@ export const api = {
 
   // Receptionist Portal
   async getMyReceptionist(): Promise<ReceptionistDashboardData> {
-    const res = await fetch(`${API_BASE_URL}/receptionists/my-receptionist`, { headers: getHeaders() });
+    const res = await safeFetch(`${API_BASE_URL}/receptionists/my-receptionist`, { headers: getHeaders() });
     return handleResponse(res);
   },
 
   async addDoctorToReceptionist(data: { doctorEmail?: string; doctorId?: string }): Promise<any> {
-    const res = await fetch(`${API_BASE_URL}/receptionists/doctors`, {
+    const res = await safeFetch(`${API_BASE_URL}/receptionists/doctors`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(data),
@@ -1755,7 +1920,7 @@ export const api = {
   },
 
   async removeDoctorFromReceptionist(doctorId: string): Promise<any> {
-    const res = await fetch(`${API_BASE_URL}/receptionists/doctors/${doctorId}`, {
+    const res = await safeFetch(`${API_BASE_URL}/receptionists/doctors/${doctorId}`, {
       method: 'DELETE',
       headers: getHeaders(),
     });
@@ -1786,7 +1951,7 @@ export const api = {
     const url = date
       ? `${API_BASE_URL}/receptionists/doctors/${doctorId}/queue?date=${date}`
       : `${API_BASE_URL}/receptionists/doctors/${doctorId}/queue`;
-    const res = await fetch(url, { headers: getHeaders() });
+    const res = await safeFetch(url, { headers: getHeaders() });
     return handleResponse(res);
   },
 
@@ -1803,7 +1968,7 @@ export const api = {
     symptoms?: string;
     clinicId?: string;
   }): Promise<any> {
-    const res = await fetch(`${API_BASE_URL}/receptionists/book-walkin`, {
+    const res = await safeFetch(`${API_BASE_URL}/receptionists/book-walkin`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(data),
@@ -1812,7 +1977,7 @@ export const api = {
   },
 
   async updateAppointmentStatus(appointmentId: string, status: string): Promise<any> {
-    const res = await fetch(`${API_BASE_URL}/receptionists/appointments/${appointmentId}/status`, {
+    const res = await safeFetch(`${API_BASE_URL}/receptionists/appointments/${appointmentId}/status`, {
       method: 'PATCH',
       headers: getHeaders(),
       body: JSON.stringify({ status }),
@@ -1821,7 +1986,7 @@ export const api = {
   },
 
   async rescheduleAppointment(appointmentId: string, data: { newDate: string; newSlotId?: string }): Promise<any> {
-    const res = await fetch(`${API_BASE_URL}/receptionists/appointments/${appointmentId}/reschedule`, {
+    const res = await safeFetch(`${API_BASE_URL}/receptionists/appointments/${appointmentId}/reschedule`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(data),
@@ -1830,7 +1995,7 @@ export const api = {
   },
 
   async changeReceptionistPassword(data: { currentPassword: string; newPassword: string }): Promise<any> {
-    const res = await fetch(`${API_BASE_URL}/receptionists/change-password`, {
+    const res = await safeFetch(`${API_BASE_URL}/receptionists/change-password`, {
       method: 'PUT',
       headers: getHeaders(),
       body: JSON.stringify(data),
@@ -1855,7 +2020,7 @@ export const api = {
 
   // Clinic Doctor Affiliation Response
   async respondToDoctorAffiliation(affiliationId: string, action: 'ACCEPT' | 'REJECT'): Promise<any> {
-    const res = await fetch(`${API_BASE_URL}/clinic/affiliations/${affiliationId}/respond`, {
+    const res = await safeFetch(`${API_BASE_URL}/clinic/affiliations/${affiliationId}/respond`, {
       method: 'PUT',
       headers: getHeaders(),
       body: JSON.stringify({ action }),
@@ -1865,12 +2030,12 @@ export const api = {
 
   // Doctor Affiliations
   async getDoctorAffiliations(): Promise<DoctorAffiliationsData> {
-    const res = await fetch(`${API_BASE_URL}/doctors/me/affiliations`, { headers: getHeaders() });
+    const res = await safeFetch(`${API_BASE_URL}/doctors/me/affiliations`, { headers: getHeaders() });
     return handleResponse(res);
   },
 
   async addDoctorClinic(data: { clinicId?: string; clinicEmail?: string }): Promise<any> {
-    const res = await fetch(`${API_BASE_URL}/doctors/me/clinics`, {
+    const res = await safeFetch(`${API_BASE_URL}/doctors/me/clinics`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(data),
@@ -1879,7 +2044,7 @@ export const api = {
   },
 
   async respondToClinicAffiliation(affiliationId: string, action: 'ACCEPT' | 'REJECT'): Promise<any> {
-    const res = await fetch(`${API_BASE_URL}/doctors/me/affiliations/${affiliationId}/respond`, {
+    const res = await safeFetch(`${API_BASE_URL}/doctors/me/affiliations/${affiliationId}/respond`, {
       method: 'PUT',
       headers: getHeaders(),
       body: JSON.stringify({ action }),
@@ -1888,7 +2053,7 @@ export const api = {
   },
 
   async removeDoctorClinic(clinicId: string): Promise<any> {
-    const res = await fetch(`${API_BASE_URL}/doctors/me/clinics/${clinicId}`, {
+    const res = await safeFetch(`${API_BASE_URL}/doctors/me/clinics/${clinicId}`, {
       method: 'DELETE',
       headers: getHeaders(),
     });
@@ -1896,7 +2061,7 @@ export const api = {
   },
 
   async addDoctorReceptionist(data: { receptionistEmail: string }): Promise<any> {
-    const res = await fetch(`${API_BASE_URL}/doctors/me/receptionists`, {
+    const res = await safeFetch(`${API_BASE_URL}/doctors/me/receptionists`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(data),
@@ -1905,7 +2070,7 @@ export const api = {
   },
 
   async removeDoctorReceptionist(receptionistId: string): Promise<any> {
-    const res = await fetch(`${API_BASE_URL}/doctors/me/receptionists/${receptionistId}`, {
+    const res = await safeFetch(`${API_BASE_URL}/doctors/me/receptionists/${receptionistId}`, {
       method: 'DELETE',
       headers: getHeaders(),
     });
@@ -1914,14 +2079,14 @@ export const api = {
 
   // Receptionist Pending Appointments & Approval Operations
   async getPendingAppointments(): Promise<Appointment[]> {
-    const res = await fetch(`${API_BASE_URL}/receptionists/pending-appointments`, {
+    const res = await safeFetch(`${API_BASE_URL}/receptionists/pending-appointments`, {
       headers: getHeaders(),
     });
     return handleResponse(res);
   },
 
   async approveAppointment(appointmentId: string): Promise<any> {
-    const res = await fetch(`${API_BASE_URL}/receptionists/appointments/${appointmentId}/approve`, {
+    const res = await safeFetch(`${API_BASE_URL}/receptionists/appointments/${appointmentId}/approve`, {
       method: 'POST',
       headers: getHeaders(),
     });
@@ -1929,7 +2094,7 @@ export const api = {
   },
 
   async rejectAppointment(appointmentId: string, reason?: string): Promise<any> {
-    const res = await fetch(`${API_BASE_URL}/receptionists/appointments/${appointmentId}/reject`, {
+    const res = await safeFetch(`${API_BASE_URL}/receptionists/appointments/${appointmentId}/reject`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify({ reason }),
@@ -1944,7 +2109,7 @@ export const api = {
     phone?: string;
     clinicId: string;
   }): Promise<any> {
-    const res = await fetch(`${API_BASE_URL}/receptionists/apply`, {
+    const res = await safeFetch(`${API_BASE_URL}/receptionists/apply`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
@@ -1957,7 +2122,7 @@ export const api = {
     action: 'ACCEPT' | 'REJECT',
     doctorIds?: string[]
   ): Promise<any> {
-    const res = await fetch(`${API_BASE_URL}/clinic/receptionists/${receptionistId}/respond`, {
+    const res = await safeFetch(`${API_BASE_URL}/clinic/receptionists/${receptionistId}/respond`, {
       method: 'PUT',
       headers: getHeaders(),
       body: JSON.stringify({ action, doctorIds }),
@@ -1967,12 +2132,12 @@ export const api = {
 
   // Notifications (BUG-13)
   async getNotifications(): Promise<{ notifications: any[]; unreadCount: number }> {
-    const res = await fetch(`${API_BASE_URL}/notifications`, { headers: getHeaders() });
+    const res = await safeFetch(`${API_BASE_URL}/notifications`, { headers: getHeaders() });
     return handleResponse(res);
   },
 
   async markNotificationRead(id: string): Promise<any> {
-    const res = await fetch(`${API_BASE_URL}/notifications/${id}/read`, {
+    const res = await safeFetch(`${API_BASE_URL}/notifications/${id}/read`, {
       method: 'PATCH',
       headers: getHeaders(),
     });
@@ -1980,7 +2145,7 @@ export const api = {
   },
 
   async markAllNotificationsRead(): Promise<any> {
-    const res = await fetch(`${API_BASE_URL}/notifications/read-all`, {
+    const res = await safeFetch(`${API_BASE_URL}/notifications/read-all`, {
       method: 'PATCH',
       headers: getHeaders(),
     });

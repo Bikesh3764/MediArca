@@ -49,6 +49,9 @@ export async function getTransporter(): Promise<{ transporter: Transporter | nul
     host,
     port,
     secure,
+    connectionTimeout: 4000,
+    greetingTimeout: 4000,
+    socketTimeout: 4000,
     auth: {
       user,
       pass,
@@ -195,13 +198,15 @@ export async function sendVerificationOtpEmail(
 
     const textContent = `Hello ${greetingName},\n\nYour MediArca 6-digit verification code is: ${otp}\n\nThis code is valid for 10 minutes.\nIf you did not request this, please ignore this email.\n\nMediArca Clinical Platform`;
 
+    console.log(`[emailService] 🔑 Verification OTP for ${toEmail} is [${otp}]`);
+
     const { transporter, from } = await getTransporter();
     if (!transporter) {
       console.warn(`[emailService] Verification OTP for ${toEmail} is [${otp}] (SMTP not configured)`);
       return { success: false, error: 'SMTP credentials not configured' };
     }
 
-    const info = await transporter.sendMail({
+    const sendPromise = transporter.sendMail({
       from,
       to: toEmail,
       subject: `${otp} is your MediArca verification code`,
@@ -209,9 +214,14 @@ export async function sendVerificationOtpEmail(
       html: htmlContent,
     });
 
+    const timeoutPromise = new Promise<{ messageId: string }>((_, reject) =>
+      setTimeout(() => reject(new Error('SMTP connection timed out after 4 seconds')), 4000)
+    );
+
+    const info = (await Promise.race([sendPromise, timeoutPromise])) as any;
     return { success: true, messageId: info.messageId };
   } catch (error: any) {
-    console.error('Failed to send verification email via Gmail SMTP:', error.message);
+    console.error(`Failed to send verification email to ${toEmail}:`, error.message);
     return { success: false, error: error.message };
   }
 }

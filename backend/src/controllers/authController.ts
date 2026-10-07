@@ -12,6 +12,13 @@ import { isValidDobDate, validateDoctorSlots, timeToMinutes, validateDoctorNumer
 import { validateMagicBytes } from '../middleware/uploadMiddleware';
 import { isValidIndianPhone, formatIndianPhone, sanitizeIndianPhone } from '../utils/phoneUtils';
 import { sendVerificationOtpEmail } from '../utils/emailService';
+import {
+  recordFailedVerificationAttempt,
+  getVerificationLockout,
+  clearVerificationState,
+  checkResendCooldown,
+  recordResendAttempt,
+} from '../utils/otpSecurity';
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -148,10 +155,65 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
     const existingUser = await prisma.user.findUnique({
       where: { email: cleanEmail },
+      include: { patientProfile: true, doctorProfile: true },
     });
 
     if (existingUser) {
-      res.status(400).json({ success: false, message: 'An account with this email already exists' });
+      if (existingUser.isEmailVerified) {
+        res.status(400).json({ success: false, message: 'An account with this email already exists' });
+        return;
+      }
+
+      // Existing unverified account: update credentials and allow completing verification!
+      const salt = await bcrypt.genSalt(10);
+      const passwordHash = await bcrypt.hash(password, salt);
+
+      let formattedPhone: string | null = null;
+      const rawPhone = phone || profileData.phone;
+      if (rawPhone !== undefined && rawPhone !== null && String(rawPhone).trim() !== '') {
+        const trimmedPhone = String(rawPhone).trim();
+        if (!isValidIndianPhone(trimmedPhone)) {
+          res.status(400).json({
+            success: false,
+            message: 'Invalid Indian phone number. Please enter a valid 10-digit mobile number (+91).',
+          });
+          return;
+        }
+        formattedPhone = formatIndianPhone(trimmedPhone);
+      }
+
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+      const updatedUser = await prisma.user.update({
+        where: { id: existingUser.id },
+        data: {
+          passwordHash,
+          fullName,
+          phone: formattedPhone || existingUser.phone,
+          role: normalizedRole,
+          emailVerificationOtp: otp,
+          emailVerificationOtpExpiresAt: otpExpiresAt,
+        },
+      });
+
+      sendVerificationOtpEmail(cleanEmail, otp, fullName).catch((mailErr) => {
+        console.error('Async OTP email dispatch failed on unverified re-registration:', mailErr);
+      });
+
+      const { passwordHash: _, ...userWithoutPassword } = updatedUser;
+      res.status(200).json({
+        success: true,
+        requiresVerification: true,
+        email: cleanEmail,
+        message: 'Account registered! A 6-digit verification code has been sent to your email.',
+        data: {
+          requiresVerification: true,
+          email: cleanEmail,
+          user: userWithoutPassword,
+          ...(process.env.NODE_ENV !== 'production' ? { devOtp: otp } : {}),
+        },
+      });
       return;
     }
 
@@ -336,6 +398,9 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       console.error('Async OTP email dispatch failed:', mailErr);
     });
 
+    // Record initial OTP send timestamp to enforce 60s cooldown on immediate resends (FIX-005)
+    recordResendAttempt(cleanEmail);
+
     const { passwordHash: _, ...userWithoutPassword } = newUser;
     res.status(201).json({
       success: true,
@@ -346,6 +411,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         requiresVerification: true,
         email: cleanEmail,
         user: userWithoutPassword,
+        ...(process.env.NODE_ENV !== 'production' ? { devOtp: otp } : {}),
       },
     });
   } catch (error: any) {
@@ -538,6 +604,17 @@ export const verifyEmailOtp = async (req: Request, res: Response): Promise<void>
     const cleanEmail = String(email).toLowerCase().trim();
     const cleanOtp = String(otp).trim();
 
+    // 1. Account-level brute-force lockout check (FIX-005)
+    const lockout = getVerificationLockout(cleanEmail);
+    if (lockout.isLocked) {
+      res.status(429).json({
+        success: false,
+        message: `Too many failed attempts. Your account is temporarily locked for ${Math.ceil(lockout.remainingLockoutSeconds / 60)} minutes. Please try again later or request a new code after the lockout expires.`,
+        remainingSeconds: lockout.remainingLockoutSeconds,
+      });
+      return;
+    }
+
     const user = await prisma.user.findUnique({
       where: { email: cleanEmail },
       include: {
@@ -564,7 +641,8 @@ export const verifyEmailOtp = async (req: Request, res: Response): Promise<void>
     }
 
     if (user.isEmailVerified) {
-      // User is already verified: issue JWT token and log them in
+      // User is already verified: clear any pending verification tracking, issue JWT token and log them in
+      clearVerificationState(cleanEmail);
       const token = jwt.sign(
         {
           id: user.id,
@@ -590,7 +668,20 @@ export const verifyEmailOtp = async (req: Request, res: Response): Promise<void>
     }
 
     if (!user.emailVerificationOtp || user.emailVerificationOtp !== cleanOtp) {
-      res.status(400).json({ success: false, message: 'Invalid verification code. Please check your email and try again.' });
+      const attemptResult = recordFailedVerificationAttempt(cleanEmail);
+      if (attemptResult.isLocked) {
+        res.status(429).json({
+          success: false,
+          message: 'Too many failed verification attempts. Your account has been temporarily locked for 15 minutes. Please try again later or request a new code once unlocked.',
+          remainingSeconds: attemptResult.remainingLockoutSeconds,
+        });
+        return;
+      }
+      res.status(400).json({
+        success: false,
+        message: `Invalid verification code. Please check your email and try again. (${attemptResult.remainingAttempts} ${attemptResult.remainingAttempts === 1 ? 'attempt' : 'attempts'} remaining before temporary lockout)`,
+        remainingAttempts: attemptResult.remainingAttempts,
+      });
       return;
     }
 
@@ -599,7 +690,8 @@ export const verifyEmailOtp = async (req: Request, res: Response): Promise<void>
       return;
     }
 
-    // Mark as verified and clear OTP
+    // Mark as verified and clear OTP & verification attempt state (FIX-005)
+    clearVerificationState(cleanEmail);
     const updatedUser = await prisma.user.update({
       where: { id: user.id },
       data: {
@@ -667,6 +759,29 @@ export const resendEmailOtp = async (req: Request, res: Response): Promise<void>
     }
 
     const cleanEmail = String(email).toLowerCase().trim();
+
+    // 1. Account lockout check: reject resend if account is locked out from failed verification attempts (FIX-005)
+    const lockout = getVerificationLockout(cleanEmail);
+    if (lockout.isLocked) {
+      res.status(429).json({
+        success: false,
+        message: `Account is temporarily locked due to multiple failed verification attempts. Please wait ${Math.ceil(lockout.remainingLockoutSeconds / 60)} minutes before requesting a new code.`,
+        remainingSeconds: lockout.remainingLockoutSeconds,
+      });
+      return;
+    }
+
+    // 2. Resend cooldown check: 60-second delay between resend attempts (FIX-005)
+    const cooldown = checkResendCooldown(cleanEmail, 60);
+    if (!cooldown.allowed) {
+      res.status(429).json({
+        success: false,
+        message: `Please wait ${cooldown.remainingSeconds} seconds before requesting a new verification code.`,
+        remainingSeconds: cooldown.remainingSeconds,
+      });
+      return;
+    }
+
     const user = await prisma.user.findUnique({
       where: { email: cleanEmail },
     });
@@ -692,11 +807,19 @@ export const resendEmailOtp = async (req: Request, res: Response): Promise<void>
       },
     });
 
-    await sendVerificationOtpEmail(cleanEmail, otp, user.fullName);
+    // Record resend timestamp for cooldown tracking (FIX-005)
+    recordResendAttempt(cleanEmail);
+
+    sendVerificationOtpEmail(cleanEmail, otp, user.fullName).catch((mailErr) => {
+      console.error('Async OTP email dispatch failed on resend:', mailErr);
+    });
 
     res.json({
       success: true,
       message: 'A fresh 6-digit verification code has been sent to your email.',
+      data: {
+        ...(process.env.NODE_ENV !== 'production' ? { devOtp: otp } : {}),
+      },
     });
   } catch (error: any) {
     console.error('Resend OTP error:', error);

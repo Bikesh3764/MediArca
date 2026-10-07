@@ -635,11 +635,12 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
             );
           }
 
-          // Highest queue number on this date across appointments to prevent collisions and skip negative pending tokens
+          // Highest queue number on this date across appointments for this clinic (FIX-014)
           const maxQueueAppt = await tx.appointment.findFirst({
             where: {
               doctorId: doctor.id,
               appointmentDate,
+              ...(targetClinicId ? { clinicId: targetClinicId } : {}),
               queueNumber: { gt: 0 },
             },
             orderBy: { queueNumber: 'desc' },
@@ -668,6 +669,8 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
               patientName: patientName ? String(patientName).trim() : null,
               patientAge: patientAge ? String(patientAge).trim() : null,
               patientGender: gender || null,
+              isCheckedIn: true,
+              checkedInAt: new Date(),
             },
             include: {
               doctor: {
@@ -1265,6 +1268,14 @@ export const approveAppointment = async (req: AuthRequest, res: Response): Promi
       }
     }
 
+    if (appointment.status !== 'PENDING_APPROVAL') {
+      res.status(400).json({
+        success: false,
+        message: `Appointment cannot be approved because current status is ${appointment.status}. Only pending booking requests can be approved.`,
+      });
+      return;
+    }
+
     const transition = canTransition(appointment.status, 'WAITING', req.user?.role || 'RECEPTIONIST');
     if (!transition.allowed) {
       res.status(400).json({
@@ -1274,90 +1285,18 @@ export const approveAppointment = async (req: AuthRequest, res: Response): Promi
       return;
     }
 
-    // Atomic transaction: assign real sequential queue token (positive integer), mark WAITING and PAID
+    // Atomic transaction: assign real sequential queue token (positive integer), mark WAITING and PAID, set isCheckedIn: true
     let updated: any;
     let attempts = 0;
     const maxAttempts = 3;
 
     while (attempts < maxAttempts) {
       try {
-        updated = await prisma.$transaction(async (tx) => {
-          // Concurrency control: lock practitioner row for this approval without swallowing errors
-          await tx.$executeRaw`SELECT id FROM "DoctorProfile" WHERE id = ${appointment.doctorId} FOR UPDATE;`;
-
-          // Find max positive queue number on this date
-          const maxQueueAppt = await tx.appointment.findFirst({
-            where: {
-              doctorId: appointment.doctorId,
-              appointmentDate: appointment.appointmentDate,
-              queueNumber: { gt: 0 },
-            },
-            orderBy: { queueNumber: 'desc' },
-            select: { queueNumber: true },
-          });
-
-          const nextToken = (maxQueueAppt?.queueNumber || 0) + 1;
-
-          // Recalculate estimated time based on newly assigned token
-          let slots = parseDoctorSlots(appointment.doctor);
-          const cd =
-            (appointment.doctor as any)?.clinics?.find((c: any) => c.clinicId === appointment.clinicId) ||
-            (appointment.doctor as any)?.clinics?.[0];
-          if (cd?.slots) {
-            try {
-              const p = typeof cd.slots === 'string' ? JSON.parse(cd.slots) : cd.slots;
-              if (Array.isArray(p) && p.length > 0) slots = p;
-            } catch {}
-          }
-          const slot = (appointment.slotId && slots.find((s) => s.id === appointment.slotId)) || slots[0];
-
-          // Check if slot has already reached capacity
-          if (slot && slot.maxPatients) {
-            const confirmedInSlot = await tx.appointment.count({
-              where: {
-                doctorId: appointment.doctorId,
-                appointmentDate: appointment.appointmentDate,
-                status: { in: ['WAITING', 'IN_CONSULTATION', 'COMPLETED'] },
-                ...(slot.id ? { slotId: slot.id } : {}),
-                ...(appointment.clinicId ? { clinicId: appointment.clinicId } : {}),
-              },
-            });
-            if (confirmedInSlot >= slot.maxPatients) {
-              throw new Error(`Cannot approve: checking shift (${slot.name}) has already reached its maximum capacity (${slot.maxPatients} patients).`);
-            }
-          }
-
-          const pace = slot?.avgConsultationMinutes || 3.0;
-
-          // Estimate start time = slot start + (nextToken - 1) * pace
-          let estTime = appointment.estimatedTime;
-          if (slot?.startTime) {
-            const [sh, sm] = slot.startTime.split(':').map(Number);
-            const totalMins = sh * 60 + sm + Math.round((nextToken - 1) * pace);
-            const eh = Math.floor(totalMins / 60) % 24;
-            const em = totalMins % 60;
-            const period = eh >= 12 ? 'PM' : 'AM';
-            const h12 = eh % 12 === 0 ? 12 : eh % 12;
-            estTime = `${String(h12).padStart(2, '0')}:${String(em).padStart(2, '0')} ${period}`;
-          }
-
-          return await tx.appointment.update({
-            where: { id: appointment.id },
-            data: {
-              queueNumber: nextToken,
-              status: 'WAITING',
-              paymentStatus: 'PAID',
-              approvedBy: receptionist.id,
-              approvedAt: new Date(),
-              estimatedTime: estTime,
-            },
-            include: {
-              doctor: { include: { user: { select: { fullName: true } } } },
-              clinic: true,
-              patient: { include: { user: { select: { fullName: true, phone: true } } } },
-            },
-          });
-        });
+        updated = await executeApproveAppointmentTransaction(
+          prisma,
+          appointment.id,
+          receptionist.id
+        );
         break;
       } catch (err: any) {
         attempts++;
@@ -1390,6 +1329,13 @@ export const approveAppointment = async (req: AuthRequest, res: Response): Promi
   } catch (error: any) {
     console.error('approveAppointment error:', error);
     const msg = error?.message || '';
+    if (msg.startsWith('APPOINTMENT_ALREADY_APPROVED:') || msg.includes('cannot be approved again')) {
+      res.status(400).json({
+        success: false,
+        message: 'This appointment has already been approved and cannot be approved again.',
+      });
+      return;
+    }
     if (msg.includes('maximum capacity') || msg.includes('Cannot approve:')) {
       res.status(400).json({ success: false, message: msg });
       return;
@@ -1400,6 +1346,123 @@ export const approveAppointment = async (req: AuthRequest, res: Response): Promi
       ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
     });
   }
+};
+
+export const executeApproveAppointmentTransaction = async (
+  prismaClient: any,
+  appointmentId: string,
+  receptionistId: string
+) => {
+  return await prismaClient.$transaction(async (tx: any) => {
+    // 1. Fetch current appointment state inside transaction
+    const currentAppt = await tx.appointment.findUnique({
+      where: { id: appointmentId },
+      include: {
+        doctor: {
+          include: {
+            user: { select: { fullName: true } },
+            clinics: true,
+          },
+        },
+        clinic: true,
+        patient: {
+          include: {
+            user: { select: { fullName: true, phone: true } },
+          },
+        },
+      },
+    });
+
+    if (!currentAppt) {
+      throw new Error('APPOINTMENT_NOT_FOUND: Appointment not found');
+    }
+
+    // Repeated approval guard: only PENDING_APPROVAL appointments can be approved
+    if (currentAppt.status !== 'PENDING_APPROVAL') {
+      throw new Error(`APPOINTMENT_ALREADY_APPROVED: Appointment is already in '${currentAppt.status}' status and cannot be approved again.`);
+    }
+
+    // Concurrency control: acquire exclusive row lock on DoctorProfile
+    if (typeof tx.$executeRaw === 'function') {
+      await tx.$executeRaw`SELECT id FROM "DoctorProfile" WHERE id = ${currentAppt.doctorId} FOR UPDATE;`;
+    }
+
+    // Find max positive queue number on this date for this clinic (FIX-014)
+    const maxQueueAppt = await tx.appointment.findFirst({
+      where: {
+        doctorId: currentAppt.doctorId,
+        appointmentDate: currentAppt.appointmentDate,
+        ...(currentAppt.clinicId ? { clinicId: currentAppt.clinicId } : {}),
+        queueNumber: { gt: 0 },
+      },
+      orderBy: { queueNumber: 'desc' },
+      select: { queueNumber: true },
+    });
+
+    const nextToken = (maxQueueAppt?.queueNumber || 0) + 1;
+
+    // Recalculate estimated time based on newly assigned token
+    let slots = parseDoctorSlots(currentAppt.doctor);
+    const cd =
+      (currentAppt.doctor as any)?.clinics?.find((c: any) => c.clinicId === currentAppt.clinicId) ||
+      (currentAppt.doctor as any)?.clinics?.[0];
+    if (cd?.slots) {
+      try {
+        const p = typeof cd.slots === 'string' ? JSON.parse(cd.slots) : cd.slots;
+        if (Array.isArray(p) && p.length > 0) slots = p;
+      } catch {}
+    }
+    const slot = (currentAppt.slotId && slots.find((s: any) => s.id === currentAppt.slotId)) || slots[0];
+
+    // Check if slot has already reached capacity
+    if (slot && slot.maxPatients) {
+      const confirmedInSlot = await tx.appointment.count({
+        where: {
+          doctorId: currentAppt.doctorId,
+          appointmentDate: currentAppt.appointmentDate,
+          status: { in: ['WAITING', 'IN_CONSULTATION', 'COMPLETED'] },
+          ...(slot.id ? { slotId: slot.id } : {}),
+          ...(currentAppt.clinicId ? { clinicId: currentAppt.clinicId } : {}),
+        },
+      });
+      if (confirmedInSlot >= slot.maxPatients) {
+        throw new Error(`Cannot approve: checking shift (${slot.name}) has already reached its maximum capacity (${slot.maxPatients} patients).`);
+      }
+    }
+
+    const pace = slot?.avgConsultationMinutes || 3.0;
+
+    // Estimate start time = slot start + (nextToken - 1) * pace
+    let estTime = currentAppt.estimatedTime;
+    if (slot?.startTime) {
+      const [sh, sm] = slot.startTime.split(':').map(Number);
+      const totalMins = sh * 60 + sm + Math.round((nextToken - 1) * pace);
+      const eh = Math.floor(totalMins / 60) % 24;
+      const em = totalMins % 60;
+      const period = eh >= 12 ? 'PM' : 'AM';
+      const h12 = eh % 12 === 0 ? 12 : eh % 12;
+      estTime = `${String(h12).padStart(2, '0')}:${String(em).padStart(2, '0')} ${period}`;
+    }
+
+    return await tx.appointment.update({
+      where: { id: appointmentId },
+      data: {
+        queueNumber: nextToken,
+        status: 'WAITING',
+        paymentStatus: 'PAID',
+        approvedBy: receptionistId,
+        approvedAt: new Date(),
+        estimatedTime: estTime,
+        isCheckedIn: true,
+        checkedInAt: new Date(),
+      },
+      include: {
+        doctor: { include: { user: { select: { fullName: true } } } },
+        clinic: true,
+        patient: { include: { user: { select: { fullName: true, phone: true } } } },
+      },
+    });
+  });
 };
 
 /**
@@ -1652,10 +1715,18 @@ export const rescheduleAppointment = async (req: AuthRequest, res: Response): Pr
       return;
     }
 
-    if (['COMPLETED', 'CANCELLED', 'REJECTED'].includes(appointment.status)) {
+    if (['COMPLETED', 'CANCELLED', 'REJECTED', 'EXPIRED', 'IN_CONSULTATION'].includes(appointment.status)) {
       res.status(400).json({
         success: false,
         message: `Cannot reschedule appointment with status '${appointment.status}'`,
+      });
+      return;
+    }
+
+    if (newDate === appointment.appointmentDate && (!newSlotId || newSlotId === appointment.slotId)) {
+      res.status(400).json({
+        success: false,
+        message: 'Appointment is already scheduled for this date and time slot',
       });
       return;
     }
@@ -1670,16 +1741,84 @@ export const rescheduleAppointment = async (req: AuthRequest, res: Response): Pr
         updatedAppt = await prisma.$transaction(async (tx) => {
           await tx.$executeRaw`SELECT id FROM "DoctorProfile" WHERE id = ${appointment.doctorId} FOR UPDATE;`;
 
+          // Check if patient already has an active appointment with this doctor on target date (FIX-010)
+          const duplicate = await tx.appointment.findFirst({
+            where: {
+              id: { not: appointment.id },
+              patientId: appointment.patientId,
+              doctorId: appointment.doctorId,
+              appointmentDate: newDate,
+              isForOther: Boolean(appointment.isForOther),
+              ...(appointment.isForOther && appointment.patientName
+                ? { patientName: { equals: String(appointment.patientName).trim(), mode: 'insensitive' } }
+                : {}),
+              status: { in: ['PENDING_APPROVAL', 'WAITING', 'IN_CONSULTATION'] },
+            },
+            select: { id: true, queueNumber: true, status: true, slotId: true },
+          });
+
+          if (duplicate) {
+            let isDuplicateExpired = false;
+            if (duplicate.status === 'PENDING_APPROVAL') {
+              if (newDate < istTodayStr) {
+                isDuplicateExpired = true;
+              } else if (newDate === istTodayStr) {
+                let activeSlots = parseDoctorSlots(appointment.doctor);
+                const cd =
+                  appointment.doctor?.clinics?.find((c: any) => c.clinicId === appointment.clinicId) ||
+                  appointment.doctor?.clinics?.[0];
+                if (cd?.slots) {
+                  try {
+                    const parsed = typeof cd.slots === 'string' ? JSON.parse(cd.slots) : cd.slots;
+                    if (Array.isArray(parsed) && parsed.length > 0) activeSlots = parsed;
+                  } catch {}
+                }
+                const prevSlot = (duplicate.slotId && activeSlots.find((s) => s.id === duplicate.slotId)) || activeSlots[0];
+                if (prevSlot) {
+                  const now = new Date();
+                  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+                  const prevStartMins = timeToMinutes(prevSlot.startTime);
+                  let prevEndMins = timeToMinutes(prevSlot.endTime);
+                  if (prevEndMins <= prevStartMins) prevEndMins += 24 * 60;
+                  if (currentMinutes >= prevEndMins) {
+                    isDuplicateExpired = true;
+                  }
+                }
+              }
+            }
+
+            if (isDuplicateExpired) {
+              await tx.appointment.update({
+                where: { id: duplicate.id },
+                data: { status: 'EXPIRED' },
+              });
+            } else {
+              const recipient = appointment.isForOther && appointment.patientName
+                ? `for ${appointment.patientName}`
+                : 'for this patient';
+              const isPending = duplicate.status === 'PENDING_APPROVAL';
+              const message = isPending
+                ? `The patient already has an active booking request ${recipient} awaiting approval with this doctor on this date.`
+                : `The patient already has an active booking (Queue #${duplicate.queueNumber}) ${recipient} with this doctor on this date.`;
+              const err: any = new Error(`DUPLICATE_BOOKING: ${message}`);
+              err.status = 400;
+              throw err;
+            }
+          }
+
           const isPending =
             appointment.status === 'PENDING_APPROVAL' ||
             appointment.paymentStatus !== 'PAID';
           let nextQueueNumber: number;
+
+          const clinicFilter = appointment.clinicId ? { clinicId: appointment.clinicId } : {};
 
           if (isPending) {
             const minQueue = await tx.appointment.findFirst({
               where: {
                 doctorId: appointment.doctorId,
                 appointmentDate: newDate,
+                ...clinicFilter,
                 queueNumber: { lt: 0 },
               },
               orderBy: { queueNumber: 'asc' },
@@ -1691,6 +1830,7 @@ export const rescheduleAppointment = async (req: AuthRequest, res: Response): Pr
               where: {
                 doctorId: appointment.doctorId,
                 appointmentDate: newDate,
+                ...clinicFilter,
                 queueNumber: { gt: 0 },
               },
               orderBy: { queueNumber: 'desc' },
@@ -1730,6 +1870,7 @@ export const rescheduleAppointment = async (req: AuthRequest, res: Response): Pr
               estimatedTime,
               status: isPending ? 'PENDING_APPROVAL' : 'WAITING',
               isCheckedIn: false, // Reset arrival for new date
+              checkedInAt: null,
             },
             include: {
               doctor: { include: { user: { select: { fullName: true } } } },
@@ -1740,6 +1881,9 @@ export const rescheduleAppointment = async (req: AuthRequest, res: Response): Pr
         });
         break;
       } catch (err: any) {
+        if (err.status === 400 || err.message?.startsWith('DUPLICATE_BOOKING:')) {
+          throw err;
+        }
         attempts++;
         if (attempts >= maxAttempts) throw err;
         await new Promise((r) => setTimeout(r, 100 * attempts));
@@ -1773,6 +1917,16 @@ export const rescheduleAppointment = async (req: AuthRequest, res: Response): Pr
     });
   } catch (error: any) {
     console.error('rescheduleAppointment error:', error);
+    if (error.status === 400 || error.message?.startsWith('DUPLICATE_BOOKING:')) {
+      const cleanMessage = error.message?.startsWith('DUPLICATE_BOOKING:')
+        ? error.message.replace('DUPLICATE_BOOKING: ', '')
+        : error.message;
+      res.status(400).json({
+        success: false,
+        message: cleanMessage,
+      });
+      return;
+    }
     res.status(500).json({
       success: false,
       message: error.message || 'Failed to reschedule appointment',

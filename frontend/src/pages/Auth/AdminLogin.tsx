@@ -52,11 +52,11 @@ export const AdminLogin: React.FC = () => {
 
         <h1 className="text-2xl font-bold tracking-tight text-white flex items-center justify-center gap-2">
           MediArca Terminal
-          <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+          <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
             Root Admin
           </span>
         </h1>
-        <p className="mt-2 text-xs text-neutral-400 font-mono">
+        <p className="mt-2 text-xs text-neutral-400">
           Authorized administrator access only
         </p>
       </div>
@@ -82,7 +82,7 @@ export const AdminLogin: React.FC = () => {
 
           <form onSubmit={handleAdminSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-medium text-neutral-300 mb-1.5 font-mono">
+              <label className="block text-xs font-semibold text-neutral-300 mb-1.5 tracking-wide">
                 ADMINISTRATOR EMAIL
               </label>
               <div className="relative">
@@ -92,14 +92,14 @@ export const AdminLogin: React.FC = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="admin@mediarca.com"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#0d1117] border border-white/15 text-white placeholder-neutral-600 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-all font-mono"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#0d1117] border border-white/15 text-white placeholder-neutral-600 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-all"
                   disabled={submitting || authenticated}
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-neutral-300 mb-1.5 font-mono">
+              <label className="block text-xs font-semibold text-neutral-300 mb-1.5 tracking-wide">
                 MASTER ACCESS KEY
               </label>
               <div className="relative">
@@ -109,7 +109,7 @@ export const AdminLogin: React.FC = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••••••"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#0d1117] border border-white/15 text-white placeholder-neutral-600 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-all font-mono pr-10"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#0d1117] border border-white/15 text-white placeholder-neutral-600 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-all pr-10"
                   disabled={submitting || authenticated}
                 />
                 <button
@@ -145,7 +145,7 @@ export const AdminLogin: React.FC = () => {
 
           {/* Security Notice */}
           <div className="mt-6 pt-4 border-t border-white/5 text-center">
-            <p className="text-[11px] text-neutral-500 leading-relaxed font-mono">
+            <p className="text-[11px] text-neutral-500 leading-relaxed">
               Authorized administrator access only.
             </p>
           </div>

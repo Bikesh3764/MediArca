@@ -284,7 +284,7 @@ export const CameraQrScannerModal: React.FC<CameraQrScannerModalProps> = ({
                 value={manualCode}
                 onChange={(e) => setManualCode(e.target.value.replace(/\D/g, ''))}
                 placeholder="e.g. 123456"
-                className="w-full px-4 py-3 rounded-xl border border-[#e5e5ea] text-center font-mono text-lg font-bold tracking-widest text-[#1d1d1f] focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
+                className="w-full px-4 py-3 rounded-xl border border-[#e5e5ea] text-center text-lg font-bold tracking-widest text-[#1d1d1f] focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
                 autoFocus
               />
               <p className="text-[11px] text-[#86868b] mt-1 text-center">

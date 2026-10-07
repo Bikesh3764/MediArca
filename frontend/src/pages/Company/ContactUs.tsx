@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Mail, CheckCircle2, AlertCircle } from 'lucide-react';
 import { api } from '../../services/api';
+import { sanitizeIndianPhone, formatIndianPhone } from '../../utils/phoneUtils';
 
 export const ContactUs: React.FC = () => {
   const [fullName, setFullName] = useState('');
@@ -20,7 +21,7 @@ export const ContactUs: React.FC = () => {
       await api.submitContactMessage({
         fullName,
         email,
-        phone: phone ? phone.trim() : undefined,
+        phone: phone ? formatIndianPhone(phone) : undefined,
         subject,
         message,
       });
@@ -127,14 +128,24 @@ export const ContactUs: React.FC = () => {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-[#1d1d1f]">Phone Number (Optional)</label>
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="e.g. 9876543210"
-                  className="w-full px-4 py-2.5 rounded-xl border border-[#e5e5ea] bg-[#fbfbfd] text-sm focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
-                />
+                <label className="text-xs font-semibold text-[#1d1d1f]">Mobile Number (Optional)</label>
+                <div className="flex rounded-xl border border-[#e5e5ea] overflow-hidden focus-within:ring-2 focus-within:ring-[#0066cc]/20 focus-within:border-[#0066cc] bg-[#fbfbfd] focus-within:bg-white transition-all h-10">
+                  <span className="inline-flex items-center px-3 bg-[#f5f5f7] border-r border-[#e5e5ea] text-[#1d1d1f] font-semibold text-[13px] select-none">
+                    +91
+                  </span>
+                  <input
+                    type="tel"
+                    inputMode="numeric"
+                    value={sanitizeIndianPhone(phone)}
+                    onChange={(e) => {
+                      const digits = sanitizeIndianPhone(e.target.value);
+                      setPhone(digits ? `+91 ${digits}` : '');
+                    }}
+                    placeholder="98765 43210"
+                    maxLength={10}
+                    className="flex-1 h-full px-3.5 text-sm bg-transparent focus:outline-none text-[#1d1d1f] placeholder:text-[#86868b]"
+                  />
+                </div>
               </div>
             </div>
 

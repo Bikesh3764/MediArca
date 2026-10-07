@@ -8,6 +8,8 @@
   html, body {
     overflow-x: hidden;
     max-width: 100vw;
+    touch-action: manipulation;
+    -webkit-overflow-scrolling: touch;
   }
 
   body {
@@ -24,6 +26,27 @@
     letter-spacing: -0.028em;
     font-weight: 600;
   }
+
+  button, a, input, select, textarea {
+    touch-action: manipulation;
+  }
+
+  /* iOS Safari auto-zoom prevention: inputs must have min 16px font size on mobile viewports */
+  @media screen and (max-width: 640px) {
+    input:not([type="checkbox"]):not([type="radio"]),
+    select,
+    textarea {
+      font-size: 16px !important;
+    }
+  }
+}
+
+.pb-safe {
+  padding-bottom: max(env(safe-area-inset-bottom), 1rem);
+}
+
+.pt-safe {
+  padding-top: max(env(safe-area-inset-top), 1rem);
 }
 
 /* Apple Design System Utility Classes */

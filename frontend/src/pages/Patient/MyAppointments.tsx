@@ -6,6 +6,7 @@ import { LiveQueueTicket } from '../../components/queue/LiveQueueTicket';
 import { AppleButton } from '../../components/ui/AppleButton';
 import { Calendar, Plus, RefreshCw, QrCode, CheckCircle2, AlertCircle, X } from 'lucide-react';
 import { CameraQrScannerModal } from '../../components/common/CameraQrScannerModal';
+import { useVisibilityPolling } from '../../utils/useVisibilityPolling';
 
 export const MyAppointments: React.FC = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -39,11 +40,14 @@ export const MyAppointments: React.FC = () => {
     queueMicrotask(() => {
       fetchAppointments();
     });
-
-    // Auto-refresh queue silently every 15 seconds so patient sees live queue position updates without flickering
-    const interval = setInterval(() => fetchAppointments(true), 15000);
-    return () => clearInterval(interval);
   }, [user, loadingAuth, navigate]);
+
+  // Auto-refresh queue silently every 15 seconds only while tab is active/visible (FIX-012)
+  useVisibilityPolling(
+    () => fetchAppointments(true),
+    15000,
+    Boolean(user) && !loadingAuth
+  );
 
   const handleCancel = async (id: string) => {
     if (!window.confirm('Are you sure you want to cancel this appointment queue token?')) return;

@@ -13,12 +13,13 @@ import {
   respondToReceptionistRequest,
 } from '../controllers/clinicController';
 import { authenticate, authorize, requireActiveClinic } from '../middleware/authMiddleware';
+import { publicCache } from '../middleware/cacheMiddleware';
 
 const router = Router();
 
-// Public route to view verified clinic list & clinic details
-router.get('/public', getPublicClinics);
-router.get('/public/:id', getPublicClinicById);
+// Public route to view verified clinic list & clinic details (FIX-015 granular caching)
+router.get('/public', publicCache(60, 30), getPublicClinics);
+router.get('/public/:id', publicCache(60, 30), getPublicClinicById);
 
 // Clinic authenticated operations
 router.use(authenticate, authorize('CLINIC'));

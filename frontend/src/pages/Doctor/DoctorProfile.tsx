@@ -300,14 +300,15 @@ export const DoctorProfile: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-semibold text-[#1d1d1f] mb-1.5">
-                  Primary Phone Number (India)
+                  Mobile Number
                 </label>
-                <div className="flex rounded-xl border border-[#e5e5ea] overflow-hidden focus-within:ring-2 focus-within:ring-[#0066cc]/20 focus-within:border-[#0066cc] transition-all">
-                  <span className="inline-flex items-center px-3 border-r border-[#e5e5ea] bg-[#f5f5f7] text-[#1d1d1f] font-semibold text-xs select-none">
+                <div className="flex rounded-xl border border-[#e5e5ea] overflow-hidden focus-within:ring-2 focus-within:ring-[#0066cc]/20 focus-within:border-[#0066cc] transition-all bg-white">
+                  <span className="inline-flex items-center px-3 border-r border-[#e5e5ea] bg-[#f5f5f7] text-[#1d1d1f] font-semibold text-[13px] select-none">
                     +91
                   </span>
                   <input
                     type="tel"
+                    inputMode="numeric"
                     value={sanitizeIndianPhone(phone)}
                     onChange={(e) => {
                       const val = sanitizeIndianPhone(e.target.value);
@@ -315,7 +316,7 @@ export const DoctorProfile: React.FC = () => {
                     }}
                     placeholder="98765 43210"
                     maxLength={10}
-                    className="w-full h-11 px-3.5 text-xs bg-white text-[#1d1d1f] placeholder:text-[#86868b] focus:outline-none"
+                    className="w-full h-11 px-3.5 text-sm bg-white text-[#1d1d1f] placeholder:text-[#86868b] focus:outline-none"
                   />
                 </div>
               </div>

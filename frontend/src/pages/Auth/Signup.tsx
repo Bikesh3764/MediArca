@@ -273,15 +273,25 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
 
               <div>
                 <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
-                  Mobile (+91)
+                  Mobile Number
                 </label>
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="+91 98765 43210"
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-sm text-[#1d1d1f] font-mono placeholder:text-[#86868b] transition-all focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20 bg-[#fbfbfd] focus:bg-white"
-                />
+                <div className="flex items-center w-full h-11 rounded-xl border border-[#e5e5ea] bg-[#fbfbfd] focus-within:bg-white focus-within:border-[#0088e8] focus-within:ring-2 focus-within:ring-[#0088e8]/20 transition-all overflow-hidden">
+                  <div className="h-full px-3.5 bg-[#f5f5f7] border-r border-[#e5e5ea] flex items-center justify-center select-none text-[13px] font-semibold text-[#1d1d1f]">
+                    +91
+                  </div>
+                  <input
+                    type="tel"
+                    inputMode="numeric"
+                    maxLength={10}
+                    value={sanitizeIndianPhone(phone)}
+                    onChange={(e) => {
+                      const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
+                      setPhone(digits ? `+91 ${digits}` : '');
+                    }}
+                    placeholder="98765 43210"
+                    className="flex-1 h-full px-3.5 bg-transparent text-sm text-[#1d1d1f] placeholder:text-[#86868b] focus:outline-none"
+                  />
+                </div>
               </div>
             </div>
 

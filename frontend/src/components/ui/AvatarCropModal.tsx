@@ -290,7 +290,7 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
           >
             {/* Guide overlay */}
             <div className="absolute inset-0 pointer-events-none z-20 flex flex-col justify-between p-3 border border-black/10 rounded-[20px]">
-              <div className="flex justify-between items-center text-[10px] font-mono font-medium text-[#1d1d1f] bg-white/90 backdrop-blur-md px-2.5 py-0.5 rounded-full border border-black/5 shadow-xs w-fit">
+              <div className="flex justify-between items-center text-[10px] font-medium text-[#1d1d1f] bg-white/90 backdrop-blur-md px-2.5 py-0.5 rounded-full border border-black/5 shadow-xs w-fit">
                 <span className="flex items-center gap-1">
                   <Move className="w-3 h-3 text-[#0088e8]" /> Drag to center face
                 </span>
@@ -305,7 +305,7 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
                   className="rounded-full border border-dashed border-[#0088e8]/40 pointer-events-none"
                 />
               </div>
-              <div className="text-[10px] font-mono text-[#86868b] bg-white/90 backdrop-blur-md px-2 py-0.5 rounded-full border border-black/5 shadow-xs w-fit self-end">
+              <div className="text-[10px] font-medium text-[#86868b] bg-white/90 backdrop-blur-md px-2 py-0.5 rounded-full border border-black/5 shadow-xs w-fit self-end">
                 {selectedRatio === '1:1' ? '1:1 Square' : '4:3 Card'}
               </div>
             </div>
@@ -361,7 +361,7 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
                 className="w-full h-1.5 bg-[#e5e5ea] rounded-full appearance-none accent-[#0088e8] cursor-pointer"
               />
               <ZoomIn className="w-4 h-4 text-[#86868b] shrink-0" />
-              <span className="text-xs font-mono font-medium text-[#1d1d1f] w-14 text-right">
+              <span className="text-xs font-semibold text-[#1d1d1f] w-14 text-right">
                 {Math.round(zoom * 100)}%
               </span>
             </div>

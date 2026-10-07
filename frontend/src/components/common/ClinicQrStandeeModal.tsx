@@ -98,7 +98,7 @@ export const ClinicQrStandeeModal: React.FC<ClinicQrStandeeModalProps> = ({
               <span className="text-[10px] uppercase font-semibold text-[#86868b] tracking-wider block">
                 6-Digit Desk Security Code
               </span>
-              <span className="text-base font-bold font-mono tracking-widest text-[#1d1d1f] mt-0.5 inline-block">
+              <span className="text-base font-bold tracking-widest text-[#1d1d1f] mt-0.5 inline-block">
                 {checkinCode}
               </span>
             </div>

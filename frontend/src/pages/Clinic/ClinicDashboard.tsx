@@ -3,6 +3,7 @@ import { api, ClinicDashboardData, ClinicReceptionistItem, Doctor, getFileUrl, f
 import { useAuth } from '../../context/AuthContext';
 import { AppleButton } from '../../components/ui/AppleButton';
 import { DashboardLayout, DashboardNavItem } from '../../components/layout/DashboardLayout';
+import { sanitizeIndianPhone } from '../../utils/phoneUtils';
 import {
   Users,
   CalendarCheck,
@@ -649,8 +650,65 @@ export const ClinicDashboard: React.FC = () => {
               </AppleButton>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
+            <>
+              {/* Mobile Doctor Cards (< 640px) */}
+              <div className="block sm:hidden space-y-3">
+                {doctors.map((doc) => (
+                  <div key={doc.doctorId} className="p-4 rounded-2xl bg-[#fafafc] border border-[#e5e5ea] space-y-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-white border border-[#e5e5ea] overflow-hidden flex-shrink-0">
+                          {doc.avatarUrl ? (
+                            <img src={getFileUrl(doc.avatarUrl)} alt={doc.fullName} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center font-semibold text-xs text-[#0066cc]">
+                              {doc.fullName[0]}
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <div className="font-semibold text-[#1d1d1f] text-sm">{doc.fullName}</div>
+                          <div className="text-[11px] text-[#86868b]">
+                            {formatDoctorDegrees(doc.qualifications)} • {doc.experienceYears} yrs exp.
+                          </div>
+                        </div>
+                      </div>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-50 text-[#0066cc] border border-blue-100 shrink-0">
+                        {doc.specialty}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2 py-2 border-y border-[#f0f0f2] text-center">
+                      <div>
+                        <div className="text-[10px] text-[#86868b]">Consultation Fee</div>
+                        <div className="font-semibold text-xs text-[#1d1d1f] mt-0.5">₹{doc.consultationFee.toFixed(0)}</div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] text-[#86868b]">Bookings</div>
+                        <div className="font-semibold text-xs text-[#1d1d1f] mt-0.5">{doc.bookingCount}</div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] text-[#86868b]">Revenue</div>
+                        <div className="font-semibold text-xs text-emerald-600 mt-0.5">₹{doc.revenue.toLocaleString()}</div>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end">
+                      <button
+                        onClick={() => handleDetachDoctor(doc.doctorId, doc.fullName)}
+                        className="h-8 px-3 rounded-full text-xs font-medium text-rose-600 hover:bg-rose-50 border border-rose-200 transition-all active:scale-[0.98] inline-flex items-center gap-1.5"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Detach Practitioner</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop Table View (>= 640px) */}
+              <div className="hidden sm:block overflow-x-auto">
+                <table className="w-full text-left text-xs">
                 <thead>
                   <tr className="border-b border-[#e5e5ea] text-[#86868b] font-medium">
                     <th className="pb-3 pl-2">Practitioner</th>
@@ -731,7 +789,8 @@ export const ClinicDashboard: React.FC = () => {
                 </tbody>
               </table>
             </div>
-          )}
+          </>
+        )}
         </div>
 
         {/* Desk Receptionists & Front Staff Section */}
@@ -785,7 +844,7 @@ export const ClinicDashboard: React.FC = () => {
                         </span>
                       </div>
                       <div className="text-[11px] text-[#86868b] mt-0.5">
-                        <span className="font-mono text-[#1d1d1f]">{rec.email}</span>
+                        <span className="font-medium text-[#1d1d1f]">{rec.email}</span>
                         {rec.phone && <span> • {rec.phone}</span>}
                         <span> • Applied {new Date(rec.createdAt).toLocaleDateString()}</span>
                       </div>
@@ -840,8 +899,66 @@ export const ClinicDashboard: React.FC = () => {
               </AppleButton>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
+            <>
+              {/* Mobile Receptionist Cards (< 640px) */}
+              <div className="block sm:hidden space-y-3">
+                {data.receptionists.map((rec) => (
+                  <div key={rec.id} className="p-4 rounded-2xl bg-[#fafafc] border border-[#e5e5ea] space-y-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <h4 className="font-semibold text-[#1d1d1f] text-sm">{rec.fullName}</h4>
+                        <div className="text-[11px] text-[#86868b]">{rec.email}</div>
+                        {rec.phone && <div className="text-[11px] text-[#86868b]">{rec.phone}</div>}
+                      </div>
+                      <div className="text-[10px] text-[#86868b] shrink-0">
+                        {new Date(rec.createdAt).toLocaleDateString()}
+                      </div>
+                    </div>
+
+                    {/* Assigned Doctors */}
+                    <div className="pt-2 border-t border-[#f0f0f2]">
+                      <div className="text-[10px] text-[#86868b] mb-1.5 font-medium">Assigned Practitioners</div>
+                      {(!rec.doctors || rec.doctors.length === 0) ? (
+                        <span className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md font-medium">
+                          No doctors assigned
+                        </span>
+                      ) : (
+                        <div className="flex flex-wrap gap-1.5">
+                          {rec.doctors.map((doc) => (
+                            <span
+                              key={doc.id}
+                              className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-50 text-[#0066cc] border border-blue-100"
+                            >
+                              {cleanDoctorName(doc.fullName)}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#f0f0f2]">
+                      <button
+                        onClick={() => handleOpenEditAssignments(rec)}
+                        className="h-8 px-3 rounded-full text-xs font-medium text-[#0066cc] hover:bg-[#0066cc]/5 border border-[#0066cc]/30 transition-all active:scale-[0.98]"
+                      >
+                        Manage Doctors
+                      </button>
+                      <button
+                        onClick={() => handleRemoveReceptionist(rec.id, rec.fullName)}
+                        className="h-8 px-2.5 rounded-full text-rose-600 hover:bg-rose-50 border border-rose-200 transition-all active:scale-[0.98]"
+                        title="Remove receptionist"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop Table View (>= 640px) */}
+              <div className="hidden sm:block overflow-x-auto">
+                <table className="w-full text-left text-xs">
                 <thead>
                   <tr className="border-b border-[#e5e5ea] text-[#86868b] font-medium">
                     <th className="pb-3 pl-2">Receptionist</th>
@@ -860,7 +977,7 @@ export const ClinicDashboard: React.FC = () => {
                         </div>
                       </td>
                       <td className="py-4 text-[#86868b]">
-                        <div className="text-[11px] text-[#1d1d1f] font-mono">{rec.email}</div>
+                        <div className="text-[11px] text-[#1d1d1f] font-medium">{rec.email}</div>
                         {rec.phone && <div className="text-[10px]">{rec.phone}</div>}
                       </td>
                       <td className="py-4">
@@ -903,7 +1020,8 @@ export const ClinicDashboard: React.FC = () => {
                 </tbody>
               </table>
             </div>
-          )}
+          </>
+        )}
         </div>
 
         {/* 4. Recent Clinic Appointments Table */}
@@ -918,8 +1036,56 @@ export const ClinicDashboard: React.FC = () => {
               <p className="mt-1">When patients book appointments with affiliated practitioners at this clinic, they will appear here.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
+            <>
+              {/* Mobile Recent Appointments Cards (< 640px) */}
+              <div className="block sm:hidden space-y-3">
+                {data.recentAppointments.map((appt) => (
+                  <div key={appt.id} className="p-4 rounded-2xl bg-[#fafafc] border border-[#e5e5ea] space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 rounded-lg bg-[#0066cc]/10 text-[#0066cc] font-bold text-xs">
+                          #{appt.queueNumber}
+                        </span>
+                        <div>
+                          <div className="font-semibold text-sm text-[#1d1d1f]">{appt.patientName}</div>
+                          <div className="text-[10px] text-[#86868b]">{appt.patientPhone}</div>
+                        </div>
+                      </div>
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                          appt.status === 'COMPLETED'
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                            : appt.status === 'IN_CONSULTATION'
+                            ? 'bg-blue-50 text-[#0066cc] border border-blue-200'
+                            : appt.status === 'WAITING'
+                            ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                            : appt.status === 'EXPIRED'
+                            ? 'bg-slate-100 text-slate-600 border border-slate-200'
+                            : appt.status === 'PENDING_APPROVAL'
+                            ? 'bg-amber-500/10 text-amber-800 border border-amber-500/20'
+                            : 'bg-gray-100 text-gray-600'
+                        }`}
+                      >
+                        {appt.status === 'PENDING_APPROVAL' ? 'Pending' : appt.status === 'EXPIRED' ? 'Expired' : appt.status}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs text-[#86868b] pt-2 border-t border-[#f0f0f2]">
+                      <div>{appt.doctorName}</div>
+                      <div className="font-semibold text-[#1d1d1f]">₹{appt.fee}</div>
+                    </div>
+
+                    <div className="flex items-center justify-between text-[11px] text-[#86868b]">
+                      <div>{appt.date}</div>
+                      <div>{appt.estimatedTime || appt.checkingWindow}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop Table View (>= 640px) */}
+              <div className="hidden sm:block overflow-x-auto">
+                <table className="w-full text-left text-xs">
                 <thead>
                   <tr className="border-b border-[#e5e5ea] text-[#86868b] font-medium">
                     <th className="pb-3 pl-2">Token #</th>
@@ -934,7 +1100,7 @@ export const ClinicDashboard: React.FC = () => {
                   {data.recentAppointments.map((appt) => (
                     <tr key={appt.id} className="hover:bg-[#fafafc]">
                       <td className="py-3 pl-2">
-                        <span className="font-mono font-semibold text-[#0066cc]">
+                        <span className="font-bold text-[#0066cc]">
                           #{appt.queueNumber}
                         </span>
                       </td>
@@ -974,14 +1140,17 @@ export const ClinicDashboard: React.FC = () => {
                 </tbody>
               </table>
             </div>
-          )}
+          </>
+        )}
         </div>
       </div>
 
       {/* Onboard Doctor Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-[20px] sm:rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-5 sm:p-8 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-t-[28px] sm:rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-5 sm:p-8 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-8 shadow-2xl max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 duration-300">
+            {/* Apple Drag Handle Pill */}
+            <div className="sm:hidden w-10 h-1 bg-[#d2d2d7] rounded-full mx-auto mb-3" />
             <div className="flex justify-between items-center pb-4 border-b border-[#f0f0f0]">
               <div>
                 <h3 className="text-base font-semibold text-[#1d1d1f]">Onboard Doctor</h3>
@@ -1101,8 +1270,10 @@ export const ClinicDashboard: React.FC = () => {
 
       {/* Provision Receptionist Modal */}
       {showRecModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-[20px] sm:rounded-[24px] border border-[#e5e5ea] max-w-lg w-full p-5 sm:p-8 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-t-[28px] sm:rounded-[24px] border border-[#e5e5ea] max-w-lg w-full p-5 sm:p-8 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-8 shadow-2xl max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 duration-300">
+            {/* Apple Drag Handle Pill */}
+            <div className="sm:hidden w-10 h-1 bg-[#d2d2d7] rounded-full mx-auto mb-3" />
             <div className="flex justify-between items-center pb-4 border-b border-[#f0f0f0]">
               <div>
                 <h3 className="text-base font-semibold text-[#1d1d1f]">Provision Desk Receptionist</h3>
@@ -1172,23 +1343,33 @@ export const ClinicDashboard: React.FC = () => {
                     onChange={(e) => setRecPassword(e.target.value)}
                     placeholder="Min. 8 characters"
                     minLength={8}
-                    className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] font-mono"
+                    className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
                   />
                 </div>
               </div>
 
               <div>
                 <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
-                  Phone Number (Optional)
+                  Mobile Number (Optional)
                 </label>
-                <input
-                  type="tel"
-                  disabled={provisioning}
-                  value={recPhone}
-                  onChange={(e) => setRecPhone(e.target.value)}
-                  placeholder="+1 (555) 000-0000"
-                  className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
-                />
+                <div className="flex rounded-xl border border-[#e5e5ea] overflow-hidden focus-within:ring-2 focus-within:ring-[#0066cc]/20 focus-within:border-[#0066cc] bg-white transition-all h-11">
+                  <span className="inline-flex items-center px-3 bg-[#f5f5f7] border-r border-[#e5e5ea] text-[#1d1d1f] font-semibold text-[13px] select-none">
+                    +91
+                  </span>
+                  <input
+                    type="tel"
+                    inputMode="numeric"
+                    disabled={provisioning}
+                    value={sanitizeIndianPhone(recPhone)}
+                    onChange={(e) => {
+                      const digits = sanitizeIndianPhone(e.target.value);
+                      setRecPhone(digits ? `+91 ${digits}` : '');
+                    }}
+                    placeholder="98765 43210"
+                    maxLength={10}
+                    className="flex-1 h-full px-3.5 text-xs bg-transparent focus:outline-none text-[#1d1d1f] placeholder:text-[#86868b]"
+                  />
+                </div>
               </div>
 
               {/* Doctor Assignments */}
@@ -1267,8 +1448,10 @@ export const ClinicDashboard: React.FC = () => {
 
       {/* Edit Assigned Doctors Modal */}
       {editingRec && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-[20px] sm:rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-5 sm:p-8 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-t-[28px] sm:rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-5 sm:p-8 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-8 shadow-2xl max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 duration-300">
+            {/* Apple Drag Handle Pill */}
+            <div className="sm:hidden w-10 h-1 bg-[#d2d2d7] rounded-full mx-auto mb-3" />
             <div className="flex justify-between items-center pb-4 border-b border-[#f0f0f0]">
               <div>
                 <h3 className="text-base font-semibold text-[#1d1d1f]">Manage Doctor Desk Access</h3>
@@ -1357,8 +1540,10 @@ export const ClinicDashboard: React.FC = () => {
 
       {/* Receptionist Credentials Handover Modal */}
       {createdCredentials && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-[20px] sm:rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-5 sm:p-8 shadow-2xl space-y-5">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-t-[28px] sm:rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-5 sm:p-8 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-8 shadow-2xl space-y-5 max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 duration-300">
+            {/* Apple Drag Handle Pill */}
+            <div className="sm:hidden w-10 h-1 bg-[#d2d2d7] rounded-full mx-auto mb-3" />
             <div className="flex justify-between items-start pb-4 border-b border-[#f0f0f0]">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
@@ -1384,18 +1569,18 @@ export const ClinicDashboard: React.FC = () => {
               </p>
             </div>
 
-            <div className="bg-[#f5f5f7] rounded-2xl p-4 border border-[#e5e5ea] space-y-3 font-mono text-xs">
+            <div className="bg-[#f5f5f7] rounded-2xl p-4 border border-[#e5e5ea] space-y-3 text-xs">
               <div>
-                <span className="text-[10px] text-[#86868b] uppercase tracking-wider font-sans font-semibold block">
+                <span className="text-[10px] text-[#86868b] uppercase tracking-wider font-semibold block">
                   Staff Member Name
                 </span>
-                <span className="text-[#1d1d1f] font-sans font-semibold text-sm">
+                <span className="text-[#1d1d1f] font-semibold text-sm">
                   {createdCredentials.fullName}
                 </span>
               </div>
 
               <div>
-                <span className="text-[10px] text-[#86868b] uppercase tracking-wider font-sans font-semibold block">
+                <span className="text-[10px] text-[#86868b] uppercase tracking-wider font-semibold block">
                   Login Email (Desk ID)
                 </span>
                 <span className="text-[#1d1d1f] select-all bg-white px-2.5 py-1 rounded-lg border border-[#e5e5ea] block mt-0.5 font-bold text-[#0066cc]">
@@ -1404,7 +1589,7 @@ export const ClinicDashboard: React.FC = () => {
               </div>
 
               <div>
-                <span className="text-[10px] text-[#86868b] uppercase tracking-wider font-sans font-semibold block">
+                <span className="text-[10px] text-[#86868b] uppercase tracking-wider font-semibold block">
                   Temporary Password
                 </span>
                 <span className="text-[#1d1d1f] select-all bg-white px-2.5 py-1 rounded-lg border border-[#e5e5ea] block mt-0.5 font-bold">
@@ -1413,10 +1598,10 @@ export const ClinicDashboard: React.FC = () => {
               </div>
 
               <div>
-                <span className="text-[10px] text-[#86868b] uppercase tracking-wider font-sans font-semibold block">
+                <span className="text-[10px] text-[#86868b] uppercase tracking-wider font-semibold block">
                   Portal Login URL
                 </span>
-                <span className="text-[#0066cc] text-[11px] block mt-0.5 select-all font-mono break-all">
+                <span className="text-[#0066cc] text-[11px] block mt-0.5 select-all font-medium break-all">
                   {`${window.location.origin}${window.location.pathname}#/receptionist/login`}
                 </span>
               </div>
@@ -1459,8 +1644,10 @@ export const ClinicDashboard: React.FC = () => {
 
       {/* Review & Approve Incoming Receptionist Modal */}
       {approvingRec && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-[20px] sm:rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-5 sm:p-8 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-t-[28px] sm:rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-5 sm:p-8 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-8 shadow-2xl max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 duration-300">
+            {/* Apple Drag Handle Pill */}
+            <div className="sm:hidden w-10 h-1 bg-[#d2d2d7] rounded-full mx-auto mb-3" />
             <div className="flex justify-between items-center pb-4 border-b border-[#f0f0f0]">
               <div>
                 <h3 className="text-base font-semibold text-[#1d1d1f]">Approve Receptionist Application</h3>
@@ -1480,7 +1667,7 @@ export const ClinicDashboard: React.FC = () => {
             <div className="py-4 space-y-4">
               <div className="p-3 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-xs">
                 <div className="font-semibold text-[#1d1d1f]">{approvingRec.fullName}</div>
-                <div className="text-[11px] text-[#86868b] font-mono">{approvingRec.email}</div>
+                <div className="text-[11px] text-[#86868b] font-medium">{approvingRec.email}</div>
               </div>
 
               <div>
@@ -1565,8 +1752,10 @@ export const ClinicDashboard: React.FC = () => {
 
       {/* Clinic Physical Check-In QR Poster Modal */}
       {showPosterModal && clinic && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-[20px] sm:rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-5 sm:p-6 shadow-2xl relative">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-t-[28px] sm:rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-5 sm:p-6 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-6 shadow-2xl relative max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 duration-300">
+            {/* Apple Drag Handle Pill */}
+            <div className="sm:hidden w-10 h-1 bg-[#d2d2d7] rounded-full mx-auto mb-3" />
             <button
               onClick={() => setShowPosterModal(false)}
               className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors"

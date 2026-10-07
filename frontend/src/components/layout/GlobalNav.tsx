@@ -22,6 +22,7 @@ import {
   Mail,
 } from 'lucide-react';
 import { api, getFileUrl, AppNotification } from '../../services/api';
+import { useVisibilityPolling } from '../../utils/useVisibilityPolling';
 
 const formatNotificationTimeAgo = (dateStr: string): string => {
   try {
@@ -74,9 +75,14 @@ export const GlobalNav: React.FC = () => {
     queueMicrotask(() => {
       fetchNotifications();
     });
-    const interval = setInterval(fetchNotifications, 25000);
-    return () => clearInterval(interval);
   }, [user, fetchNotifications]);
+
+  // Periodic notifications check every 25 seconds only while tab is active/visible (FIX-012)
+  useVisibilityPolling(
+    fetchNotifications,
+    25000,
+    Boolean(user)
+  );
 
   const handleMarkAsRead = async (notificationId: string) => {
     try {

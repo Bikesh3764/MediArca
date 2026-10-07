@@ -480,7 +480,7 @@ export const AdminDashboard: React.FC = () => {
             <Link to="/" className="flex items-center gap-2 hover:opacity-90 transition-opacity" title="Return to Main Website">
               <BrandLogo variant="full" size="md" imgClassName="h-7 w-auto" />
             </Link>
-            <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-700 border border-amber-500/20 text-[11px] font-mono font-semibold">
+            <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-700 border border-amber-500/20 text-[11px] font-semibold">
               <Shield className="w-3 h-3 text-amber-600" />
               Root Admin Console
             </span>
@@ -1400,7 +1400,7 @@ export const AdminDashboard: React.FC = () => {
                                   <div className="flex items-center gap-2">
                                     <h4 className="text-sm font-bold text-[#1d1d1f]">{formatDisplayDate(dateStr)}</h4>
                                     {getDateBadge(dateStr)}
-                                    <span className="text-xs font-mono text-[#86868b]">({dateStr})</span>
+                                    <span className="text-xs text-[#86868b]">({dateStr})</span>
                                   </div>
                                   <p className="text-[11px] text-[#86868b] mt-0.5">
                                     {items.length} booking{items.length !== 1 ? 's' : ''} scheduled • {waitingCount} waiting • {completedCount} completed
@@ -1925,7 +1925,7 @@ export const AdminDashboard: React.FC = () => {
                   </div>
                   <div>
                     <span className="text-[#86868b] block text-[10px]">Direct Email:</span>
-                    <span className="font-mono">{selectedClinic.user?.email || 'N/A'}</span>
+                    <span className="font-medium text-[#1d1d1f]">{selectedClinic.user?.email || 'N/A'}</span>
                   </div>
                   <div>
                     <span className="text-[#86868b] block text-[10px]">Facility Phone:</span>
@@ -2073,13 +2073,13 @@ export const AdminDashboard: React.FC = () => {
                   </div>
                   <div>
                     <span className="text-[#86868b] block text-[10px]">Contact Phone:</span>
-                    <span className="font-mono text-[#1d1d1f]">
+                    <span className="font-medium text-[#1d1d1f]">
                       {selectedAppointment.patient?.user?.phone || 'Not Provided'}
                     </span>
                   </div>
                   <div>
                     <span className="text-[#86868b] block text-[10px]">Email Address:</span>
-                    <span className="font-mono text-[#1d1d1f] truncate block">
+                    <span className="font-medium text-[#1d1d1f] truncate block">
                       {selectedAppointment.patient?.user?.email || 'N/A'}
                     </span>
                   </div>

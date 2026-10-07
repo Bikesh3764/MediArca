@@ -11,6 +11,7 @@ import {
   minutesTo12Hour,
 } from '../utils/scheduleUtils';
 import { isDoctorEligibleForClinicalPractice, verifyReceptionistDoctorAccess } from '../utils/authGuards';
+import { parsePaginationParams, buildPaginationMetadata } from '../utils/pagination';
 
 export const formatDoctorClinics = (doc: any) => {
   return (doc.clinics || []).map((cd: any) => {
@@ -32,11 +33,14 @@ export const formatDoctorClinics = (doc: any) => {
     const receptionists = activeReceptionists.map((r: any) => ({
       id: r.id,
       name: r.user?.fullName || 'Reception Desk',
-      phone: r.phone || r.user?.phone || null,
     }));
+
+    // Exclude raw clinic.receptionists from public clinic projection (FIX-006)
+    const { receptionists: _clinicRecs, ...cleanClinic } = cd.clinic || {};
 
     return {
       ...cd,
+      clinic: cleanClinic,
       consultationFee: cd.consultationFee ?? doc.consultationFee,
       slots: clinicSlots,
       receptionists,
@@ -131,39 +135,45 @@ export const getDoctors = async (req: Request, res: Response): Promise<void> => 
       ];
     }
 
-    let orderBy: any = { rating: 'desc' };
-    if (sortBy === 'fee_low') orderBy = { consultationFee: 'asc' };
-    if (sortBy === 'fee_high') orderBy = { consultationFee: 'desc' };
-    if (sortBy === 'experience') orderBy = { experienceYears: 'desc' };
-    if (sortBy === 'rating') orderBy = { rating: 'desc' };
+    let orderBy: any[] = [{ rating: 'desc' }, { id: 'asc' }];
+    if (sortBy === 'fee_low') orderBy = [{ consultationFee: 'asc' }, { id: 'asc' }];
+    if (sortBy === 'fee_high') orderBy = [{ consultationFee: 'desc' }, { id: 'asc' }];
+    if (sortBy === 'experience') orderBy = [{ experienceYears: 'desc' }, { id: 'asc' }];
+    if (sortBy === 'rating') orderBy = [{ rating: 'desc' }, { id: 'asc' }];
 
-    const doctors = await prisma.doctorProfile.findMany({
-      where: whereClause,
-      include: {
-        user: {
-          select: {
-            id: true,
-            fullName: true,
-            email: true,
-            avatarUrl: true,
+    const { page, limit, skip } = parsePaginationParams(req.query, 20, 50);
+
+    const [total, doctors] = await prisma.$transaction([
+      prisma.doctorProfile.count({ where: whereClause }),
+      prisma.doctorProfile.findMany({
+        where: whereClause,
+        include: {
+          user: {
+            select: {
+              id: true,
+              fullName: true,
+              avatarUrl: true,
+            },
+          },
+          clinics: {
+            where: { clinic: { isVerified: true, verificationStatus: 'VERIFIED' }, status: { in: ['ACTIVE', 'ACCEPTED'] } },
+            include: {
+              clinic: true,
+            },
+          },
+          reviews: {
+            take: 3,
+            orderBy: { createdAt: 'desc' },
+            include: {
+              patientUser: { select: { fullName: true, avatarUrl: true } },
+            },
           },
         },
-        clinics: {
-          where: { clinic: { isVerified: true, verificationStatus: 'VERIFIED' }, status: { in: ['ACTIVE', 'ACCEPTED'] } },
-          include: {
-            clinic: true,
-          },
-        },
-        reviews: {
-          take: 3,
-          orderBy: { createdAt: 'desc' },
-          include: {
-            patientUser: { select: { fullName: true, avatarUrl: true } },
-          },
-        },
-      },
-      orderBy,
-    });
+        orderBy,
+        skip,
+        take: limit,
+      }),
+    ]);
 
     const enrichedDoctors = doctors.map((doc) => ({
       ...doc,
@@ -178,7 +188,12 @@ export const getDoctors = async (req: Request, res: Response): Promise<void> => 
       })),
     }));
 
-    res.json({ success: true, count: enrichedDoctors.length, data: enrichedDoctors });
+    res.json({
+      success: true,
+      count: enrichedDoctors.length,
+      data: enrichedDoctors,
+      pagination: buildPaginationMetadata(total, page, limit),
+    });
   } catch (error: any) {
     console.error('getDoctors error:', error);
     res.status(500).json({
@@ -213,7 +228,6 @@ export const getDoctorById = async (req: Request, res: Response): Promise<void> 
                     select: {
                       id: true,
                       fullName: true,
-                      phone: true,
                     },
                   },
                   doctors: {
@@ -237,7 +251,6 @@ export const getDoctorById = async (req: Request, res: Response): Promise<void> 
                 select: {
                   id: true,
                   fullName: true,
-                  phone: true,
                 },
               },
               clinic: {
@@ -289,20 +302,23 @@ export const getDoctorById = async (req: Request, res: Response): Promise<void> 
       }
     }
 
+    // Exclude personal phone numbers from public receptionist staff projection (FIX-006)
     const doctorReceptionists = (doctor.receptionists || [])
       .filter((dr: any) => dr.status === 'ACTIVE' || !dr.status)
       .map((dr: any) => ({
         id: dr.receptionist?.id,
         name: dr.receptionist?.user?.fullName || 'Reception Desk',
-        phone: dr.receptionist?.phone || dr.receptionist?.user?.phone || null,
         clinicId: dr.receptionist?.clinicId,
         clinicName: dr.receptionist?.clinic?.clinicName,
       }));
 
+    // Exclude raw relational receptionists from root spread to prevent data leakage (FIX-006)
+    const { receptionists: _rawDocRecs, ...doctorClean } = doctor;
+
     res.json({
       success: true,
       data: {
-        ...doctor,
+        ...doctorClean,
         slots: parseDoctorSlots(doctor),
         clinics: formatDoctorClinics(doctor),
         receptionists: doctorReceptionists,

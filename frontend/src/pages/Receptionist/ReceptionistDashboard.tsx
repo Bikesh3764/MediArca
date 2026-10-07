@@ -9,6 +9,7 @@ import {
   QueuePreview,
 } from '../../services/api';
 import { sanitizeIndianPhone, formatIndianPhone, isValidIndianPhone } from '../../utils/phoneUtils';
+import { useVisibilityPolling } from '../../utils/useVisibilityPolling';
 import { useAuth } from '../../context/AuthContext';
 import { AppleButton } from '../../components/ui/AppleButton';
 import { DashboardLayout, DashboardNavItem } from '../../components/layout/DashboardLayout';
@@ -252,14 +253,15 @@ export const ReceptionistDashboard: React.FC = () => {
     };
   }, [fetchDeskData]);
 
-  // Periodic real-time sync for notifications and desk queues
-  useEffect(() => {
-    const interval = setInterval(() => {
+  // Periodic real-time sync for notifications and desk queues only while tab is active/visible (FIX-012)
+  useVisibilityPolling(
+    () => {
       fetchNotifications();
       fetchPendingAppointments();
-    }, 15000);
-    return () => clearInterval(interval);
-  }, [fetchNotifications, fetchPendingAppointments]);
+    },
+    15000,
+    Boolean(user) && user?.role?.toUpperCase() === 'RECEPTIONIST'
+  );
 
   // Fetch queue when queueDoctorId or queueDate changes
   const fetchQueue = useCallback(async (docId?: string, dateStr?: string) => {
@@ -1064,17 +1066,23 @@ export const ReceptionistDashboard: React.FC = () => {
 
                     <div>
                       <label className="block text-[13px] font-semibold text-[#1d1d1f] mb-1">
-                        Contact Phone *
+                        Mobile Number *
                       </label>
-                      <input
-                        type="tel"
-                        required
-                        value={patientPhone}
-                        onChange={(e) => setPatientPhone(sanitizeIndianPhone(e.target.value))}
-                        placeholder="10-digit mobile number"
-                        maxLength={10}
-                        className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-sm bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
-                      />
+                      <div className="flex rounded-xl border border-[#e5e5ea] overflow-hidden focus-within:ring-2 focus-within:ring-[#0066cc]/20 focus-within:border-[#0066cc] bg-white transition-all h-11">
+                        <span className="inline-flex items-center px-3 bg-[#f5f5f7] border-r border-[#e5e5ea] text-[#1d1d1f] font-semibold text-[13px] select-none">
+                          +91
+                        </span>
+                        <input
+                          type="tel"
+                          inputMode="numeric"
+                          required
+                          value={sanitizeIndianPhone(patientPhone)}
+                          onChange={(e) => setPatientPhone(sanitizeIndianPhone(e.target.value))}
+                          placeholder="98765 43210"
+                          maxLength={10}
+                          className="flex-1 h-full px-3.5 text-sm bg-transparent focus:outline-none text-[#1d1d1f] placeholder:text-[#86868b]"
+                        />
+                      </div>
                     </div>
                   </div>
 
@@ -1562,8 +1570,181 @@ export const ReceptionistDashboard: React.FC = () => {
                 const isDoctorAway = queueDoctor?.cabinStatus && queueDoctor.cabinStatus !== 'IN_CABIN';
 
                 return (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs">
+                  <>
+                    {/* Mobile Responsive Cards (< 640px) */}
+                    <div className="block sm:hidden space-y-3">
+                      {filteredAppointments.map((appt) => (
+                        <div key={appt.id} className="p-4 rounded-2xl bg-white border border-[#e5e5ea] shadow-xs space-y-3">
+                          {/* Header: Token + Patient Name + Status */}
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-xl bg-[#0066cc]/10 text-[#0066cc] font-bold text-sm border border-[#0066cc]/20">
+                                #{appt.queueNumber}
+                              </span>
+                              <div>
+                                <h4 className="font-semibold text-sm text-[#1d1d1f] leading-snug">{appt.patientName}</h4>
+                                <div className="text-xs text-[#86868b]">{appt.patientPhone}</div>
+                              </div>
+                            </div>
+                            <span
+                              className={`px-2.5 py-1 rounded-full text-[10px] font-semibold border ${
+                                appt.status === 'COMPLETED'
+                                  ? 'bg-[#f5f5f7] text-[#86868b] border-[#e5e5ea]'
+                                  : appt.status === 'IN_CONSULTATION'
+                                  ? 'bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20'
+                                  : appt.status === 'WAITING'
+                                  ? 'bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea]'
+                                  : appt.status === 'EXPIRED'
+                                  ? 'bg-slate-100 text-slate-600 border border-slate-200'
+                                  : 'bg-[#f5f5f7] text-gray-500 border-[#e5e5ea]'
+                              }`}
+                            >
+                              {appt.status === 'EXPIRED' ? 'Expired' : appt.status.replace('_', ' ')}
+                            </span>
+                          </div>
+
+                          {/* Meta Row: Time & Reason */}
+                          <div className="flex items-center justify-between text-xs text-[#86868b] pt-1 border-t border-[#f0f0f2]">
+                            <div className="flex items-center gap-1.5 font-medium text-[#1d1d1f]">
+                              <Clock className="w-3.5 h-3.5 text-[#86868b]" />
+                              <span>{appt.estimatedTime || 'Pending'}</span>
+                            </div>
+                            {appt.reasonForVisit && appt.reasonForVisit !== 'General Medical Consultation' && (
+                              <span className="text-[11px] text-[#86868b] truncate max-w-[150px]">{appt.reasonForVisit}</span>
+                            )}
+                          </div>
+
+                          {/* Arrival Toggle & Actions Bar */}
+                          <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#f0f0f2]">
+                            {/* Arrival button */}
+                            <button
+                              type="button"
+                              disabled={togglingCheckinId === appt.id || ['EXPIRED', 'CANCELLED', 'REJECTED'].includes(appt.status)}
+                              onClick={() => handleToggleCheckIn(appt.id, appt.isCheckedIn)}
+                              className={`h-9 px-3 rounded-full text-xs font-semibold inline-flex items-center gap-1.5 transition-all cursor-pointer ${
+                                ['EXPIRED', 'CANCELLED', 'REJECTED'].includes(appt.status)
+                                  ? 'bg-slate-50 text-slate-400 border border-slate-200 cursor-not-allowed opacity-60'
+                                  : appt.isCheckedIn
+                                  ? 'bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/25'
+                                  : 'bg-slate-100 text-slate-700 border border-slate-300'
+                              }`}
+                            >
+                              {togglingCheckinId === appt.id ? (
+                                <span className="w-3.5 h-3.5 rounded-full border-2 border-current border-t-transparent animate-spin inline-block"></span>
+                              ) : appt.isCheckedIn ? (
+                                <>
+                                  <span className="w-2 h-2 rounded-full bg-[#0066cc]"></span>
+                                  <span>At Clinic</span>
+                                </>
+                              ) : (
+                                <>
+                                  <span className="w-2 h-2 rounded-full bg-gray-300"></span>
+                                  <span>Mark Arrived</span>
+                                </>
+                              )}
+                            </button>
+
+                            {/* Action Buttons */}
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              {appt.status === 'WAITING' && (
+                                isDoctorAway ? (
+                                  <span className="px-3 py-1.5 rounded-full bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea] text-xs font-medium opacity-60">
+                                    Doctor Away
+                                  </span>
+                                ) : !appt.isCheckedIn ? (
+                                  <span className="px-3 py-1.5 rounded-full bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea] text-xs font-medium opacity-60">
+                                    Awaiting
+                                  </span>
+                                ) : (appt.appointmentDate || queueDate) !== getLocalDateString() ? (
+                                  <span className="px-3 py-1.5 rounded-full bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea] text-xs font-medium opacity-60">
+                                    Other Date
+                                  </span>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleStatusChange(appt.id, 'IN_CONSULTATION')}
+                                    className="h-9 px-4 rounded-full bg-[#0066cc] hover:bg-[#0055b3] text-white text-xs font-semibold shadow-xs transition-all active:scale-[0.98] cursor-pointer"
+                                  >
+                                    Call In
+                                  </button>
+                                )
+                              )}
+                              {appt.status === 'IN_CONSULTATION' && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleStatusChange(appt.id, 'COMPLETED')}
+                                  className="h-9 px-4 rounded-full bg-[#1d1d1f] hover:bg-black text-white text-xs font-semibold shadow-xs transition-all active:scale-[0.98] cursor-pointer"
+                                >
+                                  Completed
+                                </button>
+                              )}
+                              {(appt.status === 'WAITING' || appt.status === 'PENDING_APPROVAL') && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const queueDoctor = linkedDoctors.find((d) => d.doctorId === queueDoctorId);
+                                    setRescheduleTarget({
+                                      appointmentId: appt.id,
+                                      patientName: appt.patientName,
+                                      doctorName: queueDoctor?.fullName || 'Practitioner',
+                                      currentDate: queueDate,
+                                      currentQueueNumber: appt.queueNumber,
+                                      doctorId: queueDoctorId,
+                                      slotId: appt.slotId,
+                                    });
+                                    const d = new Date(queueDate);
+                                    d.setDate(d.getDate() + 1);
+                                    setRescheduleDate(getLocalDateString(d));
+                                    setRescheduleSlotId(appt.slotId || '');
+                                    setRescheduleError(null);
+                                  }}
+                                  className="h-9 px-3 rounded-full text-[#0066cc] hover:bg-[#0066cc]/10 text-xs font-medium border border-[#0066cc]/30 transition-all cursor-pointer inline-flex items-center gap-1"
+                                  title="Shift Date"
+                                >
+                                  <Calendar className="w-3.5 h-3.5" />
+                                  <span>Shift</span>
+                                </button>
+                              )}
+                              {appt.status !== 'CANCELLED' && appt.status !== 'COMPLETED' && appt.status !== 'IN_CONSULTATION' && appt.status !== 'EXPIRED' && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleStatusChange(appt.id, 'CANCELLED')}
+                                  className="h-9 px-3 rounded-full text-[#86868b] hover:text-rose-600 hover:bg-rose-50 text-xs font-medium border border-[#e5e5ea] transition-all"
+                                >
+                                  Cancel
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const queueDoctor = linkedDoctors.find((d) => d.doctorId === queueDoctorId);
+                                  setBookedPass({
+                                    queueNumber: appt.queueNumber,
+                                    estimatedTime: appt.estimatedTime,
+                                    checkingWindow: appt.checkingWindow,
+                                    appointmentDate: queueDate,
+                                    patientName: appt.patientName,
+                                    patientPhone: appt.patientPhone,
+                                    doctorName: queueDoctor?.fullName || 'Practitioner',
+                                    doctorSpecialty: queueDoctor?.specialty,
+                                    clinicName: data?.clinic?.clinicName,
+                                    clinicAddress: data?.clinic?.address,
+                                  });
+                                }}
+                                className="w-9 h-9 flex items-center justify-center rounded-full text-[#86868b] hover:text-[#0066cc] hover:bg-gray-100 border border-[#e5e5ea] transition-colors"
+                                title="Reprint Pass"
+                              >
+                                <Printer className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Desktop Table View (>= 640px) */}
+                    <div className="hidden sm:block overflow-x-auto">
+                      <table className="w-full text-left text-xs">
                       <thead>
                         <tr className="border-b border-[#e5e5ea] text-[#86868b] font-medium">
                           <th className="pb-3 pl-2">Token</th>
@@ -1579,7 +1760,7 @@ export const ReceptionistDashboard: React.FC = () => {
                         {filteredAppointments.map((appt) => (
                           <tr key={appt.id} className="hover:bg-[#fafafc]">
                             <td className="py-3 pl-2">
-                              <span className="font-mono font-bold text-sm text-[#0066cc]">
+                              <span className="font-bold text-sm text-[#0066cc]">
                                 #{appt.queueNumber}
                               </span>
                             </td>
@@ -1591,7 +1772,7 @@ export const ReceptionistDashboard: React.FC = () => {
                               )}
                             </td>
 
-                            <td className="py-3 text-[#86868b] font-mono">{appt.patientPhone}</td>
+                            <td className="py-3 text-[#86868b] font-medium">{appt.patientPhone}</td>
 
                             <td className="py-3 text-[#1d1d1f]">
                               <div className="font-medium">{appt.estimatedTime || 'Pending'}</div>
@@ -1762,7 +1943,8 @@ export const ReceptionistDashboard: React.FC = () => {
                       </tbody>
                     </table>
                   </div>
-                );
+                </>
+              );
               })()}
             </div>
           )}
@@ -2021,8 +2203,10 @@ export const ReceptionistDashboard: React.FC = () => {
 
       {/* 3. Guaranteed Queue Token Pass Modal */}
       {bookedPass && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn print:hidden">
-          <div className="bg-white rounded-[20px] sm:rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-5 sm:p-8 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn print:hidden">
+          <div className="bg-white rounded-t-[28px] sm:rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-5 sm:p-8 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-8 shadow-2xl max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 duration-300">
+            {/* Apple Drag Handle Pill */}
+            <div className="sm:hidden w-10 h-1 bg-[#d2d2d7] rounded-full mx-auto mb-3" />
             <div className="text-center pb-4 border-b border-[#f0f0f0]">
               <div className="w-10 h-10 rounded-full bg-[#f5f5f7] text-[#1d1d1f] flex items-center justify-center mx-auto mb-3">
                 <CheckCircle2 className="w-5 h-5 text-[#0066cc]" />
@@ -2036,7 +2220,7 @@ export const ReceptionistDashboard: React.FC = () => {
               <span className="text-xs font-semibold text-[#86868b] uppercase tracking-wider block">
                 Queue Token Number
               </span>
-              <div className="text-5xl font-mono font-bold text-[#0066cc] tracking-tight">
+              <div className="text-5xl font-bold text-[#0066cc] tracking-tight">
                 #{bookedPass.queueNumber}
               </div>
               <div className="pt-2 border-t border-[#e5e5ea] grid grid-cols-2 gap-2 text-xs">
@@ -2103,7 +2287,7 @@ export const ReceptionistDashboard: React.FC = () => {
 
       {/* Dedicated Printable Thermal Token Pass */}
       {bookedPass && (
-        <div className="hidden print:block font-mono text-black p-6 bg-white max-w-xs mx-auto border-2 border-black rounded-xl">
+        <div className="hidden print:block font-sans text-black p-6 bg-white max-w-xs mx-auto border-2 border-black rounded-xl">
           <div className="text-center pb-3 border-b-2 border-dashed border-gray-400">
             <h2 className="text-base font-bold uppercase tracking-wide">
               {bookedPass.clinicName || 'MediArca Clinic'}
@@ -2169,8 +2353,10 @@ export const ReceptionistDashboard: React.FC = () => {
 
       {/* Mandatory Password Change Modal for Provisioned Accounts */}
       {user?.mustChangePassword && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-md animate-fadeIn print:hidden">
-          <div className="bg-white rounded-[20px] sm:rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-5 sm:p-8 shadow-2xl relative text-left">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-md animate-fadeIn print:hidden">
+          <div className="bg-white rounded-t-[28px] sm:rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-5 sm:p-8 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-8 shadow-2xl relative text-left max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 duration-300">
+            {/* Apple Drag Handle Pill */}
+            <div className="sm:hidden w-10 h-1 bg-[#d2d2d7] rounded-full mx-auto mb-3" />
             <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center mx-auto mb-4 border border-amber-500/20">
               <ShieldCheck className="w-6 h-6" />
             </div>
@@ -2269,8 +2455,10 @@ export const ReceptionistDashboard: React.FC = () => {
 
       {/* Reschedule Appointment Modal */}
       {rescheduleTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn print:hidden">
-          <div className="bg-white rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-6 sm:p-7 shadow-2xl space-y-5">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn print:hidden">
+          <div className="bg-white rounded-t-[28px] sm:rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-6 sm:p-7 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-7 shadow-2xl space-y-5 max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 duration-300">
+            {/* Apple Drag Handle Pill */}
+            <div className="sm:hidden w-10 h-1 bg-[#d2d2d7] rounded-full mx-auto mb-3" />
             <div className="flex items-center justify-between pb-3 border-b border-[#f0f0f0]">
               <div className="flex items-center gap-2">
                 <div className="w-9 h-9 rounded-full bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center">

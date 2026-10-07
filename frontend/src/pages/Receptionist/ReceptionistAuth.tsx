@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { AppleButton } from '../../components/ui/AppleButton';
 import { BrandLogo } from '../../components/ui/BrandLogo';
-import { AlertCircle, Sparkles, Mail, Lock, Building2, User, Phone, CheckCircle2, Eye, EyeOff } from 'lucide-react';
+import { AlertCircle, Sparkles, Mail, Lock, Building2, User, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 import { api, ClinicProfile } from '../../services/api';
 import { sanitizeIndianPhone, formatIndianPhone, isValidIndianPhone } from '../../utils/phoneUtils';
 
@@ -413,17 +413,20 @@ export const ReceptionistAuth: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
-                  Contact Mobile (+91)
+                  Mobile Number
                 </label>
-                <div className="relative">
-                  <Phone className="w-4 h-4 text-[#86868b] absolute left-3.5 top-3.5" />
+                <div className="flex rounded-xl border border-[#e5e5ea] overflow-hidden focus-within:ring-2 focus-within:ring-[#0088e8]/20 focus-within:border-[#0088e8] bg-[#f5f5f7] focus-within:bg-white transition-all h-11">
+                  <span className="inline-flex items-center px-3 bg-[#e5e5ea]/50 border-r border-[#e5e5ea] text-[#1d1d1f] font-semibold text-[13px] select-none">
+                    +91
+                  </span>
                   <input
                     type="tel"
-                    value={applyPhone}
+                    inputMode="numeric"
+                    value={sanitizeIndianPhone(applyPhone)}
                     onChange={(e) => setApplyPhone(sanitizeIndianPhone(e.target.value))}
-                    placeholder="10-digit mobile number"
+                    placeholder="98765 43210"
                     maxLength={10}
-                    className="w-full h-11 pl-10 pr-4 rounded-xl border border-[#e5e5ea] text-[14px] bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
+                    className="flex-1 h-full px-3.5 text-[14px] bg-transparent focus:outline-none text-[#1d1d1f] placeholder:text-[#86868b]"
                   />
                 </div>
               </div>

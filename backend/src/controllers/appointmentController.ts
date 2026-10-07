@@ -110,8 +110,9 @@ export const getQueuePreview = async (req: AuthRequest, res: Response): Promise<
               include: {
                 receptionists: {
                   where: { status: 'ACTIVE' },
-                  include: {
-                    user: { select: { fullName: true, phone: true } },
+                  select: {
+                    id: true,
+                    status: true,
                     doctors: { select: { doctorId: true, status: true } },
                   },
                 },
@@ -182,11 +183,12 @@ export const getQueuePreview = async (req: AuthRequest, res: Response): Promise<
       },
     });
 
-    // Highest positive queue number on this date across appointments to prevent collisions and skip negative pending tokens
+    // Highest positive queue number on this date across appointments for this clinic (FIX-014)
     const maxQueueAppt = await prisma.appointment.findFirst({
       where: {
         doctorId: doctor.id,
         appointmentDate: dateStr,
+        ...(selectedAffiliation?.clinicId ? { clinicId: selectedAffiliation.clinicId } : {}),
         queueNumber: { gt: 0 },
       },
       orderBy: { queueNumber: 'desc' },
@@ -743,13 +745,16 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
           const status = isPatientBooking ? 'PENDING_APPROVAL' : 'WAITING';
           const paymentStatus = isPatientBooking ? 'PENDING' : 'PAID';
 
+          const clinicFilter = targetClinicId ? { clinicId: targetClinicId } : {};
+
           let queueNumber: number;
           if (isPatientBooking) {
-            // Negative provisional queue token strictly within PostgreSQL 32-bit signed integer range to prevent DB overflow
+            // Negative provisional queue token strictly within PostgreSQL 32-bit signed integer range to prevent DB overflow (FIX-014 scoped by clinic)
             const minQueueAppt = await tx.appointment.findFirst({
               where: {
                 doctorId: doctor.id,
                 appointmentDate,
+                ...clinicFilter,
                 queueNumber: { lt: 0 },
               },
               orderBy: { queueNumber: 'asc' },
@@ -757,11 +762,12 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
             });
             queueNumber = minQueueAppt ? minQueueAppt.queueNumber - 1 : -1;
           } else {
-            // Direct practitioner / walk-in booking: query max positive queue number
+            // Direct practitioner / walk-in booking: query max positive queue number (FIX-014 scoped by clinic)
             const maxQueueAppt = await tx.appointment.findFirst({
               where: {
                 doctorId: doctor.id,
                 appointmentDate,
+                ...clinicFilter,
                 queueNumber: { gt: 0 },
               },
               orderBy: { queueNumber: 'desc' },
@@ -789,6 +795,8 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
               patientName: (isForOther && patientName) || (req.user?.role === 'DOCTOR' && patientName) ? String(patientName).trim() : null,
               patientAge: patientAge ? String(patientAge).trim() : null,
               patientGender: patientGender || null,
+              isCheckedIn: !isPatientBooking,
+              checkedInAt: !isPatientBooking ? new Date() : null,
             },
             include: {
               doctor: {
@@ -903,6 +911,7 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
         where: {
           doctorId: doctor.id,
           appointmentDate,
+          ...(newAppointment.clinicId ? { clinicId: newAppointment.clinicId } : {}),
           queueNumber: { gt: 0 },
           ...(chosenSlot?.id ? { slotId: chosenSlot.id } : {}),
         },
@@ -1034,6 +1043,7 @@ export const getAppointmentById = async (req: AuthRequest, res: Response): Promi
         where: {
           doctorId: appointment.doctorId,
           appointmentDate: appointment.appointmentDate,
+          ...(appointment.clinicId ? { clinicId: appointment.clinicId } : {}),
           queueNumber: { gt: 0 },
           ...(appointment.slotId ? { slotId: appointment.slotId } : {}),
         },

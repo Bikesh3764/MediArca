@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -28,6 +29,8 @@ model User {
   receptionistProfile ReceptionistProfile?
   reviews             Review[]
   notifications       Notification[]
+
+  @@index([phone])
 }
 
 model DoctorProfile {
@@ -59,6 +62,8 @@ model DoctorProfile {
   receptionists         DoctorReceptionist[]
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt
+
+  @@index([isVerified, specialty])
 }
 
 model PatientProfile {
@@ -110,10 +115,12 @@ model Appointment {
 
   review          Review?
 
-  @@unique([doctorId, appointmentDate, queueNumber])
+  @@unique([clinicId, doctorId, appointmentDate, queueNumber])
   @@index([patientId])
   @@index([doctorId, appointmentDate])
+  @@index([doctorId, appointmentDate, status])
   @@index([clinicId, appointmentDate])
+  @@index([clinicId, status, appointmentDate])
   @@index([status])
   @@index([appointmentDate])
 }
@@ -164,6 +171,9 @@ model ClinicProfile {
   appointments Appointment[]
   createdAt    DateTime              @default(now())
   updatedAt    DateTime              @updatedAt
+
+  @@index([isVerified, city])
+  @@index([isVerified, state])
 }
 
 model ReceptionistProfile {

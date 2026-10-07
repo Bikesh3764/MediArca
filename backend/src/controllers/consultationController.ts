@@ -57,6 +57,11 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
       whereClause.appointmentDate = dateStr;
     }
 
+    const clinicId = req.query.clinicId as string;
+    if (clinicId) {
+      whereClause.clinicId = clinicId;
+    }
+
     const appointments = await prisma.appointment.findMany({
       where: whereClause,
       include: {
@@ -64,6 +69,9 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
           include: {
             user: { select: { fullName: true, email: true, phone: true, avatarUrl: true } },
           },
+        },
+        clinic: {
+          select: { id: true, clinicName: true, address: true, city: true },
         },
       },
       orderBy: scope === 'all-upcoming'
@@ -394,7 +402,7 @@ export const executeCompleteConsultationAtomic = async (
     where: {
       id: appointmentId,
       doctorId,
-      status: 'IN_CONSULTATION',
+      status: { in: ['IN_CONSULTATION', 'WAITING'] },
     },
     data: {
       status: 'COMPLETED',
@@ -467,6 +475,14 @@ export const completeConsultation = async (req: AuthRequest, res: Response): Pro
       return;
     }
 
+    if (targetAppointment.status === 'WAITING' && !targetAppointment.isCheckedIn) {
+      res.status(400).json({
+        success: false,
+        message: 'Patient has not checked in at the clinic yet. Patient must arrive at the clinic before consultation can be completed.',
+      });
+      return;
+    }
+
     let finalNotes = clinicalNotes;
     const notesParts: string[] = [];
     if (diagnosis && diagnosis.trim()) {
@@ -501,7 +517,7 @@ export const completeConsultation = async (req: AuthRequest, res: Response): Pro
       finalNotes = notesParts.join('\n\n');
     }
 
-    // Concurrency: Atomically ensure only appointments actively in IN_CONSULTATION are marked COMPLETED
+    // Concurrency: Atomically ensure only appointments actively in IN_CONSULTATION or WAITING are marked COMPLETED
     const appt = await executeCompleteConsultationAtomic(
       prisma,
       doctor.id,
@@ -515,7 +531,7 @@ export const completeConsultation = async (req: AuthRequest, res: Response): Pro
     if (!appt) {
       res.status(400).json({
         success: false,
-        message: 'Cannot complete consultation: Appointment is no longer in active consultation.',
+        message: 'Cannot complete consultation: Appointment is no longer in waiting or active consultation.',
       });
       return;
     }

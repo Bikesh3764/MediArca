@@ -5,6 +5,7 @@ import prisma from '../config/database';
 import { AuthRequest } from '../middleware/authMiddleware';
 import { isValidIndianPhone, formatIndianPhone, sanitizeIndianPhone } from '../utils/phoneUtils';
 import { createNotification } from '../services/notificationService';
+import { parsePaginationParams, buildPaginationMetadata } from '../utils/pagination';
 
 /**
  * Get profile and statistics for currently authenticated clinic
@@ -679,96 +680,119 @@ export const getPublicClinics = async (req: any, res: Response): Promise<void> =
       ];
     }
 
-    const clinics = await prisma.clinicProfile.findMany({
-      where: whereClause,
-      select: {
-        id: true,
-        clinicName: true,
-        address: true,
-        city: true,
-        state: true,
-        phone: true,
-        isVerified: true,
-        _count: {
-          select: {
-            doctors: {
-              where: {
-                status: { in: ['ACTIVE', 'ACCEPTED'] },
-                doctor: { isVerified: true, verificationStatus: { not: 'SUSPENDED' } },
+    const { page, limit, skip } = parsePaginationParams(req.query, 20, 50);
+
+    const [total, clinics] = await prisma.$transaction([
+      prisma.clinicProfile.count({ where: whereClause }),
+      prisma.clinicProfile.findMany({
+        where: whereClause,
+        select: {
+          id: true,
+          clinicName: true,
+          address: true,
+          city: true,
+          state: true,
+          phone: true,
+          isVerified: true,
+          _count: {
+            select: {
+              doctors: {
+                where: {
+                  status: { in: ['ACTIVE', 'ACCEPTED'] },
+                  doctor: { isVerified: true, verificationStatus: { not: 'SUSPENDED' } },
+                },
               },
             },
           },
-        },
-        doctors: {
-          where: {
-            status: { in: ['ACTIVE', 'ACCEPTED'] },
-            doctor: { isVerified: true, verificationStatus: { not: 'SUSPENDED' } },
-          },
-          select: {
-            id: true,
-            clinicId: true,
-            doctorId: true,
-            status: true,
-            consultationFee: true,
-            slots: true,
-            doctor: {
-              select: {
-                id: true,
-                specialty: true,
-                qualifications: true,
-                experienceYears: true,
-                consultationFee: true,
-                bio: true,
-                clinicAddress: true,
-                isVerified: true,
-                checkingStartTime: true,
-                checkingEndTime: true,
-                avgConsultationMinutes: true,
-                maxDailyPatients: true,
-                rating: true,
-                totalReviews: true,
-                slots: true,
-                user: {
-                  select: {
-                    id: true,
-                    fullName: true,
-                    email: true,
-                    phone: true,
-                    avatarUrl: true,
+          doctors: {
+            where: {
+              status: { in: ['ACTIVE', 'ACCEPTED'] },
+              doctor: { isVerified: true, verificationStatus: { not: 'SUSPENDED' } },
+            },
+            select: {
+              id: true,
+              clinicId: true,
+              doctorId: true,
+              status: true,
+              consultationFee: true,
+              slots: true,
+              doctor: {
+                select: {
+                  id: true,
+                  specialty: true,
+                  qualifications: true,
+                  experienceYears: true,
+                  consultationFee: true,
+                  bio: true,
+                  clinicAddress: true,
+                  isVerified: true,
+                  checkingStartTime: true,
+                  checkingEndTime: true,
+                  avgConsultationMinutes: true,
+                  maxDailyPatients: true,
+                  rating: true,
+                  totalReviews: true,
+                  slots: true,
+                  user: {
+                    select: {
+                      id: true,
+                      fullName: true,
+                      avatarUrl: true,
+                    },
                   },
                 },
               },
             },
           },
-        },
-        receptionists: {
-          where: { status: 'ACTIVE' },
-          select: {
-            id: true,
-            phone: true,
-            user: { select: { fullName: true, phone: true } },
-            doctors: { select: { doctorId: true, status: true } },
+          receptionists: {
+            where: { status: 'ACTIVE' },
+            select: {
+              id: true,
+              doctors: { select: { doctorId: true, status: true } },
+            },
           },
         },
-      },
-      orderBy: { clinicName: 'asc' },
-    });
+        orderBy: [{ clinicName: 'asc' }, { id: 'asc' }],
+        skip,
+        take: limit,
+      }),
+    ]);
 
-    const formattedClinics = clinics.map((c: any) => ({
-      ...c,
-      hasReceptionist: (c.receptionists || []).length > 0,
-      doctors: (c.doctors || []).map((cd: any) => ({
-        ...cd,
-        hasReceptionist: (c.receptionists || []).some((r: any) => {
-          if (!r.doctors || r.doctors.length === 0) return true;
-          return r.doctors.some((d: any) => d.doctorId === cd.doctorId && (d.status === 'ACTIVE' || !d.status));
+    const formattedClinics = clinics.map((c: any) => {
+      // Exclude raw receptionist internal records from public response (FIX-006)
+      const { receptionists: _receptionists, ...cleanClinic } = c;
+      return {
+        ...cleanClinic,
+        hasReceptionist: (c.receptionists || []).length > 0,
+        doctors: (c.doctors || []).map((cd: any) => {
+          const { doctor, ...cleanCd } = cd;
+          const { user, ...cleanDoctor } = doctor || {};
+          return {
+            ...cleanCd,
+            hasReceptionist: (c.receptionists || []).some((r: any) => {
+              if (!r.doctors || r.doctors.length === 0) return true;
+              return r.doctors.some((d: any) => d.doctorId === cd.doctorId && (d.status === 'ACTIVE' || !d.status));
+            }),
+            doctor: {
+              ...cleanDoctor,
+              user: user
+                ? {
+                    id: user.id,
+                    fullName: user.fullName,
+                    avatarUrl: user.avatarUrl,
+                  }
+                : null,
+            },
+          };
         }),
-      })),
-    }));
+      };
+    });
 
     res.json({
       success: true,
+      count: formattedClinics.length,
       data: formattedClinics,
+      pagination: buildPaginationMetadata(total, page, limit),
     });
   } catch (error: any) {
     console.error('getPublicClinics error:', error);
@@ -843,8 +867,6 @@ export const getPublicClinicById = async (req: any, res: Response): Promise<void
                   select: {
                     id: true,
                     fullName: true,
-                    email: true,
-                    phone: true,
                     avatarUrl: true,
                   },
                 },
@@ -856,8 +878,6 @@ export const getPublicClinicById = async (req: any, res: Response): Promise<void
           where: { status: 'ACTIVE' },
           select: {
             id: true,
-            phone: true,
-            user: { select: { fullName: true, phone: true } },
             doctors: { select: { doctorId: true, status: true } },
           },
         },
@@ -869,16 +889,32 @@ export const getPublicClinicById = async (req: any, res: Response): Promise<void
       return;
     }
 
+    // Exclude raw receptionist internal records from public response (FIX-006)
+    const { receptionists: _receptionists, ...cleanClinic } = clinic;
     const formattedClinic = {
-      ...clinic,
+      ...cleanClinic,
       hasReceptionist: (clinic.receptionists || []).length > 0,
-      doctors: (clinic.doctors || []).map((cd: any) => ({
-        ...cd,
-        hasReceptionist: (clinic.receptionists || []).some((r: any) => {
-          if (!r.doctors || r.doctors.length === 0) return true;
-          return r.doctors.some((d: any) => d.doctorId === cd.doctorId && (d.status === 'ACTIVE' || !d.status));
-        }),
-      })),
+      doctors: (clinic.doctors || []).map((cd: any) => {
+        const { doctor, ...cleanCd } = cd;
+        const { user, ...cleanDoctor } = doctor || {};
+        return {
+          ...cleanCd,
+          hasReceptionist: (clinic.receptionists || []).some((r: any) => {
+            if (!r.doctors || r.doctors.length === 0) return true;
+            return r.doctors.some((d: any) => d.doctorId === cd.doctorId && (d.status === 'ACTIVE' || !d.status));
+          }),
+          doctor: {
+            ...cleanDoctor,
+            user: user
+              ? {
+                  id: user.id,
+                  fullName: user.fullName,
+                  avatarUrl: user.avatarUrl,
+                }
+              : null,
+          },
+        };
+      }),
     };
 
     res.json({

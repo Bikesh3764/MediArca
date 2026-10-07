@@ -108,7 +108,7 @@ export const SearchableSpecialtySelect: React.FC<SearchableSpecialtySelectProps>
           </span>
           {counts && counts[value] !== undefined && (
             <span
-              className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+              className={`text-[10px] px-1.5 py-0.2 rounded-full font-semibold ${
                 value && value !== 'All' ? 'bg-[#0088e8]/20 text-[#0088e8]' : 'bg-[#e5e5ea] text-[#86868b]'
               }`}
             >
@@ -206,7 +206,7 @@ export const SearchableSpecialtySelect: React.FC<SearchableSpecialtySelectProps>
                 <div className="flex items-center gap-2">
                   <span>All Specialties</span>
                   {counts && counts['All'] !== undefined && (
-                    <span className="text-[10px] px-1.5 py-0.2 rounded-full font-mono bg-[#e5e5ea] text-[#86868b]">
+                    <span className="text-[10px] px-1.5 py-0.2 rounded-full font-semibold bg-[#e5e5ea] text-[#86868b]">
                       {counts['All']}
                     </span>
                   )}
@@ -251,7 +251,7 @@ export const SearchableSpecialtySelect: React.FC<SearchableSpecialtySelectProps>
                     <div className="flex items-center gap-2 truncate">
                       <span className="truncate">{item}</span>
                       {count !== undefined && (
-                        <span className="text-[10px] px-1.5 py-0.2 rounded-full font-mono bg-[#e5e5ea] text-[#86868b]">
+                        <span className="text-[10px] px-1.5 py-0.2 rounded-full font-semibold bg-[#e5e5ea] text-[#86868b]">
                           {count}
                         </span>
                       )}

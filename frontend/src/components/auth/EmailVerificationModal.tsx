@@ -126,14 +126,17 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
     if (countdown > 0 || resending) return;
     setError(null);
     setResending(true);
+    const safetyTimer = setTimeout(() => setResending(false), 6000);
     try {
       await api.resendEmailOtp(email);
+      clearTimeout(safetyTimer);
       setResendSuccess(true);
       setCountdown(60);
       setOtpDigits(['', '', '', '', '', '']);
       inputRefs.current[0]?.focus();
       setTimeout(() => setResendSuccess(false), 5000);
     } catch (err: any) {
+      clearTimeout(safetyTimer);
       setError(err.message || 'Failed to resend verification code. Please try again.');
     } finally {
       setResending(false);
@@ -141,8 +144,11 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative w-full max-w-md bg-white/95 backdrop-blur-xl rounded-[24px] sm:rounded-[28px] border border-[#e5e5ea] shadow-2xl p-5 sm:p-8 text-center">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-md animate-in fade-in duration-200">
+      <div className="relative w-full max-w-md bg-white/95 backdrop-blur-xl rounded-t-[28px] sm:rounded-[28px] border border-[#e5e5ea] shadow-2xl p-6 sm:p-8 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-8 text-center animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 duration-300">
+        {/* Apple Sheet Drag Handle Indicator (Mobile Only) */}
+        <div className="sm:hidden w-10 h-1 bg-[#d2d2d7] rounded-full mx-auto mb-4" />
+
         {/* Close / Back button */}
         <button
           type="button"
@@ -201,7 +207,7 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
                 value={digit}
                 onChange={(e) => handleDigitChange(idx, e.target.value)}
                 onKeyDown={(e) => handleKeyDown(idx, e)}
-                className={`w-9 h-11 sm:w-12 sm:h-14 text-center text-lg sm:text-2xl font-bold rounded-lg sm:rounded-xl border transition-all outline-none font-mono ${
+                className={`w-9 h-11 sm:w-12 sm:h-14 text-center text-lg sm:text-2xl font-semibold rounded-lg sm:rounded-xl border transition-all outline-none ${
                   digit
                     ? 'border-[#0088e8] bg-white ring-2 ring-[#0088e8]/20 text-[#1d1d1f]'
                     : 'border-[#e5e5ea] bg-[#f5f5f7] text-[#1d1d1f] focus:border-[#0088e8] focus:bg-white focus:ring-2 focus:ring-[#0088e8]/20'

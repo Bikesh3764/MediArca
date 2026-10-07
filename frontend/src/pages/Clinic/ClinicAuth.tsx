@@ -447,14 +447,14 @@ export const ClinicAuth: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1">Official Contact Phone</label>
-                <div className="flex rounded-xl border border-[#e5e5ea] overflow-hidden focus-within:ring-2 focus-within:ring-[#0066cc]/20 focus-within:border-[#0066cc] bg-[#f5f5f7] focus-within:bg-white transition-all">
-                  <span className="inline-flex items-center gap-1 px-2.5 bg-[#e5e5ea]/50 border-r border-[#e5e5ea] text-[#1d1d1f] font-semibold text-xs select-none">
-                    <span>🇮🇳</span>
-                    <span>+91</span>
+                <label className="block text-xs font-medium text-[#1d1d1f] mb-1">Contact Mobile Number</label>
+                <div className="flex rounded-xl border border-[#e5e5ea] overflow-hidden focus-within:ring-2 focus-within:ring-[#0066cc]/20 focus-within:border-[#0066cc] bg-[#f5f5f7] focus-within:bg-white transition-all h-10">
+                  <span className="inline-flex items-center px-3 bg-[#e5e5ea]/50 border-r border-[#e5e5ea] text-[#1d1d1f] font-semibold text-[13px] select-none">
+                    +91
                   </span>
                   <input
                     type="tel"
+                    inputMode="numeric"
                     required
                     value={sanitizeIndianPhone(phone)}
                     onChange={(e) => {
@@ -463,7 +463,7 @@ export const ClinicAuth: React.FC = () => {
                     }}
                     placeholder="98765 43210"
                     maxLength={10}
-                    className="w-full h-10 px-3 text-xs bg-transparent focus:outline-none tracking-wider font-mono text-[#1d1d1f] placeholder:text-[#86868b]"
+                    className="flex-1 h-full px-3 text-xs bg-transparent focus:outline-none text-[#1d1d1f] placeholder:text-[#86868b]"
                   />
                 </div>
               </div>

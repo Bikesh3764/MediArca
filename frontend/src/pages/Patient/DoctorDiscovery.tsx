@@ -5,6 +5,7 @@ import {
   Doctor,
   ClinicProfile,
   PublicClinicDoctor,
+  PaginationMeta,
   parseDoctorSlots,
   format12Hour,
   formatDoctorDegrees,
@@ -64,6 +65,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
   const [clinicSearchQuery, setClinicSearchQuery] = useState('');
   const [clinicSelectedState, setClinicSelectedState] = useState('All');
   const [clinicSelectedCity, setClinicSelectedCity] = useState('All');
+  const [clinicPage, setClinicPage] = useState(1);
 
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [allCatalogDoctors, setAllCatalogDoctors] = useState<Doctor[]>([]);
@@ -77,6 +79,15 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
   const [sortBy, setSortBy] = useState('rating');
   const [minExp, setMinExp] = useState<number>(0);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [doctorPage, setDoctorPage] = useState(1);
+  const [doctorPagination, setDoctorPagination] = useState<PaginationMeta>({
+    page: 1,
+    limit: 20,
+    total: 0,
+    totalPages: 1,
+    hasNextPage: false,
+    hasPrevPage: false,
+  });
 
   // Clinic State Options with facility counts
   const clinicStateOptions = useMemo(() => {
@@ -259,6 +270,14 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
     });
   }, [clinics, clinicSearchQuery, clinicSelectedCity, clinicSelectedState]);
 
+  const clinicLimit = 12;
+  const clinicTotal = filteredClinics.length;
+  const clinicTotalPages = Math.max(1, Math.ceil(clinicTotal / clinicLimit));
+  const paginatedClinics = useMemo(() => {
+    const start = (clinicPage - 1) * clinicLimit;
+    return filteredClinics.slice(start, start + clinicLimit);
+  }, [filteredClinics, clinicPage]);
+
   // Doctors practicing at the selected clinic
   const clinicPracticingDoctors = useMemo(() => {
     if (!selectedClinic) return [];
@@ -286,7 +305,20 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
     setClinicSearchQuery('');
     setClinicSelectedState('All');
     setClinicSelectedCity('All');
+    setClinicPage(1);
   };
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      setDoctorPage(1);
+    });
+  }, [search, selectedSpecialty, sortBy, minExp, maxFee, selectedState, selectedCity]);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      setClinicPage(1);
+    });
+  }, [clinicSearchQuery, clinicSelectedState, clinicSelectedCity]);
 
   const loadDoctors = async (
     queryText: string,
@@ -295,11 +327,12 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
     expFilter = minExp,
     feeCap = maxFee,
     stateFilter = selectedState,
-    cityFilter = selectedCity
+    cityFilter = selectedCity,
+    targetPage = doctorPage
   ) => {
     setLoading(true);
     try {
-      const data = await api.getDoctors({
+      const res = await api.getDoctorsPaginated({
         search: queryText.trim() || undefined,
         specialty: specialtyFilter !== 'All' ? specialtyFilter : undefined,
         minExp: expFilter > 0 ? expFilter : undefined,
@@ -307,10 +340,13 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
         sortBy: sortOrder,
         state: stateFilter !== 'All' ? stateFilter : undefined,
         city: cityFilter !== 'All' ? cityFilter : undefined,
+        page: targetPage,
+        limit: 20,
       });
-      setDoctors(data);
-      if (specialtyFilter === 'All' && !queryText.trim() && expFilter === 0 && feeCap >= 3000 && stateFilter === 'All' && cityFilter === 'All') {
-        setAllCatalogDoctors(data);
+      setDoctors(res.data);
+      setDoctorPagination(res.pagination);
+      if (specialtyFilter === 'All' && !queryText.trim() && expFilter === 0 && feeCap >= 3000 && stateFilter === 'All' && cityFilter === 'All' && targetPage === 1) {
+        setAllCatalogDoctors(res.data);
       }
     } catch (err) {
       console.error('Failed to load doctors:', err);
@@ -319,9 +355,9 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
     }
   };
 
-  // Load full catalog once for persistent global specialty counts
+  // Load catalog for persistent global specialty counts
   useEffect(() => {
-    api.getDoctors({}).then((data) => {
+    api.getDoctors({ limit: 50 }).then((data) => {
       setAllCatalogDoctors(data);
     }).catch(() => {});
   }, []);
@@ -329,10 +365,10 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
   // Instant debounced search & filter sync
   useEffect(() => {
     const timer = setTimeout(() => {
-      loadDoctors(search, selectedSpecialty, sortBy, minExp, maxFee, selectedState, selectedCity);
+      loadDoctors(search, selectedSpecialty, sortBy, minExp, maxFee, selectedState, selectedCity, doctorPage);
     }, 250);
     return () => clearTimeout(timer);
-  }, [search, selectedSpecialty, sortBy, minExp, maxFee, selectedState, selectedCity]);
+  }, [search, selectedSpecialty, sortBy, minExp, maxFee, selectedState, selectedCity, doctorPage]);
 
   // Specialty counts computed against unfiltered doctors catalog
   const specialtyCounts = useMemo(() => {
@@ -386,6 +422,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
     setMaxFee(3000);
     setMinExp(0);
     setSortBy('rating');
+    setDoctorPage(1);
     setSearchParams({});
   };
 
@@ -736,7 +773,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:[grid-template-columns:repeat(auto-fill,minmax(330px,1fr))] gap-5 sm:gap-6 w-full">
-                  {filteredClinics.map((clinic) => {
+                  {paginatedClinics.map((clinic) => {
                     const docCount = (clinic.doctors && Array.isArray(clinic.doctors))
                       ? clinic.doctors.length
                       : (clinic._count?.doctors ?? 0);
@@ -807,6 +844,41 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                       </div>
                     );
                   })}
+                </div>
+              )}
+
+              {clinicTotalPages > 1 && (
+                <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-[20px] bg-white border border-[#e5e5ea]">
+                  <p className="text-xs text-[#86868b]">
+                    Showing <span className="font-semibold text-[#1d1d1f]">{(clinicPage - 1) * clinicLimit + 1}</span>–<span className="font-semibold text-[#1d1d1f]">{Math.min(clinicPage * clinicLimit, clinicTotal)}</span> of <span className="font-semibold text-[#1d1d1f]">{clinicTotal}</span> clinics
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      disabled={clinicPage <= 1}
+                      onClick={() => {
+                        setClinicPage((p) => Math.max(1, p - 1));
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      className="h-8 px-4 rounded-full bg-[#f5f5f7] hover:bg-[#e5e5ea] text-xs font-semibold text-[#1d1d1f] border border-[#e5e5ea] transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                    >
+                      Previous
+                    </button>
+                    <span className="px-3 text-xs font-medium text-[#48484a]">
+                      Page {clinicPage} of {clinicTotalPages}
+                    </span>
+                    <button
+                      type="button"
+                      disabled={clinicPage >= clinicTotalPages}
+                      onClick={() => {
+                        setClinicPage((p) => p + 1);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      className="h-8 px-4 rounded-full bg-[#f5f5f7] hover:bg-[#e5e5ea] text-xs font-semibold text-[#1d1d1f] border border-[#e5e5ea] transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                    >
+                      Next
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -1387,6 +1459,41 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
               })}
             </div>
           )}
+
+          {doctorPagination.totalPages > 1 && (
+            <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-[20px] bg-white border border-[#e5e5ea]">
+              <p className="text-xs text-[#86868b]">
+                Showing <span className="font-semibold text-[#1d1d1f]">{(doctorPagination.page - 1) * doctorPagination.limit + 1}</span>–<span className="font-semibold text-[#1d1d1f]">{Math.min(doctorPagination.page * doctorPagination.limit, doctorPagination.total)}</span> of <span className="font-semibold text-[#1d1d1f]">{doctorPagination.total}</span> verified specialists
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={!doctorPagination.hasPrevPage}
+                  onClick={() => {
+                    setDoctorPage((p) => Math.max(1, p - 1));
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="h-8 px-4 rounded-full bg-[#f5f5f7] hover:bg-[#e5e5ea] text-xs font-semibold text-[#1d1d1f] border border-[#e5e5ea] transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                >
+                  Previous
+                </button>
+                <span className="px-3 text-xs font-medium text-[#48484a]">
+                  Page {doctorPagination.page} of {doctorPagination.totalPages}
+                </span>
+                <button
+                  type="button"
+                  disabled={!doctorPagination.hasNextPage}
+                  onClick={() => {
+                    setDoctorPage((p) => p + 1);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="h-8 px-4 rounded-full bg-[#f5f5f7] hover:bg-[#e5e5ea] text-xs font-semibold text-[#1d1d1f] border border-[#e5e5ea] transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
         </>
@@ -1399,8 +1506,8 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
       <SubNav title="Doctor & Clinic Directory" subtitle="Verified healthcare facilities and practitioners">
         <span className="text-xs text-[#86868b] font-medium">
           {activeSection === 'clinics'
-            ? `${clinics.length} Verified Clinic${clinics.length === 1 ? '' : 's'}`
-            : `${doctors.length} Verified Specialist${doctors.length === 1 ? '' : 's'}`}
+            ? `${filteredClinics.length} Verified Clinic${filteredClinics.length === 1 ? '' : 's'}`
+            : `${doctorPagination.total || doctors.length} Verified Specialist${(doctorPagination.total || doctors.length) === 1 ? '' : 's'}`}
         </span>
       </SubNav>
 
