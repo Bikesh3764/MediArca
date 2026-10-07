@@ -574,23 +574,27 @@ export const getDoctorAffiliations = async (req: AuthRequest, res: Response): Pr
     // Get clinic-specific stats for each affiliated clinic
     const clinicsWithStats = await Promise.all(
       activeClinics.map(async (cd) => {
-        const appointmentsAtClinic = await prisma.appointment.findMany({
+        const bookingCount = await prisma.appointment.count({
           where: {
             doctorId: doctor.id,
             clinicId: cd.clinicId,
           },
         });
 
-        // Finding F2: Count revenue only on completed consultations or paid transactions
-        const paidOrCompleted = appointmentsAtClinic.filter(
-          (a) =>
-            (a.paymentStatus === 'PAID' || a.status === 'COMPLETED') &&
-            a.status !== 'CANCELLED' &&
-            a.status !== 'REJECTED' &&
-            a.status !== 'EXPIRED'
-        );
+        // Finding F2: Count revenue only on completed consultations or paid transactions without loading rows
+        const paidOrCompletedCount = await prisma.appointment.count({
+          where: {
+            doctorId: doctor.id,
+            clinicId: cd.clinicId,
+            OR: [
+              { paymentStatus: 'PAID' },
+              { status: 'COMPLETED' },
+            ],
+            status: { notIn: ['CANCELLED', 'REJECTED', 'EXPIRED'] },
+          },
+        });
         const clinicFee = (cd as any).consultationFee ?? doctor.consultationFee;
-        const revenue = paidOrCompleted.length * clinicFee;
+        const revenue = paidOrCompletedCount * clinicFee;
 
         let clinicSlots = parseDoctorSlots(doctor);
         if ((cd as any).slots) {
@@ -610,7 +614,7 @@ export const getDoctorAffiliations = async (req: AuthRequest, res: Response): Pr
           city: cd.clinic.city,
           phone: cd.clinic.phone || cd.clinic.user.phone,
           email: cd.clinic.user.email,
-          bookingCount: appointmentsAtClinic.length,
+          bookingCount,
           revenue,
           consultationFee: clinicFee,
           slots: clinicSlots,

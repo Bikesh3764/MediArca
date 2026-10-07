@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import { getLocalDateString } from '../src/utils/scheduleUtils';
 
 const prisma = new PrismaClient();
 
@@ -61,6 +62,7 @@ async function main() {
           bio: 'Specialist in preventive cardiology, hypertension, coronary artery disease, and heart failure management with over 14 years of clinical experience.',
           clinicAddress: 'City Heart & Vascular Institute, Suite 402, Bandra West, Mumbai, MH',
           isVerified: true,
+          verificationStatus: 'VERIFIED',
           checkingStartTime: '09:00',
           checkingEndTime: '20:00',
           avgConsultationMinutes: 2.7,
@@ -109,6 +111,7 @@ async function main() {
           bio: 'Consultant dermatologist focusing on acne, eczema, psoriasis, skin cancer screening, and cosmetic laser treatments.',
           clinicAddress: 'Apex Skin & Aesthetics Clinic, Floor 2, Indiranagar, Bengaluru, KA',
           isVerified: true,
+          verificationStatus: 'VERIFIED',
           checkingStartTime: '10:00',
           checkingEndTime: '18:30',
           avgConsultationMinutes: 4.4,
@@ -157,6 +160,7 @@ async function main() {
           bio: 'Dedicated pediatrician providing comprehensive child wellness care, developmental tracking, vaccinations, and adolescent healthcare.',
           clinicAddress: 'Little Steps Children Care, Building B, Vasant Vihar, New Delhi, DL',
           isVerified: true,
+          verificationStatus: 'VERIFIED',
           checkingStartTime: '08:30',
           checkingEndTime: '18:00',
           avgConsultationMinutes: 4.5,
@@ -359,7 +363,7 @@ async function main() {
   });
 
   // 5. Create Appointments & Queue Numbers
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getLocalDateString(new Date());
 
   // Appointment 1: Active Waiting Queue #1 with Dr. Sarah Jenkins (attributed to Metropolis Polyclinic)
   const appt1 = await prisma.appointment.create({

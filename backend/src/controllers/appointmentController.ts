@@ -1278,7 +1278,7 @@ export const getPatientAppointments = async (req: AuthRequest, res: Response): P
           fee: clinicFee,
           estimatedQueueNumber: appt.queueNumber,
           liveQueue: {
-            currentServingQueueNumber: currentServingQueueNumber || (isShiftActive ? 1 : 0),
+            currentServingQueueNumber: currentServingQueueNumber,
             patientsAway: patientsAhead,
             estimatedWaitMinutes: estWaitMinutes,
             isYourTurn,

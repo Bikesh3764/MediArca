@@ -99,8 +99,12 @@ export const getMyClinic = async (req: AuthRequest, res: Response): Promise<void
       return;
     }
 
-    // Fetch all appointments linked to this clinic
-    const clinicAppointments = await prisma.appointment.findMany({
+    // Scalable database queries: count total bookings and fetch only recent 15 appointments
+    const totalBookings = await prisma.appointment.count({
+      where: { clinicId: clinic.id },
+    });
+
+    const recentAppointments = await prisma.appointment.findMany({
       where: { clinicId: clinic.id },
       include: {
         patient: {
@@ -115,6 +119,7 @@ export const getMyClinic = async (req: AuthRequest, res: Response): Promise<void
         },
       },
       orderBy: { createdAt: 'desc' },
+      take: 15,
     });
 
     // Partition affiliations by status & direction
@@ -128,48 +133,52 @@ export const getMyClinic = async (req: AuthRequest, res: Response): Promise<void
       (cd) => cd.status === 'PENDING' && (cd as any).requestedBy === 'CLINIC'
     );
 
-    // Compute stats per doctor specifically for THIS clinic (active doctors only)
-    const doctorStats = activeDoctorAffiliations.map((cd) => {
-      const docAppointments = clinicAppointments.filter((a) => a.doctorId === cd.doctorId);
-      const bookingCount = docAppointments.length;
-      const completedCount = docAppointments.filter((a) => a.status === 'COMPLETED').length;
-      // Finding F1: Count revenue only on completed consultations or paid transactions
-      const paidOrCompleted = docAppointments.filter(
-        (a) =>
-          (a.paymentStatus === 'PAID' || a.status === 'COMPLETED') &&
-          a.status !== 'CANCELLED' &&
-          a.status !== 'REJECTED' &&
-          a.status !== 'EXPIRED'
-      );
-      const effectiveFee = typeof cd.consultationFee === 'number' && Number.isFinite(cd.consultationFee)
-        ? cd.consultationFee
-        : (typeof cd.doctor.consultationFee === 'number' && Number.isFinite(cd.doctor.consultationFee) ? cd.doctor.consultationFee : 0);
-      const revenue = paidOrCompleted.reduce((acc: number, appt: any) => {
-        const apptFee = typeof appt.consultationFee === 'number' && Number.isFinite(appt.consultationFee)
-          ? appt.consultationFee
-          : (typeof appt.fee === 'number' && Number.isFinite(appt.fee) ? appt.fee : effectiveFee);
-        return acc + apptFee;
-      }, 0);
+    // Compute stats per doctor specifically for THIS clinic using targeted database queries
+    const doctorStats = await Promise.all(
+      activeDoctorAffiliations.map(async (cd) => {
+        const bookingCount = await prisma.appointment.count({
+          where: { clinicId: clinic.id, doctorId: cd.doctorId },
+        });
+        const completedCount = await prisma.appointment.count({
+          where: { clinicId: clinic.id, doctorId: cd.doctorId, status: 'COMPLETED' },
+        });
+        // Finding F1: Count revenue only on completed consultations or paid transactions without loading rows
+        const paidOrCompletedCount = await prisma.appointment.count({
+          where: {
+            clinicId: clinic.id,
+            doctorId: cd.doctorId,
+            OR: [
+              { paymentStatus: 'PAID' },
+              { status: 'COMPLETED' },
+            ],
+            status: { notIn: ['CANCELLED', 'REJECTED', 'EXPIRED'] },
+          },
+        });
+        const effectiveFee = typeof cd.consultationFee === 'number' && Number.isFinite(cd.consultationFee)
+          ? cd.consultationFee
+          : (typeof cd.doctor.consultationFee === 'number' && Number.isFinite(cd.doctor.consultationFee) ? cd.doctor.consultationFee : 0);
+        const revenue = paidOrCompletedCount * effectiveFee;
 
-      return {
-        affiliationId: cd.id,
-        doctorId: cd.doctor.id,
-        fullName: cd.doctor.user.fullName,
-        email: cd.doctor.user.email,
-        phone: cd.doctor.user.phone,
-        avatarUrl: cd.doctor.user.avatarUrl,
-        specialty: cd.doctor.specialty,
-        qualifications: cd.doctor.qualifications,
-        experienceYears: cd.doctor.experienceYears,
-        consultationFee: effectiveFee,
-        bookingCount,
-        completedCount,
-        revenue,
-        status: cd.status,
-        requestedBy: (cd as any).requestedBy || 'CLINIC',
-        joinedAt: cd.createdAt,
-      };
-    });
+        return {
+          affiliationId: cd.id,
+          doctorId: cd.doctor.id,
+          fullName: cd.doctor.user.fullName,
+          email: cd.doctor.user.email,
+          phone: cd.doctor.user.phone,
+          avatarUrl: cd.doctor.user.avatarUrl,
+          specialty: cd.doctor.specialty,
+          qualifications: cd.doctor.qualifications,
+          experienceYears: cd.doctor.experienceYears,
+          consultationFee: effectiveFee,
+          bookingCount,
+          completedCount,
+          revenue,
+          status: cd.status,
+          requestedBy: (cd as any).requestedBy || 'CLINIC',
+          joinedAt: cd.createdAt,
+        };
+      })
+    );
 
     const mapRequestInfo = (cd: typeof clinic.doctors[0]) => ({
       affiliationId: cd.id,
@@ -188,7 +197,6 @@ export const getMyClinic = async (req: AuthRequest, res: Response): Promise<void
     });
 
     const totalDoctors = doctorStats.length;
-    const totalBookings = clinicAppointments.length;
     const totalRevenue = doctorStats.reduce((sum, d) => sum + d.revenue, 0);
 
     res.json({
@@ -246,7 +254,7 @@ export const getMyClinic = async (req: AuthRequest, res: Response): Promise<void
         totalDoctors,
         totalBookings,
         totalRevenue,
-        recentAppointments: clinicAppointments.slice(0, 15).map((a) => ({
+        recentAppointments: recentAppointments.map((a) => ({
           id: a.id,
           patientName: a.patientName || a.patient?.user?.fullName || 'Patient',
           patientPhone: a.patient?.user?.phone || 'N/A',

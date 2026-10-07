@@ -552,6 +552,14 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
       }
     }
 
+    if (!targetClinicId) {
+      res.status(400).json({
+        success: false,
+        message: 'A valid clinic association is required to allocate walk-in queue tokens for this doctor.',
+      });
+      return;
+    }
+
     let slots = parseDoctorSlots(doctor);
     if (targetAffiliation?.slots) {
       try {
@@ -681,7 +689,7 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
             data: {
               patientId: patientProfile!.id,
               doctorId: doctor.id,
-              clinicId: targetClinicId || null,
+              clinicId: targetClinicId,
               appointmentDate,
               queueNumber,
               checkingWindow,
@@ -1415,12 +1423,23 @@ export const executeApproveAppointmentTransaction = async (
       await tx.$executeRaw`SELECT id FROM "DoctorProfile" WHERE id = ${currentAppt.doctorId} FOR UPDATE;`;
     }
 
+    // Resolve clinic ID for approval
+    let targetClinicId = currentAppt.clinicId || currentAppt.clinic?.id || null;
+    if (!targetClinicId) {
+      const activeClinic = currentAppt.doctor.clinics?.find((c: any) => !c.status || c.status === 'ACTIVE' || c.status === 'ACCEPTED');
+      targetClinicId = activeClinic?.clinicId || null;
+    }
+
+    if (!targetClinicId) {
+      throw new Error('A valid clinic affiliation is required to approve appointments and issue queue tokens.');
+    }
+
     // Find max positive queue number on this date for this clinic (FIX-014)
     const maxQueueAppt = await tx.appointment.findFirst({
       where: {
         doctorId: currentAppt.doctorId,
         appointmentDate: currentAppt.appointmentDate,
-        ...(currentAppt.clinicId ? { clinicId: currentAppt.clinicId } : {}),
+        clinicId: targetClinicId,
         queueNumber: { gt: 0 },
       },
       orderBy: { queueNumber: 'desc' },
@@ -1475,6 +1494,7 @@ export const executeApproveAppointmentTransaction = async (
     return await tx.appointment.update({
       where: { id: appointmentId },
       data: {
+        clinicId: targetClinicId,
         queueNumber: nextToken,
         status: 'WAITING',
         paymentStatus: 'PAID',

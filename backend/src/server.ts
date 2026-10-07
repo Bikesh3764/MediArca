@@ -10,6 +10,7 @@ dotenv.config();
 export interface GracefulShutdownOptions {
   timeoutMs?: number;
   exitProcess?: boolean;
+  exitCode?: number;
 }
 
 export let server: http.Server | null = null;
@@ -37,6 +38,10 @@ export const registerProcessHandlers = (): void => {
 
   process.on('uncaughtException', (error: Error) => {
     console.error('🚨 Uncaught Exception caught by runtime resilience handler:', error);
+    gracefulShutdown('uncaughtException', { exitCode: 1 }).catch((err) => {
+      console.error('[Graceful Shutdown] Fatal error during uncaughtException shutdown:', err);
+      process.exit(1);
+    });
   });
 
   process.on('SIGTERM', () => {
@@ -53,8 +58,6 @@ export const registerProcessHandlers = (): void => {
     });
   });
 };
-
-registerProcessHandlers();
 
 import fs from 'fs';
 import authRoutes from './routes/authRoutes';
@@ -362,12 +365,14 @@ export const gracefulShutdown = (
     console.log('[Graceful Shutdown] Graceful shutdown sequence completed.');
 
     if (shouldExit) {
-      process.exit(0);
+      process.exit(options.exitCode ?? 0);
     }
   })();
 
   return shutdownPromise;
 };
+
+registerProcessHandlers();
 
 if (process.env.NODE_ENV !== 'test' && !process.env.MEDIARCA_TEST_SUITE) {
   server = app.listen(PORT, () => {

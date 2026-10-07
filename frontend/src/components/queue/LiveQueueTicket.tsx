@@ -407,7 +407,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
                 Live Queue Flow
               </span>
               <div className="px-3 py-1 rounded-full bg-white border border-[#e5e5ea] text-xs font-medium text-[#48484a] shadow-[0_1px_2px_rgba(0,0,0,0.02)] select-none">
-                Serving: <strong className="text-[#1d1d1f] font-semibold">Queue #{liveQueue.currentServingQueueNumber || 1}</strong>
+                Serving: <strong className="text-[#1d1d1f] font-semibold">{liveQueue.currentServingQueueNumber > 0 ? `Queue #${liveQueue.currentServingQueueNumber}` : 'Waiting to Call'}</strong>
               </div>
             </div>
 

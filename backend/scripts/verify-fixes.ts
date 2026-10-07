@@ -8987,6 +8987,73 @@ Follow-up Date: 2026-10-15`;
     'Bug 13: bookWalkin includes isForOther and patientName in duplicate active booking check'
   );
 
+  // --- Category 3 Verification Suite (Medium Priority Bugs 14 - 19) ---
+  console.log('\n--- Category 3 Verification Suite (Medium Priority Bugs 14-19) ---');
+  const seedContent = fs.readFileSync(path.join(__dirname, '../prisma/seed.ts'), 'utf8');
+  const serverContent = fs.readFileSync(path.join(__dirname, '../src/server.ts'), 'utf8');
+  const clinicControllerContentCat3 = fs.readFileSync(path.join(__dirname, '../src/controllers/clinicController.ts'), 'utf8');
+  const liveQueueTicketContent = fs.readFileSync(path.join(__dirname, '../../frontend/src/components/queue/LiveQueueTicket.tsx'), 'utf8');
+
+  // Bug 14: Fake Queue #1 fallback eliminated
+  assert(
+    appointmentControllerContent.includes('currentServingQueueNumber: currentServingQueueNumber,') &&
+    !appointmentControllerContent.includes('currentServingQueueNumber: currentServingQueueNumber || (isShiftActive ? 1 : 0)'),
+    'Bug 14: appointmentController does not fabricate Queue #1 when no patient is in consultation'
+  );
+  assert(
+    liveQueueTicketContent.includes("liveQueue.currentServingQueueNumber > 0 ? `Queue #${liveQueue.currentServingQueueNumber}` : 'Waiting to Call'"),
+    'Bug 14: LiveQueueTicket UI renders Waiting to Call when current serving token is 0'
+  );
+
+  // Bug 15: Seeded doctors have explicit verificationStatus
+  assert(
+    seedContent.includes("verificationStatus: 'VERIFIED',") &&
+    seedContent.includes("isVerified: true,\n          verificationStatus: 'VERIFIED',"),
+    'Bug 15: seed.ts sets verificationStatus to VERIFIED for verified seed doctors'
+  );
+
+  // Bug 16: Seeded today uses IST getLocalDateString
+  assert(
+    seedContent.includes("import { getLocalDateString } from '../src/utils/scheduleUtils';") &&
+    seedContent.includes("const todayStr = getLocalDateString(new Date());"),
+    'Bug 16: seed.ts calculates todayStr using IST getLocalDateString instead of UTC split'
+  );
+
+  // Bug 17: Multi-clinic queue uniqueness non-null clinicId guard
+  assert(
+    receptionistControllerContent.includes("if (!targetClinicId) {") &&
+    receptionistControllerContent.includes("A valid clinic association is required to allocate walk-in queue tokens") &&
+    receptionistControllerContent.includes("clinicId: targetClinicId,") &&
+    !receptionistControllerContent.includes("clinicId: targetClinicId || null,"),
+    'Bug 17: bookWalkin enforces non-null clinicId for queue allocation'
+  );
+  assert(
+    receptionistControllerContent.includes("if (!targetClinicId) {\n      throw new Error('A valid clinic affiliation is required to approve appointments and issue queue tokens.');\n    }"),
+    'Bug 17: executeApproveAppointmentTransaction enforces non-null clinicId for approval tokens'
+  );
+
+  // Bug 18: Stats endpoints memory loops at scale
+  assert(
+    clinicControllerContentCat3.includes("const totalBookings = await prisma.appointment.count({") &&
+    clinicControllerContentCat3.includes("take: 15,") &&
+    clinicControllerContentCat3.includes("const bookingCount = await prisma.appointment.count({") &&
+    clinicControllerContentCat3.includes("const completedCount = await prisma.appointment.count({"),
+    'Bug 18: clinicController getMyClinic uses database count and bounded take: 15 instead of loading all rows'
+  );
+  assert(
+    doctorControllerContent.includes("const bookingCount = await prisma.appointment.count({") &&
+    doctorControllerContent.includes("const paidOrCompletedCount = await prisma.appointment.count({"),
+    'Bug 18: doctorController getDoctorAffiliations uses database counts instead of loading all appointment rows'
+  );
+
+  // Bug 19: Uncaught exception process handling
+  assert(
+    serverContent.includes("gracefulShutdown('uncaughtException', { exitCode: 1 })") &&
+    serverContent.includes("process.exit(options.exitCode ?? 0);") &&
+    serverContent.includes("exitCode?: number;"),
+    'Bug 19: server.ts uncaughtException triggers graceful shutdown and exits with non-zero exit code'
+  );
+
   console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);
