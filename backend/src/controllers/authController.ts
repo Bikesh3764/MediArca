@@ -182,7 +182,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         formattedPhone = formatIndianPhone(trimmedPhone);
       }
 
-      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const otp = crypto.randomInt(100000, 1000000).toString();
       const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
       const updatedUser = await prisma.user.update({
@@ -234,7 +234,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       formattedPhone = formatIndianPhone(trimmedPhone);
     }
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otp = crypto.randomInt(100000, 1000000).toString();
     const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
     let newUser;
@@ -362,7 +362,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
               city: profileData.city || null,
               state: profileData.state || null,
               phone: formattedPhone,
-              checkinCode: crypto.randomBytes(3).toString('hex').toUpperCase(),
+              checkinCode: crypto.randomInt(100000, 1000000).toString(),
             },
           },
         },
@@ -501,7 +501,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     }
 
     if (!user.isEmailVerified) {
-      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const otp = crypto.randomInt(100000, 1000000).toString();
       const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
       await prisma.user.update({
         where: { id: user.id },
@@ -796,7 +796,7 @@ export const resendEmailOtp = async (req: Request, res: Response): Promise<void>
       return;
     }
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otp = crypto.randomInt(100000, 1000000).toString();
     const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
     await prisma.user.update({
@@ -1104,7 +1104,7 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
           city: safeClinicData.city || null,
           state: safeClinicData.state || null,
           phone: formattedPhone || null,
-          checkinCode: crypto.randomBytes(3).toString('hex').toUpperCase(),
+          checkinCode: crypto.randomInt(100000, 1000000).toString(),
         },
       });
     }
@@ -1213,7 +1213,7 @@ export const googleAuth = async (req: Request, res: Response): Promise<void> => 
     }
 
     if (!user) {
-      const defaultPassword = await bcrypt.hash(Math.random().toString(36).substring(2), 10);
+      const defaultPassword = await bcrypt.hash(crypto.randomBytes(24).toString('hex'), 10);
       if (normalizedRole === 'PATIENT') {
         user = await prisma.user.create({
           data: {
@@ -1270,7 +1270,7 @@ export const googleAuth = async (req: Request, res: Response): Promise<void> => 
               create: {
                 clinicName: fullName || 'New Healthcare Clinic',
                 address: '',
-                checkinCode: crypto.randomBytes(3).toString('hex').toUpperCase(),
+                checkinCode: crypto.randomInt(100000, 1000000).toString(),
               },
             },
           },
@@ -1316,7 +1316,7 @@ export const googleAuth = async (req: Request, res: Response): Promise<void> => 
             userId: user.id,
             clinicName: user.fullName || 'New Healthcare Clinic',
             address: '',
-            checkinCode: crypto.randomBytes(3).toString('hex').toUpperCase(),
+            checkinCode: crypto.randomInt(100000, 1000000).toString(),
           },
         });
       }

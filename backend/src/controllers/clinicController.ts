@@ -58,7 +58,7 @@ export const getMyClinic = async (req: AuthRequest, res: Response): Promise<void
 
     // Auto-generate checkinCode if missing (BUG-03)
     if (!clinic.checkinCode) {
-      const generatedCode = crypto.randomBytes(3).toString('hex').toUpperCase();
+      const generatedCode = crypto.randomInt(100000, 1000000).toString();
       await prisma.clinicProfile.update({
         where: { id: clinic.id },
         data: { checkinCode: generatedCode },

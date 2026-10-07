@@ -198,11 +198,15 @@ export async function sendVerificationOtpEmail(
 
     const textContent = `Hello ${greetingName},\n\nYour MediArca 6-digit verification code is: ${otp}\n\nThis code is valid for 10 minutes.\nIf you did not request this, please ignore this email.\n\nMediArca Clinical Platform`;
 
-    console.log(`[emailService] 🔑 Verification OTP for ${toEmail} is [${otp}]`);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[emailService] Dispatching email verification OTP to ${toEmail}`);
+    }
 
     const { transporter, from } = await getTransporter();
     if (!transporter) {
-      console.warn(`[emailService] Verification OTP for ${toEmail} is [${otp}] (SMTP not configured)`);
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn(`[emailService] Verification email dispatch skipped for ${toEmail} (SMTP not configured)`);
+      }
       return { success: false, error: 'SMTP credentials not configured' };
     }
 

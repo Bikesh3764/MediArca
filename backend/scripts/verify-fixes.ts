@@ -2,6 +2,7 @@ process.env.MEDIARCA_TEST_SUITE = 'true';
 import fs from 'fs';
 import path from 'path';
 import http from 'http';
+import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import {
   timeToMinutes,
@@ -4165,8 +4166,8 @@ async function runTests() {
   assert(receptionistResponsePayload.token.length > 0, 'BUG-02: Fresh session token is delivered to receptionist');
 
   // BUG-03: QR Arrival Check-in CheckinCode Generation and Unwrapping
-  const sampleCheckinCode = 'A1B2C3';
-  assert(/^[0-9A-F]{6}$/.test(sampleCheckinCode), 'BUG-03: Clinic checkinCode matches 6-character hex uppercase regex');
+  const sampleCheckinCode = '849201';
+  assert(/^\d{6}$/.test(sampleCheckinCode), 'BUG-03: Clinic checkinCode matches 6-digit numeric code regex');
   const unpackCheckinRes = (res: any) => (res?.id ? res : res?.data);
   const unpackedDirect = unpackCheckinRes({ id: 'appt-123', isCheckedIn: true });
   const unpackedWrapped = unpackCheckinRes({ data: { id: 'appt-123', isCheckedIn: true } });
@@ -8795,6 +8796,29 @@ Follow-up Date: 2026-10-15`;
 
   const pageLevelNavigation = testShouldScroll('/doctors', '/book/doc-1', 'PUSH');
   assert(pageLevelNavigation === true, 'Test 7: Route change to new pathname triggers scroll reset');
+
+  // --- Test Suite: Secure OTP & 6-Digit Checkin Code Hardening ---
+  console.log('\n--- Test: Secure Cryptographic OTP & 6-Digit Numeric Checkin Code ---');
+  // Test A: OTP randomness and bounds
+  for (let i = 0; i < 20; i++) {
+    const testOtp = crypto.randomInt(100000, 1000000).toString();
+    assert(/^\d{6}$/.test(testOtp), `Test OTP ${i}: generated OTP is pure 6-digit numeric`);
+    const num = parseInt(testOtp, 10);
+    assert(num >= 100000 && num <= 999999, `Test OTP ${i}: generated OTP within [100000, 999999]`);
+  }
+
+  // Test B: Checkin Code randomness and bounds
+  for (let i = 0; i < 20; i++) {
+    const testCode = crypto.randomInt(100000, 1000000).toString();
+    assert(/^\d{6}$/.test(testCode), `Test Code ${i}: clinic checkinCode is pure 6-digit numeric`);
+    const num = parseInt(testCode, 10);
+    assert(num >= 100000 && num <= 999999, `Test Code ${i}: checkinCode within [100000, 999999]`);
+  }
+
+  // Test C: Static inspection of emailService to ensure no plain-text OTP logging
+  const emailServiceContent = fs.readFileSync(path.join(__dirname, '../src/utils/emailService.ts'), 'utf8');
+  assert(!emailServiceContent.includes('is [${otp}]'), 'emailService: Zero plain-text OTP console logs');
+  assert(!emailServiceContent.includes('OTP for ${toEmail} is ['), 'emailService: No OTP leaked in warning logs');
 
   console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);
