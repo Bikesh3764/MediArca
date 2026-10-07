@@ -32,11 +32,15 @@ function runMigrations() {
         console.log('[Prisma Migrate] Migrations deployed successfully after baseline resolution.');
       } catch (baselineErr) {
         console.error('[Prisma Migrate] Failed during baseline resolution:', baselineErr.message);
-        // Do not crash server startup if already up to date
+        if (process.env.CI) {
+          process.exit(1);
+        }
       }
     } else {
       console.error('[Prisma Migrate] Migration deployment warning:', err.message);
-      // Allow server to continue if already in sync
+      if (process.env.CI) {
+        process.exit(1);
+      }
     }
   }
 }

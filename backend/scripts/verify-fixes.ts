@@ -9154,18 +9154,53 @@ Follow-up Date: 2026-10-15`;
     'Issue 12: getDoctorById applies bounded pagination (take: 10) to nested reviews'
   );
 
+  // Issue 13: GitHub Actions Backend CI provisions real PostgreSQL service container & runs migrations
+  const backendCiContent = fs.readFileSync(path.join(__dirname, '../../.github/workflows/backend-ci.yml'), 'utf-8');
+  assert(
+    backendCiContent.includes('image: postgres:15-alpine') &&
+    backendCiContent.includes('DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mediarca_ci') &&
+    backendCiContent.includes('DIRECT_URL: postgresql://postgres:postgres@localhost:5432/mediarca_ci'),
+    'Issue 13: backend-ci.yml provisions real PostgreSQL 15 container and configures DATABASE_URL & DIRECT_URL'
+  );
+  assert(
+    backendCiContent.includes('npm run prisma:migrate:deploy') &&
+    backendCiContent.includes('npx prisma migrate status'),
+    'Issue 13: backend-ci.yml applies and verifies Prisma migrations against the CI PostgreSQL instance'
+  );
+
+  // When running inside GitHub Actions CI, verify live PostgreSQL connectivity and migrated schema tables
+  if (process.env.CI === 'true') {
+    const [userCount, doctorCount, clinicCount, apptCount] = await Promise.all([
+      prisma.user.count(),
+      prisma.doctorProfile.count(),
+      prisma.clinicProfile.count(),
+      prisma.appointment.count(),
+    ]);
+    assert(
+      typeof userCount === 'number' &&
+      typeof doctorCount === 'number' &&
+      typeof clinicCount === 'number' &&
+      typeof apptCount === 'number',
+      'Issue 13: Live CI PostgreSQL database accepts queries across migrated User, DoctorProfile, ClinicProfile, and Appointment tables'
+    );
+  }
+
   console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);
   console.log(`========================================\n`);
 
+  await prisma.$disconnect().catch(() => {});
+
   if (failed > 0) {
     process.exit(1);
   }
+  process.exit(0);
 }
 
-runTests().catch((e) => {
+runTests().catch(async (e) => {
   console.error('Verification failed:', e);
+  await prisma.$disconnect().catch(() => {});
   process.exit(1);
 });
 

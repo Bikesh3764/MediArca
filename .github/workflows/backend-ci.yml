@@ -21,6 +21,27 @@ jobs:
     name: Backend Build & Test Suite
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: mediarca_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres -d mediarca_ci"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mediarca_ci
+      DIRECT_URL: postgresql://postgres:postgres@localhost:5432/mediarca_ci
+      JWT_SECRET: mediarca-ci-verification-strong-jwt-secret-key-2026
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -43,6 +64,14 @@ jobs:
       - name: Generate Prisma Client
         working-directory: backend
         run: npx prisma generate
+
+      - name: Apply Prisma Migrations to CI PostgreSQL Database
+        working-directory: backend
+        run: npm run prisma:migrate:deploy
+
+      - name: Verify Prisma Migration Status on CI PostgreSQL
+        working-directory: backend
+        run: npx prisma migrate status
 
       - name: Compile Backend TypeScript
         working-directory: backend
