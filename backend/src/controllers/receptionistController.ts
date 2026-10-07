@@ -281,6 +281,24 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
       orderBy: { queueNumber: 'asc' },
     });
 
+    const getApptStartMins = (a: any): number => {
+      if (a.checkingWindow) {
+        const match = a.checkingWindow.match(/(\d{1,2}:\d{2}\s*(?:AM|PM)?)/i);
+        if (match) return timeToMinutes(match[1]);
+      }
+      return 0;
+    };
+
+    // Chronologically order appointments by slot window start time, then queueNumber (Finding 4)
+    appointments.sort((a, b) => {
+      const aSlotMins = getApptStartMins(a);
+      const bSlotMins = getApptStartMins(b);
+      if (aSlotMins !== bSlotMins) {
+        return aSlotMins - bSlotMins;
+      }
+      return a.queueNumber - b.queueNumber;
+    });
+
     let targetAffiliation: any = null;
     let slots = parseDoctorSlots(doctor);
     if (receptionist?.clinicId) {
@@ -461,6 +479,7 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
 
     let patientUser = await prisma.user.findFirst({
       where: {
+        role: 'PATIENT',
         OR: [
           ...(normalizedPhone ? [{ phone: normalizedPhone }] : []),
           ...(rawDigits ? [{ phone: rawDigits }] : []),
@@ -746,7 +765,8 @@ export const executeReceptionistInConsultationTransaction = async (
   doctorId: string,
   appointmentDate: string,
   appointmentId: string,
-  updatePayload: any
+  updatePayload: any,
+  clinicId?: string | null
 ) => {
   return await prismaClient.$transaction(async (tx: any) => {
     // Concurrency control: acquire exclusive row lock on DoctorProfile to serialize queue transitions
@@ -754,13 +774,14 @@ export const executeReceptionistInConsultationTransaction = async (
       await tx.$executeRaw`SELECT id FROM "DoctorProfile" WHERE id = ${doctorId} FOR UPDATE;`;
     }
 
-    // Reset any other active consultations for this doctor on this date to WAITING
+    // Reset any other active consultations for this doctor on this date to WAITING at this facility (Finding 2)
     await tx.appointment.updateMany({
       where: {
         doctorId,
         appointmentDate,
         status: 'IN_CONSULTATION',
         id: { not: appointmentId },
+        ...(clinicId !== undefined ? { clinicId } : {}),
       },
       data: { status: 'WAITING' },
     });
@@ -884,7 +905,8 @@ export const updateAppointmentStatus = async (req: AuthRequest, res: Response): 
         targetAppointment.doctorId,
         targetAppointment.appointmentDate,
         appointmentId,
-        updatePayload
+        updatePayload,
+        targetAppointment.clinicId
       );
     } else {
       updated = await prisma.appointment.update({
@@ -1776,7 +1798,7 @@ export const rescheduleAppointment = async (req: AuthRequest, res: Response): Pr
                 const prevSlot = (duplicate.slotId && activeSlots.find((s) => s.id === duplicate.slotId)) || activeSlots[0];
                 if (prevSlot) {
                   const now = new Date();
-                  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+                  const currentMinutes = getIndianTimeMinutes(now);
                   const prevStartMins = timeToMinutes(prevSlot.startTime);
                   let prevEndMins = timeToMinutes(prevSlot.endTime);
                   if (prevEndMins <= prevStartMins) prevEndMins += 24 * 60;
@@ -1852,6 +1874,53 @@ export const rescheduleAppointment = async (req: AuthRequest, res: Response): Pr
           }
           const chosenSlotId = newSlotId || appointment.slotId;
           const slot = (chosenSlotId && slots.find((s) => s.id === chosenSlotId)) || slots[0];
+
+          if (slot) {
+            // Validate target slot capacity and expiration for destination date (Finding 5)
+            const dayAppointments = await tx.appointment.findMany({
+              where: {
+                id: { not: appointment.id },
+                doctorId: appointment.doctorId,
+                appointmentDate: newDate,
+                ...(appointment.clinicId ? { clinicId: appointment.clinicId } : {}),
+                status: { in: ['PENDING_APPROVAL', 'WAITING', 'IN_CONSULTATION', 'COMPLETED'] },
+              },
+              select: {
+                id: true,
+                slotId: true,
+                checkingWindow: true,
+              },
+            });
+
+            const bookedInSlot = dayAppointments.filter((a) => {
+              if (a.slotId && slot.id) return a.slotId === slot.id;
+              if (a.checkingWindow && slot.startTime) return a.checkingWindow.includes(slot.startTime);
+              return slots.length === 1;
+            }).length;
+
+            const slotStatus = evaluateSlotStatus(
+              slot,
+              newDate,
+              bookedInSlot,
+              new Date()
+            );
+
+            if (slotStatus.isPassed) {
+              const err: any = new Error(
+                `This checking slot (${slot.name}) has already ended for ${newDate}. Please pick an upcoming slot or a future date.`
+              );
+              err.status = 400;
+              throw err;
+            }
+
+            if (slotStatus.isFull) {
+              const err: any = new Error(
+                `This checking slot (${slot.name}) has reached its maximum patient capacity (${slot.maxPatients} patients) for ${newDate}.`
+              );
+              err.status = 400;
+              throw err;
+            }
+          }
 
           const pace = slot?.avgConsultationMinutes || 3.0;
           const slotStartMins = slot ? timeToMinutes(slot.startTime) : 9 * 60;

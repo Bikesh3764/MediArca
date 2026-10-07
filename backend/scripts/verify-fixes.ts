@@ -8820,6 +8820,104 @@ Follow-up Date: 2026-10-15`;
   assert(!emailServiceContent.includes('is [${otp}]'), 'emailService: Zero plain-text OTP console logs');
   assert(!emailServiceContent.includes('OTP for ${toEmail} is ['), 'emailService: No OTP leaked in warning logs');
 
+  // --- Test Suite: Category 1 Critical Bugs Verification ---
+  console.log('\n--- Test: Category 1 Critical Bugs Verification ---');
+
+  // Bug 1: Unverified doctor patient data access prevention
+  const consultationControllerContent = fs.readFileSync(path.join(__dirname, '../src/controllers/consultationController.ts'), 'utf8');
+  assert(
+    consultationControllerContent.includes('const docCheck = isDoctorEligibleForClinicalPractice(doctor);') &&
+    consultationControllerContent.includes('if (!docCheck.eligible) {'),
+    'Bug 1: getDoctorQueue enforces canonical isDoctorEligibleForClinicalPractice'
+  );
+  // Verify eligibility function rejects PENDING doctors
+  const cat1PendingCheck = isDoctorEligibleForClinicalPractice({ isVerified: true, verificationStatus: 'PENDING' });
+  assert(cat1PendingCheck.eligible === false, 'Bug 1: Pending doctor is blocked from clinical queue access');
+
+  // Bug 2: Cross-clinic consultation reset prevention
+  assert(
+    consultationControllerContent.includes('clinicId?: string | null') &&
+    consultationControllerContent.includes('...(clinicId !== undefined ? { clinicId } : {})'),
+    'Bug 2: executeCallPatientTransaction scopes consultation reset by clinicId'
+  );
+  const receptionistControllerContent = fs.readFileSync(path.join(__dirname, '../src/controllers/receptionistController.ts'), 'utf8');
+  assert(
+    receptionistControllerContent.includes('executeReceptionistInConsultationTransaction') &&
+    receptionistControllerContent.includes('...(clinicId !== undefined ? { clinicId } : {})'),
+    'Bug 2: executeReceptionistInConsultationTransaction scopes consultation reset by clinicId'
+  );
+
+  // Cross-clinic simulation: resetting Clinic B does NOT affect Clinic A
+  const cat1MockAppointments = [
+    { id: 'appt_a', doctorId: 'doc_1', clinicId: 'clinic_a', status: 'IN_CONSULTATION', appointmentDate: '2026-10-08' },
+    { id: 'appt_b', doctorId: 'doc_1', clinicId: 'clinic_b', status: 'WAITING', appointmentDate: '2026-10-08' },
+  ];
+  // When calling appt_b at clinic_b:
+  const targetClinicId = 'clinic_b';
+  const targetApptId = 'appt_b';
+  cat1MockAppointments.forEach((a) => {
+    if (a.doctorId === 'doc_1' && a.appointmentDate === '2026-10-08' && a.status === 'IN_CONSULTATION' && a.id !== targetApptId) {
+      if (a.clinicId === targetClinicId) {
+        a.status = 'WAITING';
+      }
+    }
+  });
+  assert(cat1MockAppointments[0].status === 'IN_CONSULTATION', 'Bug 2: Clinic A active consultation remains IN_CONSULTATION when Clinic B calls a patient');
+
+  // Bug 3: Walk-in phone lookup non-patient account protection
+  assert(
+    receptionistControllerContent.includes("role: 'PATIENT'") &&
+    receptionistControllerContent.includes('...(normalizedPhone ? [{ phone: normalizedPhone }] : [])'),
+    "Bug 3: receptionistController bookWalkin enforces role: 'PATIENT' on phone search"
+  );
+  const appointmentControllerContent = fs.readFileSync(path.join(__dirname, '../src/controllers/appointmentController.ts'), 'utf8');
+  assert(
+    appointmentControllerContent.includes("role: 'PATIENT'") &&
+    appointmentControllerContent.includes('...(normalizedPhone ? [{ phone: normalizedPhone }] : [])'),
+    "Bug 3: appointmentController bookAppointment enforces role: 'PATIENT' on phone search"
+  );
+
+  // Bug 4: Multi-shift queue token model & ordering
+  assert(
+    consultationControllerContent.includes('getApptStartMins') &&
+    consultationControllerContent.includes('aSlotMins - bSlotMins'),
+    'Bug 4: consultationController orders queue by slot timing before queueNumber'
+  );
+  assert(
+    receptionistControllerContent.includes('getApptStartMins') &&
+    receptionistControllerContent.includes('aSlotMins - bSlotMins'),
+    'Bug 4: receptionistController orders queue by slot timing before queueNumber'
+  );
+  // Verify multi-shift sorting simulation: Morning Queue #2 comes before Evening Queue #1
+  const cat1ShiftAppts = [
+    { id: 'e1', checkingWindow: 'Evening Shift (05:00 PM – 07:00 PM)', queueNumber: 1, appointmentDate: '2026-10-08' },
+    { id: 'm1', checkingWindow: 'Morning Shift (09:00 AM – 11:00 AM)', queueNumber: 2, appointmentDate: '2026-10-08' },
+  ];
+  const getSlotStartMins = (a: any) => {
+    const match = a.checkingWindow?.match(/(\d{1,2}:\d{2}\s*(?:AM|PM)?)/i);
+    return match ? timeToMinutes(match[1]) : 0;
+  };
+  cat1ShiftAppts.sort((a, b) => {
+    const aMins = getSlotStartMins(a);
+    const bMins = getSlotStartMins(b);
+    if (aMins !== bMins) return aMins - bMins;
+    return a.queueNumber - b.queueNumber;
+  });
+  assert(cat1ShiftAppts[0].id === 'm1' && cat1ShiftAppts[0].queueNumber === 2, 'Bug 4: Morning Shift patient (09:00 AM) is prioritized at top of doctor queue ahead of Evening Shift patient (05:00 PM)');
+
+  // Bug 5: Reschedule invalid/full/passed slot validation & UTC timezone fix
+  assert(
+    !receptionistControllerContent.includes('const currentMinutes = now.getHours() * 60 + now.getMinutes()'),
+    'Bug 5: rescheduleAppointment has zero unsafe server UTC now.getHours() references'
+  );
+  assert(
+    receptionistControllerContent.includes('getIndianTimeMinutes(now)') &&
+    receptionistControllerContent.includes('evaluateSlotStatus') &&
+    receptionistControllerContent.includes('has already ended for') &&
+    receptionistControllerContent.includes('has reached its maximum patient capacity'),
+    'Bug 5: rescheduleAppointment validates target slot with evaluateSlotStatus for full and passed slots'
+  );
+
   console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);

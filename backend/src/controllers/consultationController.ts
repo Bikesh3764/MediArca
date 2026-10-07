@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import prisma from '../config/database';
 import { AuthRequest } from '../middleware/authMiddleware';
-import { getLocalDateString } from '../utils/scheduleUtils';
+import { getLocalDateString, timeToMinutes } from '../utils/scheduleUtils';
 import { canTransition } from '../utils/appointmentStateMachine';
 import { isDoctorEligibleForClinicalPractice } from '../utils/authGuards';
 import { createNotification } from '../services/notificationService';
@@ -22,12 +22,9 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
       return;
     }
 
-    if (doctor.verificationStatus === 'SUSPENDED') {
-      res.status(403).json({ success: false, message: 'Practitioner account is currently suspended from clinical practice.' });
-      return;
-    }
-    if (doctor.verificationStatus === 'REJECTED') {
-      res.status(403).json({ success: false, message: 'Practitioner registration has been declined by administration.' });
+    const docCheck = isDoctorEligibleForClinicalPractice(doctor);
+    if (!docCheck.eligible) {
+      res.status(403).json({ success: false, message: docCheck.reason });
       return;
     }
 
@@ -77,6 +74,27 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
       orderBy: scope === 'all-upcoming'
         ? [{ appointmentDate: 'asc' }, { queueNumber: 'asc' }]
         : { queueNumber: 'asc' },
+    });
+
+    const getApptStartMins = (a: any): number => {
+      if (a.checkingWindow) {
+        const match = a.checkingWindow.match(/(\d{1,2}:\d{2}\s*(?:AM|PM)?)/i);
+        if (match) return timeToMinutes(match[1]);
+      }
+      return 0;
+    };
+
+    // Chronologically order appointments by date, slot window start time, then queueNumber (Finding 4)
+    appointments.sort((a, b) => {
+      if (a.appointmentDate !== b.appointmentDate) {
+        return a.appointmentDate.localeCompare(b.appointmentDate);
+      }
+      const aSlotMins = getApptStartMins(a);
+      const bSlotMins = getApptStartMins(b);
+      if (aSlotMins !== bSlotMins) {
+        return aSlotMins - bSlotMins;
+      }
+      return a.queueNumber - b.queueNumber;
     });
 
     const activeInConsultation = appointments.find((a) => a.status === 'IN_CONSULTATION') || null;
@@ -136,7 +154,8 @@ export const executeCallPatientTransaction = async (
   prismaClient: any,
   doctorId: string,
   appointmentDate: string,
-  appointmentId: string
+  appointmentId: string,
+  clinicId?: string | null
 ) => {
   return await prismaClient.$transaction(async (tx: any) => {
     // Concurrency control: acquire exclusive row lock on DoctorProfile to serialize queue transitions
@@ -144,13 +163,14 @@ export const executeCallPatientTransaction = async (
       await tx.$executeRaw`SELECT id FROM "DoctorProfile" WHERE id = ${doctorId} FOR UPDATE;`;
     }
 
-    // Reset any other currently IN_CONSULTATION appointments on this date back to WAITING for this doctor
+    // Reset any other currently IN_CONSULTATION appointments on this date back to WAITING for this doctor at the same facility (Finding 2)
     await tx.appointment.updateMany({
       where: {
         doctorId,
         appointmentDate,
         status: 'IN_CONSULTATION',
         id: { not: appointmentId },
+        ...(clinicId !== undefined ? { clinicId } : {}),
       },
       data: { status: 'WAITING' },
     });
@@ -262,7 +282,8 @@ export const callPatient = async (req: AuthRequest, res: Response): Promise<void
       prisma,
       doctor.id,
       targetAppointment.appointmentDate,
-      appointmentId
+      appointmentId,
+      targetAppointment.clinicId
     );
 
     if (updated?.patient?.user) {

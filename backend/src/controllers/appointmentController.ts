@@ -411,6 +411,7 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
       if (cleanPhone) {
         patientUser = await prisma.user.findFirst({
           where: {
+            role: 'PATIENT',
             OR: [
               ...(normalizedPhone ? [{ phone: normalizedPhone }] : []),
               ...(rawDigits ? [{ phone: rawDigits }] : []),
