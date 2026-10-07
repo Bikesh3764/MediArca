@@ -423,7 +423,7 @@ export const executeCompleteConsultationAtomic = async (
     where: {
       id: appointmentId,
       doctorId,
-      status: { in: ['IN_CONSULTATION', 'WAITING'] },
+      status: 'IN_CONSULTATION',
     },
     data: {
       status: 'COMPLETED',
@@ -487,19 +487,37 @@ export const completeConsultation = async (req: AuthRequest, res: Response): Pro
       return;
     }
 
+    // Date check: consultations can only be finalized on the scheduled date
+    const todayIso = getLocalDateString(new Date());
+    if (targetAppointment.appointmentDate !== todayIso) {
+      res.status(400).json({
+        success: false,
+        message: `Cannot complete a consultation for ${targetAppointment.appointmentDate}. Consultations can only be completed on the scheduled appointment date (today is ${todayIso}).`,
+      });
+      return;
+    }
+
+    if (!targetAppointment.isCheckedIn) {
+      res.status(400).json({
+        success: false,
+        message: 'Patient has not checked in at the clinic yet. Patient must arrive at the clinic before consultation can be completed.',
+      });
+      return;
+    }
+
+    if (targetAppointment.status !== 'IN_CONSULTATION') {
+      res.status(400).json({
+        success: false,
+        message: `Cannot complete consultation for an appointment with status '${targetAppointment.status}'. Patient must be actively in consultation ('IN_CONSULTATION').`,
+      });
+      return;
+    }
+
     const transitionCheck = canTransition(targetAppointment.status, 'COMPLETED', 'DOCTOR');
     if (!transitionCheck.allowed) {
       res.status(400).json({
         success: false,
         message: transitionCheck.reason || `Cannot complete consultation for an appointment with status '${targetAppointment.status}'.`,
-      });
-      return;
-    }
-
-    if (targetAppointment.status === 'WAITING' && !targetAppointment.isCheckedIn) {
-      res.status(400).json({
-        success: false,
-        message: 'Patient has not checked in at the clinic yet. Patient must arrive at the clinic before consultation can be completed.',
       });
       return;
     }

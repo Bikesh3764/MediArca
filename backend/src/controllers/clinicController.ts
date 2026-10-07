@@ -66,11 +66,11 @@ export const getMyClinic = async (req: AuthRequest, res: Response): Promise<void
       clinic.checkinCode = generatedCode;
     }
 
-    // Gate operational and patient data if clinic is suspended or rejected (Finding M2)
-    const isSuspendedOrRejected =
-      clinic.verificationStatus === 'SUSPENDED' || clinic.verificationStatus === 'REJECTED';
+    // Gate operational and patient data if clinic is unverified, pending, suspended, or rejected (Finding M2, Issue 8)
+    const isNotActiveOrVerified =
+      !clinic.isVerified || clinic.verificationStatus !== 'VERIFIED';
 
-    if (isSuspendedOrRejected) {
+    if (isNotActiveOrVerified) {
       res.json({
         success: true,
         data: {

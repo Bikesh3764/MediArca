@@ -35,8 +35,8 @@ export const formatDoctorClinics = (doc: any) => {
       name: r.user?.fullName || 'Reception Desk',
     }));
 
-    // Exclude raw clinic.receptionists from public clinic projection (FIX-006)
-    const { receptionists: _clinicRecs, ...cleanClinic } = cd.clinic || {};
+    // Exclude raw clinic.receptionists and physical check-in security code from public clinic projection (FIX-006, SEC-001)
+    const { receptionists: _clinicRecs, checkinCode: _secretCode, ...cleanClinic } = cd.clinic || {};
 
     return {
       ...cd,
@@ -266,6 +266,7 @@ export const getDoctorById = async (req: Request, res: Response): Promise<void> 
       },
       reviews: {
         orderBy: { createdAt: 'desc' as const },
+        take: 10,
         include: {
           patientUser: { select: { fullName: true, avatarUrl: true } },
         },
@@ -388,6 +389,41 @@ export const updateSchedule = async (req: AuthRequest, res: Response): Promise<v
     let derivedEndTime = checkingEndTime;
     let derivedMaxPatients = maxDailyPatients;
     let derivedAvgMinutes = avgConsultationMinutes;
+
+    const timeRegex = /^([01]\d|2[0-3]):[0-5]\d$/;
+    if (checkingStartTime !== undefined) {
+      if (typeof checkingStartTime !== 'string' || !timeRegex.test(checkingStartTime.trim())) {
+        res.status(400).json({
+          success: false,
+          message: 'Invalid checkingStartTime format. Expected valid 24-hour time string in HH:mm format (e.g. 09:00).',
+        });
+        return;
+      }
+      derivedStartTime = checkingStartTime.trim();
+    }
+
+    if (checkingEndTime !== undefined) {
+      if (typeof checkingEndTime !== 'string' || !timeRegex.test(checkingEndTime.trim())) {
+        res.status(400).json({
+          success: false,
+          message: 'Invalid checkingEndTime format. Expected valid 24-hour time string in HH:mm format (e.g. 13:00).',
+        });
+        return;
+      }
+      derivedEndTime = checkingEndTime.trim();
+    }
+
+    if (derivedStartTime && derivedEndTime) {
+      const [sh, sm] = derivedStartTime.split(':').map(Number);
+      const [eh, em] = derivedEndTime.split(':').map(Number);
+      if (eh * 60 + em <= sh * 60 + sm) {
+        res.status(400).json({
+          success: false,
+          message: 'Invalid schedule times: checkingEndTime must be strictly after checkingStartTime.',
+        });
+        return;
+      }
+    }
 
     if (slots) {
       let parsed: any;

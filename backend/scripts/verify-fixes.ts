@@ -3075,8 +3075,8 @@ async function runTests() {
   assert(canTransition('WAITING', 'IN_CONSULTATION', 'DOCTOR').allowed === true, 'Doctor can call WAITING patient to IN_CONSULTATION');
   assert(canTransition('WAITING', 'IN_CONSULTATION', 'RECEPTIONIST').allowed === true, 'Receptionist can advance WAITING patient to IN_CONSULTATION');
   assert(canTransition('WAITING', 'IN_CONSULTATION', 'PATIENT').allowed === false, 'Patient cannot call themselves into consultation');
-  assert(canTransition('WAITING', 'COMPLETED', 'DOCTOR').allowed === true, 'Doctor can complete WAITING consultation directly');
-  assert(canTransition('WAITING', 'COMPLETED', 'RECEPTIONIST').allowed === true, 'Receptionist can mark WAITING consultation COMPLETED');
+  assert(canTransition('WAITING', 'COMPLETED', 'DOCTOR').allowed === false, 'Doctor CANNOT complete WAITING consultation directly (must be IN_CONSULTATION)');
+  assert(canTransition('WAITING', 'COMPLETED', 'RECEPTIONIST').allowed === false, 'Receptionist CANNOT mark WAITING consultation COMPLETED (must be IN_CONSULTATION)');
   assert(canTransition('WAITING', 'CANCELLED', 'RECEPTIONIST').allowed === true, 'Receptionist can cancel WAITING appointment');
 
   // IN_CONSULTATION transitions
@@ -3340,7 +3340,7 @@ async function runTests() {
 
   // --- Test 119: Strict State Machine Transition Violations ---
   assert(canTransition('IN_CONSULTATION', 'COMPLETED', 'RECEPTIONIST').allowed === true, 'Receptionist can mark consultation COMPLETED');
-  assert(canTransition('WAITING', 'COMPLETED', 'RECEPTIONIST').allowed === true, 'Receptionist can complete WAITING appointment');
+  assert(canTransition('WAITING', 'COMPLETED', 'RECEPTIONIST').allowed === false, 'Receptionist CANNOT complete WAITING appointment (must be IN_CONSULTATION)');
   assert(canTransition('IN_CONSULTATION', 'COMPLETED', 'PATIENT').allowed === false, 'Patient cannot complete consultation');
   assert(canTransition('IN_CONSULTATION', 'PENDING_APPROVAL', 'RECEPTIONIST').allowed === false, 'Receptionist cannot revert IN_CONSULTATION to PENDING_APPROVAL');
   assert(canTransition('COMPLETED', 'IN_CONSULTATION', 'DOCTOR').allowed === false, 'Doctor cannot recall COMPLETED consultation');
@@ -5219,8 +5219,8 @@ Follow-up Date: 2026-10-15`;
   console.log('\n--- Test 157: Doctor & Receptionist Consultation Completion and Patient Presence ---');
   assert(canTransition('IN_CONSULTATION', 'COMPLETED', 'DOCTOR').allowed === true, 'Doctor can complete consultation');
   assert(canTransition('IN_CONSULTATION', 'COMPLETED', 'RECEPTIONIST').allowed === true, 'Receptionist can complete consultation');
-  assert(canTransition('WAITING', 'COMPLETED', 'DOCTOR').allowed === true, 'Doctor can complete waiting consultation directly');
-  assert(canTransition('WAITING', 'COMPLETED', 'RECEPTIONIST').allowed === true, 'Receptionist can complete waiting consultation directly');
+  assert(canTransition('WAITING', 'COMPLETED', 'DOCTOR').allowed === false, 'Doctor CANNOT complete waiting consultation directly (must be IN_CONSULTATION)');
+  assert(canTransition('WAITING', 'COMPLETED', 'RECEPTIONIST').allowed === false, 'Receptionist CANNOT complete waiting consultation directly (must be IN_CONSULTATION)');
   assert(canTransition('IN_CONSULTATION', 'COMPLETED', 'PATIENT').allowed === false, 'Patient cannot complete consultation');
 
   // --- Test 158: Cabin Presence & Date Enforcement for Call and Complete Consultation ---
@@ -5796,7 +5796,7 @@ Follow-up Date: 2026-10-15`;
   console.log('\n--- Test 165: FIX-004 WAITING -> COMPLETED Consultation Completion & State Machine Guards ---');
 
   // 1. State machine rules verification
-  assert(canTransition('WAITING', 'COMPLETED', 'DOCTOR').allowed === true, 'Doctor can transition WAITING to COMPLETED');
+  assert(canTransition('WAITING', 'COMPLETED', 'DOCTOR').allowed === false, 'Doctor CANNOT transition WAITING to COMPLETED (must be IN_CONSULTATION)');
   assert(canTransition('IN_CONSULTATION', 'COMPLETED', 'DOCTOR').allowed === true, 'Doctor can transition IN_CONSULTATION to COMPLETED');
   assert(canTransition('PENDING_APPROVAL', 'COMPLETED', 'DOCTOR').allowed === false, 'Doctor CANNOT transition PENDING_APPROVAL to COMPLETED');
   assert(canTransition('CANCELLED', 'COMPLETED', 'DOCTOR').allowed === false, 'Doctor CANNOT transition CANCELLED to COMPLETED');
@@ -5876,16 +5876,16 @@ Follow-up Date: 2026-10-15`;
     },
   };
 
-  // Case A: WAITING -> COMPLETED for checked-in appointment
+  // Case A: WAITING -> COMPLETED is blocked (must be IN_CONSULTATION)
   const resWaitingComplete = await executeCompleteConsultationAtomic(
     mockCompletionPrisma,
     'doc-99',
     'appt-waiting-checked-in',
     { clinicalNotes: 'Diagnosed and treated directly' }
   );
-  assert(resWaitingComplete !== null, 'Case A: executeCompleteConsultationAtomic successfully completes WAITING appointment');
-  assert(resWaitingComplete?.status === 'COMPLETED', 'Case A: WAITING appointment transitioned to COMPLETED');
-  assert(resWaitingComplete?.clinicalNotes === 'Diagnosed and treated directly', 'Case A: Clinical notes attached to completed appointment');
+  assert(resWaitingComplete === null, 'Case A: executeCompleteConsultationAtomic rejects WAITING appointment (must be IN_CONSULTATION)');
+  const checkWaitingAppt = completionTestState.appointments.find((a) => a.id === 'appt-waiting-checked-in');
+  assert(checkWaitingAppt?.status === 'WAITING', 'Case A: WAITING appointment remains WAITING without premature completion');
 
   // Case A.2: IN_CONSULTATION -> COMPLETED remains fully functional
   const resInConsultationComplete = await executeCompleteConsultationAtomic(
@@ -5917,21 +5917,21 @@ Follow-up Date: 2026-10-15`;
   );
   assert(resCancelledComplete === null, 'CANCELLED appointment returns null and cannot be completed');
 
-  // Case D: Validation check for WAITING checked-in requirement
+  // Case D: Validation check for consultation completion readiness (must be IN_CONSULTATION and checked-in)
   const validateConsultationCompletionReadiness = (appt: { status: string; isCheckedIn: boolean }) => {
     const transition = canTransition(appt.status, 'COMPLETED', 'DOCTOR');
     if (!transition.allowed) {
       return { allowed: false, message: transition.reason };
     }
-    if (appt.status === 'WAITING' && !appt.isCheckedIn) {
+    if (!appt.isCheckedIn) {
       return { allowed: false, message: 'Patient has not checked in at the clinic yet. Patient must arrive at the clinic before consultation can be completed.' };
     }
     return { allowed: true };
   };
 
   assert(
-    validateConsultationCompletionReadiness({ status: 'WAITING', isCheckedIn: true }).allowed === true,
-    'Checked-in WAITING appointment passes consultation completion readiness validation'
+    validateConsultationCompletionReadiness({ status: 'WAITING', isCheckedIn: true }).allowed === false,
+    'Checked-in WAITING appointment is blocked from completion until in consultation'
   );
   assert(
     validateConsultationCompletionReadiness({ status: 'WAITING', isCheckedIn: false }).allowed === false,
@@ -9052,6 +9052,106 @@ Follow-up Date: 2026-10-15`;
     serverContent.includes("process.exit(options.exitCode ?? 0);") &&
     serverContent.includes("exitCode?: number;"),
     'Bug 19: server.ts uncaughtException triggers graceful shutdown and exits with non-zero exit code'
+  );
+
+  // =========================================================================
+  // --- Comprehensive 12-Defect Audit Verification Suite ---
+  // =========================================================================
+  console.log('\n--- Comprehensive 12-Defect Audit Verification Suite ---');
+
+  // Issue 1: formatDoctorClinics omits checkinCode alongside receptionists
+  assert(
+    doctorControllerContent.includes("receptionists: _receptionists, checkinCode: _secretCode, ...safeClinic") ||
+    doctorControllerContent.includes("checkinCode: _secretCode"),
+    'Issue 1: formatDoctorClinics safely omits physical QR checkinCode from public doctor clinic projections'
+  );
+
+  // Issue 2: State machine and controller strictly reject WAITING -> COMPLETED
+  assert(
+    canTransition('WAITING', 'COMPLETED', 'DOCTOR').allowed === false &&
+    canTransition('WAITING', 'COMPLETED', 'RECEPTIONIST').allowed === false,
+    'Issue 2: State machine disallows premature WAITING -> COMPLETED for doctors and receptionists'
+  );
+  assert(
+    canTransition('IN_CONSULTATION', 'COMPLETED', 'DOCTOR').allowed === true,
+    'Issue 2: State machine allows canonical IN_CONSULTATION -> COMPLETED for doctors'
+  );
+
+  // Issue 3: Synthetic walk-in auto-takeover removed from auth
+  assert(
+    !authControllerContent.includes("migrateSyntheticWalkinAppointments(user.id, normalizedPhone)") &&
+    !authControllerContent.includes("migrateSyntheticWalkinAppointments(userId, normalizedPhone)"),
+    'Issue 3: Blind phone-based synthetic walk-in auto-migration is completely removed from registration and profile update'
+  );
+
+  // Issue 4: Registration enforces cooldown on unverified account OTP regeneration
+  assert(
+    authControllerContent.includes("const cooldown = checkResendCooldown(cleanEmail);") &&
+    authControllerContent.includes("recordResendAttempt(cleanEmail);"),
+    'Issue 4: Unverified email re-registration enforces OTP resend cooldown and rate-limiting'
+  );
+
+  // Issue 5: Automated migration deployment script and Render startCommand
+  const packageJsonContent = fs.readFileSync(path.join(__dirname, '../package.json'), 'utf-8');
+  const renderYamlContent = fs.readFileSync(path.join(__dirname, '../../render.yaml'), 'utf-8');
+  assert(
+    packageJsonContent.includes("scripts/deploy-migrations.js") &&
+    packageJsonContent.includes('"start": "npm run prisma:migrate:deploy && node dist/server.js"'),
+    'Issue 5: backend package.json wires deploy-migrations.js directly into npm start'
+  );
+  assert(
+    renderYamlContent.includes("startCommand: npm start"),
+    'Issue 5: render.yaml specifies npm start to automatically trigger deploy-migrations.js'
+  );
+
+  // Issue 6: Multi-shift ETA calculation uses shift-specific ordinal position
+  assert(
+    receptionistControllerContent.includes("const confirmedInSlot = slot ? await tx.appointment.count({") &&
+    receptionistControllerContent.includes("Math.round(confirmedInSlot * pace)"),
+    'Issue 6: executeApproveAppointmentTransaction computes ETA using shift-specific confirmed appointment count'
+  );
+
+  // Issue 7: Cross-clinic consultation conflict detection
+  assert(
+    receptionistControllerContent.includes("activeInOtherClinic") &&
+    receptionistControllerContent.includes("Doctor is currently in an active consultation at another clinic"),
+    'Issue 7: executeReceptionistInConsultationTransaction guards against simultaneous cross-clinic consultations for the same doctor'
+  );
+
+  // Issue 8: Pending clinic data isolation in getMyClinic
+  assert(
+    clinicControllerContentCat3.includes("!clinic.isVerified || clinic.verificationStatus !== 'VERIFIED'") &&
+    clinicControllerContentCat3.includes("isNotActiveOrVerified"),
+    'Issue 8: getMyClinic isolates staff, revenue, and appointment data for unverified/pending clinics'
+  );
+
+  // Issue 9: Direct doctor check-in verifies clinical practice eligibility
+  assert(
+    appointmentControllerContent.includes("const docCheck = isDoctorEligibleForClinicalPractice(appointment.doctor);") &&
+    appointmentControllerContent.includes("if (!docCheck.eligible) {"),
+    'Issue 9: checkInAppointmentDirect verifies doctor clinical practice eligibility'
+  );
+
+  // Issue 10: QR check-in clinic active status & clinicId matching
+  assert(
+    appointmentControllerContent.includes("const clinicCheck = isClinicActive(clinic);") &&
+    appointmentControllerContent.includes("if (!clinicCheck.active) {") &&
+    appointmentControllerContent.includes("if (appointment.clinicId !== clinic.id) {"),
+    'Issue 10: checkInAppointmentWithQR validates active clinic status and strict clinicId matching'
+  );
+
+  // Issue 11: Legacy schedule time format and sequence validation
+  assert(
+    doctorControllerContent.includes("!timeRegex.test(checkingStartTime.trim())") &&
+    doctorControllerContent.includes("Invalid checkingStartTime format"),
+    'Issue 11: updateSchedule validates HH:mm time formatting and start < end order for legacy shifts'
+  );
+
+  // Issue 12: Doctor detail bounded reviews
+  assert(
+    doctorControllerContent.includes("take: 10,") &&
+    doctorControllerContent.includes("orderBy: { createdAt: 'desc' }"),
+    'Issue 12: getDoctorById applies bounded pagination (take: 10) to nested reviews'
   );
 
   console.log(`\n========================================`);

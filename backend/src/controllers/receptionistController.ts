@@ -788,6 +788,26 @@ export const executeReceptionistInConsultationTransaction = async (
       await tx.$executeRaw`SELECT id FROM "DoctorProfile" WHERE id = ${doctorId} FOR UPDATE;`;
     }
 
+    // Guard: ensure practitioner is not actively consulting a patient at another facility (Issue 7)
+    if (clinicId) {
+      const activeInOtherClinic = await tx.appointment.findFirst({
+        where: {
+          doctorId,
+          appointmentDate,
+          status: 'IN_CONSULTATION',
+          clinicId: { not: clinicId },
+          id: { not: appointmentId },
+        },
+        include: { clinic: true },
+      });
+
+      if (activeInOtherClinic) {
+        throw new Error(
+          `Cannot call patient into consultation: Doctor is currently in an active consultation at another clinic (${activeInOtherClinic.clinic?.clinicName || 'another facility'}). Only one consultation can be active at a time.`
+        );
+      }
+    }
+
     // Reset any other active consultations for this doctor on this date to WAITING at this facility (Finding 2)
     await tx.appointment.updateMany({
       where: {
@@ -890,12 +910,14 @@ export const updateAppointmentStatus = async (req: AuthRequest, res: Response): 
         });
         return;
       }
+    }
 
+    if (status === 'IN_CONSULTATION' || status === 'COMPLETED') {
       const todayIso = getLocalDateString();
       if (targetAppointment.appointmentDate !== todayIso) {
         res.status(400).json({
           success: false,
-          message: `Cannot move an appointment scheduled for ${targetAppointment.appointmentDate} into consultation today.`,
+          message: `Cannot update an appointment scheduled for ${targetAppointment.appointmentDate} to '${status}' today. Status updates are only allowed on the scheduled consultation date.`,
         });
         return;
       }
@@ -903,11 +925,10 @@ export const updateAppointmentStatus = async (req: AuthRequest, res: Response): 
       if (!targetAppointment.isCheckedIn) {
         res.status(400).json({
           success: false,
-          message: 'Patient has not checked in at the clinic yet. Patient must arrive at the clinic before being called into consultation.',
+          message: `Patient has not checked in at the clinic yet. Patient must arrive at the clinic before appointment can be updated to '${status}'.`,
         });
         return;
       }
-
     }
 
     const updatePayload: any = { status };
@@ -1461,29 +1482,28 @@ export const executeApproveAppointmentTransaction = async (
     }
     const slot = (currentAppt.slotId && slots.find((s: any) => s.id === currentAppt.slotId)) || slots[0];
 
-    // Check if slot has already reached capacity
-    if (slot && slot.maxPatients) {
-      const confirmedInSlot = await tx.appointment.count({
-        where: {
-          doctorId: currentAppt.doctorId,
-          appointmentDate: currentAppt.appointmentDate,
-          status: { in: ['WAITING', 'IN_CONSULTATION', 'COMPLETED'] },
-          ...(slot.id ? { slotId: slot.id } : {}),
-          ...(currentAppt.clinicId ? { clinicId: currentAppt.clinicId } : {}),
-        },
-      });
-      if (confirmedInSlot >= slot.maxPatients) {
-        throw new Error(`Cannot approve: checking shift (${slot.name}) has already reached its maximum capacity (${slot.maxPatients} patients).`);
-      }
+    // Check if slot has already reached capacity and count patients ahead for shift ETA (Issue 6)
+    const confirmedInSlot = slot ? await tx.appointment.count({
+      where: {
+        doctorId: currentAppt.doctorId,
+        appointmentDate: currentAppt.appointmentDate,
+        status: { in: ['WAITING', 'IN_CONSULTATION', 'COMPLETED'] },
+        ...(slot.id ? { slotId: slot.id } : {}),
+        ...(currentAppt.clinicId ? { clinicId: currentAppt.clinicId } : {}),
+      },
+    }) : 0;
+
+    if (slot && slot.maxPatients && confirmedInSlot >= slot.maxPatients) {
+      throw new Error(`Cannot approve: checking shift (${slot.name}) has already reached its maximum capacity (${slot.maxPatients} patients).`);
     }
 
     const pace = slot?.avgConsultationMinutes || 3.0;
 
-    // Estimate start time = slot start + (nextToken - 1) * pace
+    // Estimate start time based on ordinal position inside their specific slot (Issue 6)
     let estTime = currentAppt.estimatedTime;
     if (slot?.startTime) {
       const [sh, sm] = slot.startTime.split(':').map(Number);
-      const totalMins = sh * 60 + sm + Math.round((nextToken - 1) * pace);
+      const totalMins = sh * 60 + sm + Math.round(confirmedInSlot * pace);
       const eh = Math.floor(totalMins / 60) % 24;
       const em = totalMins % 60;
       const period = eh >= 12 ? 'PM' : 'AM';
@@ -1901,6 +1921,7 @@ export const rescheduleAppointment = async (req: AuthRequest, res: Response): Pr
           const chosenSlotId = newSlotId || appointment.slotId;
           const slot = (chosenSlotId && slots.find((s) => s.id === chosenSlotId)) || slots[0];
 
+          let bookedInSlot = 0;
           if (slot) {
             // Validate target slot capacity and expiration for destination date (Finding 5)
             const dayAppointments = await tx.appointment.findMany({
@@ -1918,7 +1939,7 @@ export const rescheduleAppointment = async (req: AuthRequest, res: Response): Pr
               },
             });
 
-            const bookedInSlot = dayAppointments.filter((a) => {
+            bookedInSlot = dayAppointments.filter((a) => {
               if (a.slotId && slot.id) return a.slotId === slot.id;
               if (a.checkingWindow && slot.startTime) return a.checkingWindow.includes(slot.startTime);
               return slots.length === 1;
@@ -1950,7 +1971,7 @@ export const rescheduleAppointment = async (req: AuthRequest, res: Response): Pr
 
           const pace = slot?.avgConsultationMinutes || 3.0;
           const slotStartMins = slot ? timeToMinutes(slot.startTime) : 9 * 60;
-          const tokenOffset = isPending ? 0 : Math.max(0, nextQueueNumber - 1);
+          const tokenOffset = isPending ? 0 : bookedInSlot;
           const estStartMins = slotStartMins + tokenOffset * pace;
           const estimatedTime = minutesTo12Hour(estStartMins);
           const checkingWindow = slot ? `${slot.startTime} – ${slot.endTime}` : (appointment.checkingWindow || 'General Hours');

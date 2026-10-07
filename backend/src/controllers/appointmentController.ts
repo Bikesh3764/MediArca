@@ -1499,6 +1499,16 @@ export const checkInAppointmentWithQR = async (req: AuthRequest, res: Response):
       return;
     }
 
+    // Verify clinic is active and verified before allowing check-in (Issue 10)
+    const clinicCheck = isClinicActive(clinic);
+    if (!clinicCheck.active) {
+      res.status(403).json({
+        success: false,
+        message: clinicCheck.reason || 'This clinic facility is currently inactive or not verified for arrival check-ins.',
+      });
+      return;
+    }
+
     // Anti-spoofing verification: check security code on physical poster
     const normalizedCode = String(code).trim();
     if (!clinic.checkinCode || clinic.checkinCode !== normalizedCode) {
@@ -1526,7 +1536,7 @@ export const checkInAppointmentWithQR = async (req: AuthRequest, res: Response):
         res.status(404).json({ success: false, message: 'Appointment not found or not owned by your account' });
         return;
       }
-      if (appointment.clinicId && appointment.clinicId !== clinic.id) {
+      if (appointment.clinicId !== clinic.id) {
         res.status(400).json({
           success: false,
           message: `This appointment is booked at a different venue (${appointment.clinic?.clinicName || 'another clinic'}).`,
@@ -1549,10 +1559,7 @@ export const checkInAppointmentWithQR = async (req: AuthRequest, res: Response):
           patientId: patient.id,
           appointmentDate: todayStr,
           status: { in: ['WAITING', 'IN_CONSULTATION'] },
-          OR: [
-            { clinicId: clinic.id },
-            { clinicId: null },
-          ],
+          clinicId: clinic.id,
         },
         include: {
           patient: true,
@@ -1705,6 +1712,11 @@ export const checkInAppointmentDirect = async (req: AuthRequest, res: Response):
     if (req.user.role === 'DOCTOR') {
       if (appointment.doctor.userId !== req.user.id) {
         res.status(403).json({ success: false, message: "Unauthorized for another practitioner's appointment" });
+        return;
+      }
+      const docCheck = isDoctorEligibleForClinicalPractice(appointment.doctor);
+      if (!docCheck.eligible) {
+        res.status(403).json({ success: false, message: docCheck.reason });
         return;
       }
     } else if (req.user.role === 'RECEPTIONIST') {

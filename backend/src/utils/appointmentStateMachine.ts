@@ -82,10 +82,10 @@ export const canTransition = (
         return { allowed: false, reason: 'Only practitioners or desk staff can call a patient into consultation.' };
       }
       if (to === 'COMPLETED') {
-        if (['DOCTOR', 'RECEPTIONIST'].includes(actorRole)) {
-          return { allowed: true };
-        }
-        return { allowed: false, reason: 'Only the examining doctor or receptionist desk can mark a consultation as completed.' };
+        return {
+          allowed: false,
+          reason: 'Patient must be called into consultation before the consultation can be completed. Direct transition from WAITING to COMPLETED is not permitted.',
+        };
       }
       if (to === 'CANCELLED') {
         return { allowed: true };

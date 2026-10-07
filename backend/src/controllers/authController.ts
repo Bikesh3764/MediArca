@@ -164,6 +164,17 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         return;
       }
 
+      // Enforce OTP resend cooldown on unverified account re-registration (Issue 4)
+      const cooldown = checkResendCooldown(cleanEmail);
+      if (!cooldown.allowed) {
+        res.status(429).json({
+          success: false,
+          message: `Verification code was recently requested for this email. Please wait ${cooldown.remainingSeconds} seconds before requesting a new code.`,
+          retryAfterSeconds: cooldown.remainingSeconds,
+        });
+        return;
+      }
+
       // Existing unverified account: update credentials and allow completing verification!
       const salt = await bcrypt.genSalt(10);
       const passwordHash = await bcrypt.hash(password, salt);
@@ -200,6 +211,9 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       sendVerificationOtpEmail(cleanEmail, otp, fullName).catch((mailErr) => {
         console.error('Async OTP email dispatch failed on unverified re-registration:', mailErr);
       });
+
+      // Record OTP send timestamp to enforce 60s cooldown on immediate resends (Issue 4)
+      recordResendAttempt(cleanEmail);
 
       const { passwordHash: _, ...userWithoutPassword } = updatedUser;
       res.status(200).json({
@@ -388,10 +402,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       });
     }
 
-    // Reclaim/reassign past appointments from any synthetic walk-in account with the same phone (BUG-12, BUG-17)
-    if (normalizedRole === 'PATIENT' && formattedPhone) {
-      await migrateSyntheticWalkinAppointments(newUser.id, formattedPhone);
-    }
+    // Note: Do not automatically reassign synthetic appointments on registration without phone verification (Issue 3)
 
     // Trigger OTP Email dispatch via Gmail SMTP
     sendVerificationOtpEmail(cleanEmail, otp, fullName).catch((mailErr) => {
@@ -1151,9 +1162,7 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
       }
     });
 
-    if (req.user.role === 'PATIENT' && formattedPhone) {
-      await migrateSyntheticWalkinAppointments(req.user.id, formattedPhone);
-    }
+    // Note: Do not automatically reassign synthetic appointments on profile update without verified phone ownership (Issue 3)
 
     const refreshedUser = await prisma.user.findUnique({
       where: { id: req.user.id },
