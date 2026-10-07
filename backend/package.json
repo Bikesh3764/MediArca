@@ -8,6 +8,9 @@
     "build": "npx prisma generate && tsc",
     "start": "node dist/server.js",
     "prisma:generate": "npx prisma generate",
+    "prisma:migrate:deploy": "npx prisma migrate deploy",
+    "prisma:migrate:dev": "npx prisma migrate dev",
+    "prisma:migrate:status": "npx prisma migrate status",
     "prisma:push": "npx prisma db push",
     "prisma:seed": "ts-node-dev prisma/seed.ts",
     "test:verify": "ts-node scripts/verify-fixes.ts"
