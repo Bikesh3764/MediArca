@@ -156,8 +156,8 @@ async function runTests() {
   assert(legacyParsed[0].endTime === '12:00', 'Legacy slot endTime is 12:00');
 
   // 4. Time Pass Bug: Slot Elapsed for Today
-  // Test case: appointmentDate is TODAY, slot was 09:00 - 11:00, but current time is 11:30 AM!
-  const nowPassed = new Date(2026, 8, 11, 11, 30); // 11:30 AM
+  // Test case: appointmentDate is TODAY, slot was 09:00 - 11:00, but current time is 11:30 AM IST!
+  const nowPassed = new Date('2026-09-11T11:30:00+05:30'); // 11:30 AM IST
   const slotMorning: DoctorSlot = {
     id: 's1',
     name: 'Morning Shift',
@@ -172,8 +172,8 @@ async function runTests() {
   assert(statusPassed.estimatedTime === 'Shift Ended', 'Estimated time is NOT past time like 09:20 AM');
 
   // 5. Time Pass Bug: Active In-Progress Slot Today
-  // Test case: slot is 09:00 - 13:00, current time is 10:15 AM, 2 patients ahead
-  const nowActive = new Date(2026, 8, 11, 10, 15); // 10:15 AM
+  // Test case: slot is 09:00 - 13:00, current time is 10:15 AM IST, 2 patients ahead
+  const nowActive = new Date('2026-09-11T10:15:00+05:30'); // 10:15 AM IST
   const slotLong: DoctorSlot = {
     id: 's_long',
     name: 'Full Morning',
@@ -221,8 +221,8 @@ async function runTests() {
   const metricsNight = calculateSlotMetrics('22:00', '02:00', 20);
   assert(metricsNight.durationMinutes === 240, '22:00 to 02:00 overnight duration is 240 minutes');
   assert(metricsNight.avgConsultationMinutes === 12.0, '240m / 20 = 12.0m pace');
-  // Evaluate at 23:00 (1380 mins) on same day: should NOT be marked passed
-  const nowNight = new Date(2026, 8, 11, 23, 0);
+  // Evaluate at 23:00 IST (1380 mins) on same day: should NOT be marked passed
+  const nowNight = new Date('2026-09-11T23:00:00+05:30');
   const statusNight = evaluateSlotStatus(slotOvernight, '2026-09-11', 1, nowNight);
   assert(statusNight.isPassed === false, 'Overnight shift is NOT marked passed at 23:00');
   assert(statusNight.isInProgress === true, 'Overnight shift is active at 23:00');
@@ -230,7 +230,7 @@ async function runTests() {
   // 9. Active In-Progress Slot Near Shift End (Within maxPatients capacity)
   // Shift ends at 11:00 AM (660 mins). Clock is 10:55 AM (655 mins). 5 patients ahead * 2.4 min = 12 mins -> 667 mins (11:07 AM).
   // With maxPatients = 50, only 5 patients are booked: shift is NOT full!
-  const nowCloseToEnd = new Date(2026, 8, 11, 10, 55);
+  const nowCloseToEnd = new Date('2026-09-11T10:55:00+05:30');
   const statusNearEnd = evaluateSlotStatus(slotMorning, '2026-09-11', 5, nowCloseToEnd);
   assert(statusNearEnd.isFull === false, 'Shift with 5/50 capacity is NOT marked isFull near shift end');
   assert(statusNearEnd.isPassed === false, 'Shift has not ended yet at 10:55 AM');
@@ -1991,7 +1991,7 @@ async function runTests() {
   assert(evalFullEarlyShift.isFull === true, 'Walk-in shift is marked isFull when max patient capacity reached');
 
   // Slot passed check: current time 11:00 AM IST (after 10:00 AM end)
-  const nowPassedTime = new Date(2026, 8, 28, 11, 0); // 11:00 AM local
+  const nowPassedTime = new Date('2026-09-28T11:00:00+05:30'); // 11:00 AM IST
   const evalPassedEarlyShift = evaluateSlotStatus(earlyShift, '2026-09-28', 2, nowPassedTime);
   assert(evalPassedEarlyShift.isPassed === true, 'Walk-in shift is marked isPassed when current time exceeds shift end');
 
@@ -2404,7 +2404,7 @@ async function runTests() {
     avgConsultationMinutes: 20,
   };
   // Simulate 12:43 PM today (763 mins) with 1 patient booked (Queue #2):
-  const now1243 = new Date(2026, 8, 28, 12, 43);
+  const now1243 = new Date('2026-09-28T12:43:00+05:30');
   const statusSarah = evaluateSlotStatus(slotSarah, '2026-09-28', 1, now1243);
   assert(statusSarah.isPassed === false, 'Shift ending at 13:00 is NOT passed at 12:43 PM');
   assert(statusSarah.isInProgress === true, 'Shift is actively in progress at 12:43 PM');
@@ -2432,7 +2432,7 @@ async function runTests() {
   assert(customPaceSlot.avgConsultationMinutes === 25, 'Doctor-entered consultation pace (25m) is preserved');
   // Evaluate estimated time for patient #3 (2 patients ahead):
   // 10:00 AM (600m) + 2 * 25m = 650m = 10:50 AM
-  const nowCustom = new Date(2026, 8, 28, 9, 30); // before shift
+  const nowCustom = new Date('2026-09-28T09:30:00+05:30'); // before shift
   const statusCustom = evaluateSlotStatus(customPaceSlot, '2026-09-28', 2, nowCustom);
   assert(statusCustom.estimatedTime === '10:50 AM', `Estimated time uses doctor pace 25m: 10:50 AM, got ${statusCustom.estimatedTime}`);
 
@@ -2577,7 +2577,7 @@ async function runTests() {
     avgConsultationMinutes: 10,
   };
   // 5 total bookings, but all 5 have already been COMPLETED (0 currently waiting)
-  const nowShift = new Date(2026, 8, 28, 9, 30);
+  const nowShift = new Date('2026-09-28T09:30:00+05:30');
   const statusZeroWaiting = evaluateSlotStatus(slotTest, '2026-09-28', 5, nowShift, 9 * 60 + 30, 0);
   assert(statusZeroWaiting.patientsAhead === 0, 'When 0 patients waiting, patientsAhead is 0 despite 5 completed');
   assert(statusZeroWaiting.estimatedTime === '09:30 AM', `Estimated time is active now (09:30 AM), got ${statusZeroWaiting.estimatedTime}`);
@@ -2649,7 +2649,7 @@ async function runTests() {
 
   // --- Test 96: Server-Authoritative Time & Indian Standard Time Evaluation ---
   console.log('\n--- Test 96: Server-Authoritative Time & Indian Standard Time Evaluation ---');
-  const localDateStr = getLocalDateString(new Date(2026, 8, 28, 12, 0));
+  const localDateStr = getLocalDateString(new Date('2026-09-28T12:00:00+05:30'));
   assert(/^\d{4}-\d{2}-\d{2}$/.test(localDateStr), 'getLocalDateString returns valid YYYY-MM-DD date string');
 
   const istMinutes = getIndianTimeMinutes(new Date());
@@ -2666,7 +2666,7 @@ async function runTests() {
   };
   // Server clock is 13:00 (after shift end). Malicious client claims clientMinutes = 540 (09:00 AM).
   // The server controller uses server-authoritative time and does NOT pass clientMinutes.
-  const serverNow = new Date(2026, 8, 28, 13, 0); // 1:00 PM (shift passed)
+  const serverNow = new Date('2026-09-28T13:00:00+05:30'); // 1:00 PM IST (shift passed)
   const authEvaluation = evaluateSlotStatus(testSlotAuth, '2026-09-28', 10, serverNow);
   assert(authEvaluation.isPassed === true, 'Server-authoritative evaluation correctly marks expired shift as passed');
   assert(authEvaluation.statusLabel === 'Shift Ended for Today', 'Status correctly reports Shift Ended for Today');
