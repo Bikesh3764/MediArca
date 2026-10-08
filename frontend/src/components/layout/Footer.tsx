@@ -43,10 +43,10 @@ export const Footer: React.FC = () => {
 
           {/* Column 2: Clinical Care (Spans 3 columns) */}
           <div className="lg:col-span-3 space-y-4">
-            <h4 className="text-sm font-semibold text-[#1d1d1f] tracking-wide uppercase">
+            <h4 className="text-[12px] font-semibold text-[#1d1d1f] tracking-[0.04em] uppercase">
               Clinical Care
             </h4>
-            <ul className="space-y-2.5 text-sm text-[#555558]">
+            <ul className="space-y-2.5 text-[13px] text-[#48484a]">
               <li>
                 <Link to="/doctors" className="hover:text-[#0066cc] transition-colors py-0.5 inline-block">
                   Find Doctors
@@ -80,10 +80,10 @@ export const Footer: React.FC = () => {
 
           {/* Column 3: Specialties (Spans 2 columns) */}
           <div className="lg:col-span-2 space-y-4">
-            <h4 className="text-sm font-semibold text-[#1d1d1f] tracking-wide uppercase">
+            <h4 className="text-[12px] font-semibold text-[#1d1d1f] tracking-[0.04em] uppercase">
               Specialties
             </h4>
-            <ul className="space-y-2.5 text-sm text-[#555558]">
+            <ul className="space-y-2.5 text-[13px] text-[#48484a]">
               <li>
                 <Link to="/doctors?specialty=General+Medicine" className="hover:text-[#0066cc] transition-colors py-0.5 inline-block">
                   General Medicine
@@ -119,10 +119,10 @@ export const Footer: React.FC = () => {
 
           {/* Column 4: Company & Support (Spans 3 columns) */}
           <div className="lg:col-span-3 space-y-4">
-            <h4 className="text-sm font-semibold text-[#1d1d1f] tracking-wide uppercase">
+            <h4 className="text-[12px] font-semibold text-[#1d1d1f] tracking-[0.04em] uppercase">
               Company & Help
             </h4>
-            <ul className="space-y-2.5 text-sm text-[#555558]">
+            <ul className="space-y-2.5 text-[13px] text-[#48484a]">
               <li>
                 <Link to="/about" className="hover:text-[#0066cc] transition-colors py-0.5 inline-block">
                   About MediArca
@@ -152,11 +152,11 @@ export const Footer: React.FC = () => {
           <div className="mt-12 pt-6 border-t border-[#e5e5ea] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-[#0066cc]" />
-              <span className="text-sm font-semibold text-[#1d1d1f]">
+              <span className="text-[13px] font-semibold text-[#1d1d1f]">
                 Desk & Partner Portals:
               </span>
             </div>
-            <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[13px]">
               <Link
                 to="/patient/login"
                 className="text-[#48484a] hover:text-[#0066cc] transition-colors font-medium"
@@ -189,16 +189,16 @@ export const Footer: React.FC = () => {
         )}
 
         {/* Bottom Disclaimer & Copyright Bar */}
-        <div className="mt-8 pt-6 border-t border-[#e5e5ea] space-y-4 text-xs text-[#86868b]">
-          <p className="text-xs leading-relaxed text-[#71717a]">
-            <strong>Medical Disclaimer:</strong> MediArca is an outpatient queue management platform designed to optimize appointment flow and reduce waiting room delays. MediArca is not an emergency medical service. In the event of a medical emergency, please call 112 / 108 immediately or visit the nearest hospital casualty department.
+        <div className="mt-8 pt-6 border-t border-[#e5e5ea] space-y-4 text-[12px] text-[#86868b]">
+          <p className="text-[12px] leading-relaxed text-[#86868b]">
+            <strong className="font-semibold text-[#48484a]">Medical Disclaimer:</strong> MediArca is an outpatient queue management platform designed to optimize appointment flow and reduce waiting room delays. MediArca is not an emergency medical service. In the event of a medical emergency, please call 112 / 108 immediately or visit the nearest hospital casualty department.
           </p>
 
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pt-2">
-            <p className="text-xs sm:text-sm text-[#48484a]">
+            <p className="text-[12px] sm:text-[13px] text-[#48484a]">
               © {currentYear} MediArca. All rights reserved.
             </p>
-            <div className="flex flex-wrap items-center gap-5 text-xs sm:text-sm text-[#48484a]">
+            <div className="flex flex-wrap items-center gap-5 text-[12px] sm:text-[13px] text-[#48484a]">
               <Link to="/terms" className="hover:text-[#0066cc] transition-colors">
                 Terms
               </Link>

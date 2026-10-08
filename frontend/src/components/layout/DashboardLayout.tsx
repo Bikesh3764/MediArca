@@ -121,23 +121,23 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const renderSidebarContent = () => (
     <div className="flex flex-col h-full justify-between bg-white select-none">
       <div className="p-5 space-y-6">
-        {/* Brand & Portal Type (Matches media_1789192783321.jpg) */}
+        {/* Brand & Portal Type */}
         <div>
           <Link to="/" className="inline-block hover:opacity-90 transition-opacity">
             <BrandLogo variant="full" size="md" imgClassName="h-7 w-auto" />
           </Link>
-          <div className="mt-1.5 text-[10px] font-bold tracking-widest text-[#86868b] uppercase">
+          <div className="mt-1.5 text-[11px] font-semibold tracking-[0.06em] text-[#86868b] uppercase">
             {getPortalLabel()}
           </div>
         </div>
 
         {/* User Capsule Card */}
-        <div className="bg-[#f5f5f7] border border-[#e5e5ea] rounded-2xl p-3 flex items-center gap-3 transition-all hover:bg-[#ebebeb]">
-          <div className="w-9 h-9 rounded-full bg-[#0066cc] text-white flex items-center justify-center font-bold text-sm shadow-xs flex-shrink-0">
+        <div className="bg-[#f5f5f7] border border-[#e5e5ea] rounded-[20px] p-3 flex items-center gap-3 transition-colors duration-150 hover:bg-[#ededf0]">
+          <div className="w-9 h-9 rounded-full bg-[#0066cc] text-white flex items-center justify-center font-bold text-sm shadow-2xs flex-shrink-0">
             {initialLetter}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-semibold text-[#1d1d1f] truncate leading-tight">
+            <p className="text-[13px] font-semibold text-[#1d1d1f] truncate leading-tight">
               {formattedDisplayName}
             </p>
             <div className="flex items-center gap-1.5 mt-0.5">
@@ -150,7 +150,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
         {/* NAVIGATION Section */}
         <div>
-          <p className="text-[10px] font-bold text-[#86868b] tracking-wider uppercase mb-2 px-3">
+          <p className="text-[11px] font-semibold text-[#86868b] tracking-[0.04em] uppercase mb-2 px-3">
             Navigation
           </p>
           <nav className="space-y-1">
@@ -165,10 +165,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
               const content = (
                 <div
-                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-full text-xs font-medium transition-all active:scale-[0.99] ${
+                  className={`w-full h-10 flex items-center justify-between px-3.5 rounded-xl text-[13px] transition-all duration-150 active:scale-[0.99] ${
                     isItemActive
-                      ? 'bg-[#0066cc]/10 text-[#0066cc] font-semibold border border-[#0066cc]/20'
-                      : 'text-[#48484a] hover:bg-[#f5f5f7] hover:text-[#1d1d1f]'
+                      ? 'bg-[#0066cc]/10 text-[#0066cc] font-semibold'
+                      : 'text-[#48484a] hover:bg-[#f5f5f7] hover:text-[#1d1d1f] font-medium'
                   }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
@@ -182,7 +182,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                   <div className="flex items-center gap-2">
                     {item.badge !== undefined && (
                       <span
-                        className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
+                        className={`text-[11px] px-2 py-0.5 rounded-full font-semibold ${
                           isItemActive
                             ? 'bg-[#0066cc] text-white shadow-2xs'
                             : 'bg-[#e5e5ea] text-[#48484a]'
@@ -233,32 +233,32 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
         {/* QUICK LINKS Section */}
         <div>
-          <p className="text-[10px] font-bold text-[#86868b] tracking-wider uppercase mb-2 px-3">
+          <p className="text-[11px] font-semibold text-[#86868b] tracking-[0.04em] uppercase mb-2 px-3">
             Quick Links
           </p>
           <div className="space-y-1">
             <Link
               to="/"
               onClick={() => setMobileDrawerOpen(false)}
-              className="flex items-center justify-between px-3.5 py-2 rounded-full text-xs text-[#48484a] hover:bg-[#f5f5f7] hover:text-[#1d1d1f] transition-all active:scale-[0.99]"
+              className="h-9 flex items-center justify-between px-3.5 rounded-xl text-[13px] font-medium text-[#48484a] hover:bg-[#f5f5f7] hover:text-[#1d1d1f] transition-all duration-150 active:scale-[0.99]"
             >
               <div className="flex items-center gap-3">
                 <Globe className="w-4 h-4 text-[#86868b]" />
                 <span>Main Website</span>
               </div>
-              <ChevronRight className="w-3.5 h-3.5 text-[#c7c7cc]" />
+              <ChevronRight className="w-3.5 h-3.5 text-[#d2d2d7]" />
             </Link>
             {portalType !== 'PATIENT' && (
               <Link
                 to="/doctors"
                 onClick={() => setMobileDrawerOpen(false)}
-                className="flex items-center justify-between px-3.5 py-2 rounded-full text-xs text-[#48484a] hover:bg-[#f5f5f7] hover:text-[#1d1d1f] transition-all active:scale-[0.99]"
+                className="h-9 flex items-center justify-between px-3.5 rounded-xl text-[13px] font-medium text-[#48484a] hover:bg-[#f5f5f7] hover:text-[#1d1d1f] transition-all duration-150 active:scale-[0.99]"
               >
                 <div className="flex items-center gap-3">
                   <Stethoscope className="w-4 h-4 text-[#86868b]" />
                   <span>Find Doctors</span>
                 </div>
-                <ChevronRight className="w-3.5 h-3.5 text-[#c7c7cc]" />
+                <ChevronRight className="w-3.5 h-3.5 text-[#d2d2d7]" />
               </Link>
             )}
           </div>
@@ -269,7 +269,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       <div className="p-4 border-t border-[#e5e5ea]">
         <button
           onClick={handleLogout}
-          className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-full text-xs font-medium text-[#48484a] hover:text-rose-600 hover:bg-rose-50/70 transition-all active:scale-[0.98]"
+          className="w-full h-10 flex items-center gap-2.5 px-3.5 rounded-xl text-[13px] font-medium text-[#48484a] hover:text-[#ff3b30] hover:bg-[#ff3b30]/10 transition-all duration-150 active:scale-[0.98]"
         >
           <LogOut className="w-4 h-4" />
           <span>Sign Out</span>
@@ -290,11 +290,11 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       </aside>
 
       {/* Mobile Top Navigation Bar */}
-      <div className="md:hidden sticky top-0 z-40 bg-white/85 backdrop-blur-xl border-b border-black/[0.06] px-4 py-3 flex items-center justify-between shadow-2xs">
+      <div className="md:hidden sticky top-0 z-40 bg-white/85 backdrop-blur-xl backdrop-saturate-150 border-b border-[#e5e5ea] px-4 h-14 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <button
             onClick={() => setMobileDrawerOpen(true)}
-            className="p-1.5 rounded-full text-[#1d1d1f] hover:bg-[#f5f5f7] active:scale-95 transition-all"
+            className="w-8 h-8 flex items-center justify-center rounded-full text-[#1d1d1f] hover:bg-[#f5f5f7] active:scale-[0.97] transition-all"
             aria-label="Open sidebar menu"
           >
             <Menu className="w-5 h-5" />
@@ -303,7 +303,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             <BrandLogo variant="full" size="sm" imgClassName="h-6 w-auto" />
           </div>
         </div>
-        <span className="text-[10px] font-bold text-[#86868b] tracking-wider uppercase px-2.5 py-0.5 rounded-full bg-[#f5f5f7] border border-[#e5e5ea]">
+        <span className="text-[10px] font-semibold text-[#86868b] tracking-[0.04em] uppercase px-2.5 py-0.5 rounded-full bg-[#f5f5f7] border border-[#e5e5ea]">
           {getPortalLabel()}
         </span>
       </div>
@@ -315,11 +315,11 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             className="fixed inset-0 bg-black/40 backdrop-blur-xs transition-opacity"
             onClick={() => setMobileDrawerOpen(false)}
           />
-          <div className="relative w-4/5 max-w-xs bg-white h-full shadow-2xl flex flex-col z-10 animate-fadeIn">
+          <div className="relative w-4/5 max-w-xs bg-white h-full shadow-[0_10px_32px_-4px_rgba(0,0,0,0.12)] flex flex-col z-10 animate-in fade-in duration-150">
             <div className="absolute top-4 right-4 z-20">
               <button
                 onClick={() => setMobileDrawerOpen(false)}
-                className="p-1 rounded-lg text-[#86868b] hover:text-[#1d1d1f] hover:bg-[#f5f5f7]"
+                className="w-8 h-8 flex items-center justify-center rounded-full text-[#86868b] hover:text-[#1d1d1f] hover:bg-[#f5f5f7]"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -332,14 +332,14 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       {/* Main Content Area */}
       <main className="flex-1 md:pl-64 flex flex-col min-w-0">
         {/* Page Top Header with Greeting & Action Slot */}
-        <div className="bg-white border-b border-[#e5e5ea] px-4 py-4 sm:px-8 sm:py-6">
+        <div className="bg-white border-b border-[#e5e5ea] px-4 py-5 sm:px-6 lg:px-8 sm:py-6">
           <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
             <div>
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#1d1d1f]">
+              <h1 className="text-page-title">
                 {title || defaultGreeting}
               </h1>
               {subtitle && (
-                <p className="text-xs text-[#86868b] mt-0.5 sm:mt-1 font-normal">
+                <p className="text-[13px] sm:text-[14px] text-[#86868b] mt-1 font-normal">
                   {subtitle}
                 </p>
               )}
@@ -353,7 +353,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         </div>
 
         {/* Inner Page View Content */}
-        <div className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
+        <div className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
           {children}
         </div>
       </main>

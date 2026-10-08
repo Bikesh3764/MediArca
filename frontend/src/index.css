@@ -5,6 +5,24 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --mediarca-bg: #f5f5f7;
+    --mediarca-surface: #ffffff;
+    --mediarca-surface-subtle: #fafafc;
+    --mediarca-ink: #1d1d1f;
+    --mediarca-text-secondary: #86868b;
+    --mediarca-text-muted: #6e6e73;
+    --mediarca-border: #e5e5ea;
+    --mediarca-border-strong: #d2d2d7;
+    --mediarca-divider: #f0f0f2;
+    --mediarca-blue: #0066cc;
+    --mediarca-blue-hover: #0071e3;
+    --mediarca-radius-sm: 12px;
+    --mediarca-radius-md: 20px;
+    --mediarca-radius-lg: 24px;
+    --mediarca-radius-pill: 9999px;
+  }
+
   html, body {
     overflow-x: hidden;
     max-width: 100vw;
@@ -13,18 +31,19 @@
   }
 
   body {
-    @apply bg-[#f5f5f7] text-[#1d1d1f] antialiased selection:bg-[#0066cc]/20 selection:text-[#0066cc];
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", sans-serif;
-    font-size: 17px;
-    line-height: 1.47;
-    letter-spacing: -0.022em;
+    @apply bg-[#f5f5f7] text-[#1d1d1f] antialiased selection:bg-[#0066cc]/15 selection:text-[#0066cc];
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", system-ui, sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    letter-spacing: -0.014em;
     -webkit-tap-highlight-color: transparent;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", sans-serif;
-    letter-spacing: -0.028em;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif;
+    letter-spacing: -0.022em;
     font-weight: 600;
+    color: #1d1d1f;
   }
 
   button, a, input, select, textarea {
@@ -41,60 +60,144 @@
   }
 }
 
+@layer components {
+  /* ==========================================================================
+   * 1. TYPOGRAPHY HIERARCHY
+   * ========================================================================== */
+  .text-page-title {
+    @apply font-display text-[22px] sm:text-[26px] font-semibold tracking-[-0.024em] text-[#1d1d1f] leading-tight;
+  }
+
+  .text-section-title {
+    @apply font-display text-[18px] sm:text-[20px] font-semibold tracking-[-0.02em] text-[#1d1d1f] leading-snug;
+  }
+
+  .text-card-title {
+    @apply font-display text-[15px] sm:text-[16px] font-semibold tracking-[-0.015em] text-[#1d1d1f] leading-snug;
+  }
+
+  .text-body {
+    @apply font-sans text-[14px] sm:text-[15px] font-normal tracking-[-0.011em] text-[#1d1d1f] leading-relaxed;
+  }
+
+  .text-secondary {
+    @apply font-sans text-[13px] font-normal tracking-[-0.008em] text-[#86868b] leading-relaxed;
+  }
+
+  .text-label,
+  .ui-label {
+    @apply block font-sans text-[13px] font-medium tracking-[-0.01em] text-[#1d1d1f] mb-1.5 select-none;
+  }
+
+  .text-meta {
+    @apply font-sans text-[11px] font-semibold uppercase tracking-[0.04em] text-[#86868b];
+  }
+
+  /* ==========================================================================
+   * 2. SPACING RHYTHM
+   * ========================================================================== */
+  .ui-page-container {
+    @apply max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8;
+  }
+
+  .ui-section {
+    @apply space-y-6 sm:space-y-8;
+  }
+
+  .ui-form-stack {
+    @apply space-y-4;
+  }
+
+  .ui-control-group {
+    @apply space-y-1.5;
+  }
+
+  /* ==========================================================================
+   * 3. STANDARDIZED INPUTS & FORM CONTROLS
+   * ========================================================================== */
+  .ui-input,
+  .ui-select {
+    @apply w-full h-11 px-3.5 rounded-xl bg-white border border-[#d2d2d7]/80 text-[14px] text-[#1d1d1f] placeholder:text-[#86868b] transition-all duration-150 hover:border-[#86868b]/60 focus:outline-none focus:border-[#0066cc] focus:ring-[3px] focus:ring-[#0066cc]/15 disabled:bg-[#f5f5f7] disabled:text-[#86868b] disabled:cursor-not-allowed;
+  }
+
+  .ui-textarea {
+    @apply w-full min-h-[96px] p-3.5 rounded-xl bg-white border border-[#d2d2d7]/80 text-[14px] text-[#1d1d1f] placeholder:text-[#86868b] transition-all duration-150 hover:border-[#86868b]/60 focus:outline-none focus:border-[#0066cc] focus:ring-[3px] focus:ring-[#0066cc]/15 disabled:bg-[#f5f5f7] disabled:text-[#86868b] disabled:cursor-not-allowed;
+  }
+
+  .ui-input-error {
+    @apply border-rose-400 focus:border-rose-500 focus:ring-rose-500/15;
+  }
+
+  /* ==========================================================================
+   * 4. STANDARDIZED CARDS & POPOVERS
+   * ========================================================================== */
+  .apple-card,
+  .ui-card {
+    @apply bg-white rounded-[20px] border border-[#e5e5ea] p-5 sm:p-6 shadow-[0_2px_10px_0_rgba(0,0,0,0.02)] transition-all duration-200;
+  }
+
+  .apple-card-hover,
+  .ui-card-hover {
+    @apply apple-card hover:border-[#d2d2d7] hover:shadow-[0_6px_20px_-4px_rgba(0,0,0,0.05)];
+  }
+
+  .ui-popover {
+    @apply bg-white/95 backdrop-blur-xl rounded-[20px] border border-[#e5e5ea] shadow-[0_10px_32px_-4px_rgba(0,0,0,0.08)] p-2 animate-in fade-in zoom-in-95 duration-150;
+  }
+
+  .ui-popover-option {
+    @apply w-full h-9 px-3 rounded-xl text-[13px] flex items-center justify-between gap-2 transition-colors cursor-pointer select-none text-left;
+  }
+
+  /* ==========================================================================
+   * 5. STANDARDIZED BUTTON UTILITY CLASSES
+   * ========================================================================== */
+  .apple-pill-btn {
+    @apply inline-flex items-center justify-center h-10 px-5 rounded-full text-[13px] sm:text-[14px] font-medium tracking-[-0.01em] transition-all duration-150 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066cc]/25 disabled:opacity-45 disabled:pointer-events-none cursor-pointer select-none;
+  }
+
+  .apple-pill-primary {
+    @apply apple-pill-btn bg-[#0066cc] hover:bg-[#0071e3] text-white shadow-2xs;
+  }
+
+  .apple-pill-secondary {
+    @apply apple-pill-btn bg-white text-[#0066cc] border border-[#0066cc]/30 hover:border-[#0066cc] hover:bg-[#0066cc]/5;
+  }
+
+  .apple-pill-ghost {
+    @apply apple-pill-btn bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea] hover:bg-[#e8e8ed] hover:border-[#d2d2d7];
+  }
+
+  /* ==========================================================================
+   * 6. BRAND & GLASS SURFACES
+   * ========================================================================== */
+  .mediarca-gradient {
+    @apply bg-[#0066cc];
+  }
+
+  .mediarca-text-gradient {
+    @apply text-[#0066cc];
+  }
+
+  .mediarca-badge {
+    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20;
+  }
+
+  .apple-frosted {
+    @apply bg-white/85 backdrop-blur-xl backdrop-saturate-150 border-b border-[#e5e5ea];
+  }
+
+  .apple-frosted-dark {
+    @apply bg-[#1d1d1f]/85 backdrop-blur-xl backdrop-saturate-150 border-b border-white/10 text-white;
+  }
+}
+
 .pb-safe {
   padding-bottom: max(env(safe-area-inset-bottom), 1rem);
 }
 
 .pt-safe {
   padding-top: max(env(safe-area-inset-top), 1rem);
-}
-
-/* Apple Design System Utility Classes */
-.apple-pill-btn {
-  @apply inline-flex items-center justify-center font-normal px-[22px] py-[11px] rounded-full transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:pointer-events-none;
-}
-
-.apple-pill-primary {
-  @apply apple-pill-btn bg-[#0066cc] hover:bg-[#0071e3] text-white shadow-2xs hover:shadow-xs;
-}
-
-.apple-pill-secondary {
-  @apply apple-pill-btn bg-white text-[#0066cc] border border-[#0066cc] hover:bg-[#0066cc]/5;
-}
-
-.apple-pill-ghost {
-  @apply apple-pill-btn bg-[#fafafc] text-[#1d1d1f] border border-[#e5e5ea] hover:bg-white hover:border-[#d2d2d7];
-}
-
-.apple-card {
-  @apply bg-white rounded-[20px] border border-[#e5e5ea] p-6 transition-all duration-200;
-}
-
-.apple-card-hover {
-  @apply apple-card hover:border-[#0066cc]/30 hover:shadow-apple-card;
-}
-
-/* MediArca Signature Brand Theme Utilities */
-.mediarca-gradient {
-  background: linear-gradient(135deg, #0066cc 0%, #10b981 100%);
-}
-
-.mediarca-text-gradient {
-  background: linear-gradient(135deg, #0066cc 0%, #10b981 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.mediarca-badge {
-  @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20;
-}
-
-.apple-frosted {
-  @apply bg-white/80 backdrop-blur-xl backdrop-saturate-[1.8] border-b border-black/[0.06];
-}
-
-.apple-frosted-dark {
-  @apply bg-[#1d1d1f]/80 backdrop-blur-xl backdrop-saturate-[1.8] border-b border-white/10 text-white;
 }
 
 /* Custom crisp scrollbar */
@@ -113,7 +216,7 @@
   background: #a1a1a6;
 }
 
-/* Crisp Clean Prescription Printing */
+/* Crisp Clean Printing */
 @media print {
   header,
   footer,
@@ -143,4 +246,3 @@
     box-shadow: none !important;
   }
 }
-
