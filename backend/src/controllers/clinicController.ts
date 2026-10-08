@@ -3,7 +3,8 @@ import { Response } from 'express';
 import bcrypt from 'bcryptjs';
 import prisma from '../config/database';
 import { AuthRequest } from '../middleware/authMiddleware';
-import { isValidIndianPhone, formatIndianPhone, sanitizeIndianPhone } from '../utils/phoneUtils';
+import { isValidIndianPhone, formatIndianPhone, sanitizeIndianPhone, findExistingAccountByPhone } from '../utils/phoneUtils';
+import { isDoctorEligibleForClinicalPractice } from '../utils/authGuards';
 import { createNotification } from '../services/notificationService';
 import { parsePaginationParams, buildPaginationMetadata } from '../utils/pagination';
 
@@ -347,10 +348,11 @@ export const addDoctorToClinic = async (req: AuthRequest, res: Response): Promis
       return;
     }
 
-    if (!doctor.isVerified) {
+    const docCheck = isDoctorEligibleForClinicalPractice(doctor);
+    if (!docCheck.eligible) {
       res.status(400).json({
         success: false,
-        message: 'Doctor is pending administrative verification. Unverified doctors cannot be affiliated with clinics.',
+        message: docCheck.reason || 'Doctor is pending administrative verification. Unverified doctors cannot be affiliated with clinics.',
       });
       return;
     }
@@ -543,6 +545,15 @@ export const respondToDoctorAffiliation = async (req: AuthRequest, res: Response
     const docName = affiliation.doctor.user.fullName;
 
     if (normalizedAction === 'ACCEPT') {
+      const docCheck = isDoctorEligibleForClinicalPractice(affiliation.doctor);
+      if (!docCheck.eligible) {
+        res.status(400).json({
+          success: false,
+          message: docCheck.reason || 'Doctor is not eligible for clinical practice or affiliation.',
+        });
+        return;
+      }
+
       const updated = await prisma.clinicDoctor.update({
         where: { id: affiliation.id },
         data: { status: 'ACCEPTED' },
@@ -989,7 +1000,7 @@ export const addClinicReceptionist = async (req: AuthRequest, res: Response): Pr
     });
 
     if (existingUser) {
-      res.status(400).json({ success: false, message: 'An account with this email already exists' });
+      res.status(409).json({ success: false, message: 'An account with this email already exists' });
       return;
     }
 
@@ -1008,6 +1019,15 @@ export const addClinicReceptionist = async (req: AuthRequest, res: Response): Pr
         return;
       }
       formattedPhone = formatIndianPhone(trimmedPhone);
+
+      const existingPhoneUser = await findExistingAccountByPhone(prisma, formattedPhone);
+      if (existingPhoneUser) {
+        res.status(409).json({
+          success: false,
+          message: 'An account with this mobile number already exists. Each mobile number can only be linked to a single account.',
+        });
+        return;
+      }
     }
 
     // Validate that provided doctorIds belong to this clinic

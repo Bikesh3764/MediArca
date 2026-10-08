@@ -69,3 +69,63 @@ export const isValidIndianPhone = (raw: string | undefined | null): boolean => {
 
   return false;
 };
+
+/**
+ * Generates all canonical and legacy storage variants for a 10-digit Indian mobile number
+ * so uniqueness checks match regardless of spacing or +91 prefix formatting.
+ */
+export const getPhoneSearchVariants = (raw: string | undefined | null): string[] => {
+  const digits = sanitizeIndianPhone(raw);
+  if (!digits || digits.length !== 10 || !/^[6-9]/.test(digits)) {
+    return [];
+  }
+  return Array.from(
+    new Set([
+      `+91 ${digits}`,
+      `+91${digits}`,
+      digits,
+      `+91 ${digits.slice(0, 5)} ${digits.slice(5)}`,
+      `91${digits}`,
+      `0${digits}`,
+    ])
+  );
+};
+
+/**
+ * Checks if any real (non-synthetic walk-in) user account already holds the given mobile number.
+ * Excludes synthetic walk-in placeholder rows (`@mediarca.local` / `walkin.`) and optionally excludes a specific userId.
+ */
+export const findExistingAccountByPhone = async (
+  prismaClient: any,
+  rawPhone: string | undefined | null,
+  options?: { excludeUserId?: string }
+): Promise<{ id: string; email: string; role: string; phone: string | null; isEmailVerified?: boolean } | null> => {
+  const variants = getPhoneSearchVariants(rawPhone);
+  if (variants.length === 0 || !prismaClient?.user?.findFirst) {
+    return null;
+  }
+
+  const whereClause: any = {
+    phone: { in: variants },
+    NOT: [
+      { email: { endsWith: '@mediarca.local', mode: 'insensitive' } },
+      { email: { startsWith: 'walkin.', mode: 'insensitive' } },
+    ],
+  };
+
+  if (options?.excludeUserId) {
+    whereClause.id = { not: options.excludeUserId };
+  }
+
+  return await prismaClient.user.findFirst({
+    where: whereClause,
+    select: {
+      id: true,
+      email: true,
+      role: true,
+      phone: true,
+      isEmailVerified: true,
+    },
+  });
+};
+

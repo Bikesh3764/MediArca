@@ -66,8 +66,7 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const rawDigits = sanitizeIndianPhone(phone);
-    if (rawDigits.length > 0 && !isValidIndianPhone(phone)) {
+    if (!isValidIndianPhone(phone)) {
       setError('Please enter a valid 10-digit Indian mobile number.');
       return;
     }
@@ -79,7 +78,7 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
         fullName,
         email,
         password,
-        phone: isValidIndianPhone(phone) ? formatIndianPhone(phone) : undefined,
+        phone: formatIndianPhone(phone),
         role,
       };
 
@@ -282,6 +281,7 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
                   <input
                     type="tel"
                     inputMode="numeric"
+                    required
                     maxLength={10}
                     value={sanitizeIndianPhone(phone)}
                     onChange={(e) => {

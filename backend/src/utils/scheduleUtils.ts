@@ -259,12 +259,14 @@ export const isValidAppointmentDate = (dateStr: any): boolean => {
  */
 export const isValidDobDate = (dateStr: any): boolean => {
   if (!dateStr || typeof dateStr !== 'string') return false;
-  const match = dateStr.trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const trimmed = dateStr.trim();
+  const match = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (!match) return false;
   const year = parseInt(match[1], 10);
   const month = parseInt(match[2], 10);
   const day = parseInt(match[3], 10);
-  const currentYear = new Date().getFullYear();
+  const todayIst = getLocalDateString(new Date());
+  const currentYear = parseInt(todayIst.slice(0, 4), 10);
   if (year < 1900 || year > currentYear || month < 1 || month > 12 || day < 1 || day > 31) return false;
   const d = new Date(Date.UTC(year, month - 1, day));
   if (
@@ -274,9 +276,7 @@ export const isValidDobDate = (dateStr: any): boolean => {
   ) {
     return false;
   }
-  const now = new Date();
-  const todayUtc = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
-  return d.getTime() <= todayUtc;
+  return trimmed <= todayIst;
 };
 
 /**

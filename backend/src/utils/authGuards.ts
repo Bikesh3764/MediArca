@@ -138,35 +138,55 @@ export const verifyReceptionistDoctorAccess = async (
   });
 
   if (!assignment) {
-    // Fallback: If receptionist belongs to a clinic where this doctor has an active affiliation
+    // Fallback: Only if receptionist has NO explicit active doctor assignments (general clinic desk staff)
+    // and belongs to the target clinic where this doctor has an active affiliation
     if (receptionist.clinicId) {
-      const clinicAffiliation = await prisma.clinicDoctor.findUnique({
-        where: {
-          clinicId_doctorId: {
-            clinicId: receptionist.clinicId,
-            doctorId,
-          },
-        },
-      });
-      if (clinicAffiliation && (clinicAffiliation.status === 'ACTIVE' || clinicAffiliation.status === 'ACCEPTED')) {
-        let clinic = await prisma.clinicProfile.findUnique({
-          where: { id: receptionist.clinicId },
-        });
-        const clinicCheck = isClinicActive(clinic);
-        if (!clinicCheck.active) {
-          return { authorized: false, reason: clinicCheck.reason };
-        }
+      if (clinicId && receptionist.clinicId !== clinicId) {
         return {
-          authorized: true,
-          receptionist,
-          assignment: {
-            id: 'clinic-affiliation',
-            doctorId,
-            receptionistId: receptionist.id,
-            status: 'ACTIVE',
-          } as any,
-          clinic,
+          authorized: false,
+          reason: 'Access denied: Requested appointment or operation belongs to a different clinic facility.',
         };
+      }
+
+      const activeAssignedCount =
+        typeof prisma.doctorReceptionist?.count === 'function'
+          ? await prisma.doctorReceptionist.count({
+              where: {
+                receptionistId: receptionist.id,
+                status: 'ACTIVE',
+              },
+            })
+          : 0;
+
+      if (activeAssignedCount === 0) {
+        const clinicAffiliation = await prisma.clinicDoctor.findUnique({
+          where: {
+            clinicId_doctorId: {
+              clinicId: receptionist.clinicId,
+              doctorId,
+            },
+          },
+        });
+        if (clinicAffiliation && (clinicAffiliation.status === 'ACTIVE' || clinicAffiliation.status === 'ACCEPTED')) {
+          const clinic = await prisma.clinicProfile.findUnique({
+            where: { id: receptionist.clinicId },
+          });
+          const clinicCheck = isClinicActive(clinic);
+          if (!clinicCheck.active) {
+            return { authorized: false, reason: clinicCheck.reason };
+          }
+          return {
+            authorized: true,
+            receptionist,
+            assignment: {
+              id: 'clinic-affiliation',
+              doctorId,
+              receptionistId: receptionist.id,
+              status: 'ACTIVE',
+            } as any,
+            clinic,
+          };
+        }
       }
     }
     return {

@@ -9,8 +9,9 @@ import {
   validateDoctorSlots,
   getIndianTimeMinutes,
   minutesTo12Hour,
+  timeToMinutes,
 } from '../utils/scheduleUtils';
-import { isDoctorEligibleForClinicalPractice, verifyReceptionistDoctorAccess } from '../utils/authGuards';
+import { isDoctorEligibleForClinicalPractice, verifyReceptionistDoctorAccess, isClinicActive } from '../utils/authGuards';
 import { parsePaginationParams, buildPaginationMetadata } from '../utils/pagination';
 
 export const formatDoctorClinics = (doc: any) => {
@@ -467,12 +468,52 @@ export const updateSchedule = async (req: AuthRequest, res: Response): Promise<v
         return;
       }
 
-      if (!clinicAffiliation.clinic || !clinicAffiliation.clinic.isVerified || clinicAffiliation.clinic.verificationStatus !== 'VERIFIED') {
+      const clinicCheck = isClinicActive(clinicAffiliation.clinic);
+      if (!clinicCheck.active) {
         res.status(403).json({
           success: false,
-          message: 'Clinic facility is not verified or is currently suspended from practice.',
+          message: clinicCheck.reason || 'Clinic facility is not verified or is currently suspended from practice.',
         });
         return;
+      }
+
+      // Prevent physical doctor from configuring overlapping shifts across multiple clinics simultaneously (Issue 7 / Fix #8)
+      if (formattedSlots.length > 0) {
+        const otherAffiliations = await prisma.clinicDoctor.findMany({
+          where: {
+            doctorId: doctor.id,
+            clinicId: { not: clinicId },
+            status: { in: ['ACTIVE', 'ACCEPTED'] },
+            slots: { not: null },
+          },
+          include: { clinic: true },
+        });
+
+        for (const otherAff of otherAffiliations) {
+          if (!isClinicActive(otherAff.clinic).active) continue;
+          let otherSlots: any[] = [];
+          try {
+            const parsed = typeof otherAff.slots === 'string' ? JSON.parse(otherAff.slots) : otherAff.slots;
+            if (Array.isArray(parsed)) otherSlots = parsed;
+          } catch {}
+
+          for (const newSlot of formattedSlots) {
+            const startA = timeToMinutes(newSlot.startTime);
+            const endA = timeToMinutes(newSlot.endTime);
+            for (const existingSlot of otherSlots) {
+              if (!existingSlot?.startTime || !existingSlot?.endTime) continue;
+              const startB = timeToMinutes(existingSlot.startTime);
+              const endB = timeToMinutes(existingSlot.endTime);
+              if (startA < endB && startB < endA) {
+                res.status(400).json({
+                  success: false,
+                  message: `Shift '${newSlot.name}' (${newSlot.startTime}–${newSlot.endTime}) overlaps with your active shift '${existingSlot.name || 'Shift'}' (${existingSlot.startTime}–${existingSlot.endTime}) at ${otherAff.clinic?.clinicName || 'another clinic'}. A practitioner cannot have simultaneous physical shifts at two clinics.`,
+                });
+                return;
+              }
+            }
+          }
+        }
       }
 
       const clinicUpdateData: any = {};
@@ -650,6 +691,7 @@ export const getDoctorAffiliations = async (req: AuthRequest, res: Response): Pr
           city: cd.clinic.city,
           phone: cd.clinic.phone || cd.clinic.user.phone,
           email: cd.clinic.user.email,
+          checkinCode: isClinicActive(cd.clinic).active ? (cd.clinic as any).checkinCode || undefined : undefined,
           bookingCount,
           revenue,
           consultationFee: clinicFee,
@@ -755,13 +797,20 @@ export const addDoctorClinic = async (req: AuthRequest, res: Response): Promise<
       return;
     }
 
-    if (!clinic.isVerified) {
+    const clinicCheck = isClinicActive(clinic);
+    if (!clinicCheck.active) {
       res.status(400).json({
         success: false,
-        message: 'Cannot affiliate with an unverified clinic. Please wait for administrative verification.',
+        message: clinicCheck.reason || 'Cannot affiliate with an unverified or suspended clinic. Please wait for administrative verification.',
       });
       return;
     }
+
+    const sanitizeClinicAffiliation = (aff: any) => {
+      if (!aff || !aff.clinic) return aff;
+      const { checkinCode: _secret, ...safeClinic } = aff.clinic;
+      return { ...aff, clinic: safeClinic };
+    };
 
     const existing = await prisma.clinicDoctor.findUnique({
       where: { clinicId_doctorId: { clinicId: clinic.id, doctorId: doctor.id } },
@@ -783,7 +832,7 @@ export const addDoctorClinic = async (req: AuthRequest, res: Response): Promise<
           res.status(200).json({
             success: true,
             message: `Affiliation with ${clinic.clinicName} accepted successfully`,
-            data: accepted,
+            data: sanitizeClinicAffiliation(accepted),
           });
           return;
         }
@@ -802,7 +851,7 @@ export const addDoctorClinic = async (req: AuthRequest, res: Response): Promise<
         res.status(201).json({
           success: true,
           message: `Affiliation request sent to ${clinic.clinicName}. Waiting for clinic acceptance.`,
-          data: renewed,
+          data: sanitizeClinicAffiliation(renewed),
         });
         return;
       }
@@ -821,7 +870,7 @@ export const addDoctorClinic = async (req: AuthRequest, res: Response): Promise<
     res.status(201).json({
       success: true,
       message: `Affiliation request sent to ${clinic.clinicName}. Waiting for clinic acceptance.`,
-      data: link,
+      data: sanitizeClinicAffiliation(link),
     });
   } catch (error: any) {
     console.error('addDoctorClinic error:', error);
@@ -903,6 +952,15 @@ export const respondToClinicAffiliation = async (req: AuthRequest, res: Response
     const clinicName = affiliation.clinic.clinicName;
 
     if (normalizedAction === 'ACCEPT') {
+      const clinicCheck = isClinicActive(affiliation.clinic);
+      if (!clinicCheck.active) {
+        res.status(400).json({
+          success: false,
+          message: clinicCheck.reason || 'Cannot accept affiliation with an unverified or suspended clinic.',
+        });
+        return;
+      }
+
       const updated = await prisma.clinicDoctor.update({
         where: { id: affiliation.id },
         data: { status: 'ACCEPTED' },
@@ -1074,12 +1132,9 @@ export const updateCabinStatus = async (req: AuthRequest, res: Response): Promis
         res.status(404).json({ success: false, message: 'Doctor profile not found' });
         return;
       }
-      if (doctor.verificationStatus === 'SUSPENDED') {
-        res.status(403).json({ success: false, message: 'Practitioner account is currently suspended from clinical practice.' });
-        return;
-      }
-      if (doctor.verificationStatus === 'REJECTED') {
-        res.status(403).json({ success: false, message: 'Practitioner registration has been declined by administration.' });
+      const docCheck = isDoctorEligibleForClinicalPractice(doctor);
+      if (!docCheck.eligible) {
+        res.status(403).json({ success: false, message: docCheck.reason });
         return;
       }
     } else {
@@ -1160,12 +1215,19 @@ export const updateCabinStatus = async (req: AuthRequest, res: Response): Promis
 export const getDoctorReviews = async (req: Request, res: Response): Promise<void> => {
   try {
     const id = String(req.params.id);
-    const doctor = await prisma.doctorProfile.findUnique({
+    let doctor = await prisma.doctorProfile.findUnique({
       where: { id },
-      select: { id: true, rating: true, totalReviews: true },
+      select: { id: true, rating: true, totalReviews: true, isVerified: true, verificationStatus: true },
     });
 
     if (!doctor) {
+      doctor = await prisma.doctorProfile.findUnique({
+        where: { userId: id },
+        select: { id: true, rating: true, totalReviews: true, isVerified: true, verificationStatus: true },
+      });
+    }
+
+    if (!doctor || !doctor.isVerified || doctor.verificationStatus !== 'VERIFIED') {
       res.status(404).json({ success: false, message: 'Doctor not found' });
       return;
     }
@@ -1173,9 +1235,9 @@ export const getDoctorReviews = async (req: Request, res: Response): Promise<voi
     const { page, limit, skip } = parsePaginationParams(req.query, 20, 50);
 
     const [total, reviews] = await prisma.$transaction([
-      prisma.review.count({ where: { doctorId: id } }),
+      prisma.review.count({ where: { doctorId: doctor.id } }),
       prisma.review.findMany({
-        where: { doctorId: id },
+        where: { doctorId: doctor.id },
         orderBy: { createdAt: 'desc' },
         take: limit,
         skip,

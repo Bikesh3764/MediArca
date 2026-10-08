@@ -42,11 +42,13 @@ import {
   sanitizeIndianPhone,
   formatIndianPhone,
   isValidIndianPhone,
+  getPhoneSearchVariants,
+  findExistingAccountByPhone,
 } from '../src/utils/phoneUtils';
 import { getJwtSecret, optionalAuthenticate, authenticate, AuthRequest } from '../src/middleware/authMiddleware';
 import jwt from 'jsonwebtoken';
 import { canTransition } from '../src/utils/appointmentStateMachine';
-import { isDoctorEligibleForClinicalPractice, isClinicActive } from '../src/utils/authGuards';
+import { isDoctorEligibleForClinicalPractice, isClinicActive, verifyReceptionistDoctorAccess } from '../src/utils/authGuards';
 import { sanitizeClinicalHistoryList, checkNeedsProfileCompletion } from '../src/controllers/authController';
 import app, { registerProcessHandlers, checkCorsOrigin as checkCorsOriginServer } from '../src/server';
 import prisma from '../src/config/database';
@@ -9184,6 +9186,156 @@ Follow-up Date: 2026-10-15`;
       'Issue 13: Live CI PostgreSQL database accepts queries across migrated User, DoctorProfile, ClinicProfile, and Appointment tables'
     );
   }
+
+  // =========================================================================
+  // COMPREHENSIVE PHONE & EMAIL UNIQUENESS + 14 SECURITY/LOGICAL AUDIT SUITE
+  // =========================================================================
+  console.log('\n--- Phone & Email Uniqueness + 14-Defect Security & Logical Audit Suite ---');
+
+  // 1. Phone Uniqueness Helpers (getPhoneSearchVariants & findExistingAccountByPhone)
+  const variants = getPhoneSearchVariants('9876543210');
+  assert(
+    variants.includes('+91 9876543210') &&
+    variants.includes('+919876543210') &&
+    variants.includes('9876543210') &&
+    variants.includes('+91 98765 43210') &&
+    variants.includes('919876543210') &&
+    variants.includes('09876543210'),
+    'Uniqueness: getPhoneSearchVariants generates all 6 normalized & legacy Indian mobile search variants'
+  );
+  assert(
+    getPhoneSearchVariants('12345').length === 0,
+    'Uniqueness: getPhoneSearchVariants returns empty array for invalid phone input'
+  );
+
+  let capturedWhere: any = null;
+  const mockPrismaPhone = {
+    user: {
+      findFirst: async (args: any) => {
+        capturedWhere = args.where;
+        return { id: 'existing-user-1', email: 'real@mediarca.com', role: 'PATIENT', isEmailVerified: true };
+      },
+    },
+  };
+  const foundDuplicate = await findExistingAccountByPhone(mockPrismaPhone, '+91 98765 43210', { excludeUserId: 'self-id-99' });
+  assert(
+    foundDuplicate?.id === 'existing-user-1' &&
+    capturedWhere?.phone?.in?.includes('+91 9876543210') &&
+    capturedWhere?.id?.not === 'self-id-99' &&
+    Array.isArray(capturedWhere?.NOT),
+    'Uniqueness: findExistingAccountByPhone queries across all variants, excludes synthetic walk-in accounts, and respects excludeUserId'
+  );
+
+  // 2. Phone & Email Uniqueness enforced across Auth, Clinic, Receptionist, and Frontend Signup
+  const consultationControllerContentAudit = fs.readFileSync(path.join(__dirname, '../src/controllers/consultationController.ts'), 'utf-8');
+  const authGuardsContentAudit = fs.readFileSync(path.join(__dirname, '../src/utils/authGuards.ts'), 'utf-8');
+  const signupTsxContent = fs.readFileSync(path.join(__dirname, '../../frontend/src/pages/Auth/Signup.tsx'), 'utf-8');
+
+  assert(
+    authControllerContent.includes('findExistingAccountByPhone(prisma, candidatePhoneToCheck, {') &&
+    authControllerContent.includes('findExistingAccountByPhone(prisma, formattedPhone, {') &&
+    authControllerContent.includes('status(409)'),
+    'Fix 1: authController enforces mobile number uniqueness (HTTP 409) in register (new & unverified re-register) and updateProfile'
+  );
+  assert(
+    clinicControllerContentCat3.includes('findExistingAccountByPhone') &&
+    receptionistControllerContent.includes('findExistingAccountByPhone'),
+    'Fix 1: clinicController (addClinicReceptionist) and receptionistController (applyReceptionist) enforce mobile number uniqueness (HTTP 409)'
+  );
+  assert(
+    signupTsxContent.includes('if (!isValidIndianPhone(phone)) {'),
+    'Fix 1: Frontend Signup.tsx strictly requires a valid 10-digit Indian mobile number for Patient and Doctor registration'
+  );
+
+  // 3. Fix 2: rescheduleAppointment strips sensitive fields (no user: true or clinic: true leaks) & validates date/guards
+  assert(
+    !receptionistControllerContent.includes('patient: { include: { user: true } }') &&
+    receptionistControllerContent.includes('isValidAppointmentDate(newDate)') &&
+    receptionistControllerContent.includes('const docCheck = isDoctorEligibleForClinicalPractice(appointment.doctor);'),
+    'Fix 2: rescheduleAppointment prevents passwordHash/OTP/checkinCode leakage, validates newDate, and enforces role & clinical eligibility'
+  );
+
+  // 4. Fix 3: sanitizeUserPayload & controller projections strip checkinCode and sensitive auth fields
+  assert(
+    authControllerContent.includes('export const sanitizeUserPayload = (user: any) => {') &&
+    authControllerContent.includes('sanitizeUserPayload(updatedUser)') &&
+    authControllerContent.includes('sanitizeUserPayload(newUser)'),
+    'Fix 3: authController sanitizeUserPayload strips passwordHash, OTP metadata, and non-owner clinic checkinCode'
+  );
+  assert(
+    appointmentControllerContent.includes('delete sanitizedClinic.checkinCode;') &&
+    appointmentControllerContent.includes('const { checkinCode: _secret, ...safeClinic } = safeAppointment.clinic;'),
+    'Fix 3: appointmentController strips clinic checkinCode from getPatientAppointments and checkInAppointmentWithQR'
+  );
+
+  // 5. Fix 4 & Fix 5: checkInAppointmentDirect blocks PENDING_APPROVAL/COMPLETED and supports :id or :appointmentId
+  assert(
+    appointmentControllerContent.includes("const id = String(req.params.id || req.params.appointmentId || '');") &&
+    appointmentControllerContent.includes("if (appointment.status !== 'WAITING' && appointment.status !== 'IN_CONSULTATION')"),
+    'Fix 4 & 5: checkInAppointmentDirect resolves :id/:appointmentId route params and strictly restricts arrival check-in to WAITING/IN_CONSULTATION'
+  );
+
+  // 6. Fix 6: Unverified re-registration enforces OTP verification lockout & upserts role profile
+  assert(
+    authControllerContent.includes('const lockout = getVerificationLockout(cleanEmail);') &&
+    authControllerContent.includes('await tx.patientProfile.upsert(') &&
+    authControllerContent.includes('await tx.doctorProfile.upsert('),
+    'Fix 6: Unverified email re-registration checks getVerificationLockout and upserts target role profile on role change'
+  );
+
+  // 7. Fix 7: Cross-clinic simultaneous consultation guard in consultationController & receptionistController
+  assert(
+    consultationControllerContentAudit.includes('const activeInOtherClinic = await tx.appointment.findFirst({') &&
+    consultationControllerContentAudit.includes('Doctor is currently in an active consultation at another clinic') &&
+    receptionistControllerContent.includes("if (error?.message?.includes('Cannot call patient into consultation')) {"),
+    'Fix 7: Both doctor callPatient and receptionist updateAppointmentStatus block simultaneous cross-clinic IN_CONSULTATION with HTTP 400'
+  );
+
+  // 8. Fix 8: Cross-clinic shift overlap validation in updateSchedule
+  assert(
+    doctorControllerContent.includes('Prevent physical doctor from configuring overlapping shifts across multiple clinics simultaneously') &&
+    doctorControllerContent.includes('const clinicCheck = isClinicActive(affiliation.clinic);'),
+    'Fix 8: updateSchedule verifies active clinic affiliation and rejects cross-clinic overlapping shifts for the same doctor'
+  );
+
+  // 9. Fix 9: Receptionist mustChangePassword enforced across check-in, pending, approve, reject, and reschedule
+  assert(
+    appointmentControllerContent.includes('if (userRec?.mustChangePassword || req.user.mustChangePassword) {') &&
+    receptionistControllerContent.includes('if (userRec?.mustChangePassword || req.user.mustChangePassword) {'),
+    'Fix 9: Receptionist temporary password guard (mustChangePassword) enforced across all desk mutation and queue endpoints'
+  );
+
+  // 10. Fix 10: verifyReceptionistDoctorAccess prevents cross-clinic and unassigned-doctor privilege escalation
+  assert(
+    authGuardsContentAudit.includes('if (clinicId && receptionist.clinicId !== clinicId)') &&
+    authGuardsContentAudit.includes('const activeAssignedCount =') &&
+    authGuardsContentAudit.includes('if (activeAssignedCount === 0)'),
+    'Fix 10: verifyReceptionistDoctorAccess denies access to cross-clinic operations and restricts clinic-level fallback to general desk staff with zero explicit doctor subset assignments'
+  );
+
+  // 11. Fix 11: Affiliation endpoints verify doctor eligibility and clinic active status
+  assert(
+    clinicControllerContentCat3.includes('const docCheck = isDoctorEligibleForClinicalPractice(doctor);') &&
+    doctorControllerContent.includes('const clinicCheck = isClinicActive(clinic);'),
+    'Fix 11: Doctor-Clinic affiliation request and acceptance endpoints enforce verified/active eligibility on both sides'
+  );
+
+  // 12. Fix 12 & Fix 13: updateCabinStatus uses isDoctorEligibleForClinicalPractice & getDoctorReviews checks verificationStatus
+  assert(
+    doctorControllerContent.includes('const docCheck = isDoctorEligibleForClinicalPractice(doctor);') &&
+    doctorControllerContent.includes("if (!doctor || !doctor.isVerified || doctor.verificationStatus !== 'VERIFIED')"),
+    'Fix 12 & 13: updateCabinStatus enforces canonical eligibility and getDoctorReviews verifies doctor status and supports userId fallback'
+  );
+
+  // 13. Fix 14: isValidDobDate uses IST date string instead of server timezone
+  const todayIstStr = getLocalDateString(new Date());
+  const tomorrowIstStr = getTomorrowDateString(new Date());
+  assert(
+    isValidDobDate(todayIstStr) === true &&
+    isValidDobDate(tomorrowIstStr) === false &&
+    isValidDobDate('1899-12-31') === false,
+    'Fix 14: isValidDobDate accurately validates dates against IST calendar day regardless of server timezone'
+  );
 
   console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);

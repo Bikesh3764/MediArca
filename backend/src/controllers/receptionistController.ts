@@ -13,7 +13,7 @@ import {
   minutesTo12Hour,
   isValidAppointmentDate,
 } from '../utils/scheduleUtils';
-import { formatIndianPhone, sanitizeIndianPhone, isValidIndianPhone } from '../utils/phoneUtils';
+import { formatIndianPhone, sanitizeIndianPhone, isValidIndianPhone, findExistingAccountByPhone } from '../utils/phoneUtils';
 import { canTransition } from '../utils/appointmentStateMachine';
 import {
   verifyReceptionistDoctorAccess,
@@ -31,6 +31,12 @@ export const getMyReceptionist = async (req: AuthRequest, res: Response): Promis
       res.status(403).json({ success: false, message: 'Access denied: receptionist role required' });
       return;
     }
+
+    const userRec = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { mustChangePassword: true },
+    });
+    const mustChangePassword = Boolean(userRec?.mustChangePassword || req.user.mustChangePassword);
 
     const receptionist = await prisma.receptionistProfile.findUnique({
       where: { userId: req.user.id },
@@ -132,6 +138,12 @@ export const getMyReceptionist = async (req: AuthRequest, res: Response): Promis
           }
         }
 
+        const sanitizedDoctorClinics = (dr.doctor.clinics || []).map((c: any) => {
+          if (!c?.clinic) return c;
+          const { checkinCode: _secret, ...safeClinic } = c.clinic;
+          return { ...c, clinic: safeClinic };
+        });
+
         return {
           affiliationId: dr.id,
           doctorId: dr.doctor.id,
@@ -143,7 +155,7 @@ export const getMyReceptionist = async (req: AuthRequest, res: Response): Promis
           clinicAddress: dr.doctor.clinicAddress,
           consultationFee,
           slots: activeSlots,
-          clinics: dr.doctor.clinics,
+          clinics: sanitizedDoctorClinics,
           cabinStatus: (dr.doctor as any).cabinStatus || 'IN_CABIN',
           expectedReturnTime: (dr.doctor as any).expectedReturnTime || null,
           cabinStatusUpdatedAt: (dr.doctor as any).cabinStatusUpdatedAt || null,
@@ -153,6 +165,8 @@ export const getMyReceptionist = async (req: AuthRequest, res: Response): Promis
         };
       })
     );
+
+    const canAccessClinicCheckinCode = !mustChangePassword && isClinicActive(receptionist.clinic).active;
 
     res.json({
       success: true,
@@ -173,7 +187,7 @@ export const getMyReceptionist = async (req: AuthRequest, res: Response): Promis
               phone: receptionist.clinic.phone,
               isVerified: receptionist.clinic.isVerified,
               verificationStatus: receptionist.clinic.verificationStatus,
-              checkinCode: (receptionist.clinic as any).checkinCode || null,
+              ...(canAccessClinicCheckinCode ? { checkinCode: (receptionist.clinic as any).checkinCode || null } : {}),
             }
           : null,
         doctors: doctorsWithQueue,
@@ -989,6 +1003,13 @@ export const updateAppointmentStatus = async (req: AuthRequest, res: Response): 
     });
   } catch (error: any) {
     console.error('updateAppointmentStatus error:', error);
+    if (error?.message?.includes('Cannot call patient into consultation')) {
+      res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+      return;
+    }
     res.status(500).json({
       success: false,
       message: 'Failed to update appointment status',
@@ -1088,6 +1109,18 @@ export const getPendingAppointments = async (req: AuthRequest, res: Response): P
       return;
     }
 
+    const userRec = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { mustChangePassword: true },
+    });
+    if (userRec?.mustChangePassword || req.user.mustChangePassword) {
+      res.status(403).json({
+        success: false,
+        message: 'Temporary password must be changed before accessing clinical desk operations.',
+      });
+      return;
+    }
+
     const receptionist = await prisma.receptionistProfile.findUnique({
       where: { userId: req.user.id },
       include: {
@@ -1162,11 +1195,29 @@ export const getPendingAppointments = async (req: AuthRequest, res: Response): P
             user: { select: { fullName: true, avatarUrl: true, email: true, phone: true } },
             clinics: {
               where: { clinicId: receptionist.clinicId || undefined },
-              include: { clinic: true },
+              include: {
+                clinic: {
+                  select: {
+                    id: true,
+                    clinicName: true,
+                    address: true,
+                    city: true,
+                    phone: true,
+                  },
+                },
+              },
             },
           },
         },
-        clinic: true,
+        clinic: {
+          select: {
+            id: true,
+            clinicName: true,
+            address: true,
+            city: true,
+            phone: true,
+          },
+        },
         patient: {
           include: {
             user: { select: { fullName: true, email: true, phone: true, avatarUrl: true } },
@@ -1240,6 +1291,18 @@ export const approveAppointment = async (req: AuthRequest, res: Response): Promi
       return;
     }
 
+    const userRec = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { mustChangePassword: true },
+    });
+    if (userRec?.mustChangePassword || req.user.mustChangePassword) {
+      res.status(403).json({
+        success: false,
+        message: 'Temporary password must be changed before accessing clinical desk operations.',
+      });
+      return;
+    }
+
     const appointmentId = String(req.params.appointmentId);
 
     const appointment = await prisma.appointment.findUnique({
@@ -1251,7 +1314,15 @@ export const approveAppointment = async (req: AuthRequest, res: Response): Promi
             clinics: true,
           },
         },
-        clinic: true,
+        clinic: {
+          select: {
+            id: true,
+            clinicName: true,
+            address: true,
+            city: true,
+            phone: true,
+          },
+        },
         patient: {
           include: {
             user: { select: { id: true, fullName: true, email: true, phone: true, avatarUrl: true, role: true } },
@@ -1421,7 +1492,15 @@ export const executeApproveAppointmentTransaction = async (
             clinics: true,
           },
         },
-        clinic: true,
+        clinic: {
+          select: {
+            id: true,
+            clinicName: true,
+            address: true,
+            city: true,
+            phone: true,
+          },
+        },
         patient: {
           include: {
             user: { select: { fullName: true, phone: true } },
@@ -1511,7 +1590,7 @@ export const executeApproveAppointmentTransaction = async (
       estTime = `${String(h12).padStart(2, '0')}:${String(em).padStart(2, '0')} ${period}`;
     }
 
-    return await tx.appointment.update({
+    const updatedRecord = await tx.appointment.update({
       where: { id: appointmentId },
       data: {
         clinicId: targetClinicId,
@@ -1526,10 +1605,22 @@ export const executeApproveAppointmentTransaction = async (
       },
       include: {
         doctor: { include: { user: { select: { fullName: true } } } },
-        clinic: true,
+        clinic: {
+          select: {
+            id: true,
+            clinicName: true,
+            address: true,
+            city: true,
+            phone: true,
+          },
+        },
         patient: { include: { user: { select: { fullName: true, phone: true } } } },
       },
     });
+    if (updatedRecord?.clinic && (updatedRecord.clinic as any).checkinCode !== undefined) {
+      delete (updatedRecord.clinic as any).checkinCode;
+    }
+    return updatedRecord;
   });
 };
 
@@ -1540,6 +1631,18 @@ export const rejectAppointment = async (req: AuthRequest, res: Response): Promis
   try {
     if (!req.user || req.user.role !== 'RECEPTIONIST') {
       res.status(403).json({ success: false, message: 'Access denied: Receptionist role required' });
+      return;
+    }
+
+    const userRec = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { mustChangePassword: true },
+    });
+    if (userRec?.mustChangePassword || req.user.mustChangePassword) {
+      res.status(403).json({
+        success: false,
+        message: 'Temporary password must be changed before accessing clinical desk operations.',
+      });
       return;
     }
 
@@ -1630,27 +1733,50 @@ export const applyReceptionist = async (req: Request, res: Response): Promise<vo
       return;
     }
 
+    let formattedPhone: string | null = null;
+    if (phone && String(phone).trim() !== '') {
+      if (!isValidIndianPhone(String(phone))) {
+        res.status(400).json({
+          success: false,
+          message: 'Invalid phone number. Please enter a valid 10-digit Indian mobile number (+91).',
+        });
+        return;
+      }
+      formattedPhone = formatIndianPhone(String(phone));
+    }
+
     const existingUser = await prisma.user.findUnique({
       where: { email: String(email).toLowerCase().trim() },
     });
 
     if (existingUser) {
-      res.status(400).json({ success: false, message: 'An account with this email already exists' });
+      res.status(409).json({ success: false, message: 'An account with this email already exists' });
       return;
+    }
+
+    if (formattedPhone) {
+      const existingByPhone = await findExistingAccountByPhone(prisma, formattedPhone);
+      if (existingByPhone) {
+        res.status(409).json({
+          success: false,
+          message: 'An account with this mobile number already exists.',
+        });
+        return;
+      }
     }
 
     const clinic = await prisma.clinicProfile.findUnique({
       where: { id: String(clinicId) },
     });
 
-    if (!clinic || !clinic.isVerified) {
-      res.status(400).json({ success: false, message: 'Selected clinic is invalid or not verified' });
+    const clinicCheck = isClinicActive(clinic);
+    if (!clinicCheck.active || !clinic) {
+      res.status(400).json({ success: false, message: clinicCheck.reason || 'Selected clinic is invalid or not verified' });
       return;
     }
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
-    const formattedPhone = phone ? formatIndianPhone(phone) : null;
 
     const user = await prisma.user.create({
       data: {
@@ -1715,30 +1841,40 @@ export const determineRescheduleTarget = (
 
 export const rescheduleAppointment = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    if (!req.user || req.user.role !== 'RECEPTIONIST') {
+    if (!req.user || !['RECEPTIONIST', 'CLINIC'].includes(req.user.role)) {
       res.status(403).json({ success: false, message: 'Access denied' });
       return;
     }
 
-    const receptionist = await prisma.receptionistProfile.findUnique({
-      where: { userId: req.user.id },
-      include: {
-        doctors: true,
-        clinic: true,
-      },
-    });
-
-    if (!receptionist || receptionist.status !== 'ACTIVE') {
-      res.status(403).json({ success: false, message: 'Receptionist desk profile is inactive' });
-      return;
+    if (req.user.role === 'RECEPTIONIST') {
+      const userRec = await prisma.user.findUnique({
+        where: { id: req.user.id },
+        select: { mustChangePassword: true },
+      });
+      if (userRec?.mustChangePassword || req.user.mustChangePassword) {
+        res.status(403).json({
+          success: false,
+          message: 'Temporary password must be changed before accessing clinical desk operations.',
+        });
+        return;
+      }
     }
 
-    const rawApptId = req.params.appointmentId;
+    const rawApptId = req.params.appointmentId || req.params.id;
     const appointmentId = typeof rawApptId === 'string' ? rawApptId : Array.isArray(rawApptId) ? rawApptId[0] : '';
-    const { newDate, newSlotId } = req.body;
+    const { newDate: rawNewDate, newSlotId } = req.body;
+    const newDate = rawNewDate ? String(rawNewDate).trim() : '';
 
     if (!newDate) {
       res.status(400).json({ success: false, message: 'New appointment date is required' });
+      return;
+    }
+
+    if (!isValidAppointmentDate(newDate)) {
+      res.status(400).json({
+        success: false,
+        message: 'Invalid appointment date format. Expected valid calendar date in YYYY-MM-DD format.',
+      });
       return;
     }
 
@@ -1759,10 +1895,26 @@ export const rescheduleAppointment = async (req: AuthRequest, res: Response): Pr
         },
         patient: {
           include: {
-            user: true,
+            user: {
+              select: {
+                id: true,
+                fullName: true,
+                email: true,
+                phone: true,
+                avatarUrl: true,
+              },
+            },
           },
         },
-        clinic: true,
+        clinic: {
+          select: {
+            id: true,
+            clinicName: true,
+            address: true,
+            city: true,
+            phone: true,
+          },
+        },
       },
     });
 
@@ -1771,16 +1923,31 @@ export const rescheduleAppointment = async (req: AuthRequest, res: Response): Pr
       return;
     }
 
-    // Verify receptionist authority
-    if (receptionist.clinicId && appointment.clinicId && receptionist.clinicId !== appointment.clinicId) {
-      res.status(403).json({ success: false, message: 'Unauthorized for this clinic facility' });
-      return;
-    }
-
-    const assignedDoctorIds = receptionist.doctors.map((d: any) => d.doctorId);
-    if (assignedDoctorIds.length > 0 && !assignedDoctorIds.includes(appointment.doctorId)) {
-      res.status(403).json({ success: false, message: 'Unauthorized for this doctor' });
-      return;
+    // Verify authority using canonical guards (Fix #2)
+    if (req.user.role === 'RECEPTIONIST') {
+      const access = await verifyReceptionistDoctorAccess(req.user.id, appointment.doctorId, appointment.clinicId);
+      if (!access.authorized) {
+        res.status(403).json({ success: false, message: access.reason || 'Unauthorized for this doctor or clinic' });
+        return;
+      }
+    } else if (req.user.role === 'CLINIC') {
+      const clinic = await prisma.clinicProfile.findUnique({
+        where: { userId: req.user.id },
+      });
+      const clinicCheck = isClinicActive(clinic);
+      if (!clinicCheck.active || !clinic) {
+        res.status(403).json({ success: false, message: clinicCheck.reason || 'Clinic facility is inactive' });
+        return;
+      }
+      if (appointment.clinicId !== clinic.id) {
+        res.status(403).json({ success: false, message: 'Unauthorized for another clinic facility' });
+        return;
+      }
+      const docCheck = isDoctorEligibleForClinicalPractice(appointment.doctor);
+      if (!docCheck.eligible) {
+        res.status(403).json({ success: false, message: docCheck.reason });
+        return;
+      }
     }
 
     if (['COMPLETED', 'CANCELLED', 'REJECTED', 'EXPIRED', 'IN_CONSULTATION'].includes(appointment.status)) {
@@ -1976,7 +2143,7 @@ export const rescheduleAppointment = async (req: AuthRequest, res: Response): Pr
           const estimatedTime = minutesTo12Hour(estStartMins);
           const checkingWindow = slot ? `${slot.startTime} – ${slot.endTime}` : (appointment.checkingWindow || 'General Hours');
 
-          return await tx.appointment.update({
+          const updatedRecord = await tx.appointment.update({
             where: { id: appointment.id },
             data: {
               appointmentDate: newDate,
@@ -1990,10 +2157,40 @@ export const rescheduleAppointment = async (req: AuthRequest, res: Response): Pr
             },
             include: {
               doctor: { include: { user: { select: { fullName: true } } } },
-              patient: { include: { user: true } },
-              clinic: true,
+              patient: {
+                include: {
+                  user: {
+                    select: {
+                      id: true,
+                      fullName: true,
+                      email: true,
+                      phone: true,
+                      avatarUrl: true,
+                    },
+                  },
+                },
+              },
+              clinic: {
+                select: {
+                  id: true,
+                  clinicName: true,
+                  address: true,
+                  city: true,
+                  phone: true,
+                },
+              },
             },
           });
+
+          if (updatedRecord?.patient?.user) {
+            delete (updatedRecord.patient.user as any).passwordHash;
+            delete (updatedRecord.patient.user as any).emailVerificationOtp;
+            delete (updatedRecord.patient.user as any).emailVerificationOtpExpiresAt;
+          }
+          if (updatedRecord?.clinic) {
+            delete (updatedRecord.clinic as any).checkinCode;
+          }
+          return updatedRecord;
         });
         break;
       } catch (err: any) {

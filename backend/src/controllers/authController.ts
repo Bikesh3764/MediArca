@@ -10,7 +10,7 @@ import { AuthRequest, getJwtSecret } from '../middleware/authMiddleware';
 import { uploadToR2, deleteFromR2, isR2Configured } from '../config/r2';
 import { isValidDobDate, validateDoctorSlots, timeToMinutes, validateDoctorNumericBounds } from '../utils/scheduleUtils';
 import { validateMagicBytes } from '../middleware/uploadMiddleware';
-import { isValidIndianPhone, formatIndianPhone, sanitizeIndianPhone } from '../utils/phoneUtils';
+import { isValidIndianPhone, formatIndianPhone, sanitizeIndianPhone, findExistingAccountByPhone } from '../utils/phoneUtils';
 import { sendVerificationOtpEmail } from '../utils/emailService';
 import {
   recordFailedVerificationAttempt,
@@ -119,6 +119,42 @@ export const checkNeedsProfileCompletion = (user: any): boolean => {
   return false;
 };
 
+/**
+ * Strips sensitive fields (passwordHash, emailVerificationOtp, emailVerificationOtpExpiresAt)
+ * and strips physical QR checkinCode from non-owning clinic relations (doctorProfile.clinics, receptionistProfile.clinic).
+ */
+export const sanitizeUserPayload = (user: any) => {
+  if (!user) return user;
+  const {
+    passwordHash: _pw,
+    emailVerificationOtp: _otp,
+    emailVerificationOtpExpiresAt: _otpExp,
+    ...safeUser
+  } = user;
+
+  if (safeUser.doctorProfile?.clinics && Array.isArray(safeUser.doctorProfile.clinics)) {
+    safeUser.doctorProfile = {
+      ...safeUser.doctorProfile,
+      clinics: safeUser.doctorProfile.clinics.map((cd: any) => {
+        if (!cd?.clinic) return cd;
+        const { checkinCode: _secret, receptionists: _recs, ...safeClinic } = cd.clinic;
+        return { ...cd, clinic: safeClinic };
+      }),
+    };
+  }
+
+  if (safeUser.receptionistProfile?.clinic) {
+    const { checkinCode: _secret, receptionists: _recs, ...safeClinic } = safeUser.receptionistProfile.clinic;
+    safeUser.receptionistProfile = {
+      ...safeUser.receptionistProfile,
+      clinic: safeClinic,
+    };
+  }
+
+  (safeUser as any).needsProfileCompletion = checkNeedsProfileCompletion(user);
+  return safeUser;
+};
+
 export const register = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, password, fullName, phone, role = 'PATIENT', ...profileData } = req.body;
@@ -155,16 +191,59 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
     const existingUser = await prisma.user.findUnique({
       where: { email: cleanEmail },
-      include: { patientProfile: true, doctorProfile: true },
+      include: { patientProfile: true, doctorProfile: true, clinicProfile: true },
     });
 
+    if (existingUser && existingUser.isEmailVerified) {
+      res.status(409).json({
+        success: false,
+        message: 'An account with this email already exists. Each email address can only be linked to a single account.',
+      });
+      return;
+    }
+
+    let formattedPhone: string | null = null;
+    const rawPhone = phone || profileData.phone;
+    if (rawPhone !== undefined && rawPhone !== null && String(rawPhone).trim() !== '') {
+      const trimmedPhone = String(rawPhone).trim();
+      if (!isValidIndianPhone(trimmedPhone)) {
+        res.status(400).json({
+          success: false,
+          message: 'Invalid Indian phone number. Please enter a valid 10-digit mobile number (+91).',
+        });
+        return;
+      }
+      formattedPhone = formatIndianPhone(trimmedPhone);
+    }
+
+    // Enforce strict mobile number uniqueness across all real accounts (Patient, Doctor, Clinic, Receptionist)
+    const candidatePhoneToCheck = formattedPhone || existingUser?.phone || null;
+    if (candidatePhoneToCheck) {
+      const existingPhoneUser = await findExistingAccountByPhone(prisma, candidatePhoneToCheck, {
+        excludeUserId: existingUser?.id,
+      });
+      if (existingPhoneUser) {
+        res.status(409).json({
+          success: false,
+          message: 'An account with this mobile number already exists. Each mobile number can only be linked to a single account.',
+        });
+        return;
+      }
+    }
+
     if (existingUser) {
-      if (existingUser.isEmailVerified) {
-        res.status(400).json({ success: false, message: 'An account with this email already exists' });
+      // 1. Account-level lockout check before issuing new OTP on unverified re-registration
+      const lockout = getVerificationLockout(cleanEmail);
+      if (lockout.isLocked) {
+        res.status(429).json({
+          success: false,
+          message: `Too many failed verification attempts. Your account is temporarily locked for ${Math.ceil(lockout.remainingLockoutSeconds / 60)} minutes.`,
+          remainingSeconds: lockout.remainingLockoutSeconds,
+        });
         return;
       }
 
-      // Enforce OTP resend cooldown on unverified account re-registration (Issue 4)
+      // 2. Enforce OTP resend cooldown on unverified account re-registration (Issue 4)
       const cooldown = checkResendCooldown(cleanEmail);
       if (!cooldown.allowed) {
         res.status(429).json({
@@ -175,37 +254,66 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         return;
       }
 
-      // Existing unverified account: update credentials and allow completing verification!
+      // Existing unverified account: update credentials, ensure role profile exists, and allow completing verification!
       const salt = await bcrypt.genSalt(10);
       const passwordHash = await bcrypt.hash(password, salt);
 
-      let formattedPhone: string | null = null;
-      const rawPhone = phone || profileData.phone;
-      if (rawPhone !== undefined && rawPhone !== null && String(rawPhone).trim() !== '') {
-        const trimmedPhone = String(rawPhone).trim();
-        if (!isValidIndianPhone(trimmedPhone)) {
-          res.status(400).json({
-            success: false,
-            message: 'Invalid Indian phone number. Please enter a valid 10-digit mobile number (+91).',
-          });
-          return;
-        }
-        formattedPhone = formatIndianPhone(trimmedPhone);
-      }
-
       const otp = crypto.randomInt(100000, 1000000).toString();
       const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
+      const targetPhone = formattedPhone || existingUser.phone;
 
       const updatedUser = await prisma.user.update({
         where: { id: existingUser.id },
         data: {
           passwordHash,
-          fullName,
-          phone: formattedPhone || existingUser.phone,
+          fullName: normalizedRole === 'CLINIC' ? (profileData.clinicName || fullName) : fullName,
+          phone: targetPhone,
           role: normalizedRole,
           emailVerificationOtp: otp,
           emailVerificationOtpExpiresAt: otpExpiresAt,
+          ...(normalizedRole === 'PATIENT'
+            ? {
+                patientProfile: {
+                  upsert: {
+                    update: {},
+                    create: {},
+                  },
+                },
+              }
+            : normalizedRole === 'DOCTOR'
+              ? {
+                  doctorProfile: {
+                    upsert: {
+                      update: {},
+                      create: {
+                        specialty: profileData.specialty || 'General Physician',
+                        qualifications: profileData.qualifications || 'MBBS',
+                        isVerified: false,
+                        checkingStartTime: '09:00',
+                        checkingEndTime: '13:00',
+                      },
+                    },
+                  },
+                }
+              : normalizedRole === 'CLINIC'
+                ? {
+                    clinicProfile: {
+                      upsert: {
+                        update: {},
+                        create: {
+                          clinicName: profileData.clinicName || fullName,
+                          address: profileData.address || profileData.clinicAddress || 'Central Healthcare Clinic',
+                          city: profileData.city || null,
+                          state: profileData.state || null,
+                          phone: targetPhone,
+                          checkinCode: crypto.randomInt(100000, 1000000).toString(),
+                        },
+                      },
+                    },
+                  }
+                : {}),
         },
+        include: { patientProfile: true, doctorProfile: true, clinicProfile: true },
       });
 
       sendVerificationOtpEmail(cleanEmail, otp, fullName).catch((mailErr) => {
@@ -215,7 +323,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       // Record OTP send timestamp to enforce 60s cooldown on immediate resends (Issue 4)
       recordResendAttempt(cleanEmail);
 
-      const { passwordHash: _, ...userWithoutPassword } = updatedUser;
+      const userWithoutPassword = sanitizeUserPayload(updatedUser);
       res.status(200).json({
         success: true,
         requiresVerification: true,
@@ -233,20 +341,6 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(password, salt);
-
-    let formattedPhone: string | null = null;
-    const rawPhone = phone || profileData.phone;
-    if (rawPhone !== undefined && rawPhone !== null && String(rawPhone).trim() !== '') {
-      const trimmedPhone = String(rawPhone).trim();
-      if (!isValidIndianPhone(trimmedPhone)) {
-        res.status(400).json({
-          success: false,
-          message: 'Invalid Indian phone number. Please enter a valid 10-digit mobile number (+91).',
-        });
-        return;
-      }
-      formattedPhone = formatIndianPhone(trimmedPhone);
-    }
 
     const otp = crypto.randomInt(100000, 1000000).toString();
     const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
@@ -412,7 +506,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     // Record initial OTP send timestamp to enforce 60s cooldown on immediate resends (FIX-005)
     recordResendAttempt(cleanEmail);
 
-    const { passwordHash: _, ...userWithoutPassword } = newUser;
+    const userWithoutPassword = sanitizeUserPayload(newUser);
     res.status(201).json({
       success: true,
       requiresVerification: true,
@@ -608,8 +702,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       { expiresIn: '7d' }
     );
 
-    const { passwordHash: _, ...userWithoutPassword } = user;
-    (userWithoutPassword as any).needsProfileCompletion = checkNeedsProfileCompletion(user);
+    const userWithoutPassword = sanitizeUserPayload(user);
     res.json({
       success: true,
       message: 'Logged in successfully',
@@ -689,8 +782,7 @@ export const verifyEmailOtp = async (req: Request, res: Response): Promise<void>
         getJwtSecret(),
         { expiresIn: '7d' }
       );
-      const { passwordHash: _, ...userWithoutPassword } = user;
-      (userWithoutPassword as any).needsProfileCompletion = checkNeedsProfileCompletion(user);
+      const userWithoutPassword = sanitizeUserPayload(user);
       res.json({
         success: true,
         message: 'Email is already verified',
@@ -764,8 +856,7 @@ export const verifyEmailOtp = async (req: Request, res: Response): Promise<void>
       { expiresIn: '7d' }
     );
 
-    const { passwordHash: _, ...userWithoutPassword } = updatedUser;
-    (userWithoutPassword as any).needsProfileCompletion = checkNeedsProfileCompletion(updatedUser);
+    const userWithoutPassword = sanitizeUserPayload(updatedUser);
 
     res.json({
       success: true,
@@ -926,8 +1017,7 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
       return;
     }
 
-    const { passwordHash: _, ...userWithoutPassword } = user;
-    (userWithoutPassword as any).needsProfileCompletion = checkNeedsProfileCompletion(user);
+    const userWithoutPassword = sanitizeUserPayload(user);
     res.json({ success: true, data: userWithoutPassword });
   } catch (error: any) {
     res.status(500).json({
@@ -972,6 +1062,18 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
           return;
         }
         formattedPhone = formatIndianPhone(trimmedPhone);
+
+        // Enforce strict mobile number uniqueness across accounts
+        const existingPhoneUser = await findExistingAccountByPhone(prisma, formattedPhone, {
+          excludeUserId: req.user.id,
+        });
+        if (existingPhoneUser) {
+          res.status(409).json({
+            success: false,
+            message: 'An account with this mobile number already exists. Each mobile number can only be linked to a single account.',
+          });
+          return;
+        }
       }
     }
 
@@ -1173,8 +1275,7 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
       },
     });
 
-    const { passwordHash: _, ...result } = refreshedUser!;
-    (result as any).needsProfileCompletion = checkNeedsProfileCompletion(refreshedUser);
+    const result = sanitizeUserPayload(refreshedUser);
     res.json({ success: true, message: 'Profile updated successfully', data: result });
   } catch (error: any) {
     res.status(500).json({
@@ -1402,8 +1503,7 @@ export const googleAuth = async (req: Request, res: Response): Promise<void> => 
       { expiresIn: '7d' }
     );
 
-    const { passwordHash: _, ...userWithoutPassword } = user;
-    (userWithoutPassword as any).needsProfileCompletion = checkNeedsProfileCompletion(user);
+    const userWithoutPassword = sanitizeUserPayload(user);
     res.json({
       success: true,
       message: 'Google authentication successful',
@@ -1492,7 +1592,7 @@ export const uploadAvatar = async (req: AuthRequest, res: Response): Promise<voi
       },
     });
 
-    const { passwordHash: _, ...userWithoutPassword } = updatedUser;
+    const userWithoutPassword = sanitizeUserPayload(updatedUser);
     res.json({
       success: true,
       message: 'Avatar photo uploaded and profile updated successfully',

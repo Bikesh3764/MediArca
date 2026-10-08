@@ -163,6 +163,26 @@ export const executeCallPatientTransaction = async (
       await tx.$executeRaw`SELECT id FROM "DoctorProfile" WHERE id = ${doctorId} FOR UPDATE;`;
     }
 
+    // Guard: ensure practitioner is not actively consulting a patient at another clinic facility (Issue 7 / Fix #7)
+    if (clinicId && typeof tx.appointment?.findFirst === 'function') {
+      const activeInOtherClinic = await tx.appointment.findFirst({
+        where: {
+          doctorId,
+          appointmentDate,
+          status: 'IN_CONSULTATION',
+          clinicId: { not: clinicId },
+          id: { not: appointmentId },
+        },
+        include: { clinic: true },
+      });
+
+      if (activeInOtherClinic) {
+        throw new Error(
+          `Cannot call patient into consultation: Doctor is currently in an active consultation at another clinic (${activeInOtherClinic.clinic?.clinicName || 'another facility'}). Only one consultation can be active at a time.`
+        );
+      }
+    }
+
     // Reset any other currently IN_CONSULTATION appointments on this date back to WAITING for this doctor at the same facility (Finding 2)
     await tx.appointment.updateMany({
       where: {
@@ -303,6 +323,13 @@ export const callPatient = async (req: AuthRequest, res: Response): Promise<void
     });
   } catch (error: any) {
     console.error('callPatient error:', error);
+    if (error?.message?.includes('Cannot call patient into consultation')) {
+      res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+      return;
+    }
     res.status(500).json({
       success: false,
       message: 'Failed to call patient',

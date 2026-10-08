@@ -1202,11 +1202,19 @@ export const getPatientAppointments = async (req: AuthRequest, res: Response): P
       const clinicFee = targetClinicAffiliation?.consultationFee ?? appt.doctor.consultationFee;
 
       const recContact = resolveReceptionistContact(appt.clinic, appt.doctorId, appt.doctor);
-      const sanitizedDoctor = { ...appt.doctor };
-      delete (sanitizedDoctor as any).receptionists;
-      const sanitizedClinic = appt.clinic ? { ...appt.clinic } : null;
+      const sanitizedDoctor: any = { ...appt.doctor };
+      delete sanitizedDoctor.receptionists;
+      if (Array.isArray(sanitizedDoctor.clinics)) {
+        sanitizedDoctor.clinics = sanitizedDoctor.clinics.map((cd: any) => {
+          if (!cd?.clinic) return cd;
+          const { checkinCode: _secret, ...safeClinic } = cd.clinic;
+          return { ...cd, clinic: safeClinic };
+        });
+      }
+      const sanitizedClinic: any = appt.clinic ? { ...appt.clinic } : null;
       if (sanitizedClinic) {
-        delete (sanitizedClinic as any).receptionists;
+        delete sanitizedClinic.receptionists;
+        delete sanitizedClinic.checkinCode;
       }
 
       const apptWithRec = {
@@ -1611,11 +1619,16 @@ export const checkInAppointmentWithQR = async (req: AuthRequest, res: Response):
     }
 
     if (appointment.isCheckedIn) {
+      const safeAppointment = { ...appointment };
+      if (safeAppointment.clinic) {
+        const { checkinCode: _secret, ...safeClinic } = safeAppointment.clinic;
+        safeAppointment.clinic = safeClinic;
+      }
       res.json({
         success: true,
         alreadyCheckedIn: true,
         message: `You are already checked in at ${clinic.clinicName} (Queue #${appointment.queueNumber}).`,
-        data: appointment,
+        data: safeAppointment,
       });
       return;
     }
@@ -1628,7 +1641,15 @@ export const checkInAppointmentWithQR = async (req: AuthRequest, res: Response):
       },
       include: {
         doctor: { include: { user: { select: { fullName: true } } } },
-        clinic: true,
+        clinic: {
+          select: {
+            id: true,
+            clinicName: true,
+            address: true,
+            city: true,
+            phone: true,
+          },
+        },
       },
     });
 
@@ -1698,7 +1719,12 @@ export const checkInAppointmentDirect = async (req: AuthRequest, res: Response):
       return;
     }
 
-    const id = String(req.params.id);
+    const id = String(req.params.id || req.params.appointmentId || '');
+    if (!id) {
+      res.status(400).json({ success: false, message: 'Appointment ID is required' });
+      return;
+    }
+
     const appointment = await prisma.appointment.findUnique({
       where: { id },
       include: { doctor: true, clinic: true },
@@ -1720,6 +1746,18 @@ export const checkInAppointmentDirect = async (req: AuthRequest, res: Response):
         return;
       }
     } else if (req.user.role === 'RECEPTIONIST') {
+      const userRec = await prisma.user.findUnique({
+        where: { id: req.user.id },
+        select: { mustChangePassword: true },
+      });
+      if (userRec?.mustChangePassword || req.user.mustChangePassword) {
+        res.status(403).json({
+          success: false,
+          message: 'Temporary password must be changed before accessing clinical desk operations.',
+        });
+        return;
+      }
+
       const access = await verifyReceptionistDoctorAccess(req.user.id, appointment.doctorId, appointment.clinicId);
       if (!access.authorized) {
         res.status(403).json({ success: false, message: access.reason || 'Unauthorized for this doctor' });
@@ -1746,10 +1784,13 @@ export const checkInAppointmentDirect = async (req: AuthRequest, res: Response):
       }
     }
 
-    if (['EXPIRED', 'CANCELLED', 'REJECTED'].includes(appointment.status)) {
+    if (appointment.status !== 'WAITING' && appointment.status !== 'IN_CONSULTATION') {
       res.status(400).json({
         success: false,
-        message: `Cannot update check-in status for an appointment with status '${appointment.status}'.`,
+        message:
+          appointment.status === 'PENDING_APPROVAL'
+            ? 'Cannot mark arrival for an unapproved booking request. Please approve the booking request and confirm fee receipt first.'
+            : `Cannot update check-in status for an appointment with status '${appointment.status}'.`,
       });
       return;
     }
