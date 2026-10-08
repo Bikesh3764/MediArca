@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { api, User } from '../../services/api';
+import { api, User, DEFAULT_PHONE_PREFIX, getLocalDateString } from '../../services/api';
 import { BrandLogo } from '../ui/BrandLogo';
 import { SearchableSpecialtySelect } from '../ui/SearchableSpecialtySelect';
 import { INDIAN_STATES, getCitiesForState } from '../../utils/indiaStates';
-import { DEFAULT_PHONE_PREFIX } from '../../services/api';
 import {
   sanitizeIndianPhone,
   formatIndianPhone,
@@ -346,7 +345,7 @@ export const ProfileCompletionModal: React.FC = () => {
                     required
                     value={dateOfBirth}
                     onChange={(e) => setDateOfBirth(e.target.value)}
-                    max={new Date().toISOString().split('T')[0]}
+                    max={getLocalDateString()}
                     className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[13px] text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                   />
                 </div>

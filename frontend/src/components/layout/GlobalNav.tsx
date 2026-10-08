@@ -568,7 +568,7 @@ export const GlobalNav: React.FC = () => {
             </div>
           )}
           {user && (
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#0088e8]/10 text-[#0088e8] font-semibold border border-[#0088e8]/20 hidden sm:inline-flex">
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#0066cc]/10 text-[#0066cc] font-semibold border border-[#0066cc]/20 hidden sm:inline-flex">
               {user.role}
             </span>
           )}
@@ -587,7 +587,7 @@ export const GlobalNav: React.FC = () => {
         <div className="md:hidden bg-white/95 backdrop-blur-2xl border-b border-black/[0.06] rounded-b-[24px] px-5 py-5 animate-fadeIn space-y-3.5 text-sm shadow-2xl">
           {user && (
             <div className="flex items-center gap-3 pb-3.5 border-b border-black/[0.06]">
-              <div className="w-9 h-9 rounded-full bg-[#0088e8] flex items-center justify-center text-xs font-bold text-white shadow-2xs overflow-hidden flex-shrink-0">
+              <div className="w-9 h-9 rounded-full bg-[#0066cc] flex items-center justify-center text-xs font-bold text-white shadow-2xs overflow-hidden flex-shrink-0">
                 {user.avatarUrl ? (
                   <img src={getFileUrl(user.avatarUrl)} alt={user.fullName} className="w-full h-full object-cover" />
                 ) : (

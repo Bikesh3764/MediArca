@@ -63,8 +63,6 @@ export const AdminLogin: React.FC = () => {
 
       <div className="mt-6 sm:mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-[#161b22] py-6 sm:py-8 px-4 sm:px-10 rounded-[20px] sm:rounded-2xl border border-white/10 shadow-2xl backdrop-blur-xl relative overflow-hidden">
-          {/* Ambient Glow */}
-          <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-amber-500 to-transparent"></div>
 
           {error && (
             <div className="mb-5 p-3 rounded-xl bg-rose-950/60 border border-rose-500/40 text-rose-300 text-xs flex items-center gap-2.5 animate-in fade-in">

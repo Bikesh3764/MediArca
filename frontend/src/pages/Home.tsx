@@ -435,8 +435,7 @@ export const Home: React.FC = () => {
             className="w-full h-full object-cover object-center"
           />
           {/* Subtle light balance so the hospital photo is vibrant and clearly visible */}
-          <div className="absolute inset-0 bg-white/40" />
-          <div className="absolute inset-0 bg-gradient-to-b from-white/40 via-transparent to-[#f5f5f7]" />
+          <div className="absolute inset-0 bg-white/55" />
         </div>
 
         <div className="relative z-10 max-w-4xl mx-auto text-center w-full">

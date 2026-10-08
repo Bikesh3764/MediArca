@@ -533,7 +533,7 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
           clinicId: targetClinicId,
           status: 'ACTIVE',
           OR: [
-            { doctors: { none: {} } },
+            { doctors: { none: { status: 'ACTIVE' } } },
             { doctors: { some: { doctorId: doctor.id, status: 'ACTIVE' } } },
           ],
         },

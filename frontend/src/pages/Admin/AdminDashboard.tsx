@@ -833,7 +833,7 @@ export const AdminDashboard: React.FC = () => {
                                   size="sm"
                                   disabled={actionId === doc.id}
                                   onClick={() => handleVerify(doc.id, 'VERIFIED')}
-                                  className="text-[#0066cc] hover:text-[#0284c7] text-xs"
+                                  className="text-[#0066cc] hover:text-[#0071e3] text-xs"
                                 >
                                   {actionId === doc.id ? 'Updating...' : 'Approve & Verify'}
                                 </AppleButton>
@@ -983,7 +983,7 @@ export const AdminDashboard: React.FC = () => {
                                     size="sm"
                                     disabled={clinicActionId === c.id}
                                     onClick={() => handleVerifyClinic(c.id, 'VERIFIED')}
-                                    className="text-[#0066cc] hover:text-[#0284c7] text-xs"
+                                    className="text-[#0066cc] hover:text-[#0071e3] text-xs"
                                   >
                                     {clinicActionId === c.id ? 'Updating...' : 'Approve & Verify'}
                                   </AppleButton>

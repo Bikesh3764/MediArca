@@ -86,7 +86,7 @@
 }
 
 .mediarca-badge {
-  @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-[#0066cc]/10 to-[#10b981]/10 text-[#0066cc] border border-[#0066cc]/20;
+  @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20;
 }
 
 .apple-frosted {

@@ -70,6 +70,10 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
       setError('Please enter a valid 10-digit Indian mobile number.');
       return;
     }
+    if (password.trim().length < 8) {
+      setError('Password must be at least 8 characters long.');
+      return;
+    }
     setError(null);
     setSubmitting(true);
 
@@ -155,9 +159,6 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
           <h1 className="text-2xl font-semibold text-[#1d1d1f] tracking-tight">
             Create Account
           </h1>
-          <p className="text-xs text-[#86868b] mt-1">
-            Join MediArca Clinical Platform
-          </p>
         </div>
 
         {/* Main Card */}
@@ -251,7 +252,7 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder={role === 'DOCTOR' ? 'Dr. First Last' : 'First Last'}
-                className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-sm text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20 bg-[#fbfbfd] focus:bg-white"
+                className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-sm text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:border-[#0066cc] focus:ring-2 focus:ring-[#0066cc]/20 bg-[#fbfbfd] focus:bg-white"
               />
             </div>
 
@@ -266,7 +267,7 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@example.com"
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-sm text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20 bg-[#fbfbfd] focus:bg-white"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-sm text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:border-[#0066cc] focus:ring-2 focus:ring-[#0066cc]/20 bg-[#fbfbfd] focus:bg-white"
                 />
               </div>
 
@@ -274,7 +275,7 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
                 <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
                   Mobile Number
                 </label>
-                <div className="flex items-center w-full h-11 rounded-xl border border-[#e5e5ea] bg-[#fbfbfd] focus-within:bg-white focus-within:border-[#0088e8] focus-within:ring-2 focus-within:ring-[#0088e8]/20 transition-all overflow-hidden">
+                <div className="flex items-center w-full h-11 rounded-xl border border-[#e5e5ea] bg-[#fbfbfd] focus-within:bg-white focus-within:border-[#0066cc] focus-within:ring-2 focus-within:ring-[#0066cc]/20 transition-all overflow-hidden">
                   <div className="h-full px-3.5 bg-[#f5f5f7] border-r border-[#e5e5ea] flex items-center justify-center select-none text-[13px] font-semibold text-[#1d1d1f]">
                     +91
                   </div>
@@ -285,7 +286,7 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
                     maxLength={10}
                     value={sanitizeIndianPhone(phone)}
                     onChange={(e) => {
-                      const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
+                      const digits = sanitizeIndianPhone(e.target.value);
                       setPhone(digits ? `+91 ${digits}` : '');
                     }}
                     placeholder="98765 43210"
@@ -307,7 +308,7 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Min. 8 characters"
-                  className="w-full h-11 pl-3.5 pr-10 rounded-xl border border-[#e5e5ea] text-sm text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20 bg-[#fbfbfd] focus:bg-white"
+                  className="w-full h-11 pl-3.5 pr-10 rounded-xl border border-[#e5e5ea] text-sm text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:border-[#0066cc] focus:ring-2 focus:ring-[#0066cc]/20 bg-[#fbfbfd] focus:bg-white"
                 />
                 <button
                   type="button"
@@ -347,7 +348,7 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
                       value={qualifications}
                       onChange={(e) => setQualifications(e.target.value)}
                       placeholder="e.g. MBBS, MD"
-                      className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-sm text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20 bg-[#fbfbfd] focus:bg-white"
+                      className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-sm text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:border-[#0066cc] focus:ring-2 focus:ring-[#0066cc]/20 bg-[#fbfbfd] focus:bg-white"
                     />
                   </div>
 
@@ -362,7 +363,7 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
                       value={experienceYears}
                       onChange={(e) => setExperienceYears(e.target.value)}
                       placeholder="5"
-                      className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-sm text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20 bg-[#fbfbfd] focus:bg-white"
+                      className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-sm text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:border-[#0066cc] focus:ring-2 focus:ring-[#0066cc]/20 bg-[#fbfbfd] focus:bg-white"
                     />
                   </div>
                 </div>
@@ -392,7 +393,7 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
           Already registered?{' '}
           <Link
             to={role === 'DOCTOR' ? '/doctor/login' : '/patient/login'}
-            className="text-[#0088e8] font-semibold hover:underline"
+            className="text-[#0066cc] font-semibold hover:underline"
           >
             Sign in to {role === 'DOCTOR' ? 'Doctor Console' : 'Patient Account'}
           </Link>

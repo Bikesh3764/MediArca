@@ -7,7 +7,7 @@ import { AppleButton } from '../../components/ui/AppleButton';
 import { UtilityCard } from '../../components/ui/UtilityCard';
 import { SearchableSpecialtySelect } from '../../components/ui/SearchableSpecialtySelect';
 import { optimizeAvatarImage } from '../../utils/documentOptimizer';
-import { sanitizeIndianPhone, formatIndianPhone } from '../../utils/phoneUtils';
+import { sanitizeIndianPhone, formatIndianPhone, isValidIndianPhone } from '../../utils/phoneUtils';
 import {
   Building2,
   Settings,
@@ -86,7 +86,7 @@ export const DoctorProfile: React.FC = () => {
       const res = await api.uploadAvatar(result.file);
       updateUser(res.user);
       await refreshUser();
-      setSuccessMsg('Doctor profile photo adjusted, framed and updated successfully.');
+      setSuccessMsg('Profile photo updated.');
       setTimeout(() => setAvatarOptimization(null), 5000);
     } catch (err: any) {
       setErrorMsg(err.message || 'Failed to update profile photo');
@@ -139,16 +139,14 @@ export const DoctorProfile: React.FC = () => {
       return;
     }
 
-    const rawDigits = sanitizeIndianPhone(phone);
-    if (rawDigits.length > 0 && rawDigits.length !== 10) {
-      setErrorMsg('Please enter a valid 10-digit mobile number.');
+    if (!isValidIndianPhone(phone)) {
+      setErrorMsg('Please enter a valid 10-digit Indian mobile number.');
       setSaving(false);
       return;
     }
     const formattedPhone = formatIndianPhone(phone);
 
     try {
-
       const updatedUser = await api.updateDoctorProfile({
         fullName: fullName.trim(),
         phone: formattedPhone,
@@ -160,7 +158,7 @@ export const DoctorProfile: React.FC = () => {
 
       updateUser(updatedUser);
       await refreshUser();
-      setSuccessMsg('Doctor profile and credentials saved successfully!');
+      setSuccessMsg('Doctor profile saved.');
     } catch (err: any) {
       setErrorMsg(err.message || 'Failed to update doctor profile. Please try again.');
     } finally {
@@ -195,8 +193,7 @@ export const DoctorProfile: React.FC = () => {
       portalType="DOCTOR"
       portalSubtitle="DOCTOR PORTAL"
       navItems={navItems}
-      title="Doctor Profile & Practice Settings"
-      subtitle="Edit your credentials, clinical specialty, bio, consultation fee, and checking shifts"
+      title="Profile & Settings"
     >
       <div className="max-w-4xl space-y-6">
         {successMsg && (
@@ -214,10 +211,7 @@ export const DoctorProfile: React.FC = () => {
         )}
 
         {/* Profile Avatar Card with Auto-Compression */}
-        <UtilityCard
-          title="Doctor Headshot & Profile Photo"
-          subtitle="Photos up to 10 MB are automatically compressed for rapid patient search & queue loading"
-        >
+        <UtilityCard title="Profile Photo">
           <div className="flex flex-col sm:flex-row items-center gap-5 pt-2">
             <div className="relative group">
               <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-[#0066cc] shadow-sm bg-[#f5f5f7] flex items-center justify-center">
@@ -236,7 +230,7 @@ export const DoctorProfile: React.FC = () => {
                 disabled={avatarLoading}
                 onClick={() => avatarInputRef.current?.click()}
                 className="absolute -bottom-1 -right-1 bg-[#0066cc] hover:bg-[#0071e3] text-white p-2 rounded-full shadow-md transition-all disabled:opacity-50"
-                title="Change doctor headshot"
+                title="Change photo"
               >
                 <Camera className="w-3.5 h-3.5" />
               </button>
@@ -260,11 +254,8 @@ export const DoctorProfile: React.FC = () => {
                   className="flex items-center gap-1.5 text-xs"
                 >
                   <Camera className="w-3.5 h-3.5" />
-                  {avatarLoading ? 'Optimizing & Uploading...' : 'Upload & Adjust Headshot'}
+                  {avatarLoading ? 'Uploading...' : 'Change Photo'}
                 </AppleButton>
-                <span className="text-[11px] text-[#86868b]">
-                  Accepts JPG, PNG, WebP. Interactive face-centering tool included.
-                </span>
               </div>
 
               {avatarOptimization && (
@@ -279,11 +270,11 @@ export const DoctorProfile: React.FC = () => {
 
         <form onSubmit={handleSave} className="space-y-6">
           {/* Professional Credentials Card */}
-          <UtilityCard title="Professional Identity & Contact" subtitle="Displayed publicly to patients across search and discovery">
+          <UtilityCard title="Professional Details">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
               <div>
-                <label className="block text-xs font-semibold text-[#1d1d1f] mb-1.5">
-                  Full Name & Title *
+                <label className="block text-[13px] font-medium text-[#1d1d1f] tracking-[-0.01em] mb-1.5">
+                  Full Name & Title
                 </label>
                 <div className="relative">
                   <UserIcon className="w-3.5 h-3.5 text-[#86868b] absolute left-3.5 top-3.5" />
@@ -292,23 +283,24 @@ export const DoctorProfile: React.FC = () => {
                     required
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    placeholder="e.g. Dr. Rajesh Verma"
-                    className="w-full h-11 pl-9 pr-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
+                    placeholder="Dr. Rajesh Verma"
+                    className="w-full h-11 pl-9 pr-3.5 rounded-[12px] border border-[#d2d2d7] text-[15px] tracking-[-0.015em] bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-[3px] focus:ring-[#0066cc]/15 focus:border-[#0066cc]"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#1d1d1f] mb-1.5">
+                <label className="block text-[13px] font-medium text-[#1d1d1f] tracking-[-0.01em] mb-1.5">
                   Mobile Number
                 </label>
-                <div className="flex rounded-xl border border-[#e5e5ea] overflow-hidden focus-within:ring-2 focus-within:ring-[#0066cc]/20 focus-within:border-[#0066cc] transition-all bg-white">
-                  <span className="inline-flex items-center px-3 border-r border-[#e5e5ea] bg-[#f5f5f7] text-[#1d1d1f] font-semibold text-[13px] select-none">
+                <div className="flex h-11 rounded-[12px] border border-[#d2d2d7] overflow-hidden focus-within:ring-[3px] focus-within:ring-[#0066cc]/15 focus-within:border-[#0066cc] transition-all bg-white">
+                  <span className="inline-flex items-center justify-center px-3.5 border-r border-[#d2d2d7] bg-[#f5f5f7] text-[#1d1d1f] font-semibold text-[15px] tracking-[-0.01em] select-none">
                     +91
                   </span>
                   <input
                     type="tel"
                     inputMode="numeric"
+                    required
                     value={sanitizeIndianPhone(phone)}
                     onChange={(e) => {
                       const val = sanitizeIndianPhone(e.target.value);
@@ -316,14 +308,14 @@ export const DoctorProfile: React.FC = () => {
                     }}
                     placeholder="98765 43210"
                     maxLength={10}
-                    className="w-full h-11 px-3.5 text-sm bg-white text-[#1d1d1f] placeholder:text-[#86868b] focus:outline-none"
+                    className="w-full h-full px-3.5 text-[15px] tracking-[-0.015em] bg-white text-[#1d1d1f] placeholder:text-[#86868b] focus:outline-none"
                   />
                 </div>
               </div>
 
               <div className="sm:col-span-2">
-                <label className="block text-xs font-semibold text-[#1d1d1f] mb-1.5">
-                  Medical Specialty *
+                <label className="block text-[13px] font-medium text-[#1d1d1f] tracking-[-0.01em] mb-1.5">
+                  Specialty
                 </label>
                 <SearchableSpecialtySelect
                   value={specialty}
@@ -331,13 +323,13 @@ export const DoctorProfile: React.FC = () => {
                   allowOther={true}
                   customValue={customSpecialty}
                   onCustomChange={setCustomSpecialty}
-                  placeholder="Select or search medical specialty..."
+                  placeholder="Select specialty"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#1d1d1f] mb-1.5">
-                  Qualifications & Degrees *
+                <label className="block text-[13px] font-medium text-[#1d1d1f] tracking-[-0.01em] mb-1.5">
+                  Qualifications
                 </label>
                 <div className="relative">
                   <GraduationCap className="w-3.5 h-3.5 text-[#86868b] absolute left-3.5 top-3.5" />
@@ -346,58 +338,56 @@ export const DoctorProfile: React.FC = () => {
                     required
                     value={qualifications}
                     onChange={(e) => setQualifications(e.target.value)}
-                    placeholder="e.g. MBBS, MD (Medicine), DM (Cardiology)"
-                    className="w-full h-11 pl-9 pr-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
+                    placeholder="MBBS, MD"
+                    className="w-full h-11 pl-9 pr-3.5 rounded-[12px] border border-[#d2d2d7] text-[15px] tracking-[-0.015em] bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-[3px] focus:ring-[#0066cc]/15 focus:border-[#0066cc]"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#1d1d1f] mb-1.5">
-                  Years of Clinical Experience
+                <label className="block text-[13px] font-medium text-[#1d1d1f] tracking-[-0.01em] mb-1.5">
+                  Experience (Years)
                 </label>
                 <div className="relative">
                   <Briefcase className="w-3.5 h-3.5 text-[#86868b] absolute left-3.5 top-3.5" />
                   <input
                     type="number"
                     min={0}
+                    max={80}
                     value={experienceYears}
                     onChange={(e) => setExperienceYears(Number(e.target.value))}
-                    className="w-full h-11 pl-9 pr-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
+                    className="w-full h-11 pl-9 pr-3.5 rounded-[12px] border border-[#d2d2d7] text-[15px] tracking-[-0.015em] bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-[3px] focus:ring-[#0066cc]/15 focus:border-[#0066cc]"
                   />
                 </div>
               </div>
             </div>
 
             <div className="mt-4">
-              <label className="block text-xs font-semibold text-[#1d1d1f] mb-1.5">
-                Professional Bio & Practice Philosophy
+              <label className="block text-[13px] font-medium text-[#1d1d1f] tracking-[-0.01em] mb-1.5">
+                Bio
               </label>
               <textarea
                 rows={3}
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
-                placeholder="Share your background, clinical expertise, and approach to patient care..."
-                className="w-full p-3 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
+                placeholder="Clinical background and focus areas"
+                className="w-full p-3.5 rounded-[12px] border border-[#d2d2d7] text-[14px] tracking-[-0.01em] bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-[3px] focus:ring-[#0066cc]/15 focus:border-[#0066cc]"
               />
             </div>
           </UtilityCard>
 
           {/* Facility-Specific Practice Shifts & Fees Card */}
-          <UtilityCard
-            title="Practicing Clinics, Shifts & Consultation Fees"
-            subtitle="Manage practice shifts, consultation fees, and patient caps per clinic facility"
-          >
+          <UtilityCard title="Clinic Shifts & Fees">
             <div className="p-5 rounded-[20px] bg-[#f5f5f7] border border-[#e5e5ea] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-2xs">
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
                   <Building2 className="w-4 h-4 text-[#0066cc]" />
                   <h4 className="text-xs font-bold text-[#1d1d1f] tracking-tight">
-                    Facility-Specific Practice Schedules
+                    Facility Schedules
                   </h4>
                 </div>
-                <p className="text-[11px] text-[#86868b] max-w-lg leading-relaxed">
-                  Your checking hours (e.g. Shift 1: 09:00–13:00, Shift 2: 15:00–18:00), consultation fees, and patient capacity are configured directly for each verified clinic you are affiliated with.
+                <p className="text-[12px] text-[#86868b] max-w-lg leading-relaxed">
+                  Configure checking hours, consultation fees, and patient capacity per affiliated clinic.
                 </p>
               </div>
               <AppleButton
@@ -422,7 +412,7 @@ export const DoctorProfile: React.FC = () => {
               className="flex items-center justify-center gap-2 shadow-sm w-full sm:w-auto"
             >
               <Save className="w-4 h-4" />
-              {saving ? 'Saving Credentials...' : 'Save Doctor Profile'}
+              {saving ? 'Saving...' : 'Save Changes'}
             </AppleButton>
           </div>
         </form>

@@ -10,7 +10,7 @@ import { AuthRequest, getJwtSecret } from '../middleware/authMiddleware';
 import { uploadToR2, deleteFromR2, isR2Configured } from '../config/r2';
 import { isValidDobDate, validateDoctorSlots, timeToMinutes, validateDoctorNumericBounds } from '../utils/scheduleUtils';
 import { validateMagicBytes } from '../middleware/uploadMiddleware';
-import { isValidIndianPhone, formatIndianPhone, sanitizeIndianPhone, findExistingAccountByPhone } from '../utils/phoneUtils';
+import { isValidIndianPhone, formatIndianPhone, sanitizeIndianPhone, findExistingAccountByPhone, getPhoneSearchVariants } from '../utils/phoneUtils';
 import { sendVerificationOtpEmail } from '../utils/emailService';
 import {
   recordFailedVerificationAttempt,
@@ -817,6 +817,32 @@ export const verifyEmailOtp = async (req: Request, res: Response): Promise<void>
       return;
     }
 
+    // Before activating account, verify no other verified user claimed this mobile number and release any stale unverified rows
+    if (user.phone) {
+      const existingVerifiedOwner = await findExistingAccountByPhone(prisma, user.phone, {
+        excludeUserId: user.id,
+      });
+      if (existingVerifiedOwner) {
+        res.status(409).json({
+          success: false,
+          message: 'An account with this mobile number already exists. Each mobile number can only be linked to a single account.',
+        });
+        return;
+      }
+
+      const phoneVariants = getPhoneSearchVariants(user.phone);
+      if (phoneVariants.length > 0 && typeof prisma.user?.updateMany === 'function') {
+        await prisma.user.updateMany({
+          where: {
+            id: { not: user.id },
+            isEmailVerified: false,
+            phone: { in: phoneVariants },
+          },
+          data: { phone: null },
+        });
+      }
+    }
+
     // Mark as verified and clear OTP & verification attempt state (FIX-005)
     clearVerificationState(cleanEmail);
     const updatedUser = await prisma.user.update({
@@ -1051,7 +1077,11 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
     let formattedPhone: string | null | undefined = undefined;
     if (phone !== undefined) {
       if (phone === null || String(phone).trim() === '') {
-        formattedPhone = null;
+        res.status(400).json({
+          success: false,
+          message: 'A valid 10-digit Indian mobile number (+91) is required and cannot be removed.',
+        });
+        return;
       } else {
         const trimmedPhone = String(phone).trim();
         if (!isValidIndianPhone(trimmedPhone)) {

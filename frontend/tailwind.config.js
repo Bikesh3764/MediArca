@@ -8,8 +8,8 @@ export default {
     extend: {
       colors: {
         brand: {
-          cyan: '#0088e8',
-          cyanDark: '#0284c7',
+          cyan: '#0066cc',
+          cyanDark: '#0071e3',
           cyanLight: '#e0f2fe',
           emerald: '#10b981',
           emeraldDark: '#059669',

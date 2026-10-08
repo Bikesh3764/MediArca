@@ -98,7 +98,7 @@ export const getPhoneSearchVariants = (raw: string | undefined | null): string[]
 export const findExistingAccountByPhone = async (
   prismaClient: any,
   rawPhone: string | undefined | null,
-  options?: { excludeUserId?: string }
+  options?: { excludeUserId?: string; includeUnverified?: boolean }
 ): Promise<{ id: string; email: string; role: string; phone: string | null; isEmailVerified?: boolean } | null> => {
   const variants = getPhoneSearchVariants(rawPhone);
   if (variants.length === 0 || !prismaClient?.user?.findFirst) {
@@ -112,6 +112,10 @@ export const findExistingAccountByPhone = async (
       { email: { startsWith: 'walkin.', mode: 'insensitive' } },
     ],
   };
+
+  if (!options?.includeUnverified) {
+    whereClause.isEmailVerified = true;
+  }
 
   if (options?.excludeUserId) {
     whereClause.id = { not: options.excludeUserId };

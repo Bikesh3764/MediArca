@@ -369,14 +369,14 @@ export const ManageSchedule: React.FC = () => {
               <div className="p-5 rounded-[22px] bg-[#fafafc] border border-[#e5e5ea] space-y-3">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <label className="text-xs font-bold text-[#1d1d1f] flex items-center gap-2">
-                    <Building2 className="w-4 h-4 text-[#0088e8]" />
+                    <Building2 className="w-4 h-4 text-[#0066cc]" />
                     <span>Practicing Facility</span>
                   </label>
                   {clinics.length > 1 ? (
                     <select
                       value={selectedClinicId}
                       onChange={(e) => handleClinicChange(e.target.value)}
-                      className="h-10 px-4 rounded-full border border-[#e5e5ea] text-xs font-semibold text-[#1d1d1f] bg-white focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] cursor-pointer transition-all hover:bg-[#fafafc] shadow-2xs"
+                      className="h-10 px-4 rounded-full border border-[#e5e5ea] text-xs font-semibold text-[#1d1d1f] bg-white focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] cursor-pointer transition-all hover:bg-[#fafafc] shadow-2xs"
                     >
                       {clinics.map((c) => (
                         <option key={c.clinicId} value={c.clinicId}>
@@ -394,7 +394,7 @@ export const ManageSchedule: React.FC = () => {
                 {selectedClinic ? (
                   <div className="pt-3 border-t border-[#f0f0f0] flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-[#86868b]">
                     <div className="flex items-center gap-1.5">
-                      <MapPin className="w-3.5 h-3.5 text-[#0088e8] flex-shrink-0" />
+                      <MapPin className="w-3.5 h-3.5 text-[#0066cc] flex-shrink-0" />
                       <span className="text-[#1d1d1f] font-medium">
                         {selectedClinic.address}{selectedClinic.city ? `, ${selectedClinic.city}` : ''}
                       </span>
@@ -409,7 +409,7 @@ export const ManageSchedule: React.FC = () => {
                 ) : (
                   <div className="pt-3 border-t border-[#f0f0f0] flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-[#86868b]">
                     <div className="flex items-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5 text-[#0088e8] flex-shrink-0" />
+                      <Sparkles className="w-3.5 h-3.5 text-[#0066cc] flex-shrink-0" />
                       <span className="text-[#1d1d1f] font-medium">
                         Direct Consultations & Telehealth Practice
                       </span>
@@ -426,7 +426,7 @@ export const ManageSchedule: React.FC = () => {
               <div className="p-4 sm:p-6 rounded-[20px] sm:rounded-[22px] bg-[#f5f5f7] border border-[#e5e5ea] shadow-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#0088e8]/10 text-[#0088e8] border border-[#0088e8]/20">
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20">
                       {selectedClinic?.clinicName} Capacity Overview
                     </span>
                   </div>
@@ -434,7 +434,7 @@ export const ManageSchedule: React.FC = () => {
                     {totalMaxDailyPatients} Max Daily Patients
                   </h2>
                   <p className="text-xs text-[#86868b] mt-1 flex items-center gap-1.5 font-medium">
-                    <Clock className="w-3.5 h-3.5 text-[#0088e8]" />
+                    <Clock className="w-3.5 h-3.5 text-[#0066cc]" />
                     <span>Configured Shifts: {slots.length} shift{slots.length > 1 ? 's' : ''} at this facility</span>
                   </p>
                 </div>
@@ -443,8 +443,8 @@ export const ManageSchedule: React.FC = () => {
                   <span className="text-[10px] font-semibold text-[#86868b] uppercase tracking-wide block">
                     Consultation Pace Mode
                   </span>
-                  <span className="text-xs font-bold text-[#0088e8] flex items-center gap-1.5 mt-0.5 justify-start sm:justify-end">
-                    <Timer className="w-3.5 h-3.5 text-[#0088e8]" />
+                  <span className="text-xs font-bold text-[#0066cc] flex items-center gap-1.5 mt-0.5 justify-start sm:justify-end">
+                    <Timer className="w-3.5 h-3.5 text-[#0066cc]" />
                     Doctor-Entered Consultation Time
                   </span>
                 </div>
@@ -455,7 +455,7 @@ export const ManageSchedule: React.FC = () => {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-[#f0f0f0]">
                   <div>
                     <h3 className="text-base font-bold text-[#1d1d1f] flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-[#0088e8]" />
+                      <Calendar className="w-4 h-4 text-[#0066cc]" />
                       Checking Shifts & Timings
                     </h3>
                     <p className="text-xs text-[#86868b] mt-0.5">
@@ -485,12 +485,12 @@ export const ManageSchedule: React.FC = () => {
                     return (
                       <div
                         key={slot.id || idx}
-                        className="p-4 sm:p-6 rounded-[20px] sm:rounded-[22px] bg-white border border-[#e5e5ea] space-y-4 relative transition-all duration-200 hover:border-[#0088e8]/40 shadow-xs"
+                        className="p-4 sm:p-6 rounded-[20px] sm:rounded-[22px] bg-white border border-[#e5e5ea] space-y-4 relative transition-all duration-200 hover:border-[#0066cc]/40 shadow-xs"
                       >
                         {/* Shift Header */}
                         <div className="flex items-center justify-between gap-3 pb-3 border-b border-[#f5f5f7]">
                           <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                            <span className="w-7 h-7 rounded-full bg-[#0088e8]/10 text-[#0088e8] text-xs font-bold flex items-center justify-center flex-shrink-0">
+                            <span className="w-7 h-7 rounded-full bg-[#0066cc]/10 text-[#0066cc] text-xs font-bold flex items-center justify-center flex-shrink-0">
                               {idx + 1}
                             </span>
                             <input
@@ -498,12 +498,12 @@ export const ManageSchedule: React.FC = () => {
                               value={slot.name}
                               onChange={(e) => handleSlotChange(idx, 'name', e.target.value)}
                               placeholder="e.g. Shift 1: Morning & Afternoon"
-                              className="text-sm font-bold text-[#1d1d1f] bg-transparent border-b border-transparent hover:border-[#0088e8]/50 focus:border-[#0088e8] focus:outline-none px-1 py-0.5 transition-all truncate"
+                              className="text-sm font-bold text-[#1d1d1f] bg-transparent border-b border-transparent hover:border-[#0066cc]/50 focus:border-[#0066cc] focus:outline-none px-1 py-0.5 transition-all truncate"
                             />
                           </div>
 
                           <div className="flex items-center gap-2 flex-shrink-0">
-                            <span className="px-3 py-1 rounded-full bg-[#0088e8]/10 text-[#0088e8] border border-[#0088e8]/20 text-xs font-semibold flex items-center gap-1.5">
+                            <span className="px-3 py-1 rounded-full bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20 text-xs font-semibold flex items-center gap-1.5">
                               <Clock className="w-3.5 h-3.5" />
                               <span>
                                 {format12Hour(slot.startTime)} – {format12Hour(slot.endTime)}
@@ -527,7 +527,7 @@ export const ManageSchedule: React.FC = () => {
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                           <div>
                             <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 flex items-center gap-1.5">
-                              <Clock className="w-3.5 h-3.5 text-[#0088e8]" />
+                              <Clock className="w-3.5 h-3.5 text-[#0066cc]" />
                               <span>Start Time</span>
                             </label>
                             <input
@@ -535,7 +535,7 @@ export const ManageSchedule: React.FC = () => {
                               required
                               value={slot.startTime}
                               onChange={(e) => handleSlotChange(idx, 'startTime', e.target.value)}
-                              className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-xs font-semibold bg-white text-[#1d1d1f] focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] transition-all"
+                              className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-xs font-semibold bg-white text-[#1d1d1f] focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] transition-all"
                             />
                             <span className="text-[10px] text-[#86868b] mt-1 block">
                               {format12Hour(slot.startTime)}
@@ -544,7 +544,7 @@ export const ManageSchedule: React.FC = () => {
 
                           <div>
                             <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 flex items-center gap-1.5">
-                              <Clock className="w-3.5 h-3.5 text-[#0088e8]" />
+                              <Clock className="w-3.5 h-3.5 text-[#0066cc]" />
                               <span>End Time</span>
                             </label>
                             <input
@@ -552,7 +552,7 @@ export const ManageSchedule: React.FC = () => {
                               required
                               value={slot.endTime}
                               onChange={(e) => handleSlotChange(idx, 'endTime', e.target.value)}
-                              className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-xs font-semibold bg-white text-[#1d1d1f] focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] transition-all"
+                              className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-xs font-semibold bg-white text-[#1d1d1f] focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] transition-all"
                             />
                             <span className="text-[10px] text-[#86868b] mt-1 block">
                               {format12Hour(slot.endTime)}
@@ -561,7 +561,7 @@ export const ManageSchedule: React.FC = () => {
 
                           <div>
                             <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 flex items-center gap-1.5">
-                              <Timer className="w-3.5 h-3.5 text-[#0088e8]" />
+                              <Timer className="w-3.5 h-3.5 text-[#0066cc]" />
                               <span>Avg Consultation Time</span>
                             </label>
                             <div className="relative">
@@ -579,9 +579,9 @@ export const ManageSchedule: React.FC = () => {
                                   )
                                 }
                                 placeholder="20"
-                                className="w-full h-11 pl-3.5 pr-14 rounded-xl border border-[#0088e8]/40 text-xs font-bold bg-[#0088e8]/5 text-[#0088e8] focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] transition-all"
+                                className="w-full h-11 pl-3.5 pr-14 rounded-xl border border-[#0066cc]/40 text-xs font-bold bg-[#0066cc]/5 text-[#0066cc] focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] transition-all"
                               />
-                              <span className="absolute right-3 top-3 text-[11px] font-semibold text-[#0088e8]">
+                              <span className="absolute right-3 top-3 text-[11px] font-semibold text-[#0066cc]">
                                 mins
                               </span>
                             </div>
@@ -610,7 +610,7 @@ export const ManageSchedule: React.FC = () => {
                                   )
                                 }
                                 placeholder="25"
-                                className="w-full h-11 pl-3.5 pr-12 rounded-xl border border-[#e5e5ea] text-xs font-bold bg-white text-[#1d1d1f] focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] transition-all"
+                                className="w-full h-11 pl-3.5 pr-12 rounded-xl border border-[#e5e5ea] text-xs font-bold bg-white text-[#1d1d1f] focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] transition-all"
                               />
                               <span className="absolute right-3 top-3 text-[11px] font-semibold text-[#86868b]">
                                 pts
@@ -630,7 +630,7 @@ export const ManageSchedule: React.FC = () => {
                             </span>
                             <span className="text-[#86868b]">•</span>
                             <span>
-                              Doctor Pace: <strong className="text-[#0088e8]">~{slot.avgConsultationMinutes || 15}m per patient</strong>
+                              Doctor Pace: <strong className="text-[#0066cc]">~{slot.avgConsultationMinutes || 15}m per patient</strong>
                             </span>
                             <span className="text-[#86868b]">•</span>
                             <span>
@@ -643,9 +643,9 @@ export const ManageSchedule: React.FC = () => {
                               type="button"
                               onClick={() => handleAutoPace(idx)}
                               title="Calculate pace by dividing shift duration by max patients"
-                              className="px-2.5 py-1 rounded-lg bg-white border border-[#e5e5ea] text-[#0088e8] font-semibold text-[11px] hover:bg-blue-50 transition-all flex items-center gap-1 shadow-2xs cursor-pointer"
+                              className="px-2.5 py-1 rounded-lg bg-white border border-[#e5e5ea] text-[#0066cc] font-semibold text-[11px] hover:bg-blue-50 transition-all flex items-center gap-1 shadow-2xs cursor-pointer"
                             >
-                              <Sparkles className="w-3 h-3 text-[#0088e8]" />
+                              <Sparkles className="w-3 h-3 text-[#0066cc]" />
                               <span>Auto-calc Pace</span>
                             </button>
                             <button
@@ -697,7 +697,7 @@ export const ManageSchedule: React.FC = () => {
                       value={consultationFee}
                       onChange={(e) => setConsultationFee(Number(e.target.value))}
                       placeholder="500"
-                      className="w-full h-11 pl-9 pr-4 rounded-xl border border-[#e5e5ea] text-sm font-bold bg-white text-[#1d1d1f] focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] transition-all"
+                      className="w-full h-11 pl-9 pr-4 rounded-xl border border-[#e5e5ea] text-sm font-bold bg-white text-[#1d1d1f] focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] transition-all"
                     />
                   </div>
                   <p className="text-[11px] text-[#86868b] mt-1.5 leading-relaxed">

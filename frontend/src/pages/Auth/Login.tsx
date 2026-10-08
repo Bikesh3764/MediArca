@@ -132,9 +132,6 @@ export const Login: React.FC<LoginProps> = ({ portal }) => {
           <h1 className="text-2xl font-semibold text-[#1d1d1f] tracking-tight">
             Sign In
           </h1>
-          <p className="text-xs text-[#86868b] mt-1">
-            Welcome back to MediArca Clinical Platform
-          </p>
         </div>
 
         {/* Main Clean Apple Card */}
@@ -229,7 +226,7 @@ export const Login: React.FC<LoginProps> = ({ portal }) => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder={activeRole === 'DOCTOR' ? 'dr.name@mediarca.com' : 'name@example.com'}
-                className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-sm text-[#1d1d1f] placeholder:text-[#86868b] focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20 transition-all bg-[#fbfbfd] focus:bg-white"
+                className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-sm text-[#1d1d1f] placeholder:text-[#86868b] focus:outline-none focus:border-[#0066cc] focus:ring-2 focus:ring-[#0066cc]/20 transition-all bg-[#fbfbfd] focus:bg-white"
               />
             </div>
 
@@ -244,7 +241,7 @@ export const Login: React.FC<LoginProps> = ({ portal }) => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full h-11 pl-3.5 pr-10 rounded-xl border border-[#e5e5ea] text-sm text-[#1d1d1f] placeholder:text-[#86868b] focus:outline-none focus:border-[#0088e8] focus:ring-2 focus:ring-[#0088e8]/20 transition-all bg-[#fbfbfd] focus:bg-white"
+                  className="w-full h-11 pl-3.5 pr-10 rounded-xl border border-[#e5e5ea] text-sm text-[#1d1d1f] placeholder:text-[#86868b] focus:outline-none focus:border-[#0066cc] focus:ring-2 focus:ring-[#0066cc]/20 transition-all bg-[#fbfbfd] focus:bg-white"
                 />
                 <button
                   type="button"
@@ -273,7 +270,7 @@ export const Login: React.FC<LoginProps> = ({ portal }) => {
           <div className="mt-6 pt-5 border-t border-[#f0f0f2]">
             <div className="flex items-center justify-between text-[11px] text-[#86868b] mb-2.5">
               <span className="flex items-center gap-1 font-medium text-[#1d1d1f]">
-                <Sparkles className="w-3 h-3 text-[#0088e8]" />
+                <Sparkles className="w-3 h-3 text-[#0066cc]" />
                 Instant Demo Access
               </span>
               <span>1-Click Test</span>
@@ -284,7 +281,7 @@ export const Login: React.FC<LoginProps> = ({ portal }) => {
                 onClick={() => handleQuickLogin('john.doe@gmail.com', 'patient123', '/patient/appointments')}
                 className={`py-2 px-3 rounded-xl border text-xs font-medium transition-all text-center cursor-pointer active:scale-[0.98] ${
                   activeRole === 'PATIENT'
-                    ? 'bg-[#0088e8]/10 text-[#0088e8] border-[#0088e8]/30 font-semibold'
+                    ? 'bg-[#0066cc]/10 text-[#0066cc] border-[#0066cc]/30 font-semibold'
                     : 'bg-[#f5f5f7] hover:bg-[#ebebee] text-[#1d1d1f] border-[#e5e5ea]'
                 }`}
               >
@@ -295,7 +292,7 @@ export const Login: React.FC<LoginProps> = ({ portal }) => {
                 onClick={() => handleQuickLogin('dr.sarah@mediarca.com', 'doctor123', '/doctor/dashboard')}
                 className={`py-2 px-3 rounded-xl border text-xs font-medium transition-all text-center cursor-pointer active:scale-[0.98] ${
                   activeRole === 'DOCTOR'
-                    ? 'bg-[#0088e8]/10 text-[#0088e8] border-[#0088e8]/30 font-semibold'
+                    ? 'bg-[#0066cc]/10 text-[#0066cc] border-[#0066cc]/30 font-semibold'
                     : 'bg-[#f5f5f7] hover:bg-[#ebebee] text-[#1d1d1f] border-[#e5e5ea]'
                 }`}
               >
@@ -305,11 +302,11 @@ export const Login: React.FC<LoginProps> = ({ portal }) => {
 
             <div className="mt-3.5 flex items-center justify-center gap-2 text-[11px] text-[#86868b]">
               <span>Staff portals:</span>
-              <Link to="/receptionist/login" className="text-[#0088e8] hover:underline font-medium">
+              <Link to="/receptionist/login" className="text-[#0066cc] hover:underline font-medium">
                 Receptionist Desk
               </Link>
               <span>•</span>
-              <Link to="/clinic/login" className="text-[#0088e8] hover:underline font-medium">
+              <Link to="/clinic/login" className="text-[#0066cc] hover:underline font-medium">
                 Clinic Portal
               </Link>
             </div>
@@ -321,7 +318,7 @@ export const Login: React.FC<LoginProps> = ({ portal }) => {
           Don't have an account?{' '}
           <Link
             to={activeRole === 'DOCTOR' ? '/doctor/signup' : '/patient/signup'}
-            className="text-[#0088e8] font-semibold hover:underline"
+            className="text-[#0066cc] font-semibold hover:underline"
           >
             Create {activeRole === 'DOCTOR' ? 'Doctor Profile' : 'Patient Account'}
           </Link>

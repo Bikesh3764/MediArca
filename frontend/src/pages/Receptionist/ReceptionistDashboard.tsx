@@ -2302,7 +2302,7 @@ export const ReceptionistDashboard: React.FC = () => {
 
           <div className="py-4 text-center">
             <div className="text-xs uppercase text-gray-500 tracking-wider">Token Number</div>
-            <div className="text-5xl font-black tracking-tight my-1">
+            <div className="text-5xl font-bold tracking-tight my-1">
               #{bookedPass.queueNumber}
             </div>
             <div className="text-xs font-semibold text-gray-800">

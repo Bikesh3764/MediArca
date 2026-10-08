@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { api } from '../../services/api';
+import { api, getLocalDateString } from '../../services/api';
 import { AppleButton } from '../../components/ui/AppleButton';
 import { UtilityCard } from '../../components/ui/UtilityCard';
 import {
@@ -15,13 +15,34 @@ export const PatientProfile: React.FC = () => {
   const [fullName, setFullName] = useState(user?.fullName || '');
   const [phone, setPhone] = useState(user?.phone || '');
   const [bloodGroup, setBloodGroup] = useState(user?.patientProfile?.bloodGroup || '');
-  const [dateOfBirth, setDateOfBirth] = useState(user?.patientProfile?.dateOfBirth || '');
+  const [dateOfBirth, setDateOfBirth] = useState(
+    user?.patientProfile?.dateOfBirth ? String(user.patientProfile.dateOfBirth).split('T')[0] : ''
+  );
   const [gender, setGender] = useState(user?.patientProfile?.gender || '');
   const [emergencyContact, setEmergencyContact] = useState(user?.patientProfile?.emergencyContact || '');
 
   const [saving, setSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    queueMicrotask(() => {
+      if (mounted && user) {
+        setFullName(user.fullName || '');
+        setPhone(user.phone || '');
+        setBloodGroup(user.patientProfile?.bloodGroup || '');
+        setDateOfBirth(
+          user.patientProfile?.dateOfBirth ? String(user.patientProfile.dateOfBirth).split('T')[0] : ''
+        );
+        setGender(user.patientProfile?.gender || '');
+        setEmergencyContact(user.patientProfile?.emergencyContact || '');
+      }
+    });
+    return () => {
+      mounted = false;
+    };
+  }, [user]);
 
   const handlePhoneInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const digits = sanitizeIndianPhone(e.target.value);
@@ -30,7 +51,11 @@ export const PatientProfile: React.FC = () => {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (phone.trim() && !isValidIndianPhone(phone)) {
+    if (!fullName.trim()) {
+      setErrorMsg('Full name is required.');
+      return;
+    }
+    if (!isValidIndianPhone(phone)) {
       setErrorMsg('Please enter a valid 10-digit Indian mobile number.');
       return;
     }
@@ -88,7 +113,7 @@ export const PatientProfile: React.FC = () => {
           <UtilityCard title="Personal Information">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
               <div>
-                <label className="block text-xs font-semibold text-[#1d1d1f] mb-1.5">
+                <label className="block text-[13px] font-medium text-[#1d1d1f] tracking-[-0.01em] mb-1.5">
                   Full Name
                 </label>
                 <input
@@ -97,45 +122,45 @@ export const PatientProfile: React.FC = () => {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="Full Name"
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] transition-all"
+                  className="w-full h-11 px-3.5 rounded-[12px] border border-[#d2d2d7] text-[15px] tracking-[-0.015em] bg-white text-[#1d1d1f] focus:outline-none focus:ring-[3px] focus:ring-[#0066cc]/15 focus:border-[#0066cc] transition-all"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#1d1d1f] mb-1.5">
-                  Phone Number
+                <label className="block text-[13px] font-medium text-[#1d1d1f] tracking-[-0.01em] mb-1.5">
+                  Mobile Number
                 </label>
-                <div className="flex rounded-xl border border-[#e5e5ea] overflow-hidden focus-within:ring-2 focus-within:ring-[#0066cc]/20 focus-within:border-[#0066cc] bg-white transition-all">
-                  <span className="inline-flex items-center gap-1 px-3 bg-[#f5f5f7] border-r border-[#e5e5ea] text-[#1d1d1f] font-semibold text-xs select-none">
-                    <span>🇮🇳</span>
-                    <span>+91</span>
+                <div className="flex h-11 rounded-[12px] border border-[#d2d2d7] overflow-hidden focus-within:ring-[3px] focus-within:ring-[#0066cc]/15 focus-within:border-[#0066cc] bg-white transition-all">
+                  <span className="inline-flex items-center justify-center px-3.5 bg-[#f5f5f7] border-r border-[#d2d2d7] text-[#1d1d1f] font-semibold text-[15px] tracking-[-0.01em] select-none">
+                    +91
                   </span>
                   <input
                     type="tel"
                     inputMode="numeric"
+                    required
                     value={sanitizeIndianPhone(phone)}
                     onChange={handlePhoneInputChange}
                     placeholder="98765 43210"
                     maxLength={10}
-                    className="w-full h-11 px-3.5 text-sm bg-white focus:outline-none text-[#1d1d1f]"
+                    className="w-full h-full px-3.5 text-[15px] tracking-[-0.015em] bg-white focus:outline-none text-[#1d1d1f] placeholder:text-[#86868b]"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#86868b] mb-1.5">
+                <label className="block text-[13px] font-medium text-[#86868b] tracking-[-0.01em] mb-1.5">
                   Email
                 </label>
                 <input
                   type="email"
                   disabled
                   value={user?.email || ''}
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] text-[#86868b] cursor-not-allowed select-none"
+                  className="w-full h-11 px-3.5 rounded-[12px] border border-[#e5e5ea] text-[14px] tracking-[-0.01em] bg-[#f5f5f7] text-[#86868b] cursor-not-allowed select-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#1d1d1f] mb-1.5">
+                <label className="block text-[13px] font-medium text-[#1d1d1f] tracking-[-0.01em] mb-1.5">
                   Emergency Contact
                 </label>
                 <input
@@ -143,7 +168,7 @@ export const PatientProfile: React.FC = () => {
                   value={emergencyContact}
                   onChange={(e) => setEmergencyContact(e.target.value)}
                   placeholder="Optional contact name & number"
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] transition-all"
+                  className="w-full h-11 px-3.5 rounded-[12px] border border-[#d2d2d7] text-[15px] tracking-[-0.015em] bg-white text-[#1d1d1f] placeholder:text-[#86868b] focus:outline-none focus:ring-[3px] focus:ring-[#0066cc]/15 focus:border-[#0066cc] transition-all"
                 />
               </div>
             </div>
@@ -153,42 +178,51 @@ export const PatientProfile: React.FC = () => {
           <UtilityCard title="Health Details">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2">
               <div>
-                <label className="block text-xs font-semibold text-[#1d1d1f] mb-1.5">
+                <label className="block text-[13px] font-medium text-[#1d1d1f] tracking-[-0.01em] mb-1.5">
                   Date of Birth
                 </label>
                 <input
                   type="date"
+                  max={getLocalDateString()}
                   value={dateOfBirth}
                   onChange={(e) => setDateOfBirth(e.target.value)}
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] transition-all"
+                  className="w-full h-11 px-3.5 rounded-[12px] border border-[#d2d2d7] text-[14px] tracking-[-0.01em] bg-white text-[#1d1d1f] focus:outline-none focus:ring-[3px] focus:ring-[#0066cc]/15 focus:border-[#0066cc] transition-all"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#1d1d1f] mb-1.5">
+                <label className="block text-[13px] font-medium text-[#1d1d1f] tracking-[-0.01em] mb-1.5">
                   Gender
                 </label>
-                <select
-                  value={gender}
-                  onChange={(e) => setGender(e.target.value)}
-                  className="w-full h-11 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] transition-all cursor-pointer"
-                >
-                  <option value="">Select</option>
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                  <option value="Other">Other</option>
-                  <option value="Prefer not to say">Prefer not to say</option>
-                </select>
+                <div className="grid grid-cols-3 gap-1 p-1 h-11 rounded-[12px] bg-[#f5f5f7] border border-[#e5e5ea]">
+                  {(['Male', 'Female', 'Other'] as const).map((option) => {
+                    const active = gender === option;
+                    return (
+                      <button
+                        key={option}
+                        type="button"
+                        onClick={() => setGender(option)}
+                        className={`rounded-[9px] text-[13px] font-semibold tracking-[-0.01em] transition-all duration-150 ${
+                          active
+                            ? 'bg-white text-[#1d1d1f] shadow-[0_1px_3px_rgba(0,0,0,0.08)]'
+                            : 'text-[#86868b] hover:text-[#1d1d1f]'
+                        }`}
+                      >
+                        {option}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#1d1d1f] mb-1.5">
+                <label className="block text-[13px] font-medium text-[#1d1d1f] tracking-[-0.01em] mb-1.5">
                   Blood Group
                 </label>
                 <select
                   value={bloodGroup}
                   onChange={(e) => setBloodGroup(e.target.value)}
-                  className="w-full h-11 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] transition-all cursor-pointer"
+                  className="w-full h-11 px-3 rounded-[12px] border border-[#d2d2d7] text-[14px] tracking-[-0.01em] bg-white text-[#1d1d1f] focus:outline-none focus:ring-[3px] focus:ring-[#0066cc]/15 focus:border-[#0066cc] transition-all cursor-pointer"
                 >
                   <option value="">Select</option>
                   <option value="A+">A+</option>

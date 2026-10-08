@@ -160,7 +160,7 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
         </button>
 
         {/* Icon */}
-        <div className="w-12 h-12 sm:w-14 sm:h-14 mx-auto mb-3 sm:mb-4 rounded-2xl bg-[#0088e8]/10 text-[#0088e8] flex items-center justify-center border border-[#0088e8]/20 shadow-xs">
+        <div className="w-12 h-12 sm:w-14 sm:h-14 mx-auto mb-3 sm:mb-4 rounded-2xl bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center border border-[#0066cc]/20 shadow-xs">
           <Mail className="w-6 h-6 sm:w-7 sm:h-7" />
         </div>
 
@@ -209,8 +209,8 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
                 onKeyDown={(e) => handleKeyDown(idx, e)}
                 className={`w-9 h-11 sm:w-12 sm:h-14 text-center text-lg sm:text-2xl font-semibold rounded-lg sm:rounded-xl border transition-all outline-none ${
                   digit
-                    ? 'border-[#0088e8] bg-white ring-2 ring-[#0088e8]/20 text-[#1d1d1f]'
-                    : 'border-[#e5e5ea] bg-[#f5f5f7] text-[#1d1d1f] focus:border-[#0088e8] focus:bg-white focus:ring-2 focus:ring-[#0088e8]/20'
+                    ? 'border-[#0066cc] bg-white ring-2 ring-[#0066cc]/20 text-[#1d1d1f]'
+                    : 'border-[#e5e5ea] bg-[#f5f5f7] text-[#1d1d1f] focus:border-[#0066cc] focus:bg-white focus:ring-2 focus:ring-[#0066cc]/20'
                 }`}
               />
             ))}
@@ -239,7 +239,7 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
             className={`inline-flex items-center gap-1.5 font-semibold transition-colors ${
               countdown > 0 || resending
                 ? 'text-[#86868b] cursor-not-allowed opacity-60'
-                : 'text-[#0088e8] hover:text-[#0077cc] cursor-pointer'
+                : 'text-[#0066cc] hover:text-[#0071e3] cursor-pointer'
             }`}
           >
             <RefreshCw className={`w-3.5 h-3.5 ${resending ? 'animate-spin' : ''}`} />

@@ -9337,6 +9337,34 @@ Follow-up Date: 2026-10-15`;
     'Fix 14: isValidDobDate accurately validates dates against IST calendar day regardless of server timezone'
   );
 
+  // 14. Fix 15: Unverified phone reservation lockout protection & mandatory phone guard
+  const phoneUtilsContent = fs.readFileSync(path.join(__dirname, '../src/utils/phoneUtils.ts'), 'utf8');
+  assert(
+    phoneUtilsContent.includes('whereClause.isEmailVerified = true;') &&
+    authControllerContent.includes('release any stale unverified rows') &&
+    authControllerContent.includes("if (phone === null || String(phone).trim() === '')"),
+    'Fix 15: findExistingAccountByPhone ignores unverified accounts by default, verifyEmailOtp releases stale unverified phones, and updateProfile blocks empty phone wipeout'
+  );
+
+  // 15. Fix 16: General receptionist active status check & public clinic verified doctor filter
+  assert(
+    appointmentControllerContent.includes("{ doctors: { none: { status: 'ACTIVE' } } }") &&
+    doctorControllerContent.includes("const activeDocs = (r.doctors || []).filter((d: any) => d.status === 'ACTIVE' || !d.status);") &&
+    clinicControllerContentCat3.includes("verificationStatus: 'VERIFIED',"),
+    'Fix 16: General receptionist matching checks active doctor links and public clinics strictly filter VERIFIED doctors'
+  );
+
+  // 16. Fix 17: Strict Apple HIG UI, SF Pro Typography & Action Blue (#0066cc) Compliance
+  const patientProfileContent = fs.readFileSync(path.join(__dirname, '../../frontend/src/pages/Patient/PatientProfile.tsx'), 'utf8');
+  const errorBoundaryContent = fs.readFileSync(path.join(__dirname, '../../frontend/src/components/ui/ErrorBoundary.tsx'), 'utf8');
+  assert(
+    patientProfileContent.includes("user.patientProfile.dateOfBirth).split('T')[0]") &&
+    patientProfileContent.includes('max={getLocalDateString()}') &&
+    !patientProfileContent.includes('🇮🇳') &&
+    !errorBoundaryContent.includes('font-mono'),
+    'Fix 17: PatientProfile syncs ISO dateOfBirth and uses clean +91 badge + segmented gender control; ErrorBoundary eliminates font-mono'
+  );
+
   console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);

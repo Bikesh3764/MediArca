@@ -562,7 +562,7 @@ export const DoctorDashboard: React.FC = () => {
                     {affiliations?.clinics.length || 0}
                   </h3>
                 </div>
-                <div className="w-11 h-11 rounded-2xl bg-[#0088e8]/10 text-[#0088e8] flex items-center justify-center">
+                <div className="w-11 h-11 rounded-2xl bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center">
                   <Building2 className="w-5 h-5" />
                 </div>
               </div>
@@ -574,7 +574,7 @@ export const DoctorDashboard: React.FC = () => {
                     {affiliations?.receptionists.length || 0}
                   </h3>
                 </div>
-                <div className="w-11 h-11 rounded-2xl bg-[#0088e8]/10 text-[#0088e8] flex items-center justify-center">
+                <div className="w-11 h-11 rounded-2xl bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center">
                   <Users className="w-5 h-5" />
                 </div>
               </div>
@@ -599,9 +599,9 @@ export const DoctorDashboard: React.FC = () => {
 
             {/* Incoming Clinic Affiliation Invitations */}
             {affiliations?.incomingRequests && affiliations.incomingRequests.length > 0 && (
-              <div className="bg-white rounded-[20px] border border-[#0088e8]/30 p-6 shadow-sm">
+              <div className="bg-white rounded-[20px] border border-[#0066cc]/30 p-6 shadow-sm">
                 <div className="flex items-center gap-2.5 mb-4">
-                  <div className="w-9 h-9 rounded-xl bg-[#0088e8]/10 text-[#0088e8] flex items-center justify-center">
+                  <div className="w-9 h-9 rounded-xl bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center">
                     <Building2 className="w-5 h-5" />
                   </div>
                   <div>
@@ -720,7 +720,7 @@ export const DoctorDashboard: React.FC = () => {
                 </div>
               ) : affiliations?.clinics.length === 0 ? (
                 <div className="p-8 text-center bg-[#f5f5f7]/50 rounded-2xl border border-dashed border-[#e5e5ea]">
-                  <div className="w-12 h-12 rounded-2xl bg-[#0088e8]/10 text-[#0088e8] flex items-center justify-center mx-auto mb-3">
+                  <div className="w-12 h-12 rounded-2xl bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center mx-auto mb-3">
                     <Building2 className="w-6 h-6" />
                   </div>
                   <h4 className="text-sm font-semibold text-[#1d1d1f]">No Clinics Affiliated</h4>
@@ -749,13 +749,13 @@ export const DoctorDashboard: React.FC = () => {
                   {affiliations?.clinics.map((clinic) => (
                     <div
                       key={clinic.clinicId}
-                      className="rounded-[20px] border border-[#e5e5ea] p-5 hover:border-[#0088e8]/30 transition-all duration-200 flex flex-col justify-between bg-white shadow-sm hover:shadow-md"
+                      className="rounded-[20px] border border-[#e5e5ea] p-5 hover:border-[#0066cc]/30 transition-all duration-200 flex flex-col justify-between bg-white shadow-sm hover:shadow-md"
                     >
                       <div>
                         {/* Header: Icon, Name, Verified, Location, Detach */}
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex items-start gap-3.5 min-w-0">
-                            <div className="w-10 h-10 rounded-2xl bg-[#0088e8]/10 text-[#0088e8] flex items-center justify-center font-bold flex-shrink-0">
+                            <div className="w-10 h-10 rounded-2xl bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center font-bold flex-shrink-0">
                               <Building2 className="w-5 h-5" />
                             </div>
                             <div className="min-w-0">
@@ -764,7 +764,7 @@ export const DoctorDashboard: React.FC = () => {
                                   {clinic.clinicName}
                                 </h4>
                                 <span title="Verified Clinic" className="inline-flex">
-                                  <CheckCircle2 className="w-4 h-4 text-[#0088e8] shrink-0" />
+                                  <CheckCircle2 className="w-4 h-4 text-[#0066cc] shrink-0" />
                                 </span>
                               </div>
                               <p className="text-xs text-[#86868b] flex items-center gap-1 mt-1 truncate">
@@ -808,7 +808,7 @@ export const DoctorDashboard: React.FC = () => {
                         {/* Shifts Status */}
                         <div className="mt-3 flex items-center justify-between text-xs px-1 text-[#86868b]">
                           <span className="flex items-center gap-1.5 font-medium">
-                            <Clock className="w-3.5 h-3.5 text-[#0088e8]" />
+                            <Clock className="w-3.5 h-3.5 text-[#0066cc]" />
                             Practice Shifts:
                           </span>
                           <span className="font-semibold text-[#1d1d1f] truncate max-w-[220px]">
@@ -893,11 +893,11 @@ export const DoctorDashboard: React.FC = () => {
                   {affiliations?.receptionists.map((rec) => (
                     <div
                       key={rec.receptionistId}
-                      className="rounded-[20px] border border-[#e5e5ea] p-4 sm:p-5 hover:border-[#0088e8]/30 hover:shadow-md transition-all duration-200 flex items-center justify-between gap-4 bg-white shadow-xs"
+                      className="rounded-[20px] border border-[#e5e5ea] p-4 sm:p-5 hover:border-[#0066cc]/30 hover:shadow-md transition-all duration-200 flex items-center justify-between gap-4 bg-white shadow-xs"
                     >
                       <div className="flex items-center gap-3.5 min-w-0 flex-1">
-                        <div className="w-11 h-11 rounded-2xl bg-[#0088e8]/8 text-[#0088e8] border border-[#0088e8]/15 flex items-center justify-center flex-shrink-0 shadow-2xs">
-                          <Users className="w-5 h-5 text-[#0088e8]" />
+                        <div className="w-11 h-11 rounded-2xl bg-[#0066cc]/8 text-[#0066cc] border border-[#0066cc]/15 flex items-center justify-center flex-shrink-0 shadow-2xs">
+                          <Users className="w-5 h-5 text-[#0066cc]" />
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
@@ -906,7 +906,7 @@ export const DoctorDashboard: React.FC = () => {
                             </h4>
                             {rec.clinicName && (
                               <span className="text-[11px] font-medium px-2.5 py-0.5 rounded-full bg-[#f5f5f7] text-[#48484a] border border-[#e5e5ea] flex items-center gap-1.5 truncate max-w-[180px]">
-                                <Building2 className="w-3 h-3 text-[#0088e8] shrink-0" />
+                                <Building2 className="w-3 h-3 text-[#0066cc] shrink-0" />
                                 <span className="truncate">{rec.clinicName}</span>
                               </span>
                             )}
@@ -983,10 +983,10 @@ export const DoctorDashboard: React.FC = () => {
             {fetchError && (
               <div className="mb-6 p-4 rounded-2xl bg-blue-50 border border-blue-200 text-blue-900 text-xs flex items-center justify-between shadow-sm">
                 <div className="flex items-center gap-2">
-                  <RefreshCw className="w-4 h-4 text-[#0088e8] animate-spin" />
+                  <RefreshCw className="w-4 h-4 text-[#0066cc] animate-spin" />
                   <span>Connecting to cloud database... (Cloud backend may take 30s to resume from idle)</span>
                 </div>
-                <AppleButton variant="ghost" size="sm" onClick={() => fetchQueue(true)} className="text-[#0088e8]">
+                <AppleButton variant="ghost" size="sm" onClick={() => fetchQueue(true)} className="text-[#0066cc]">
                   Retry
                 </AppleButton>
               </div>
@@ -1016,7 +1016,7 @@ export const DoctorDashboard: React.FC = () => {
             <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-6 mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm">
               <div className="flex items-center gap-2">
                 <h2 className="text-xl font-semibold text-[#1d1d1f] tracking-tight">{user?.fullName}</h2>
-                <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#0088e8]/10 text-[#0088e8]">
+                <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#0066cc]/10 text-[#0066cc]">
                   {user?.doctorProfile?.specialty || 'Doctor'}
                 </span>
               </div>
@@ -1055,7 +1055,7 @@ export const DoctorDashboard: React.FC = () => {
                     <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
                       queueScope === 'date' && date === queueData.upcomingSummary.tomorrowDate
                         ? 'bg-white/20 text-white'
-                        : 'bg-[#0088e8] text-white'
+                        : 'bg-[#0066cc] text-white'
                     }`}>
                       {queueData.upcomingSummary.tomorrowCount}
                     </span>
@@ -1077,7 +1077,7 @@ export const DoctorDashboard: React.FC = () => {
                     <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
                       queueScope === 'all-upcoming'
                         ? 'bg-white/20 text-white'
-                        : 'bg-[#0088e8] text-white'
+                        : 'bg-[#0066cc] text-white'
                     }`}>
                       {queueData.upcomingSummary.totalUpcomingCount}
                     </span>
@@ -1090,7 +1090,7 @@ export const DoctorDashboard: React.FC = () => {
                     setQueueScope('date');
                     setDate(e.target.value);
                   }}
-                  className="h-9 px-3.5 rounded-full border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
+                  className="h-9 px-3.5 rounded-full border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
                   title="Choose Specific Date"
                 />
               </div>
@@ -1100,7 +1100,7 @@ export const DoctorDashboard: React.FC = () => {
             {queueData?.upcomingSummary && queueData.upcomingSummary.tomorrowCount > 0 && (queueScope !== 'date' || date !== queueData.upcomingSummary.tomorrowDate) && (
               <div className="mb-6 p-4 rounded-[20px] bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-[#0088e8] text-white flex items-center justify-center font-bold flex-shrink-0 shadow-xs">
+                  <div className="w-10 h-10 rounded-xl bg-[#0066cc] text-white flex items-center justify-center font-bold flex-shrink-0 shadow-xs">
                     <Calendar className="w-5 h-5" />
                   </div>
                   <div>
@@ -1118,7 +1118,7 @@ export const DoctorDashboard: React.FC = () => {
                     setQueueScope('date');
                     setDate(queueData.upcomingSummary!.tomorrowDate);
                   }}
-                  className="px-4 py-2 rounded-xl bg-[#0088e8] hover:bg-[#0077cc] text-white font-semibold text-xs transition-all shadow-xs flex items-center justify-center gap-1.5 self-start sm:self-auto flex-shrink-0"
+                  className="px-4 py-2 rounded-xl bg-[#0066cc] hover:bg-[#0071e3] text-white font-semibold text-xs transition-all shadow-xs flex items-center justify-center gap-1.5 self-start sm:self-auto flex-shrink-0"
                 >
                   <span>Switch to Tomorrow</span>
                   <ChevronRight className="w-4 h-4" />
@@ -1130,7 +1130,7 @@ export const DoctorDashboard: React.FC = () => {
             {queueData?.upcomingSummary && queueData.upcomingSummary.tomorrowCount === 0 && queueData.upcomingSummary.nextDateWithBookings && (queueScope !== 'date' || date !== queueData.upcomingSummary.nextDateWithBookings) && (
               <div className="mb-6 p-4 rounded-[20px] bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-[#0088e8] text-white flex items-center justify-center font-bold flex-shrink-0 shadow-xs">
+                  <div className="w-10 h-10 rounded-xl bg-[#0066cc] text-white flex items-center justify-center font-bold flex-shrink-0 shadow-xs">
                     <Calendar className="w-5 h-5" />
                   </div>
                   <div>
@@ -1148,7 +1148,7 @@ export const DoctorDashboard: React.FC = () => {
                     setQueueScope('date');
                     setDate(queueData.upcomingSummary!.nextDateWithBookings!);
                   }}
-                  className="px-4 py-2 rounded-xl bg-[#0088e8] hover:bg-[#0077cc] text-white font-semibold text-xs transition-all shadow-xs flex items-center justify-center gap-1.5 self-start sm:self-auto flex-shrink-0"
+                  className="px-4 py-2 rounded-xl bg-[#0066cc] hover:bg-[#0071e3] text-white font-semibold text-xs transition-all shadow-xs flex items-center justify-center gap-1.5 self-start sm:self-auto flex-shrink-0"
                 >
                   <span>View {queueData.upcomingSummary.nextDateWithBookings}</span>
                   <ChevronRight className="w-4 h-4" />
@@ -1160,7 +1160,7 @@ export const DoctorDashboard: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-6">
               {/* Card 1: Total Bookings */}
               <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-6 shadow-sm transition-all hover:shadow-md">
-                <div className="w-10 h-10 rounded-xl bg-[#0088e8]/10 text-[#0088e8] flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center">
                   <Calendar className="w-5 h-5" />
                 </div>
                 <h3 className="text-4xl font-bold text-[#1d1d1f] mt-4 tracking-tight">
@@ -1190,7 +1190,7 @@ export const DoctorDashboard: React.FC = () => {
               {/* Left: Quick Actions */}
               <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-6 shadow-sm flex flex-col justify-between">
                 <div className="flex items-center gap-2 mb-4">
-                  <Zap className="w-4 h-4 text-[#0088e8] fill-[#0088e8]" />
+                  <Zap className="w-4 h-4 text-[#0066cc] fill-[#0066cc]" />
                   <h3 className="text-sm font-semibold text-[#1d1d1f] tracking-tight">
                     Quick Actions
                   </h3>
@@ -1204,11 +1204,11 @@ export const DoctorDashboard: React.FC = () => {
                     className="w-full rounded-2xl border border-[#e0f2fe] bg-[#f0f9ff]/60 hover:bg-[#f0f9ff] p-3.5 flex items-center justify-between text-left transition-all group"
                   >
                     <div className="flex items-center gap-3.5">
-                      <div className="w-10 h-10 rounded-xl bg-[#0088e8] text-white flex items-center justify-center shadow-xs flex-shrink-0">
+                      <div className="w-10 h-10 rounded-xl bg-[#0066cc] text-white flex items-center justify-center shadow-xs flex-shrink-0">
                         <Calendar className="w-5 h-5" />
                       </div>
                       <div>
-                        <h4 className="text-sm font-semibold text-[#1d1d1f] group-hover:text-[#0088e8] transition-colors">
+                        <h4 className="text-sm font-semibold text-[#1d1d1f] group-hover:text-[#0066cc] transition-colors">
                           View Appointments
                         </h4>
                         <p className="text-xs text-[#86868b] mt-0.5">
@@ -1216,7 +1216,7 @@ export const DoctorDashboard: React.FC = () => {
                         </p>
                       </div>
                     </div>
-                    <ChevronRight className="w-4 h-4 text-[#86868b] group-hover:text-[#0088e8] transition-colors" />
+                    <ChevronRight className="w-4 h-4 text-[#86868b] group-hover:text-[#0066cc] transition-colors" />
                   </button>
 
                   {/* Action 2: Walk-in QR Code */}
@@ -1277,7 +1277,7 @@ export const DoctorDashboard: React.FC = () => {
                   <button
                     type="button"
                     onClick={scrollToQueue}
-                    className="text-xs font-semibold text-[#0088e8] hover:underline flex items-center gap-1"
+                    className="text-xs font-semibold text-[#0066cc] hover:underline flex items-center gap-1"
                   >
                     View All &rarr;
                   </button>
@@ -1303,7 +1303,7 @@ export const DoctorDashboard: React.FC = () => {
                           setQueueScope('date');
                           setDate(queueData.upcomingSummary!.tomorrowDate);
                         }}
-                        className="mt-3 text-xs font-semibold text-[#0088e8] hover:underline inline-flex items-center gap-1"
+                        className="mt-3 text-xs font-semibold text-[#0066cc] hover:underline inline-flex items-center gap-1"
                       >
                         Switch to Tomorrow ({queueData.upcomingSummary.tomorrowCount}) &rarr;
                       </button>
@@ -1314,7 +1314,7 @@ export const DoctorDashboard: React.FC = () => {
                     {queueData.allAppointments.slice(0, 3).map((appt) => (
                       <div
                         key={appt.id}
-                        className="p-3 rounded-xl border border-[#e5e5ea] hover:border-[#0088e8]/30 transition-all flex items-center justify-between text-xs"
+                        className="p-3 rounded-xl border border-[#e5e5ea] hover:border-[#0066cc]/30 transition-all flex items-center justify-between text-xs"
                       >
                         <div className="flex items-center gap-3 min-w-0">
                           <span className="w-7 h-7 rounded-lg bg-[#1d1d1f] text-white font-bold text-[11px] flex items-center justify-center flex-shrink-0">
@@ -1339,7 +1339,7 @@ export const DoctorDashboard: React.FC = () => {
                             appt.status === 'IN_CONSULTATION'
                               ? 'bg-[#0066cc]/10 text-emerald-700 border border-emerald-200'
                               : appt.status === 'COMPLETED'
-                              ? 'bg-blue-50 text-[#0088e8] border border-blue-200'
+                              ? 'bg-blue-50 text-[#0066cc] border border-blue-200'
                               : appt.status === 'EXPIRED'
                               ? 'bg-slate-100 text-slate-600 border border-slate-200'
                               : 'bg-amber-50 text-amber-800 border border-amber-200'
@@ -1357,7 +1357,7 @@ export const DoctorDashboard: React.FC = () => {
             {/* Practice Summary Card (Matches media_1789192783321.jpg) */}
             <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-6 shadow-sm mb-8">
               <div className="flex items-center gap-2 mb-2">
-                <Clock className="w-4 h-4 text-[#0088e8]" />
+                <Clock className="w-4 h-4 text-[#0066cc]" />
                 <h3 className="text-sm font-semibold text-[#1d1d1f] tracking-tight">
                   Practice Summary
                 </h3>
@@ -1478,7 +1478,7 @@ export const DoctorDashboard: React.FC = () => {
                           value={queueSearch}
                           onChange={(e) => setQueueSearch(e.target.value)}
                           placeholder="Search patient, phone, token..."
-                          className="h-9 px-3.5 rounded-full border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8] w-full sm:w-56"
+                          className="h-9 px-3.5 rounded-full border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] w-full sm:w-56"
                         />
                         {isDoctorAway ? (
                           <AppleButton
@@ -1554,7 +1554,7 @@ export const DoctorDashboard: React.FC = () => {
                             setQueueScope('date');
                             setDate(queueData.upcomingSummary!.tomorrowDate);
                           }}
-                          className="px-4 py-2 rounded-xl bg-[#0088e8] hover:bg-[#0077cc] text-white text-xs font-semibold transition-all inline-flex items-center gap-1.5 shadow-xs"
+                          className="px-4 py-2 rounded-xl bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-semibold transition-all inline-flex items-center gap-1.5 shadow-xs"
                         >
                           <span>Switch to Tomorrow's Queue ({queueData.upcomingSummary.tomorrowCount} Booked)</span>
                           <ChevronRight className="w-4 h-4" />
@@ -1581,7 +1581,7 @@ export const DoctorDashboard: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setQueueSearch('')}
-                          className="mt-2 text-xs text-[#0088e8] font-semibold hover:underline"
+                          className="mt-2 text-xs text-[#0066cc] font-semibold hover:underline"
                         >
                           Clear Search Filter
                         </button>
@@ -1594,11 +1594,11 @@ export const DoctorDashboard: React.FC = () => {
                       {filteredWaiting.map((appt) => (
                       <div
                         key={appt.id}
-                        className="bg-white rounded-[20px] border border-[#e5e5ea] p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:border-[#0088e8]/40 transition-all duration-200"
+                        className="bg-white rounded-[20px] border border-[#e5e5ea] p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:border-[#0066cc]/40 transition-all duration-200"
                       >
                         <div className="flex items-center gap-4">
                           <div className="w-12 h-12 rounded-2xl bg-[#1d1d1f] text-white flex flex-col items-center justify-center font-bold">
-                            <span className="text-[9px] uppercase tracking-wider text-[#0088e8]">Queue</span>
+                            <span className="text-[9px] uppercase tracking-wider text-[#0066cc]">Queue</span>
                             <span className="text-lg leading-none">#{appt.queueNumber}</span>
                           </div>
                           <div>
@@ -1607,12 +1607,12 @@ export const DoctorDashboard: React.FC = () => {
                                 {appt.patientName || appt.patient?.user?.fullName || 'Patient'}
                               </h4>
                               {appt.isForOther && (
-                                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#0088e8]/10 text-[#0088e8] border border-[#0088e8]/20">
+                                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20">
                                   Family ({appt.patientAge ? `Age ${appt.patientAge}` : 'Other'} • by {appt.patient?.user.fullName})
                                 </span>
                               )}
                               {appt.checkingWindow && (
-                                <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-[#0088e8]">
+                                <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-[#0066cc]">
                                   {appt.checkingWindow}
                                 </span>
                               )}
@@ -1642,7 +1642,7 @@ export const DoctorDashboard: React.FC = () => {
                             <p className="text-xs text-[#86868b] flex items-center gap-1.5 mt-0.5">
                               <span>Est. {appt.estimatedTime}</span>
                               <span>•</span>
-                              <span className="text-[#0088e8]">
+                              <span className="text-[#0066cc]">
                                 {appt.reasonForVisit || 'General Medical'}
                               </span>
                             </p>
@@ -1727,7 +1727,7 @@ export const DoctorDashboard: React.FC = () => {
                       {queueData.completedQueue.map((appt) => (
                         <div
                           key={appt.id}
-                          className="p-3.5 rounded-2xl bg-white border border-[#e5e5ea] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs hover:border-[#0088e8]/30 transition-all"
+                          className="p-3.5 rounded-2xl bg-white border border-[#e5e5ea] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs hover:border-[#0066cc]/30 transition-all"
                         >
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="font-semibold text-[#86868b]">Queue #{appt.queueNumber}</span>
@@ -1743,7 +1743,7 @@ export const DoctorDashboard: React.FC = () => {
                               variant="ghost"
                               size="sm"
                               onClick={() => navigate(`/doctor/consultation/${appt.id}`)}
-                              className="text-[#0088e8] text-[11px] py-1 px-2.5"
+                              className="text-[#0066cc] text-[11px] py-1 px-2.5"
                             >
                               Review Notes
                             </AppleButton>
@@ -1885,7 +1885,7 @@ export const DoctorDashboard: React.FC = () => {
                   placeholder="e.g. John Smith"
                   value={walkinName}
                   onChange={(e) => setWalkinName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] focus:outline-none focus:border-[#0088e8]"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] focus:outline-none focus:border-[#0066cc]"
                 />
               </div>
 
@@ -1899,7 +1899,7 @@ export const DoctorDashboard: React.FC = () => {
                     placeholder="e.g. 34"
                     value={walkinAge}
                     onChange={(e) => setWalkinAge(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] focus:outline-none focus:border-[#0088e8]"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] focus:outline-none focus:border-[#0066cc]"
                   />
                 </div>
                 <div>
@@ -1909,7 +1909,7 @@ export const DoctorDashboard: React.FC = () => {
                   <select
                     value={walkinGender}
                     onChange={(e) => setWalkinGender(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] focus:outline-none focus:border-[#0088e8]"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] focus:outline-none focus:border-[#0066cc]"
                   >
                     <option value="Not Specified">Not Specified</option>
                     <option value="Male">Male</option>
@@ -1923,7 +1923,7 @@ export const DoctorDashboard: React.FC = () => {
                 <label className="block text-[11px] font-semibold text-[#86868b] uppercase mb-1">
                   Mobile Number (Optional)
                 </label>
-                <div className="flex rounded-xl border border-[#e5e5ea] overflow-hidden focus-within:ring-2 focus-within:ring-[#0088e8]/20 focus-within:border-[#0088e8] bg-white transition-all h-10">
+                <div className="flex rounded-xl border border-[#e5e5ea] overflow-hidden focus-within:ring-2 focus-within:ring-[#0066cc]/20 focus-within:border-[#0066cc] bg-white transition-all h-10">
                   <span className="inline-flex items-center px-3 bg-[#f5f5f7] border-r border-[#e5e5ea] text-[#1d1d1f] font-semibold text-[13px] select-none">
                     +91
                   </span>
@@ -1952,7 +1952,7 @@ export const DoctorDashboard: React.FC = () => {
                       setWalkinClinicId(e.target.value);
                       setWalkinSlotId('');
                     }}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
                   >
                     <option value="">Select Clinic Venue</option>
                     {affiliations.clinics.map((c) => (
@@ -1977,7 +1977,7 @@ export const DoctorDashboard: React.FC = () => {
                 <select
                   value={walkinSlotId}
                   onChange={(e) => setWalkinSlotId(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
                 >
                   <option value="">Current / Default Shift</option>
                   {(
@@ -2001,7 +2001,7 @@ export const DoctorDashboard: React.FC = () => {
                   placeholder="e.g. Fever, cough, general consultation"
                   value={walkinReason}
                   onChange={(e) => setWalkinReason(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
                 />
               </div>
 
@@ -2028,7 +2028,7 @@ export const DoctorDashboard: React.FC = () => {
           <div className="inline-block px-4 py-1.5 rounded-full border-2 border-black text-xs font-bold uppercase tracking-widest mb-3">
             MediArca Instant Walk-in Check-in
           </div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-black">
+          <h1 className="text-3xl font-bold tracking-tight text-black">
             Dr. {doctorDisplayName}
           </h1>
           <p className="text-base font-semibold text-gray-800 mt-1">

@@ -154,7 +154,7 @@ export const ReceptionistAuth: React.FC = () => {
       return;
     }
 
-    if (applyPhone && !isValidIndianPhone(applyPhone)) {
+    if (!isValidIndianPhone(applyPhone)) {
       setError('Please provide a valid 10-digit Indian phone number.');
       return;
     }
@@ -176,7 +176,7 @@ export const ReceptionistAuth: React.FC = () => {
         fullName: applyFullName.trim(),
         email: applyEmail.trim(),
         password: applyPassword,
-        phone: applyPhone ? formatIndianPhone(applyPhone) : undefined,
+        phone: formatIndianPhone(applyPhone),
         clinicId: applyClinicId,
       });
 
@@ -206,9 +206,6 @@ export const ReceptionistAuth: React.FC = () => {
             <h1 className="text-2xl sm:text-3xl font-semibold text-[#1d1d1f] tracking-tight">
               Set Your Permanent Password
             </h1>
-            <p className="text-xs sm:text-sm text-[#86868b] mt-1.5 leading-relaxed max-w-xs mx-auto">
-              Your clinic administrator provisioned your account with a temporary password. You must set a private password to continue.
-            </p>
           </div>
 
           <div className="bg-white rounded-[20px] sm:rounded-[24px] border border-[#e5e5ea] p-4 sm:p-8 shadow-sm">
@@ -230,7 +227,7 @@ export const ReceptionistAuth: React.FC = () => {
                   value={tempPassword}
                   onChange={(e) => setTempPassword(e.target.value)}
                   placeholder="Enter temporary password"
-                  className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[14px] bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
+                  className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[14px] bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
                 />
               </div>
 
@@ -245,7 +242,7 @@ export const ReceptionistAuth: React.FC = () => {
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[14px] bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
+                  className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[14px] bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
                 />
               </div>
 
@@ -260,7 +257,7 @@ export const ReceptionistAuth: React.FC = () => {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[14px] bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
+                  className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[14px] bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
                 />
               </div>
 
@@ -303,9 +300,6 @@ export const ReceptionistAuth: React.FC = () => {
           <h1 className="text-2xl font-semibold text-[#1d1d1f] tracking-tight">
             Reception Desk
           </h1>
-          <p className="text-xs text-[#86868b] mt-1">
-            Front desk queue and walk-in management
-          </p>
         </div>
 
         {/* Card */}
@@ -360,7 +354,7 @@ export const ReceptionistAuth: React.FC = () => {
                   Application Submitted
                 </h3>
                 <p className="text-xs text-[#86868b] mt-1.5 leading-relaxed max-w-sm mx-auto">
-                  Your application to join <strong>{applySuccessClinic}</strong> has been sent to the clinic administrator. Once reviewed and approved, your desk credentials will be activated.
+                  Your application to join <strong>{applySuccessClinic}</strong> has been sent to the clinic administrator.
                 </p>
               </div>
               <AppleButton
@@ -379,7 +373,7 @@ export const ReceptionistAuth: React.FC = () => {
             <form onSubmit={handleApplySubmit} className="space-y-4">
               <div>
                 <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
-                  Full Name *
+                  Full Name
                 </label>
                 <div className="relative">
                   <User className="w-4 h-4 text-[#86868b] absolute left-3.5 top-3.5" />
@@ -388,15 +382,15 @@ export const ReceptionistAuth: React.FC = () => {
                     required
                     value={applyFullName}
                     onChange={(e) => setApplyFullName(e.target.value)}
-                    placeholder="e.g. Priya Sharma"
-                    className="w-full h-11 pl-10 pr-4 rounded-xl border border-[#e5e5ea] text-[14px] bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
+                    placeholder="Priya Sharma"
+                    className="w-full h-11 pl-10 pr-4 rounded-xl border border-[#e5e5ea] text-[14px] bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
                   />
                 </div>
               </div>
 
               <div>
                 <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
-                  Work / Personal Email *
+                  Email
                 </label>
                 <div className="relative">
                   <Mail className="w-4 h-4 text-[#86868b] absolute left-3.5 top-3.5" />
@@ -406,7 +400,7 @@ export const ReceptionistAuth: React.FC = () => {
                     value={applyEmail}
                     onChange={(e) => setApplyEmail(e.target.value)}
                     placeholder="priya@receptionist.com"
-                    className="w-full h-11 pl-10 pr-4 rounded-xl border border-[#e5e5ea] text-[14px] bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
+                    className="w-full h-11 pl-10 pr-4 rounded-xl border border-[#e5e5ea] text-[14px] bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
                   />
                 </div>
               </div>
@@ -415,13 +409,14 @@ export const ReceptionistAuth: React.FC = () => {
                 <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
                   Mobile Number
                 </label>
-                <div className="flex rounded-xl border border-[#e5e5ea] overflow-hidden focus-within:ring-2 focus-within:ring-[#0088e8]/20 focus-within:border-[#0088e8] bg-[#f5f5f7] focus-within:bg-white transition-all h-11">
+                <div className="flex rounded-xl border border-[#e5e5ea] overflow-hidden focus-within:ring-2 focus-within:ring-[#0066cc]/20 focus-within:border-[#0066cc] bg-[#f5f5f7] focus-within:bg-white transition-all h-11">
                   <span className="inline-flex items-center px-3 bg-[#e5e5ea]/50 border-r border-[#e5e5ea] text-[#1d1d1f] font-semibold text-[13px] select-none">
                     +91
                   </span>
                   <input
                     type="tel"
                     inputMode="numeric"
+                    required
                     value={sanitizeIndianPhone(applyPhone)}
                     onChange={(e) => setApplyPhone(sanitizeIndianPhone(e.target.value))}
                     placeholder="98765 43210"
@@ -433,7 +428,7 @@ export const ReceptionistAuth: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-medium text-[#1d1d1f] mb-1 flex items-center justify-between">
-                  <span>Select Clinic Facility *</span>
+                  <span>Clinic Facility</span>
                   {clinicsLoading && <span className="text-[10px] text-[#86868b]">Loading clinics...</span>}
                 </label>
                 <div className="relative">
@@ -442,7 +437,7 @@ export const ReceptionistAuth: React.FC = () => {
                     required
                     value={applyClinicId}
                     onChange={(e) => setApplyClinicId(e.target.value)}
-                    className="w-full h-11 pl-10 pr-4 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
+                    className="w-full h-11 pl-10 pr-4 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
                   >
                     {clinics.length === 0 ? (
                       <option value="">No verified clinics available</option>
@@ -459,7 +454,7 @@ export const ReceptionistAuth: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
-                  Choose Account Password * (min. 8 characters)
+                  Password (min. 8 characters)
                 </label>
                 <div className="relative">
                   <Lock className="w-4 h-4 text-[#86868b] absolute left-3.5 top-3.5" />
@@ -470,7 +465,7 @@ export const ReceptionistAuth: React.FC = () => {
                     value={applyPassword}
                     onChange={(e) => setApplyPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full h-11 pl-10 pr-4 rounded-xl border border-[#e5e5ea] text-[14px] bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
+                    className="w-full h-11 pl-10 pr-4 rounded-xl border border-[#e5e5ea] text-[14px] bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
                   />
                 </div>
               </div>
@@ -483,19 +478,15 @@ export const ReceptionistAuth: React.FC = () => {
                   disabled={submitting || clinics.length === 0}
                   className="w-full"
                 >
-                  {submitting ? 'Submitting Application...' : 'Submit Join Application'}
+                  {submitting ? 'Submitting...' : 'Submit Application'}
                 </AppleButton>
               </div>
-
-              <p className="text-[11px] text-[#86868b] text-center mt-2 leading-relaxed">
-                Clinic administrators will verify your application and assign doctor queues before activating your desk.
-              </p>
             </form>
           ) : (
             <form onSubmit={handleLoginSubmit} className="space-y-3.5">
               <div>
                 <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
-                  Desk Email Address
+                  Desk Email
                 </label>
                 <div className="relative">
                   <Mail className="w-4 h-4 text-[#86868b] absolute left-3.5 top-3.5" />
@@ -505,7 +496,7 @@ export const ReceptionistAuth: React.FC = () => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="receptionist@domain.com"
-                    className="w-full h-11 pl-10 pr-4 rounded-xl border border-[#e5e5ea] text-sm bg-[#fbfbfd] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
+                    className="w-full h-11 pl-10 pr-4 rounded-xl border border-[#e5e5ea] text-sm bg-[#fbfbfd] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
                   />
                 </div>
               </div>
@@ -520,7 +511,7 @@ export const ReceptionistAuth: React.FC = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full h-11 pl-10 pr-10 rounded-xl border border-[#e5e5ea] text-sm bg-[#fbfbfd] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0088e8]/20 focus:border-[#0088e8]"
+                    className="w-full h-11 pl-10 pr-10 rounded-xl border border-[#e5e5ea] text-sm bg-[#fbfbfd] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
                   />
                   <button
                     type="button"
@@ -552,7 +543,7 @@ export const ReceptionistAuth: React.FC = () => {
                   disabled={submitting}
                   className="w-full py-2 px-3 rounded-xl bg-[#f5f5f7] hover:bg-[#ebebee] border border-[#e5e5ea] text-xs font-medium text-[#1d1d1f] flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] cursor-pointer"
                 >
-                  <Sparkles className="w-3.5 h-3.5 text-[#0088e8]" />
+                  <Sparkles className="w-3.5 h-3.5 text-[#0066cc]" />
                   <span>Instant Demo: Clara Oswald (Front Desk)</span>
                 </button>
               </div>
@@ -563,7 +554,7 @@ export const ReceptionistAuth: React.FC = () => {
         {/* Footer Link */}
         <p className="mt-4 text-center text-xs text-[#86868b]">
           Clinic administrator?{' '}
-          <Link to="/clinic/login" className="text-[#0088e8] font-semibold hover:underline">
+          <Link to="/clinic/login" className="text-[#0066cc] font-semibold hover:underline">
             Clinic Portal Sign In
           </Link>
         </p>

@@ -718,7 +718,7 @@ export const getPublicClinics = async (req: any, res: Response): Promise<void> =
               doctors: {
                 where: {
                   status: { in: ['ACTIVE', 'ACCEPTED'] },
-                  doctor: { isVerified: true, verificationStatus: { not: 'SUSPENDED' } },
+                  doctor: { isVerified: true, verificationStatus: 'VERIFIED' },
                 },
               },
             },
@@ -726,7 +726,7 @@ export const getPublicClinics = async (req: any, res: Response): Promise<void> =
           doctors: {
             where: {
               status: { in: ['ACTIVE', 'ACCEPTED'] },
-              doctor: { isVerified: true, verificationStatus: { not: 'SUSPENDED' } },
+              doctor: { isVerified: true, verificationStatus: 'VERIFIED' },
             },
             select: {
               id: true,
@@ -789,8 +789,9 @@ export const getPublicClinics = async (req: any, res: Response): Promise<void> =
           return {
             ...cleanCd,
             hasReceptionist: (c.receptionists || []).some((r: any) => {
-              if (!r.doctors || r.doctors.length === 0) return true;
-              return r.doctors.some((d: any) => d.doctorId === cd.doctorId && (d.status === 'ACTIVE' || !d.status));
+              const activeDocs = (r.doctors || []).filter((d: any) => d.status === 'ACTIVE' || !d.status);
+              if (activeDocs.length === 0) return true;
+              return activeDocs.some((d: any) => d.doctorId === cd.doctorId);
             }),
             doctor: {
               ...cleanDoctor,
@@ -848,7 +849,7 @@ export const getPublicClinicById = async (req: any, res: Response): Promise<void
             doctors: {
               where: {
                 status: { in: ['ACTIVE', 'ACCEPTED'] },
-                doctor: { isVerified: true, verificationStatus: { not: 'SUSPENDED' } },
+                doctor: { isVerified: true, verificationStatus: 'VERIFIED' },
               },
             },
           },
@@ -856,7 +857,7 @@ export const getPublicClinicById = async (req: any, res: Response): Promise<void
         doctors: {
           where: {
             status: { in: ['ACTIVE', 'ACCEPTED'] },
-            doctor: { isVerified: true, verificationStatus: { not: 'SUSPENDED' } },
+            doctor: { isVerified: true, verificationStatus: 'VERIFIED' },
           },
           select: {
             id: true,
@@ -919,8 +920,9 @@ export const getPublicClinicById = async (req: any, res: Response): Promise<void
         return {
           ...cleanCd,
           hasReceptionist: (clinic.receptionists || []).some((r: any) => {
-            if (!r.doctors || r.doctors.length === 0) return true;
-            return r.doctors.some((d: any) => d.doctorId === cd.doctorId && (d.status === 'ACTIVE' || !d.status));
+            const activeDocs = (r.doctors || []).filter((d: any) => d.status === 'ACTIVE' || !d.status);
+            if (activeDocs.length === 0) return true;
+            return activeDocs.some((d: any) => d.doctorId === cd.doctorId);
           }),
           doctor: {
             ...cleanDoctor,

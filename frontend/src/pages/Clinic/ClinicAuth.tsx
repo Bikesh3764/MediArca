@@ -134,6 +134,10 @@ export const ClinicAuth: React.FC = () => {
       setError('Please enter a valid 10-digit Indian phone number');
       return;
     }
+    if (password.trim().length < 8) {
+      setError('Password must be at least 8 characters long.');
+      return;
+    }
     setError(null);
     setSubmitting(true);
     try {
@@ -191,9 +195,6 @@ export const ClinicAuth: React.FC = () => {
           <h1 className="text-2xl font-semibold text-[#1d1d1f] tracking-tight">
             Clinic Portal
           </h1>
-          <p className="text-xs text-[#86868b] mt-1">
-            Sign in or register your healthcare facility
-          </p>
         </div>
 
         {/* Card */}
@@ -250,7 +251,7 @@ export const ClinicAuth: React.FC = () => {
                   width="100%"
                 />
               ) : (
-                <div className="w-full space-y-2">
+                <div className="w-full">
                   <button
                     type="button"
                     onClick={handleSimulatedGoogleLogin}
@@ -262,11 +263,8 @@ export const ClinicAuth: React.FC = () => {
                       <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
                       <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
                     </svg>
-                    <span>Continue with Google (Clinic Admin)</span>
+                    <span>Continue with Google</span>
                   </button>
-                  <p className="text-[11px] text-center text-[#86868b]">
-                    Sign in or onboard your clinical facility using Google workspace.
-                  </p>
                 </div>
               )}
             </div>
@@ -492,10 +490,10 @@ export const ClinicAuth: React.FC = () => {
                   <input
                     type={showPassword ? 'text' : 'password'}
                     required
-                    minLength={6}
+                    minLength={8}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Minimum 6 characters"
+                    placeholder="Minimum 8 characters"
                     className="w-full h-10 pl-10 pr-10 rounded-xl border border-[#e5e5ea] text-xs bg-[#fbfbfd] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
                   />
                   <button

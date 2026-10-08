@@ -27,8 +27,9 @@ export const formatDoctorClinics = (doc: any) => {
     }
     const activeReceptionists = (cd.clinic?.receptionists || []).filter((r: any) => {
       if (r.status && r.status !== 'ACTIVE') return false;
-      if (!r.doctors || r.doctors.length === 0) return true;
-      return r.doctors.some((d: any) => d.doctorId === doc.id && (d.status === 'ACTIVE' || !d.status));
+      const activeDocs = (r.doctors || []).filter((d: any) => d.status === 'ACTIVE' || !d.status);
+      if (activeDocs.length === 0) return true;
+      return activeDocs.some((d: any) => d.doctorId === doc.id);
     });
 
     const receptionists = activeReceptionists.map((r: any) => ({
