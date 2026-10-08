@@ -5,9 +5,9 @@ export const RefundPolicy: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#f5f5f7] text-[#1d1d1f] py-10 sm:py-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto space-y-8">
-        {/* Header (No pill badge) */}
-        <div className="space-y-2">
-          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[#1d1d1f]">
+        {/* Header */}
+        <div className="space-y-1.5">
+          <h1 className="text-page-title text-[#1d1d1f]">
             Cancellation and Refund Policy
           </h1>
           <p className="text-xs text-[#86868b]">
@@ -16,10 +16,10 @@ export const RefundPolicy: React.FC = () => {
         </div>
 
         {/* Content Card */}
-        <div className="bg-white rounded-[24px] p-6 sm:p-10 border border-[#e5e5ea] shadow-xs space-y-6 text-xs sm:text-sm text-[#48484a] leading-relaxed">
+        <div className="bg-white rounded-[24px] p-6 sm:p-10 border border-[#e5e5ea] shadow-apple-xs space-y-6 text-xs sm:text-sm text-[#48484a] leading-relaxed">
           {/* Neutral Highlight */}
-          <div className="p-4 rounded-[18px] bg-[#fbfbfd] border border-[#e5e5ea] text-[#1d1d1f] flex items-start gap-3">
-            <CheckCircle2 className="w-5 h-5 text-[#1d1d1f] shrink-0 mt-0.5" />
+          <div className="p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] flex items-start gap-3">
+            <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
             <div>
               <p className="font-semibold text-sm">Zero Upfront Online Payments</p>
               <p className="text-xs text-[#6e6e73] mt-0.5">
@@ -29,7 +29,7 @@ export const RefundPolicy: React.FC = () => {
           </div>
 
           <section className="space-y-2">
-            <h2 className="text-base font-bold text-[#1d1d1f]">
+            <h2 className="text-card-title text-[#1d1d1f]">
               1. No Online Charges
             </h2>
             <p>
@@ -38,7 +38,7 @@ export const RefundPolicy: React.FC = () => {
           </section>
 
           <section className="space-y-2">
-            <h2 className="text-base font-bold text-[#1d1d1f]">
+            <h2 className="text-card-title text-[#1d1d1f]">
               2. Free Appointment Cancellation
             </h2>
             <p>
@@ -47,7 +47,7 @@ export const RefundPolicy: React.FC = () => {
           </section>
 
           <section className="space-y-2">
-            <h2 className="text-base font-bold text-[#1d1d1f]">
+            <h2 className="text-card-title text-[#1d1d1f]">
               3. Clinic On-Site Payments
             </h2>
             <p>
@@ -56,7 +56,7 @@ export const RefundPolicy: React.FC = () => {
           </section>
 
           <section className="space-y-2">
-            <h2 className="text-base font-bold text-[#1d1d1f]">
+            <h2 className="text-card-title text-[#1d1d1f]">
               4. Doctor Shift Rescheduling or Cancellation
             </h2>
             <p>
@@ -65,7 +65,7 @@ export const RefundPolicy: React.FC = () => {
           </section>
 
           <section className="space-y-2">
-            <h2 className="text-base font-bold text-[#1d1d1f]">
+            <h2 className="text-card-title text-[#1d1d1f]">
               5. Questions and Support
             </h2>
             <p>

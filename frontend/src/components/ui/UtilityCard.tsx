@@ -10,6 +10,7 @@ export interface UtilityCardProps extends React.HTMLAttributes<HTMLDivElement> {
   hoverEffect?: boolean;
   title?: string;
   subtitle?: string;
+  action?: React.ReactNode;
   children: React.ReactNode;
 }
 
@@ -17,6 +18,7 @@ export const UtilityCard: React.FC<UtilityCardProps> = ({
   hoverEffect = false,
   title,
   subtitle,
+  action,
   className = '',
   children,
   ...props
@@ -30,16 +32,19 @@ export const UtilityCard: React.FC<UtilityCardProps> = ({
       )}
       {...props}
     >
-      {(title || subtitle) && (
-        <div className="mb-4">
-          {title && (
-            <h3 className="text-[15px] sm:text-[16px] font-semibold text-[#1d1d1f] tracking-[-0.015em] leading-snug">
-              {title}
-            </h3>
-          )}
-          {subtitle && (
-            <p className="text-[13px] text-[#86868b] mt-0.5 leading-relaxed">{subtitle}</p>
-          )}
+      {(title || subtitle || action) && (
+        <div className="mb-4 flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+          <div>
+            {title && (
+              <h3 className="text-[15px] sm:text-[16px] font-semibold text-[#1d1d1f] tracking-[-0.015em] leading-snug">
+                {title}
+              </h3>
+            )}
+            {subtitle && (
+              <p className="text-[13px] text-[#86868b] mt-0.5 leading-relaxed">{subtitle}</p>
+            )}
+          </div>
+          {action && <div className="shrink-0">{action}</div>}
         </div>
       )}
       {children}

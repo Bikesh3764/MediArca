@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api, Appointment, getLocalDateString } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import { SubNav } from '../../components/layout/SubNav';
 import { LiveQueueTicket } from '../../components/queue/LiveQueueTicket';
 import { AppleButton } from '../../components/ui/AppleButton';
 import { Calendar, Plus, RefreshCw, QrCode, CheckCircle2, AlertCircle, X } from 'lucide-react';
@@ -89,96 +90,91 @@ export const MyAppointments: React.FC = () => {
   const pastList = appointments.filter((a) => !upcomingList.includes(a));
 
   return (
-    <div className="min-h-screen bg-[#f5f5f7] pb-16">
-      {/* Sleek Apple Header */}
-      <div className="bg-white border-b border-[#e5e5ea]/80">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h1 className="text-2xl font-bold text-[#1d1d1f] tracking-tight">Appointments</h1>
-            </div>
-            <div className="flex items-center gap-2">
-              <AppleButton
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setSelectedApptForScan(null);
-                  setScannerOpen(true);
-                }}
-                className="flex items-center gap-1.5 text-xs text-[#0066cc] hover:text-[#0071e3] hover:bg-[#0066cc]/5 border border-[#0066cc]/20"
-              >
-                <QrCode className="w-3.5 h-3.5" />
-                Scan Clinic QR
-              </AppleButton>
-              <AppleButton
-                variant="ghost"
-                size="sm"
-                onClick={() => fetchAppointments()}
-                className="flex items-center gap-1.5 text-xs"
-              >
-                <RefreshCw className="w-3.5 h-3.5" />
-                Refresh
-              </AppleButton>
-              <AppleButton
-                variant="primary"
-                size="sm"
-                onClick={() => navigate('/doctors')}
-                className="flex items-center gap-1.5 shadow-none bg-[#0066cc] hover:bg-[#0071e3] text-xs font-semibold"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                Book Doctor
-              </AppleButton>
-            </div>
-          </div>
+    <div className="min-h-screen bg-[#f5f5f7] pb-20">
+      <SubNav
+        title="My Appointments"
+        subtitle="Live outpatient queue passes and consultation history"
+      >
+        <div className="flex items-center gap-2 flex-wrap">
+          <AppleButton
+            variant="secondary"
+            size="sm"
+            onClick={() => {
+              setSelectedApptForScan(null);
+              setScannerOpen(true);
+            }}
+          >
+            <QrCode className="w-4 h-4 text-[#0066cc]" />
+            <span>Scan Clinic QR</span>
+          </AppleButton>
+          <AppleButton
+            variant="ghost"
+            size="sm"
+            onClick={() => fetchAppointments()}
+          >
+            <RefreshCw className="w-4 h-4" />
+            <span>Refresh</span>
+          </AppleButton>
+          <AppleButton
+            variant="primary"
+            size="sm"
+            onClick={() => navigate('/doctors')}
+          >
+            <Plus className="w-4 h-4" />
+            <span>Book Doctor</span>
+          </AppleButton>
         </div>
-      </div>
+      </SubNav>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      <div className="max-w-4xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
         {/* Check-In Feedback Banner */}
         {checkinMessage && (
           <div
-            className={`p-4 rounded-2xl border text-xs flex items-center justify-between shadow-2xs ${
+            className={`p-4 rounded-xl border text-[13px] font-medium flex items-center justify-between gap-3 ${
               checkinMessage.type === 'success'
-                ? 'bg-[#f5f5f7] border-[#e5e5ea] text-[#1d1d1f]'
-                : 'bg-rose-50 border-rose-200 text-rose-900'
+                ? 'bg-emerald-50 border-emerald-200/80 text-emerald-900'
+                : 'bg-[#ff3b30]/8 border-[#ff3b30]/20 text-[#d70015]'
             }`}
           >
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2.5">
               {checkinMessage.type === 'success' ? (
-                <CheckCircle2 className="w-4 h-4 text-[#0066cc] shrink-0" />
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
               ) : (
-                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                <AlertCircle className="w-4 h-4 text-[#ff3b30] shrink-0" />
               )}
-              <span className="font-medium">{checkinMessage.text}</span>
+              <span>{checkinMessage.text}</span>
             </div>
             <button
+              type="button"
               onClick={() => setCheckinMessage(null)}
-              className="text-[#86868b] hover:text-[#1d1d1f] p-1 cursor-pointer"
+              className="text-[#86868b] hover:text-[#1d1d1f] p-1 rounded-full transition-colors cursor-pointer shrink-0"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
         )}
 
-        {/* Apple Pill Segmented Filter */}
-        <div className="flex justify-center mb-8">
-          <div className="bg-[#f5f5f7] p-1 rounded-full border border-[#e5e5ea] flex shadow-2xs">
+        {/* Segmented Filter */}
+        <div className="flex items-center justify-between gap-4">
+          <div className="bg-white p-1 rounded-full border border-[#e5e5ea] inline-flex shadow-2xs">
             <button
+              type="button"
               onClick={() => setActiveTab('upcoming')}
-              className={`px-5 py-2 rounded-full text-xs transition-all cursor-pointer active:scale-[0.98] ${
+              className={`px-5 py-1.5 rounded-full text-[13px] transition-all cursor-pointer ${
                 activeTab === 'upcoming'
-                  ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs'
-                  : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
+                  ? 'bg-[#1d1d1f] text-white font-semibold'
+                  : 'text-[#6e6e73] hover:text-[#1d1d1f] font-medium'
               }`}
             >
-              Upcoming ({upcomingList.length})
+              Active & Upcoming ({upcomingList.length})
             </button>
             <button
+              type="button"
               onClick={() => setActiveTab('past')}
-              className={`px-5 py-2 rounded-full text-xs transition-all cursor-pointer active:scale-[0.98] ${
+              className={`px-5 py-1.5 rounded-full text-[13px] transition-all cursor-pointer ${
                 activeTab === 'past'
-                  ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs'
-                  : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
+                  ? 'bg-[#1d1d1f] text-white font-semibold'
+                  : 'text-[#6e6e73] hover:text-[#1d1d1f] font-medium'
               }`}
             >
               Past ({pastList.length})
@@ -190,28 +186,29 @@ export const MyAppointments: React.FC = () => {
         {loading ? (
           <div className="space-y-4">
             {[1, 2].map((i) => (
-              <div key={i} className="h-64 rounded-[20px] bg-white border border-[#e5e5ea] animate-pulse"></div>
+              <div key={i} className="h-64 apple-card animate-pulse" />
             ))}
           </div>
         ) : activeTab === 'upcoming' ? (
           upcomingList.length === 0 ? (
-            <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-10 sm:p-12 text-center max-w-md mx-auto shadow-sm">
-              <Calendar className="w-10 h-10 text-[#86868b] mx-auto mb-3" />
-              <h3 className="text-base font-semibold text-[#1d1d1f]">No upcoming appointments</h3>
-              <p className="text-xs text-[#86868b] mt-1">
-                Your scheduled visits and queue tokens will appear here.
+            <div className="apple-card p-10 sm:p-12 text-center max-w-md mx-auto">
+              <div className="w-12 h-12 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] flex items-center justify-center mx-auto mb-4 text-[#86868b]">
+                <Calendar className="w-6 h-6" />
+              </div>
+              <h3 className="text-card-title">No upcoming appointments</h3>
+              <p className="text-secondary mt-1 mb-6">
+                Your scheduled consultations and live queue tokens will appear here.
               </p>
               <AppleButton
                 variant="primary"
                 size="md"
                 onClick={() => navigate('/doctors')}
-                className="mt-5 px-6 font-semibold bg-[#0066cc] hover:bg-[#0071e3] shadow-none"
               >
                 Book Doctor
               </AppleButton>
             </div>
           ) : (
-            <div className="space-y-6">
+            <div className="space-y-5">
               {upcomingList.map((appt) => (
                 <LiveQueueTicket
                   key={appt.id}
@@ -230,15 +227,17 @@ export const MyAppointments: React.FC = () => {
             </div>
           )
         ) : pastList.length === 0 ? (
-          <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-10 sm:p-12 text-center max-w-md mx-auto shadow-sm">
-            <Calendar className="w-10 h-10 text-[#86868b] mx-auto mb-3" />
-            <h3 className="text-base font-semibold text-[#1d1d1f]">No past appointments</h3>
-            <p className="text-xs text-[#86868b] mt-1">
-              Completed consultations will appear here.
+          <div className="apple-card p-10 sm:p-12 text-center max-w-md mx-auto">
+            <div className="w-12 h-12 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] flex items-center justify-center mx-auto mb-4 text-[#86868b]">
+              <Calendar className="w-6 h-6" />
+            </div>
+            <h3 className="text-card-title">No past appointments</h3>
+            <p className="text-secondary mt-1">
+              Completed and archived consultations will appear here.
             </p>
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-5">
             {pastList.map((appt) => (
               <LiveQueueTicket
                 key={appt.id}

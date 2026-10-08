@@ -12,8 +12,7 @@ export const MobileTabBar: React.FC = () => {
     location.pathname.startsWith('/doctor') ||
     location.pathname.startsWith('/clinic') ||
     location.pathname.startsWith('/receptionist') ||
-    location.pathname === '/admin' ||
-    location.pathname === '/admin-login';
+    location.pathname.startsWith('/admin');
 
   if (isPortalRoute) return null;
 

@@ -5,8 +5,8 @@ export const PrivacyPolicy: React.FC = () => {
     <div className="min-h-screen bg-[#f5f5f7] text-[#1d1d1f] py-10 sm:py-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto space-y-8">
         {/* Header */}
-        <div className="space-y-2">
-          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[#1d1d1f]">
+        <div className="space-y-1.5">
+          <h1 className="text-page-title text-[#1d1d1f]">
             Privacy Policy
           </h1>
           <p className="text-xs text-[#86868b]">
@@ -15,9 +15,9 @@ export const PrivacyPolicy: React.FC = () => {
         </div>
 
         {/* Content Card */}
-        <div className="bg-white rounded-[24px] p-6 sm:p-10 border border-[#e5e5ea] shadow-xs space-y-6 text-xs sm:text-sm text-[#48484a] leading-relaxed">
+        <div className="bg-white rounded-[24px] p-6 sm:p-10 border border-[#e5e5ea] shadow-apple-xs space-y-6 text-xs sm:text-sm text-[#48484a] leading-relaxed">
           <section className="space-y-2">
-            <h2 className="text-base font-bold text-[#1d1d1f]">
+            <h2 className="text-card-title text-[#1d1d1f]">
               1. What Information We Collect
             </h2>
             <p>
@@ -31,7 +31,7 @@ export const PrivacyPolicy: React.FC = () => {
           </section>
 
           <section className="space-y-2">
-            <h2 className="text-base font-bold text-[#1d1d1f]">
+            <h2 className="text-card-title text-[#1d1d1f]">
               2. How We Use Your Information
             </h2>
             <p>
@@ -48,7 +48,7 @@ export const PrivacyPolicy: React.FC = () => {
           </section>
 
           <section className="space-y-2">
-            <h2 className="text-base font-bold text-[#1d1d1f]">
+            <h2 className="text-card-title text-[#1d1d1f]">
               3. Data Security
             </h2>
             <p>
@@ -57,7 +57,7 @@ export const PrivacyPolicy: React.FC = () => {
           </section>
 
           <section className="space-y-2">
-            <h2 className="text-base font-bold text-[#1d1d1f]">
+            <h2 className="text-card-title text-[#1d1d1f]">
               4. Managing Your Information
             </h2>
             <p>
@@ -66,7 +66,7 @@ export const PrivacyPolicy: React.FC = () => {
           </section>
 
           <section className="space-y-2">
-            <h2 className="text-base font-bold text-[#1d1d1f]">
+            <h2 className="text-card-title text-[#1d1d1f]">
               5. Contact Us
             </h2>
             <p>

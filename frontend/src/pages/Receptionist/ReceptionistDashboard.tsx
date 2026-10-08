@@ -669,17 +669,17 @@ export const ReceptionistDashboard: React.FC = () => {
         <div className="flex items-center gap-2">
           {data?.clinic?.id && (
             <AppleButton
-              variant="ghost"
+              variant="secondary"
               size="sm"
               onClick={() => setIsStandeeModalOpen(true)}
-              className="flex items-center gap-1.5 text-xs text-[#0066cc] hover:text-[#0071e3] hover:bg-[#0066cc]/5 border border-[#0066cc]/20 cursor-pointer"
+              className="flex items-center gap-1.5 text-xs cursor-pointer"
             >
-              <QrCode className="w-3.5 h-3.5" />
+              <QrCode className="w-3.5 h-3.5 text-[#0066cc]" />
               <span>Clinic QR Standee</span>
             </AppleButton>
           )}
           <AppleButton
-            variant="ghost"
+            variant="secondary"
             size="sm"
             onClick={() => {
               fetchDeskData();
@@ -698,120 +698,120 @@ export const ReceptionistDashboard: React.FC = () => {
       <div className="space-y-6 print:hidden">
         {/* Banner Feedback */}
         {successMsg && (
-          <div className="p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] text-xs flex items-center justify-between shadow-xs">
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-[#0066cc] flex-shrink-0" />
+          <div className="p-4 rounded-xl bg-emerald-50/70 border border-emerald-200/80 text-emerald-800 text-[13px] flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
               <span>{successMsg}</span>
             </div>
-            <button onClick={() => setSuccessMsg(null)} className="text-[#86868b] hover:text-[#1d1d1f]">
+            <button onClick={() => setSuccessMsg(null)} className="text-emerald-700 hover:text-emerald-900 p-1 rounded-full">
               <X className="w-4 h-4" />
             </button>
           </div>
         )}
 
         {error && (
-          <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center justify-between shadow-xs">
-            <div className="flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          <div className="p-4 rounded-xl bg-rose-50/80 border border-rose-200/80 text-rose-800 text-[13px] flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
               <span>{error}</span>
             </div>
-            <button onClick={() => setError(null)} className="text-rose-700 hover:text-rose-900">
+            <button onClick={() => setError(null)} className="text-rose-700 hover:text-rose-900 p-1 rounded-full">
               <X className="w-4 h-4" />
             </button>
           </div>
         )}
 
         {/* 1. Metrics Overview */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <div
             onClick={() => setActiveTab('doctors')}
-            className={`bg-white rounded-[18px] sm:rounded-2xl border p-3.5 sm:p-5 shadow-xs cursor-pointer transition-all active:scale-[0.99] ${
-              activeTab === 'doctors' ? 'border-[#0066cc]/50 ring-1 ring-[#0066cc]/20' : 'border-[#e5e5ea] hover:border-black/15'
+            className={`bg-white rounded-[20px] border p-4 sm:p-5 shadow-apple-xs cursor-pointer transition-all active:scale-[0.99] ${
+              activeTab === 'doctors' ? 'border-[#0066cc] ring-1 ring-[#0066cc]/15' : 'border-[#e5e5ea] hover:border-[#d2d2d7]'
             }`}
           >
-            <span className="text-[10px] sm:text-[11px] font-semibold text-[#86868b] uppercase tracking-wider block mb-1.5 sm:mb-2">
+            <span className="text-[11px] font-semibold text-[#86868b] uppercase tracking-wider block mb-1.5">
               Assigned Doctors
             </span>
-            <div className="text-xl sm:text-3xl font-bold tracking-tight text-[#1d1d1f]">
+            <div className="text-2xl sm:text-[28px] font-bold tracking-tight text-[#1d1d1f] tabular-nums">
               {linkedDoctors.length}
             </div>
-            <p className="text-[11px] sm:text-xs text-[#86868b] mt-1">Practitioners at desk</p>
+            <p className="text-meta text-[#86868b] mt-1">Practitioners at desk</p>
           </div>
 
           <div
             onClick={() => setActiveTab('pending')}
-            className={`bg-white rounded-[18px] sm:rounded-2xl border p-3.5 sm:p-5 shadow-xs cursor-pointer transition-all active:scale-[0.99] ${
-              activeTab === 'pending' ? 'border-[#0066cc]/50 ring-1 ring-[#0066cc]/20' : 'border-[#e5e5ea] hover:border-black/15'
+            className={`bg-white rounded-[20px] border p-4 sm:p-5 shadow-apple-xs cursor-pointer transition-all active:scale-[0.99] ${
+              activeTab === 'pending' ? 'border-[#0066cc] ring-1 ring-[#0066cc]/15' : 'border-[#e5e5ea] hover:border-[#d2d2d7]'
             }`}
           >
-            <div className="flex items-center justify-between mb-1.5 sm:mb-2">
-              <span className="text-[10px] sm:text-[11px] font-semibold text-[#86868b] uppercase tracking-wider">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[11px] font-semibold text-[#86868b] uppercase tracking-wider">
                 Pending Approvals
               </span>
               {pendingAppointments.length > 0 && (
-                <span className="w-2 h-2 rounded-full bg-[#0066cc]"></span>
+                <span className="w-2 h-2 rounded-full bg-amber-500"></span>
               )}
             </div>
-            <div className="text-xl sm:text-3xl font-bold tracking-tight text-[#1d1d1f]">
+            <div className="text-2xl sm:text-[28px] font-bold tracking-tight text-[#1d1d1f] tabular-nums">
               {pendingAppointments.length}
             </div>
-            <p className="text-[11px] sm:text-xs text-[#86868b] mt-1">
-              {pendingAppointments.length === 1 ? '1 awaiting' : `${pendingAppointments.length} awaiting`}
+            <p className="text-meta text-[#86868b] mt-1">
+              {pendingAppointments.length === 1 ? '1 awaiting review' : `${pendingAppointments.length} awaiting review`}
             </p>
           </div>
 
           <div
             onClick={() => setActiveTab('queue')}
-            className={`bg-white rounded-[18px] sm:rounded-2xl border p-3.5 sm:p-5 shadow-xs cursor-pointer transition-all active:scale-[0.99] ${
-              activeTab === 'queue' ? 'border-[#0066cc]/50 ring-1 ring-[#0066cc]/20' : 'border-[#e5e5ea] hover:border-black/15'
+            className={`bg-white rounded-[20px] border p-4 sm:p-5 shadow-apple-xs cursor-pointer transition-all active:scale-[0.99] ${
+              activeTab === 'queue' ? 'border-[#0066cc] ring-1 ring-[#0066cc]/15' : 'border-[#e5e5ea] hover:border-[#d2d2d7]'
             }`}
           >
-            <span className="text-[10px] sm:text-[11px] font-semibold text-[#86868b] uppercase tracking-wider block mb-1.5 sm:mb-2">
+            <span className="text-[11px] font-semibold text-[#86868b] uppercase tracking-wider block mb-1.5">
               Today's Bookings
             </span>
-            <div className="text-xl sm:text-3xl font-bold tracking-tight text-[#1d1d1f]">
+            <div className="text-2xl sm:text-[28px] font-bold tracking-tight text-[#1d1d1f] tabular-nums">
               {linkedDoctors.reduce((sum, d) => sum + d.todayTotalBookings, 0)}
             </div>
-            <p className="text-[11px] sm:text-xs text-[#86868b] mt-1">Total registered today</p>
+            <p className="text-meta text-[#86868b] mt-1">Total registered today</p>
           </div>
 
           <div
             onClick={() => setActiveTab('queue')}
-            className={`bg-white rounded-[18px] sm:rounded-2xl border p-3.5 sm:p-5 shadow-xs cursor-pointer transition-all active:scale-[0.99] ${
-              activeTab === 'queue' ? 'border-[#0066cc]/50 ring-1 ring-[#0066cc]/20' : 'border-[#e5e5ea] hover:border-black/15'
+            className={`bg-white rounded-[20px] border p-4 sm:p-5 shadow-apple-xs cursor-pointer transition-all active:scale-[0.99] ${
+              activeTab === 'queue' ? 'border-[#0066cc] ring-1 ring-[#0066cc]/15' : 'border-[#e5e5ea] hover:border-[#d2d2d7]'
             }`}
           >
-            <span className="text-[10px] sm:text-[11px] font-semibold text-[#86868b] uppercase tracking-wider block mb-1.5 sm:mb-2">
+            <span className="text-[11px] font-semibold text-[#86868b] uppercase tracking-wider block mb-1.5">
               Patients Waiting
             </span>
-            <div className="text-xl sm:text-3xl font-bold tracking-tight text-[#1d1d1f]">
+            <div className="text-2xl sm:text-[28px] font-bold tracking-tight text-[#1d1d1f] tabular-nums">
               {linkedDoctors.reduce((sum, d) => sum + d.todayWaitingPatients, 0)}
             </div>
-            <p className="text-[11px] sm:text-xs text-[#86868b] mt-1">In today's queue</p>
+            <p className="text-meta text-[#86868b] mt-1">In today's queue</p>
           </div>
         </div>
 
         {/* 2. Main Content Container */}
-        <div className="bg-white rounded-[20px] sm:rounded-2xl border border-[#e5e5ea] p-4 sm:p-7 shadow-xs">
+        <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-5 sm:p-6 shadow-apple-xs">
           {/* TAB 1: Rapid Walk-in Booking */}
           {activeTab === 'walkin' && (
             <div>
-              <div className="mb-6 pb-4 border-b border-[#f0f0f0]">
-                <h3 className="text-base font-semibold text-[#1d1d1f]">
+              <div className="mb-6 pb-4 border-b border-[#f0f0f2]">
+                <h3 className="text-section-title text-[#1d1d1f]">
                   Walk-in Patient Booking
                 </h3>
-                <p className="text-xs text-[#86868b] mt-0.5">
+                <p className="text-meta text-[#86868b] mt-0.5">
                   Generate queue tokens for patients arriving directly at reception.
                 </p>
               </div>
 
               {linkedDoctors.length === 0 ? (
-                <div className="py-12 text-center">
-                  <div className="w-12 h-12 rounded-full bg-[#f5f5f7] text-[#86868b] flex items-center justify-center mx-auto mb-3">
-                    <Stethoscope className="w-6 h-6" />
+                <div className="py-12 text-center bg-[#f5f5f7]/60 rounded-2xl border border-[#e5e5ea]">
+                  <div className="w-12 h-12 rounded-2xl bg-white border border-[#e5e5ea] text-[#86868b] flex items-center justify-center mx-auto mb-3 shadow-apple-xs">
+                    <Stethoscope className="w-5 h-5" />
                   </div>
-                  <h4 className="text-sm font-semibold text-[#1d1d1f] mb-1">No Doctors Linked Yet</h4>
-                  <p className="text-xs text-[#86868b] max-w-xs mx-auto mb-4">
+                  <h4 className="text-card-title text-[#1d1d1f] mb-1">No Doctors Linked Yet</h4>
+                  <p className="text-meta text-[#86868b] max-w-xs mx-auto mb-4">
                     Link doctors to your desk roster first in the "Linked Doctors Desk" tab before booking walk-ins.
                   </p>
                   <AppleButton variant="primary" size="sm" onClick={() => setActiveTab('doctors')}>
@@ -822,7 +822,7 @@ export const ReceptionistDashboard: React.FC = () => {
                 <form onSubmit={handleWalkinSubmit} className="space-y-5 max-w-2xl">
                   {/* Select Doctor */}
                   <div>
-                    <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5">
+                    <label className="ui-label">
                       Select Practitioner
                     </label>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -837,8 +837,8 @@ export const ReceptionistDashboard: React.FC = () => {
                             }}
                             className={`p-3.5 rounded-2xl border cursor-pointer transition-all flex items-center gap-3 ${
                               isSelected
-                                ? 'bg-[#0066cc]/5 border-[#0066cc] shadow-xs'
-                                : 'bg-[#fafafc] border-[#e5e5ea] hover:border-gray-300'
+                                ? 'bg-[#0066cc]/5 border-[#0066cc] shadow-apple-xs'
+                                : 'bg-[#f5f5f7]/60 border-[#e5e5ea] hover:border-[#d2d2d7]'
                             }`}
                           >
                             <div className="w-10 h-10 rounded-full bg-white border border-[#e5e5ea] overflow-hidden flex-shrink-0">
@@ -856,11 +856,11 @@ export const ReceptionistDashboard: React.FC = () => {
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between gap-1">
-                                <div className="font-semibold text-xs text-[#1d1d1f] truncate">
+                                <div className="font-semibold text-[13px] text-[#1d1d1f] truncate">
                                   {cleanDoctorName(doc.fullName)}
                                 </div>
                                 {isSelected && (
-                                  <span className="text-[10px] font-bold text-[#0066cc] bg-[#0066cc]/10 px-2 py-0.5 rounded-full border border-[#0066cc]/20 shrink-0">
+                                  <span className="text-[11px] font-semibold text-[#0066cc] bg-[#0066cc]/10 px-2 py-0.5 rounded-full border border-[#0066cc]/20 shrink-0 tabular-nums">
                                     Token #{walkinPreview?.nextQueueNumber || 1}
                                   </span>
                                 )}
@@ -868,7 +868,7 @@ export const ReceptionistDashboard: React.FC = () => {
                               <div className="text-[11px] text-[#0066cc] font-medium">{doc.specialty}</div>
                               <div className="mt-1 flex items-center gap-1.5 flex-wrap">
                                 <CabinStatusBadge status={doc.cabinStatus} expectedReturnTime={doc.expectedReturnTime} size="sm" />
-                                <span className="text-[10px] text-[#86868b]">
+                                <span className="text-[11px] text-[#86868b] tabular-nums">
                                   ₹{doc.consultationFee.toFixed(0)} • {doc.todayWaitingPatients} waiting
                                 </span>
                               </div>
@@ -882,7 +882,7 @@ export const ReceptionistDashboard: React.FC = () => {
                   {/* Date & Shift */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[13px] font-semibold text-[#1d1d1f] mb-1.5">
+                      <label className="ui-label">
                         Consultation Date
                       </label>
                       <input
@@ -890,18 +890,18 @@ export const ReceptionistDashboard: React.FC = () => {
                         required
                         value={appointmentDate}
                         onChange={(e) => setAppointmentDate(e.target.value)}
-                        className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-sm bg-white text-[#1d1d1f] focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] transition-all"
+                        className="ui-input"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-[13px] font-semibold text-[#1d1d1f] mb-1.5">
+                      <label className="ui-label">
                         Checking Shift
                       </label>
                       <select
                         value={slotId}
                         onChange={(e) => setSlotId(e.target.value)}
-                        className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-sm bg-white text-[#1d1d1f] focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] transition-all cursor-pointer"
+                        className="ui-select"
                       >
                         {activeSelectedDoctor?.slots.map((s) => {
                           const sStatus = walkinPreview?.availableSlots?.find((as) => as.slot.id === s.id);
@@ -918,11 +918,11 @@ export const ReceptionistDashboard: React.FC = () => {
 
                   {/* Shift Ended Notice Banner */}
                   {isSelectedShiftEnded && (
-                    <div className="p-4 rounded-2xl bg-amber-50/90 border border-amber-200/90 text-amber-900 text-xs sm:text-[13px] flex items-start gap-3 shadow-2xs">
+                    <div className="p-4 rounded-xl bg-amber-50/80 border border-amber-200/80 text-amber-900 text-[13px] flex items-start gap-3">
                       <Clock className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                       <div>
                         <p className="font-semibold text-amber-900">Shift Ended for Today</p>
-                        <p className="text-amber-700 mt-0.5 leading-relaxed">
+                        <p className="text-amber-700 mt-0.5 leading-relaxed text-xs">
                           This checking shift has already ended for today. New queue tokens cannot be generated for concluded shifts. Please select an upcoming shift or choose tomorrow's date.
                         </p>
                       </div>
@@ -931,11 +931,11 @@ export const ReceptionistDashboard: React.FC = () => {
 
                   {/* Shift Full Notice Banner */}
                   {!isSelectedShiftEnded && isSelectedShiftFull && (
-                    <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 text-xs sm:text-[13px] flex items-start gap-3 shadow-2xs">
+                    <div className="p-4 rounded-xl bg-rose-50/80 border border-rose-200/80 text-rose-900 text-[13px] flex items-start gap-3">
                       <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
                       <div>
                         <p className="font-semibold text-rose-900">Shift Capacity Reached</p>
-                        <p className="text-rose-700 mt-0.5 leading-relaxed">
+                        <p className="text-rose-700 mt-0.5 leading-relaxed text-xs">
                           This shift has reached its maximum patient capacity. Please pick another active shift or choose a different date.
                         </p>
                       </div>
@@ -945,14 +945,14 @@ export const ReceptionistDashboard: React.FC = () => {
                   {/* Clinic / Facility Attribution */}
                   {activeSelectedDoctor?.clinics && activeSelectedDoctor.clinics.length > 0 && (
                     <div>
-                      <label className="block text-[13px] font-semibold text-[#1d1d1f] mb-1.5 flex items-center gap-1.5">
+                      <label className="ui-label flex items-center gap-1.5">
                         <Building2 className="w-3.5 h-3.5 text-[#0066cc]" />
                         Clinic / Facility Attribution
                       </label>
                       <select
                         value={walkinClinicId}
                         onChange={(e) => setWalkinClinicId(e.target.value)}
-                        className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-sm bg-white text-[#1d1d1f] focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] transition-all cursor-pointer"
+                        className="ui-select"
                       >
                         {activeSelectedDoctor.clinics.map((c) => (
                           <option key={c.clinicId} value={c.clinicId}>
@@ -964,40 +964,40 @@ export const ReceptionistDashboard: React.FC = () => {
                   )}
 
                   {/* Live Token Allocation Preview */}
-                  <div className="p-4 sm:p-5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+                  <div className="p-4 sm:p-5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="flex items-center gap-3.5">
-                      <div className="w-12 h-12 rounded-2xl bg-white border border-[#e5e5ea] flex items-center justify-center text-[#0066cc] font-bold text-xl shadow-xs shrink-0">
+                      <div className="w-12 h-12 rounded-2xl bg-white border border-[#e5e5ea] flex items-center justify-center text-[#0066cc] font-bold text-xl shadow-apple-xs shrink-0 tabular-nums">
                         #{walkinPreview?.nextQueueNumber || 1}
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="text-xs sm:text-[13px] font-semibold text-[#1d1d1f]">
+                          <span className="text-[13px] font-semibold text-[#1d1d1f]">
                             Allocated Token Number
                           </span>
-                          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
+                          <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${
                             isSelectedShiftEnded
-                              ? 'bg-amber-50 text-amber-700 border-amber-200'
-                              : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                              ? 'bg-amber-50 text-amber-700 border-amber-200/80'
+                              : 'bg-emerald-50 text-emerald-700 border-emerald-200/80'
                           }`}>
                             {isSelectedShiftEnded ? 'Shift Ended' : 'Guaranteed Token'}
                           </span>
                         </div>
-                        <p className="text-xs text-[#86868b] mt-0.5">
+                        <p className="text-meta text-[#86868b] mt-0.5">
                           Assigned upon walk-in booking for {appointmentDate}.
                         </p>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-4 self-end sm:self-center border-t sm:border-t-0 pt-2 sm:pt-0 border-[#e5e5ea] w-full sm:w-auto justify-between sm:justify-end">
+                    <div className="flex items-center gap-4 self-end sm:self-center border-t sm:border-t-0 pt-2.5 sm:pt-0 border-[#e5e5ea] w-full sm:w-auto justify-between sm:justify-end">
                       <div className="text-right">
                         <span className="text-[11px] text-[#86868b] block font-medium">Est. Consultation</span>
-                        <span className="text-xs sm:text-[13px] font-semibold text-[#1d1d1f]">
+                        <span className="text-[13px] font-semibold text-[#1d1d1f]">
                           {previewLoading ? 'Updating...' : walkinPreview?.estimatedTime || 'Immediate'}
                         </span>
                       </div>
                       <div className="text-right">
                         <span className="text-[11px] text-[#86868b] block font-medium">Waiting Ahead</span>
-                        <span className="text-xs sm:text-[13px] font-semibold text-[#1d1d1f]">
+                        <span className="text-[13px] font-semibold text-[#1d1d1f] tabular-nums">
                           {previewLoading ? '...' : `${walkinPreview?.patientsAhead ?? 0} patients`}
                         </span>
                       </div>
@@ -1006,16 +1006,16 @@ export const ReceptionistDashboard: React.FC = () => {
 
                   {/* Booking For Toggle */}
                   <div>
-                    <label className="block text-[13px] font-semibold text-[#1d1d1f] mb-1.5">
+                    <label className="ui-label">
                       Booking For:
                     </label>
-                    <div className="flex rounded-full bg-[#f5f5f7] p-1 border border-[#e5e5ea] max-w-xs mb-3 shadow-xs">
+                    <div className="inline-flex rounded-full bg-[#f5f5f7] p-1 border border-[#e5e5ea] w-full max-w-xs">
                       <button
                         type="button"
                         onClick={() => setBookingFor('self')}
-                        className={`flex-1 py-1.5 text-xs sm:text-[13px] font-semibold rounded-full transition-all active:scale-[0.98] ${
+                        className={`flex-1 py-1.5 text-xs font-medium rounded-full transition-all cursor-pointer ${
                           bookingFor === 'self'
-                            ? 'bg-white text-[#1d1d1f] shadow-xs'
+                            ? 'bg-white text-[#1d1d1f] shadow-apple-xs font-semibold'
                             : 'text-[#86868b] hover:text-[#1d1d1f]'
                         }`}
                       >
@@ -1024,9 +1024,9 @@ export const ReceptionistDashboard: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setBookingFor('other')}
-                        className={`flex-1 py-1.5 text-xs sm:text-[13px] font-semibold rounded-full transition-all active:scale-[0.98] ${
+                        className={`flex-1 py-1.5 text-xs font-medium rounded-full transition-all cursor-pointer ${
                           bookingFor === 'other'
-                            ? 'bg-white text-[#1d1d1f] shadow-xs'
+                            ? 'bg-white text-[#1d1d1f] shadow-apple-xs font-semibold'
                             : 'text-[#86868b] hover:text-[#1d1d1f]'
                         }`}
                       >
@@ -1036,9 +1036,9 @@ export const ReceptionistDashboard: React.FC = () => {
                   </div>
 
                   {/* Patient Name, Age & Phone */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
                     <div className="sm:col-span-1">
-                      <label className="block text-[13px] font-semibold text-[#1d1d1f] mb-1">
+                      <label className="ui-label">
                         Patient Full Name *
                       </label>
                       <input
@@ -1047,12 +1047,12 @@ export const ReceptionistDashboard: React.FC = () => {
                         value={patientName}
                         onChange={(e) => setPatientName(e.target.value)}
                         placeholder="e.g. Rahul Ray"
-                        className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-sm bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
+                        className="ui-input"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-[13px] font-semibold text-[#1d1d1f] mb-1">
+                      <label className="ui-label">
                         Patient Age
                       </label>
                       <input
@@ -1060,12 +1060,12 @@ export const ReceptionistDashboard: React.FC = () => {
                         value={patientAge}
                         onChange={(e) => setPatientAge(e.target.value)}
                         placeholder="e.g. 12"
-                        className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-sm bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
+                        className="ui-input"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-[13px] font-semibold text-[#1d1d1f] mb-1">
+                      <label className="ui-label">
                         Mobile Number *
                       </label>
                       <div className="flex rounded-xl border border-[#e5e5ea] overflow-hidden focus-within:ring-2 focus-within:ring-[#0066cc]/20 focus-within:border-[#0066cc] bg-white transition-all h-11">
@@ -1080,7 +1080,7 @@ export const ReceptionistDashboard: React.FC = () => {
                           onChange={(e) => setPatientPhone(sanitizeIndianPhone(e.target.value))}
                           placeholder="98765 43210"
                           maxLength={10}
-                          className="flex-1 h-full px-3.5 text-sm bg-transparent focus:outline-none text-[#1d1d1f] placeholder:text-[#86868b]"
+                          className="flex-1 h-full px-3.5 text-[14px] bg-transparent focus:outline-none text-[#1d1d1f] placeholder:text-[#86868b]"
                         />
                       </div>
                     </div>
@@ -1089,11 +1089,11 @@ export const ReceptionistDashboard: React.FC = () => {
                   {/* Gender & Reason */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-[13px] font-semibold text-[#1d1d1f] mb-1">Gender</label>
+                      <label className="ui-label">Gender</label>
                       <select
                         value={gender}
                         onChange={(e) => setGender(e.target.value)}
-                        className="w-full h-11 px-3 rounded-xl border border-[#e5e5ea] text-sm bg-white text-[#1d1d1f] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
+                        className="ui-select"
                       >
                         <option value="Not Specified">Not Specified</option>
                         <option value="Male">Male</option>
@@ -1103,7 +1103,7 @@ export const ReceptionistDashboard: React.FC = () => {
                     </div>
 
                     <div className="sm:col-span-2">
-                      <label className="block text-[13px] font-semibold text-[#1d1d1f] mb-1">
+                      <label className="ui-label">
                         Reason for Visit / Chief Symptoms
                       </label>
                       <input
@@ -1111,22 +1111,18 @@ export const ReceptionistDashboard: React.FC = () => {
                         value={reasonForVisit}
                         onChange={(e) => setReasonForVisit(e.target.value)}
                         placeholder="e.g. Acute fever, migraine, blood pressure check"
-                        className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-sm bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
+                        className="ui-input"
                       />
                     </div>
                   </div>
 
-                  <div className="pt-3">
+                  <div className="pt-2">
                     <AppleButton
                       variant={isSelectedShiftEnded || isSelectedShiftFull ? 'secondary' : 'primary'}
                       size="lg"
                       type="submit"
                       disabled={bookingLoading || isSelectedShiftEnded || isSelectedShiftFull}
-                      className={`w-full sm:w-auto px-8 transition-all ${
-                        isSelectedShiftEnded || isSelectedShiftFull
-                          ? 'opacity-60 cursor-not-allowed bg-[#e5e5ea] text-[#86868b] border border-[#d1d1d6] shadow-none hover:bg-[#e5e5ea] hover:text-[#86868b]'
-                          : 'cursor-pointer'
-                      }`}
+                      className="w-full sm:w-auto px-8"
                     >
                       {bookingLoading
                         ? 'Issuing Token...'
@@ -1145,17 +1141,17 @@ export const ReceptionistDashboard: React.FC = () => {
           {/* TAB: Pending Approvals & Online Bookings */}
           {activeTab === 'pending' && (
             <div>
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-[#f0f0f0]">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-[#f0f0f2]">
                 <div>
-                  <h3 className="text-base font-semibold text-[#1d1d1f] flex items-center gap-2">
+                  <h3 className="text-section-title text-[#1d1d1f] flex items-center gap-2">
                     Pending Approvals
                     {pendingAppointments.length > 0 && (
-                      <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea]">
+                      <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea] tabular-nums">
                         {pendingAppointments.length} pending
                       </span>
                     )}
                   </h3>
-                  <p className="text-xs text-[#86868b] mt-0.5">
+                  <p className="text-meta text-[#86868b] mt-0.5">
                     Review incoming online bookings and issue official queue tokens.
                   </p>
                 </div>
@@ -1173,7 +1169,7 @@ export const ReceptionistDashboard: React.FC = () => {
 
               {/* Search Bar for Pending Approvals */}
               {pendingAppointments.length > 0 && (
-                <div className="mb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#f0f0f0]">
+                <div className="mb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#f0f0f2]">
                   <div className="relative flex-1 max-w-md">
                     <Search className="w-4 h-4 text-[#86868b] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                     <input
@@ -1181,7 +1177,7 @@ export const ReceptionistDashboard: React.FC = () => {
                       value={pendingSearch}
                       onChange={(e) => setPendingSearch(e.target.value)}
                       placeholder="Search by patient name, phone, or doctor..."
-                      className="w-full h-9 pl-9 pr-8 rounded-full border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
+                      className="w-full h-10 pl-9 pr-8 rounded-full border border-[#e5e5ea] text-[13px] bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
                     />
                     {pendingSearch && (
                       <button
@@ -1195,7 +1191,7 @@ export const ReceptionistDashboard: React.FC = () => {
                     )}
                   </div>
                   {pendingSearch && (
-                    <div className="text-[11px] text-[#86868b] font-medium">
+                    <div className="text-[12px] text-[#86868b] font-medium tabular-nums">
                       Showing {
                         pendingAppointments.filter((appt) => {
                           const q = pendingSearch.toLowerCase().trim();
@@ -1213,16 +1209,16 @@ export const ReceptionistDashboard: React.FC = () => {
               )}
 
               {pendingLoading ? (
-                <div className="py-16 text-center text-xs text-[#86868b]">
+                <div className="py-16 text-center text-meta text-[#86868b]">
                   Loading pending online bookings...
                 </div>
               ) : pendingAppointments.length === 0 ? (
-                <div className="py-16 text-center text-xs text-[#86868b] bg-[#fafafc] rounded-2xl border border-dashed border-[#e5e5ea]">
-                  <div className="w-10 h-10 rounded-full bg-[#f5f5f7] text-[#1d1d1f] flex items-center justify-center mx-auto mb-3">
+                <div className="py-14 text-center bg-[#f5f5f7]/60 rounded-2xl border border-[#e5e5ea]">
+                  <div className="w-10 h-10 rounded-2xl bg-white border border-[#e5e5ea] flex items-center justify-center mx-auto mb-3 shadow-apple-xs">
                     <CheckCircle2 className="w-5 h-5 text-[#0066cc]" />
                   </div>
-                  <p className="font-semibold text-sm text-[#1d1d1f]">All Bookings Processed</p>
-                  <p className="mt-1 text-xs max-w-sm mx-auto text-[#86868b]">
+                  <p className="text-card-title text-[#1d1d1f]">All Bookings Processed</p>
+                  <p className="mt-1 text-meta max-w-sm mx-auto text-[#86868b]">
                     No pending online patient bookings awaiting confirmation.
                   </p>
                 </div>
@@ -1240,22 +1236,23 @@ export const ReceptionistDashboard: React.FC = () => {
 
                 if (filteredPending.length === 0) {
                   return (
-                    <div className="py-16 text-center bg-[#fafafc] rounded-2xl border border-dashed border-[#e5e5ea]">
-                      <div className="w-12 h-12 rounded-full bg-[#f5f5f7] text-[#86868b] flex items-center justify-center mx-auto mb-3">
-                        <Search className="w-6 h-6" />
+                    <div className="py-14 text-center bg-[#f5f5f7]/60 rounded-2xl border border-[#e5e5ea]">
+                      <div className="w-12 h-12 rounded-2xl bg-white border border-[#e5e5ea] text-[#86868b] flex items-center justify-center mx-auto mb-3 shadow-apple-xs">
+                        <Search className="w-5 h-5" />
                       </div>
-                      <p className="font-semibold text-sm text-[#1d1d1f]">No Matching Patients Found</p>
-                      <p className="mt-1 text-xs max-w-sm mx-auto text-[#86868b]">
+                      <p className="text-card-title text-[#1d1d1f]">No Matching Patients Found</p>
+                      <p className="mt-1 text-meta max-w-sm mx-auto text-[#86868b]">
                         No pending online bookings match "{pendingSearch}". Check the patient name spelling or clear your search filter.
                       </p>
                       <div className="mt-4">
-                        <button
+                        <AppleButton
                           type="button"
+                          variant="secondary"
+                          size="sm"
                           onClick={() => setPendingSearch('')}
-                          className="px-4 py-1.5 rounded-full text-xs font-semibold bg-white border border-[#e5e5ea] text-[#1d1d1f] hover:bg-gray-50 shadow-xs transition-all active:scale-[0.98]"
                         >
                           Clear Search
-                        </button>
+                        </AppleButton>
                       </div>
                     </div>
                   );
@@ -1273,31 +1270,31 @@ export const ReceptionistDashboard: React.FC = () => {
                     return (
                       <div
                         key={appt.id}
-                        className="p-5 rounded-2xl bg-white border border-[#e5e5ea] hover:border-black/20 transition-all shadow-xs space-y-4"
+                        className="p-5 rounded-2xl bg-white border border-[#e5e5ea] hover:border-[#d2d2d7] transition-all shadow-apple-xs space-y-4"
                       >
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#f0f0f0] pb-3">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#f0f0f2] pb-3">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea] flex items-center gap-1.5">
+                            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-amber-50 text-amber-800 border border-amber-200/80 flex items-center gap-1.5">
                               <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
                               Pending Confirmation
                             </span>
-                            <span className="text-xs text-[#86868b]">
+                            <span className="text-meta text-[#86868b]">
                               {appt.createdAt ? new Date(appt.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : 'Recently'}
                             </span>
                           </div>
                           <div className="text-right">
-                            <span className="text-xs text-[#86868b]">Token:</span>{' '}
+                            <span className="text-meta text-[#86868b]">Token:</span>{' '}
                             <span className="text-xs font-medium text-[#86868b]">Assigned on confirm</span>
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 text-xs">
                           {/* Patient Info */}
-                          <div className="space-y-1.5 p-3.5 rounded-xl bg-[#fafafc] border border-[#f0f0f0]">
+                          <div className="space-y-1.5 p-3.5 rounded-xl bg-[#f5f5f7]/60 border border-[#e5e5ea]">
                             <span className="text-[10px] font-semibold text-[#86868b] uppercase tracking-wider block">
                               Patient
                             </span>
-                            <div className="font-semibold text-sm text-[#1d1d1f]">{patientDisplay}</div>
+                            <div className="font-semibold text-[14px] text-[#1d1d1f]">{patientDisplay}</div>
                             {appt.isForOther && (
                               <div className="text-[11px] text-[#0066cc] font-medium">
                                 Dependent / Family • Age: {appt.patientAge || 'N/A'} {appt.patientGender ? `• ${appt.patientGender}` : ''}
@@ -1307,7 +1304,7 @@ export const ReceptionistDashboard: React.FC = () => {
                               <div className="flex items-center gap-1.5 pt-1">
                                 <a
                                   href={`tel:${phoneDisplay}`}
-                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#f5f5f7] text-[#1d1d1f] hover:bg-gray-200 border border-[#e5e5ea] font-medium text-[11px] transition-colors"
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white text-[#1d1d1f] hover:bg-[#f5f5f7] border border-[#e5e5ea] font-medium text-[11px] transition-colors"
                                 >
                                   <Phone className="w-3 h-3 text-[#86868b]" />
                                   <span>{phoneDisplay}</span>
@@ -1317,11 +1314,11 @@ export const ReceptionistDashboard: React.FC = () => {
                           </div>
 
                           {/* Practitioner & Appointment Slot */}
-                          <div className="space-y-1.5 p-3.5 rounded-xl bg-[#fafafc] border border-[#f0f0f0]">
+                          <div className="space-y-1.5 p-3.5 rounded-xl bg-[#f5f5f7]/60 border border-[#e5e5ea]">
                             <span className="text-[10px] font-semibold text-[#86868b] uppercase tracking-wider block">
                               Practitioner & Slot
                             </span>
-                            <div className="font-semibold text-sm text-[#1d1d1f]">
+                            <div className="font-semibold text-[14px] text-[#1d1d1f]">
                               {cleanDoctorName(appt.doctor?.user?.fullName)}
                             </div>
                             <div className="text-[#0066cc] font-medium">{appt.doctor?.specialty}</div>
@@ -1332,34 +1329,36 @@ export const ReceptionistDashboard: React.FC = () => {
                           </div>
 
                           {/* Fee & Payment Verification */}
-                          <div className="space-y-1.5 p-3.5 rounded-xl bg-[#fafafc] border border-[#f0f0f0]">
+                          <div className="space-y-1.5 p-3.5 rounded-xl bg-[#f5f5f7]/60 border border-[#e5e5ea]">
                             <span className="text-[10px] font-semibold text-[#86868b] uppercase tracking-wider block">
                               Consultation Fee
                             </span>
-                            <div className="text-2xl font-bold text-[#1d1d1f]">
+                            <div className="text-2xl font-bold text-[#1d1d1f] tabular-nums">
                               ₹{fee}
                             </div>
-                            <p className="text-[10px] text-[#86868b] leading-snug">
+                            <p className="text-[11px] text-[#86868b] leading-snug">
                               Payment due at reception desk.
                             </p>
                           </div>
                         </div>
 
                         {appt.reasonForVisit && (
-                          <div className="text-xs text-[#86868b] px-3 py-2 rounded-xl bg-[#f5f5f7]">
-                            <span className="font-medium text-[#1d1d1f]">Reason for Visit:</span> {appt.reasonForVisit}
+                          <div className="text-xs text-[#86868b] px-3.5 py-2.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea]">
+                            <span className="font-semibold text-[#1d1d1f]">Reason for Visit:</span> {appt.reasonForVisit}
                           </div>
                         )}
 
-                        <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-[#f0f0f0]">
-                          <div className="text-[11px] text-[#86868b] flex items-center gap-1.5">
+                        <div className="pt-3 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-[#f0f0f2]">
+                          <div className="text-[12px] text-[#86868b] flex items-center gap-1.5">
                             <CreditCard className="w-3.5 h-3.5 text-[#86868b]" />
                             <span>Confirming assigns official queue token to patient pass.</span>
                           </div>
 
                           <div className="flex items-center gap-2 w-full sm:w-auto">
-                            <button
+                            <AppleButton
                               type="button"
+                              variant="secondary"
+                              size="sm"
                               disabled={isRejecting || isApproving}
                               onClick={() => {
                                 setRescheduleTarget({
@@ -1377,31 +1376,35 @@ export const ReceptionistDashboard: React.FC = () => {
                                 setRescheduleSlotId(appt.slotId || '');
                                 setRescheduleError(null);
                               }}
-                              className="px-3.5 py-2 rounded-full text-xs font-medium text-[#0066cc] hover:bg-[#0066cc]/10 border border-[#0066cc]/30 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-1 cursor-pointer"
+                              className="flex items-center justify-center gap-1.5"
                               title="Shift patient appointment to another date"
                             >
-                              <Calendar className="w-3.5 h-3.5" />
+                              <Calendar className="w-3.5 h-3.5 text-[#0066cc]" />
                               <span>Shift Date</span>
-                            </button>
+                            </AppleButton>
 
-                            <button
+                            <AppleButton
                               type="button"
+                              variant="secondary"
+                              size="sm"
                               disabled={isRejecting || isApproving}
                               onClick={() => handleRejectPendingAppointment(appt.id)}
-                              className="flex-1 sm:flex-initial px-4 py-2 rounded-full text-xs font-medium text-[#86868b] hover:text-rose-600 hover:bg-rose-50 border border-[#e5e5ea] transition-all active:scale-[0.98] disabled:opacity-50"
+                              className="flex-1 sm:flex-initial hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50"
                             >
                               {isRejecting ? 'Declining...' : 'Decline'}
-                            </button>
+                            </AppleButton>
 
-                            <button
+                            <AppleButton
                               type="button"
+                              variant="primary"
+                              size="sm"
                               disabled={isApproving || isRejecting}
                               onClick={() => handleApprovePendingAppointment(appt.id)}
-                              className="flex-1 sm:flex-initial px-5 py-2 rounded-full text-xs font-semibold text-white bg-[#0066cc] hover:bg-[#0055b3] shadow-xs transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-1.5"
+                              className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5"
                             >
                               <Check className="w-3.5 h-3.5" />
-                              {isApproving ? 'Confirming...' : `Confirm & Issue Token (₹${fee})`}
-                            </button>
+                              <span>{isApproving ? 'Confirming...' : `Confirm & Issue Token (₹${fee})`}</span>
+                            </AppleButton>
                           </div>
                         </div>
                       </div>
@@ -1416,16 +1419,19 @@ export const ReceptionistDashboard: React.FC = () => {
           {/* TAB 2: Live Queue Manager */}
           {activeTab === 'queue' && (
             <div>
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-[#f0f0f2]">
                 <div>
-                  <h3 className="text-base font-semibold text-[#1d1d1f]">Live Queue</h3>
+                  <h3 className="text-section-title text-[#1d1d1f]">Live Queue</h3>
+                  <p className="text-meta text-[#86868b] mt-0.5">
+                    Real-time patient arrival check-in and consultation queue control.
+                  </p>
                 </div>
 
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full sm:w-auto">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto">
                   <select
                     value={queueDoctorId}
                     onChange={(e) => setQueueDoctorId(e.target.value)}
-                    className="h-10 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] text-[#1d1d1f] transition-all focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] w-full sm:w-auto"
+                    className="ui-select h-10 text-xs w-full sm:w-auto"
                   >
                     {linkedDoctors.map((doc) => (
                       <option key={doc.doctorId} value={doc.doctorId}>
@@ -1438,7 +1444,7 @@ export const ReceptionistDashboard: React.FC = () => {
                     type="date"
                     value={queueDate}
                     onChange={(e) => setQueueDate(e.target.value)}
-                    className="h-10 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] text-[#1d1d1f] transition-all focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] w-full sm:w-auto"
+                    className="ui-input h-10 text-xs w-full sm:w-auto"
                   />
 
                   <AppleButton
@@ -1482,17 +1488,17 @@ export const ReceptionistDashboard: React.FC = () => {
               })()}
 
               {/* Status Filter & Live Queue Search */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-4 border-b border-[#f0f0f0]">
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 pb-4 border-b border-[#f0f0f2]">
+                <div className="inline-flex items-center gap-1 p-1 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] overflow-x-auto max-w-full">
                   {(['ALL', 'WAITING', 'IN_CONSULTATION', 'COMPLETED', 'CANCELLED', 'EXPIRED'] as const).map((st) => (
                     <button
                       key={st}
                       type="button"
                       onClick={() => setStatusFilter(st)}
-                      className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all active:scale-[0.98] whitespace-nowrap ${
+                      className={`px-3 py-1 rounded-full text-[11px] font-medium transition-all whitespace-nowrap cursor-pointer ${
                         statusFilter === st
-                          ? 'bg-[#1d1d1f] text-white shadow-xs'
-                          : 'bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f]'
+                          ? 'bg-white text-[#1d1d1f] font-semibold shadow-apple-xs'
+                          : 'text-[#86868b] hover:text-[#1d1d1f]'
                       }`}
                     >
                       {st.replace('_', ' ')}
@@ -1501,13 +1507,16 @@ export const ReceptionistDashboard: React.FC = () => {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={queueSearch}
-                    onChange={(e) => setQueueSearch(e.target.value)}
-                    placeholder="Search patient, phone, token #..."
-                    className="h-9 px-4 rounded-full border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] w-full sm:w-64"
-                  />
+                  <div className="relative w-full sm:w-64">
+                    <Search className="w-3.5 h-3.5 text-[#86868b] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <input
+                      type="text"
+                      value={queueSearch}
+                      onChange={(e) => setQueueSearch(e.target.value)}
+                      placeholder="Search patient, phone, token #..."
+                      className="h-9 pl-9 pr-4 rounded-full border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] w-full"
+                    />
+                  </div>
                   {queueSearch && (
                     <button
                       type="button"
@@ -1521,14 +1530,14 @@ export const ReceptionistDashboard: React.FC = () => {
               </div>
 
               {queueLoading ? (
-                <div className="py-12 text-center text-xs text-[#86868b]">Loading live queue...</div>
+                <div className="py-12 text-center text-meta text-[#86868b]">Loading live queue...</div>
               ) : queueAppointments.length === 0 ? (
-                <div className="py-12 text-center">
-                  <div className="w-12 h-12 rounded-full bg-[#f5f5f7] text-[#86868b] flex items-center justify-center mx-auto mb-3">
-                    <Clock className="w-6 h-6" />
+                <div className="py-14 text-center bg-[#f5f5f7]/60 rounded-2xl border border-[#e5e5ea]">
+                  <div className="w-12 h-12 rounded-2xl bg-white border border-[#e5e5ea] text-[#86868b] flex items-center justify-center mx-auto mb-3 shadow-apple-xs">
+                    <Clock className="w-5 h-5" />
                   </div>
-                  <h4 className="text-sm font-semibold text-[#1d1d1f] mb-1">Queue is Empty</h4>
-                  <p className="text-xs text-[#86868b] max-w-xs mx-auto mb-4">
+                  <h4 className="text-card-title text-[#1d1d1f] mb-1">Queue is Empty</h4>
+                  <p className="text-meta text-[#86868b] max-w-xs mx-auto mb-4">
                     No patients booked in this queue for {queueDate}.
                   </p>
                   <AppleButton variant="primary" size="sm" onClick={() => setActiveTab('walkin')}>
@@ -1548,8 +1557,8 @@ export const ReceptionistDashboard: React.FC = () => {
 
                 if (filteredAppointments.length === 0) {
                   return (
-                    <div className="py-12 text-center">
-                      <p className="text-xs text-[#86868b]">
+                    <div className="py-12 text-center bg-[#f5f5f7]/60 rounded-2xl border border-[#e5e5ea]">
+                      <p className="text-meta text-[#86868b]">
                         No patients match status "{statusFilter}" and search "{queueSearch}".
                       </p>
                       <button
@@ -1558,7 +1567,7 @@ export const ReceptionistDashboard: React.FC = () => {
                           setStatusFilter('ALL');
                           setQueueSearch('');
                         }}
-                        className="mt-2 text-xs text-[#0066cc] font-semibold hover:underline"
+                        className="mt-2.5 text-xs text-[#0066cc] font-semibold hover:underline cursor-pointer"
                       >
                         Reset Filters
                       </button>
@@ -1574,29 +1583,27 @@ export const ReceptionistDashboard: React.FC = () => {
                     {/* Mobile Responsive Cards (< 640px) */}
                     <div className="block sm:hidden space-y-3">
                       {filteredAppointments.map((appt) => (
-                        <div key={appt.id} className="p-4 rounded-2xl bg-white border border-[#e5e5ea] shadow-xs space-y-3">
+                        <div key={appt.id} className="p-4 rounded-2xl bg-white border border-[#e5e5ea] shadow-apple-xs space-y-3">
                           {/* Header: Token + Patient Name + Status */}
                           <div className="flex items-start justify-between gap-2">
-                            <div className="flex items-center gap-2">
-                              <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-xl bg-[#0066cc]/10 text-[#0066cc] font-bold text-sm border border-[#0066cc]/20">
+                            <div className="flex items-center gap-2.5">
+                              <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-xl bg-[#0066cc]/10 text-[#0066cc] font-bold text-sm border border-[#0066cc]/20 tabular-nums">
                                 #{appt.queueNumber}
                               </span>
                               <div>
-                                <h4 className="font-semibold text-sm text-[#1d1d1f] leading-snug">{appt.patientName}</h4>
-                                <div className="text-xs text-[#86868b]">{appt.patientPhone}</div>
+                                <h4 className="font-semibold text-[14px] text-[#1d1d1f] leading-snug">{appt.patientName}</h4>
+                                <div className="text-meta text-[#86868b]">{appt.patientPhone}</div>
                               </div>
                             </div>
                             <span
-                              className={`px-2.5 py-1 rounded-full text-[10px] font-semibold border ${
+                              className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${
                                 appt.status === 'COMPLETED'
-                                  ? 'bg-[#f5f5f7] text-[#86868b] border-[#e5e5ea]'
+                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200/80'
                                   : appt.status === 'IN_CONSULTATION'
-                                  ? 'bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20'
+                                  ? 'bg-[#0066cc]/10 text-[#0066cc] border-[#0066cc]/20'
                                   : appt.status === 'WAITING'
-                                  ? 'bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea]'
-                                  : appt.status === 'EXPIRED'
-                                  ? 'bg-slate-100 text-slate-600 border border-slate-200'
-                                  : 'bg-[#f5f5f7] text-gray-500 border-[#e5e5ea]'
+                                  ? 'bg-amber-50 text-amber-800 border-amber-200/80'
+                                  : 'bg-[#f5f5f7] text-[#86868b] border-[#e5e5ea]'
                               }`}
                             >
                               {appt.status === 'EXPIRED' ? 'Expired' : appt.status.replace('_', ' ')}
@@ -1604,7 +1611,7 @@ export const ReceptionistDashboard: React.FC = () => {
                           </div>
 
                           {/* Meta Row: Time & Reason */}
-                          <div className="flex items-center justify-between text-xs text-[#86868b] pt-1 border-t border-[#f0f0f2]">
+                          <div className="flex items-center justify-between text-xs text-[#86868b] pt-2 border-t border-[#f0f0f2]">
                             <div className="flex items-center gap-1.5 font-medium text-[#1d1d1f]">
                               <Clock className="w-3.5 h-3.5 text-[#86868b]" />
                               <span>{appt.estimatedTime || 'Pending'}</span>
@@ -1616,71 +1623,73 @@ export const ReceptionistDashboard: React.FC = () => {
 
                           {/* Arrival Toggle & Actions Bar */}
                           <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#f0f0f2]">
-                            {/* Arrival button */}
                             <button
                               type="button"
                               disabled={togglingCheckinId === appt.id || ['EXPIRED', 'CANCELLED', 'REJECTED'].includes(appt.status)}
                               onClick={() => handleToggleCheckIn(appt.id, appt.isCheckedIn)}
-                              className={`h-9 px-3 rounded-full text-xs font-semibold inline-flex items-center gap-1.5 transition-all cursor-pointer ${
+                              className={`h-8 px-3 rounded-full text-xs font-medium inline-flex items-center gap-1.5 transition-all cursor-pointer ${
                                 ['EXPIRED', 'CANCELLED', 'REJECTED'].includes(appt.status)
-                                  ? 'bg-slate-50 text-slate-400 border border-slate-200 cursor-not-allowed opacity-60'
+                                  ? 'bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea] cursor-not-allowed opacity-60'
                                   : appt.isCheckedIn
-                                  ? 'bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/25'
-                                  : 'bg-slate-100 text-slate-700 border border-slate-300'
+                                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/80'
+                                  : 'bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea]'
                               }`}
                             >
                               {togglingCheckinId === appt.id ? (
                                 <span className="w-3.5 h-3.5 rounded-full border-2 border-current border-t-transparent animate-spin inline-block"></span>
                               ) : appt.isCheckedIn ? (
                                 <>
-                                  <span className="w-2 h-2 rounded-full bg-[#0066cc]"></span>
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
                                   <span>At Clinic</span>
                                 </>
                               ) : (
                                 <>
-                                  <span className="w-2 h-2 rounded-full bg-gray-300"></span>
+                                  <span className="w-1.5 h-1.5 rounded-full bg-[#86868b]"></span>
                                   <span>Mark Arrived</span>
                                 </>
                               )}
                             </button>
 
-                            {/* Action Buttons */}
                             <div className="flex items-center gap-1.5 flex-wrap">
                               {appt.status === 'WAITING' && (
                                 isDoctorAway ? (
-                                  <span className="px-3 py-1.5 rounded-full bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea] text-xs font-medium opacity-60">
+                                  <span className="px-3 py-1 rounded-full bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea] text-xs font-medium opacity-70">
                                     Doctor Away
                                   </span>
                                 ) : !appt.isCheckedIn ? (
-                                  <span className="px-3 py-1.5 rounded-full bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea] text-xs font-medium opacity-60">
+                                  <span className="px-3 py-1 rounded-full bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea] text-xs font-medium opacity-70">
                                     Awaiting
                                   </span>
                                 ) : (appt.appointmentDate || queueDate) !== getLocalDateString() ? (
-                                  <span className="px-3 py-1.5 rounded-full bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea] text-xs font-medium opacity-60">
+                                  <span className="px-3 py-1 rounded-full bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea] text-xs font-medium opacity-70">
                                     Other Date
                                   </span>
                                 ) : (
-                                  <button
+                                  <AppleButton
                                     type="button"
+                                    variant="primary"
+                                    size="sm"
                                     onClick={() => handleStatusChange(appt.id, 'IN_CONSULTATION')}
-                                    className="h-9 px-4 rounded-full bg-[#0066cc] hover:bg-[#0055b3] text-white text-xs font-semibold shadow-xs transition-all active:scale-[0.98] cursor-pointer"
                                   >
                                     Call In
-                                  </button>
+                                  </AppleButton>
                                 )
                               )}
                               {appt.status === 'IN_CONSULTATION' && (
-                                <button
+                                <AppleButton
                                   type="button"
+                                  variant="primary"
+                                  size="sm"
                                   onClick={() => handleStatusChange(appt.id, 'COMPLETED')}
-                                  className="h-9 px-4 rounded-full bg-[#1d1d1f] hover:bg-black text-white text-xs font-semibold shadow-xs transition-all active:scale-[0.98] cursor-pointer"
                                 >
                                   Completed
-                                </button>
+                                </AppleButton>
                               )}
                               {(appt.status === 'WAITING' || appt.status === 'PENDING_APPROVAL') && (
-                                <button
+                                <AppleButton
                                   type="button"
+                                  variant="secondary"
+                                  size="sm"
                                   onClick={() => {
                                     const queueDoctor = linkedDoctors.find((d) => d.doctorId === queueDoctorId);
                                     setRescheduleTarget({
@@ -1698,21 +1707,23 @@ export const ReceptionistDashboard: React.FC = () => {
                                     setRescheduleSlotId(appt.slotId || '');
                                     setRescheduleError(null);
                                   }}
-                                  className="h-9 px-3 rounded-full text-[#0066cc] hover:bg-[#0066cc]/10 text-xs font-medium border border-[#0066cc]/30 transition-all cursor-pointer inline-flex items-center gap-1"
+                                  className="inline-flex items-center gap-1"
                                   title="Shift Date"
                                 >
-                                  <Calendar className="w-3.5 h-3.5" />
+                                  <Calendar className="w-3.5 h-3.5 text-[#0066cc]" />
                                   <span>Shift</span>
-                                </button>
+                                </AppleButton>
                               )}
                               {appt.status !== 'CANCELLED' && appt.status !== 'COMPLETED' && appt.status !== 'IN_CONSULTATION' && appt.status !== 'EXPIRED' && (
-                                <button
+                                <AppleButton
                                   type="button"
+                                  variant="secondary"
+                                  size="sm"
                                   onClick={() => handleStatusChange(appt.id, 'CANCELLED')}
-                                  className="h-9 px-3 rounded-full text-[#86868b] hover:text-rose-600 hover:bg-rose-50 text-xs font-medium border border-[#e5e5ea] transition-all"
+                                  className="hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50"
                                 >
                                   Cancel
-                                </button>
+                                </AppleButton>
                               )}
                               <button
                                 type="button"
@@ -1731,10 +1742,10 @@ export const ReceptionistDashboard: React.FC = () => {
                                     clinicAddress: data?.clinic?.address,
                                   });
                                 }}
-                                className="w-9 h-9 flex items-center justify-center rounded-full text-[#86868b] hover:text-[#0066cc] hover:bg-gray-100 border border-[#e5e5ea] transition-colors"
+                                className="w-8 h-8 flex items-center justify-center rounded-full text-[#86868b] hover:text-[#0066cc] hover:bg-[#f5f5f7] border border-[#e5e5ea] transition-colors cursor-pointer"
                                 title="Reprint Pass"
                               >
-                                <Printer className="w-4 h-4" />
+                                <Printer className="w-3.5 h-3.5" />
                               </button>
                             </div>
                           </div>
@@ -1745,206 +1756,212 @@ export const ReceptionistDashboard: React.FC = () => {
                     {/* Desktop Table View (>= 640px) */}
                     <div className="hidden sm:block overflow-x-auto">
                       <table className="w-full text-left text-xs">
-                      <thead>
-                        <tr className="border-b border-[#e5e5ea] text-[#86868b] font-medium">
-                          <th className="pb-3 pl-2">Token</th>
-                          <th className="pb-3">Patient</th>
-                          <th className="pb-3">Contact</th>
-                          <th className="pb-3">Time</th>
-                          <th className="pb-3 text-center">Arrival</th>
-                          <th className="pb-3">Status</th>
-                          <th className="pb-3 text-right pr-2">Action</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-[#f0f0f0]">
-                        {filteredAppointments.map((appt) => (
-                          <tr key={appt.id} className="hover:bg-[#fafafc]">
-                            <td className="py-3 pl-2">
-                              <span className="font-bold text-sm text-[#0066cc]">
-                                #{appt.queueNumber}
-                              </span>
-                            </td>
+                        <thead>
+                          <tr className="border-b border-[#e5e5ea] text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">
+                            <th className="pb-3 pl-2">Token</th>
+                            <th className="pb-3">Patient</th>
+                            <th className="pb-3">Contact</th>
+                            <th className="pb-3">Time</th>
+                            <th className="pb-3 text-center">Arrival</th>
+                            <th className="pb-3">Status</th>
+                            <th className="pb-3 text-right pr-2">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#f0f0f2]">
+                          {filteredAppointments.map((appt) => (
+                            <tr key={appt.id} className="hover:bg-[#f5f5f7]/60 transition-colors">
+                              <td className="py-3.5 pl-2">
+                                <span className="font-bold text-sm text-[#0066cc] tabular-nums">
+                                  #{appt.queueNumber}
+                                </span>
+                              </td>
 
-                            <td className="py-3">
-                              <div className="font-medium text-[#1d1d1f]">{appt.patientName}</div>
-                              {appt.reasonForVisit && appt.reasonForVisit !== 'General Medical Consultation' && (
-                                <div className="text-[10px] text-[#86868b]">{appt.reasonForVisit}</div>
-                              )}
-                            </td>
-
-                            <td className="py-3 text-[#86868b] font-medium">{appt.patientPhone}</td>
-
-                            <td className="py-3 text-[#1d1d1f]">
-                              <div className="font-medium">{appt.estimatedTime || 'Pending'}</div>
-                            </td>
-
-                            <td className="py-3 text-center">
-                               <button
-                                type="button"
-                                disabled={togglingCheckinId === appt.id || ['EXPIRED', 'CANCELLED', 'REJECTED'].includes(appt.status)}
-                                onClick={() => handleToggleCheckIn(appt.id, appt.isCheckedIn)}
-                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all cursor-pointer ${
-                                  ['EXPIRED', 'CANCELLED', 'REJECTED'].includes(appt.status)
-                                    ? 'bg-slate-50 text-slate-400 border border-slate-200 cursor-not-allowed opacity-60'
-                                    : appt.isCheckedIn
-                                    ? 'bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/25 hover:bg-[#0066cc]/15'
-                                    : 'bg-slate-100 text-slate-600 border border-slate-300 hover:bg-slate-200 hover:text-slate-800'
-                                }`}
-                                title={
-                                  ['EXPIRED', 'CANCELLED', 'REJECTED'].includes(appt.status)
-                                    ? `Cannot mark arrival for ${appt.status.toLowerCase()} appointment`
-                                    : appt.isCheckedIn
-                                    ? "Click to untick / undo arrival"
-                                    : "Click to mark patient arrived at clinic"
-                                }
-                              >
-                                {togglingCheckinId === appt.id ? (
-                                  <span className="w-3 h-3 rounded-full border-2 border-current border-t-transparent animate-spin inline-block"></span>
-                                ) : appt.isCheckedIn ? (
-                                  <>
-                                    <span className="w-1.5 h-1.5 rounded-full bg-[#0066cc]"></span>
-                                    <span>At Clinic</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <span className="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
-                                    <span>Mark Arrived</span>
-                                  </>
+                              <td className="py-3.5">
+                                <div className="font-semibold text-[#1d1d1f] text-[13px]">{appt.patientName}</div>
+                                {appt.reasonForVisit && appt.reasonForVisit !== 'General Medical Consultation' && (
+                                  <div className="text-[11px] text-[#86868b] mt-0.5">{appt.reasonForVisit}</div>
                                 )}
-                              </button>
-                            </td>
+                              </td>
 
-                            <td className="py-3">
-                              <span
-                                className={`px-2.5 py-0.5 rounded-full text-[10px] font-medium border ${
-                                  appt.status === 'COMPLETED'
-                                    ? 'bg-[#f5f5f7] text-[#86868b] border-[#e5e5ea]'
-                                    : appt.status === 'IN_CONSULTATION'
-                                    ? 'bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20'
-                                    : appt.status === 'WAITING'
-                                    ? 'bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea]'
-                                    : appt.status === 'EXPIRED'
-                                    ? 'bg-slate-100 text-slate-600 border border-slate-200'
-                                    : 'bg-[#f5f5f7] text-gray-500 border-[#e5e5ea]'
-                                }`}
-                              >
-                                {appt.status === 'EXPIRED' ? 'Expired' : appt.status.replace('_', ' ')}
-                              </span>
-                            </td>
+                              <td className="py-3.5 text-[#86868b] font-medium tabular-nums">{appt.patientPhone}</td>
 
-                            <td className="py-3 text-right pr-2">
-                              <div className="inline-flex items-center gap-1.5">
-                                {appt.status === 'WAITING' && (
-                                  isDoctorAway ? (
-                                    <button
-                                      type="button"
-                                      disabled={true}
-                                      className="px-3.5 py-1.5 rounded-full bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea] text-[11px] font-medium opacity-60 cursor-not-allowed whitespace-nowrap"
-                                      title={`Doctor has ${queueDoctor?.cabinStatus === 'STEPPED_OUT' ? 'stepped out' : 'not entered cabin'}. Patient cannot be called in until doctor returns.`}
-                                    >
-                                      Doctor {queueDoctor?.cabinStatus === 'STEPPED_OUT' ? 'Stepped Out' : 'Away'}
-                                    </button>
-                                  ) : !appt.isCheckedIn ? (
-                                    <button
-                                      type="button"
-                                      disabled={true}
-                                      className="px-3.5 py-1.5 rounded-full bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea] text-[11px] font-medium opacity-60 cursor-not-allowed whitespace-nowrap"
-                                      title="Patient has not checked in at clinic yet. Mark patient arrival first."
-                                    >
-                                      Awaiting Arrival
-                                    </button>
-                                  ) : (appt.appointmentDate || queueDate) !== getLocalDateString() ? (
-                                    <button
-                                      type="button"
-                                      disabled={true}
-                                      className="px-3.5 py-1.5 rounded-full bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea] text-[11px] font-medium opacity-60 cursor-not-allowed whitespace-nowrap"
-                                      title="Cannot call in an appointment scheduled for another date."
-                                    >
-                                      Scheduled for {appt.appointmentDate || queueDate}
-                                    </button>
+                              <td className="py-3.5 text-[#1d1d1f]">
+                                <div className="font-medium">{appt.estimatedTime || 'Pending'}</div>
+                              </td>
+
+                              <td className="py-3.5 text-center">
+                                <button
+                                  type="button"
+                                  disabled={togglingCheckinId === appt.id || ['EXPIRED', 'CANCELLED', 'REJECTED'].includes(appt.status)}
+                                  onClick={() => handleToggleCheckIn(appt.id, appt.isCheckedIn)}
+                                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium transition-all cursor-pointer ${
+                                    ['EXPIRED', 'CANCELLED', 'REJECTED'].includes(appt.status)
+                                      ? 'bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea] cursor-not-allowed opacity-60'
+                                      : appt.isCheckedIn
+                                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/80 hover:bg-emerald-100/70'
+                                      : 'bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea] hover:bg-[#e8e8ed]'
+                                  }`}
+                                  title={
+                                    ['EXPIRED', 'CANCELLED', 'REJECTED'].includes(appt.status)
+                                      ? `Cannot mark arrival for ${appt.status.toLowerCase()} appointment`
+                                      : appt.isCheckedIn
+                                      ? "Click to untick / undo arrival"
+                                      : "Click to mark patient arrived at clinic"
+                                  }
+                                >
+                                  {togglingCheckinId === appt.id ? (
+                                    <span className="w-3 h-3 rounded-full border-2 border-current border-t-transparent animate-spin inline-block"></span>
+                                  ) : appt.isCheckedIn ? (
+                                    <>
+                                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                                      <span>At Clinic</span>
+                                    </>
                                   ) : (
-                                    <button
-                                      onClick={() => handleStatusChange(appt.id, 'IN_CONSULTATION')}
-                                      className="px-3.5 py-1.5 rounded-full bg-[#0066cc] hover:bg-[#0055b3] text-white text-[11px] font-semibold shadow-xs transition-all active:scale-[0.98] cursor-pointer whitespace-nowrap"
+                                    <>
+                                      <span className="w-1.5 h-1.5 rounded-full bg-[#86868b]"></span>
+                                      <span>Mark Arrived</span>
+                                    </>
+                                  )}
+                                </button>
+                              </td>
+
+                              <td className="py-3.5">
+                                <span
+                                  className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${
+                                    appt.status === 'COMPLETED'
+                                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200/80'
+                                      : appt.status === 'IN_CONSULTATION'
+                                      ? 'bg-[#0066cc]/10 text-[#0066cc] border-[#0066cc]/20'
+                                      : appt.status === 'WAITING'
+                                      ? 'bg-amber-50 text-amber-800 border-amber-200/80'
+                                      : 'bg-[#f5f5f7] text-[#86868b] border-[#e5e5ea]'
+                                  }`}
+                                >
+                                  {appt.status === 'EXPIRED' ? 'Expired' : appt.status.replace('_', ' ')}
+                                </span>
+                              </td>
+
+                              <td className="py-3.5 text-right pr-2">
+                                <div className="inline-flex items-center gap-1.5">
+                                  {appt.status === 'WAITING' && (
+                                    isDoctorAway ? (
+                                      <button
+                                        type="button"
+                                        disabled={true}
+                                        className="px-3 py-1 rounded-full bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea] text-[11px] font-medium opacity-60 cursor-not-allowed whitespace-nowrap"
+                                        title={`Doctor has ${queueDoctor?.cabinStatus === 'STEPPED_OUT' ? 'stepped out' : 'not entered cabin'}. Patient cannot be called in until doctor returns.`}
+                                      >
+                                        Doctor {queueDoctor?.cabinStatus === 'STEPPED_OUT' ? 'Stepped Out' : 'Away'}
+                                      </button>
+                                    ) : !appt.isCheckedIn ? (
+                                      <button
+                                        type="button"
+                                        disabled={true}
+                                        className="px-3 py-1 rounded-full bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea] text-[11px] font-medium opacity-60 cursor-not-allowed whitespace-nowrap"
+                                        title="Patient has not checked in at clinic yet. Mark patient arrival first."
+                                      >
+                                        Awaiting Arrival
+                                      </button>
+                                    ) : (appt.appointmentDate || queueDate) !== getLocalDateString() ? (
+                                      <button
+                                        type="button"
+                                        disabled={true}
+                                        className="px-3 py-1 rounded-full bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea] text-[11px] font-medium opacity-60 cursor-not-allowed whitespace-nowrap"
+                                        title="Cannot call in an appointment scheduled for another date."
+                                      >
+                                        Scheduled for {appt.appointmentDate || queueDate}
+                                      </button>
+                                    ) : (
+                                      <AppleButton
+                                        variant="primary"
+                                        size="sm"
+                                        onClick={() => handleStatusChange(appt.id, 'IN_CONSULTATION')}
+                                        className="h-7 px-3 text-[11px]"
+                                      >
+                                        Call In
+                                      </AppleButton>
+                                    )
+                                  )}
+                                  {appt.status === 'IN_CONSULTATION' && (
+                                    <AppleButton
+                                      variant="primary"
+                                      size="sm"
+                                      onClick={() => handleStatusChange(appt.id, 'COMPLETED')}
+                                      className="h-7 px-3 text-[11px]"
                                     >
-                                      Call In
-                                    </button>
-                                  )
-                                )}
-                                {appt.status === 'IN_CONSULTATION' && (
-                                  <button
-                                    onClick={() => handleStatusChange(appt.id, 'COMPLETED')}
-                                    className="px-3.5 py-1.5 rounded-full bg-[#1d1d1f] hover:bg-black text-white text-[11px] font-semibold shadow-xs transition-all active:scale-[0.98] cursor-pointer"
-                                  >
-                                    Mark Completed
-                                  </button>
-                                )}
-                                {(appt.status === 'WAITING' || appt.status === 'PENDING_APPROVAL') && (
+                                      Mark Completed
+                                    </AppleButton>
+                                  )}
+                                  {(appt.status === 'WAITING' || appt.status === 'PENDING_APPROVAL') && (
+                                    <AppleButton
+                                      type="button"
+                                      variant="secondary"
+                                      size="sm"
+                                      onClick={() => {
+                                        const queueDoctor = linkedDoctors.find((d) => d.doctorId === queueDoctorId);
+                                        setRescheduleTarget({
+                                          appointmentId: appt.id,
+                                          patientName: appt.patientName,
+                                          doctorName: queueDoctor?.fullName || 'Practitioner',
+                                          currentDate: queueDate,
+                                          currentQueueNumber: appt.queueNumber,
+                                          doctorId: queueDoctorId,
+                                          slotId: appt.slotId,
+                                        });
+                                        const d = new Date(queueDate);
+                                        d.setDate(d.getDate() + 1);
+                                        setRescheduleDate(getLocalDateString(d));
+                                        setRescheduleSlotId(appt.slotId || '');
+                                        setRescheduleError(null);
+                                      }}
+                                      className="h-7 px-2.5 text-[11px] inline-flex items-center gap-1"
+                                      title="Shift patient appointment to another date/shift"
+                                    >
+                                      <Calendar className="w-3 h-3 text-[#0066cc]" />
+                                      <span>Shift Date</span>
+                                    </AppleButton>
+                                  )}
+                                  {appt.status !== 'CANCELLED' && appt.status !== 'COMPLETED' && appt.status !== 'IN_CONSULTATION' && appt.status !== 'EXPIRED' && (
+                                    <AppleButton
+                                      variant="secondary"
+                                      size="sm"
+                                      onClick={() => handleStatusChange(appt.id, 'CANCELLED')}
+                                      className="h-7 px-2.5 text-[11px] hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50"
+                                    >
+                                      Cancel
+                                    </AppleButton>
+                                  )}
                                   <button
                                     type="button"
                                     onClick={() => {
                                       const queueDoctor = linkedDoctors.find((d) => d.doctorId === queueDoctorId);
-                                      setRescheduleTarget({
-                                        appointmentId: appt.id,
+                                      setBookedPass({
+                                        queueNumber: appt.queueNumber,
+                                        estimatedTime: appt.estimatedTime,
+                                        checkingWindow: appt.checkingWindow,
+                                        appointmentDate: queueDate,
                                         patientName: appt.patientName,
+                                        patientPhone: appt.patientPhone,
                                         doctorName: queueDoctor?.fullName || 'Practitioner',
-                                        currentDate: queueDate,
-                                        currentQueueNumber: appt.queueNumber,
-                                        doctorId: queueDoctorId,
-                                        slotId: appt.slotId,
+                                        doctorSpecialty: queueDoctor?.specialty,
+                                        clinicName: data?.clinic?.clinicName,
+                                        clinicAddress: data?.clinic?.address,
                                       });
-                                      const d = new Date(queueDate);
-                                      d.setDate(d.getDate() + 1);
-                                      setRescheduleDate(getLocalDateString(d));
-                                      setRescheduleSlotId(appt.slotId || '');
-                                      setRescheduleError(null);
                                     }}
-                                    className="px-2.5 py-1.5 rounded-full text-[#0066cc] hover:bg-[#0066cc]/10 text-[11px] font-medium border border-[#0066cc]/30 transition-all cursor-pointer inline-flex items-center gap-1"
-                                    title="Shift patient appointment to another date/shift"
+                                    className="w-7 h-7 flex items-center justify-center rounded-full text-[#86868b] hover:text-[#0066cc] hover:bg-[#f5f5f7] border border-[#e5e5ea] transition-colors cursor-pointer"
+                                    title="Reprint Token Pass"
                                   >
-                                    <Calendar className="w-3 h-3" />
-                                    <span>Shift Date</span>
+                                    <Printer className="w-3.5 h-3.5" />
                                   </button>
-                                )}
-                                {appt.status !== 'CANCELLED' && appt.status !== 'COMPLETED' && appt.status !== 'IN_CONSULTATION' && appt.status !== 'EXPIRED' && (
-                                  <button
-                                    onClick={() => handleStatusChange(appt.id, 'CANCELLED')}
-                                    className="px-2.5 py-1 rounded-full text-[#86868b] hover:text-rose-600 hover:bg-rose-50 text-[11px] font-medium border border-[#e5e5ea] transition-all"
-                                  >
-                                    Cancel
-                                  </button>
-                                )}
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const queueDoctor = linkedDoctors.find((d) => d.doctorId === queueDoctorId);
-                                    setBookedPass({
-                                      queueNumber: appt.queueNumber,
-                                      estimatedTime: appt.estimatedTime,
-                                      checkingWindow: appt.checkingWindow,
-                                      appointmentDate: queueDate,
-                                      patientName: appt.patientName,
-                                      patientPhone: appt.patientPhone,
-                                      doctorName: queueDoctor?.fullName || 'Practitioner',
-                                      doctorSpecialty: queueDoctor?.specialty,
-                                      clinicName: data?.clinic?.clinicName,
-                                      clinicAddress: data?.clinic?.address,
-                                    });
-                                  }}
-                                  className="p-1.5 rounded-full text-[#86868b] hover:text-[#0066cc] hover:bg-gray-100 border border-[#e5e5ea] transition-colors"
-                                  title="Reprint Token Pass"
-                                >
-                                  <Printer className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </>
-              );
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                );
               })()}
             </div>
           )}
@@ -1952,37 +1969,39 @@ export const ReceptionistDashboard: React.FC = () => {
           {/* TAB 3: Assigned Doctors Desk Roster */}
           {activeTab === 'doctors' && (
             <div className="space-y-6">
-              <div className="flex items-center justify-between gap-3 mb-6 pb-4 border-b border-[#f0f0f0]">
+              <div className="flex items-center justify-between gap-3 mb-6 pb-4 border-b border-[#f0f0f2]">
                 <div>
-                  <h3 className="text-base font-semibold text-[#1d1d1f]">
+                  <h3 className="text-section-title text-[#1d1d1f]">
                     Assigned Practitioners
                   </h3>
-                  <p className="text-xs text-[#86868b] mt-0.5">
+                  <p className="text-meta text-[#86868b] mt-0.5">
                     Clinic doctor presence and queue operations.
                   </p>
                 </div>
-                <span className="text-xs font-medium px-3 py-1 rounded-full bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea]">
+                <span className="text-xs font-medium px-3 py-1 rounded-full bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea] tabular-nums">
                   {linkedDoctors.length} {linkedDoctors.length === 1 ? 'Doctor' : 'Doctors'}
                 </span>
               </div>
 
               <div>
                 {linkedDoctors.length === 0 ? (
-                  <div className="py-12 text-center text-xs text-[#86868b] bg-[#fafafc] rounded-2xl border border-dashed border-[#e5e5ea]">
-                    <Stethoscope className="w-8 h-8 text-[#86868b] mx-auto mb-2 opacity-50" />
-                    <p className="font-semibold text-[#1d1d1f]">No Doctors Assigned Yet</p>
-                    <p className="mt-1">Please ask your Clinic Administrator to assign practitioners to your desk.</p>
+                  <div className="py-12 text-center bg-[#f5f5f7]/60 rounded-2xl border border-[#e5e5ea]">
+                    <div className="w-10 h-10 rounded-2xl bg-white border border-[#e5e5ea] flex items-center justify-center mx-auto mb-3 shadow-apple-xs">
+                      <Stethoscope className="w-5 h-5 text-[#86868b]" />
+                    </div>
+                    <p className="text-card-title text-[#1d1d1f]">No Doctors Assigned Yet</p>
+                    <p className="text-meta text-[#86868b] mt-1">Please ask your Clinic Administrator to assign practitioners to your desk.</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
                     {linkedDoctors.map((doc) => (
                       <div
                         key={doc.doctorId}
-                        className="p-5 rounded-2xl bg-white border border-[#e5e5ea] shadow-xs space-y-4 hover:border-black/15 transition-all"
+                        className="p-5 rounded-2xl bg-white border border-[#e5e5ea] shadow-apple-xs space-y-4 hover:border-[#d2d2d7] transition-all"
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] overflow-hidden flex-shrink-0">
+                            <div className="w-11 h-11 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] overflow-hidden flex-shrink-0">
                               {doc.avatarUrl ? (
                                 <img src={getFileUrl(doc.avatarUrl)} alt={doc.fullName} className="w-full h-full object-cover" />
                               ) : (
@@ -1992,26 +2011,26 @@ export const ReceptionistDashboard: React.FC = () => {
                               )}
                             </div>
                             <div>
-                              <div className="font-semibold text-sm text-[#1d1d1f] tracking-tight">
+                              <div className="text-card-title text-[#1d1d1f]">
                                 {cleanDoctorName(doc.fullName)}
                               </div>
                               <div className="text-xs text-[#0066cc] font-medium">{doc.specialty}</div>
-                              <div className="text-[11px] text-[#86868b] mt-0.5">{data?.clinic?.clinicName || 'Clinic Desk'}</div>
+                              <div className="text-meta text-[#86868b] mt-0.5">{data?.clinic?.clinicName || 'Clinic Desk'}</div>
                             </div>
                           </div>
 
                           <div className="text-right flex-shrink-0">
-                            <span className="text-sm font-semibold text-[#1d1d1f] block">
+                            <span className="text-sm font-semibold text-[#1d1d1f] block tabular-nums">
                               ₹{doc.consultationFee}
                             </span>
-                            <span className="text-[11px] text-[#86868b]">
+                            <span className="text-meta text-[#86868b] tabular-nums">
                               {doc.todayTotalBookings} booked today
                             </span>
                           </div>
                         </div>
 
                         {/* Interactive Cabin Presence Control */}
-                        <div className="pt-2 border-t border-[#f0f0f0]">
+                        <div className="pt-3 border-t border-[#f0f0f2]">
                           <CabinStatusControl
                             currentStatus={doc.cabinStatus}
                             expectedReturnTime={doc.expectedReturnTime}
@@ -2043,22 +2062,22 @@ export const ReceptionistDashboard: React.FC = () => {
           {/* 5. Notifications Tab */}
           {activeTab === 'notifications' && (
             <div className="space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#f0f0f0]">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#f0f0f2]">
                 <div>
-                  <h3 className="text-lg font-semibold text-[#1d1d1f]">Desk Notifications</h3>
-                  <p className="text-xs text-[#86868b] mt-0.5">
+                  <h3 className="text-section-title text-[#1d1d1f]">Desk Notifications</h3>
+                  <p className="text-meta text-[#86868b] mt-0.5">
                     Real-time alerts for incoming bookings and on-site patient check-ins.
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
                   {unreadNotifCount > 0 && (
                     <AppleButton
-                      variant="ghost"
+                      variant="secondary"
                       size="sm"
                       onClick={handleMarkAllNotifsRead}
-                      className="text-xs text-[#0066cc] hover:text-[#0071e3]"
+                      className="text-xs"
                     >
-                      <Check className="w-3.5 h-3.5 mr-1" />
+                      <Check className="w-3.5 h-3.5 mr-1 text-[#0066cc]" />
                       Mark all read
                     </AppleButton>
                   )}
@@ -2068,7 +2087,7 @@ export const ReceptionistDashboard: React.FC = () => {
                       onClick={() => setNotifFilter('ALL')}
                       className={`px-3 py-1 rounded-full text-xs transition-all cursor-pointer ${
                         notifFilter === 'ALL'
-                          ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs'
+                          ? 'bg-white text-[#1d1d1f] font-semibold shadow-apple-xs'
                           : 'text-[#86868b] hover:text-[#1d1d1f]'
                       }`}
                     >
@@ -2079,7 +2098,7 @@ export const ReceptionistDashboard: React.FC = () => {
                       onClick={() => setNotifFilter('UNREAD')}
                       className={`px-3 py-1 rounded-full text-xs transition-all cursor-pointer ${
                         notifFilter === 'UNREAD'
-                          ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs'
+                          ? 'bg-white text-[#1d1d1f] font-semibold shadow-apple-xs'
                           : 'text-[#86868b] hover:text-[#1d1d1f]'
                       }`}
                     >
@@ -2097,14 +2116,14 @@ export const ReceptionistDashboard: React.FC = () => {
 
                 if (filtered.length === 0) {
                   return (
-                    <div className="py-16 text-center">
-                      <div className="w-12 h-12 rounded-full bg-[#f5f5f7] text-[#86868b] flex items-center justify-center mx-auto mb-3">
-                        <Bell className="w-6 h-6" />
+                    <div className="py-14 text-center bg-[#f5f5f7]/60 rounded-2xl border border-[#e5e5ea]">
+                      <div className="w-12 h-12 rounded-2xl bg-white border border-[#e5e5ea] text-[#86868b] flex items-center justify-center mx-auto mb-3 shadow-apple-xs">
+                        <Bell className="w-5 h-5" />
                       </div>
-                      <h4 className="text-sm font-semibold text-[#1d1d1f]">
+                      <h4 className="text-card-title text-[#1d1d1f]">
                         {notifFilter === 'UNREAD' ? 'No unread desk notifications' : 'No notifications yet'}
                       </h4>
-                      <p className="text-xs text-[#86868b] mt-1 max-w-sm mx-auto">
+                      <p className="text-meta text-[#86868b] mt-1 max-w-sm mx-auto">
                         When patients book appointments or check in at the reception desk, instant notifications will appear here.
                       </p>
                     </div>
@@ -2125,7 +2144,7 @@ export const ReceptionistDashboard: React.FC = () => {
                           className={`p-4 rounded-2xl border transition-all cursor-pointer ${
                             !item.isRead
                               ? 'bg-[#0066cc]/[0.02] border-[#0066cc]/30 hover:border-[#0066cc]'
-                              : 'bg-white border-[#e5e5ea] hover:border-black/15'
+                              : 'bg-white border-[#e5e5ea] hover:border-[#d2d2d7]'
                           }`}
                         >
                           <div className="flex items-start justify-between gap-3">
@@ -2141,7 +2160,7 @@ export const ReceptionistDashboard: React.FC = () => {
                               </div>
                               <div className="min-w-0">
                                 <div className="flex items-center gap-2">
-                                  <h4 className="text-xs font-semibold text-[#1d1d1f] tracking-tight">
+                                  <h4 className="text-[13px] font-semibold text-[#1d1d1f] tracking-tight">
                                     {item.title}
                                   </h4>
                                   {!item.isRead && (
@@ -2155,10 +2174,10 @@ export const ReceptionistDashboard: React.FC = () => {
                                 >
                                   {item.message}
                                 </p>
-                                <div className="flex items-center gap-3 mt-2 text-[10px] text-[#86868b]">
+                                <div className="flex items-center gap-3 mt-2 text-[11px] text-[#86868b]">
                                   <span>{new Date(item.createdAt).toLocaleString()}</span>
                                   {item.type && (
-                                    <span className="uppercase font-semibold tracking-wider px-2 py-0.5 rounded-full bg-[#f5f5f7] border border-[#e5e5ea]">
+                                    <span className="uppercase text-[10px] font-semibold tracking-wider px-2 py-0.5 rounded-full bg-[#f5f5f7] border border-[#e5e5ea]">
                                       {item.type.replace(/_/g, ' ')}
                                     </span>
                                   )}
@@ -2204,26 +2223,25 @@ export const ReceptionistDashboard: React.FC = () => {
       {/* 3. Guaranteed Queue Token Pass Modal */}
       {bookedPass && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn print:hidden">
-          <div className="bg-white rounded-t-[28px] sm:rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-5 sm:p-8 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-8 shadow-2xl max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 duration-300">
-            {/* Apple Drag Handle Pill */}
+          <div className="bg-white rounded-t-[28px] sm:rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-5 sm:p-6 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-6 shadow-apple-float max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 duration-300">
             <div className="sm:hidden w-10 h-1 bg-[#d2d2d7] rounded-full mx-auto mb-3" />
-            <div className="text-center pb-4 border-b border-[#f0f0f0]">
-              <div className="w-10 h-10 rounded-full bg-[#f5f5f7] text-[#1d1d1f] flex items-center justify-center mx-auto mb-3">
+            <div className="text-center pb-4 border-b border-[#f0f0f2]">
+              <div className="w-10 h-10 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] flex items-center justify-center mx-auto mb-3">
                 <CheckCircle2 className="w-5 h-5 text-[#0066cc]" />
               </div>
-              <h3 className="text-lg font-semibold text-[#1d1d1f]">Walk-in Token Issued</h3>
-              <p className="text-xs text-[#86868b] mt-0.5">Live consultation queue pass</p>
+              <h3 className="text-section-title text-[#1d1d1f]">Walk-in Token Issued</h3>
+              <p className="text-meta text-[#86868b] mt-0.5">Live consultation queue pass</p>
             </div>
 
             {/* Token Badge Display */}
-            <div className="my-6 p-6 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] text-center space-y-3">
-              <span className="text-xs font-semibold text-[#86868b] uppercase tracking-wider block">
+            <div className="my-5 p-6 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] text-center space-y-3">
+              <span className="text-[11px] font-semibold text-[#86868b] uppercase tracking-wider block">
                 Queue Token Number
               </span>
-              <div className="text-5xl font-bold text-[#0066cc] tracking-tight">
+              <div className="text-5xl font-bold text-[#0066cc] tracking-tight tabular-nums">
                 #{bookedPass.queueNumber}
               </div>
-              <div className="pt-2 border-t border-[#e5e5ea] grid grid-cols-2 gap-2 text-xs">
+              <div className="pt-3 border-t border-[#e5e5ea] grid grid-cols-2 gap-2 text-xs">
                 <div>
                   <span className="text-[11px] text-[#86868b] block">Est. Consultation</span>
                   <span className="font-semibold text-[#1d1d1f]">{bookedPass.estimatedTime || 'Active'}</span>
@@ -2235,7 +2253,7 @@ export const ReceptionistDashboard: React.FC = () => {
               </div>
             </div>
 
-            <div className="space-y-2 text-xs mb-6 p-3 rounded-xl bg-blue-50/50 border border-blue-100">
+            <div className="space-y-2 text-xs mb-6 p-3.5 rounded-xl bg-[#f5f5f7]/60 border border-[#e5e5ea]">
               <div className="flex justify-between">
                 <span className="text-[#86868b]">Patient Name:</span>
                 <span className="font-semibold text-[#1d1d1f]">{bookedPass.patientName}</span>
@@ -2243,7 +2261,7 @@ export const ReceptionistDashboard: React.FC = () => {
               {bookedPass.patientPhone && (
                 <div className="flex justify-between">
                   <span className="text-[#86868b]">Patient Phone:</span>
-                  <span className="font-semibold text-[#1d1d1f]">{bookedPass.patientPhone}</span>
+                  <span className="font-semibold text-[#1d1d1f] tabular-nums">{bookedPass.patientPhone}</span>
                 </div>
               )}
               <div className="flex justify-between">
@@ -2262,7 +2280,7 @@ export const ReceptionistDashboard: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex gap-2.5">
               <AppleButton
                 variant="secondary"
                 size="md"
@@ -2354,16 +2372,15 @@ export const ReceptionistDashboard: React.FC = () => {
       {/* Mandatory Password Change Modal for Provisioned Accounts */}
       {user?.mustChangePassword && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-md animate-fadeIn print:hidden">
-          <div className="bg-white rounded-t-[28px] sm:rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-5 sm:p-8 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-8 shadow-2xl relative text-left max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 duration-300">
-            {/* Apple Drag Handle Pill */}
+          <div className="bg-white rounded-t-[28px] sm:rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-5 sm:p-6 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-6 shadow-apple-float relative text-left max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 duration-300">
             <div className="sm:hidden w-10 h-1 bg-[#d2d2d7] rounded-full mx-auto mb-3" />
-            <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center mx-auto mb-4 border border-amber-500/20">
+            <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto mb-4 border border-amber-200/80">
               <ShieldCheck className="w-6 h-6" />
             </div>
-            <h2 className="text-xl font-bold text-[#1d1d1f] text-center mb-1">
+            <h2 className="text-section-title text-[#1d1d1f] text-center mb-1">
               Update Temporary Password
             </h2>
-            <p className="text-xs text-[#86868b] text-center mb-6 leading-relaxed">
+            <p className="text-meta text-[#86868b] text-center mb-6 leading-relaxed">
               Your clinic administrator provisioned your account with a temporary password. For clinical data security, you must set a permanent password before accessing the receptionist desk.
             </p>
 
@@ -2376,7 +2393,7 @@ export const ReceptionistDashboard: React.FC = () => {
 
             <form onSubmit={handleChangePassword} className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
+                <label className="ui-label">
                   Current Temporary Password
                 </label>
                 <div className="relative">
@@ -2386,14 +2403,14 @@ export const ReceptionistDashboard: React.FC = () => {
                     value={currentPassword}
                     onChange={(e) => setCurrentPassword(e.target.value)}
                     placeholder="Enter temporary password"
-                    className="w-full h-11 px-3.5 pl-9 rounded-xl border border-[#e5e5ea] text-sm focus:outline-none focus:border-[#0066cc]"
+                    className="ui-input pl-9"
                   />
                   <Lock className="w-4 h-4 text-[#86868b] absolute left-3 top-3.5" />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
+                <label className="ui-label">
                   New Permanent Password (min. 8 characters)
                 </label>
                 <div className="relative">
@@ -2404,14 +2421,14 @@ export const ReceptionistDashboard: React.FC = () => {
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder="Enter new password (min. 8 characters)"
-                    className="w-full h-11 px-3.5 pl-9 rounded-xl border border-[#e5e5ea] text-sm focus:outline-none focus:border-[#0066cc]"
+                    className="ui-input pl-9"
                   />
                   <Lock className="w-4 h-4 text-[#86868b] absolute left-3 top-3.5" />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
+                <label className="ui-label">
                   Confirm New Password
                 </label>
                 <div className="relative">
@@ -2421,7 +2438,7 @@ export const ReceptionistDashboard: React.FC = () => {
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="Re-enter new password"
-                    className="w-full h-11 px-3.5 pl-9 rounded-xl border border-[#e5e5ea] text-sm focus:outline-none focus:border-[#0066cc]"
+                    className="ui-input pl-9"
                   />
                   <Lock className="w-4 h-4 text-[#86868b] absolute left-3 top-3.5" />
                 </div>
@@ -2432,7 +2449,7 @@ export const ReceptionistDashboard: React.FC = () => {
                 size="lg"
                 type="submit"
                 disabled={changingPassword}
-                className="w-full mt-2 shadow-sm"
+                className="w-full mt-2"
               >
                 {changingPassword ? 'Updating Password...' : 'Save & Unlock Receptionist Desk'}
               </AppleButton>
@@ -2440,6 +2457,7 @@ export const ReceptionistDashboard: React.FC = () => {
           </div>
         </div>
       )}
+
       {/* Clinic QR Check-In Standee Modal */}
       {data?.clinic && (
         <ClinicQrStandeeModal
@@ -2456,23 +2474,23 @@ export const ReceptionistDashboard: React.FC = () => {
       {/* Reschedule Appointment Modal */}
       {rescheduleTarget && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn print:hidden">
-          <div className="bg-white rounded-t-[28px] sm:rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-6 sm:p-7 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-7 shadow-2xl space-y-5 max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 duration-300">
-            {/* Apple Drag Handle Pill */}
+          <div className="bg-white rounded-t-[28px] sm:rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-5 sm:p-6 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-6 shadow-apple-float space-y-5 max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 duration-300">
             <div className="sm:hidden w-10 h-1 bg-[#d2d2d7] rounded-full mx-auto mb-3" />
-            <div className="flex items-center justify-between pb-3 border-b border-[#f0f0f0]">
-              <div className="flex items-center gap-2">
-                <div className="w-9 h-9 rounded-full bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center">
-                  <Calendar className="w-5 h-5" />
+            <div className="flex items-start justify-between pb-4 border-b border-[#f0f0f2]">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center shrink-0">
+                  <Calendar className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-base font-semibold text-[#1d1d1f]">Reschedule Appointment</h3>
-                  <p className="text-xs text-[#86868b]">Shift patient visit to another date or shift</p>
+                  <h3 className="text-card-title text-[#1d1d1f]">Reschedule Appointment</h3>
+                  <p className="text-meta text-[#86868b] mt-0.5">Shift patient visit to another date or shift</p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setRescheduleTarget(null)}
-                className="text-[#86868b] hover:text-[#1d1d1f] p-1.5 rounded-full hover:bg-black/5 cursor-pointer"
+                className="w-8 h-8 flex items-center justify-center text-[#86868b] hover:text-[#1d1d1f] rounded-full hover:bg-[#f5f5f7] cursor-pointer"
+                aria-label="Close"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -2490,7 +2508,7 @@ export const ReceptionistDashboard: React.FC = () => {
               </div>
               <div className="flex justify-between">
                 <span className="text-[#86868b]">Current Schedule:</span>
-                <span className="font-medium text-[#1d1d1f]">
+                <span className="font-medium text-[#1d1d1f] tabular-nums">
                   {rescheduleTarget.currentDate}
                   {rescheduleTarget.currentQueueNumber ? ` (Token #${rescheduleTarget.currentQueueNumber})` : ''}
                 </span>
@@ -2499,7 +2517,7 @@ export const ReceptionistDashboard: React.FC = () => {
 
             {/* Date Selection */}
             <div>
-              <label className="text-xs font-semibold text-[#1d1d1f] block mb-1.5">
+              <label className="ui-label">
                 New Appointment Date
               </label>
               <input
@@ -2507,9 +2525,9 @@ export const ReceptionistDashboard: React.FC = () => {
                 min={getLocalDateString()}
                 value={rescheduleDate}
                 onChange={(e) => setRescheduleDate(e.target.value)}
-                className="w-full h-10 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
+                className="ui-input"
               />
-              <div className="flex gap-2 mt-2">
+              <div className="flex gap-2 mt-2.5">
                 <button
                   type="button"
                   onClick={() => {
@@ -2517,7 +2535,7 @@ export const ReceptionistDashboard: React.FC = () => {
                     d.setDate(d.getDate() + 1);
                     setRescheduleDate(getLocalDateString(d));
                   }}
-                  className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-[#f5f5f7] hover:bg-gray-200 text-[#1d1d1f] border border-[#e5e5ea] transition-all cursor-pointer"
+                  className="px-3 py-1 rounded-full text-[11px] font-medium bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] transition-all cursor-pointer"
                 >
                   Tomorrow
                 </button>
@@ -2528,7 +2546,7 @@ export const ReceptionistDashboard: React.FC = () => {
                     d.setDate(d.getDate() + 2);
                     setRescheduleDate(getLocalDateString(d));
                   }}
-                  className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-[#f5f5f7] hover:bg-gray-200 text-[#1d1d1f] border border-[#e5e5ea] transition-all cursor-pointer"
+                  className="px-3 py-1 rounded-full text-[11px] font-medium bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] transition-all cursor-pointer"
                 >
                   Day After Tomorrow
                 </button>
@@ -2541,13 +2559,13 @@ export const ReceptionistDashboard: React.FC = () => {
               if (!doc || !doc.slots || doc.slots.length <= 1) return null;
               return (
                 <div>
-                  <label className="text-xs font-semibold text-[#1d1d1f] block mb-1.5">
+                  <label className="ui-label">
                     Select Consultation Shift
                   </label>
                   <select
                     value={rescheduleSlotId}
                     onChange={(e) => setRescheduleSlotId(e.target.value)}
-                    className="w-full h-10 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
+                    className="ui-select"
                   >
                     <option value="">Standard Hours / Any Shift</option>
                     {doc.slots.map((s) => (
@@ -2560,7 +2578,7 @@ export const ReceptionistDashboard: React.FC = () => {
               );
             })()}
 
-            <div className="p-3 rounded-xl bg-blue-50/60 border border-blue-100 text-[11px] text-blue-900 leading-relaxed">
+            <div className="p-3.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-[12px] text-[#86868b] leading-relaxed">
               Upon rescheduling, the system will allocate a new consecutive queue token on the chosen date and automatically dispatch an SMS/in-app alert to the patient.
             </div>
 
@@ -2571,12 +2589,12 @@ export const ReceptionistDashboard: React.FC = () => {
               </div>
             )}
 
-            <div className="flex gap-2.5 pt-2">
+            <div className="flex gap-2.5 pt-3 border-t border-[#f0f0f2]">
               <AppleButton
                 variant="secondary"
                 size="md"
                 onClick={() => setRescheduleTarget(null)}
-                className="flex-1 text-xs"
+                className="flex-1"
                 disabled={rescheduling}
               >
                 Cancel
@@ -2585,7 +2603,7 @@ export const ReceptionistDashboard: React.FC = () => {
                 variant="primary"
                 size="md"
                 onClick={handleConfirmReschedule}
-                className="flex-1 text-xs bg-[#0066cc] hover:bg-[#0071e3] shadow-none"
+                className="flex-1"
                 disabled={rescheduling}
               >
                 {rescheduling ? 'Rescheduling...' : 'Confirm Shift'}

@@ -370,67 +370,64 @@ export const ClinicDashboard: React.FC = () => {
         clinic?.city ? ` • ${clinic.city}` : ''
       }${clinic?.state ? `, ${clinic.state}` : ''}`}
       headerAction={
-        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+        <div className="flex flex-wrap items-center gap-2">
           <AppleButton
             variant="secondary"
             size="sm"
             onClick={() => setShowPosterModal(true)}
-            className="flex items-center gap-1.5 text-xs"
           >
             <QrCode className="w-3.5 h-3.5 text-[#0066cc]" />
-            <span className="hidden xs:inline">Check-In</span> Poster
+            <span><span className="hidden xs:inline">Check-In </span>Poster</span>
           </AppleButton>
           <AppleButton
             variant="secondary"
             size="sm"
             onClick={() => setShowRecModal(true)}
-            className="flex items-center gap-1.5 text-xs"
           >
             <UserCheck className="w-3.5 h-3.5" />
-            <span className="hidden xs:inline">Provision</span> Receptionist
+            <span><span className="hidden xs:inline">Provision </span>Receptionist</span>
           </AppleButton>
           <AppleButton
             variant="primary"
             size="sm"
             onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-1.5 shadow-sm text-xs"
           >
             <UserPlus className="w-3.5 h-3.5" />
-            Invite Doctor
+            <span>Invite Doctor</span>
           </AppleButton>
         </div>
       }
     >
-      <div className="space-y-6 sm:space-y-8">
+      <div className="space-y-6">
         {/* Verification Warning if clinic not yet verified or suspended */}
         {clinic?.verificationStatus === 'SUSPENDED' && (
-          <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 text-xs flex items-start gap-3 shadow-xs">
-            <ShieldAlert className="w-5 h-5 text-rose-600 flex-shrink-0 mt-0.5" />
+          <div className="p-4 rounded-[16px] bg-rose-50 border border-rose-200 text-rose-900 text-xs flex items-start gap-3">
+            <ShieldAlert className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
             <div>
-              <div className="font-semibold text-rose-900">Clinic Facility License Suspended</div>
-              <p className="text-rose-800 text-[11px] mt-0.5">
+              <div className="font-semibold text-sm text-rose-900">Clinic Facility License Suspended</div>
+              <p className="text-rose-800 text-xs mt-0.5 leading-relaxed">
                 Your facility license has been suspended by administration. Doctors cannot accept new affiliations or clinic bookings until license reinstatement.
               </p>
             </div>
           </div>
         )}
         {clinic?.verificationStatus === 'REJECTED' && (
-          <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 text-xs flex items-start gap-3 shadow-xs">
-            <ShieldAlert className="w-5 h-5 text-rose-600 flex-shrink-0 mt-0.5" />
+          <div className="p-4 rounded-[16px] bg-rose-50 border border-rose-200 text-rose-900 text-xs flex items-start gap-3">
+            <ShieldAlert className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
             <div>
-              <div className="font-semibold text-rose-900">Clinic Registration Application Rejected</div>
-              <p className="text-rose-800 text-[11px] mt-0.5">
+              <div className="font-semibold text-sm text-rose-900">Clinic Registration Application Rejected</div>
+              <p className="text-rose-800 text-xs mt-0.5 leading-relaxed">
                 Your clinic registration credentials were not approved. Please contact platform administration to review your facility details.
               </p>
             </div>
           </div>
         )}
         {((clinic?.verificationStatus === 'PENDING' || clinic?.isVerified === false) && clinic?.verificationStatus !== 'SUSPENDED' && clinic?.verificationStatus !== 'REJECTED') && (
-          <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start gap-3 shadow-xs">
-            <ShieldAlert className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+          <div className="p-4 rounded-[16px] bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start gap-3">
+            <ShieldAlert className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
             <div>
-              <div className="font-semibold text-amber-900">Clinic Pending Administrative Verification</div>
-              <p className="text-amber-800 text-[11px] mt-0.5">
+              <div className="font-semibold text-sm text-amber-900">Clinic Pending Administrative Verification</div>
+              <p className="text-amber-800 text-xs mt-0.5 leading-relaxed">
                 Your clinic profile is currently pending review by MediArca administration. While unverified, your clinic will not appear in public clinic searches or doctor affiliation directories. You can still onboard doctors, manage front desk staff, and configure operations.
               </p>
             </div>
@@ -439,14 +436,15 @@ export const ClinicDashboard: React.FC = () => {
 
         {/* Banner feedback */}
         {successMsg && (
-          <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center justify-between shadow-xs">
+          <div className="p-4 rounded-[16px] bg-emerald-50/80 border border-emerald-200 text-emerald-900 text-xs flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-              <span>{successMsg}</span>
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span className="font-medium">{successMsg}</span>
             </div>
             <button
+              type="button"
               onClick={() => setSuccessMsg(null)}
-              className="text-emerald-700 hover:text-emerald-900"
+              className="text-emerald-700 hover:text-emerald-900 p-1 rounded-full cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
@@ -454,75 +452,79 @@ export const ClinicDashboard: React.FC = () => {
         )}
 
         {error && (
-          <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center justify-between shadow-xs">
+          <div className="p-4 rounded-[16px] bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 flex-shrink-0" />
-              <span>{error}</span>
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span className="font-medium">{error}</span>
             </div>
-            <button onClick={() => setError(null)} className="text-rose-700 hover:text-rose-900">
+            <button
+              type="button"
+              onClick={() => setError(null)}
+              className="text-rose-700 hover:text-rose-900 p-1 rounded-full cursor-pointer"
+            >
               <X className="w-4 h-4" />
             </button>
           </div>
         )}
 
         {/* 1. Clinic Metrics Overview */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-          <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-4 sm:p-6 shadow-xs">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-semibold text-[#86868b] uppercase tracking-wider">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="apple-card p-5 flex items-center justify-between">
+            <div>
+              <span className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-wider block">
                 Affiliated Doctors
               </span>
-              <div className="w-8 h-8 rounded-xl bg-blue-50 text-[#0066cc] flex items-center justify-center">
-                <Users className="w-4 h-4" />
+              <div className="text-2xl sm:text-3xl font-bold text-[#1d1d1f] mt-1 tracking-tight tabular-nums">
+                {data?.totalDoctors ?? doctors.length}
               </div>
+              <p className="text-meta mt-0.5">Practitioners linked to this facility</p>
             </div>
-            <div className="text-2xl sm:text-3xl font-semibold text-[#1d1d1f]">
-              {data?.totalDoctors ?? doctors.length}
+            <div className="w-10 h-10 rounded-[12px] bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center shrink-0">
+              <Users className="w-5 h-5" />
             </div>
-            <p className="text-[11px] text-[#86868b] mt-1">Practitioners linked to this facility</p>
           </div>
 
-          <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-4 sm:p-6 shadow-xs">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-semibold text-[#86868b] uppercase tracking-wider">
+          <div className="apple-card p-5 flex items-center justify-between">
+            <div>
+              <span className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-wider block">
                 Clinic Appointments
               </span>
-              <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-                <CalendarCheck className="w-4 h-4" />
+              <div className="text-2xl sm:text-3xl font-bold text-[#1d1d1f] mt-1 tracking-tight tabular-nums">
+                {data?.totalBookings ?? 0}
               </div>
+              <p className="text-meta mt-0.5">Booked across all doctors here</p>
             </div>
-            <div className="text-2xl sm:text-3xl font-semibold text-[#1d1d1f]">
-              {data?.totalBookings ?? 0}
+            <div className="w-10 h-10 rounded-[12px] bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center shrink-0">
+              <CalendarCheck className="w-5 h-5" />
             </div>
-            <p className="text-[11px] text-[#86868b] mt-1">Booked at this facility across all doctors</p>
           </div>
 
-          <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-4 sm:p-6 shadow-xs">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-semibold text-[#86868b] uppercase tracking-wider">
+          <div className="apple-card p-5 flex items-center justify-between">
+            <div>
+              <span className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-wider block">
                 Clinic Revenue
               </span>
-              <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                <IndianRupee className="w-4 h-4" />
+              <div className="text-2xl sm:text-3xl font-bold text-[#1d1d1f] mt-1 tracking-tight tabular-nums">
+                ₹{data?.totalRevenue ? data.totalRevenue.toLocaleString() : '0'}
               </div>
+              <p className="text-meta mt-0.5">
+                Generated specifically at this facility
+              </p>
             </div>
-            <div className="text-2xl sm:text-3xl font-semibold text-[#1d1d1f]">
-              ₹{data?.totalRevenue ? data.totalRevenue.toLocaleString() : '0'}
+            <div className="w-10 h-10 rounded-[12px] bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center shrink-0">
+              <IndianRupee className="w-5 h-5" />
             </div>
-            <p className="text-[11px] text-[#86868b] mt-1">
-              Generated specifically at this facility
-            </p>
           </div>
         </div>
 
         {/* 2. Affiliated Doctors Section */}
-        <div id="practitioners-section" className="scroll-mt-6 bg-white rounded-[20px] sm:rounded-[24px] border border-[#e5e5ea] p-4 sm:p-8 shadow-xs">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-[#f0f0f0] mb-6">
+        <div id="practitioners-section" className="scroll-mt-6 apple-card p-5 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#e5e5ea]/70 mb-6">
             <div>
-              <h2 className="text-lg font-semibold text-[#1d1d1f] tracking-tight">
+              <h2 className="text-section-title">
                 Affiliated Doctors
               </h2>
-              <p className="text-xs text-[#86868b] mt-0.5">
+              <p className="text-meta mt-0.5">
                 Doctors and revenue generated at {clinic?.clinicName || 'this clinic'}.
               </p>
             </div>
@@ -530,58 +532,58 @@ export const ClinicDashboard: React.FC = () => {
               variant="secondary"
               size="sm"
               onClick={() => setShowAddModal(true)}
-              className="flex items-center gap-1.5 self-start sm:self-auto"
+              className="self-start sm:self-auto"
             >
               <UserPlus className="w-3.5 h-3.5" />
-              Invite Doctor
+              <span>Invite Doctor</span>
             </AppleButton>
           </div>
 
           {/* Incoming Doctor Affiliation Requests */}
           {data?.incomingRequests && data.incomingRequests.length > 0 && (
-            <div className="mb-6 p-4 rounded-2xl bg-[#0066cc]/5 border-2 border-[#0066cc]/20 animate-fadeIn">
+            <div className="mb-6 p-4 rounded-[16px] bg-[#0066cc]/5 border border-[#0066cc]/20 animate-fadeIn">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <Stethoscope className="w-4 h-4 text-[#0066cc]" />
-                  <h3 className="text-sm font-semibold text-[#1d1d1f]">
+                  <h3 className="text-card-title">
                     Incoming Doctor Affiliation Requests ({data.incomingRequests.length})
                   </h3>
                 </div>
-                <span className="text-[11px] text-[#0066cc] font-medium">Requires Clinic Approval</span>
+                <span className="text-[11px] text-[#0066cc] font-semibold">Requires Clinic Approval</span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {data.incomingRequests.map((doc) => (
                   <div
                     key={doc.affiliationId || doc.doctorId}
-                    className="p-3.5 rounded-xl bg-white border border-[#e5e5ea] flex flex-col justify-between gap-3 shadow-xs"
+                    className="p-4 rounded-[14px] bg-white border border-[#e5e5ea] flex flex-col justify-between gap-3"
                   >
                     <div>
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-semibold text-xs text-[#1d1d1f]">{cleanDoctorName(doc.fullName)}</h4>
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 text-[#0066cc] font-medium">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h4 className="font-semibold text-sm text-[#1d1d1f]">{cleanDoctorName(doc.fullName)}</h4>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#0066cc]/10 text-[#0066cc] font-semibold border border-[#0066cc]/20">
                           {doc.specialty}
                         </span>
                       </div>
-                      <p className="text-[11px] text-[#86868b] mt-0.5">{doc.email}</p>
+                      <p className="text-meta mt-0.5">{doc.email}</p>
                     </div>
-                    <div className="flex items-center gap-2 pt-2 border-t border-[#f0f0f0]">
+                    <div className="flex items-center gap-2 pt-2.5 border-t border-[#e5e5ea]/70">
                       <AppleButton
                         size="sm"
                         variant="primary"
                         onClick={() => handleRespondDoctorAffiliation(doc.affiliationId!, 'ACCEPT')}
-                        className="flex-1 flex items-center justify-center gap-1 text-[11px] py-1.5"
+                        className="flex-1"
                       >
                         <Check className="w-3.5 h-3.5" />
-                        Accept
+                        <span>Accept</span>
                       </AppleButton>
                       <AppleButton
                         size="sm"
-                        variant="ghost"
+                        variant="destructive"
                         onClick={() => handleRespondDoctorAffiliation(doc.affiliationId!, 'REJECT')}
-                        className="flex-1 flex items-center justify-center gap-1 text-[11px] py-1.5 text-rose-600 hover:bg-rose-50"
+                        className="flex-1"
                       >
                         <X className="w-3.5 h-3.5" />
-                        Decline
+                        <span>Decline</span>
                       </AppleButton>
                     </div>
                   </div>
@@ -592,10 +594,10 @@ export const ClinicDashboard: React.FC = () => {
 
           {/* Pending Outgoing Doctor Requests */}
           {data?.outgoingRequests && data.outgoingRequests.length > 0 && (
-            <div className="mb-6 p-4 rounded-2xl bg-amber-50/50 border border-amber-200">
+            <div className="mb-6 p-4 rounded-[16px] bg-amber-50/50 border border-amber-200">
               <div className="flex items-center gap-2 mb-3">
                 <Clock3 className="w-4 h-4 text-amber-600" />
-                <h3 className="text-sm font-semibold text-[#1d1d1f]">
+                <h3 className="text-card-title">
                   Pending Doctor Invitations ({data.outgoingRequests.length})
                 </h3>
               </div>
@@ -603,21 +605,20 @@ export const ClinicDashboard: React.FC = () => {
                 {data.outgoingRequests.map((doc) => (
                   <div
                     key={doc.affiliationId || doc.doctorId}
-                    className="p-3 rounded-xl bg-white border border-amber-200 flex items-center justify-between text-xs"
+                    className="p-3.5 rounded-[14px] bg-white border border-amber-200 flex items-center justify-between text-xs"
                   >
                     <div>
                       <span className="font-semibold text-[#1d1d1f]">{cleanDoctorName(doc.fullName)}</span>
-                      <span className="text-[10px] text-[#86868b] block">{doc.specialty}</span>
+                      <span className="text-[11px] text-[#6e6e73] block">{doc.specialty}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300">
+                      <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
                         Awaiting Doctor
                       </span>
                       <AppleButton
                         size="sm"
-                        variant="ghost"
+                        variant="destructive"
                         onClick={() => handleCancelInvitation(doc.doctorId, doc.fullName)}
-                        className="text-rose-600 hover:bg-rose-50 text-[11px] h-7 px-2"
                       >
                         Cancel
                       </AppleButton>
@@ -629,24 +630,23 @@ export const ClinicDashboard: React.FC = () => {
           )}
 
           {loading ? (
-            <div className="py-12 text-center text-xs text-[#86868b]">Loading roster...</div>
+            <div className="py-12 text-center text-meta">Loading roster...</div>
           ) : doctors.length === 0 ? (
-            <div className="py-12 text-center">
-              <div className="w-12 h-12 rounded-2xl bg-[#f5f5f7] flex items-center justify-center mx-auto mb-3 text-[#86868b]">
-                <Stethoscope className="w-6 h-6" />
+            <div className="py-12 text-center bg-[#f5f5f7]/60 rounded-[16px] border border-dashed border-[#d2d2d7]">
+              <div className="w-11 h-11 rounded-[12px] bg-[#0066cc]/10 flex items-center justify-center mx-auto mb-3 text-[#0066cc]">
+                <Stethoscope className="w-5 h-5" />
               </div>
-              <h3 className="text-sm font-semibold text-[#1d1d1f]">No Doctors Affiliated Yet</h3>
-              <p className="text-xs text-[#86868b] max-w-sm mx-auto mt-1 mb-4">
+              <h3 className="text-card-title">No Doctors Affiliated Yet</h3>
+              <p className="text-meta max-w-sm mx-auto mt-1 mb-4">
                 Onboard doctors to your clinic to begin receiving facility appointments and tracking isolated clinic revenue.
               </p>
               <AppleButton
                 variant="primary"
                 size="sm"
                 onClick={() => setShowAddModal(true)}
-                className="inline-flex items-center gap-1.5"
               >
                 <UserPlus className="w-3.5 h-3.5" />
-                Onboard First Doctor
+                <span>Onboard First Doctor</span>
               </AppleButton>
             </div>
           ) : (
@@ -654,10 +654,10 @@ export const ClinicDashboard: React.FC = () => {
               {/* Mobile Doctor Cards (< 640px) */}
               <div className="block sm:hidden space-y-3">
                 {doctors.map((doc) => (
-                  <div key={doc.doctorId} className="p-4 rounded-2xl bg-[#fafafc] border border-[#e5e5ea] space-y-3">
+                  <div key={doc.doctorId} className="p-4 rounded-[16px] bg-[#f5f5f7]/60 border border-[#e5e5ea] space-y-3">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-white border border-[#e5e5ea] overflow-hidden flex-shrink-0">
+                        <div className="w-10 h-10 rounded-full bg-white border border-[#e5e5ea] overflow-hidden shrink-0">
                           {doc.avatarUrl ? (
                             <img src={getFileUrl(doc.avatarUrl)} alt={doc.fullName} className="w-full h-full object-cover" />
                           ) : (
@@ -668,39 +668,40 @@ export const ClinicDashboard: React.FC = () => {
                         </div>
                         <div>
                           <div className="font-semibold text-[#1d1d1f] text-sm">{doc.fullName}</div>
-                          <div className="text-[11px] text-[#86868b]">
+                          <div className="text-[11px] text-[#6e6e73]">
                             {formatDoctorDegrees(doc.qualifications)} • {doc.experienceYears} yrs exp.
                           </div>
                         </div>
                       </div>
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-50 text-[#0066cc] border border-blue-100 shrink-0">
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20 shrink-0">
                         {doc.specialty}
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-2 py-2 border-y border-[#f0f0f2] text-center">
+                    <div className="grid grid-cols-3 gap-2 py-2.5 border-y border-[#e5e5ea] text-center">
                       <div>
-                        <div className="text-[10px] text-[#86868b]">Consultation Fee</div>
-                        <div className="font-semibold text-xs text-[#1d1d1f] mt-0.5">₹{doc.consultationFee.toFixed(0)}</div>
+                        <div className="text-[10px] text-[#6e6e73] font-medium">Fee</div>
+                        <div className="font-semibold text-xs text-[#1d1d1f] mt-0.5 tabular-nums">₹{doc.consultationFee.toFixed(0)}</div>
+                      </div>
+                      <div className="border-x border-[#e5e5ea]">
+                        <div className="text-[10px] text-[#6e6e73] font-medium">Bookings</div>
+                        <div className="font-semibold text-xs text-[#1d1d1f] mt-0.5 tabular-nums">{doc.bookingCount}</div>
                       </div>
                       <div>
-                        <div className="text-[10px] text-[#86868b]">Bookings</div>
-                        <div className="font-semibold text-xs text-[#1d1d1f] mt-0.5">{doc.bookingCount}</div>
-                      </div>
-                      <div>
-                        <div className="text-[10px] text-[#86868b]">Revenue</div>
-                        <div className="font-semibold text-xs text-emerald-600 mt-0.5">₹{doc.revenue.toLocaleString()}</div>
+                        <div className="text-[10px] text-[#6e6e73] font-medium">Revenue</div>
+                        <div className="font-semibold text-xs text-[#0066cc] mt-0.5 tabular-nums">₹{doc.revenue.toLocaleString()}</div>
                       </div>
                     </div>
 
                     <div className="flex justify-end">
-                      <button
+                      <AppleButton
+                        variant="destructive"
+                        size="sm"
                         onClick={() => handleDetachDoctor(doc.doctorId, doc.fullName)}
-                        className="h-8 px-3 rounded-full text-xs font-medium text-rose-600 hover:bg-rose-50 border border-rose-200 transition-all active:scale-[0.98] inline-flex items-center gap-1.5"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                         <span>Detach Practitioner</span>
-                      </button>
+                      </AppleButton>
                     </div>
                   </div>
                 ))}
@@ -709,98 +710,99 @@ export const ClinicDashboard: React.FC = () => {
               {/* Desktop Table View (>= 640px) */}
               <div className="hidden sm:block overflow-x-auto">
                 <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="border-b border-[#e5e5ea] text-[#86868b] font-medium">
-                    <th className="pb-3 pl-2">Practitioner</th>
-                    <th className="pb-3">Specialty</th>
-                    <th className="pb-3">Fee</th>
-                    <th className="pb-3 text-center">Bookings Here</th>
-                    <th className="pb-3 text-right">Revenue Here</th>
-                    <th className="pb-3 text-right pr-2">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#f0f0f0]">
-                  {doctors.map((doc) => (
-                    <tr key={doc.doctorId} className="hover:bg-[#fafafc]">
-                      <td className="py-4 pl-2">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] overflow-hidden flex-shrink-0">
-                            {doc.avatarUrl ? (
-                              <img
-                                src={getFileUrl(doc.avatarUrl)}
-                                alt={doc.fullName}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center font-semibold text-xs text-[#0066cc]">
-                                {doc.fullName[0]}
-                              </div>
-                            )}
-                          </div>
-                          <div>
-                            <div className="font-semibold text-[#1d1d1f] text-sm">
-                              {doc.fullName}
-                            </div>
-                            <div className="text-[11px] text-[#86868b]">
-                              {formatDoctorDegrees(doc.qualifications)} • {doc.experienceYears} yrs exp.
-                            </div>
-                            <div className="text-[10px] text-[#86868b]">{doc.email}</div>
-                          </div>
-                        </div>
-                      </td>
-
-                      <td className="py-4">
-                        <span className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-blue-50 text-[#0066cc] border border-blue-100">
-                          {doc.specialty}
-                        </span>
-                      </td>
-
-                      <td className="py-4 font-medium text-[#1d1d1f]">
-                        ₹{doc.consultationFee.toFixed(0)}
-                      </td>
-
-                      <td className="py-4 text-center">
-                        <span className="font-semibold text-[#1d1d1f] text-sm">
-                          {doc.bookingCount}
-                        </span>
-                        <span className="text-[10px] text-[#86868b] block">
-                          ({doc.completedCount} completed)
-                        </span>
-                      </td>
-
-                      <td className="py-4 text-right">
-                        <span className="font-semibold text-emerald-600 text-sm">
-                          ₹{doc.revenue.toLocaleString()}
-                        </span>
-                        <span className="text-[10px] text-[#86868b] block">at this clinic</span>
-                      </td>
-
-                      <td className="py-4 text-right pr-2">
-                        <button
-                          onClick={() => handleDetachDoctor(doc.doctorId, doc.fullName)}
-                          className="px-3 py-1.5 rounded-full text-[11px] font-medium text-rose-600 hover:bg-rose-50 border border-rose-200 transition-all active:scale-[0.98] inline-flex items-center gap-1 shadow-2xs"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                          Detach
-                        </button>
-                      </td>
+                  <thead>
+                    <tr className="border-b border-[#e5e5ea] text-[11px] font-semibold uppercase tracking-wider text-[#6e6e73]">
+                      <th className="pb-3 pl-2">Practitioner</th>
+                      <th className="pb-3">Specialty</th>
+                      <th className="pb-3">Fee</th>
+                      <th className="pb-3 text-center">Bookings Here</th>
+                      <th className="pb-3 text-right">Revenue Here</th>
+                      <th className="pb-3 text-right pr-2">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </>
-        )}
+                  </thead>
+                  <tbody className="divide-y divide-[#e5e5ea]/60">
+                    {doctors.map((doc) => (
+                      <tr key={doc.doctorId} className="hover:bg-[#f5f5f7]/50 transition-colors">
+                        <td className="py-4 pl-2">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] overflow-hidden shrink-0">
+                              {doc.avatarUrl ? (
+                                <img
+                                  src={getFileUrl(doc.avatarUrl)}
+                                  alt={doc.fullName}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center font-semibold text-xs text-[#0066cc]">
+                                  {doc.fullName[0]}
+                                </div>
+                              )}
+                            </div>
+                            <div>
+                              <div className="font-semibold text-[#1d1d1f] text-sm">
+                                {doc.fullName}
+                              </div>
+                              <div className="text-[11px] text-[#6e6e73]">
+                                {formatDoctorDegrees(doc.qualifications)} • {doc.experienceYears} yrs exp.
+                              </div>
+                              <div className="text-[11px] text-[#86868b]">{doc.email}</div>
+                            </div>
+                          </div>
+                        </td>
+
+                        <td className="py-4">
+                          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20">
+                            {doc.specialty}
+                          </span>
+                        </td>
+
+                        <td className="py-4 font-semibold text-[#1d1d1f] tabular-nums">
+                          ₹{doc.consultationFee.toFixed(0)}
+                        </td>
+
+                        <td className="py-4 text-center">
+                          <span className="font-semibold text-[#1d1d1f] text-sm tabular-nums">
+                            {doc.bookingCount}
+                          </span>
+                          <span className="text-[11px] text-[#6e6e73] block">
+                            ({doc.completedCount} completed)
+                          </span>
+                        </td>
+
+                        <td className="py-4 text-right">
+                          <span className="font-semibold text-[#0066cc] text-sm tabular-nums">
+                            ₹{doc.revenue.toLocaleString()}
+                          </span>
+                          <span className="text-[11px] text-[#6e6e73] block">at this clinic</span>
+                        </td>
+
+                        <td className="py-4 text-right pr-2">
+                          <AppleButton
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDetachDoctor(doc.doctorId, doc.fullName)}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>Detach</span>
+                          </AppleButton>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Desk Receptionists & Front Staff Section */}
-        <div id="receptionists-section" className="scroll-mt-6 bg-white rounded-[20px] sm:rounded-[24px] border border-[#e5e5ea] p-4 sm:p-8 shadow-xs">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-[#f0f0f0] mb-6">
+        <div id="receptionists-section" className="scroll-mt-6 apple-card p-5 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#e5e5ea]/70 mb-6">
             <div>
-              <h2 className="text-lg font-semibold text-[#1d1d1f] tracking-tight">
+              <h2 className="text-section-title">
                 Desk Receptionists & Front Staff
               </h2>
-              <p className="text-xs text-[#86868b] mt-0.5">
+              <p className="text-meta mt-0.5">
                 Manage credentials and assign specific affiliated practitioners to each front desk receptionist.
               </p>
             </div>
@@ -808,25 +810,25 @@ export const ClinicDashboard: React.FC = () => {
               variant="secondary"
               size="sm"
               onClick={() => setShowRecModal(true)}
-              className="flex items-center gap-1.5 self-start sm:self-auto"
+              className="self-start sm:self-auto"
             >
               <UserCheck className="w-3.5 h-3.5" />
-              Provision Receptionist
+              <span>Provision Receptionist</span>
             </AppleButton>
           </div>
 
           {/* Incoming Receptionist Applications */}
           {data?.incomingReceptionists && data.incomingReceptionists.length > 0 && (
-            <div className="mb-6 p-5 rounded-2xl bg-amber-50/50 border border-amber-200">
+            <div className="mb-6 p-4 rounded-[16px] bg-amber-50/50 border border-amber-200">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" />
-                  <h3 className="text-sm font-semibold text-amber-900">
+                  <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                  <h3 className="text-card-title text-amber-900">
                     Incoming Receptionist Applications ({data.incomingReceptionists.length})
                   </h3>
                 </div>
                 <span className="text-[11px] font-medium text-amber-800">
-                  Staff requesting front desk access to your facility
+                  Staff requesting front desk access
                 </span>
               </div>
 
@@ -834,16 +836,16 @@ export const ClinicDashboard: React.FC = () => {
                 {data.incomingReceptionists.map((rec) => (
                   <div
                     key={rec.id}
-                    className="p-3.5 rounded-xl bg-white border border-amber-200/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs"
+                    className="p-3.5 rounded-[14px] bg-white border border-amber-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
                   >
                     <div>
                       <div className="font-semibold text-xs text-[#1d1d1f] flex items-center gap-2">
                         <span>{rec.fullName}</span>
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 text-amber-800 border border-amber-200">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-800 border border-amber-200">
                           Pending Approval
                         </span>
                       </div>
-                      <div className="text-[11px] text-[#86868b] mt-0.5">
+                      <div className="text-[11px] text-[#6e6e73] mt-0.5">
                         <span className="font-medium text-[#1d1d1f]">{rec.email}</span>
                         {rec.phone && <span> • {rec.phone}</span>}
                         <span> • Applied {new Date(rec.createdAt).toLocaleDateString()}</span>
@@ -851,27 +853,27 @@ export const ClinicDashboard: React.FC = () => {
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <button
-                        type="button"
+                      <AppleButton
+                        variant="destructive"
+                        size="sm"
                         disabled={processingRecId === rec.id}
                         onClick={() => handleRespondReceptionist(rec.id, 'REJECT')}
-                        className="px-3 py-1.5 rounded-full text-xs font-medium text-rose-600 hover:bg-rose-50 border border-rose-200 transition-all active:scale-[0.98] disabled:opacity-50"
                       >
                         Decline
-                      </button>
+                      </AppleButton>
 
-                      <button
-                        type="button"
+                      <AppleButton
+                        variant="primary"
+                        size="sm"
                         disabled={processingRecId === rec.id}
                         onClick={() => {
                           setApprovingRec({ id: rec.id, fullName: rec.fullName, email: rec.email });
                           setApprovalDoctorIds([]);
                         }}
-                        className="px-3.5 py-1.5 rounded-full text-xs font-semibold text-white bg-[#0066cc] hover:bg-[#0071e3] shadow-xs transition-all active:scale-[0.98] disabled:opacity-50 flex items-center gap-1.5"
                       >
                         <Check className="w-3.5 h-3.5" />
-                        Review & Assign Doctors
-                      </button>
+                        <span>Review & Assign Doctors</span>
+                      </AppleButton>
                     </div>
                   </div>
                 ))}
@@ -880,22 +882,21 @@ export const ClinicDashboard: React.FC = () => {
           )}
 
           {(!data?.receptionists || data.receptionists.length === 0) ? (
-            <div className="py-12 text-center">
-              <div className="w-12 h-12 rounded-2xl bg-[#f5f5f7] flex items-center justify-center mx-auto mb-3 text-[#86868b]">
-                <UserCheck className="w-6 h-6" />
+            <div className="py-12 text-center bg-[#f5f5f7]/60 rounded-[16px] border border-dashed border-[#d2d2d7]">
+              <div className="w-11 h-11 rounded-[12px] bg-[#0066cc]/10 flex items-center justify-center mx-auto mb-3 text-[#0066cc]">
+                <UserCheck className="w-5 h-5" />
               </div>
-              <h3 className="text-sm font-semibold text-[#1d1d1f]">No Receptionists Provisioned</h3>
-              <p className="text-xs text-[#86868b] max-w-sm mx-auto mt-1 mb-4">
+              <h3 className="text-card-title">No Receptionists Provisioned</h3>
+              <p className="text-meta max-w-sm mx-auto mt-1 mb-4">
                 Provision secure login credentials for your reception staff. You can configure which doctors each receptionist manages appointments for.
               </p>
               <AppleButton
                 variant="primary"
                 size="sm"
                 onClick={() => setShowRecModal(true)}
-                className="inline-flex items-center gap-1.5"
               >
                 <UserCheck className="w-3.5 h-3.5" />
-                Provision First Receptionist
+                <span>Provision First Receptionist</span>
               </AppleButton>
             </div>
           ) : (
@@ -903,23 +904,23 @@ export const ClinicDashboard: React.FC = () => {
               {/* Mobile Receptionist Cards (< 640px) */}
               <div className="block sm:hidden space-y-3">
                 {data.receptionists.map((rec) => (
-                  <div key={rec.id} className="p-4 rounded-2xl bg-[#fafafc] border border-[#e5e5ea] space-y-3">
+                  <div key={rec.id} className="p-4 rounded-[16px] bg-[#f5f5f7]/60 border border-[#e5e5ea] space-y-3">
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         <h4 className="font-semibold text-[#1d1d1f] text-sm">{rec.fullName}</h4>
-                        <div className="text-[11px] text-[#86868b]">{rec.email}</div>
-                        {rec.phone && <div className="text-[11px] text-[#86868b]">{rec.phone}</div>}
+                        <div className="text-[11px] text-[#6e6e73]">{rec.email}</div>
+                        {rec.phone && <div className="text-[11px] text-[#6e6e73]">{rec.phone}</div>}
                       </div>
-                      <div className="text-[10px] text-[#86868b] shrink-0">
+                      <div className="text-[11px] text-[#6e6e73] shrink-0">
                         {new Date(rec.createdAt).toLocaleDateString()}
                       </div>
                     </div>
 
                     {/* Assigned Doctors */}
-                    <div className="pt-2 border-t border-[#f0f0f2]">
-                      <div className="text-[10px] text-[#86868b] mb-1.5 font-medium">Assigned Practitioners</div>
+                    <div className="pt-2.5 border-t border-[#e5e5ea]">
+                      <div className="text-[10px] text-[#6e6e73] uppercase tracking-wider mb-1.5 font-semibold">Assigned Practitioners</div>
                       {(!rec.doctors || rec.doctors.length === 0) ? (
-                        <span className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md font-medium">
+                        <span className="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full font-semibold">
                           No doctors assigned
                         </span>
                       ) : (
@@ -927,7 +928,7 @@ export const ClinicDashboard: React.FC = () => {
                           {rec.doctors.map((doc) => (
                             <span
                               key={doc.id}
-                              className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-50 text-[#0066cc] border border-blue-100"
+                              className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20"
                             >
                               {cleanDoctorName(doc.fullName)}
                             </span>
@@ -937,20 +938,22 @@ export const ClinicDashboard: React.FC = () => {
                     </div>
 
                     {/* Actions */}
-                    <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#f0f0f2]">
-                      <button
+                    <div className="flex items-center justify-end gap-2 pt-2.5 border-t border-[#e5e5ea]">
+                      <AppleButton
+                        variant="secondary"
+                        size="sm"
                         onClick={() => handleOpenEditAssignments(rec)}
-                        className="h-8 px-3 rounded-full text-xs font-medium text-[#0066cc] hover:bg-[#0066cc]/5 border border-[#0066cc]/30 transition-all active:scale-[0.98]"
                       >
                         Manage Doctors
-                      </button>
-                      <button
+                      </AppleButton>
+                      <AppleButton
+                        variant="destructive"
+                        size="sm"
                         onClick={() => handleRemoveReceptionist(rec.id, rec.fullName)}
-                        className="h-8 px-2.5 rounded-full text-rose-600 hover:bg-rose-50 border border-rose-200 transition-all active:scale-[0.98]"
                         title="Remove receptionist"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      </AppleButton>
                     </div>
                   </div>
                 ))}
@@ -959,123 +962,130 @@ export const ClinicDashboard: React.FC = () => {
               {/* Desktop Table View (>= 640px) */}
               <div className="hidden sm:block overflow-x-auto">
                 <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="border-b border-[#e5e5ea] text-[#86868b] font-medium">
-                    <th className="pb-3 pl-2">Receptionist</th>
-                    <th className="pb-3">Contact</th>
-                    <th className="pb-3">Assigned Doctors</th>
-                    <th className="pb-3 text-right pr-2">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#f0f0f0]">
-                  {data.receptionists.map((rec) => (
-                    <tr key={rec.id} className="hover:bg-[#fafafc]">
-                      <td className="py-4 pl-2">
-                        <div className="font-semibold text-[#1d1d1f]">{rec.fullName}</div>
-                        <div className="text-[10px] text-[#86868b]">
-                          Added {new Date(rec.createdAt).toLocaleDateString()}
-                        </div>
-                      </td>
-                      <td className="py-4 text-[#86868b]">
-                        <div className="text-[11px] text-[#1d1d1f] font-medium">{rec.email}</div>
-                        {rec.phone && <div className="text-[10px]">{rec.phone}</div>}
-                      </td>
-                      <td className="py-4">
-                        {(!rec.doctors || rec.doctors.length === 0) ? (
-                          <span className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md font-medium">
-                            No doctors assigned
-                          </span>
-                        ) : (
-                          <div className="flex flex-wrap gap-1.5 max-w-md">
-                            {rec.doctors.map((doc) => (
-                              <span
-                                key={doc.id}
-                                className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-50 text-[#0066cc] border border-blue-100"
-                              >
-                                {cleanDoctorName(doc.fullName)}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </td>
-                      <td className="py-4 text-right pr-2">
-                        <div className="inline-flex items-center gap-2">
-                          <button
-                            onClick={() => handleOpenEditAssignments(rec)}
-                            className="px-3 py-1.5 rounded-full text-[11px] font-medium text-[#0066cc] hover:bg-[#0066cc]/5 border border-[#0066cc]/30 transition-all active:scale-[0.98] shadow-2xs"
-                          >
-                            Manage Doctors
-                          </button>
-                          <button
-                            onClick={() => handleRemoveReceptionist(rec.id, rec.fullName)}
-                            className="p-1.5 rounded-full text-rose-600 hover:bg-rose-50 border border-rose-200 transition-all active:scale-[0.98] shadow-2xs"
-                            title="Remove receptionist"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </td>
+                  <thead>
+                    <tr className="border-b border-[#e5e5ea] text-[11px] font-semibold uppercase tracking-wider text-[#6e6e73]">
+                      <th className="pb-3 pl-2">Receptionist</th>
+                      <th className="pb-3">Contact</th>
+                      <th className="pb-3">Assigned Doctors</th>
+                      <th className="pb-3 text-right pr-2">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </>
-        )}
+                  </thead>
+                  <tbody className="divide-y divide-[#e5e5ea]/60">
+                    {data.receptionists.map((rec) => (
+                      <tr key={rec.id} className="hover:bg-[#f5f5f7]/50 transition-colors">
+                        <td className="py-4 pl-2">
+                          <div className="font-semibold text-[#1d1d1f] text-sm">{rec.fullName}</div>
+                          <div className="text-[11px] text-[#6e6e73]">
+                            Added {new Date(rec.createdAt).toLocaleDateString()}
+                          </div>
+                        </td>
+                        <td className="py-4 text-[#6e6e73]">
+                          <div className="text-xs text-[#1d1d1f] font-medium">{rec.email}</div>
+                          {rec.phone && <div className="text-[11px]">{rec.phone}</div>}
+                        </td>
+                        <td className="py-4">
+                          {(!rec.doctors || rec.doctors.length === 0) ? (
+                            <span className="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full font-semibold">
+                              No doctors assigned
+                            </span>
+                          ) : (
+                            <div className="flex flex-wrap gap-1.5 max-w-md">
+                              {rec.doctors.map((doc) => (
+                                <span
+                                  key={doc.id}
+                                  className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20"
+                                >
+                                  {cleanDoctorName(doc.fullName)}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </td>
+                        <td className="py-4 text-right pr-2">
+                          <div className="inline-flex items-center gap-2">
+                            <AppleButton
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => handleOpenEditAssignments(rec)}
+                            >
+                              Manage Doctors
+                            </AppleButton>
+                            <AppleButton
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => handleRemoveReceptionist(rec.id, rec.fullName)}
+                              title="Remove receptionist"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </AppleButton>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
         </div>
 
         {/* 4. Recent Clinic Appointments Table */}
-        <div id="appointments-section" className="scroll-mt-6 bg-white rounded-[20px] sm:rounded-[24px] border border-[#e5e5ea] p-4 sm:p-8 shadow-xs">
-          <h3 className="text-base font-semibold text-[#1d1d1f] mb-4">
-            Recent Consultations at this Facility
-          </h3>
+        <div id="appointments-section" className="scroll-mt-6 apple-card p-5 sm:p-6">
+          <div className="pb-4 border-b border-[#e5e5ea]/70 mb-5">
+            <h3 className="text-section-title">
+              Recent Consultations at this Facility
+            </h3>
+            <p className="text-meta mt-0.5">
+              Live and completed patient encounters across affiliated doctors.
+            </p>
+          </div>
           {(!data?.recentAppointments || data.recentAppointments.length === 0) ? (
-            <div className="py-12 text-center text-xs text-[#86868b]">
-              <CalendarCheck className="w-8 h-8 text-[#86868b] mx-auto mb-2 opacity-50" />
-              <p className="font-semibold text-[#1d1d1f]">No Facility Consultations Recorded Yet</p>
-              <p className="mt-1">When patients book appointments with affiliated practitioners at this clinic, they will appear here.</p>
+            <div className="py-12 text-center bg-[#f5f5f7]/60 rounded-[16px] border border-dashed border-[#d2d2d7]">
+              <CalendarCheck className="w-8 h-8 text-[#86868b] mx-auto mb-2 opacity-60" />
+              <p className="text-card-title">No Facility Consultations Recorded Yet</p>
+              <p className="text-meta mt-1">When patients book appointments with affiliated practitioners at this clinic, they will appear here.</p>
             </div>
           ) : (
             <>
               {/* Mobile Recent Appointments Cards (< 640px) */}
               <div className="block sm:hidden space-y-3">
                 {data.recentAppointments.map((appt) => (
-                  <div key={appt.id} className="p-4 rounded-2xl bg-[#fafafc] border border-[#e5e5ea] space-y-2">
+                  <div key={appt.id} className="p-4 rounded-[16px] bg-[#f5f5f7]/60 border border-[#e5e5ea] space-y-2.5">
                     <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <span className="px-2 py-0.5 rounded-lg bg-[#0066cc]/10 text-[#0066cc] font-bold text-xs">
+                      <div className="flex items-center gap-2.5">
+                        <span className="px-2.5 py-1 rounded-[8px] bg-[#0066cc]/10 text-[#0066cc] font-bold text-xs tabular-nums">
                           #{appt.queueNumber}
                         </span>
                         <div>
                           <div className="font-semibold text-sm text-[#1d1d1f]">{appt.patientName}</div>
-                          <div className="text-[10px] text-[#86868b]">{appt.patientPhone}</div>
+                          <div className="text-[11px] text-[#6e6e73]">{appt.patientPhone}</div>
                         </div>
                       </div>
                       <span
-                        className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                        className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold border ${
                           appt.status === 'COMPLETED'
-                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                             : appt.status === 'IN_CONSULTATION'
-                            ? 'bg-blue-50 text-[#0066cc] border border-blue-200'
+                            ? 'bg-[#0066cc]/10 text-[#0066cc] border-[#0066cc]/20'
                             : appt.status === 'WAITING'
-                            ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                            ? 'bg-amber-50 text-amber-800 border-amber-200'
                             : appt.status === 'EXPIRED'
-                            ? 'bg-slate-100 text-slate-600 border border-slate-200'
+                            ? 'bg-[#f5f5f7] text-[#6e6e73] border-[#e5e5ea]'
                             : appt.status === 'PENDING_APPROVAL'
-                            ? 'bg-amber-500/10 text-amber-800 border border-amber-500/20'
-                            : 'bg-gray-100 text-gray-600'
+                            ? 'bg-amber-50 text-amber-800 border-amber-200'
+                            : 'bg-[#f5f5f7] text-[#6e6e73] border-[#e5e5ea]'
                         }`}
                       >
                         {appt.status === 'PENDING_APPROVAL' ? 'Pending' : appt.status === 'EXPIRED' ? 'Expired' : appt.status}
                       </span>
                     </div>
 
-                    <div className="flex items-center justify-between text-xs text-[#86868b] pt-2 border-t border-[#f0f0f2]">
-                      <div>{appt.doctorName}</div>
-                      <div className="font-semibold text-[#1d1d1f]">₹{appt.fee}</div>
+                    <div className="flex items-center justify-between text-xs text-[#6e6e73] pt-2 border-t border-[#e5e5ea]">
+                      <div className="font-medium text-[#1d1d1f]">{appt.doctorName}</div>
+                      <div className="font-semibold text-[#1d1d1f] tabular-nums">₹{appt.fee}</div>
                     </div>
 
-                    <div className="flex items-center justify-between text-[11px] text-[#86868b]">
+                    <div className="flex items-center justify-between text-[11px] text-[#6e6e73]">
                       <div>{appt.date}</div>
                       <div>{appt.estimatedTime || appt.checkingWindow}</div>
                     </div>
@@ -1086,90 +1096,90 @@ export const ClinicDashboard: React.FC = () => {
               {/* Desktop Table View (>= 640px) */}
               <div className="hidden sm:block overflow-x-auto">
                 <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="border-b border-[#e5e5ea] text-[#86868b] font-medium">
-                    <th className="pb-3 pl-2">Token #</th>
-                    <th className="pb-3">Patient</th>
-                    <th className="pb-3">Doctor</th>
-                    <th className="pb-3">Date & Time</th>
-                    <th className="pb-3">Status</th>
-                    <th className="pb-3 text-right pr-2">Fee</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#f0f0f0]">
-                  {data.recentAppointments.map((appt) => (
-                    <tr key={appt.id} className="hover:bg-[#fafafc]">
-                      <td className="py-3 pl-2">
-                        <span className="font-bold text-[#0066cc]">
-                          #{appt.queueNumber}
-                        </span>
-                      </td>
-                      <td className="py-3">
-                        <div className="font-medium text-[#1d1d1f]">{appt.patientName}</div>
-                        <div className="text-[10px] text-[#86868b]">{appt.patientPhone}</div>
-                      </td>
-                      <td className="py-3 font-medium text-[#1d1d1f]">{appt.doctorName}</td>
-                      <td className="py-3 text-[#86868b]">
-                        <div>{appt.date}</div>
-                        <div className="text-[10px]">{appt.estimatedTime || appt.checkingWindow}</div>
-                      </td>
-                      <td className="py-3">
-                        <span
-                          className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
-                            appt.status === 'COMPLETED'
-                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                              : appt.status === 'IN_CONSULTATION'
-                              ? 'bg-blue-50 text-[#0066cc] border border-blue-200'
-                              : appt.status === 'WAITING'
-                              ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                              : appt.status === 'EXPIRED'
-                              ? 'bg-slate-100 text-slate-600 border border-slate-200'
-                              : appt.status === 'PENDING_APPROVAL'
-                              ? 'bg-amber-500/10 text-amber-800 border border-amber-500/20'
-                              : 'bg-gray-100 text-gray-600'
-                          }`}
-                        >
-                          {appt.status === 'PENDING_APPROVAL' ? 'Pending Desk' : appt.status === 'EXPIRED' ? 'Expired' : appt.status}
-                        </span>
-                      </td>
-                      <td className="py-3 text-right pr-2 font-medium text-[#1d1d1f]">
-                        ₹{appt.fee}
-                      </td>
+                  <thead>
+                    <tr className="border-b border-[#e5e5ea] text-[11px] font-semibold uppercase tracking-wider text-[#6e6e73]">
+                      <th className="pb-3 pl-2">Token #</th>
+                      <th className="pb-3">Patient</th>
+                      <th className="pb-3">Doctor</th>
+                      <th className="pb-3">Date & Time</th>
+                      <th className="pb-3">Status</th>
+                      <th className="pb-3 text-right pr-2">Fee</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </>
-        )}
+                  </thead>
+                  <tbody className="divide-y divide-[#e5e5ea]/60">
+                    {data.recentAppointments.map((appt) => (
+                      <tr key={appt.id} className="hover:bg-[#f5f5f7]/50 transition-colors">
+                        <td className="py-3.5 pl-2">
+                          <span className="font-bold text-[#0066cc] tabular-nums">
+                            #{appt.queueNumber}
+                          </span>
+                        </td>
+                        <td className="py-3.5">
+                          <div className="font-semibold text-[#1d1d1f]">{appt.patientName}</div>
+                          <div className="text-[11px] text-[#6e6e73]">{appt.patientPhone}</div>
+                        </td>
+                        <td className="py-3.5 font-medium text-[#1d1d1f]">{appt.doctorName}</td>
+                        <td className="py-3.5 text-[#6e6e73]">
+                          <div className="text-[#1d1d1f] font-medium">{appt.date}</div>
+                          <div className="text-[11px]">{appt.estimatedTime || appt.checkingWindow}</div>
+                        </td>
+                        <td className="py-3.5">
+                          <span
+                            className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold border ${
+                              appt.status === 'COMPLETED'
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                : appt.status === 'IN_CONSULTATION'
+                                ? 'bg-[#0066cc]/10 text-[#0066cc] border-[#0066cc]/20'
+                                : appt.status === 'WAITING'
+                                ? 'bg-amber-50 text-amber-800 border-amber-200'
+                                : appt.status === 'EXPIRED'
+                                ? 'bg-[#f5f5f7] text-[#6e6e73] border-[#e5e5ea]'
+                                : appt.status === 'PENDING_APPROVAL'
+                                ? 'bg-amber-50 text-amber-800 border-amber-200'
+                                : 'bg-[#f5f5f7] text-[#6e6e73] border-[#e5e5ea]'
+                            }`}
+                          >
+                            {appt.status === 'PENDING_APPROVAL' ? 'Pending Desk' : appt.status === 'EXPIRED' ? 'Expired' : appt.status}
+                          </span>
+                        </td>
+                        <td className="py-3.5 text-right pr-2 font-semibold text-[#1d1d1f] tabular-nums">
+                          ₹{appt.fee}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
       {/* Onboard Doctor Modal */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-t-[28px] sm:rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-5 sm:p-8 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-8 shadow-2xl max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 duration-300">
-            {/* Apple Drag Handle Pill */}
+          <div className="bg-white rounded-t-[28px] sm:rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-5 sm:p-6 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-6 shadow-apple-float max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 duration-300">
             <div className="sm:hidden w-10 h-1 bg-[#d2d2d7] rounded-full mx-auto mb-3" />
-            <div className="flex justify-between items-center pb-4 border-b border-[#f0f0f0]">
+            <div className="flex justify-between items-start pb-4 border-b border-[#f0f0f2]">
               <div>
-                <h3 className="text-base font-semibold text-[#1d1d1f]">Onboard Doctor</h3>
-                <p className="text-xs text-[#86868b] mt-0.5">
+                <h3 className="text-card-title text-[#1d1d1f]">Onboard Doctor</h3>
+                <p className="text-meta text-[#86868b] mt-0.5">
                   Link a verified practitioner to {clinic?.clinicName || 'your clinic'}
                 </p>
               </div>
               <button
                 disabled={adding}
                 onClick={() => setShowAddModal(false)}
-                className="p-1.5 rounded-full hover:bg-gray-100 text-[#86868b]"
+                className="w-8 h-8 rounded-full hover:bg-[#f5f5f7] flex items-center justify-center text-[#86868b] hover:text-[#1d1d1f] transition-colors cursor-pointer"
+                aria-label="Close"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleAddDoctor} className="space-y-4 pt-4">
+            <form onSubmit={handleAddDoctor} className="space-y-4 pt-5">
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
+                <label className="ui-label">
                   Doctor's Registered Email
                 </label>
                 <input
@@ -1179,7 +1189,7 @@ export const ClinicDashboard: React.FC = () => {
                   value={doctorEmail}
                   onChange={(e) => setDoctorEmail(e.target.value)}
                   placeholder="e.g. dr.sarah@mediarca.com"
-                  className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
+                  className="ui-input"
                 />
               </div>
 
@@ -1187,17 +1197,17 @@ export const ClinicDashboard: React.FC = () => {
               {allDoctors.length > 0 && (
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs font-medium text-[#86868b]">
+                    <label className="text-[12px] font-medium text-[#86868b]">
                       Or search & pick from verified doctors:
                     </label>
-                    <span className="text-[10px] text-[#86868b]">{allDoctors.length} available</span>
+                    <span className="text-[11px] text-[#86868b]">{allDoctors.length} available</span>
                   </div>
                   <input
                     type="text"
                     value={doctorSearchQuery}
                     onChange={(e) => setDoctorSearchQuery(e.target.value)}
                     placeholder="Filter by name, specialty, or email..."
-                    className="w-full h-8 px-3 rounded-full border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] mb-2"
+                    className="w-full h-9 px-3.5 rounded-full border border-[#e5e5ea] text-[13px] bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] mb-2.5"
                   />
                   <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
                     {allDoctors
@@ -1216,31 +1226,33 @@ export const ClinicDashboard: React.FC = () => {
                         return (
                           <div
                             key={d.id}
-                            className="p-2.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] flex items-center justify-between text-xs hover:border-[#0066cc]/30 transition-all"
+                            className="p-2.5 rounded-xl bg-[#f5f5f7]/80 border border-[#e5e5ea] flex items-center justify-between text-xs hover:border-[#0066cc]/30 transition-all"
                           >
                             <div
-                              className="cursor-pointer flex-1 mr-2"
+                              className="cursor-pointer flex-1 mr-2 min-w-0"
                               onClick={() => docEmail && setDoctorEmail(docEmail)}
                               title={docEmail ? 'Click to select email' : undefined}
                             >
-                              <div className="font-semibold text-[#1d1d1f] hover:text-[#0066cc] transition-colors">{docName}</div>
-                              <div className="text-[10px] text-[#86868b] mt-0.5">
+                              <div className="font-semibold text-[#1d1d1f] hover:text-[#0066cc] transition-colors truncate">{docName}</div>
+                              <div className="text-[11px] text-[#86868b] mt-0.5 truncate">
                                 {d.specialty}{docEmail ? ` • ${docEmail}` : ''}
                               </div>
                             </div>
                             {isAlreadyAdded ? (
-                              <span className="text-[10px] text-[#86868b] px-2.5 py-1 rounded-full bg-[#e5e5ea] font-medium shrink-0">
+                              <span className="text-[11px] text-[#86868b] px-2.5 py-1 rounded-full bg-[#e5e5ea]/70 font-medium shrink-0">
                                 Affiliated
                               </span>
                             ) : (
-                              <button
+                              <AppleButton
                                 type="button"
+                                variant="primary"
+                                size="sm"
                                 disabled={adding}
                                 onClick={() => handleQuickAdd(docEmail, d.id)}
-                                className="px-3 py-1 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-[11px] font-medium shadow-2xs cursor-pointer transition-all active:scale-[0.98] shrink-0"
+                                className="h-7 px-3 text-[11px] shrink-0"
                               >
                                 {adding ? 'Adding...' : 'Add'}
-                              </button>
+                              </AppleButton>
                             )}
                           </div>
                         );
@@ -1249,9 +1261,9 @@ export const ClinicDashboard: React.FC = () => {
                 </div>
               )}
 
-              <div className="pt-4 border-t border-[#f0f0f0] flex justify-end gap-2">
+              <div className="pt-4 border-t border-[#f0f0f2] flex justify-end gap-2.5">
                 <AppleButton
-                  variant="ghost"
+                  variant="secondary"
                   size="sm"
                   type="button"
                   disabled={adding}
@@ -1271,28 +1283,28 @@ export const ClinicDashboard: React.FC = () => {
       {/* Provision Receptionist Modal */}
       {showRecModal && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-t-[28px] sm:rounded-[24px] border border-[#e5e5ea] max-w-lg w-full p-5 sm:p-8 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-8 shadow-2xl max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 duration-300">
-            {/* Apple Drag Handle Pill */}
+          <div className="bg-white rounded-t-[28px] sm:rounded-[24px] border border-[#e5e5ea] max-w-lg w-full p-5 sm:p-6 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-6 shadow-apple-float max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 duration-300">
             <div className="sm:hidden w-10 h-1 bg-[#d2d2d7] rounded-full mx-auto mb-3" />
-            <div className="flex justify-between items-center pb-4 border-b border-[#f0f0f0]">
+            <div className="flex justify-between items-start pb-4 border-b border-[#f0f0f2]">
               <div>
-                <h3 className="text-base font-semibold text-[#1d1d1f]">Provision Desk Receptionist</h3>
-                <p className="text-xs text-[#86868b] mt-0.5">
+                <h3 className="text-card-title text-[#1d1d1f]">Provision Desk Receptionist</h3>
+                <p className="text-meta text-[#86868b] mt-0.5">
                   Create portal login credentials and assign practitioner management permissions.
                 </p>
               </div>
               <button
                 disabled={provisioning}
                 onClick={() => setShowRecModal(false)}
-                className="p-1.5 rounded-full hover:bg-gray-100 text-[#86868b]"
+                className="w-8 h-8 rounded-full hover:bg-[#f5f5f7] flex items-center justify-center text-[#86868b] hover:text-[#1d1d1f] transition-colors cursor-pointer"
+                aria-label="Close"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleProvisionReceptionist} className="space-y-4 pt-4">
+            <form onSubmit={handleProvisionReceptionist} className="space-y-4 pt-5">
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
+                <label className="ui-label">
                   Full Name *
                 </label>
                 <input
@@ -1302,13 +1314,13 @@ export const ClinicDashboard: React.FC = () => {
                   value={recFullName}
                   onChange={(e) => setRecFullName(e.target.value)}
                   placeholder="e.g. John Doe"
-                  className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
+                  className="ui-input"
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div>
-                  <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
+                  <label className="ui-label">
                     Login Email *
                   </label>
                   <input
@@ -1318,12 +1330,12 @@ export const ClinicDashboard: React.FC = () => {
                     value={recEmail}
                     onChange={(e) => setRecEmail(e.target.value)}
                     placeholder="desk@clinic.com"
-                    className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
+                    className="ui-input"
                   />
                 </div>
                 <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="block text-xs font-medium text-[#1d1d1f]">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="ui-label mb-0">
                       Temporary Password *
                     </label>
                     <button
@@ -1343,17 +1355,17 @@ export const ClinicDashboard: React.FC = () => {
                     onChange={(e) => setRecPassword(e.target.value)}
                     placeholder="Min. 8 characters"
                     minLength={8}
-                    className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
+                    className="ui-input"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
+                <label className="ui-label">
                   Mobile Number (Optional)
                 </label>
                 <div className="flex rounded-xl border border-[#e5e5ea] overflow-hidden focus-within:ring-2 focus-within:ring-[#0066cc]/20 focus-within:border-[#0066cc] bg-white transition-all h-11">
-                  <span className="inline-flex items-center px-3 bg-[#f5f5f7] border-r border-[#e5e5ea] text-[#1d1d1f] font-semibold text-[13px] select-none">
+                  <span className="inline-flex items-center px-3.5 bg-[#f5f5f7] border-r border-[#e5e5ea] text-[#1d1d1f] font-semibold text-[13px] select-none">
                     +91
                   </span>
                   <input
@@ -1367,21 +1379,21 @@ export const ClinicDashboard: React.FC = () => {
                     }}
                     placeholder="98765 43210"
                     maxLength={10}
-                    className="flex-1 h-full px-3.5 text-xs bg-transparent focus:outline-none text-[#1d1d1f] placeholder:text-[#86868b]"
+                    className="flex-1 h-full px-3.5 text-[14px] bg-transparent focus:outline-none text-[#1d1d1f] placeholder:text-[#86868b]"
                   />
                 </div>
               </div>
 
               {/* Doctor Assignments */}
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
+                <label className="ui-label">
                   Assign Doctors to this Receptionist Desk
                 </label>
-                <p className="text-[11px] text-[#86868b] mb-2">
+                <p className="text-[12px] text-[#86868b] mb-2.5">
                   Select which affiliated doctors this receptionist is authorized to manage queues and appointments for.
                 </p>
                 {doctors.length === 0 ? (
-                  <div className="p-3 bg-[#f5f5f7] rounded-xl text-xs text-[#86868b] text-center">
+                  <div className="p-3.5 bg-[#f5f5f7] rounded-xl text-xs text-[#86868b] text-center border border-[#e5e5ea]">
                     No affiliated doctors in this clinic yet. You can assign doctors later.
                   </div>
                 ) : (
@@ -1398,7 +1410,7 @@ export const ClinicDashboard: React.FC = () => {
                               setRecDoctorIds([...recDoctorIds, doc.doctorId]);
                             }
                           }}
-                          className={`p-2.5 rounded-xl border cursor-pointer transition-colors flex items-center justify-between text-xs ${
+                          className={`p-3 rounded-xl border cursor-pointer transition-colors flex items-center justify-between text-xs ${
                             isSelected
                               ? 'bg-[#0066cc]/5 border-[#0066cc]/40 text-[#0066cc]'
                               : 'bg-white border-[#e5e5ea] text-[#1d1d1f] hover:bg-[#fafafc]'
@@ -1415,11 +1427,11 @@ export const ClinicDashboard: React.FC = () => {
                               {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
                             </div>
                             <div>
-                              <div className="font-medium text-[#1d1d1f]">{cleanDoctorName(doc.fullName)}</div>
-                              <div className="text-[10px] text-[#86868b]">{doc.specialty}</div>
+                              <div className="font-semibold text-[#1d1d1f]">{cleanDoctorName(doc.fullName)}</div>
+                              <div className="text-[11px] text-[#86868b]">{doc.specialty}</div>
                             </div>
                           </div>
-                          <span className="text-[10px] text-[#86868b]">₹{doc.consultationFee}</span>
+                          <span className="text-[12px] font-medium text-[#86868b] tabular-nums">₹{doc.consultationFee}</span>
                         </div>
                       );
                     })}
@@ -1427,9 +1439,9 @@ export const ClinicDashboard: React.FC = () => {
                 )}
               </div>
 
-              <div className="pt-4 border-t border-[#f0f0f0] flex justify-end gap-2">
+              <div className="pt-4 border-t border-[#f0f0f2] flex justify-end gap-2.5">
                 <AppleButton
-                  variant="ghost"
+                  variant="secondary"
                   size="sm"
                   type="button"
                   disabled={provisioning}
@@ -1449,32 +1461,32 @@ export const ClinicDashboard: React.FC = () => {
       {/* Edit Assigned Doctors Modal */}
       {editingRec && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-t-[28px] sm:rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-5 sm:p-8 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-8 shadow-2xl max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 duration-300">
-            {/* Apple Drag Handle Pill */}
+          <div className="bg-white rounded-t-[28px] sm:rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-5 sm:p-6 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-6 shadow-apple-float max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 duration-300">
             <div className="sm:hidden w-10 h-1 bg-[#d2d2d7] rounded-full mx-auto mb-3" />
-            <div className="flex justify-between items-center pb-4 border-b border-[#f0f0f0]">
+            <div className="flex justify-between items-start pb-4 border-b border-[#f0f0f2]">
               <div>
-                <h3 className="text-base font-semibold text-[#1d1d1f]">Manage Doctor Desk Access</h3>
-                <p className="text-xs text-[#86868b] mt-0.5">
+                <h3 className="text-card-title text-[#1d1d1f]">Manage Doctor Desk Access</h3>
+                <p className="text-meta text-[#86868b] mt-0.5">
                   Configure active doctor assignments for {editingRec.fullName}.
                 </p>
               </div>
               <button
                 disabled={savingAssignments}
                 onClick={() => setEditingRec(null)}
-                className="p-1.5 rounded-full hover:bg-gray-100 text-[#86868b]"
+                className="w-8 h-8 rounded-full hover:bg-[#f5f5f7] flex items-center justify-center text-[#86868b] hover:text-[#1d1d1f] transition-colors cursor-pointer"
+                aria-label="Close"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleUpdateAssignedDoctors} className="space-y-4 pt-4">
-              <p className="text-xs text-[#86868b]">
+            <form onSubmit={handleUpdateAssignedDoctors} className="space-y-4 pt-5">
+              <p className="text-[13px] text-[#86868b]">
                 Select which affiliated doctors this receptionist is authorized to book walk-ins and manage queues for:
               </p>
 
               {doctors.length === 0 ? (
-                <div className="p-4 bg-[#f5f5f7] rounded-xl text-xs text-[#86868b] text-center">
+                <div className="p-4 bg-[#f5f5f7] rounded-xl text-xs text-[#86868b] text-center border border-[#e5e5ea]">
                   No affiliated doctors currently onboarded to this clinic.
                 </div>
               ) : (
@@ -1491,7 +1503,7 @@ export const ClinicDashboard: React.FC = () => {
                             setEditDoctorIds([...editDoctorIds, doc.doctorId]);
                           }
                         }}
-                        className={`p-2.5 rounded-xl border cursor-pointer transition-colors flex items-center justify-between text-xs ${
+                        className={`p-3 rounded-xl border cursor-pointer transition-colors flex items-center justify-between text-xs ${
                           isSelected
                             ? 'bg-[#0066cc]/5 border-[#0066cc]/40 text-[#0066cc]'
                             : 'bg-white border-[#e5e5ea] text-[#1d1d1f] hover:bg-[#fafafc]'
@@ -1508,20 +1520,20 @@ export const ClinicDashboard: React.FC = () => {
                             {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
                           </div>
                           <div>
-                            <div className="font-medium text-[#1d1d1f]">{cleanDoctorName(doc.fullName)}</div>
-                            <div className="text-[10px] text-[#86868b]">{doc.specialty}</div>
+                            <div className="font-semibold text-[#1d1d1f]">{cleanDoctorName(doc.fullName)}</div>
+                            <div className="text-[11px] text-[#86868b]">{doc.specialty}</div>
                           </div>
                         </div>
-                        <span className="text-[10px] text-[#86868b]">₹{doc.consultationFee}</span>
+                        <span className="text-[12px] font-medium text-[#86868b] tabular-nums">₹{doc.consultationFee}</span>
                       </div>
                     );
                   })}
                 </div>
               )}
 
-              <div className="pt-4 border-t border-[#f0f0f0] flex justify-end gap-2">
+              <div className="pt-4 border-t border-[#f0f0f2] flex justify-end gap-2.5">
                 <AppleButton
-                  variant="ghost"
+                  variant="secondary"
                   size="sm"
                   type="button"
                   disabled={savingAssignments}
@@ -1541,35 +1553,35 @@ export const ClinicDashboard: React.FC = () => {
       {/* Receptionist Credentials Handover Modal */}
       {createdCredentials && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-t-[28px] sm:rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-5 sm:p-8 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-8 shadow-2xl space-y-5 max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 duration-300">
-            {/* Apple Drag Handle Pill */}
+          <div className="bg-white rounded-t-[28px] sm:rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-5 sm:p-6 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-6 shadow-apple-float space-y-5 max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 duration-300">
             <div className="sm:hidden w-10 h-1 bg-[#d2d2d7] rounded-full mx-auto mb-3" />
-            <div className="flex justify-between items-start pb-4 border-b border-[#f0f0f0]">
+            <div className="flex justify-between items-start pb-4 border-b border-[#f0f0f2]">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
-                  <UserCheck className="w-6 h-6" />
+                <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200/80 text-amber-600 flex items-center justify-center shrink-0">
+                  <UserCheck className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-semibold text-[#1d1d1f]">Desk Credentials Ready</h3>
-                  <p className="text-xs text-[#86868b]">Provide these credentials to your front desk staff</p>
+                  <h3 className="text-card-title text-[#1d1d1f]">Desk Credentials Ready</h3>
+                  <p className="text-meta text-[#86868b] mt-0.5">Provide these credentials to your front desk staff</p>
                 </div>
               </div>
               <button
                 onClick={() => setCreatedCredentials(null)}
-                className="p-1 rounded-full text-[#86868b] hover:bg-gray-100 transition-colors"
+                className="w-8 h-8 rounded-full text-[#86868b] hover:bg-[#f5f5f7] hover:text-[#1d1d1f] flex items-center justify-center transition-colors cursor-pointer"
+                aria-label="Close"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200/80 text-amber-900 text-xs space-y-1 leading-relaxed">
+            <div className="p-3.5 rounded-xl bg-amber-50/70 border border-amber-200/80 text-amber-900 text-xs space-y-1 leading-relaxed">
               <p className="font-semibold">Handover Notice:</p>
-              <p className="text-[11px] text-amber-800">
+              <p className="text-[12px] text-amber-800">
                 Direct public receptionist signup is disabled. Your receptionist must log in using the credentials below via the Receptionist Portal link at the bottom of the landing page.
               </p>
             </div>
 
-            <div className="bg-[#f5f5f7] rounded-2xl p-4 border border-[#e5e5ea] space-y-3 text-xs">
+            <div className="bg-[#f5f5f7] rounded-xl p-4 border border-[#e5e5ea] space-y-3 text-xs">
               <div>
                 <span className="text-[10px] text-[#86868b] uppercase tracking-wider font-semibold block">
                   Staff Member Name
@@ -1583,7 +1595,7 @@ export const ClinicDashboard: React.FC = () => {
                 <span className="text-[10px] text-[#86868b] uppercase tracking-wider font-semibold block">
                   Login Email (Desk ID)
                 </span>
-                <span className="text-[#1d1d1f] select-all bg-white px-2.5 py-1 rounded-lg border border-[#e5e5ea] block mt-0.5 font-bold text-[#0066cc]">
+                <span className="text-[#0066cc] select-all bg-white px-3 py-1.5 rounded-lg border border-[#e5e5ea] block mt-1 font-semibold">
                   {createdCredentials.email}
                 </span>
               </div>
@@ -1592,7 +1604,7 @@ export const ClinicDashboard: React.FC = () => {
                 <span className="text-[10px] text-[#86868b] uppercase tracking-wider font-semibold block">
                   Temporary Password
                 </span>
-                <span className="text-[#1d1d1f] select-all bg-white px-2.5 py-1 rounded-lg border border-[#e5e5ea] block mt-0.5 font-bold">
+                <span className="text-[#1d1d1f] select-all bg-white px-3 py-1.5 rounded-lg border border-[#e5e5ea] block mt-1 font-semibold">
                   {createdCredentials.password}
                 </span>
               </div>
@@ -1607,7 +1619,7 @@ export const ClinicDashboard: React.FC = () => {
               </div>
             </div>
 
-            <div className="pt-2 flex flex-col sm:flex-row justify-end gap-2">
+            <div className="pt-2 flex flex-col sm:flex-row justify-end gap-2.5">
               <AppleButton
                 variant="secondary"
                 size="sm"
@@ -1645,36 +1657,36 @@ export const ClinicDashboard: React.FC = () => {
       {/* Review & Approve Incoming Receptionist Modal */}
       {approvingRec && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-t-[28px] sm:rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-5 sm:p-8 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-8 shadow-2xl max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 duration-300">
-            {/* Apple Drag Handle Pill */}
+          <div className="bg-white rounded-t-[28px] sm:rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-5 sm:p-6 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-6 shadow-apple-float max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 duration-300">
             <div className="sm:hidden w-10 h-1 bg-[#d2d2d7] rounded-full mx-auto mb-3" />
-            <div className="flex justify-between items-center pb-4 border-b border-[#f0f0f0]">
+            <div className="flex justify-between items-start pb-4 border-b border-[#f0f0f2]">
               <div>
-                <h3 className="text-base font-semibold text-[#1d1d1f]">Approve Receptionist Application</h3>
-                <p className="text-xs text-[#86868b] mt-0.5">
+                <h3 className="text-card-title text-[#1d1d1f]">Approve Receptionist Application</h3>
+                <p className="text-meta text-[#86868b] mt-0.5">
                   Assign practitioners to {approvingRec.fullName}
                 </p>
               </div>
               <button
                 disabled={processingRecId !== null}
                 onClick={() => setApprovingRec(null)}
-                className="p-1.5 rounded-full hover:bg-gray-100 text-[#86868b]"
+                className="w-8 h-8 rounded-full hover:bg-[#f5f5f7] flex items-center justify-center text-[#86868b] hover:text-[#1d1d1f] transition-colors cursor-pointer"
+                aria-label="Close"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
             <div className="py-4 space-y-4">
-              <div className="p-3 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-xs">
-                <div className="font-semibold text-[#1d1d1f]">{approvingRec.fullName}</div>
-                <div className="text-[11px] text-[#86868b] font-medium">{approvingRec.email}</div>
+              <div className="p-3.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-xs">
+                <div className="font-semibold text-[#1d1d1f] text-[13px]">{approvingRec.fullName}</div>
+                <div className="text-[12px] text-[#86868b] mt-0.5">{approvingRec.email}</div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#1d1d1f] mb-1.5">
+                <label className="ui-label">
                   Assign Doctors Managed by this Receptionist:
                 </label>
-                <p className="text-[11px] text-[#86868b] mb-3">
+                <p className="text-[12px] text-[#86868b] mb-3">
                   This receptionist will only be able to view schedules, book walk-ins, and manage queues for selected practitioners.
                 </p>
 
@@ -1698,26 +1710,26 @@ export const ClinicDashboard: React.FC = () => {
                                 setApprovalDoctorIds([...approvalDoctorIds, doc.doctorId]);
                               }
                             }}
-                            className={`p-2.5 rounded-xl border cursor-pointer transition-colors flex items-center justify-between text-xs ${
+                            className={`p-3 rounded-xl border cursor-pointer transition-colors flex items-center justify-between text-xs ${
                               isChecked
                                 ? 'bg-[#0066cc]/5 border-[#0066cc]'
                                 : 'bg-[#f5f5f7] border-[#e5e5ea] hover:bg-[#e8e8ed]'
                             }`}
                           >
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2.5">
                               <div
                                 className={`w-4 h-4 rounded flex items-center justify-center border transition-colors ${
                                   isChecked
                                     ? 'bg-[#0066cc] border-[#0066cc] text-white'
-                                    : 'bg-white border-gray-300'
+                                    : 'bg-white border-[#c7c7cc]'
                                 }`}
                               >
                                 {isChecked && <Check className="w-3 h-3" />}
                               </div>
-                              <span className="font-medium text-[#1d1d1f]">{cleanDoctorName(doc.fullName)}</span>
+                              <span className="font-semibold text-[#1d1d1f]">{cleanDoctorName(doc.fullName)}</span>
                               <span className="text-[11px] text-[#0066cc]">({doc.specialty})</span>
                             </div>
-                            <span className="text-[10px] text-[#86868b]">₹{doc.consultationFee}</span>
+                            <span className="text-[12px] font-medium text-[#86868b] tabular-nums">₹{doc.consultationFee}</span>
                           </div>
                         );
                       })}
@@ -1726,9 +1738,9 @@ export const ClinicDashboard: React.FC = () => {
               </div>
             </div>
 
-            <div className="pt-3 border-t border-[#f0f0f0] flex justify-end gap-2">
+            <div className="pt-4 border-t border-[#f0f0f2] flex justify-end gap-2.5">
               <AppleButton
-                variant="ghost"
+                variant="secondary"
                 size="sm"
                 type="button"
                 disabled={processingRecId !== null}
@@ -1753,12 +1765,12 @@ export const ClinicDashboard: React.FC = () => {
       {/* Clinic Physical Check-In QR Poster Modal */}
       {showPosterModal && clinic && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-t-[28px] sm:rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-5 sm:p-6 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-6 shadow-2xl relative max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 duration-300">
-            {/* Apple Drag Handle Pill */}
+          <div className="bg-white rounded-t-[28px] sm:rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-5 sm:p-6 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-6 shadow-apple-float relative max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 duration-300">
             <div className="sm:hidden w-10 h-1 bg-[#d2d2d7] rounded-full mx-auto mb-3" />
             <button
               onClick={() => setShowPosterModal(false)}
-              className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors"
+              className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center text-[#86868b] hover:text-[#1d1d1f] rounded-full hover:bg-[#f5f5f7] transition-colors cursor-pointer"
+              aria-label="Close"
             >
               <X className="w-4 h-4" />
             </button>
@@ -1767,17 +1779,17 @@ export const ClinicDashboard: React.FC = () => {
               <span className="text-[11px] font-semibold uppercase tracking-wider text-[#0066cc] bg-[#0066cc]/10 px-3 py-1 rounded-full border border-[#0066cc]/20 inline-block mb-3">
                 Official Clinic Arrival QR
               </span>
-              <h3 className="text-lg font-bold text-[#1d1d1f]">
+              <h3 className="text-section-title text-[#1d1d1f]">
                 {clinic.clinicName}
               </h3>
-              <p className="text-xs text-[#86868b] mt-0.5">
+              <p className="text-meta text-[#86868b] mt-0.5">
                 {clinic.address}{clinic.city ? `, ${clinic.city}` : ''}
               </p>
             </div>
 
             {/* Poster Card */}
-            <div id="clinic-printable-poster" className="my-6 p-6 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] text-center">
-              <div className="w-48 h-48 mx-auto bg-white p-3 rounded-2xl border border-[#e5e5ea] shadow-xs flex items-center justify-center">
+            <div id="clinic-printable-poster" className="my-5 p-6 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] text-center">
+              <div className="w-48 h-48 mx-auto bg-white p-3 rounded-2xl border border-[#e5e5ea] shadow-apple-xs flex items-center justify-center">
                 <img
                   src={`https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(
                     `${window.location.origin}${window.location.pathname}#/clinic-checkin?clinicId=${clinic.id}&code=${clinic.checkinCode || ''}`
@@ -1788,17 +1800,17 @@ export const ClinicDashboard: React.FC = () => {
               </div>
 
               <div className="mt-4">
-                <p className="text-xs font-semibold text-[#1d1d1f]">
+                <p className="text-[13px] font-semibold text-[#1d1d1f]">
                   Scan Upon Arrival at Clinic Desk
                 </p>
-                <p className="text-[11px] text-[#86868b] mt-1">
+                <p className="text-[12px] text-[#86868b] mt-1">
                   Patients scan this QR code with their mobile camera to verify physical presence in the waiting room.
                 </p>
               </div>
             </div>
 
             {/* Actions */}
-            <div className="flex items-center gap-2 pt-2 border-t border-[#f0f0f0]">
+            <div className="flex items-center gap-2.5 pt-3 border-t border-[#f0f0f2]">
               <AppleButton
                 variant="secondary"
                 size="sm"
@@ -1818,7 +1830,7 @@ export const ClinicDashboard: React.FC = () => {
                 variant="primary"
                 size="sm"
                 onClick={() => window.print()}
-                className="flex-1 flex items-center justify-center gap-1.5 shadow-sm"
+                className="flex-1 flex items-center justify-center gap-1.5"
               >
                 <Printer className="w-3.5 h-3.5" />
                 <span>Print Poster</span>
