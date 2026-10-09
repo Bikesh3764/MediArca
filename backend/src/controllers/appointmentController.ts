@@ -99,29 +99,38 @@ export const getQueuePreview = async (req: AuthRequest, res: Response): Promise<
       return;
     }
 
-    const doctor = await prisma.doctorProfile.findUnique({
-      where: { id: String(doctorId) },
-      include: {
-        user: { select: { fullName: true } },
-        clinics: {
-          where: { clinic: { isVerified: true, verificationStatus: 'VERIFIED' }, status: { in: ['ACTIVE', 'ACCEPTED'] } },
-          include: {
-            clinic: {
-              include: {
-                receptionists: {
-                  where: { status: 'ACTIVE' },
-                  select: {
-                    id: true,
-                    status: true,
-                    doctors: { select: { doctorId: true, status: true } },
-                  },
+    const doctorInclude = {
+      user: { select: { fullName: true } },
+      clinics: {
+        where: { clinic: { isVerified: true, verificationStatus: 'VERIFIED' }, status: { in: ['ACTIVE', 'ACCEPTED'] } },
+        include: {
+          clinic: {
+            include: {
+              receptionists: {
+                where: { status: 'ACTIVE' },
+                select: {
+                  id: true,
+                  status: true,
+                  doctors: { select: { doctorId: true, status: true } },
                 },
               },
             },
           },
         },
       },
+    };
+
+    let doctor = await prisma.doctorProfile.findUnique({
+      where: { id: String(doctorId) },
+      include: doctorInclude,
     });
+
+    if (!doctor) {
+      doctor = await prisma.doctorProfile.findUnique({
+        where: { userId: String(doctorId) },
+        include: doctorInclude,
+      });
+    }
 
     if (!doctor) {
       res.status(404).json({ success: false, message: 'Doctor not found' });
@@ -472,7 +481,7 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
       }
     }
 
-    const doctor = await prisma.doctorProfile.findUnique({
+    let doctor = await prisma.doctorProfile.findUnique({
       where: { id: doctorId },
       include: {
         user: { select: { fullName: true } },
@@ -482,6 +491,19 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
         },
       },
     });
+
+    if (!doctor) {
+      doctor = await prisma.doctorProfile.findUnique({
+        where: { userId: doctorId },
+        include: {
+          user: { select: { fullName: true } },
+          clinics: {
+            where: { clinic: { isVerified: true, verificationStatus: 'VERIFIED' }, status: { in: ['ACTIVE', 'ACCEPTED'] } },
+            include: { clinic: true },
+          },
+        },
+      });
+    }
 
     if (!doctor) {
       res.status(404).json({ success: false, message: 'Doctor not found' });

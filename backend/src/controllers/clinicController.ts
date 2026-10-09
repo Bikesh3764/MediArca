@@ -324,6 +324,16 @@ export const addDoctorToClinic = async (req: AuthRequest, res: Response): Promis
           },
         },
       });
+      if (!doctor) {
+        doctor = await prisma.doctorProfile.findUnique({
+          where: { userId: doctorId },
+          include: {
+            user: {
+              select: { id: true, fullName: true, email: true, phone: true, avatarUrl: true, role: true },
+            },
+          },
+        });
+      }
     } else if (doctorEmail) {
       const user = await prisma.user.findUnique({
         where: { email: doctorEmail.toLowerCase().trim() },

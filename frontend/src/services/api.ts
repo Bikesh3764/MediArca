@@ -768,6 +768,7 @@ export interface ReceptionistDashboardData {
 
 export interface ReceptionistQueueItem {
   id: string;
+  doctorId?: string;
   queueNumber: number;
   patientName: string;
   patientPhone: string;

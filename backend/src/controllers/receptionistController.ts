@@ -355,6 +355,7 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
         cancelledCount: appointments.filter((a) => a.status === 'CANCELLED').length,
         appointments: appointments.map((a) => ({
           id: a.id,
+          doctorId: a.doctorId,
           queueNumber: a.queueNumber,
           patientName: a.patientName || a.patient?.user?.fullName || 'Walk-in Patient',
           registeredUserName: a.patient?.user?.fullName,

@@ -319,9 +319,11 @@ export const callPatient = async (req: AuthRequest, res: Response): Promise<void
       ).catch(() => {});
     }
 
+    const patientDisplayName = updated.patientName || updated.patient?.user?.fullName || 'Patient';
+
     res.json({
       success: true,
-      message: `Queue #${updated.queueNumber} (${updated.patient.user.fullName}) is now in consultation`,
+      message: `Queue #${updated.queueNumber} (${patientDisplayName}) is now in consultation`,
       data: updated,
     });
   } catch (error: any) {

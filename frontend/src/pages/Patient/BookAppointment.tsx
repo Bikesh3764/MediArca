@@ -73,6 +73,9 @@ export const BookAppointment: React.FC = () => {
     ? selectedClinic.slots
     : (doctor ? parseDoctorSlots(doctor) : []);
 
+  const isSelectedSlotPassed = Boolean(queuePreview?.isPassed);
+  const isSelectedSlotFull = Boolean(queuePreview?.isFull);
+
   const attachedReceptionists = React.useMemo(() => {
     if (!doctor) return [];
     const list: Array<{ id: string; name: string; phone?: string; clinicName?: string }> = [];
@@ -224,6 +227,18 @@ export const BookAppointment: React.FC = () => {
       return;
     }
 
+    if (isSelectedSlotPassed) {
+      setError('This checking slot has already ended for today. Please pick an upcoming slot or a future date.');
+      setSubmitting(false);
+      return;
+    }
+
+    if (isSelectedSlotFull) {
+      setError('This checking slot has reached its maximum patient capacity. Please choose another shift or date.');
+      setSubmitting(false);
+      return;
+    }
+
     const isForOther = bookingFor === 'other';
     if (isForOther) {
       if (!patientName.trim()) {
@@ -299,9 +314,6 @@ export const BookAppointment: React.FC = () => {
       </div>
     );
   }
-
-  const isSelectedSlotPassed = Boolean(queuePreview?.isPassed);
-  const isSelectedSlotFull = Boolean(queuePreview?.isFull);
 
   // Receptionist Contact Info resolved for confirmation screen
   const primaryReceptionist = attachedReceptionists[0];
@@ -627,10 +639,10 @@ export const BookAppointment: React.FC = () => {
                   <button
                     key={s.id}
                     type="button"
-                    disabled={slotPassed}
+                    disabled={slotPassed || slotFull}
                     onClick={() => setSelectedSlotId(s.id)}
                     className={`p-3.5 rounded-2xl border text-left transition-all duration-150 cursor-pointer ${
-                      slotPassed
+                      slotPassed || slotFull
                         ? 'bg-[#f5f5f7] border-[#e5e5ea] opacity-60 cursor-not-allowed'
                         : isSelected
                         ? 'bg-white border-[#0066cc] ring-4 ring-[#0066cc]/10'

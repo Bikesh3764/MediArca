@@ -153,7 +153,7 @@ export const ClinicDashboard: React.FC = () => {
       setSuccessMsg(`Dr. ${docName} has been detached from your clinic.`);
       fetchClinicData();
     } catch (err: any) {
-      alert(err.message || 'Failed to detach doctor');
+      setError(err.message || 'Failed to detach doctor');
     }
   };
 

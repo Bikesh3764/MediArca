@@ -4,6 +4,8 @@ import {
   ReceptionistDashboardData,
   ReceptionistQueueItem,
   getLocalDateString,
+  getIndianTimeMinutes,
+  timeToMinutes,
   Appointment,
   getFileUrl,
   QueuePreview,
@@ -406,14 +408,12 @@ export const ReceptionistDashboard: React.FC = () => {
     if (appointmentDate === todayStr && slotId && activeSelectedDoctor?.slots) {
       const slotObj = activeSelectedDoctor.slots.find((s) => s.id === slotId);
       if (slotObj?.endTime) {
-        const now = new Date();
-        const currentHours = now.getHours();
-        const currentMinutes = now.getMinutes();
-        const [endH, endM] = slotObj.endTime.split(':').map((v) => parseInt(v, 10));
-        if (Number.isFinite(endH) && Number.isFinite(endM)) {
-          if (currentHours > endH || (currentHours === endH && currentMinutes >= endM)) {
-            return true;
-          }
+        const currentMinutes = getIndianTimeMinutes(new Date());
+        const startMins = timeToMinutes(slotObj.startTime || '00:00');
+        let endMins = timeToMinutes(slotObj.endTime);
+        if (endMins <= startMins) endMins += 24 * 60;
+        if (currentMinutes >= endMins) {
+          return true;
         }
       }
     }
@@ -496,6 +496,16 @@ export const ReceptionistDashboard: React.FC = () => {
       }
     }
 
+    if (isSelectedShiftEnded) {
+      setError('Selected checking shift has already ended for today. Please pick an upcoming shift or future date.');
+      return;
+    }
+
+    if (isSelectedShiftFull) {
+      setError('Selected checking shift has reached its maximum patient capacity. Please choose another shift or date.');
+      return;
+    }
+
     setBookingLoading(true);
     setError(null);
     try {
@@ -552,8 +562,11 @@ export const ReceptionistDashboard: React.FC = () => {
 
   // Handle status updates
   const handleStatusChange = async (appointmentId: string, status: string) => {
+    const targetAppt = queueAppointments.find((a) => a.id === appointmentId);
+    const apptDoctorId = targetAppt?.doctorId || (queueDoctorId !== 'all' ? queueDoctorId : undefined);
+    const targetDoctor = linkedDoctors.find((d) => d.doctorId === apptDoctorId);
+
     if (status === 'IN_CONSULTATION') {
-      const targetDoctor = linkedDoctors.find((d) => d.doctorId === queueDoctorId);
       if (targetDoctor?.cabinStatus && targetDoctor.cabinStatus !== 'IN_CABIN') {
         const awayMsg = targetDoctor.cabinStatus === 'STEPPED_OUT'
           ? `${cleanDoctorName(targetDoctor.fullName)} has stepped out${targetDoctor.expectedReturnTime ? ` (expected return ~${targetDoctor.expectedReturnTime})` : ''}. Doctor must be In Cabin before calling patients.`
@@ -561,12 +574,13 @@ export const ReceptionistDashboard: React.FC = () => {
         alert(awayMsg);
         return;
       }
+    }
 
-      const targetAppt = queueAppointments.find((a) => a.id === appointmentId);
+    if (status === 'IN_CONSULTATION' || status === 'COMPLETED') {
       if (targetAppt) {
         const targetDate = targetAppt.appointmentDate || queueDate;
         if (targetDate !== getLocalDateString()) {
-          alert(`Cannot call in an appointment scheduled for ${targetDate}. Only today's appointments can be called in.`);
+          alert(`Cannot update an appointment scheduled for ${targetDate} to '${status}'. Only today's appointments can be updated.`);
           return;
         }
         if (!targetAppt.isCheckedIn) {
