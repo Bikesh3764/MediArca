@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { ZoomIn, ZoomOut, RotateCcw, X, Check, Move, Maximize2, User } from 'lucide-react';
-import { AppleButton } from './AppleButton';
 
 interface AvatarCropModalProps {
   isOpen: boolean;
@@ -221,27 +220,27 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
   const currentRenderedH = imgDimensions.height * fitScale * zoom;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/60 backdrop-blur-md animate-fadeIn">
-      <div className="relative w-full max-w-lg bg-white rounded-[26px] sm:rounded-[30px] border border-[#e5e5ea] shadow-2xl overflow-hidden flex flex-col max-h-[94vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xl animate-fadeIn">
+      <div className="relative w-full max-w-[460px] bg-white rounded-[28px] border border-[#e5e5ea] shadow-[0_24px_64px_rgba(0,0,0,0.12),0_4px_16px_rgba(0,0,0,0.04)] overflow-hidden flex flex-col max-h-[94vh] p-6 sm:p-7">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-[#f0f0f2] flex items-center justify-between">
-          <div>
-            <h3 className="text-lg font-bold text-[#1d1d1f] tracking-tight">Adjust & Fit Doctor Photo</h3>
-            <p className="text-xs text-[#86868b] mt-0.5">Scale and position your headshot so it fits the card area</p>
-          </div>
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="text-[20px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">
+            Adjust Profile Photo
+          </h3>
           <button
+            type="button"
             onClick={onClose}
             disabled={processing}
-            className="w-8 h-8 rounded-full bg-[#f5f5f7] hover:bg-[#e5e5ea] flex items-center justify-center text-[#86868b] hover:text-[#1d1d1f] transition-colors"
+            className="w-8 h-8 rounded-full bg-[#f5f5f7] hover:bg-[#e5e5ea] flex items-center justify-center text-[#86868b] hover:text-[#1d1d1f] transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Viewport & Cropping Area */}
-        <div className="p-5 sm:p-6 bg-[#fbfbfd] flex flex-col items-center select-none overflow-y-auto">
+        <div className="flex flex-col items-center select-none overflow-y-auto">
           {/* Aspect Ratio Switcher */}
-          <div className="flex items-center gap-1.5 p-1 bg-[#f0f0f4] rounded-full text-xs font-semibold mb-4">
+          <div className="p-1 bg-[#f5f5f7] border border-[#e5e5ea] rounded-xl flex gap-1 select-none w-full mb-4">
             <button
               type="button"
               onClick={() => {
@@ -249,13 +248,13 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
                 setZoom(1);
                 setOffset({ x: 0, y: 0 });
               }}
-              className={`px-3.5 py-1.5 rounded-full transition-all ${
+              className={`flex-1 py-2 text-xs rounded-lg transition-all duration-150 cursor-pointer text-center ${
                 selectedRatio === '1:1'
-                  ? 'bg-white text-[#0066cc] shadow-xs'
-                  : 'text-[#86868b] hover:text-[#1d1d1f]'
+                  ? 'bg-white text-[#1d1d1f] font-semibold shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_1px_rgba(0,0,0,0.04)] border border-black/5'
+                  : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
               }`}
             >
-              1:1 Square (Full Avatar)
+              1:1 Square
             </button>
             <button
               type="button"
@@ -264,13 +263,13 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
                 setZoom(1);
                 setOffset({ x: 0, y: 0 });
               }}
-              className={`px-3.5 py-1.5 rounded-full transition-all ${
+              className={`flex-1 py-2 text-xs rounded-lg transition-all duration-150 cursor-pointer text-center ${
                 selectedRatio === '4:3'
-                  ? 'bg-white text-[#0066cc] shadow-xs'
-                  : 'text-[#86868b] hover:text-[#1d1d1f]'
+                  ? 'bg-white text-[#1d1d1f] font-semibold shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_1px_rgba(0,0,0,0.04)] border border-black/5'
+                  : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
               }`}
             >
-              4:3 Card Banner
+              4:3 Portrait
             </button>
           </div>
 
@@ -286,28 +285,25 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
               height: `${boxHeight}px`,
               maxWidth: '100%',
             }}
-            className="relative rounded-[22px] overflow-hidden bg-white border-2 border-[#0066cc] shadow-lg cursor-grab active:cursor-grabbing touch-none flex items-center justify-center mx-auto"
+            className="relative rounded-2xl overflow-hidden bg-[#f5f5f7] border border-[#d2d2d7] cursor-grab active:cursor-grabbing touch-none flex items-center justify-center mx-auto"
           >
             {/* Guide overlay */}
-            <div className="absolute inset-0 pointer-events-none z-20 flex flex-col justify-between p-3 border border-black/10 rounded-[20px]">
-              <div className="flex justify-between items-center text-[10px] font-medium text-[#1d1d1f] bg-white/90 backdrop-blur-md px-2.5 py-0.5 rounded-full border border-black/5 shadow-xs w-fit">
+            <div className="absolute inset-0 pointer-events-none z-20 flex flex-col justify-between p-3">
+              <div className="flex justify-between items-center text-[11px] font-medium text-[#1d1d1f] bg-white/90 backdrop-blur-md px-2.5 py-0.5 rounded-full border border-black/5 w-fit">
                 <span className="flex items-center gap-1">
-                  <Move className="w-3 h-3 text-[#0066cc]" /> Drag to center face
+                  <Move className="w-3 h-3 text-[#0066cc]" /> Drag to reposition
                 </span>
               </div>
               <div className="flex justify-center">
-                {/* Subtle circular boundary guide */}
                 <div
                   style={{
-                    width: selectedRatio === '1:1' ? '260px' : '220px',
-                    height: selectedRatio === '1:1' ? '260px' : '220px',
+                    width: selectedRatio === '1:1' ? '240px' : '200px',
+                    height: selectedRatio === '1:1' ? '240px' : '200px',
                   }}
                   className="rounded-full border border-dashed border-[#0066cc]/40 pointer-events-none"
                 />
               </div>
-              <div className="text-[10px] font-medium text-[#86868b] bg-white/90 backdrop-blur-md px-2 py-0.5 rounded-full border border-black/5 shadow-xs w-fit self-end">
-                {selectedRatio === '1:1' ? '1:1 Square' : '4:3 Card'}
-              </div>
+              <div />
             </div>
 
             {/* Target Image with interactive pan and zoom */}
@@ -332,23 +328,31 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
             <button
               type="button"
               onClick={handleFitEntirePhoto}
-              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#0066cc]/10 text-[#0066cc] hover:bg-[#0066cc]/20 transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] hover:bg-[#e8e8ed] transition-colors cursor-pointer"
             >
-              <Maximize2 className="w-3.5 h-3.5" />
-              Fit Full Photo (100%)
+              <Maximize2 className="w-3.5 h-3.5 text-[#0066cc]" />
+              Fit Photo
             </button>
             <button
               type="button"
               onClick={handleFocusFace}
-              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#f0f0f4] text-[#1d1d1f] hover:bg-[#e5e5ea] transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] hover:bg-[#e8e8ed] transition-colors cursor-pointer"
             >
               <User className="w-3.5 h-3.5 text-[#0066cc]" />
-              Focus Face
+              Center Face
+            </button>
+            <button
+              type="button"
+              onClick={handleFitEntirePhoto}
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium text-[#0066cc] hover:underline cursor-pointer"
+            >
+              <RotateCcw className="w-3 h-3" />
+              Reset
             </button>
           </div>
 
-          {/* Zoom Slider & Reset */}
-          <div className="w-full max-w-sm mt-4 space-y-2.5">
+          {/* Zoom Slider */}
+          <div className="w-full mt-4">
             <div className="flex items-center gap-3">
               <ZoomOut className="w-4 h-4 text-[#86868b] shrink-0" />
               <input
@@ -361,55 +365,35 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
                 className="w-full h-1.5 bg-[#e5e5ea] rounded-full appearance-none accent-[#0066cc] cursor-pointer"
               />
               <ZoomIn className="w-4 h-4 text-[#86868b] shrink-0" />
-              <span className="text-xs font-semibold text-[#1d1d1f] w-14 text-right">
+              <span className="text-xs font-medium text-[#1d1d1f] w-11 text-right">
                 {Math.round(zoom * 100)}%
               </span>
-            </div>
-
-            <div className="flex items-center justify-between text-xs text-[#86868b]">
-              <span>
-                {zoom === 1 ? 'Whole photo is fully fitted' : 'Drag image to frame desired face area'}
-              </span>
-              <button
-                type="button"
-                onClick={handleFitEntirePhoto}
-                className="inline-flex items-center gap-1 font-medium text-[#0066cc] hover:text-[#0071e3] transition-colors"
-              >
-                <RotateCcw className="w-3 h-3" />
-                Reset Fit
-              </button>
             </div>
           </div>
         </div>
 
         {/* Footer Actions */}
-        <div className="p-4 sm:px-6 sm:py-4 bg-white border-t border-[#f0f0f2] flex flex-col sm:flex-row items-center justify-between gap-3">
-          <span className="text-[11px] text-[#86868b] text-center sm:text-left">
-            Photo will save at 800px retina clarity
-          </span>
-          <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
-            <AppleButton
-              variant="secondary"
-              size="sm"
-              disabled={processing}
-              onClick={onClose}
-              className="text-xs px-4 flex-1 sm:flex-initial"
-            >
-              Cancel
-            </AppleButton>
-            <AppleButton
-              variant="primary"
-              size="sm"
-              disabled={processing}
-              onClick={handleCropAndSave}
-              className="text-xs px-5 bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white flex items-center justify-center gap-1.5 shadow-xs font-semibold cursor-pointer transition-all flex-1 sm:flex-initial"
-            >
-              <Check className="w-3.5 h-3.5 stroke-[2.5]" />
-              <span>{processing ? 'Framing & Saving...' : 'Apply & Save Headshot'}</span>
-            </AppleButton>
-          </div>
+        <div className="pt-5 mt-5 border-t border-[#e5e5ea] flex items-center gap-2.5">
+          <button
+            type="button"
+            disabled={processing}
+            onClick={onClose}
+            className="flex-1 h-11 px-4 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] border border-[#e5e5ea] text-[#1d1d1f] text-sm font-medium transition-all cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            disabled={processing}
+            onClick={handleCropAndSave}
+            className="flex-1 h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-medium transition-all duration-150 shadow-[0_2px_8px_rgba(0,102,204,0.2),0_1px_2px_rgba(0,0,0,0.06)] flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60"
+          >
+            <Check className="w-4 h-4" />
+            <span>{processing ? 'Saving...' : 'Save Photo'}</span>
+          </button>
         </div>
       </div>
     </div>
   );
 };
+

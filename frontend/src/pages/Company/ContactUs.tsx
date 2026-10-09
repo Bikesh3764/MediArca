@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, CheckCircle2, AlertCircle } from 'lucide-react';
+import { CheckCircle2, AlertCircle, ChevronDown } from 'lucide-react';
 import { api } from '../../services/api';
 import { sanitizeIndianPhone, formatIndianPhone } from '../../utils/phoneUtils';
 
@@ -52,20 +52,15 @@ export const ContactUs: React.FC = () => {
         </div>
 
         {/* Email Direct Card */}
-        <div className="bg-white rounded-[20px] p-5 border border-[#e5e5ea] shadow-xs flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3.5">
-            <div className="w-10 h-10 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] flex items-center justify-center shrink-0">
-              <Mail className="w-4 h-4 text-[#1d1d1f]" />
-            </div>
-            <div>
-              <p className="text-xs text-[#86868b] font-medium">Direct Email Support</p>
-              <a
-                href="mailto:contact@mediarca.in"
-                className="text-sm sm:text-base font-semibold text-[#1d1d1f] hover:text-[#0066cc] transition-colors"
-              >
-                contact@mediarca.in
-              </a>
-            </div>
+        <div className="bg-white rounded-[24px] p-5 sm:p-6 border border-[#e5e5ea] shadow-[0_2px_12px_rgba(0,0,0,0.03)] flex items-center justify-between gap-4">
+          <div>
+            <p className="text-xs text-[#86868b] font-medium">Direct Email Support</p>
+            <a
+              href="mailto:contact@mediarca.in"
+              className="text-sm sm:text-base font-semibold text-[#1d1d1f] hover:text-[#0066cc] transition-colors mt-0.5 inline-block"
+            >
+              contact@mediarca.in
+            </a>
           </div>
           <a
             href="mailto:contact@mediarca.in"
@@ -76,12 +71,12 @@ export const ContactUs: React.FC = () => {
         </div>
 
         {/* Contact Message Form */}
-        <div className="bg-white rounded-[24px] p-6 sm:p-8 border border-[#e5e5ea] shadow-xs space-y-6">
-          <h2 className="text-lg font-bold text-[#1d1d1f]">Send a Message</h2>
+        <div className="bg-white rounded-[24px] p-6 sm:p-8 border border-[#e5e5ea] shadow-[0_2px_12px_rgba(0,0,0,0.03)] space-y-6">
+          <h2 className="text-[22px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">Send a Message</h2>
 
           {submitted && (
             <div className="p-4 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] text-xs flex items-center gap-3">
-              <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+              <CheckCircle2 className="w-5 h-5 text-[#0066cc] shrink-0" />
               <div>
                 <p className="font-semibold text-sm">Message Sent</p>
                 <p className="text-[#6e6e73] mt-0.5">
@@ -102,35 +97,35 @@ export const ContactUs: React.FC = () => {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-[#1d1d1f]">Your Name *</label>
+            <div>
+              <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">Your Name *</label>
               <input
                 type="text"
                 required
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder="Enter your name"
-                className="w-full px-4 py-2.5 rounded-xl border border-[#e5e5ea] bg-[#fbfbfd] text-sm focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
+                className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
               />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-[#1d1d1f]">Your Email *</label>
+              <div>
+                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">Your Email *</label>
                 <input
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@example.com"
-                  className="w-full px-4 py-2.5 rounded-xl border border-[#e5e5ea] bg-[#fbfbfd] text-sm focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-[#1d1d1f]">Mobile Number (Optional)</label>
-                <div className="flex rounded-xl border border-[#e5e5ea] overflow-hidden focus-within:ring-2 focus-within:ring-[#0066cc]/20 focus-within:border-[#0066cc] bg-[#fbfbfd] focus-within:bg-white transition-all h-10">
-                  <span className="inline-flex items-center px-3 bg-[#f5f5f7] border-r border-[#e5e5ea] text-[#1d1d1f] font-semibold text-[13px] select-none">
+              <div>
+                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">Mobile Number (Optional)</label>
+                <div className="flex items-center w-full h-11 rounded-xl border border-[#d2d2d7] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus-within:border-[#0066cc] focus-within:ring-4 focus-within:ring-[#0066cc]/10 transition-all duration-150 overflow-hidden">
+                  <span className="h-full px-3.5 bg-[#f5f5f7] border-r border-[#d2d2d7] flex items-center justify-center select-none text-[13px] font-semibold text-[#1d1d1f]">
                     +91
                   </span>
                   <input
@@ -143,35 +138,38 @@ export const ContactUs: React.FC = () => {
                     }}
                     placeholder="98765 43210"
                     maxLength={10}
-                    className="flex-1 h-full px-3.5 text-sm bg-transparent focus:outline-none text-[#1d1d1f] placeholder:text-[#86868b]"
+                    className="w-full h-full px-3.5 bg-transparent text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:outline-none"
                   />
                 </div>
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-[#1d1d1f]">Subject</label>
-              <select
-                value={subject}
-                onChange={(e) => setSubject(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl border border-[#e5e5ea] bg-[#fbfbfd] text-sm focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
-              >
-                <option value="General Inquiry">General Inquiry</option>
-                <option value="Appointment Issue">Appointment / Queue Issue</option>
-                <option value="Doctor or Clinic Onboarding">Doctor or Clinic Inquiry</option>
-                <option value="Feedback">Feedback</option>
-              </select>
+            <div>
+              <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">Subject</label>
+              <div className="relative">
+                <select
+                  value={subject}
+                  onChange={(e) => setSubject(e.target.value)}
+                  className="w-full h-11 pl-3.5 pr-9 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 appearance-none cursor-pointer"
+                >
+                  <option value="General Inquiry">General Inquiry</option>
+                  <option value="Appointment Issue">Appointment / Queue Issue</option>
+                  <option value="Doctor or Clinic Onboarding">Doctor or Clinic Inquiry</option>
+                  <option value="Feedback">Feedback</option>
+                </select>
+                <ChevronDown className="w-4 h-4 text-[#86868b] pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2" />
+              </div>
             </div>
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-[#1d1d1f]">Message</label>
+            <div>
+              <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">Message</label>
               <textarea
                 required
                 rows={4}
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder="Write your message here..."
-                className="w-full px-4 py-2.5 rounded-xl border border-[#e5e5ea] bg-[#fbfbfd] text-sm focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] resize-none"
+                className="w-full p-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 resize-none"
               />
             </div>
 
@@ -179,7 +177,7 @@ export const ContactUs: React.FC = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 px-6 rounded-full bg-[#1d1d1f] hover:bg-black text-white text-sm font-semibold transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
+                className="w-full h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-[14px] font-semibold shadow-sm transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
               >
                 {loading ? 'Sending...' : 'Send Message'}
               </button>

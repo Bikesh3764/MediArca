@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { api, getLocalDateString } from '../../services/api';
-import { AppleButton } from '../../components/ui/AppleButton';
 import { UtilityCard } from '../../components/ui/UtilityCard';
 import {
   AlertCircle,
   CheckCircle2,
+  ChevronDown,
 } from 'lucide-react';
 import { sanitizeIndianPhone, formatIndianPhone, isValidIndianPhone } from '../../utils/phoneUtils';
 
@@ -89,31 +89,31 @@ export const PatientProfile: React.FC = () => {
       {/* Sleek Apple Header */}
       <div className="bg-white border-b border-[#e5e5ea]/80">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6">
-          <h1 className="text-2xl font-bold text-[#1d1d1f] tracking-tight">Profile</h1>
+          <h1 className="text-[22px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">Profile</h1>
         </div>
       </div>
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         {successMsg && (
-          <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2.5 shadow-sm">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-            <span className="font-medium">{successMsg}</span>
+          <div className="p-3.5 rounded-2xl bg-white border border-[#e5e5ea] text-[#1d1d1f] text-xs font-medium flex items-center gap-2.5 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
+            <CheckCircle2 className="w-4 h-4 text-[#0066cc] shrink-0" />
+            <span>{successMsg}</span>
           </div>
         )}
 
         {errorMsg && (
-          <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2.5 shadow-sm">
-            <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
-            <span className="font-medium">{errorMsg}</span>
+          <div className="p-3.5 rounded-2xl bg-rose-50/80 border border-rose-200/80 text-rose-700 text-xs font-medium flex items-center gap-2.5">
+            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+            <span>{errorMsg}</span>
           </div>
         )}
 
         <form onSubmit={handleSave} className="space-y-6">
           {/* Personal Information */}
           <UtilityCard title="Personal Information">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-[13px] font-medium text-[#1d1d1f] tracking-[-0.01em] mb-1.5">
+                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
                   Full Name
                 </label>
                 <input
@@ -122,18 +122,18 @@ export const PatientProfile: React.FC = () => {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="Full Name"
-                  className="w-full h-11 px-3.5 rounded-[12px] border border-[#d2d2d7] text-[15px] tracking-[-0.015em] bg-white text-[#1d1d1f] focus:outline-none focus:ring-[3px] focus:ring-[#0066cc]/15 focus:border-[#0066cc] transition-all"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
 
               <div>
-                <label className="block text-[13px] font-medium text-[#1d1d1f] tracking-[-0.01em] mb-1.5">
+                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
                   Mobile Number
                 </label>
-                <div className="flex h-11 rounded-[12px] border border-[#d2d2d7] overflow-hidden focus-within:ring-[3px] focus-within:ring-[#0066cc]/15 focus-within:border-[#0066cc] bg-white transition-all">
-                  <span className="inline-flex items-center justify-center px-3.5 bg-[#f5f5f7] border-r border-[#d2d2d7] text-[#1d1d1f] font-semibold text-[15px] tracking-[-0.01em] select-none">
+                <div className="flex items-center w-full h-11 rounded-xl border border-[#d2d2d7] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus-within:border-[#0066cc] focus-within:ring-4 focus-within:ring-[#0066cc]/10 transition-all duration-150 overflow-hidden">
+                  <div className="h-full px-3.5 bg-[#f5f5f7] border-r border-[#d2d2d7] flex items-center justify-center select-none text-[13px] font-semibold text-[#1d1d1f]">
                     +91
-                  </span>
+                  </div>
                   <input
                     type="tel"
                     inputMode="numeric"
@@ -142,33 +142,33 @@ export const PatientProfile: React.FC = () => {
                     onChange={handlePhoneInputChange}
                     placeholder="98765 43210"
                     maxLength={10}
-                    className="w-full h-full px-3.5 text-[15px] tracking-[-0.015em] bg-white focus:outline-none text-[#1d1d1f] placeholder:text-[#86868b]"
+                    className="w-full h-full px-3.5 text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] bg-transparent focus:outline-none font-medium tracking-wide"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[13px] font-medium text-[#86868b] tracking-[-0.01em] mb-1.5">
+                <label className="block text-xs font-medium text-[#86868b] mb-1.5 tracking-tight">
                   Email
                 </label>
                 <input
                   type="email"
                   disabled
                   value={user?.email || ''}
-                  className="w-full h-11 px-3.5 rounded-[12px] border border-[#e5e5ea] text-[14px] tracking-[-0.01em] bg-[#f5f5f7] text-[#86868b] cursor-not-allowed select-none"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-[14px] bg-[#f5f5f7] text-[#86868b] cursor-not-allowed select-none"
                 />
               </div>
 
               <div>
-                <label className="block text-[13px] font-medium text-[#1d1d1f] tracking-[-0.01em] mb-1.5">
-                  Emergency Contact
+                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                  Emergency Contact <span className="text-[#86868b] font-normal">(Optional)</span>
                 </label>
                 <input
                   type="text"
                   value={emergencyContact}
                   onChange={(e) => setEmergencyContact(e.target.value)}
                   placeholder="Optional contact name & number"
-                  className="w-full h-11 px-3.5 rounded-[12px] border border-[#d2d2d7] text-[15px] tracking-[-0.015em] bg-white text-[#1d1d1f] placeholder:text-[#86868b] focus:outline-none focus:ring-[3px] focus:ring-[#0066cc]/15 focus:border-[#0066cc] transition-all"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
             </div>
@@ -176,9 +176,9 @@ export const PatientProfile: React.FC = () => {
 
           {/* Health Details */}
           <UtilityCard title="Health Details">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label className="block text-[13px] font-medium text-[#1d1d1f] tracking-[-0.01em] mb-1.5">
+                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
                   Date of Birth
                 </label>
                 <input
@@ -186,15 +186,15 @@ export const PatientProfile: React.FC = () => {
                   max={getLocalDateString()}
                   value={dateOfBirth}
                   onChange={(e) => setDateOfBirth(e.target.value)}
-                  className="w-full h-11 px-3.5 rounded-[12px] border border-[#d2d2d7] text-[14px] tracking-[-0.01em] bg-white text-[#1d1d1f] focus:outline-none focus:ring-[3px] focus:ring-[#0066cc]/15 focus:border-[#0066cc] transition-all"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
 
               <div>
-                <label className="block text-[13px] font-medium text-[#1d1d1f] tracking-[-0.01em] mb-1.5">
+                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
                   Gender
                 </label>
-                <div className="grid grid-cols-3 gap-1 p-1 h-11 rounded-[12px] bg-[#f5f5f7] border border-[#e5e5ea]">
+                <div className="p-1 bg-[#f5f5f7] border border-[#e5e5ea] rounded-xl grid grid-cols-3 gap-1 h-11 select-none">
                   {(['Male', 'Female', 'Other'] as const).map((option) => {
                     const active = gender === option;
                     return (
@@ -202,10 +202,10 @@ export const PatientProfile: React.FC = () => {
                         key={option}
                         type="button"
                         onClick={() => setGender(option)}
-                        className={`rounded-[9px] text-[13px] font-semibold tracking-[-0.01em] transition-all duration-150 ${
+                        className={`rounded-lg text-[13px] transition-all duration-150 cursor-pointer ${
                           active
-                            ? 'bg-white text-[#1d1d1f] shadow-[0_1px_3px_rgba(0,0,0,0.08)]'
-                            : 'text-[#86868b] hover:text-[#1d1d1f]'
+                            ? 'bg-white text-[#1d1d1f] font-semibold shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_1px_rgba(0,0,0,0.04)] border border-black/5'
+                            : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
                         }`}
                       >
                         {option}
@@ -216,38 +216,41 @@ export const PatientProfile: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-[13px] font-medium text-[#1d1d1f] tracking-[-0.01em] mb-1.5">
+                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
                   Blood Group
                 </label>
-                <select
-                  value={bloodGroup}
-                  onChange={(e) => setBloodGroup(e.target.value)}
-                  className="w-full h-11 px-3 rounded-[12px] border border-[#d2d2d7] text-[14px] tracking-[-0.01em] bg-white text-[#1d1d1f] focus:outline-none focus:ring-[3px] focus:ring-[#0066cc]/15 focus:border-[#0066cc] transition-all cursor-pointer"
-                >
-                  <option value="">Select</option>
-                  <option value="A+">A+</option>
-                  <option value="A-">A-</option>
-                  <option value="B+">B+</option>
-                  <option value="B-">B-</option>
-                  <option value="AB+">AB+</option>
-                  <option value="AB-">AB-</option>
-                  <option value="O+">O+</option>
-                  <option value="O-">O-</option>
-                </select>
+                <div className="relative">
+                  <select
+                    value={bloodGroup}
+                    onChange={(e) => setBloodGroup(e.target.value)}
+                    className={`w-full h-11 pl-3.5 pr-9 rounded-xl border border-[#d2d2d7] bg-white text-[14px] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 appearance-none cursor-pointer ${
+                      bloodGroup ? 'text-[#1d1d1f] font-medium' : 'text-[#a1a1a6]'
+                    }`}
+                  >
+                    <option value="">Select</option>
+                    <option value="A+">A+</option>
+                    <option value="A-">A-</option>
+                    <option value="B+">B+</option>
+                    <option value="B-">B-</option>
+                    <option value="AB+">AB+</option>
+                    <option value="AB-">AB-</option>
+                    <option value="O+">O+</option>
+                    <option value="O-">O-</option>
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-[#86868b] pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2" />
+                </div>
               </div>
             </div>
           </UtilityCard>
 
-          <div className="flex justify-end pt-2">
-            <AppleButton
+          <div className="flex justify-end pt-1">
+            <button
               type="submit"
-              variant="primary"
-              size="md"
               disabled={saving}
-              className="px-7 py-2.5 font-semibold text-[13px] tracking-tight shadow-none w-full sm:w-auto"
+              className="w-full sm:w-auto h-11 px-7 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-medium transition-all duration-150 shadow-[0_2px_8px_rgba(0,102,204,0.2),0_1px_2px_rgba(0,0,0,0.06)] flex items-center justify-center gap-2 cursor-pointer select-none disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {saving ? 'Saving...' : 'Save'}
-            </AppleButton>
+              {saving ? 'Saving...' : 'Save Changes'}
+            </button>
           </div>
         </form>
       </div>

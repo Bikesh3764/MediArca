@@ -2,19 +2,17 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api, Appointment } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
-import { SubNav } from '../../components/layout/SubNav';
-import { AppleButton } from '../../components/ui/AppleButton';
+import { DashboardLayout, DashboardNavItem } from '../../components/layout/DashboardLayout';
 import { UtilityCard } from '../../components/ui/UtilityCard';
 import {
   ChevronLeft,
   AlertCircle,
   CheckCircle2,
-  User,
-  Phone,
-  Calendar,
-  Building2,
-  FileText,
   Save,
+  LayoutDashboard,
+  Building2,
+  Calendar,
+  Settings,
 } from 'lucide-react';
 
 export const ConsultationView: React.FC = () => {
@@ -29,8 +27,35 @@ export const ConsultationView: React.FC = () => {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Clinical Notes (Optional observations / doctor remarks)
   const [clinicalNotes, setClinicalNotes] = useState('');
+
+  const navItems: DashboardNavItem[] = [
+    {
+      id: 'dashboard',
+      label: 'Live Queue',
+      icon: LayoutDashboard,
+      path: '/doctor/dashboard',
+      active: true,
+    },
+    {
+      id: 'affiliations',
+      label: 'Clinics & Staff',
+      icon: Building2,
+      path: '/doctor/dashboard?tab=affiliations',
+    },
+    {
+      id: 'schedule',
+      label: 'Shifts & Fees',
+      icon: Calendar,
+      path: '/doctor/schedule',
+    },
+    {
+      id: 'settings',
+      label: 'Settings',
+      icon: Settings,
+      path: '/doctor/profile',
+    },
+  ];
 
   useEffect(() => {
     if (loadingAuth) return;
@@ -108,16 +133,23 @@ export const ConsultationView: React.FC = () => {
 
   if (error && !appointment) {
     return (
-      <div className="min-h-screen bg-[#f5f5f7] p-8 flex items-center justify-center">
-        <div className="bg-white rounded-[20px] p-6 max-w-md w-full border border-[#e5e5ea] text-center shadow-sm">
-          <AlertCircle className="w-10 h-10 text-rose-500 mx-auto mb-3" />
-          <h2 className="text-lg font-semibold text-[#1d1d1f]">Unable to Load Encounter</h2>
-          <p className="text-xs text-[#86868b] mt-1 mb-4">{error}</p>
-          <AppleButton variant="primary" size="md" onClick={() => navigate('/doctor/dashboard')} className="w-full">
-            Return to Dashboard
-          </AppleButton>
+      <DashboardLayout
+        portalType="DOCTOR"
+        navItems={navItems}
+        title="Consultation Desk"
+      >
+        <div className="bg-white rounded-[24px] p-8 max-w-md border border-[#e5e5ea] text-center shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
+          <h2 className="text-[18px] font-semibold text-[#1d1d1f] tracking-tight">Unable to Load Encounter</h2>
+          <p className="text-[13px] text-[#86868b] mt-1 mb-5">{error}</p>
+          <button
+            type="button"
+            onClick={() => navigate('/doctor/dashboard')}
+            className="w-full h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-medium transition-all duration-150 flex items-center justify-center cursor-pointer"
+          >
+            Return to Queue
+          </button>
         </div>
-      </div>
+      </DashboardLayout>
     );
   }
 
@@ -128,50 +160,57 @@ export const ConsultationView: React.FC = () => {
   const isCancelled = appointment.status === 'CANCELLED' || appointment.status === 'REJECTED';
 
   return (
-    <div className="min-h-screen bg-[#f5f5f7] pb-16">
-      <SubNav title="Consultation Desk" />
-
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
-        {/* Navigation Breadcrumb */}
+    <DashboardLayout
+      portalType="DOCTOR"
+      navItems={navItems}
+      title="Patient Consultation"
+      subtitle={`Token #${appointment.queueNumber} • ${patientName}`}
+      headerAction={
         <button
           type="button"
           onClick={() => navigate('/doctor/dashboard')}
-          className="inline-flex items-center gap-1.5 text-xs text-[#86868b] hover:text-[#1d1d1f] mb-6 transition-colors cursor-pointer"
+          className="h-9 px-4 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer"
         >
           <ChevronLeft className="w-4 h-4" />
-          <span>Back to Doctor Dashboard</span>
+          <span>Back to Queue</span>
         </button>
-
+      }
+    >
+      <div className="max-w-3xl space-y-6">
         {/* Status Alerts */}
         {error && (
-          <div className="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2">
+          <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200/80 text-rose-700 text-xs font-medium flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
             <span>{error}</span>
           </div>
         )}
 
         {successMsg && (
-          <div className="mb-6 p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] text-xs flex items-center gap-2">
+          <div className="p-3.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] text-xs font-medium flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 shrink-0 text-[#0066cc]" />
             <span>{successMsg}</span>
           </div>
         )}
 
         {/* Encounter Header Card */}
-        <UtilityCard className="mb-6 p-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#e5e5ea]">
+        <UtilityCard className="p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-[#e5e5ea]">
             <div>
-              <div className="flex items-center gap-2 flex-wrap mb-1">
-                <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20">
-                  {appointment.status.replace('_', ' ')}
+              <div className="flex items-center gap-2 flex-wrap mb-1.5">
+                <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#0066cc]/10 text-[#0066cc]">
+                  {appointment.status === 'IN_CONSULTATION'
+                    ? 'In Consultation'
+                    : appointment.status === 'COMPLETED'
+                    ? 'Completed'
+                    : appointment.status.replace('_', ' ')}
                 </span>
-                <span className="text-xs font-semibold text-[#86868b]">
+                <span className="text-xs font-medium text-[#86868b]">
                   Token #{appointment.queueNumber}
                 </span>
               </div>
-              <h1 className="text-2xl font-bold text-[#1d1d1f] tracking-tight">
+              <h2 className="text-[20px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">
                 {patientName}
-              </h1>
+              </h2>
               {appointment.isForOther && appointment.patient?.user?.fullName && (
                 <p className="text-xs text-[#86868b] mt-0.5">
                   Booked for family member by {appointment.patient.user.fullName}
@@ -180,54 +219,42 @@ export const ConsultationView: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-2xl font-bold text-[#1d1d1f] bg-[#f5f5f7] px-4 py-2 rounded-2xl border border-[#e5e5ea]">
+              <span className="text-[18px] font-semibold text-[#0066cc] bg-[#0066cc]/10 px-4 py-1.5 rounded-2xl">
                 #{appointment.queueNumber}
               </span>
             </div>
           </div>
 
           {/* Patient & Booking Details Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-6 text-xs">
-            <div className="space-y-0.5">
-              <span className="text-[#86868b] flex items-center gap-1">
-                <User className="w-3.5 h-3.5 text-[#86868b]" />
-                Demographics
-              </span>
-              <p className="font-semibold text-[#1d1d1f]">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-5 text-xs">
+            <div className="space-y-1">
+              <span className="text-[#86868b] font-medium block">Patient Info</span>
+              <p className="font-semibold text-[#1d1d1f] text-[13px]">
                 {appointment.patientAge ? `${appointment.patientAge} Yrs` : 'Age N/A'}
                 {appointment.patientGender ? ` • ${appointment.patientGender}` : ''}
               </p>
             </div>
 
-            <div className="space-y-0.5">
-              <span className="text-[#86868b] flex items-center gap-1">
-                <Phone className="w-3.5 h-3.5 text-[#86868b]" />
-                Phone
-              </span>
-              <p className="font-semibold text-[#1d1d1f]">
+            <div className="space-y-1">
+              <span className="text-[#86868b] font-medium block">Phone</span>
+              <p className="font-semibold text-[#1d1d1f] text-[13px]">
                 {appointment.patient?.user?.phone || 'Not provided'}
               </p>
             </div>
 
-            <div className="space-y-0.5">
-              <span className="text-[#86868b] flex items-center gap-1">
-                <Calendar className="w-3.5 h-3.5 text-[#86868b]" />
-                Date & Shift
-              </span>
-              <p className="font-semibold text-[#1d1d1f]">
+            <div className="space-y-1">
+              <span className="text-[#86868b] font-medium block">Date & Shift</span>
+              <p className="font-semibold text-[#1d1d1f] text-[13px]">
                 {appointment.appointmentDate}
               </p>
-              <p className="text-[11px] text-[#86868b]">
+              <p className="text-xs text-[#86868b]">
                 {appointment.checkingWindow || appointment.estimatedTime || 'Standard'}
               </p>
             </div>
 
-            <div className="space-y-0.5">
-              <span className="text-[#86868b] flex items-center gap-1">
-                <Building2 className="w-3.5 h-3.5 text-[#86868b]" />
-                Clinic Venue
-              </span>
-              <p className="font-semibold text-[#1d1d1f] truncate">
+            <div className="space-y-1">
+              <span className="text-[#86868b] font-medium block">Clinic Venue</span>
+              <p className="font-semibold text-[#1d1d1f] text-[13px] truncate">
                 {appointment.clinic?.clinicName || 'Direct Facility'}
               </p>
             </div>
@@ -235,7 +262,7 @@ export const ConsultationView: React.FC = () => {
 
           {/* Reason for Visit & Symptoms */}
           {(appointment.reasonForVisit || appointment.symptoms) && (
-            <div className="mt-6 p-4 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] space-y-2 text-xs">
+            <div className="mt-5 p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] space-y-1.5 text-[13px]">
               {appointment.reasonForVisit && (
                 <div>
                   <span className="font-semibold text-[#1d1d1f]">Reason for Visit: </span>
@@ -255,111 +282,97 @@ export const ConsultationView: React.FC = () => {
         {/* Consultation Completion Form / View */}
         {isCompleted ? (
           <UtilityCard className="p-6">
-            <div className="flex items-center gap-2 mb-3">
+            <div className="flex items-center gap-2 mb-1.5">
               <CheckCircle2 className="w-5 h-5 text-[#0066cc]" />
-              <h2 className="text-base font-semibold text-[#1d1d1f]">Consultation Completed</h2>
+              <h2 className="text-[16px] font-semibold text-[#1d1d1f] tracking-tight">Consultation Completed</h2>
             </div>
-            <p className="text-xs text-[#86868b] mb-4">
-              This clinical encounter was finalized on {appointment.completedAt ? new Date(appointment.completedAt).toLocaleString() : (appointment as any).updatedAt ? new Date((appointment as any).updatedAt).toLocaleString() : appointment.appointmentDate}.
+            <p className="text-[13px] text-[#86868b] mb-5">
+              Completed on {appointment.completedAt ? new Date(appointment.completedAt).toLocaleString() : (appointment as any).updatedAt ? new Date((appointment as any).updatedAt).toLocaleString() : appointment.appointmentDate}.
             </p>
 
             {clinicalNotes && (
-              <div className="mb-6 p-4 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea]">
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b] block mb-1">
-                  Doctor's Notes
+              <div className="mb-6 p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea]">
+                <span className="text-xs font-medium text-[#86868b] block mb-1.5">
+                  Consultation Notes
                 </span>
-                <p className="text-xs text-[#1d1d1f] whitespace-pre-wrap leading-relaxed">
+                <p className="text-[14px] text-[#1d1d1f] whitespace-pre-wrap leading-relaxed">
                   {clinicalNotes}
                 </p>
               </div>
             )}
 
-            <AppleButton
-              variant="primary"
-              size="md"
+            <button
+              type="button"
               onClick={() => navigate('/doctor/dashboard')}
-              className="w-full bg-[#1d1d1f] hover:bg-black text-white"
+              className="w-full sm:w-auto h-10 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-xs font-semibold transition-all duration-150 flex items-center justify-center cursor-pointer"
             >
-              Return to Dashboard
-            </AppleButton>
+              Return to Live Queue
+            </button>
           </UtilityCard>
         ) : isCancelled ? (
           <UtilityCard className="p-6 text-center">
-            <AlertCircle className="w-10 h-10 text-[#86868b] mx-auto mb-2" />
-            <h2 className="text-base font-semibold text-[#1d1d1f]">Appointment Cancelled</h2>
-            <p className="text-xs text-[#86868b] mt-1 mb-4">
+            <h2 className="text-[16px] font-semibold text-[#1d1d1f] tracking-tight">Appointment Cancelled</h2>
+            <p className="text-[13px] text-[#86868b] mt-1 mb-5">
               This appointment is cancelled or rejected and cannot be modified.
             </p>
-            <AppleButton
-              variant="secondary"
-              size="md"
+            <button
+              type="button"
               onClick={() => navigate('/doctor/dashboard')}
-              className="w-full"
+              className="w-full sm:w-auto h-10 px-6 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-medium transition-all inline-flex items-center justify-center cursor-pointer"
             >
-              Return to Dashboard
-            </AppleButton>
+              Return to Live Queue
+            </button>
           </UtilityCard>
         ) : (
           <form onSubmit={handleCompleteConsultation} className="space-y-6">
-            {/* Optional Clinical Notes Card */}
             <UtilityCard className="p-6">
-              <div className="flex items-center gap-2 mb-2">
-                <FileText className="w-4 h-4 text-[#0066cc]" />
-                <h2 className="text-sm font-semibold text-[#1d1d1f]">
-                  Doctor's Observations & Notes <span className="text-[#86868b] font-normal">(Optional)</span>
-                </h2>
+              <div className="flex items-center justify-between gap-2 mb-3">
+                <label className="text-xs font-medium text-[#1d1d1f] tracking-tight">
+                  Consultation Notes <span className="text-[#86868b] font-normal">(Optional)</span>
+                </label>
+                <button
+                  type="button"
+                  disabled={savingNotes}
+                  onClick={handleSaveNotesDraft}
+                  className="inline-flex items-center gap-1.5 text-xs text-[#0066cc] hover:text-[#0071e3] font-medium py-1 px-2.5 rounded-full bg-[#0066cc]/10 hover:bg-[#0066cc]/15 transition-colors cursor-pointer"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  <span>{savingNotes ? 'Saving...' : 'Save Draft'}</span>
+                </button>
               </div>
-              <p className="text-xs text-[#86868b] mb-4">
-                Add any optional clinical remarks, findings, or follow-up recommendations for your reference.
-              </p>
 
               <textarea
                 value={clinicalNotes}
                 onChange={(e) => setClinicalNotes(e.target.value)}
                 rows={4}
-                placeholder="Enter clinical observations, advice, or patient notes..."
-                className="w-full rounded-xl border border-[#e5e5ea] bg-[#fafafc] p-3 text-xs text-[#1d1d1f] focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] transition-all resize-y"
+                placeholder="Add clinical observations, findings, or follow-up notes..."
+                className="w-full rounded-xl border border-[#d2d2d7] bg-white p-3.5 text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 resize-y"
               />
 
-              <div className="flex justify-end mt-2">
+              <div className="mt-5 pt-4 border-t border-[#e5e5ea] flex flex-col sm:flex-row items-center justify-end gap-2.5">
                 <button
                   type="button"
-                  disabled={savingNotes}
-                  onClick={handleSaveNotesDraft}
-                  className="inline-flex items-center gap-1.5 text-xs text-[#0066cc] hover:text-[#0071e3] font-medium py-1 px-2 rounded-lg hover:bg-[#0066cc]/5 transition-colors cursor-pointer"
+                  onClick={() => navigate('/doctor/dashboard')}
+                  className="w-full sm:w-auto h-10 px-5 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-medium transition-all cursor-pointer"
                 >
-                  <Save className="w-3.5 h-3.5" />
-                  <span>{savingNotes ? 'Saving...' : 'Save Notes Draft'}</span>
+                  Back to Queue
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="w-full sm:w-auto h-10 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-xs font-semibold transition-all duration-150 shadow-[0_2px_8px_rgba(0,102,204,0.2)] flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60"
+                >
+                  <CheckCircle2 className="w-4 h-4 text-white" />
+                  <span>{submitting ? 'Completing...' : 'Complete Consultation'}</span>
                 </button>
               </div>
             </UtilityCard>
-
-            {/* Action Bar */}
-            <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-sm">
-              <AppleButton
-                variant="ghost"
-                size="md"
-                type="button"
-                onClick={() => navigate('/doctor/dashboard')}
-                className="w-full sm:w-auto text-xs text-[#86868b] hover:text-[#1d1d1f]"
-              >
-                Back to Dashboard
-              </AppleButton>
-
-              <AppleButton
-                variant="primary"
-                size="lg"
-                type="submit"
-                disabled={submitting}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#1d1d1f] hover:bg-black text-white font-semibold cursor-pointer shadow-none"
-              >
-                <CheckCircle2 className="w-4 h-4 text-white" />
-                <span>{submitting ? 'Completing...' : 'Mark Consultation Completed'}</span>
-              </AppleButton>
-            </div>
           </form>
         )}
       </div>
-    </div>
+    </DashboardLayout>
   );
 };
+
+

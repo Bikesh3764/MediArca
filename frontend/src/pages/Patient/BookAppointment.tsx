@@ -24,7 +24,6 @@ import {
   Building2,
   MapPin,
   Phone,
-  Clock,
 } from 'lucide-react';
 
 const formatDisplayPhone = (phone?: string) => {
@@ -312,36 +311,32 @@ export const BookAppointment: React.FC = () => {
 
         <div className="max-w-xl mx-auto px-4 sm:px-6 pt-6 sm:pt-10">
           <UtilityCard className="text-center py-8 px-5 sm:px-8 space-y-6">
-            <div className="w-16 h-16 rounded-full bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea] flex items-center justify-center mx-auto shadow-2xs">
-              <Clock className="w-8 h-8" />
-            </div>
-
             <div>
-              <span className="text-xs font-semibold uppercase tracking-wider text-[#86868b] block mb-1">
+              <span className="text-xs font-medium text-[#0066cc] block mb-1">
                 Request Submitted
               </span>
-              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#1d1d1f]">
+              <h2 className="text-[22px] sm:text-2xl font-semibold tracking-tight text-[#1d1d1f] leading-snug">
                 Pending Receptionist Confirmation
               </h2>
               <p className="text-xs text-[#86868b] mt-1 font-medium">
                 {confirmedAppointment.appointmentDate} · {confirmedAppointment.checkingWindow}
               </p>
-              <div className="mt-3 inline-flex items-baseline gap-2 px-4 py-1.5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea]">
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">Estimated Token</span>
-                <span className="text-xl font-bold text-[#1d1d1f] tracking-tight">
+              <div className="mt-3.5 inline-flex items-baseline gap-2 px-4 py-1.5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea]">
+                <span className="text-xs font-medium text-[#86868b]">Estimated Token</span>
+                <span className="text-xl font-bold text-[#0066cc] tracking-tight">
                   #{confirmedAppointment.estimatedQueueNumber || (confirmedAppointment.queueNumber > 0 ? confirmedAppointment.queueNumber : 1)}
                 </span>
               </div>
             </div>
 
-            {/* Receptionist Contact Details Card (NOW REVEALED!) */}
+            {/* Receptionist Contact Details Card */}
             <div className="p-4 sm:p-5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] text-left space-y-3">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <span className="text-[11px] font-semibold text-[#86868b] uppercase tracking-wider block">
+                  <span className="text-xs font-medium text-[#86868b] block">
                     Pay Receptionist to Confirm
                   </span>
-                  <h4 className="text-base font-bold text-[#1d1d1f] mt-0.5">
+                  <h4 className="text-base font-semibold text-[#1d1d1f] mt-0.5 tracking-tight">
                     {deskName}
                   </h4>
                   <p className="text-xs text-[#86868b] mt-0.5">
@@ -352,7 +347,7 @@ export const BookAppointment: React.FC = () => {
                   <span className="text-base font-bold text-[#1d1d1f] block">
                     ₹{activeFee}
                   </span>
-                  <span className="text-[10px] text-[#86868b]">Fee</span>
+                  <span className="text-[11px] text-[#86868b]">Fee</span>
                 </div>
               </div>
 
@@ -364,7 +359,7 @@ export const BookAppointment: React.FC = () => {
                 <div className="pt-1">
                   <a
                     href={`tel:${deskPhone.replace(/\s+/g, '')}`}
-                    className="w-full h-11 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-semibold flex items-center justify-center gap-2 active:scale-95 transition-all shadow-sm cursor-pointer"
+                    className="w-full h-11 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-sm font-medium flex items-center justify-center gap-2 active:scale-[0.98] transition-all duration-150 shadow-[0_2px_8px_rgba(0,102,204,0.2),0_1px_2px_rgba(0,0,0,0.06)] cursor-pointer select-none"
                   >
                     <Phone className="w-4 h-4" />
                     <span>Call Receptionist: {formatDisplayPhone(deskPhone)}</span>
@@ -379,22 +374,20 @@ export const BookAppointment: React.FC = () => {
 
             {/* Navigation Actions */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
-              <AppleButton
-                variant="primary"
-                size="lg"
+              <button
+                type="button"
                 onClick={() => navigate('/patient/appointments')}
-                className="w-full sm:w-auto"
+                className="w-full sm:w-auto h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-medium transition-all duration-150 shadow-[0_2px_8px_rgba(0,102,204,0.2),0_1px_2px_rgba(0,0,0,0.06)] flex items-center justify-center cursor-pointer select-none"
               >
                 View Request in My Passes
-              </AppleButton>
-              <AppleButton
-                variant="secondary"
-                size="lg"
+              </button>
+              <button
+                type="button"
                 onClick={() => navigate('/doctors')}
-                className="w-full sm:w-auto"
+                className="w-full sm:w-auto h-11 px-6 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] active:scale-[0.98] text-[#1d1d1f] border border-[#e5e5ea] text-sm font-medium transition-all duration-150 flex items-center justify-center cursor-pointer select-none"
               >
                 Back to Doctors
-              </AppleButton>
+              </button>
             </div>
           </UtilityCard>
         </div>
@@ -420,7 +413,7 @@ export const BookAppointment: React.FC = () => {
       <div className="max-w-2xl mx-auto px-4 sm:px-6 pt-5 sm:pt-8">
         <UtilityCard>
           {error && (
-            <div className="mb-5 p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
+            <div className="mb-5 p-3.5 rounded-2xl bg-rose-50/80 border border-rose-200/80 text-rose-700 text-xs font-medium flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{error}</span>
             </div>
@@ -449,7 +442,7 @@ export const BookAppointment: React.FC = () => {
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <h3 className="text-lg font-bold text-[#1d1d1f] tracking-tight truncate">
+                <h3 className="text-[18px] font-semibold text-[#1d1d1f] tracking-tight truncate leading-snug">
                   {doctor.user?.fullName || 'Doctor'}
                 </h3>
                 <CheckCircle2 className="w-4 h-4 text-[#0066cc] shrink-0" />
@@ -474,21 +467,21 @@ export const BookAppointment: React.FC = () => {
           {/* Clinic Venue Selection */}
           {!doctor.clinics || doctor.clinics.length === 0 ? (
             <div className="py-4 border-b border-[#f0f0f2]">
-              <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start gap-2.5">
-                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                <p className="leading-relaxed">
+              <div className="p-3.5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] text-xs flex items-start gap-2.5">
+                <AlertCircle className="w-4 h-4 text-[#86868b] shrink-0 mt-0.5" />
+                <p className="leading-relaxed text-[#86868b]">
                   Doctor is not currently affiliated with an active clinic. Online booking is disabled.
                 </p>
               </div>
             </div>
           ) : (
             <div className="py-4 border-b border-[#f0f0f2]">
-              <label className="block text-xs font-semibold text-[#1d1d1f] mb-2">
+              <label className="block text-xs font-medium text-[#1d1d1f] mb-2 tracking-tight">
                 Clinic
               </label>
 
               {doctor.clinics.length === 1 ? (
-                <div className="p-3.5 rounded-2xl bg-white border border-[#0066cc] ring-2 ring-[#0066cc]/10 shadow-xs flex items-center justify-between">
+                <div className="p-3.5 rounded-2xl bg-white border border-[#0066cc] ring-4 ring-[#0066cc]/10 flex items-center justify-between">
                   <div className="min-w-0 flex-1">
                     <span className="text-sm font-semibold text-[#1d1d1f] block truncate">
                       {doctor.clinics[0].clinic.clinicName}
@@ -498,7 +491,7 @@ export const BookAppointment: React.FC = () => {
                       <span className="truncate">{doctor.clinics[0].clinic.address}{doctor.clinics[0].clinic.city ? `, ${doctor.clinics[0].clinic.city}` : ''}</span>
                     </span>
                   </div>
-                  <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full shrink-0 ml-2">
+                  <span className="text-xs font-semibold text-[#1d1d1f] bg-[#f5f5f7] border border-[#e5e5ea] px-3 py-1 rounded-full shrink-0 ml-2">
                     Fee: ₹{doctor.clinics[0].consultationFee ?? doctor.consultationFee}
                   </span>
                 </div>
@@ -512,10 +505,10 @@ export const BookAppointment: React.FC = () => {
                         key={c.clinicId}
                         type="button"
                         onClick={() => handleSelectClinic(c.clinicId)}
-                        className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer ${
+                        className={`p-3.5 rounded-2xl border text-left transition-all duration-150 cursor-pointer ${
                           isSelected
-                            ? 'bg-white border-[#0066cc] ring-2 ring-[#0066cc]/15 shadow-xs'
-                            : 'bg-[#fafafc] border-[#e5e5ea] hover:bg-white hover:border-[#d2d2d7]'
+                            ? 'bg-white border-[#0066cc] ring-4 ring-[#0066cc]/10'
+                            : 'bg-[#f5f5f7]/60 border-[#e5e5ea] hover:bg-white hover:border-[#d2d2d7]'
                         }`}
                       >
                         <div className="flex items-center justify-between gap-1 mb-1">
@@ -530,7 +523,7 @@ export const BookAppointment: React.FC = () => {
                           <MapPin className="w-3 h-3 text-[#86868b] shrink-0" />
                           <span className="truncate">{c.clinic.address}{c.clinic.city ? `, ${c.clinic.city}` : ''}</span>
                         </span>
-                        <div className="mt-2 pt-2 border-t border-[#f0f0f2] flex items-center justify-between text-xs">
+                        <div className="mt-2 pt-2 border-t border-[#e5e5ea] flex items-center justify-between text-xs">
                           <span className="text-[#86868b]">Fee</span>
                           <span className="font-semibold text-[#1d1d1f]">₹{clinicFee}</span>
                         </div>
@@ -545,15 +538,15 @@ export const BookAppointment: React.FC = () => {
           {/* Date Picker */}
           <div className="pt-4 pb-2">
             <div className="flex items-center justify-between mb-1.5">
-              <label className="text-xs font-semibold text-[#1d1d1f]">Date</label>
+              <label className="text-xs font-medium text-[#1d1d1f] tracking-tight">Date</label>
               <div className="flex items-center gap-1">
                 <button
                   type="button"
                   onClick={() => setAppointmentDate(getLocalDateString())}
-                  className={`px-2.5 py-0.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
+                  className={`px-2.5 py-0.5 rounded-full text-xs font-medium transition-all duration-150 cursor-pointer border ${
                     appointmentDate === getLocalDateString()
-                      ? 'bg-[#1d1d1f] text-white'
-                      : 'bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f]'
+                      ? 'bg-[#0066cc] text-white border-[#0066cc]'
+                      : 'bg-[#f5f5f7] text-[#1d1d1f] border-[#e5e5ea] hover:bg-[#e8e8ed]'
                   }`}
                 >
                   Today
@@ -561,10 +554,10 @@ export const BookAppointment: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setAppointmentDate(getTomorrowDateString())}
-                  className={`px-2.5 py-0.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
+                  className={`px-2.5 py-0.5 rounded-full text-xs font-medium transition-all duration-150 cursor-pointer border ${
                     appointmentDate === getTomorrowDateString()
-                      ? 'bg-[#1d1d1f] text-white'
-                      : 'bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f]'
+                      ? 'bg-[#0066cc] text-white border-[#0066cc]'
+                      : 'bg-[#f5f5f7] text-[#1d1d1f] border-[#e5e5ea] hover:bg-[#e8e8ed]'
                   }`}
                 >
                   Tomorrow
@@ -577,13 +570,13 @@ export const BookAppointment: React.FC = () => {
               value={appointmentDate}
               min={getLocalDateString()}
               onChange={(e) => setAppointmentDate(e.target.value)}
-              className="w-full h-10 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] transition-all focus:outline-none focus:border-[#0066cc]"
+              className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
             />
           </div>
 
           {/* Shift Selection */}
           <div className="py-4 border-b border-[#f0f0f2]">
-            <label className="block text-xs font-semibold text-[#1d1d1f] mb-2">Shift</label>
+            <label className="block text-xs font-medium text-[#1d1d1f] mb-2 tracking-tight">Shift</label>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               {(queuePreview?.availableSlots || doctorSlots.map((s) => ({ slot: s }))).map((item: any) => {
@@ -599,12 +592,12 @@ export const BookAppointment: React.FC = () => {
                     type="button"
                     disabled={slotPassed}
                     onClick={() => setSelectedSlotId(s.id)}
-                    className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer ${
+                    className={`p-3.5 rounded-2xl border text-left transition-all duration-150 cursor-pointer ${
                       slotPassed
                         ? 'bg-[#f5f5f7] border-[#e5e5ea] opacity-60 cursor-not-allowed'
                         : isSelected
-                        ? 'bg-white border-[#0066cc] ring-2 ring-[#0066cc]/15 shadow-xs'
-                        : 'bg-[#fafafc] border-[#e5e5ea] hover:bg-white hover:border-[#d2d2d7]'
+                        ? 'bg-white border-[#0066cc] ring-4 ring-[#0066cc]/10'
+                        : 'bg-[#f5f5f7]/60 border-[#e5e5ea] hover:bg-white hover:border-[#d2d2d7]'
                     }`}
                   >
                     <div className="flex items-center justify-between gap-2 mb-1">
@@ -624,15 +617,15 @@ export const BookAppointment: React.FC = () => {
 
                     <div>
                       {slotPassed ? (
-                        <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-gray-200 text-gray-700">
+                        <span className="text-[10px] font-medium px-2.5 py-0.5 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-[#86868b]">
                           Shift Ended
                         </span>
                       ) : slotFull ? (
-                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-rose-50 text-rose-700">
+                        <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-rose-50/80 border border-rose-200/80 text-rose-700">
                           Full
                         </span>
                       ) : (
-                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">
+                        <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-[#0066cc]/8 border border-[#0066cc]/15 text-[#0066cc]">
                           Available
                         </span>
                       )}
@@ -675,17 +668,17 @@ export const BookAppointment: React.FC = () => {
           <form onSubmit={handleBooking} className="space-y-4">
             {/* Booking For Toggle */}
             <div className="py-2 border-b border-[#f0f0f2] pb-4">
-              <label className="block text-xs font-semibold text-[#1d1d1f] mb-2">
-                Booking For:
+              <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                Booking For
               </label>
-              <div className="flex rounded-full bg-[#f5f5f7] p-1 border border-[#e5e5ea] max-w-xs shadow-2xs">
+              <div className="p-1 bg-[#f5f5f7] border border-[#e5e5ea] rounded-xl flex gap-1 max-w-xs select-none">
                 <button
                   type="button"
                   onClick={() => setBookingFor('myself')}
-                  className={`flex-1 py-1.5 text-xs font-semibold rounded-full transition-all cursor-pointer ${
+                  className={`flex-1 py-2 text-[13px] rounded-lg transition-all duration-150 cursor-pointer ${
                     bookingFor === 'myself'
-                      ? 'bg-white text-[#1d1d1f] shadow-xs'
-                      : 'text-[#86868b] hover:text-[#1d1d1f]'
+                      ? 'bg-white text-[#1d1d1f] font-semibold shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_1px_rgba(0,0,0,0.04)] border border-black/5'
+                      : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
                   }`}
                 >
                   Myself
@@ -693,10 +686,10 @@ export const BookAppointment: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setBookingFor('other')}
-                  className={`flex-1 py-1.5 text-xs font-semibold rounded-full transition-all cursor-pointer ${
+                  className={`flex-1 py-2 text-[13px] rounded-lg transition-all duration-150 cursor-pointer ${
                     bookingFor === 'other'
-                      ? 'bg-white text-[#1d1d1f] shadow-xs'
-                      : 'text-[#86868b] hover:text-[#1d1d1f]'
+                      ? 'bg-white text-[#1d1d1f] font-semibold shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_1px_rgba(0,0,0,0.04)] border border-black/5'
+                      : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
                   }`}
                 >
                   Someone Else
@@ -704,14 +697,14 @@ export const BookAppointment: React.FC = () => {
               </div>
 
               {bookingFor === 'other' && (
-                <div className="mt-3 p-3.5 rounded-2xl bg-[#0066cc]/5 border border-[#0066cc]/20 space-y-3">
-                  <div className="text-xs font-semibold text-[#0066cc]">
+                <div className="mt-3 p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] space-y-3">
+                  <div className="text-xs font-semibold text-[#1d1d1f] tracking-tight">
                     Patient Details
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div className="sm:col-span-1">
-                      <label className="block text-[11px] font-semibold text-[#1d1d1f] mb-1">
-                        Full Name *
+                      <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                        Full Name <span className="text-rose-500">*</span>
                       </label>
                       <input
                         type="text"
@@ -719,12 +712,12 @@ export const BookAppointment: React.FC = () => {
                         value={patientName}
                         onChange={(e) => setPatientName(e.target.value)}
                         placeholder="e.g. Rahul Ray"
-                        className="w-full h-10 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] focus:outline-none focus:border-[#0066cc]"
+                        className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-semibold text-[#1d1d1f] mb-1">
-                        Age *
+                      <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                        Age <span className="text-rose-500">*</span>
                       </label>
                       <input
                         type="text"
@@ -732,17 +725,17 @@ export const BookAppointment: React.FC = () => {
                         value={patientAge}
                         onChange={(e) => setPatientAge(e.target.value)}
                         placeholder="e.g. 24"
-                        className="w-full h-10 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] focus:outline-none focus:border-[#0066cc]"
+                        className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-semibold text-[#1d1d1f] mb-1">
+                      <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
                         Gender
                       </label>
                       <select
                         value={patientGender}
                         onChange={(e) => setPatientGender(e.target.value)}
-                        className="w-full h-10 px-2.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] focus:outline-none focus:border-[#0066cc]"
+                        className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 cursor-pointer"
                       >
                         <option value="Male">Male</option>
                         <option value="Female">Female</option>
@@ -755,7 +748,7 @@ export const BookAppointment: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-[#1d1d1f] mb-1.5">
+              <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
                 Reason for Visit
               </label>
               <input
@@ -763,12 +756,12 @@ export const BookAppointment: React.FC = () => {
                 value={reasonForVisit}
                 onChange={(e) => setReasonForVisit(e.target.value)}
                 placeholder="e.g. Checkup, consultation, follow-up"
-                className="w-full h-10 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] focus:outline-none focus:border-[#0066cc]"
+                className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-[#1d1d1f] mb-1.5">
+              <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
                 Symptoms <span className="text-[#86868b] font-normal">(Optional)</span>
               </label>
               <textarea
@@ -776,11 +769,11 @@ export const BookAppointment: React.FC = () => {
                 value={symptoms}
                 onChange={(e) => setSymptoms(e.target.value)}
                 placeholder="Describe any symptoms (optional)..."
-                className="w-full p-3 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] focus:outline-none focus:border-[#0066cc] resize-none"
+                className="w-full p-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 resize-none"
               ></textarea>
             </div>
 
-            {/* Fee & Confirmation Notice (ZERO receptionist contact exposed before button click!) */}
+            {/* Fee & Confirmation Notice */}
             <div className="p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] space-y-2">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-[#86868b]">Consultation Fee</span>
@@ -792,34 +785,34 @@ export const BookAppointment: React.FC = () => {
             </div>
 
             {!hasActiveReceptionist && (
-              <div className="p-3.5 rounded-2xl bg-amber-50/90 border border-amber-200 text-amber-900 text-xs flex items-start gap-2.5">
-                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+              <div className="p-3.5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] text-xs flex items-start gap-2.5">
+                <AlertCircle className="w-4 h-4 text-[#86868b] shrink-0 mt-0.5" />
                 <div>
-                  <span className="font-semibold block text-amber-950 mb-0.5">Booking Unavailable at this Clinic</span>
-                  Online queue booking is currently closed for this doctor at {selectedClinic?.clinic.clinicName || 'this facility'} because no front-desk receptionist is currently assigned at this clinic.
+                  <span className="font-semibold block text-[#1d1d1f] mb-0.5">Booking Unavailable at this Clinic</span>
+                  <span className="text-[#86868b]">
+                    Online queue booking is currently closed for this doctor at {selectedClinic?.clinic.clinicName || 'this facility'} because no front-desk receptionist is currently assigned at this clinic.
+                  </span>
                 </div>
               </div>
             )}
 
             {isSelectedSlotPassed && (
-              <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs">
+              <div className="p-3 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] text-xs">
                 This shift has ended for today. Pick an upcoming shift or future date.
               </div>
             )}
 
             {isSelectedSlotFull && !isSelectedSlotPassed && (
-              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs">
+              <div className="p-3 rounded-xl bg-rose-50/80 border border-rose-200/80 text-rose-700 text-xs">
                 Shift is full. Select another slot or date.
               </div>
             )}
 
             <div className="pt-2 flex justify-end">
-              <AppleButton
-                variant="primary"
-                size="lg"
+              <button
                 type="submit"
                 disabled={submitting || isSelectedSlotPassed || isSelectedSlotFull || !doctor.clinics || doctor.clinics.length === 0 || !hasActiveReceptionist}
-                className="w-full sm:w-auto font-semibold"
+                className="w-full sm:w-auto h-11 px-7 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-medium transition-all duration-150 shadow-[0_2px_8px_rgba(0,102,204,0.2),0_1px_2px_rgba(0,0,0,0.06)] flex items-center justify-center gap-2 cursor-pointer select-none disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {!doctor.clinics || doctor.clinics.length === 0
                   ? 'Booking Unavailable'
@@ -832,7 +825,7 @@ export const BookAppointment: React.FC = () => {
                   : isSelectedSlotFull
                   ? 'Shift Full'
                   : `Submit Request to Receptionist (₹${activeFee})`}
-              </AppleButton>
+              </button>
             </div>
           </form>
         </UtilityCard>

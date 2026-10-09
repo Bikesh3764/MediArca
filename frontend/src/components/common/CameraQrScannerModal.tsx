@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import jsQR from 'jsqr';
-import { X, Camera, AlertCircle, CheckCircle2, ArrowRight } from 'lucide-react';
-import { AppleButton } from '../ui/AppleButton';
+import { X, AlertCircle, CheckCircle2, ArrowRight } from 'lucide-react';
 
 interface CameraQrScannerModalProps {
   isOpen: boolean;
@@ -172,38 +171,36 @@ export const CameraQrScannerModal: React.FC<CameraQrScannerModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
-      <div className="relative w-full max-w-md bg-white rounded-[24px] border border-[#e5e5ea] shadow-2xl overflow-hidden p-6 text-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xl animate-fadeIn">
+      <div className="relative w-full max-w-[450px] bg-white rounded-[28px] border border-[#e5e5ea] shadow-[0_24px_64px_rgba(0,0,0,0.12),0_4px_16px_rgba(0,0,0,0.04)] overflow-hidden p-6 sm:p-7 text-center">
         {/* Close Button */}
         <button
+          type="button"
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 rounded-full text-[#86868b] hover:text-[#1d1d1f] hover:bg-black/[0.05] transition-colors cursor-pointer z-10"
+          className="absolute top-4 right-4 w-8 h-8 rounded-full bg-[#f5f5f7] hover:bg-[#e5e5ea] flex items-center justify-center text-[#86868b] hover:text-[#1d1d1f] transition-colors cursor-pointer z-10"
         >
-          <X className="w-5 h-5" />
+          <X className="w-4 h-4" />
         </button>
 
         {/* Header */}
-        <div className="mb-4">
-          <div className="w-12 h-12 rounded-2xl bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center mx-auto mb-3">
-            <Camera className="w-6 h-6" />
-          </div>
-          <h2 className="text-xl font-semibold text-[#1d1d1f] tracking-tight">
-            Scan Clinic QR Standee
+        <div className="mb-5">
+          <h2 className="text-[22px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">
+            Clinic Check-In
           </h2>
-          <p className="text-xs text-[#86868b] mt-1 max-w-xs mx-auto">
-            Point your camera at the physical QR standee at the reception desk to verify your arrival.
+          <p className="text-xs text-[#86868b] mt-1">
+            Scan the reception desk QR standee or enter the 6-digit code.
           </p>
         </div>
 
-        {/* Tab Toggle: Camera vs Code */}
-        <div className="flex rounded-full bg-[#f5f5f7] p-1 border border-[#e5e5ea] mb-5">
+        {/* Segmented Toggle: Camera vs Code */}
+        <div className="p-1 bg-[#f5f5f7] border border-[#e5e5ea] rounded-xl flex gap-1 select-none mb-5">
           <button
             type="button"
             onClick={() => setMode('camera')}
-            className={`flex-1 py-1.5 text-xs font-semibold rounded-full transition-all cursor-pointer ${
+            className={`flex-1 py-2 text-xs rounded-lg transition-all duration-150 cursor-pointer text-center ${
               mode === 'camera'
-                ? 'bg-white text-[#1d1d1f] shadow-xs'
-                : 'text-[#86868b] hover:text-[#1d1d1f]'
+                ? 'bg-white text-[#1d1d1f] font-semibold shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_1px_rgba(0,0,0,0.04)] border border-black/5'
+                : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
             }`}
           >
             Camera Scanner
@@ -211,13 +208,13 @@ export const CameraQrScannerModal: React.FC<CameraQrScannerModalProps> = ({
           <button
             type="button"
             onClick={() => setMode('manual')}
-            className={`flex-1 py-1.5 text-xs font-semibold rounded-full transition-all cursor-pointer ${
+            className={`flex-1 py-2 text-xs rounded-lg transition-all duration-150 cursor-pointer text-center ${
               mode === 'manual'
-                ? 'bg-white text-[#1d1d1f] shadow-xs'
-                : 'text-[#86868b] hover:text-[#1d1d1f]'
+                ? 'bg-white text-[#1d1d1f] font-semibold shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_1px_rgba(0,0,0,0.04)] border border-black/5'
+                : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
             }`}
           >
-            Enter 6-Digit Code
+            6-Digit Code
           </button>
         </div>
 
@@ -225,21 +222,20 @@ export const CameraQrScannerModal: React.FC<CameraQrScannerModalProps> = ({
         {mode === 'camera' && (
           <div>
             {cameraError ? (
-              <div className="my-6 p-6 rounded-2xl bg-amber-50 border border-amber-200 text-center">
-                <AlertCircle className="w-8 h-8 text-amber-600 mx-auto mb-3" />
-                <p className="text-xs text-[#1d1d1f] font-medium mb-2">Camera Unavailable</p>
-                <p className="text-[11px] text-[#555558] mb-4 leading-relaxed">{cameraError}</p>
-                <AppleButton
-                  variant="primary"
-                  size="sm"
+              <div className="my-4 p-5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] text-center">
+                <AlertCircle className="w-6 h-6 text-[#86868b] mx-auto mb-2.5" />
+                <p className="text-xs font-semibold text-[#1d1d1f] mb-1">Camera Unavailable</p>
+                <p className="text-xs text-[#86868b] mb-4 leading-relaxed">{cameraError}</p>
+                <button
+                  type="button"
                   onClick={() => setMode('manual')}
-                  className="w-full"
+                  className="w-full h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-medium transition-all duration-150 shadow-[0_2px_8px_rgba(0,102,204,0.2),0_1px_2px_rgba(0,0,0,0.06)] flex items-center justify-center cursor-pointer"
                 >
-                  Enter Desk Code Manually
-                </AppleButton>
+                  Enter 6-Digit Code
+                </button>
               </div>
             ) : (
-              <div className="relative w-full aspect-square max-w-[300px] mx-auto rounded-2xl overflow-hidden bg-black border border-[#e5e5ea] shadow-inner flex items-center justify-center">
+              <div className="relative w-full aspect-square max-w-[280px] mx-auto rounded-2xl overflow-hidden bg-black border border-[#d2d2d7] flex items-center justify-center">
                 <video
                   ref={videoRef}
                   className="w-full h-full object-cover"
@@ -249,61 +245,54 @@ export const CameraQrScannerModal: React.FC<CameraQrScannerModalProps> = ({
                 <canvas ref={canvasRef} className="hidden" />
 
                 {/* Viewfinder overlay */}
-                <div className="absolute inset-0 border-2 border-white/20 rounded-2xl pointer-events-none flex items-center justify-center">
+                <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
                   <div className="w-48 h-48 border-2 border-[#0066cc] rounded-xl relative shadow-[0_0_20px_rgba(0,102,204,0.3)]">
-                    {/* Laser scan line animation */}
                     <div className="w-full h-0.5 bg-[#0066cc] shadow-[0_0_8px_#0066cc] absolute top-0 left-0 animate-pulse transition-all" />
                   </div>
                 </div>
 
                 {scannedFeedback && (
-                  <div className="absolute inset-0 bg-emerald-600/90 backdrop-blur-xs flex flex-col items-center justify-center text-white animate-fadeIn">
-                    <CheckCircle2 className="w-12 h-12 mb-2 animate-bounce" />
-                    <p className="text-sm font-semibold">QR Code Verified!</p>
+                  <div className="absolute inset-0 bg-[#0066cc]/95 backdrop-blur-xs flex flex-col items-center justify-center text-white animate-fadeIn">
+                    <CheckCircle2 className="w-10 h-10 mb-2" />
+                    <p className="text-sm font-semibold">QR Code Verified</p>
                   </div>
                 )}
               </div>
             )}
-
-            <p className="text-[11px] text-[#86868b] mt-4">
-              Hold your camera steady over the front desk standee.
-            </p>
           </div>
         )}
 
         {/* Manual Code Mode */}
         {mode === 'manual' && (
-          <form onSubmit={handleManualSubmit} className="space-y-4 my-2 text-left">
+          <form onSubmit={handleManualSubmit} className="space-y-4 text-left">
             <div>
-              <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5">
-                6-Digit Clinic Security Code
+              <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                6-Digit Desk Code
               </label>
               <input
                 type="text"
+                inputMode="numeric"
                 maxLength={6}
                 value={manualCode}
                 onChange={(e) => setManualCode(e.target.value.replace(/\D/g, ''))}
-                placeholder="e.g. 123456"
-                className="w-full px-4 py-3 rounded-xl border border-[#e5e5ea] text-center text-lg font-bold tracking-widest text-[#1d1d1f] focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
+                placeholder="123456"
+                className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-center text-base font-semibold tracking-widest text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 autoFocus
               />
-              <p className="text-[11px] text-[#86868b] mt-1 text-center">
-                The 6-digit code printed directly beneath the QR code on the desk standee.
-              </p>
             </div>
 
-            <AppleButton
+            <button
               type="submit"
-              variant="primary"
               disabled={manualCode.trim().length !== 6}
-              className="w-full flex items-center justify-center gap-2 mt-4"
+              className="w-full h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-medium transition-all duration-150 shadow-[0_2px_8px_rgba(0,102,204,0.2),0_1px_2px_rgba(0,0,0,0.06)] flex items-center justify-center gap-2 cursor-pointer select-none disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <span>Confirm Arrival</span>
               <ArrowRight className="w-4 h-4" />
-            </AppleButton>
+            </button>
           </form>
         )}
       </div>
     </div>
   );
 };
+

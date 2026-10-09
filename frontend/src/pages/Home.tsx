@@ -23,13 +23,11 @@ import {
   MapPin,
   Clock,
   ArrowLeft,
-  Building2,
-  Stethoscope,
   X,
   SlidersHorizontal,
   Phone,
   RotateCcw,
-  ChevronRight,
+  ChevronDown,
 } from 'lucide-react';
 
 const getClinicLocationDisplay = (clinic?: { address?: string; city?: string | null; state?: string | null } | null): string => {
@@ -502,39 +500,37 @@ export const Home: React.FC = () => {
       </section>
 
       {/* 2. Main Discovery Workspace */}
-      <section id="catalog-section" className="w-full px-4 sm:px-6 lg:px-10 xl:px-14 py-8 sm:py-10 flex-1">
+      <section id="catalog-section" className="w-full max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-14 py-8 sm:py-10 flex-1">
         {/* Navigation & Search Bar Header */}
         <div className="flex flex-col sm:flex-row items-center gap-3.5 sm:gap-4 pb-6 mb-8 border-b border-[#e5e5ea]">
-          <div className="h-11 inline-flex items-center p-1 bg-[#f5f5f7] rounded-full border border-[#e5e5ea] shrink-0">
+          <div className="h-11 inline-flex items-center p-1 bg-[#e8e8ed]/70 rounded-full border border-[#e5e5ea] shrink-0">
             <button
               type="button"
               onClick={() => handleSectionSwitch('clinics')}
-              className={`h-full flex items-center gap-2 px-5 rounded-full text-xs sm:text-sm font-semibold transition-all cursor-pointer active:scale-95 ${
+              className={`h-full flex items-center justify-center px-6 rounded-full text-xs sm:text-sm font-semibold transition-all cursor-pointer active:scale-95 ${
                 activeSection === 'clinics'
-                  ? 'bg-white text-[#1d1d1f] shadow-xs'
+                  ? 'bg-white text-[#1d1d1f] shadow-[0_1px_3px_rgba(0,0,0,0.08)]'
                   : 'text-[#86868b] hover:text-[#1d1d1f]'
               }`}
             >
-              <Building2 className={`w-4 h-4 ${activeSection === 'clinics' ? 'text-[#0066cc]' : 'text-[#86868b]'}`} />
               <span>Clinics</span>
             </button>
             <button
               type="button"
               onClick={() => handleSectionSwitch('doctors')}
-              className={`h-full flex items-center gap-2 px-5 rounded-full text-xs sm:text-sm font-semibold transition-all cursor-pointer active:scale-95 ${
+              className={`h-full flex items-center justify-center px-6 rounded-full text-xs sm:text-sm font-semibold transition-all cursor-pointer active:scale-95 ${
                 activeSection === 'doctors'
-                  ? 'bg-white text-[#1d1d1f] shadow-xs'
+                  ? 'bg-white text-[#1d1d1f] shadow-[0_1px_3px_rgba(0,0,0,0.08)]'
                   : 'text-[#86868b] hover:text-[#1d1d1f]'
               }`}
             >
-              <Stethoscope className={`w-4 h-4 ${activeSection === 'doctors' ? 'text-[#0066cc]' : 'text-[#86868b]'}`} />
               <span>Doctors</span>
             </button>
           </div>
 
           {/* Search bar beside Clinics & Doctors Switch */}
           {activeSection === 'clinics' && !selectedClinic && (
-            <div className="flex-1 h-11 bg-white px-3.5 rounded-full border border-[#e5e5ea] flex items-center gap-2.5 sm:gap-3">
+            <div className="flex-1 w-full h-11 bg-white px-3.5 rounded-full border border-[#e5e5ea] flex items-center gap-2.5 sm:gap-3 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
               <div className="flex items-center gap-2 flex-1 h-full min-w-0">
                 <Search className="w-4 h-4 text-[#86868b] shrink-0" />
                 <input
@@ -592,6 +588,7 @@ export const Home: React.FC = () => {
                         ).length
                       : clinics.length
                   }
+                  disabled={clinicSelectedState === 'All'}
                   variant="bar"
                   searchable={clinicCityOptions.length > 5}
                 />
@@ -610,7 +607,7 @@ export const Home: React.FC = () => {
           )}
 
           {activeSection === 'doctors' && (
-            <div className="flex-1 h-11 bg-white px-3.5 rounded-full border border-[#e5e5ea] flex items-center gap-2.5 sm:gap-3">
+            <div className="flex-1 w-full h-11 bg-white px-3.5 rounded-full border border-[#e5e5ea] flex items-center gap-2.5 sm:gap-3 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
               <div className="flex items-center gap-2 flex-1 h-full min-w-0">
                 <Search className="w-4 h-4 text-[#86868b] shrink-0" />
                 <input
@@ -683,37 +680,31 @@ export const Home: React.FC = () => {
             {selectedClinic ? (
               <div className="space-y-8 animate-fadeIn">
                 {/* Selected Clinic Header Card */}
-                <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-5 sm:p-6 shadow-xs">
+                <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="flex items-start sm:items-center gap-4 min-w-0">
-                      <div className="w-12 h-12 rounded-2xl bg-[#0066cc]/10 flex items-center justify-center text-[#0066cc] shrink-0">
-                        <Building2 className="w-6 h-6" />
-                      </div>
-                      <div className="min-w-0">
-                        <h2 className="text-xl sm:text-2xl font-semibold text-[#1d1d1f] tracking-tight truncate mb-1">
-                          {selectedClinic.clinicName}
-                        </h2>
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-[#86868b]">
-                          <span className="inline-flex items-center gap-1.5 font-medium text-[#48484a]">
-                            <MapPin className="w-3.5 h-3.5 text-[#0066cc] shrink-0" />
-                            <span className="truncate max-w-xs sm:max-w-md">
-                              {getClinicLocationDisplay(selectedClinic)}
-                            </span>
+                    <div className="min-w-0">
+                      <h2 className="text-[22px] font-semibold text-[#1d1d1f] tracking-tight leading-snug truncate mb-1.5">
+                        {selectedClinic.clinicName}
+                      </h2>
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-[#86868b]">
+                        <span className="inline-flex items-center gap-1.5 font-normal text-[#48484a]">
+                          <MapPin className="w-3.5 h-3.5 text-[#0066cc] shrink-0" />
+                          <span className="truncate max-w-xs sm:max-w-md font-normal">
+                            {getClinicLocationDisplay(selectedClinic)}
                           </span>
-                          {selectedClinic.phone && (
-                            <a
-                              href={`tel:${selectedClinic.phone}`}
-                              className="inline-flex items-center gap-1.5 font-medium text-[#48484a] hover:text-[#0066cc] transition-colors"
-                            >
-                              <Phone className="w-3.5 h-3.5 text-[#0066cc] shrink-0" />
-                              <span>{formatDisplayPhone(selectedClinic.phone)}</span>
-                            </a>
-                          )}
-                          <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md bg-[#f5f5f7] text-[#1d1d1f] font-medium border border-[#e5e5ea]">
-                            <Stethoscope className="w-3 h-3 text-[#0066cc]" />
-                            {clinicPracticingDoctors.length} {clinicPracticingDoctors.length === 1 ? 'Specialist' : 'Specialists'}
-                          </span>
-                        </div>
+                        </span>
+                        {selectedClinic.phone && (
+                          <a
+                            href={`tel:${selectedClinic.phone}`}
+                            className="inline-flex items-center gap-1.5 font-normal text-[#48484a] hover:text-[#0066cc] transition-colors"
+                          >
+                            <Phone className="w-3.5 h-3.5 text-[#0066cc] shrink-0" />
+                            <span className="font-normal">{formatDisplayPhone(selectedClinic.phone)}</span>
+                          </a>
+                        )}
+                        <span className="inline-flex items-center text-[11px] px-2.5 py-0.5 rounded-full bg-[#f5f5f7] text-[#1d1d1f] font-medium border border-[#e5e5ea]">
+                          {clinicPracticingDoctors.length} {clinicPracticingDoctors.length === 1 ? 'Specialist' : 'Specialists'}
+                        </span>
                       </div>
                     </div>
 
@@ -731,26 +722,25 @@ export const Home: React.FC = () => {
                 {/* Practicing Doctors Section */}
                 <div>
                   <div className="mb-6">
-                    <h3 className="text-xl sm:text-2xl font-semibold text-[#1d1d1f] tracking-tight">
+                    <h3 className="text-[22px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">
                       Doctors at this clinic
                     </h3>
                   </div>
 
                   {clinicPracticingDoctors.length === 0 ? (
-                    <div className="bg-white rounded-[18px] border border-[#e0e0e0] p-12 text-center max-w-md mx-auto">
-                      <Stethoscope className="w-8 h-8 text-[#86868b] mx-auto mb-3" />
+                    <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-12 text-center max-w-md mx-auto shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
                       <h4 className="text-base font-semibold text-[#1d1d1f] mb-1">
                         No doctors listed
                       </h4>
-                      <p className="text-xs text-[#86868b] mb-4">
-                        No doctors listed right now.
+                      <p className="text-xs text-[#86868b] mb-5">
+                        No doctors are currently listed for this clinic.
                       </p>
                       <AppleButton variant="secondary" size="sm" onClick={() => setSelectedClinic(null)}>
                         Back to Clinics
                       </AppleButton>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5 sm:gap-6">
+                    <div className="grid grid-cols-1 md:[grid-template-columns:repeat(auto-fill,minmax(330px,1fr))] gap-5 sm:gap-6 w-full">
                       {clinicPracticingDoctors.map((docItem) => {
                         const doctor = docItem.doctor;
                         const slots = parseDoctorSlots({
@@ -763,7 +753,7 @@ export const Home: React.FC = () => {
                         return (
                           <div
                             key={doctor.id}
-                            className="w-full bg-white rounded-[20px] border border-[#e0e0e0] overflow-hidden hover:border-[#0066cc]/40 transition-all duration-200 flex flex-col justify-between group"
+                            className="w-full bg-white rounded-[24px] border border-[#e5e5ea] shadow-[0_2px_12px_rgba(0,0,0,0.03)] overflow-hidden hover:border-[#0066cc]/40 transition-all duration-200 flex flex-col justify-between group"
                           >
                             {/* Doctor Photo Banner - Natural 16:10 proportion displaying the full photo */}
                             <div
@@ -878,17 +868,16 @@ export const Home: React.FC = () => {
               <div className="space-y-6">
                 {/* Clinics Cards Grid */}
                 {loadingClinics ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5 sm:gap-6">
+                  <div className="grid grid-cols-1 md:[grid-template-columns:repeat(auto-fill,minmax(330px,1fr))] gap-5 sm:gap-6 w-full">
                     {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
                       <div
                         key={i}
-                        className="h-72 rounded-[20px] bg-white border border-[#e0e0e0] animate-pulse p-4"
+                        className="h-72 rounded-[24px] bg-white border border-[#e5e5ea] animate-pulse p-4"
                       />
                     ))}
                   </div>
                 ) : filteredClinics.length === 0 ? (
-                  <div className="bg-white rounded-[24px] border border-[#e0e0e0] p-12 text-center max-w-md mx-auto">
-                    <Building2 className="w-10 h-10 text-[#86868b] mx-auto mb-3" />
+                  <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-12 text-center max-w-md mx-auto shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
                     <h3 className="text-base font-semibold text-[#1d1d1f] mb-1">
                       No clinics found
                     </h3>
@@ -900,7 +889,7 @@ export const Home: React.FC = () => {
                     </AppleButton>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5 sm:gap-6">
+                  <div className="grid grid-cols-1 md:[grid-template-columns:repeat(auto-fill,minmax(330px,1fr))] gap-5 sm:gap-6 w-full">
                     {filteredClinics.map((clinic) => {
                       const docCount = (clinic.doctors && Array.isArray(clinic.doctors))
                         ? clinic.doctors.length
@@ -911,7 +900,7 @@ export const Home: React.FC = () => {
                         <div
                           key={clinic.id}
                           onClick={() => setSelectedClinic(clinic)}
-                          className="w-full bg-white rounded-[20px] border border-[#e0e0e0] overflow-hidden hover:border-[#0066cc]/40 transition-all duration-200 flex flex-col justify-between group cursor-pointer"
+                          className="w-full bg-white rounded-[24px] border border-[#e5e5ea] shadow-[0_2px_12px_rgba(0,0,0,0.03)] overflow-hidden hover:border-[#0066cc]/40 transition-all duration-200 flex flex-col justify-between group cursor-pointer"
                         >
                           {/* Top Facility Photography Banner */}
                           <div className="relative w-full aspect-[16/10] bg-[#f5f5f7] border-b border-[#f0f0f2] overflow-hidden flex items-center justify-center">
@@ -920,12 +909,6 @@ export const Home: React.FC = () => {
                               alt={clinic.clinicName}
                               className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
                             />
-                            {/* Doctor Count Pill Badge Overlay */}
-                            <div className="absolute top-3 right-3">
-                              <span className="text-[11px] font-medium text-[#1d1d1f] bg-white/95 backdrop-blur-sm px-3 py-1 rounded-full border border-black/5 shadow-2xs">
-                                {docCount === 1 ? '1 Doctor' : `${docCount} Doctors`}
-                              </span>
-                            </div>
                           </div>
 
                           {/* Card Body */}
@@ -933,43 +916,43 @@ export const Home: React.FC = () => {
                             <div>
                               {/* Clinic Name */}
                               <h3
-                                className="text-[16px] sm:text-[17px] font-semibold text-[#1d1d1f] tracking-tight leading-snug group-hover:text-[#0066cc] transition-colors truncate"
+                                className="text-[17px] font-semibold text-[#1d1d1f] tracking-tight leading-snug group-hover:text-[#0066cc] transition-colors truncate"
                                 title={clinic.clinicName}
                               >
                                 {clinic.clinicName}
                               </h3>
 
                               {/* Location & Contact Info */}
-                              <div className="mt-3 space-y-2.5">
-                                <p className="flex items-start gap-2 text-[13px] leading-snug">
-                                  <MapPin className="w-4 h-4 text-[#0066cc] shrink-0 mt-0.5" />
-                                  <span className="line-clamp-2 font-semibold text-[#1d1d1f] tracking-tight">
+                              <div className="mt-2.5 space-y-1.5">
+                                <p className="flex items-start gap-2 text-xs text-[#48484a] font-normal leading-snug">
+                                  <MapPin className="w-3.5 h-3.5 text-[#86868b] shrink-0 mt-0.5" />
+                                  <span className="line-clamp-2 font-normal text-[#48484a]">
                                     {locationDisplay}
                                   </span>
                                 </p>
                                 {clinic.phone && (
-                                  <div className="pt-0.5">
-                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-xs font-semibold text-[#1d1d1f] tracking-tight">
-                                      <Phone className="w-3.5 h-3.5 text-[#0066cc]" />
-                                      <span>{formatDisplayPhone(clinic.phone)}</span>
-                                    </span>
-                                  </div>
+                                  <p className="flex items-center gap-2 text-xs text-[#48484a] font-normal leading-snug">
+                                    <Phone className="w-3.5 h-3.5 text-[#86868b] shrink-0" />
+                                    <span className="font-normal text-[#48484a]">{formatDisplayPhone(clinic.phone)}</span>
+                                  </p>
                                 )}
                               </div>
                             </div>
 
                             {/* Apple HIG Card Footer */}
-                            <div className="mt-4 pt-3.5 border-t border-[#f0f0f2]">
+                            <div className="mt-4 pt-3.5 border-t border-[#f0f0f2] flex items-center justify-between gap-3">
+                              <span className="text-xs font-medium text-[#48484a] bg-[#f5f5f7] px-2.5 py-1 rounded-full border border-[#e5e5ea]">
+                                {docCount === 1 ? '1 Specialist' : `${docCount} Specialists`}
+                              </span>
                               <button
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setSelectedClinic(clinic);
                                 }}
-                                className="w-full h-9 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-[13px] font-semibold tracking-tight transition-all duration-200 active:scale-[0.98] inline-flex items-center justify-center gap-1.5 cursor-pointer shadow-none group-hover:bg-[#0071e3]"
+                                className="h-8 px-5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-medium transition-all duration-150 active:scale-[0.97] inline-flex items-center justify-center cursor-pointer select-none shadow-[0_1px_2px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,102,204,0.15)]"
                               >
-                                <span>View Doctors</span>
-                                <ChevronRight className="w-3.5 h-3.5 text-white/90 transition-transform duration-200 group-hover:translate-x-0.5" />
+                                View Doctors
                               </button>
                             </div>
                           </div>
@@ -985,22 +968,19 @@ export const Home: React.FC = () => {
 
         {/* SECTION B: DOCTORS DISCOVERY */}
         {activeSection === 'doctors' && (
-          <div className="flex flex-col lg:flex-row gap-8 items-start">
+          <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start w-full">
             {/* Desktop Left Filter Sidebar */}
-            <aside className="hidden lg:block w-72 bg-white rounded-[20px] border border-[#e0e0e0] p-5 shrink-0 space-y-5">
+            <aside className="hidden lg:block w-64 xl:w-72 bg-white rounded-[24px] border border-[#e5e5ea] p-5 shrink-0 space-y-5 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
               <div className="flex items-center justify-between pb-3.5 border-b border-[#f0f0f2]">
-                <div className="flex items-center gap-2">
-                  <SlidersHorizontal className="w-4 h-4 text-[#86868b]" />
-                  <h3 className="text-sm font-semibold text-[#1d1d1f] tracking-tight">Filters</h3>
-                </div>
+                <h3 className="text-sm font-semibold text-[#1d1d1f] tracking-tight">Filters</h3>
                 {(doctorSearchQuery || doctorLocationQuery || selectedSpecialty !== 'All' || selectedCity !== 'All' || selectedState !== 'All' || minExperience > 0 || maxFee < 3000) && (
                   <button
                     type="button"
                     onClick={resetDoctorFilters}
-                    className="h-6 px-2.5 rounded-full text-xs font-medium text-[#0066cc] hover:text-white bg-[#0066cc]/10 hover:bg-[#0066cc] border border-[#0066cc]/20 hover:border-[#0066cc] transition-all flex items-center gap-1 cursor-pointer active:scale-95 group shadow-2xs"
+                    className="h-6 px-2.5 rounded-full text-xs font-medium text-[#1d1d1f] bg-[#f5f5f7] hover:bg-[#e8e8ed] border border-[#e5e5ea] transition-all flex items-center gap-1 cursor-pointer active:scale-95"
                     title="Reset all filters"
                   >
-                    <RotateCcw className="w-3 h-3 group-hover:-rotate-90 transition-transform duration-200" />
+                    <RotateCcw className="w-3 h-3" />
                     <span>Reset</span>
                   </button>
                 )}
@@ -1037,7 +1017,7 @@ export const Home: React.FC = () => {
 
                 {/* Specialty */}
                 <div>
-                  <label className="block text-xs font-medium text-[#86868b] mb-1.5">
+                  <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
                     Specialty
                   </label>
                   <SearchableSpecialtySelect
@@ -1052,9 +1032,9 @@ export const Home: React.FC = () => {
 
                 {/* Max Consultation Fee Slider */}
                 <div>
-                  <div className="flex items-center justify-between text-xs font-medium text-[#86868b] mb-1.5">
+                  <div className="flex items-center justify-between text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
                     <span>Fee Limit</span>
-                    <span className="text-[#1d1d1f] font-semibold">Up to ₹{maxFee}</span>
+                    <span className="text-[#0066cc] font-semibold">Up to ₹{maxFee}</span>
                   </div>
                   <input
                     type="range"
@@ -1073,10 +1053,10 @@ export const Home: React.FC = () => {
 
                 {/* Experience Segmented Control */}
                 <div>
-                  <label className="block text-xs font-medium text-[#86868b] mb-1.5">
+                  <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
                     Experience
                   </label>
-                  <div className="p-0.5 rounded-lg bg-[#e5e5ea]/70 grid grid-cols-4 gap-0.5">
+                  <div className="p-1 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] grid grid-cols-4 gap-1 select-none">
                     {[
                       { label: 'All', value: 0 },
                       { label: '5+ yr', value: 5 },
@@ -1087,10 +1067,10 @@ export const Home: React.FC = () => {
                         key={item.value}
                         type="button"
                         onClick={() => setMinExperience(item.value)}
-                        className={`py-1 rounded-md text-[11px] font-medium transition-all text-center cursor-pointer ${
+                        className={`py-1.5 rounded-lg text-[11px] transition-all duration-150 text-center cursor-pointer ${
                           minExperience === item.value
-                            ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs'
-                            : 'text-[#86868b] hover:text-[#1d1d1f]'
+                            ? 'bg-white text-[#1d1d1f] font-semibold shadow-[0_1px_3px_rgba(0,0,0,0.08)] border border-black/5'
+                            : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
                         }`}
                       >
                         {item.label}
@@ -1102,12 +1082,12 @@ export const Home: React.FC = () => {
             </aside>
 
             {/* Main Doctor Grid */}
-            <div className="flex-1 w-full space-y-6">
+            <div className="flex-1 w-full min-w-0 space-y-6">
               {/* Mobile Collapsible Filters */}
               {doctorMobileFiltersOpen && (
-                <div className="lg:hidden bg-white p-4 rounded-[20px] border border-[#e0e0e0] space-y-4">
-                  <div className="flex items-center justify-between pb-2 border-b border-[#f0f0f2]">
-                    <span className="text-xs font-semibold text-[#1d1d1f]">Filter Options</span>
+                <div className="lg:hidden bg-white p-5 rounded-[24px] border border-[#e5e5ea] shadow-[0_2px_12px_rgba(0,0,0,0.03)] space-y-4">
+                  <div className="flex items-center justify-between pb-2.5 border-b border-[#f0f0f2]">
+                    <span className="text-xs font-semibold text-[#1d1d1f] tracking-tight">Filter Options</span>
                     {(doctorSearchQuery || doctorLocationQuery || selectedSpecialty !== 'All' || selectedCity !== 'All' || selectedState !== 'All' || minExperience > 0 || maxFee < 3000) && (
                       <button
                         type="button"
@@ -1120,7 +1100,7 @@ export const Home: React.FC = () => {
                     )}
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-[#86868b] mb-1">
+                    <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
                       Specialty
                     </label>
                     <SearchableSpecialtySelect
@@ -1131,7 +1111,7 @@ export const Home: React.FC = () => {
                       counts={specialtyCounts}
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-2 gap-3">
                     <div>
                       <AppleFilterSelect
                         label="State"
@@ -1159,9 +1139,9 @@ export const Home: React.FC = () => {
                   </div>
 
                   <div>
-                    <div className="flex items-center justify-between text-xs font-medium text-[#86868b] mb-1">
+                    <div className="flex items-center justify-between text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
                       <span>Fee Limit</span>
-                      <span className="text-[#1d1d1f] font-semibold">Up to ₹{maxFee}</span>
+                      <span className="text-[#0066cc] font-semibold">Up to ₹{maxFee}</span>
                     </div>
                     <input
                       type="range"
@@ -1179,10 +1159,10 @@ export const Home: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-[#86868b] mb-1">
+                    <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
                       Experience
                     </label>
-                    <div className="p-0.5 rounded-lg bg-[#e5e5ea]/70 grid grid-cols-4 gap-0.5">
+                    <div className="p-1 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] grid grid-cols-4 gap-1 select-none">
                       {[
                         { label: 'All', value: 0 },
                         { label: '5+ yr', value: 5 },
@@ -1193,10 +1173,10 @@ export const Home: React.FC = () => {
                           key={item.value}
                           type="button"
                           onClick={() => setMinExperience(item.value)}
-                          className={`py-1 rounded-md text-[11px] font-medium transition-all text-center cursor-pointer ${
+                          className={`py-1.5 rounded-lg text-[11px] transition-all duration-150 text-center cursor-pointer ${
                             minExperience === item.value
-                              ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs'
-                              : 'text-[#86868b] hover:text-[#1d1d1f]'
+                              ? 'bg-white text-[#1d1d1f] font-semibold shadow-[0_1px_3px_rgba(0,0,0,0.08)] border border-black/5'
+                              : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
                           }`}
                         >
                           {item.label}
@@ -1207,19 +1187,46 @@ export const Home: React.FC = () => {
                 </div>
               )}
 
+              {/* Open Apple Catalog Header */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#e5e5ea]">
+                <div className="flex items-baseline gap-2">
+                  <h2 className="text-[22px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">
+                    {selectedSpecialty === 'All' ? 'Specialists' : selectedSpecialty}
+                  </h2>
+                  <span className="text-sm text-[#86868b] font-normal">
+                    ({filteredDoctors.length})
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-1.5 shrink-0 ml-auto sm:ml-0">
+                  <div className="relative inline-flex items-center">
+                    <select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value as 'rating' | 'experience' | 'fee_low' | 'fee_high')}
+                      className="appearance-none h-9 pl-3.5 pr-8 rounded-full border border-[#d2d2d7] bg-white hover:bg-[#f5f5f7] text-xs font-medium text-[#1d1d1f] focus:outline-none focus:border-[#0066cc] cursor-pointer shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all"
+                    >
+                      <option value="rating">Recommended</option>
+                      <option value="experience">Most Experienced</option>
+                      <option value="fee_low">Price: Low to High</option>
+                      <option value="fee_high">Price: High to Low</option>
+                    </select>
+                    <ChevronDown className="w-3.5 h-3.5 text-[#86868b] pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2" />
+                  </div>
+                </div>
+              </div>
+
               {/* Doctor Cards Grid */}
               {loadingDoctors ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-5 sm:gap-6">
+                <div className="grid grid-cols-1 md:[grid-template-columns:repeat(auto-fill,minmax(330px,1fr))] gap-5 sm:gap-6 w-full">
                   {[1, 2, 3, 4, 5, 6].map((i) => (
                     <div
                       key={i}
-                      className="h-80 rounded-[20px] bg-white border border-[#e0e0e0] animate-pulse p-4"
+                      className="h-80 rounded-[24px] bg-white border border-[#e5e5ea] animate-pulse p-4"
                     />
                   ))}
                 </div>
               ) : filteredDoctors.length === 0 ? (
-                <div className="bg-white rounded-[24px] border border-[#e0e0e0] p-12 text-center max-w-md mx-auto">
-                  <Stethoscope className="w-10 h-10 text-[#86868b] mx-auto mb-3" />
+                <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-12 text-center max-w-md mx-auto shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
                   <h3 className="text-base font-semibold text-[#1d1d1f] mb-1">
                     No doctors found
                   </h3>
@@ -1231,7 +1238,7 @@ export const Home: React.FC = () => {
                   </AppleButton>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-5 sm:gap-6">
+                <div className="grid grid-cols-1 md:[grid-template-columns:repeat(auto-fill,minmax(330px,1fr))] gap-5 sm:gap-6 w-full">
                   {filteredDoctors.map((doctor) => {
                     const slots = parseDoctorSlots(doctor);
                     // Strictly sanitize doctor degrees to legitimate medical degrees only (NO FACC!)
@@ -1241,7 +1248,7 @@ export const Home: React.FC = () => {
                     return (
                       <div
                         key={doctor.id}
-                        className="w-full bg-white rounded-[20px] border border-[#e0e0e0] overflow-hidden hover:border-[#0066cc]/40 transition-all duration-200 flex flex-col justify-between group"
+                        className="w-full bg-white rounded-[24px] border border-[#e5e5ea] shadow-[0_2px_12px_rgba(0,0,0,0.03)] overflow-hidden hover:border-[#0066cc]/40 transition-all duration-200 flex flex-col justify-between group"
                       >
                         {/* Doctor Photo Banner - Natural 16:10 proportion displaying the full photo */}
                         <div

@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { AppleButton } from '../../components/ui/AppleButton';
 import { BrandLogo } from '../../components/ui/BrandLogo';
-import { AlertCircle, Sparkles, Mail, Lock, Building2, User, CheckCircle2, Eye, EyeOff } from 'lucide-react';
+import { AlertCircle, Eye, EyeOff, ChevronDown, RefreshCw } from 'lucide-react';
 import { api, ClinicProfile } from '../../services/api';
 import { sanitizeIndianPhone, formatIndianPhone, isValidIndianPhone } from '../../utils/phoneUtils';
 
@@ -81,7 +80,6 @@ export const ReceptionistAuth: React.FC = () => {
         newPassword,
       });
 
-      // Synchronize fresh session token and auth context (Finding H2)
       if (res?.token) {
         localStorage.setItem('mediarca_token', res.token);
       }
@@ -194,23 +192,20 @@ export const ReceptionistAuth: React.FC = () => {
 
   if (mustChangePasswordState) {
     return (
-      <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center py-8 sm:py-16 px-3 sm:px-6 animate-fadeIn">
-        <div className="max-w-md w-full">
-          <div className="text-center mb-6 sm:mb-8">
-            <Link to="/" className="inline-block mb-3 hover:opacity-90 transition-opacity">
-              <BrandLogo variant="full" size="md" imgClassName="h-8 w-auto mx-auto" />
-            </Link>
-            <div className="w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center mx-auto mb-4 border border-amber-500/20 shadow-xs">
-              <Lock className="w-7 h-7" />
+      <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center py-8 sm:py-12 px-4 sm:px-6">
+        <div className="max-w-[450px] w-full">
+          <div className="bg-white rounded-[28px] border border-[#e5e5ea] shadow-[0_12px_40px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,0,0,0.03)] p-6 sm:p-7">
+            <div className="flex flex-col items-center text-center mb-6">
+              <Link to="/" className="mb-2.5 hover:opacity-90 transition-opacity">
+                <BrandLogo variant="full" size="md" imgClassName="h-7 w-auto object-contain mx-auto" />
+              </Link>
+              <h1 className="text-[22px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">
+                Set Permanent Password
+              </h1>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-semibold text-[#1d1d1f] tracking-tight">
-              Set Your Permanent Password
-            </h1>
-          </div>
 
-          <div className="bg-white rounded-[20px] sm:rounded-[24px] border border-[#e5e5ea] p-4 sm:p-8 shadow-sm">
             {error && (
-              <div className="mb-5 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
+              <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
                 <span>{error}</span>
               </div>
@@ -218,8 +213,8 @@ export const ReceptionistAuth: React.FC = () => {
 
             <form onSubmit={handlePasswordChangeSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
-                  Temporary / Current Password
+                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                  Temporary Password
                 </label>
                 <input
                   type="password"
@@ -227,13 +222,13 @@ export const ReceptionistAuth: React.FC = () => {
                   value={tempPassword}
                   onChange={(e) => setTempPassword(e.target.value)}
                   placeholder="Enter temporary password"
-                  className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[14px] bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
-                  New Permanent Password (min. 8 characters)
+                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                  New Password
                 </label>
                 <input
                   type="password"
@@ -241,14 +236,14 @@ export const ReceptionistAuth: React.FC = () => {
                   minLength={8}
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[14px] bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
+                  placeholder="Min. 8 characters"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
-                  Confirm Permanent Password
+                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                  Confirm Password
                 </label>
                 <input
                   type="password"
@@ -256,28 +251,33 @@ export const ReceptionistAuth: React.FC = () => {
                   minLength={8}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-[14px] bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
+                  placeholder="Confirm new password"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
 
               <div className="pt-2">
-                <AppleButton
-                  variant="primary"
-                  size="md"
+                <button
                   type="submit"
                   disabled={changingPassword}
-                  className="w-full"
+                  className="w-full h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-medium transition-all duration-150 shadow-[0_2px_8px_rgba(0,102,204,0.2),0_1px_2px_rgba(0,0,0,0.06)] flex items-center justify-center gap-2 cursor-pointer select-none disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  {changingPassword ? 'Saving Permanent Password...' : 'Save & Enter Reception Desk'}
-                </AppleButton>
+                  {changingPassword ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>Saving Password...</span>
+                    </>
+                  ) : (
+                    'Save & Enter Reception Desk'
+                  )}
+                </button>
               </div>
 
-              <div className="text-center pt-2">
+              <div className="text-center pt-1">
                 <button
                   type="button"
                   onClick={() => setMustChangePasswordState(false)}
-                  className="text-xs text-[#86868b] hover:text-[#1d1d1f] transition-colors"
+                  className="text-xs font-medium text-[#86868b] hover:text-[#1d1d1f] transition-colors cursor-pointer"
                 >
                   Back to Sign In
                 </button>
@@ -290,22 +290,21 @@ export const ReceptionistAuth: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center py-8 sm:py-12 px-3 sm:px-6">
-      <div className="max-w-[440px] w-full">
-        {/* Header */}
-        <div className="text-center mb-6">
-          <Link to="/" className="inline-block hover:opacity-90 transition-opacity mb-3">
-            <BrandLogo variant="full" size="md" imgClassName="h-8 w-auto mx-auto" />
-          </Link>
-          <h1 className="text-2xl font-semibold text-[#1d1d1f] tracking-tight">
-            Reception Desk
-          </h1>
-        </div>
+    <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center py-8 sm:py-12 px-4 sm:px-6">
+      <div className="max-w-[450px] w-full">
+        <div className="bg-white rounded-[28px] border border-[#e5e5ea] shadow-[0_12px_40px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,0,0,0.03)] p-6 sm:p-7">
+          {/* Brand & Header */}
+          <div className="flex flex-col items-center text-center mb-6">
+            <Link to="/" className="mb-2.5 hover:opacity-90 transition-opacity">
+              <BrandLogo variant="full" size="md" imgClassName="h-7 w-auto object-contain mx-auto" />
+            </Link>
+            <h1 className="text-[22px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">
+              Reception Desk
+            </h1>
+          </div>
 
-        {/* Card */}
-        <div className="bg-white rounded-[20px] sm:rounded-[24px] border border-[#e5e5ea] p-4 sm:p-8 shadow-xs">
           {/* Segmented Mode Selector */}
-          <div className="flex rounded-full bg-[#f5f5f7] p-1 border border-[#e5e5ea] mb-6 shadow-2xs">
+          <div className="p-1 bg-[#f5f5f7] border border-[#e5e5ea] rounded-xl flex gap-1 select-none mb-5">
             <button
               type="button"
               onClick={() => {
@@ -313,10 +312,10 @@ export const ReceptionistAuth: React.FC = () => {
                 setError(null);
                 setApplySuccessClinic(null);
               }}
-              className={`flex-1 py-1.5 text-xs font-semibold rounded-full transition-all active:scale-[0.98] ${
+              className={`flex-1 py-2 text-xs rounded-lg transition-all duration-150 cursor-pointer text-center ${
                 authMode === 'login'
-                  ? 'bg-white text-[#1d1d1f] shadow-xs'
-                  : 'text-[#86868b] hover:text-[#1d1d1f]'
+                  ? 'bg-white text-[#1d1d1f] font-semibold shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_1px_rgba(0,0,0,0.04)] border border-black/5'
+                  : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
               }`}
             >
               Desk Sign In
@@ -327,10 +326,10 @@ export const ReceptionistAuth: React.FC = () => {
                 setAuthMode('apply');
                 setError(null);
               }}
-              className={`flex-1 py-1.5 text-xs font-semibold rounded-full transition-all active:scale-[0.98] ${
+              className={`flex-1 py-2 text-xs rounded-lg transition-all duration-150 cursor-pointer text-center ${
                 authMode === 'apply'
-                  ? 'bg-white text-[#1d1d1f] shadow-xs'
-                  : 'text-[#86868b] hover:text-[#1d1d1f]'
+                  ? 'bg-white text-[#1d1d1f] font-semibold shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_1px_rgba(0,0,0,0.04)] border border-black/5'
+                  : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
               }`}
             >
               Apply to Clinic
@@ -338,81 +337,71 @@ export const ReceptionistAuth: React.FC = () => {
           </div>
 
           {error && (
-            <div className="mb-5 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
+            <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
               <span>{error}</span>
             </div>
           )}
 
           {applySuccessClinic ? (
-            <div className="text-center py-6 space-y-4">
-              <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto shadow-xs">
-                <CheckCircle2 className="w-6 h-6" />
-              </div>
+            <div className="text-center py-4 space-y-4">
               <div>
                 <h3 className="text-base font-semibold text-[#1d1d1f]">
                   Application Submitted
                 </h3>
-                <p className="text-xs text-[#86868b] mt-1.5 leading-relaxed max-w-sm mx-auto">
-                  Your application to join <strong>{applySuccessClinic}</strong> has been sent to the clinic administrator.
+                <p className="text-xs text-[#86868b] mt-1 leading-relaxed">
+                  Your application to join <span className="font-medium text-[#1d1d1f]">{applySuccessClinic}</span> has been sent to the clinic administrator.
                 </p>
               </div>
-              <AppleButton
-                variant="secondary"
-                size="md"
+              <button
+                type="button"
                 onClick={() => {
                   setApplySuccessClinic(null);
                   setAuthMode('login');
                 }}
-                className="w-full"
+                className="w-full h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-medium transition-all duration-150 shadow-[0_2px_8px_rgba(0,102,204,0.2),0_1px_2px_rgba(0,0,0,0.06)] flex items-center justify-center cursor-pointer"
               >
                 Back to Desk Sign In
-              </AppleButton>
+              </button>
             </div>
           ) : authMode === 'apply' ? (
             <form onSubmit={handleApplySubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
+                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
                   Full Name
                 </label>
-                <div className="relative">
-                  <User className="w-4 h-4 text-[#86868b] absolute left-3.5 top-3.5" />
-                  <input
-                    type="text"
-                    required
-                    value={applyFullName}
-                    onChange={(e) => setApplyFullName(e.target.value)}
-                    placeholder="Priya Sharma"
-                    className="w-full h-11 pl-10 pr-4 rounded-xl border border-[#e5e5ea] text-[14px] bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
-                  />
-                </div>
+                <input
+                  type="text"
+                  required
+                  value={applyFullName}
+                  onChange={(e) => setApplyFullName(e.target.value)}
+                  placeholder="Your full legal name"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
-                  Email
+                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                  Email Address
                 </label>
-                <div className="relative">
-                  <Mail className="w-4 h-4 text-[#86868b] absolute left-3.5 top-3.5" />
-                  <input
-                    type="email"
-                    required
-                    value={applyEmail}
-                    onChange={(e) => setApplyEmail(e.target.value)}
-                    placeholder="priya@receptionist.com"
-                    className="w-full h-11 pl-10 pr-4 rounded-xl border border-[#e5e5ea] text-[14px] bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
-                  />
-                </div>
+                <input
+                  type="email"
+                  required
+                  value={applyEmail}
+                  onChange={(e) => setApplyEmail(e.target.value)}
+                  placeholder="name@domain.com"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
+                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
                   Mobile Number
                 </label>
-                <div className="flex rounded-xl border border-[#e5e5ea] overflow-hidden focus-within:ring-2 focus-within:ring-[#0066cc]/20 focus-within:border-[#0066cc] bg-[#f5f5f7] focus-within:bg-white transition-all h-11">
-                  <span className="inline-flex items-center px-3 bg-[#e5e5ea]/50 border-r border-[#e5e5ea] text-[#1d1d1f] font-semibold text-[13px] select-none">
+                <div className="flex items-center w-full h-11 rounded-xl border border-[#d2d2d7] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus-within:border-[#0066cc] focus-within:ring-4 focus-within:ring-[#0066cc]/10 transition-all duration-150 overflow-hidden">
+                  <div className="h-full px-3.5 bg-[#f5f5f7] border-r border-[#d2d2d7] flex items-center justify-center select-none text-[13px] font-semibold text-[#1d1d1f]">
                     +91
-                  </span>
+                  </div>
                   <input
                     type="tel"
                     inputMode="numeric"
@@ -421,23 +410,22 @@ export const ReceptionistAuth: React.FC = () => {
                     onChange={(e) => setApplyPhone(sanitizeIndianPhone(e.target.value))}
                     placeholder="98765 43210"
                     maxLength={10}
-                    className="flex-1 h-full px-3.5 text-[14px] bg-transparent focus:outline-none text-[#1d1d1f] placeholder:text-[#86868b]"
+                    className="flex-1 h-full px-3.5 bg-transparent text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:outline-none"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1 flex items-center justify-between">
+                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight flex items-center justify-between">
                   <span>Clinic Facility</span>
-                  {clinicsLoading && <span className="text-[10px] text-[#86868b]">Loading clinics...</span>}
+                  {clinicsLoading && <span className="text-[11px] font-normal text-[#86868b]">Loading...</span>}
                 </label>
                 <div className="relative">
-                  <Building2 className="w-4 h-4 text-[#86868b] absolute left-3.5 top-3.5" />
                   <select
                     required
                     value={applyClinicId}
                     onChange={(e) => setApplyClinicId(e.target.value)}
-                    className="w-full h-11 pl-10 pr-4 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
+                    className="w-full h-11 pl-3.5 pr-8 rounded-xl border border-[#d2d2d7] bg-white text-[13px] text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 appearance-none cursor-pointer"
                   >
                     {clinics.length === 0 ? (
                       <option value="">No verified clinics available</option>
@@ -449,74 +437,75 @@ export const ReceptionistAuth: React.FC = () => {
                       ))
                     )}
                   </select>
+                  <ChevronDown className="w-4 h-4 text-[#86868b] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
-                  Password (min. 8 characters)
+                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                  Password
                 </label>
-                <div className="relative">
-                  <Lock className="w-4 h-4 text-[#86868b] absolute left-3.5 top-3.5" />
-                  <input
-                    type="password"
-                    required
-                    minLength={8}
-                    value={applyPassword}
-                    onChange={(e) => setApplyPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full h-11 pl-10 pr-4 rounded-xl border border-[#e5e5ea] text-[14px] bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
-                  />
-                </div>
+                <input
+                  type="password"
+                  required
+                  minLength={8}
+                  value={applyPassword}
+                  onChange={(e) => setApplyPassword(e.target.value)}
+                  placeholder="Min. 8 characters"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                />
               </div>
 
               <div className="pt-2">
-                <AppleButton
-                  variant="primary"
-                  size="md"
+                <button
                   type="submit"
                   disabled={submitting || clinics.length === 0}
-                  className="w-full"
+                  className="w-full h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-medium transition-all duration-150 shadow-[0_2px_8px_rgba(0,102,204,0.2),0_1px_2px_rgba(0,0,0,0.06)] flex items-center justify-center gap-2 cursor-pointer select-none disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  {submitting ? 'Submitting...' : 'Submit Application'}
-                </AppleButton>
+                  {submitting ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>Submitting...</span>
+                    </>
+                  ) : (
+                    'Submit Application'
+                  )}
+                </button>
               </div>
             </form>
           ) : (
-            <form onSubmit={handleLoginSubmit} className="space-y-3.5">
+            <form onSubmit={handleLoginSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
+                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
                   Desk Email
                 </label>
-                <div className="relative">
-                  <Mail className="w-4 h-4 text-[#86868b] absolute left-3.5 top-3.5" />
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="receptionist@domain.com"
-                    className="w-full h-11 pl-10 pr-4 rounded-xl border border-[#e5e5ea] text-sm bg-[#fbfbfd] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
-                  />
-                </div>
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="receptionist@domain.com"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1">Password</label>
+                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                  Password
+                </label>
                 <div className="relative">
-                  <Lock className="w-4 h-4 text-[#86868b] absolute left-3.5 top-3.5" />
                   <input
                     type={showPassword ? 'text' : 'password'}
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full h-11 pl-10 pr-10 rounded-xl border border-[#e5e5ea] text-sm bg-[#fbfbfd] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
+                    placeholder="Enter password"
+                    className="w-full h-11 pl-3.5 pr-10 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-3 text-[#86868b] hover:text-[#1d1d1f] transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#86868b] hover:text-[#1d1d1f] transition-colors cursor-pointer"
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -524,27 +513,31 @@ export const ReceptionistAuth: React.FC = () => {
               </div>
 
               <div className="pt-2">
-                <AppleButton
-                  variant="primary"
-                  size="md"
+                <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full"
+                  className="w-full h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-medium transition-all duration-150 shadow-[0_2px_8px_rgba(0,102,204,0.2),0_1px_2px_rgba(0,0,0,0.06)] flex items-center justify-center gap-2 cursor-pointer select-none disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  {submitting ? 'Authenticating...' : 'Sign In to Desk'}
-                </AppleButton>
+                  {submitting ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>Signing In...</span>
+                    </>
+                  ) : (
+                    'Sign In to Desk'
+                  )}
+                </button>
               </div>
 
               {/* Demo 1-Click Login */}
-              <div className="pt-4 border-t border-[#f0f0f2]">
+              <div className="pt-5 border-t border-[#e5e5ea]">
                 <button
                   type="button"
                   onClick={handleDemoLogin}
                   disabled={submitting}
-                  className="w-full py-2 px-3 rounded-xl bg-[#f5f5f7] hover:bg-[#ebebee] border border-[#e5e5ea] text-xs font-medium text-[#1d1d1f] flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] cursor-pointer"
+                  className="w-full h-9 px-3 rounded-xl bg-[#f5f5f7] hover:bg-[#e8e8ed] border border-[#e5e5ea] text-xs font-medium text-[#1d1d1f] flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] cursor-pointer"
                 >
-                  <Sparkles className="w-3.5 h-3.5 text-[#0066cc]" />
-                  <span>Instant Demo: Clara Oswald (Front Desk)</span>
+                  <span>Demo Reception Desk Sign In</span>
                 </button>
               </div>
             </form>
@@ -552,7 +545,7 @@ export const ReceptionistAuth: React.FC = () => {
         </div>
 
         {/* Footer Link */}
-        <p className="mt-4 text-center text-xs text-[#86868b]">
+        <p className="mt-5 text-center text-xs text-[#86868b]">
           Clinic administrator?{' '}
           <Link to="/clinic/login" className="text-[#0066cc] font-semibold hover:underline">
             Clinic Portal Sign In
@@ -562,3 +555,4 @@ export const ReceptionistAuth: React.FC = () => {
     </div>
   );
 };
+

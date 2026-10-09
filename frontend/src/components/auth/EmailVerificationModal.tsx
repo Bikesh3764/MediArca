@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Mail, AlertCircle, ArrowLeft, RefreshCw, CheckCircle2 } from 'lucide-react';
-import { AppleButton } from '../ui/AppleButton';
+import { AlertCircle, ArrowLeft, RefreshCw, CheckCircle2 } from 'lucide-react';
+import { BrandLogo } from '../ui/BrandLogo';
 import { api, User } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 
@@ -37,14 +37,12 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
       });
       return;
     }
-    // Focus first input on open
     const timer = setTimeout(() => {
       inputRefs.current[0]?.focus();
     }, 150);
     return () => clearTimeout(timer);
   }, [isOpen]);
 
-  // 60-second countdown timer for resend
   useEffect(() => {
     if (!isOpen || countdown <= 0) return;
     const timer = setInterval(() => {
@@ -56,7 +54,6 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
   if (!isOpen) return null;
 
   const handleDigitChange = (index: number, value: string) => {
-    // Only accept numeric digits
     const cleaned = value.replace(/\D/g, '');
     if (!cleaned) {
       const nextDigits = [...otpDigits];
@@ -65,13 +62,11 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
       return;
     }
 
-    // Single digit entry
     const nextDigits = [...otpDigits];
-    nextDigits[index] = cleaned[cleaned.length - 1]; // take last entered digit
+    nextDigits[index] = cleaned[cleaned.length - 1];
     setOtpDigits(nextDigits);
     setError(null);
 
-    // Auto-advance to next input
     if (index < 5) {
       inputRefs.current[index + 1]?.focus();
     }
@@ -79,7 +74,6 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
 
   const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Backspace' && !otpDigits[index] && index > 0) {
-      // Move focus back on backspace if current cell is empty
       inputRefs.current[index - 1]?.focus();
     }
   };
@@ -96,7 +90,6 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
     setOtpDigits(nextDigits);
     setError(null);
 
-    // Focus last filled or next input
     const nextFocusIndex = Math.min(pasted.length, 5);
     inputRefs.current[nextFocusIndex]?.focus();
   };
@@ -144,8 +137,8 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative w-full max-w-md bg-white/95 backdrop-blur-xl rounded-t-[28px] sm:rounded-[28px] border border-[#e5e5ea] shadow-2xl p-6 sm:p-8 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-8 text-center animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 duration-300">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-xl animate-in fade-in duration-200">
+      <div className="relative w-full max-w-[450px] bg-white/95 backdrop-blur-2xl rounded-t-[28px] sm:rounded-[28px] border border-[#e5e5ea] shadow-[0_24px_64px_rgba(0,0,0,0.12),0_4px_16px_rgba(0,0,0,0.04)] p-6 sm:p-7 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-7 text-center animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 duration-300">
         {/* Apple Sheet Drag Handle Indicator (Mobile Only) */}
         <div className="sm:hidden w-10 h-1 bg-[#d2d2d7] rounded-full mx-auto mb-4" />
 
@@ -153,31 +146,28 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-4 left-4 sm:top-5 sm:left-5 p-2 rounded-full hover:bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f] transition-colors"
-          title="Back to registration"
+          className="absolute top-4 left-4 sm:top-5 sm:left-5 p-2 rounded-full hover:bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f] transition-colors cursor-pointer"
+          title="Back"
         >
           <ArrowLeft className="w-4 h-4" />
         </button>
 
-        {/* Icon */}
-        <div className="w-12 h-12 sm:w-14 sm:h-14 mx-auto mb-3 sm:mb-4 rounded-2xl bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center border border-[#0066cc]/20 shadow-xs">
-          <Mail className="w-6 h-6 sm:w-7 sm:h-7" />
+        {/* Brand & Header */}
+        <div className="flex flex-col items-center text-center mb-5">
+          <div className="mb-2.5">
+            <BrandLogo variant="full" size="md" imgClassName="h-7 w-auto object-contain mx-auto" />
+          </div>
+          <h3 className="text-[22px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">
+            Verify Your Email
+          </h3>
+          <p className="mt-1.5 text-xs text-[#86868b]">
+            Enter the 6-digit code sent to <span className="font-medium text-[#1d1d1f]">{email}</span>
+          </p>
         </div>
-
-        {/* Heading */}
-        <h3 className="text-xl sm:text-2xl font-semibold text-[#1d1d1f] tracking-tight">
-          Verify Your Email
-        </h3>
-        <p className="mt-2 text-xs sm:text-sm text-[#86868b] leading-relaxed">
-          We have sent a 6-digit verification code to
-        </p>
-        <p className="font-semibold text-xs sm:text-sm text-[#1d1d1f] mt-0.5 break-all">
-          {email}
-        </p>
 
         {/* Error message */}
         {error && (
-          <div className="mt-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2 text-left animate-in fade-in">
+          <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2 text-left">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
             <span>{error}</span>
           </div>
@@ -185,15 +175,15 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
 
         {/* Resend success alert */}
         {resendSuccess && (
-          <div className="mt-4 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs flex items-center gap-2 text-left animate-in fade-in">
-            <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-emerald-600" />
-            <span>New 6-digit code has been sent to your email!</span>
+          <div className="mb-4 p-3 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] text-xs flex items-center gap-2 text-left">
+            <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-[#0066cc]" />
+            <span>A new 6-digit code has been sent.</span>
           </div>
         )}
 
         {/* OTP Input Form */}
-        <form onSubmit={handleSubmit} className="mt-5 sm:mt-6">
-          <div className="flex justify-center gap-1.5 sm:gap-2.5 mb-5 sm:mb-6 max-w-full" onPaste={handlePaste}>
+        <form onSubmit={handleSubmit}>
+          <div className="flex justify-center gap-2 mb-5 max-w-full" onPaste={handlePaste}>
             {otpDigits.map((digit, idx) => (
               <input
                 key={idx}
@@ -207,44 +197,42 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
                 value={digit}
                 onChange={(e) => handleDigitChange(idx, e.target.value)}
                 onKeyDown={(e) => handleKeyDown(idx, e)}
-                className={`w-9 h-11 sm:w-12 sm:h-14 text-center text-lg sm:text-2xl font-semibold rounded-lg sm:rounded-xl border transition-all outline-none ${
-                  digit
-                    ? 'border-[#0066cc] bg-white ring-2 ring-[#0066cc]/20 text-[#1d1d1f]'
-                    : 'border-[#e5e5ea] bg-[#f5f5f7] text-[#1d1d1f] focus:border-[#0066cc] focus:bg-white focus:ring-2 focus:ring-[#0066cc]/20'
-                }`}
+                className="w-11 h-12 text-center text-lg font-semibold rounded-xl border border-[#d2d2d7] bg-white text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
               />
             ))}
           </div>
 
-          <AppleButton
-            variant="primary"
-            size="md"
+          <button
             type="submit"
             disabled={submitting || fullOtp.length !== 6}
-            className="w-full"
+            className="w-full h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-medium transition-all duration-150 shadow-[0_2px_8px_rgba(0,102,204,0.2),0_1px_2px_rgba(0,0,0,0.06)] flex items-center justify-center gap-2 cursor-pointer select-none disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            {submitting ? 'Verifying Code...' : 'Verify & Continue'}
-          </AppleButton>
+            {submitting ? (
+              <>
+                <RefreshCw className="w-4 h-4 animate-spin" />
+                <span>Verifying...</span>
+              </>
+            ) : (
+              'Verify & Continue'
+            )}
+          </button>
         </form>
 
-        {/* Resend & help options */}
-        <div className="mt-5 pt-4 border-t border-[#f0f0f0] flex flex-col items-center gap-2 text-xs">
-          <p className="text-[#86868b]">
-            Didn't receive the email? Check your spam folder or
-          </p>
+        {/* Resend option */}
+        <div className="mt-5 pt-4 border-t border-[#e5e5ea] flex items-center justify-center text-xs">
           <button
             type="button"
             onClick={handleResend}
             disabled={countdown > 0 || resending}
-            className={`inline-flex items-center gap-1.5 font-semibold transition-colors ${
+            className={`inline-flex items-center gap-1.5 font-medium transition-colors ${
               countdown > 0 || resending
-                ? 'text-[#86868b] cursor-not-allowed opacity-60'
+                ? 'text-[#86868b] cursor-not-allowed'
                 : 'text-[#0066cc] hover:text-[#0071e3] cursor-pointer'
             }`}
           >
             <RefreshCw className={`w-3.5 h-3.5 ${resending ? 'animate-spin' : ''}`} />
             <span>
-              {countdown > 0 ? `Resend code in ${countdown}s` : 'Resend code now'}
+              {countdown > 0 ? `Resend code in ${countdown}s` : 'Resend code'}
             </span>
           </button>
         </div>
@@ -252,3 +240,4 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
     </div>
   );
 };
+

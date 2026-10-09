@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { BrandLogo } from '../ui/BrandLogo';
 import { useAuth } from '../../context/AuthContext';
-import { Mail, ShieldCheck } from 'lucide-react';
+import { Mail } from 'lucide-react';
 
 export const Footer: React.FC = () => {
   const { user } = useAuth();
@@ -25,28 +25,24 @@ export const Footer: React.FC = () => {
             </p>
 
             {/* Direct Contact Channels */}
-            <div className="space-y-3 pt-1 text-sm text-[#48484a]">
+            <div className="space-y-2 pt-1 text-sm text-[#48484a]">
+              <p className="text-xs text-[#86868b] font-normal">Support & Inquiries</p>
               <a
                 href="mailto:contact@mediarca.in"
-                className="flex items-center gap-3 text-[#48484a] hover:text-[#0066cc] transition-colors group"
+                className="inline-flex items-center gap-2 font-medium text-[#1d1d1f] hover:text-[#0066cc] transition-colors"
               >
-                <div className="w-8 h-8 rounded-full bg-white border border-[#e5e5ea] flex items-center justify-center shrink-0 shadow-2xs group-hover:border-[#0066cc]/30 transition-colors">
-                  <Mail className="w-4 h-4 text-[#0066cc]" />
-                </div>
-                <div>
-                  <p className="text-[11px] text-[#86868b] font-normal">Support & Inquiries</p>
-                  <p className="font-medium text-[#1d1d1f] group-hover:text-[#0066cc] transition-colors">contact@mediarca.in</p>
-                </div>
+                <Mail className="w-4 h-4 text-[#0066cc] shrink-0" />
+                <span>contact@mediarca.in</span>
               </a>
             </div>
           </div>
 
           {/* Column 2: Clinical Care (Spans 3 columns) */}
           <div className="lg:col-span-3 space-y-4">
-            <h4 className="text-sm font-semibold text-[#1d1d1f] tracking-wide uppercase">
+            <h4 className="text-xs font-semibold text-[#1d1d1f] tracking-tight">
               Clinical Care
             </h4>
-            <ul className="space-y-2.5 text-sm text-[#555558]">
+            <ul className="space-y-2.5 text-sm text-[#48484a]">
               <li>
                 <Link to="/doctors" className="hover:text-[#0066cc] transition-colors py-0.5 inline-block">
                   Find Doctors
@@ -80,10 +76,10 @@ export const Footer: React.FC = () => {
 
           {/* Column 3: Specialties (Spans 2 columns) */}
           <div className="lg:col-span-2 space-y-4">
-            <h4 className="text-sm font-semibold text-[#1d1d1f] tracking-wide uppercase">
+            <h4 className="text-xs font-semibold text-[#1d1d1f] tracking-tight">
               Specialties
             </h4>
-            <ul className="space-y-2.5 text-sm text-[#555558]">
+            <ul className="space-y-2.5 text-sm text-[#48484a]">
               <li>
                 <Link to="/doctors?specialty=General+Medicine" className="hover:text-[#0066cc] transition-colors py-0.5 inline-block">
                   General Medicine
@@ -119,10 +115,10 @@ export const Footer: React.FC = () => {
 
           {/* Column 4: Company & Support (Spans 3 columns) */}
           <div className="lg:col-span-3 space-y-4">
-            <h4 className="text-sm font-semibold text-[#1d1d1f] tracking-wide uppercase">
+            <h4 className="text-xs font-semibold text-[#1d1d1f] tracking-tight">
               Company & Help
             </h4>
-            <ul className="space-y-2.5 text-sm text-[#555558]">
+            <ul className="space-y-2.5 text-sm text-[#48484a]">
               <li>
                 <Link to="/about" className="hover:text-[#0066cc] transition-colors py-0.5 inline-block">
                   About MediArca
@@ -150,10 +146,9 @@ export const Footer: React.FC = () => {
         {/* Operational Portals Strip (Shown only to guests/unauthenticated visitors; hidden once signed in) */}
         {!user && (
           <div className="mt-12 pt-6 border-t border-[#e5e5ea] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-[#0066cc]" />
-              <span className="text-sm font-semibold text-[#1d1d1f]">
-                Desk & Partner Portals:
+            <div>
+              <span className="text-xs font-semibold text-[#1d1d1f] tracking-tight">
+                Desk & Partner Portals
               </span>
             </div>
             <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
@@ -190,7 +185,7 @@ export const Footer: React.FC = () => {
 
         {/* Bottom Disclaimer & Copyright Bar */}
         <div className="mt-8 pt-6 border-t border-[#e5e5ea] space-y-4 text-xs text-[#86868b]">
-          <p className="text-xs leading-relaxed text-[#71717a]">
+          <p className="text-xs leading-relaxed text-[#86868b]">
             <strong>Medical Disclaimer:</strong> MediArca is an outpatient queue management platform designed to optimize appointment flow and reduce waiting room delays. MediArca is not an emergency medical service. In the event of a medical emergency, please call 112 / 108 immediately or visit the nearest hospital casualty department.
           </p>
 

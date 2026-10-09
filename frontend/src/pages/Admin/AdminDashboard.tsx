@@ -7,10 +7,8 @@ import { AppleButton } from '../../components/ui/AppleButton';
 import { UtilityCard } from '../../components/ui/UtilityCard';
 import {
   Users,
-  ShieldCheck,
   Shield,
   Calendar,
-  AlertCircle,
   CheckCircle2,
   RefreshCw,
   Clock,
@@ -20,11 +18,8 @@ import {
   XCircle,
   Globe,
   LogOut,
-  Mail,
   Filter,
   Search,
-  CalendarDays,
-  Layers,
   Eye,
   RotateCcw,
   ChevronDown,
@@ -144,27 +139,27 @@ export const AdminDashboard: React.FC = () => {
   const getDateBadge = (dateStr: string) => {
     if (dateStr === todayStr) {
       return (
-        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-[#0066cc] border border-blue-200">
+        <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20">
           Today
         </span>
       );
     }
     if (dateStr === tomorrowStr) {
       return (
-        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
+        <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea]">
           Tomorrow
         </span>
       );
     }
     if (dateStr < todayStr) {
       return (
-        <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 text-gray-600 border border-gray-200">
+        <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea]">
           Past
         </span>
       );
     }
     return (
-      <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+      <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea]">
         Upcoming
       </span>
     );
@@ -175,22 +170,22 @@ export const AdminDashboard: React.FC = () => {
     switch (s) {
       case 'WAITING':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea]">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#0066cc]"></span>
             Waiting
           </span>
         );
       case 'IN_CONSULTATION':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-[#0066cc] border border-blue-200 animate-pulse">
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20">
             <span className="w-1.5 h-1.5 rounded-full bg-[#0066cc]"></span>
             In Consultation
           </span>
         );
       case 'COMPLETED':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea]">
+            <CheckCircle2 className="w-3 h-3 text-[#0066cc]" />
             Completed
           </span>
         );
@@ -203,21 +198,21 @@ export const AdminDashboard: React.FC = () => {
         );
       case 'EXPIRED':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-gray-100 text-gray-600 border border-gray-200">
-            <Clock className="w-3 h-3 text-gray-500" />
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea]">
+            <Clock className="w-3 h-3 text-[#86868b]" />
             Expired
           </span>
         );
       case 'PENDING_APPROVAL':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-300">
-            <Clock className="w-3 h-3 text-amber-600" />
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea]">
+            <Clock className="w-3 h-3 text-[#86868b]" />
             Pending Approval
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-gray-100 text-gray-700">
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#f5f5f7] text-[#1d1d1f]">
             {status}
           </span>
         );
@@ -411,7 +406,7 @@ export const AdminDashboard: React.FC = () => {
     switch (status) {
       case 'VERIFIED':
         return (
-          <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full text-xs font-semibold border border-emerald-200">
+          <span className="inline-flex items-center gap-1 bg-[#0066cc]/10 text-[#0066cc] px-2.5 py-1 rounded-full text-xs font-semibold border border-[#0066cc]/20">
             <CheckCircle2 className="w-3.5 h-3.5" />
             Verified
           </span>
@@ -425,7 +420,7 @@ export const AdminDashboard: React.FC = () => {
         );
       case 'REJECTED':
         return (
-          <span className="inline-flex items-center gap-1 bg-gray-100 text-gray-700 px-2.5 py-1 rounded-full text-xs font-semibold border border-gray-300">
+          <span className="inline-flex items-center gap-1 bg-[#f5f5f7] text-[#86868b] px-2.5 py-1 rounded-full text-xs font-semibold border border-[#e5e5ea]">
             <XCircle className="w-3.5 h-3.5" />
             Rejected
           </span>
@@ -433,8 +428,8 @@ export const AdminDashboard: React.FC = () => {
       case 'PENDING':
       default:
         return (
-          <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 px-2.5 py-1 rounded-full text-xs font-semibold border border-amber-200 animate-pulse">
-            <Clock className="w-3.5 h-3.5" />
+          <span className="inline-flex items-center gap-1 bg-[#f5f5f7] text-[#1d1d1f] px-2.5 py-1 rounded-full text-xs font-semibold border border-[#e5e5ea]">
+            <Clock className="w-3.5 h-3.5 text-[#86868b]" />
             Pending Review
           </span>
         );
@@ -480,8 +475,8 @@ export const AdminDashboard: React.FC = () => {
             <Link to="/" className="flex items-center gap-2 hover:opacity-90 transition-opacity" title="Return to Main Website">
               <BrandLogo variant="full" size="md" imgClassName="h-7 w-auto" />
             </Link>
-            <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-700 border border-amber-500/20 text-[11px] font-semibold">
-              <Shield className="w-3 h-3 text-amber-600" />
+            <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea] text-[11px] font-medium">
+              <Shield className="w-3 h-3 text-[#86868b]" />
               Root Admin Console
             </span>
           </div>
@@ -510,8 +505,8 @@ export const AdminDashboard: React.FC = () => {
 
             <div className="h-4 w-px bg-[#e5e5ea] hidden sm:block" />
 
-            <div className="hidden lg:flex items-center gap-2 px-2.5 py-1 rounded-full bg-[#f5f5f7] text-[11px] text-[#48484a]">
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <div className="hidden lg:flex items-center gap-2 px-2.5 py-1 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-[11px] text-[#48484a]">
+              <div className="w-1.5 h-1.5 rounded-full bg-[#0066cc]" />
               <span className="font-medium truncate max-w-[140px]">{user?.email || 'admin@mediarca.com'}</span>
             </div>
 
@@ -531,10 +526,10 @@ export const AdminDashboard: React.FC = () => {
       <div className="bg-white border-b border-[#e5e5ea] px-4 sm:px-6 py-5">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f]">
+            <h1 className="text-[22px] font-semibold tracking-tight text-[#1d1d1f] leading-snug">
               Admin Dashboard
             </h1>
-            <p className="text-xs text-[#86868b] mt-0.5 font-normal">
+            <p className="text-[13px] text-[#86868b] mt-1 leading-relaxed">
               Manage doctor and clinic verifications, view platform statistics
             </p>
           </div>
@@ -558,90 +553,64 @@ export const AdminDashboard: React.FC = () => {
             {/* KPI Metrics */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
               <UtilityCard>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="text-[11px] text-[#86868b] uppercase font-semibold">Patients</span>
-                    <h3 className="text-3xl font-semibold text-[#1d1d1f] mt-1">{stats?.totalPatients || 0}</h3>
-                  </div>
-                  <div className="w-10 h-10 rounded-xl bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center">
-                    <Users className="w-5 h-5" />
-                  </div>
+                <div>
+                  <span className="text-xs font-medium text-[#86868b] block mb-1.5">Patients</span>
+                  <h3 className="text-3xl font-semibold text-[#1d1d1f] tracking-tight">{stats?.totalPatients || 0}</h3>
                 </div>
               </UtilityCard>
 
               <UtilityCard>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="text-[11px] text-[#86868b] uppercase font-semibold">Doctors</span>
-                    <h3 className="text-3xl font-semibold text-[#1d1d1f] mt-1">{stats?.totalDoctors || 0}</h3>
-                    <p className="text-[10px] text-amber-600 font-medium mt-0.5">{stats?.pendingDoctors || 0} pending review</p>
-                  </div>
-                  <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                    <ShieldCheck className="w-5 h-5" />
-                  </div>
+                <div>
+                  <span className="text-xs font-medium text-[#86868b] block mb-1.5">Doctors</span>
+                  <h3 className="text-3xl font-semibold text-[#1d1d1f] tracking-tight">{stats?.totalDoctors || 0}</h3>
+                  <p className="text-[11px] text-[#86868b] font-medium mt-1">{stats?.pendingDoctors || 0} pending review</p>
                 </div>
               </UtilityCard>
 
               <UtilityCard>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="text-[11px] text-[#86868b] uppercase font-semibold">Clinics</span>
-                    <h3 className="text-3xl font-semibold text-[#1d1d1f] mt-1">{stats?.totalClinics || clinics.length}</h3>
-                    <p className="text-[10px] text-amber-600 font-medium mt-0.5">
-                      {clinics.filter((c) => getPractitionerStatus(c) === 'PENDING').length} pending review
-                    </p>
-                  </div>
-                  <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
-                    <Building2 className="w-5 h-5" />
-                  </div>
+                <div>
+                  <span className="text-xs font-medium text-[#86868b] block mb-1.5">Clinics</span>
+                  <h3 className="text-3xl font-semibold text-[#1d1d1f] tracking-tight">{stats?.totalClinics || clinics.length}</h3>
+                  <p className="text-[11px] text-[#86868b] font-medium mt-1">
+                    {clinics.filter((c) => getPractitionerStatus(c) === 'PENDING').length} pending review
+                  </p>
                 </div>
               </UtilityCard>
 
               <UtilityCard>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="text-[11px] text-[#86868b] uppercase font-semibold">Pending Review</span>
-                    <h3 className="text-3xl font-semibold text-amber-600 mt-1">
-                      {doctors.filter((d) => getPractitionerStatus(d) === 'PENDING').length +
-                        clinics.filter((c) => getPractitionerStatus(c) === 'PENDING').length}
-                    </h3>
-                    <p className="text-[10px] text-[#86868b] mt-0.5">Docs & Clinics</p>
-                  </div>
-                  <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-                    <AlertCircle className="w-5 h-5" />
-                  </div>
+                <div>
+                  <span className="text-xs font-medium text-[#86868b] block mb-1.5">Pending Review</span>
+                  <h3 className="text-3xl font-semibold text-[#0066cc] tracking-tight">
+                    {doctors.filter((d) => getPractitionerStatus(d) === 'PENDING').length +
+                      clinics.filter((c) => getPractitionerStatus(c) === 'PENDING').length}
+                  </h3>
+                  <p className="text-[11px] text-[#86868b] font-medium mt-1">Docs & Clinics</p>
                 </div>
               </UtilityCard>
 
               <UtilityCard>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="text-[11px] text-[#86868b] uppercase font-semibold">Total Bookings</span>
-                    <h3 className="text-3xl font-semibold text-[#1d1d1f] mt-1">{stats?.totalAppointments || 0}</h3>
-                    <p className="text-[10px] text-purple-600 font-medium mt-0.5">{stats?.todayAppointments || 0} today</p>
-                  </div>
-                  <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
-                    <Calendar className="w-5 h-5" />
-                  </div>
+                <div>
+                  <span className="text-xs font-medium text-[#86868b] block mb-1.5">Total Bookings</span>
+                  <h3 className="text-3xl font-semibold text-[#1d1d1f] tracking-tight">{stats?.totalAppointments || 0}</h3>
+                  <p className="text-[11px] text-[#0066cc] font-medium mt-1">{stats?.todayAppointments || 0} today</p>
                 </div>
               </UtilityCard>
             </div>
 
             {/* Verification Navigation Tabs */}
             <div className="flex items-center gap-2 border-b border-[#e5e5ea] pb-4 overflow-x-auto scrollbar-none">
-              <div className="inline-flex p-1 bg-[#f5f5f7] rounded-full border border-[#e5e5ea] shadow-xs whitespace-nowrap">
+              <div className="inline-flex p-1 bg-[#e8e8ed]/70 rounded-full border border-[#e5e5ea] whitespace-nowrap">
                 <button
                   onClick={() => setActiveTab('doctors')}
                   className={`px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-2 transition-all active:scale-[0.98] cursor-pointer ${
                     activeTab === 'doctors'
-                      ? 'bg-white text-[#1d1d1f] shadow-xs'
+                      ? 'bg-white text-[#1d1d1f] shadow-[0_1px_3px_rgba(0,0,0,0.08)]'
                       : 'text-[#86868b] hover:text-[#1d1d1f]'
                   }`}
                 >
-                  <ShieldCheck className="w-4 h-4 text-[#0066cc]" />
                   <span>Doctor Verification</span>
                   {doctors.filter((d) => getPractitionerStatus(d) === 'PENDING').length > 0 ? (
-                    <span className="px-2 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-bold">
+                    <span className="px-2 py-0.5 rounded-full bg-[#0066cc] text-white text-[10px] font-semibold">
                       {doctors.filter((d) => getPractitionerStatus(d) === 'PENDING').length} pending
                     </span>
                   ) : (
@@ -653,14 +622,13 @@ export const AdminDashboard: React.FC = () => {
                   onClick={() => setActiveTab('clinics')}
                   className={`px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-2 transition-all active:scale-[0.98] cursor-pointer ${
                     activeTab === 'clinics'
-                      ? 'bg-white text-[#1d1d1f] shadow-xs'
+                      ? 'bg-white text-[#1d1d1f] shadow-[0_1px_3px_rgba(0,0,0,0.08)]'
                       : 'text-[#86868b] hover:text-[#1d1d1f]'
                   }`}
                 >
-                  <Building2 className="w-4 h-4 text-indigo-600" />
                   <span>Clinic Verification</span>
                   {clinics.filter((c) => getPractitionerStatus(c) === 'PENDING').length > 0 ? (
-                    <span className="px-2 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-bold animate-pulse">
+                    <span className="px-2 py-0.5 rounded-full bg-[#0066cc] text-white text-[10px] font-semibold">
                       {clinics.filter((c) => getPractitionerStatus(c) === 'PENDING').length} pending
                     </span>
                   ) : (
@@ -672,11 +640,10 @@ export const AdminDashboard: React.FC = () => {
                   onClick={() => setActiveTab('appointments')}
                   className={`px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-2 transition-all active:scale-[0.98] cursor-pointer ${
                     activeTab === 'appointments'
-                      ? 'bg-white text-[#1d1d1f] shadow-xs'
+                      ? 'bg-white text-[#1d1d1f] shadow-[0_1px_3px_rgba(0,0,0,0.08)]'
                       : 'text-[#86868b] hover:text-[#1d1d1f]'
                   }`}
                 >
-                  <Calendar className="w-4 h-4 text-purple-600" />
                   <span>Platform Bookings ({appointments.length})</span>
                 </button>
 
@@ -684,14 +651,13 @@ export const AdminDashboard: React.FC = () => {
                   onClick={() => setActiveTab('messages')}
                   className={`px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-2 transition-all active:scale-[0.98] cursor-pointer ${
                     activeTab === 'messages'
-                      ? 'bg-white text-[#1d1d1f] shadow-xs'
+                      ? 'bg-white text-[#1d1d1f] shadow-[0_1px_3px_rgba(0,0,0,0.08)]'
                       : 'text-[#86868b] hover:text-[#1d1d1f]'
                   }`}
                 >
-                  <Mail className="w-4 h-4 text-emerald-600" />
                   <span>Contact Inquiries</span>
                   {contactMessages.filter((m) => m.status === 'NEW').length > 0 ? (
-                    <span className="px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-bold">
+                    <span className="px-2 py-0.5 rounded-full bg-[#0066cc] text-white text-[10px] font-semibold">
                       {contactMessages.filter((m) => m.status === 'NEW').length} new
                     </span>
                   ) : (
@@ -706,8 +672,8 @@ export const AdminDashboard: React.FC = () => {
               <UtilityCard>
                 <div className="flex justify-between items-center mb-6">
                   <div>
-                    <h3 className="text-lg font-semibold text-[#1d1d1f]">Practitioner Verification Queue</h3>
-                    <p className="text-xs text-[#86868b] mt-0.5">
+                    <h3 className="text-[20px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">Practitioner Verification Queue</h3>
+                    <p className="text-[13px] text-[#86868b] mt-1 leading-relaxed">
                       Doctors must be verified by admin before appearing in patient searches.
                     </p>
                   </div>
@@ -716,7 +682,7 @@ export const AdminDashboard: React.FC = () => {
 
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs">
-                    <thead className="border-b border-[#e5e5ea] text-[#86868b] uppercase tracking-wider font-semibold">
+                    <thead className="border-b border-[#e5e5ea] text-[#86868b] font-semibold">
                       <tr>
                         <th className="py-3 px-3">Practitioner</th>
                         <th className="py-3 px-3">Specialty</th>
@@ -821,7 +787,7 @@ export const AdminDashboard: React.FC = () => {
                                   size="sm"
                                   disabled={actionId === doc.id}
                                   onClick={() => handleVerify(doc.id, 'VERIFIED')}
-                                  className="text-xs bg-[#10b981] hover:bg-[#059669] text-white shadow-2xs font-medium"
+                                  className="text-xs font-medium"
                                 >
                                   {actionId === doc.id ? 'Activating...' : 'Re-activate'}
                                 </AppleButton>
@@ -853,8 +819,8 @@ export const AdminDashboard: React.FC = () => {
               <UtilityCard>
                 <div className="flex justify-between items-center mb-6">
                   <div>
-                    <h3 className="text-lg font-semibold text-[#1d1d1f]">Clinic Facility Verification Queue</h3>
-                    <p className="text-xs text-[#86868b] mt-0.5">
+                    <h3 className="text-[20px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">Clinic Facility Verification Queue</h3>
+                    <p className="text-[13px] text-[#86868b] mt-1 leading-relaxed">
                       Clinics must be verified by MediArca administration before appearing in patient searches or doctor affiliation lists.
                     </p>
                   </div>
@@ -863,7 +829,7 @@ export const AdminDashboard: React.FC = () => {
 
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs">
-                    <thead className="border-b border-[#e5e5ea] text-[#86868b] uppercase tracking-wider font-semibold">
+                    <thead className="border-b border-[#e5e5ea] text-[#86868b] font-semibold">
                       <tr>
                         <th className="py-3 px-3">Facility</th>
                         <th className="py-3 px-3">Location</th>
@@ -883,23 +849,18 @@ export const AdminDashboard: React.FC = () => {
                         clinics.map((c) => (
                           <tr key={c.id} className="hover:bg-[#f5f5f7]/60 transition-colors">
                             <td className="py-3.5 px-3">
-                              <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center flex-shrink-0 font-semibold">
-                                  <Building2 className="w-4 h-4" />
+                              <div>
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedClinic(c)}
+                                  className="text-[13px] text-[#1d1d1f] font-semibold block text-left hover:text-[#0066cc] transition-colors cursor-pointer"
+                                >
+                                  {c.clinicName}
+                                </button>
+                                <div className="text-[#86868b]">
+                                  {c.user?.fullName} • {c.user?.email}
                                 </div>
-                                <div>
-                                  <button
-                                    type="button"
-                                    onClick={() => setSelectedClinic(c)}
-                                    className="text-[13px] text-[#1d1d1f] font-semibold block text-left hover:text-[#0066cc] transition-colors cursor-pointer"
-                                  >
-                                    {c.clinicName}
-                                  </button>
-                                  <div className="text-[#86868b]">
-                                    {c.user?.fullName} • {c.user?.email}
-                                  </div>
-                                  {c.phone && <div className="text-[10px] text-[#86868b]">{c.phone}</div>}
-                                </div>
+                                {c.phone && <div className="text-[10px] text-[#86868b]">{c.phone}</div>}
                               </div>
                             </td>
                             <td className="py-3.5 px-3 text-[#1d1d1f]">
@@ -971,7 +932,7 @@ export const AdminDashboard: React.FC = () => {
                                     size="sm"
                                     disabled={clinicActionId === c.id}
                                     onClick={() => handleVerifyClinic(c.id, 'VERIFIED')}
-                                    className="text-xs bg-[#10b981] hover:bg-[#059669] text-white shadow-2xs font-medium"
+                                    className="text-xs font-medium"
                                   >
                                     {clinicActionId === c.id ? 'Activating...' : 'Re-activate'}
                                   </AppleButton>
@@ -1007,29 +968,28 @@ export const AdminDashboard: React.FC = () => {
                   <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-[#e5e5ea]">
                     <div>
                       <div className="flex items-center gap-2">
-                        <h3 className="text-lg font-bold text-[#1d1d1f] tracking-tight">Platform Bookings & Queue Oversight</h3>
+                        <h3 className="text-[20px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">Platform Bookings & Queue Oversight</h3>
                         <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f]">
                           {filteredAppointments.length} of {appointments.length} Total
                         </span>
                       </div>
-                      <p className="text-xs text-[#86868b] mt-1">
+                      <p className="text-[13px] text-[#86868b] mt-1 leading-relaxed">
                         Audit trail of queue tokens, consultation flows, and schedules organized by dates and clinical facilities.
                       </p>
                     </div>
 
                     {/* View Mode Segmented Controls */}
-                    <div className="inline-flex items-center p-1 bg-[#f5f5f7] rounded-full border border-[#e5e5ea] self-start lg:self-auto shadow-2xs">
+                    <div className="inline-flex items-center p-1 bg-[#e8e8ed]/70 rounded-full border border-[#e5e5ea] self-start lg:self-auto">
                       <button
                         type="button"
                         onClick={() => setBookingViewMode('table')}
                         className={`px-3.5 py-1.5 rounded-full text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
                           bookingViewMode === 'table'
-                            ? 'bg-white text-[#1d1d1f] shadow-xs font-semibold'
+                            ? 'bg-white text-[#1d1d1f] shadow-[0_1px_3px_rgba(0,0,0,0.08)] font-semibold'
                             : 'text-[#86868b] hover:text-[#1d1d1f]'
                         }`}
                         title="View flat table of all matching bookings"
                       >
-                        <Layers className="w-3.5 h-3.5 text-[#0066cc]" />
                         <span>All Records</span>
                       </button>
 
@@ -1038,13 +998,12 @@ export const AdminDashboard: React.FC = () => {
                         onClick={() => setBookingViewMode('by-date')}
                         className={`px-3.5 py-1.5 rounded-full text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
                           bookingViewMode === 'by-date'
-                            ? 'bg-white text-[#1d1d1f] shadow-xs font-semibold'
+                            ? 'bg-white text-[#1d1d1f] shadow-[0_1px_3px_rgba(0,0,0,0.08)] font-semibold'
                             : 'text-[#86868b] hover:text-[#1d1d1f]'
                         }`}
                         title="Group bookings chronologically by date"
                       >
-                        <CalendarDays className="w-3.5 h-3.5 text-purple-600" />
-                        <span>Organize by Date</span>
+                        <span>By Date</span>
                       </button>
 
                       <button
@@ -1052,13 +1011,12 @@ export const AdminDashboard: React.FC = () => {
                         onClick={() => setBookingViewMode('by-clinic')}
                         className={`px-3.5 py-1.5 rounded-full text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
                           bookingViewMode === 'by-clinic'
-                            ? 'bg-white text-[#1d1d1f] shadow-xs font-semibold'
+                            ? 'bg-white text-[#1d1d1f] shadow-[0_1px_3px_rgba(0,0,0,0.08)] font-semibold'
                             : 'text-[#86868b] hover:text-[#1d1d1f]'
                         }`}
                         title="Group bookings by clinic facility"
                       >
-                        <Building2 className="w-3.5 h-3.5 text-indigo-600" />
-                        <span>Organize by Clinic</span>
+                        <span>By Clinic</span>
                       </button>
                     </div>
                   </div>
@@ -1066,48 +1024,48 @@ export const AdminDashboard: React.FC = () => {
                   {/* Summary Metric Counters Bar */}
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-3 my-5">
                     <div className="p-3 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-center">
-                      <span className="text-[10px] text-[#86868b] uppercase font-semibold block">Total Shown</span>
-                      <strong className="text-lg font-bold text-[#1d1d1f] mt-0.5 block">{filteredAppointments.length}</strong>
+                      <span className="text-xs font-medium text-[#86868b] block">Total Shown</span>
+                      <strong className="text-lg font-semibold text-[#1d1d1f] mt-0.5 block">{filteredAppointments.length}</strong>
                     </div>
 
-                    <div className="p-3 rounded-xl bg-blue-50/60 border border-blue-200/60 text-center">
-                      <span className="text-[10px] text-blue-700 uppercase font-semibold block">Today's Visits</span>
-                      <strong className="text-lg font-bold text-[#0066cc] mt-0.5 block">
+                    <div className="p-3 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-center">
+                      <span className="text-xs font-medium text-[#86868b] block">Today's Visits</span>
+                      <strong className="text-lg font-semibold text-[#0066cc] mt-0.5 block">
                         {filteredAppointments.filter((a) => a.appointmentDate === todayStr).length}
                       </strong>
                     </div>
 
-                    <div className="p-3 rounded-xl bg-amber-50/70 border border-amber-200 text-center">
-                      <span className="text-[10px] text-amber-800 uppercase font-semibold block">Waiting</span>
-                      <strong className="text-lg font-bold text-amber-700 mt-0.5 block">
+                    <div className="p-3 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-center">
+                      <span className="text-xs font-medium text-[#86868b] block">Waiting</span>
+                      <strong className="text-lg font-semibold text-[#1d1d1f] mt-0.5 block">
                         {filteredAppointments.filter((a) => (a.status || '').toUpperCase() === 'WAITING').length}
                       </strong>
                     </div>
 
-                    <div className="p-3 rounded-xl bg-indigo-50/70 border border-indigo-200 text-center">
-                      <span className="text-[10px] text-indigo-800 uppercase font-semibold block">In Cabin</span>
-                      <strong className="text-lg font-bold text-indigo-600 mt-0.5 block">
+                    <div className="p-3 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-center">
+                      <span className="text-xs font-medium text-[#86868b] block">In Cabin</span>
+                      <strong className="text-lg font-semibold text-[#0066cc] mt-0.5 block">
                         {filteredAppointments.filter((a) => (a.status || '').toUpperCase() === 'IN_CONSULTATION').length}
                       </strong>
                     </div>
 
-                    <div className="p-3 rounded-xl bg-emerald-50/70 border border-emerald-200 text-center">
-                      <span className="text-[10px] text-emerald-800 uppercase font-semibold block">Completed</span>
-                      <strong className="text-lg font-bold text-emerald-700 mt-0.5 block">
+                    <div className="p-3 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-center">
+                      <span className="text-xs font-medium text-[#86868b] block">Completed</span>
+                      <strong className="text-lg font-semibold text-[#1d1d1f] mt-0.5 block">
                         {filteredAppointments.filter((a) => (a.status || '').toUpperCase() === 'COMPLETED').length}
                       </strong>
                     </div>
 
-                    <div className="p-3 rounded-xl bg-rose-50/60 border border-rose-200 text-center">
-                      <span className="text-[10px] text-rose-800 uppercase font-semibold block">Cancelled/Off</span>
-                      <strong className="text-lg font-bold text-rose-600 mt-0.5 block">
+                    <div className="p-3 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-center">
+                      <span className="text-xs font-medium text-[#86868b] block">Cancelled/Off</span>
+                      <strong className="text-lg font-semibold text-rose-600 mt-0.5 block">
                         {filteredAppointments.filter((a) => ['CANCELLED', 'EXPIRED'].includes((a.status || '').toUpperCase())).length}
                       </strong>
                     </div>
                   </div>
 
                   {/* Interactive Filter Control Panel (Date, Clinic, Status, Search) */}
-                  <div className="p-4 rounded-2xl bg-[#fafafc] border border-[#e5e5ea] space-y-3.5">
+                  <div className="p-4 rounded-2xl bg-[#f5f5f7]/60 border border-[#e5e5ea] space-y-3.5">
                     <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
                       {/* Search Bar */}
                       <div className="relative flex-1">
@@ -1117,7 +1075,7 @@ export const AdminDashboard: React.FC = () => {
                           value={bookingSearchQuery}
                           onChange={(e) => setBookingSearchQuery(e.target.value)}
                           placeholder="Search patient, practitioner, clinic, token #..."
-                          className="w-full pl-9 pr-8 py-2 text-xs rounded-xl bg-white border border-[#e5e5ea] text-[#1d1d1f] placeholder-[#86868b] focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] transition-all"
+                          className="w-full h-11 pl-10 pr-8 rounded-xl bg-white border border-[#d2d2d7] text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                         />
                         {bookingSearchQuery && (
                           <button
@@ -1137,26 +1095,26 @@ export const AdminDashboard: React.FC = () => {
                             value={bookingClinicFilter}
                             onChange={(e) => setBookingClinicFilter(e.target.value)}
                             aria-label="Filter bookings by clinic facility"
-                            className="w-full appearance-none pl-8 pr-7 py-2 text-xs rounded-xl bg-white border border-[#e5e5ea] text-[#1d1d1f] font-medium focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] cursor-pointer transition-all"
+                            className="w-full h-11 appearance-none pl-9 pr-8 rounded-xl bg-white border border-[#d2d2d7] text-[13px] text-[#1d1d1f] font-medium shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 cursor-pointer transition-all duration-150"
                           >
-                            <option value="ALL">🏥 All Clinics ({appointments.length})</option>
+                            <option value="ALL">All Clinics ({appointments.length})</option>
                             {clinicFilterOptions.map((c) => (
                               <option key={c.id} value={c.name}>
                                 {c.name} ({c.count})
                               </option>
                             ))}
                           </select>
-                          <Building2 className="w-3.5 h-3.5 text-[#86868b] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                          <ChevronDown className="w-3.5 h-3.5 text-[#86868b] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                          <Building2 className="w-4 h-4 text-[#86868b] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                          <ChevronDown className="w-4 h-4 text-[#86868b] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                         </div>
 
                         {/* Status Filter Selector */}
-                        <div className="relative min-w-[140px]">
+                        <div className="relative min-w-[150px]">
                           <select
                             value={bookingStatusFilter}
                             onChange={(e) => setBookingStatusFilter(e.target.value)}
                             aria-label="Filter bookings by consultation status"
-                            className="w-full appearance-none pl-8 pr-7 py-2 text-xs rounded-xl bg-white border border-[#e5e5ea] text-[#1d1d1f] font-medium focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] cursor-pointer transition-all"
+                            className="w-full h-11 appearance-none pl-9 pr-8 rounded-xl bg-white border border-[#d2d2d7] text-[13px] text-[#1d1d1f] font-medium shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 cursor-pointer transition-all duration-150"
                           >
                             <option value="ALL">All Statuses</option>
                             <option value="WAITING">Waiting</option>
@@ -1166,17 +1124,17 @@ export const AdminDashboard: React.FC = () => {
                             <option value="EXPIRED">Expired</option>
                             <option value="PENDING_APPROVAL">Pending Approval</option>
                           </select>
-                          <Filter className="w-3.5 h-3.5 text-[#86868b] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                          <ChevronDown className="w-3.5 h-3.5 text-[#86868b] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                          <Filter className="w-4 h-4 text-[#86868b] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                          <ChevronDown className="w-4 h-4 text-[#86868b] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                         </div>
                       </div>
                     </div>
 
                     {/* Date Quick Filter Pills + Custom Date Picker */}
-                    <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t border-[#f0f0f2]">
+                    <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t border-[#e5e5ea]">
                       <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="text-[11px] font-semibold text-[#86868b] mr-1 flex items-center gap-1">
-                          <Calendar className="w-3 h-3 text-[#0066cc]" />
+                        <span className="text-xs font-medium text-[#86868b] mr-1 flex items-center gap-1">
+                          <Calendar className="w-3.5 h-3.5 text-[#0066cc]" />
                           Date:
                         </span>
 
@@ -1188,7 +1146,7 @@ export const AdminDashboard: React.FC = () => {
                           }}
                           className={`px-3 py-1 rounded-full text-xs transition-all cursor-pointer ${
                             bookingDateFilter === 'ALL'
-                              ? 'bg-[#1d1d1f] text-white font-semibold shadow-xs'
+                              ? 'bg-[#0066cc] text-white font-semibold shadow-xs'
                               : 'bg-white border border-[#e5e5ea] text-[#48484a] hover:bg-[#f5f5f7]'
                           }`}
                         >
@@ -1218,7 +1176,7 @@ export const AdminDashboard: React.FC = () => {
                           }}
                           className={`px-3 py-1 rounded-full text-xs transition-all cursor-pointer ${
                             bookingDateFilter === 'TOMORROW'
-                              ? 'bg-purple-600 text-white font-semibold shadow-xs'
+                              ? 'bg-[#0066cc] text-white font-semibold shadow-xs'
                               : 'bg-white border border-[#e5e5ea] text-[#48484a] hover:bg-[#f5f5f7]'
                           }`}
                         >
@@ -1233,7 +1191,7 @@ export const AdminDashboard: React.FC = () => {
                           }}
                           className={`px-3 py-1 rounded-full text-xs transition-all cursor-pointer ${
                             bookingDateFilter === 'PAST'
-                              ? 'bg-gray-700 text-white font-semibold shadow-xs'
+                              ? 'bg-[#0066cc] text-white font-semibold shadow-xs'
                               : 'bg-white border border-[#e5e5ea] text-[#48484a] hover:bg-[#f5f5f7]'
                           }`}
                         >
@@ -1242,7 +1200,7 @@ export const AdminDashboard: React.FC = () => {
 
                         {/* Custom Date Input */}
                         <div className="inline-flex items-center gap-1.5 ml-1 pl-2 border-l border-[#e5e5ea]">
-                          <span className="text-[10px] text-[#86868b] font-medium">Specific:</span>
+                          <span className="text-xs text-[#86868b] font-medium">Specific:</span>
                           <input
                             type="date"
                             value={bookingCustomDate}
@@ -1253,8 +1211,8 @@ export const AdminDashboard: React.FC = () => {
                             }}
                             className={`px-2.5 py-1 text-xs rounded-lg border transition-all cursor-pointer ${
                               bookingDateFilter === 'CUSTOM'
-                                ? 'bg-blue-50 border-[#0066cc] text-[#0066cc] font-semibold'
-                                : 'bg-white border-[#e5e5ea] text-[#1d1d1f]'
+                                ? 'bg-[#0066cc]/10 border-[#0066cc] text-[#0066cc] font-semibold'
+                                : 'bg-white border-[#d2d2d7] text-[#1d1d1f]'
                             }`}
                           />
                         </div>
@@ -1277,9 +1235,6 @@ export const AdminDashboard: React.FC = () => {
                   {/* Empty State */}
                   {filteredAppointments.length === 0 && (
                     <div className="p-12 text-center my-6 rounded-2xl border border-dashed border-[#e5e5ea] bg-white">
-                      <div className="w-12 h-12 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] flex items-center justify-center mx-auto mb-3 text-[#86868b]">
-                        <Calendar className="w-6 h-6 text-[#86868b]" />
-                      </div>
                       <h4 className="text-sm font-semibold text-[#1d1d1f]">No Bookings Found</h4>
                       <p className="text-xs text-[#86868b] mt-1 max-w-sm mx-auto">
                         No appointments match your active date ({bookingDateFilter !== 'ALL' ? bookingDateFilter : 'selected'}), clinic, or search filter.
@@ -1287,7 +1242,7 @@ export const AdminDashboard: React.FC = () => {
                       <button
                         type="button"
                         onClick={handleResetBookingFilters}
-                        className="mt-4 px-4 py-1.5 rounded-full text-xs font-semibold bg-[#1d1d1f] hover:bg-black text-white transition-all cursor-pointer"
+                        className="mt-4 h-9 px-5 rounded-full text-xs font-semibold bg-[#0066cc] hover:bg-[#0071e3] text-white transition-all cursor-pointer active:scale-[0.98]"
                       >
                         Clear All Filters
                       </button>
@@ -1298,7 +1253,7 @@ export const AdminDashboard: React.FC = () => {
                   {bookingViewMode === 'table' && filteredAppointments.length > 0 && (
                     <div className="overflow-x-auto mt-5">
                       <table className="w-full text-left text-xs">
-                        <thead className="border-b border-[#e5e5ea] text-[#86868b] uppercase tracking-wider font-semibold">
+                        <thead className="border-b border-[#e5e5ea] text-[#86868b] font-semibold">
                           <tr>
                             <th className="py-3 px-3">Date</th>
                             <th className="py-3 px-3">Queue Token</th>
@@ -1328,7 +1283,7 @@ export const AdminDashboard: React.FC = () => {
                                       {appt.patient?.user?.fullName || appt.patientName || 'Unknown Patient'}
                                     </span>
                                     {appt.isForOther && appt.patientName && (
-                                      <span className="ml-1.5 px-1.5 py-0.2 rounded text-[9px] font-semibold bg-purple-50 text-purple-700 border border-purple-200">
+                                      <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea]">
                                         Family
                                       </span>
                                     )}
@@ -1347,7 +1302,7 @@ export const AdminDashboard: React.FC = () => {
                                 </td>
                                 <td className="py-3 px-3">
                                   <div className="flex items-start gap-1.5">
-                                    <Building2 className="w-3.5 h-3.5 text-indigo-600 shrink-0 mt-0.5" />
+                                    <Building2 className="w-3.5 h-3.5 text-[#0066cc] shrink-0 mt-0.5" />
                                     <div>
                                       <span className="font-medium text-[#1d1d1f]">{clinicInfo.name}</span>
                                       {clinicInfo.city && (
@@ -1391,21 +1346,16 @@ export const AdminDashboard: React.FC = () => {
                             className="bg-white rounded-2xl border border-[#e5e5ea] overflow-hidden shadow-2xs"
                           >
                             {/* Date Group Header */}
-                            <div className="px-4 py-3.5 bg-[#fbfbfd] border-b border-[#e5e5ea] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                              <div className="flex items-center gap-2.5">
-                                <div className="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
-                                  <CalendarDays className="w-4 h-4" />
+                            <div className="px-4 py-3.5 bg-[#f5f5f7]/60 border-b border-[#e5e5ea] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <h4 className="text-sm font-semibold text-[#1d1d1f]">{formatDisplayDate(dateStr)}</h4>
+                                  {getDateBadge(dateStr)}
+                                  <span className="text-xs text-[#86868b]">({dateStr})</span>
                                 </div>
-                                <div>
-                                  <div className="flex items-center gap-2">
-                                    <h4 className="text-sm font-bold text-[#1d1d1f]">{formatDisplayDate(dateStr)}</h4>
-                                    {getDateBadge(dateStr)}
-                                    <span className="text-xs text-[#86868b]">({dateStr})</span>
-                                  </div>
-                                  <p className="text-[11px] text-[#86868b] mt-0.5">
-                                    {items.length} booking{items.length !== 1 ? 's' : ''} scheduled • {waitingCount} waiting • {completedCount} completed
-                                  </p>
-                                </div>
+                                <p className="text-[11px] text-[#86868b] mt-0.5">
+                                  {items.length} booking{items.length !== 1 ? 's' : ''} scheduled • {waitingCount} waiting • {completedCount} completed
+                                </p>
                               </div>
 
                               <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white border border-[#e5e5ea] text-[#1d1d1f] self-start sm:self-center">
@@ -1416,7 +1366,7 @@ export const AdminDashboard: React.FC = () => {
                             {/* Date Appointments Table */}
                             <div className="overflow-x-auto">
                               <table className="w-full text-left text-xs">
-                                <thead className="border-b border-[#f0f0f2] text-[#86868b] uppercase tracking-wider font-semibold bg-[#fafafa]">
+                                <thead className="border-b border-[#f0f0f2] text-[#86868b] font-semibold bg-[#fafafa]">
                                   <tr>
                                     <th className="py-2.5 px-3">Token #</th>
                                     <th className="py-2.5 px-3">Patient</th>
@@ -1439,7 +1389,7 @@ export const AdminDashboard: React.FC = () => {
                                               {appt.patient?.user?.fullName || appt.patientName || 'Unknown Patient'}
                                             </span>
                                             {appt.isForOther && appt.patientName && (
-                                              <span className="ml-1.5 px-1.5 py-0.2 rounded text-[9px] font-semibold bg-purple-50 text-purple-700 border border-purple-200">
+                                              <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea]">
                                                 Family
                                               </span>
                                             )}
@@ -1458,7 +1408,7 @@ export const AdminDashboard: React.FC = () => {
                                         </td>
                                         <td className="py-3 px-3">
                                           <div className="flex items-start gap-1.5">
-                                            <Building2 className="w-3.5 h-3.5 text-indigo-600 shrink-0 mt-0.5" />
+                                            <Building2 className="w-3.5 h-3.5 text-[#0066cc] shrink-0 mt-0.5" />
                                             <div>
                                               <span className="font-medium text-[#1d1d1f]">{clinicInfo.name}</span>
                                               {clinicInfo.city && (
@@ -1507,31 +1457,26 @@ export const AdminDashboard: React.FC = () => {
                             className="bg-white rounded-2xl border border-[#e5e5ea] overflow-hidden shadow-2xs"
                           >
                             {/* Clinic Group Header */}
-                            <div className="px-4 py-3.5 bg-[#fbfbfd] border-b border-[#e5e5ea] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                              <div className="flex items-center gap-2.5">
-                                <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
-                                  <Building2 className="w-4 h-4" />
+                            <div className="px-4 py-3.5 bg-[#f5f5f7]/60 border-b border-[#e5e5ea] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <h4 className="text-sm font-semibold text-[#1d1d1f]">{clinicInfo.name}</h4>
+                                  {clinicInfo.city && (
+                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-white border border-[#e5e5ea] text-[#86868b]">
+                                      {clinicInfo.city}
+                                    </span>
+                                  )}
                                 </div>
-                                <div>
-                                  <div className="flex items-center gap-2">
-                                    <h4 className="text-sm font-bold text-[#1d1d1f]">{clinicInfo.name}</h4>
-                                    {clinicInfo.city && (
-                                      <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 text-gray-700">
-                                        {clinicInfo.city}
-                                      </span>
-                                    )}
-                                  </div>
-                                  <p className="text-[11px] text-[#86868b] mt-0.5">
-                                    {items.length} total booking{items.length !== 1 ? 's' : ''} • {doctorsInClinic.length} doctor{doctorsInClinic.length !== 1 ? 's' : ''} ({doctorsInClinic.slice(0, 3).join(', ')}{doctorsInClinic.length > 3 ? '...' : ''})
-                                  </p>
-                                </div>
+                                <p className="text-[11px] text-[#86868b] mt-0.5">
+                                  {items.length} total booking{items.length !== 1 ? 's' : ''} • {doctorsInClinic.length} doctor{doctorsInClinic.length !== 1 ? 's' : ''} ({doctorsInClinic.slice(0, 3).join(', ')}{doctorsInClinic.length > 3 ? '...' : ''})
+                                </p>
                               </div>
 
                               <div className="flex items-center gap-2 self-start sm:self-center">
-                                <span className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-amber-50 text-amber-800 border border-amber-200">
+                                <span className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-white text-[#1d1d1f] border border-[#e5e5ea]">
                                   {waitingCount} Waiting
                                 </span>
-                                <span className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-800 border border-emerald-200">
+                                <span className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20">
                                   {completedCount} Completed
                                 </span>
                               </div>
@@ -1540,7 +1485,7 @@ export const AdminDashboard: React.FC = () => {
                             {/* Clinic Appointments Table */}
                             <div className="overflow-x-auto">
                               <table className="w-full text-left text-xs">
-                                <thead className="border-b border-[#f0f0f2] text-[#86868b] uppercase tracking-wider font-semibold bg-[#fafafa]">
+                                <thead className="border-b border-[#f0f0f2] text-[#86868b] font-semibold bg-[#fafafa]">
                                   <tr>
                                     <th className="py-2.5 px-3">Date</th>
                                     <th className="py-2.5 px-3">Token #</th>
@@ -1567,7 +1512,7 @@ export const AdminDashboard: React.FC = () => {
                                             {appt.patient?.user?.fullName || appt.patientName || 'Unknown Patient'}
                                           </span>
                                           {appt.isForOther && appt.patientName && (
-                                            <span className="ml-1.5 px-1.5 py-0.2 rounded text-[9px] font-semibold bg-purple-50 text-purple-700 border border-purple-200">
+                                            <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea]">
                                               Family
                                             </span>
                                           )}
@@ -1615,8 +1560,8 @@ export const AdminDashboard: React.FC = () => {
               <UtilityCard>
                 <div className="flex justify-between items-center mb-6">
                   <div>
-                    <h3 className="text-lg font-semibold text-[#1d1d1f]">User Contact Inquiries</h3>
-                    <p className="text-xs text-[#86868b] mt-0.5">
+                    <h3 className="text-[20px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">User Contact Inquiries</h3>
+                    <p className="text-[13px] text-[#86868b] mt-1 leading-relaxed">
                       Messages submitted by visitors, patients, doctors, or clinics via the Contact Us form.
                     </p>
                   </div>
@@ -1634,7 +1579,7 @@ export const AdminDashboard: React.FC = () => {
                         key={msg.id}
                         className={`p-4 sm:p-5 rounded-2xl border transition-all ${
                           msg.status === 'NEW'
-                            ? 'bg-emerald-50/30 border-emerald-200 shadow-2xs'
+                            ? 'bg-[#0066cc]/[0.02] border-[#0066cc]/30 shadow-2xs'
                             : 'bg-white border-[#e5e5ea]'
                         }`}
                       >
@@ -1647,8 +1592,8 @@ export const AdminDashboard: React.FC = () => {
                               <div className="flex items-center gap-2">
                                 <span className="font-semibold text-sm text-[#1d1d1f]">{msg.fullName}</span>
                                 {msg.status === 'NEW' ? (
-                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
-                                    NEW
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20">
+                                    New
                                   </span>
                                 ) : (
                                   <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#f5f5f7] text-[#86868b]">
@@ -1672,14 +1617,14 @@ export const AdminDashboard: React.FC = () => {
                             {msg.status === 'NEW' && (
                               <button
                                 onClick={() => handleMarkMessageRead(msg.id)}
-                                className="px-2.5 py-1 rounded-full text-[11px] font-medium border border-[#e5e5ea] bg-white text-[#1d1d1f] hover:bg-[#f5f5f7] cursor-pointer"
+                                className="px-3 py-1 rounded-full text-xs font-medium border border-[#e5e5ea] bg-[#f5f5f7] text-[#1d1d1f] hover:bg-[#e8e8ed] cursor-pointer transition-all"
                               >
                                 Mark Read
                               </button>
                             )}
                             <a
                               href={`mailto:${msg.email}?subject=Re: ${encodeURIComponent(msg.subject)}`}
-                              className="px-3 py-1 rounded-full text-[11px] font-semibold bg-[#1d1d1f] hover:bg-black text-white cursor-pointer"
+                              className="px-3.5 py-1 rounded-full text-xs font-semibold bg-[#0066cc] hover:bg-[#0071e3] text-white cursor-pointer transition-all"
                             >
                               Reply Email
                             </a>
@@ -1705,8 +1650,8 @@ export const AdminDashboard: React.FC = () => {
       {/* Doctor Verification Credentials Inspection Modal */}
       {selectedDoctor && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-[20px] sm:rounded-[24px] border border-[#e5e5ea] max-w-lg w-full p-5 sm:p-8 shadow-2xl space-y-5">
-            <div className="flex justify-between items-start pb-4 border-b border-[#f0f0f0]">
+          <div className="bg-white rounded-[28px] border border-[#e5e5ea] max-w-lg w-full p-6 sm:p-8 shadow-2xl space-y-5">
+            <div className="flex justify-between items-start pb-4 border-b border-[#f0f0f2]">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] overflow-hidden flex items-center justify-center font-bold text-lg text-[#0066cc]">
                   {selectedDoctor.user.avatarUrl ? (
@@ -1716,8 +1661,8 @@ export const AdminDashboard: React.FC = () => {
                   )}
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-[#1d1d1f]">{selectedDoctor.user.fullName}</h3>
-                  <div className="flex items-center gap-2 mt-0.5">
+                  <h3 className="text-[20px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">{selectedDoctor.user.fullName}</h3>
+                  <div className="flex items-center gap-2 mt-1">
                     <p className="text-xs text-[#0066cc] font-medium">{selectedDoctor.specialty}</p>
                     {renderStatusBadge(getPractitionerStatus(selectedDoctor))}
                   </div>
@@ -1734,35 +1679,35 @@ export const AdminDashboard: React.FC = () => {
             <div className="space-y-3 text-xs">
               <div className="grid grid-cols-2 gap-3 p-3.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea]">
                 <div>
-                  <span className="text-[#86868b] block">Qualifications:</span>
-                  <strong className="text-[#1d1d1f]">{formatDoctorDegrees(selectedDoctor.qualifications)}</strong>
+                  <span className="text-[#86868b] block">Qualifications</span>
+                  <strong className="text-[#1d1d1f] mt-0.5 block">{formatDoctorDegrees(selectedDoctor.qualifications)}</strong>
                 </div>
                 <div>
-                  <span className="text-[#86868b] block">Experience:</span>
-                  <strong className="text-[#1d1d1f]">{selectedDoctor.experienceYears} Years</strong>
+                  <span className="text-[#86868b] block">Experience</span>
+                  <strong className="text-[#1d1d1f] mt-0.5 block">{selectedDoctor.experienceYears} Years</strong>
                 </div>
                 <div>
-                  <span className="text-[#86868b] block">Consultation Fee:</span>
-                  <strong className="text-[#1d1d1f]">₹{selectedDoctor.consultationFee}</strong>
+                  <span className="text-[#86868b] block">Consultation Fee</span>
+                  <strong className="text-[#1d1d1f] mt-0.5 block">₹{selectedDoctor.consultationFee}</strong>
                 </div>
                 <div>
-                  <span className="text-[#86868b] block">Checking Window:</span>
-                  <strong className="text-[#0066cc]">
+                  <span className="text-[#86868b] block">Checking Window</span>
+                  <strong className="text-[#0066cc] mt-0.5 block">
                     {selectedDoctor.checkingStartTime ? `${format12Hour(selectedDoctor.checkingStartTime)} – ${format12Hour(selectedDoctor.checkingEndTime)}` : 'Flexible'}
                   </strong>
                 </div>
               </div>
 
               <div>
-                <span className="text-[#86868b] font-semibold block mb-1">Clinic Address:</span>
-                <p className="text-[#1d1d1f] p-2.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea]">
+                <span className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">Clinic Address</span>
+                <p className="text-[#1d1d1f] p-3 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea]">
                   {selectedDoctor.clinicAddress || 'MediArca Clinic Facility'}
                 </p>
               </div>
 
               <div>
-                <span className="text-[#86868b] font-semibold block mb-1">Professional Bio & Practice Philosophy:</span>
-                <p className="text-[#1d1d1f] p-2.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] leading-relaxed">
+                <span className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">Professional Bio & Practice Philosophy</span>
+                <p className="text-[#1d1d1f] p-3 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] leading-relaxed">
                   {selectedDoctor.bio || 'Dedicated medical practitioner accepting outpatient consultations.'}
                 </p>
               </div>
@@ -1773,7 +1718,7 @@ export const AdminDashboard: React.FC = () => {
               </div>
             </div>
 
-            <div className="pt-4 border-t border-[#f0f0f0] flex items-center justify-between">
+            <div className="pt-4 border-t border-[#f0f0f2] flex items-center justify-between">
               <AppleButton variant="ghost" size="sm" onClick={() => setSelectedDoctor(null)}>
                 Close
               </AppleButton>
@@ -1802,7 +1747,6 @@ export const AdminDashboard: React.FC = () => {
                       await handleVerify(selectedDoctor.id, 'VERIFIED');
                       setSelectedDoctor(null);
                     }}
-                    className="bg-emerald-600 hover:bg-emerald-700"
                   >
                     <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
                     Re-activate Practitioner
@@ -1817,7 +1761,6 @@ export const AdminDashboard: React.FC = () => {
                       await handleVerify(selectedDoctor.id, 'VERIFIED');
                       setSelectedDoctor(null);
                     }}
-                    className="bg-emerald-600 hover:bg-emerald-700"
                   >
                     <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
                     Re-evaluate & Approve
@@ -1861,18 +1804,13 @@ export const AdminDashboard: React.FC = () => {
       {/* Clinic Facility Inspection & Verification Modal */}
       {selectedClinic && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-[20px] sm:rounded-[24px] border border-[#e5e5ea] max-w-lg w-full p-5 sm:p-8 shadow-2xl space-y-5">
-            <div className="flex justify-between items-start pb-4 border-b border-[#f0f0f0]">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-lg">
-                  <Building2 className="w-6 h-6" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-[#1d1d1f] tracking-tight">{selectedClinic.clinicName}</h3>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <p className="text-xs text-[#86868b]">Clinical Healthcare Facility Verification</p>
-                    {renderStatusBadge(getPractitionerStatus(selectedClinic))}
-                  </div>
+          <div className="bg-white rounded-[28px] border border-[#e5e5ea] max-w-lg w-full p-6 sm:p-8 shadow-2xl space-y-5">
+            <div className="flex justify-between items-start pb-4 border-b border-[#f0f0f2]">
+              <div>
+                <h3 className="text-[22px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">{selectedClinic.clinicName}</h3>
+                <div className="flex items-center gap-2 mt-1">
+                  <p className="text-[13px] text-[#86868b]">Clinical Healthcare Facility Verification</p>
+                  {renderStatusBadge(getPractitionerStatus(selectedClinic))}
                 </div>
               </div>
               <button
@@ -1884,67 +1822,67 @@ export const AdminDashboard: React.FC = () => {
             </div>
 
             <div className="space-y-3.5 text-xs text-[#1d1d1f]">
-              <div className="grid grid-cols-2 gap-3 p-3 bg-[#f5f5f7] rounded-xl border border-[#e5e5ea]">
+              <div className="grid grid-cols-2 gap-3 p-3.5 bg-[#f5f5f7] rounded-xl border border-[#e5e5ea]">
                 <div>
-                  <span className="text-[10px] text-[#86868b] uppercase font-semibold block">Facility Address</span>
+                  <span className="text-xs font-medium text-[#86868b] block">Facility Address</span>
                   <p className="font-medium mt-0.5">{selectedClinic.address}</p>
                 </div>
                 <div>
-                  <span className="text-[10px] text-[#86868b] uppercase font-semibold block">City & State</span>
+                  <span className="text-xs font-medium text-[#86868b] block">City & State</span>
                   <p className="font-medium mt-0.5">{selectedClinic.city || 'Not Specified'}{selectedClinic.state ? `, ${selectedClinic.state}` : ''}</p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-3 p-3 bg-[#f5f5f7] rounded-xl border border-[#e5e5ea] text-center">
+              <div className="grid grid-cols-3 gap-3 p-3.5 bg-[#f5f5f7] rounded-xl border border-[#e5e5ea] text-center">
                 <div>
-                  <span className="text-[10px] text-[#86868b] uppercase font-semibold block">Doctors</span>
-                  <p className="text-base font-bold text-[#1d1d1f] mt-0.5">
+                  <span className="text-xs font-medium text-[#86868b] block">Doctors</span>
+                  <p className="text-base font-semibold text-[#1d1d1f] mt-0.5">
                     {selectedClinic._count?.doctors ?? selectedClinic.doctorsCount ?? 0}
                   </p>
                 </div>
                 <div>
-                  <span className="text-[10px] text-[#86868b] uppercase font-semibold block">Receptionists</span>
-                  <p className="text-base font-bold text-[#0066cc] mt-0.5">
+                  <span className="text-xs font-medium text-[#86868b] block">Receptionists</span>
+                  <p className="text-base font-semibold text-[#0066cc] mt-0.5">
                     {selectedClinic._count?.receptionists ?? selectedClinic.receptionistsCount ?? 0}
                   </p>
                 </div>
                 <div>
-                  <span className="text-[10px] text-[#86868b] uppercase font-semibold block">Bookings</span>
-                  <p className="text-base font-bold text-emerald-600 mt-0.5">
+                  <span className="text-xs font-medium text-[#86868b] block">Bookings</span>
+                  <p className="text-base font-semibold text-[#1d1d1f] mt-0.5">
                     {selectedClinic._count?.appointments ?? selectedClinic.appointmentsCount ?? 0}
                   </p>
                 </div>
               </div>
 
-              <div className="p-3 bg-white border border-[#e5e5ea] rounded-xl space-y-2">
-                <span className="text-[10px] text-[#86868b] uppercase font-semibold block">Primary Administrative Contact</span>
+              <div className="p-3.5 bg-white border border-[#e5e5ea] rounded-xl space-y-2">
+                <span className="text-xs font-semibold text-[#1d1d1f] block">Primary Administrative Contact</span>
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   <div>
-                    <span className="text-[#86868b] block text-[10px]">Admin Full Name:</span>
-                    <span className="font-medium">{selectedClinic.user?.fullName || 'N/A'}</span>
+                    <span className="text-[#86868b] block text-[11px]">Admin Full Name</span>
+                    <span className="font-medium mt-0.5 block">{selectedClinic.user?.fullName || 'N/A'}</span>
                   </div>
                   <div>
-                    <span className="text-[#86868b] block text-[10px]">Direct Email:</span>
-                    <span className="font-medium text-[#1d1d1f]">{selectedClinic.user?.email || 'N/A'}</span>
+                    <span className="text-[#86868b] block text-[11px]">Direct Email</span>
+                    <span className="font-medium text-[#1d1d1f] mt-0.5 block">{selectedClinic.user?.email || 'N/A'}</span>
                   </div>
                   <div>
-                    <span className="text-[#86868b] block text-[10px]">Facility Phone:</span>
-                    <span>{selectedClinic.phone || selectedClinic.user?.phone || 'N/A'}</span>
+                    <span className="text-[#86868b] block text-[11px]">Facility Phone</span>
+                    <span className="mt-0.5 block">{selectedClinic.phone || selectedClinic.user?.phone || 'N/A'}</span>
                   </div>
                   <div>
-                    <span className="text-[#86868b] block text-[10px]">Registration Date:</span>
-                    <span>{selectedClinic.createdAt ? new Date(selectedClinic.createdAt).toLocaleDateString() : 'N/A'}</span>
+                    <span className="text-[#86868b] block text-[11px]">Registration Date</span>
+                    <span className="mt-0.5 block">{selectedClinic.createdAt ? new Date(selectedClinic.createdAt).toLocaleDateString() : 'N/A'}</span>
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center justify-between p-3 rounded-xl border border-[#e5e5ea] bg-[#fafafc]">
-                <span className="text-[#86868b] font-medium">Platform Verification State:</span>
+              <div className="flex items-center justify-between p-3.5 rounded-xl border border-[#e5e5ea] bg-[#f5f5f7]">
+                <span className="text-[#86868b] font-medium">Platform Verification State</span>
                 {renderStatusBadge(getPractitionerStatus(selectedClinic))}
               </div>
             </div>
 
-            <div className="pt-4 border-t border-[#f0f0f0] flex items-center justify-between">
+            <div className="pt-4 border-t border-[#f0f0f2] flex items-center justify-between">
               <AppleButton variant="ghost" size="sm" onClick={() => setSelectedClinic(null)}>
                 Close
               </AppleButton>
@@ -1973,7 +1911,6 @@ export const AdminDashboard: React.FC = () => {
                       await handleVerifyClinic(selectedClinic.id, 'VERIFIED');
                       setSelectedClinic(null);
                     }}
-                    className="bg-emerald-600 hover:bg-emerald-700"
                   >
                     <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
                     Re-activate Facility
@@ -1988,7 +1925,6 @@ export const AdminDashboard: React.FC = () => {
                       await handleVerifyClinic(selectedClinic.id, 'VERIFIED');
                       setSelectedClinic(null);
                     }}
-                    className="bg-emerald-600 hover:bg-emerald-700"
                   >
                     <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
                     Re-evaluate & Approve
@@ -2032,21 +1968,16 @@ export const AdminDashboard: React.FC = () => {
       {/* Platform Booking Inspection Modal */}
       {selectedAppointment && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-[20px] sm:rounded-[24px] border border-[#e5e5ea] max-w-lg w-full p-5 sm:p-7 shadow-2xl space-y-4">
-            <div className="flex justify-between items-start pb-3 border-b border-[#f0f0f0]">
-              <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-2xl bg-blue-50 text-[#0066cc] flex items-center justify-center font-bold text-base">
-                  #{selectedAppointment.queueNumber}
+          <div className="bg-white rounded-[28px] border border-[#e5e5ea] max-w-lg w-full p-6 sm:p-8 shadow-2xl space-y-5">
+            <div className="flex justify-between items-start pb-4 border-b border-[#f0f0f2]">
+              <div>
+                <div className="flex items-center gap-2.5">
+                  <h3 className="text-[22px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">Queue Token #{selectedAppointment.queueNumber}</h3>
+                  {renderAppointmentStatusBadge(selectedAppointment.status)}
                 </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-base font-bold text-[#1d1d1f]">Queue Token #{selectedAppointment.queueNumber}</h3>
-                    {renderAppointmentStatusBadge(selectedAppointment.status)}
-                  </div>
-                  <p className="text-xs text-[#86868b] mt-0.5">
-                    {formatDisplayDate(selectedAppointment.appointmentDate)} • {selectedAppointment.estimatedTime || 'Estimated Time N/A'}
-                  </p>
-                </div>
+                <p className="text-[13px] text-[#86868b] mt-1">
+                  {formatDisplayDate(selectedAppointment.appointmentDate)} • {selectedAppointment.estimatedTime || 'Estimated Time N/A'}
+                </p>
               </div>
               <button
                 type="button"
@@ -2059,33 +1990,33 @@ export const AdminDashboard: React.FC = () => {
 
             <div className="space-y-3 text-xs text-[#1d1d1f]">
               {/* Patient Block */}
-              <div className="p-3 bg-[#f5f5f7] rounded-xl border border-[#e5e5ea] space-y-1.5">
-                <span className="text-[10px] text-[#86868b] uppercase font-semibold block">Patient Information</span>
+              <div className="p-3.5 bg-[#f5f5f7] rounded-xl border border-[#e5e5ea] space-y-2">
+                <span className="text-xs font-semibold text-[#1d1d1f] block">Patient Information</span>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <span className="text-[#86868b] block text-[10px]">Patient Name:</span>
-                    <strong className="text-[#1d1d1f]">
+                    <span className="text-[#86868b] block text-[11px]">Patient Name</span>
+                    <strong className="text-[#1d1d1f] mt-0.5 block">
                       {selectedAppointment.patient?.user?.fullName || selectedAppointment.patientName || 'Walk-in Patient'}
                     </strong>
                     {selectedAppointment.isForOther && (
-                      <span className="ml-1 text-[10px] text-purple-700 font-semibold">(Family Member)</span>
+                      <span className="text-[11px] text-[#86868b] font-medium">(Family Member)</span>
                     )}
                   </div>
                   <div>
-                    <span className="text-[#86868b] block text-[10px]">Contact Phone:</span>
-                    <span className="font-medium text-[#1d1d1f]">
+                    <span className="text-[#86868b] block text-[11px]">Contact Phone</span>
+                    <span className="font-medium text-[#1d1d1f] mt-0.5 block">
                       {selectedAppointment.patient?.user?.phone || 'Not Provided'}
                     </span>
                   </div>
                   <div>
-                    <span className="text-[#86868b] block text-[10px]">Email Address:</span>
-                    <span className="font-medium text-[#1d1d1f] truncate block">
+                    <span className="text-[#86868b] block text-[11px]">Email Address</span>
+                    <span className="font-medium text-[#1d1d1f] truncate block mt-0.5">
                       {selectedAppointment.patient?.user?.email || 'N/A'}
                     </span>
                   </div>
                   <div>
-                    <span className="text-[#86868b] block text-[10px]">Arrival Status:</span>
-                    <span className="font-medium text-[#1d1d1f]">
+                    <span className="text-[#86868b] block text-[11px]">Arrival Status</span>
+                    <span className="font-medium text-[#1d1d1f] mt-0.5 block">
                       {selectedAppointment.isCheckedIn ? 'Checked-in at Desk' : 'Not Checked-in'}
                     </span>
                   </div>
@@ -2093,32 +2024,32 @@ export const AdminDashboard: React.FC = () => {
               </div>
 
               {/* Doctor & Clinic Block */}
-              <div className="p-3 bg-[#f5f5f7] rounded-xl border border-[#e5e5ea] space-y-1.5">
-                <span className="text-[10px] text-[#86868b] uppercase font-semibold block">Clinical Facility & Practitioner</span>
+              <div className="p-3.5 bg-[#f5f5f7] rounded-xl border border-[#e5e5ea] space-y-2">
+                <span className="text-xs font-semibold text-[#1d1d1f] block">Clinical Facility & Practitioner</span>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <span className="text-[#86868b] block text-[10px]">Attending Practitioner:</span>
-                    <strong className="text-[#1d1d1f]">{selectedAppointment.doctor?.user?.fullName || 'Practitioner'}</strong>
-                    <span className="text-[10px] text-[#0066cc] block">{selectedAppointment.doctor?.specialty}</span>
+                    <span className="text-[#86868b] block text-[11px]">Attending Practitioner</span>
+                    <strong className="text-[#1d1d1f] mt-0.5 block">{selectedAppointment.doctor?.user?.fullName || 'Practitioner'}</strong>
+                    <span className="text-[11px] text-[#0066cc] block">{selectedAppointment.doctor?.specialty}</span>
                   </div>
                   <div>
-                    <span className="text-[#86868b] block text-[10px]">Facility Name:</span>
-                    <strong className="text-[#1d1d1f]">{resolveClinic(selectedAppointment).name}</strong>
+                    <span className="text-[#86868b] block text-[11px]">Facility Name</span>
+                    <strong className="text-[#1d1d1f] mt-0.5 block">{resolveClinic(selectedAppointment).name}</strong>
                     {resolveClinic(selectedAppointment).city && (
-                      <span className="text-[10px] text-[#86868b] block">{resolveClinic(selectedAppointment).city}</span>
+                      <span className="text-[11px] text-[#86868b] block">{resolveClinic(selectedAppointment).city}</span>
                     )}
                   </div>
                   <div className="col-span-2">
-                    <span className="text-[#86868b] block text-[10px]">Shift / Window:</span>
-                    <span className="text-[#1d1d1f] font-medium">{selectedAppointment.checkingWindow || 'Default Clinical Shift'}</span>
+                    <span className="text-[#86868b] block text-[11px]">Shift / Window</span>
+                    <span className="text-[#1d1d1f] font-medium mt-0.5 block">{selectedAppointment.checkingWindow || 'Default Clinical Shift'}</span>
                   </div>
                 </div>
               </div>
 
               {/* Clinical Notes / Reason */}
               {(selectedAppointment.reasonForVisit || selectedAppointment.symptoms) && (
-                <div className="p-3 bg-white border border-[#e5e5ea] rounded-xl space-y-1">
-                  <span className="text-[10px] text-[#86868b] uppercase font-semibold block">Reason for Visit / Symptoms</span>
+                <div className="p-3.5 bg-white border border-[#e5e5ea] rounded-xl space-y-1">
+                  <span className="text-xs font-semibold text-[#1d1d1f] block">Reason for Visit / Symptoms</span>
                   <p className="text-xs text-[#48484a] leading-relaxed">
                     {selectedAppointment.reasonForVisit || selectedAppointment.symptoms}
                   </p>
@@ -2126,7 +2057,7 @@ export const AdminDashboard: React.FC = () => {
               )}
             </div>
 
-            <div className="pt-3 border-t border-[#f0f0f0] flex justify-end">
+            <div className="pt-4 border-t border-[#f0f0f2] flex justify-end">
               <AppleButton variant="ghost" size="sm" onClick={() => setSelectedAppointment(null)}>
                 Close
               </AppleButton>

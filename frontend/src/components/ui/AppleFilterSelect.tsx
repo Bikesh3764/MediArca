@@ -91,7 +91,7 @@ export const AppleFilterSelect: React.FC<AppleFilterSelectProps> = ({
   return (
     <div ref={containerRef} className={`relative ${className}`}>
       {label && (
-        <label className="block text-xs font-medium text-[#86868b] mb-1.5 select-none">
+        <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight select-none">
           {label}
         </label>
       )}
@@ -125,22 +125,22 @@ export const AppleFilterSelect: React.FC<AppleFilterSelectProps> = ({
           type="button"
           disabled={disabled}
           onClick={() => !disabled && setIsOpen(!isOpen)}
-          className={`w-full h-10 px-3.5 rounded-xl border transition-all flex items-center justify-between gap-2 text-xs sm:text-sm select-none ${
+          className={`w-full h-11 px-3.5 rounded-xl border transition-all duration-150 flex items-center justify-between gap-2 text-[14px] select-none shadow-[0_1px_2px_rgba(0,0,0,0.04)] ${
             disabled
-              ? 'bg-[#f5f5f7]/50 border-[#e5e5ea] text-[#86868b] opacity-60 cursor-not-allowed'
-              : `bg-[#f5f5f7] hover:bg-[#ebebed] cursor-pointer ${
+              ? 'bg-[#f5f5f7] border-[#e5e5ea] text-[#86868b] opacity-60 cursor-not-allowed'
+              : `bg-white cursor-pointer ${
                   isOpen
-                    ? 'bg-white border-[#0066cc] ring-2 ring-[#0066cc]/20'
-                    : 'border-[#e0e0e0] text-[#1d1d1f]'
+                    ? 'border-[#0066cc] ring-4 ring-[#0066cc]/10'
+                    : 'border-[#d2d2d7] text-[#1d1d1f] hover:border-[#86868b]'
                 }`
           }`}
         >
           <div className="flex items-center gap-2 min-w-0 truncate">
             {icon}
-            <span className="truncate font-medium">{displayLabel}</span>
+            <span className="truncate font-normal">{displayLabel}</span>
           </div>
           <ChevronDown
-            className={`w-3.5 h-3.5 shrink-0 text-[#86868b] transition-transform duration-200 ${
+            className={`w-4 h-4 shrink-0 text-[#86868b] transition-transform duration-200 ${
               isOpen ? 'rotate-180 text-[#0066cc]' : ''
             }`}
           />

@@ -11,19 +11,15 @@ import {
 } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { DashboardLayout, DashboardNavItem } from '../../components/layout/DashboardLayout';
-import { AppleButton } from '../../components/ui/AppleButton';
 import { UtilityCard } from '../../components/ui/UtilityCard';
 import {
   Clock,
-  IndianRupee,
   CheckCircle2,
   ChevronLeft,
   AlertCircle,
   AlertTriangle,
   Plus,
   Trash2,
-  Calendar,
-  Sparkles,
   LayoutDashboard,
   Building2,
   MapPin,
@@ -31,6 +27,7 @@ import {
   Settings,
   Timer,
   Users,
+  Calendar,
 } from 'lucide-react';
 
 export const ManageSchedule: React.FC = () => {
@@ -61,7 +58,7 @@ export const ManageSchedule: React.FC = () => {
   const navItems: DashboardNavItem[] = [
     {
       id: 'dashboard',
-      label: 'Dashboard',
+      label: 'Live Queue',
       icon: LayoutDashboard,
       path: '/doctor/dashboard',
     },
@@ -70,6 +67,12 @@ export const ManageSchedule: React.FC = () => {
       label: 'Clinics & Staff',
       icon: Building2,
       path: '/doctor/dashboard?tab=affiliations',
+    },
+    {
+      id: 'schedule',
+      label: 'Shifts & Fees',
+      icon: Calendar,
+      path: '/doctor/schedule',
       active: true,
     },
     {
@@ -303,72 +306,69 @@ export const ManageSchedule: React.FC = () => {
   return (
     <DashboardLayout
       portalType="DOCTOR"
-      portalSubtitle="DOCTOR PORTAL"
       navItems={navItems}
       title="Clinic Practice Schedule"
       subtitle={
         selectedClinic
-          ? `Managing shifts, consultation time, and fees for ${selectedClinic.clinicName}`
-          : 'Configure daily shifts & practice timings per clinic facility'
+          ? `Manage shifts, consultation time, and fee for ${selectedClinic.clinicName}`
+          : 'Configure daily shifts and consultation fee'
       }
       headerAction={
-        <AppleButton
-          variant="ghost"
-          size="sm"
+        <button
+          type="button"
           onClick={() => navigate('/doctor/dashboard?tab=affiliations')}
-          className="flex items-center gap-1.5 text-xs font-medium"
+          className="h-9 px-4 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer"
         >
           <ChevronLeft className="w-4 h-4" />
           <span>Back to Clinics & Staff</span>
-        </AppleButton>
+        </button>
       }
     >
       <div className="max-w-4xl space-y-6">
         {loadingClinics ? (
-          <div className="h-64 rounded-3xl bg-white border border-[#e5e5ea] animate-pulse p-8" />
+          <div className="h-64 rounded-[24px] bg-white border border-[#e5e5ea] animate-pulse p-8" />
         ) : (
           <>
             {clinics.length === 0 && (
-              <div className="p-5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+              <div className="p-5 rounded-[24px] bg-white border border-[#e5e5ea] text-[#1d1d1f] text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
                 <div>
-                  <p className="font-semibold text-[13px] flex items-center gap-1.5 text-amber-950">
-                    <AlertTriangle className="w-4 h-4 text-amber-600" />
+                  <p className="font-semibold text-[14px] flex items-center gap-2 text-[#1d1d1f]">
+                    <AlertTriangle className="w-4 h-4 text-[#0066cc]" />
                     Clinic Affiliation Required for Online Bookings
                   </p>
-                  <p className="text-amber-800/90 mt-0.5">
-                    You are not currently linked to an active clinic facility. While you can set your base shifts and fees below, online patient bookings and live queue tokens require affiliation with at least one verified clinic partner.
+                  <p className="text-[#86868b] mt-1 leading-relaxed">
+                    Online patient bookings and live queue tokens require affiliation with at least one verified clinic partner.
                   </p>
                 </div>
-                <AppleButton
-                  variant="primary"
-                  size="sm"
+                <button
+                  type="button"
                   onClick={() => navigate('/doctor/dashboard?tab=affiliations')}
-                  className="whitespace-nowrap self-start sm:self-auto bg-amber-600 hover:bg-amber-700 text-white"
+                  className="h-10 px-5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-xs font-medium transition-all whitespace-nowrap self-start sm:self-auto cursor-pointer"
                 >
                   Affiliate with a Clinic
-                </AppleButton>
+                </button>
               </div>
             )}
 
-            <UtilityCard className="p-4 sm:p-8 space-y-6">
+            <UtilityCard className="p-5 sm:p-7 space-y-6">
               {successMsg && (
-                <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2.5 animate-fadeIn">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                <div className="p-3.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] text-xs flex items-center gap-2.5 animate-fadeIn">
+                  <CheckCircle2 className="w-4 h-4 text-[#0066cc] flex-shrink-0" />
                   <span className="font-medium">{successMsg}</span>
                 </div>
               )}
 
               {error && (
-                <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2.5 animate-fadeIn">
-                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200/80 text-rose-700 text-xs flex items-center gap-2.5 animate-fadeIn">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0 text-rose-600" />
                   <span className="font-medium">{error}</span>
                 </div>
               )}
 
               {/* Clinic Selector & Verified Location Banner */}
-              <div className="p-5 rounded-[22px] bg-[#fafafc] border border-[#e5e5ea] space-y-3">
+              <div className="p-5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] space-y-3">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <label className="text-xs font-bold text-[#1d1d1f] flex items-center gap-2">
+                  <label className="text-[13px] font-semibold text-[#1d1d1f] flex items-center gap-2">
                     <Building2 className="w-4 h-4 text-[#0066cc]" />
                     <span>Practicing Facility</span>
                   </label>
@@ -376,7 +376,7 @@ export const ManageSchedule: React.FC = () => {
                     <select
                       value={selectedClinicId}
                       onChange={(e) => handleClinicChange(e.target.value)}
-                      className="h-10 px-4 rounded-full border border-[#e5e5ea] text-xs font-semibold text-[#1d1d1f] bg-white focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] cursor-pointer transition-all hover:bg-[#fafafc] shadow-2xs"
+                      className="h-11 px-3.5 rounded-xl border border-[#d2d2d7] text-[14px] font-medium text-[#1d1d1f] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 cursor-pointer transition-all"
                     >
                       {clinics.map((c) => (
                         <option key={c.clinicId} value={c.clinicId}>
@@ -385,14 +385,14 @@ export const ManageSchedule: React.FC = () => {
                       ))}
                     </select>
                   ) : (
-                    <span className="text-xs font-medium text-[#86868b] bg-white px-3 py-1.5 rounded-full border border-[#e5e5ea]">
-                      {selectedClinic ? selectedClinic.clinicName : 'Independent Practice / Direct Consultations'}
+                    <span className="text-xs font-medium text-[#1d1d1f] bg-white px-3.5 py-1.5 rounded-full border border-[#e5e5ea]">
+                      {selectedClinic ? selectedClinic.clinicName : 'Independent Practice'}
                     </span>
                   )}
                 </div>
 
-                {selectedClinic ? (
-                  <div className="pt-3 border-t border-[#f0f0f0] flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-[#86868b]">
+                {selectedClinic && (
+                  <div className="pt-3 border-t border-[#e5e5ea] flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-[#86868b]">
                     <div className="flex items-center gap-1.5">
                       <MapPin className="w-3.5 h-3.5 text-[#0066cc] flex-shrink-0" />
                       <span className="text-[#1d1d1f] font-medium">
@@ -406,74 +406,35 @@ export const ManageSchedule: React.FC = () => {
                       </div>
                     )}
                   </div>
-                ) : (
-                  <div className="pt-3 border-t border-[#f0f0f0] flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-[#86868b]">
-                    <div className="flex items-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5 text-[#0066cc] flex-shrink-0" />
-                      <span className="text-[#1d1d1f] font-medium">
-                        Direct Consultations & Telehealth Practice
-                      </span>
-                    </div>
-                    <span className="text-[11px] text-[#86868b]">
-                      Configures schedule across direct and non-clinic appointments
-                    </span>
-                  </div>
                 )}
               </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
-              {/* Header & Capacity Summary Card */}
-              <div className="p-4 sm:p-6 rounded-[20px] sm:rounded-[22px] bg-[#f5f5f7] border border-[#e5e5ea] shadow-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20">
-                      {selectedClinic?.clinicName} Capacity Overview
-                    </span>
-                  </div>
-                  <h2 className="text-2xl sm:text-3xl font-bold text-[#1d1d1f] tracking-tight">
-                    {totalMaxDailyPatients} Max Daily Patients
-                  </h2>
-                  <p className="text-xs text-[#86868b] mt-1 flex items-center gap-1.5 font-medium">
-                    <Clock className="w-3.5 h-3.5 text-[#0066cc]" />
-                    <span>Configured Shifts: {slots.length} shift{slots.length > 1 ? 's' : ''} at this facility</span>
-                  </p>
-                </div>
-
-                <div className="bg-white/90 backdrop-blur-md px-4 py-3 rounded-2xl border border-[#e5e5ea] shadow-2xs text-left sm:text-right">
-                  <span className="text-[10px] font-semibold text-[#86868b] uppercase tracking-wide block">
-                    Consultation Pace Mode
-                  </span>
-                  <span className="text-xs font-bold text-[#0066cc] flex items-center gap-1.5 mt-0.5 justify-start sm:justify-end">
-                    <Timer className="w-3.5 h-3.5 text-[#0066cc]" />
-                    Doctor-Entered Consultation Time
-                  </span>
-                </div>
-              </div>
-
-              {/* Multiple Checking Shifts Section */}
-              <div className="space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-[#f0f0f0]">
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Header & Capacity Summary Card */}
+                <div className="p-5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                   <div>
-                    <h3 className="text-base font-bold text-[#1d1d1f] flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-[#0066cc]" />
-                      Checking Shifts & Timings
-                    </h3>
+                    <span className="text-xs font-medium text-[#86868b] block mb-0.5">
+                      {selectedClinic ? `${selectedClinic.clinicName} Capacity` : 'Daily Capacity'}
+                    </span>
+                    <h2 className="text-[22px] font-semibold text-[#1d1d1f] tracking-tight">
+                      {totalMaxDailyPatients} Max Daily Patients
+                    </h2>
                     <p className="text-xs text-[#86868b] mt-0.5">
-                      Specify each shift's working hours, your average consultation time per patient, and maximum daily patient capacity.
+                      {slots.length} configured shift{slots.length > 1 ? 's' : ''}
                     </p>
                   </div>
-                  <AppleButton
+
+                  <button
                     type="button"
-                    variant="secondary"
-                    size="sm"
                     onClick={handleAddSlot}
-                    className="flex items-center gap-1.5 self-start sm:self-auto rounded-full px-4"
+                    className="h-10 px-4 rounded-full bg-white hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer"
                   >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Add Another Shift</span>
-                  </AppleButton>
+                    <Plus className="w-3.5 h-3.5 text-[#0066cc]" />
+                    <span>Add Shift</span>
+                  </button>
                 </div>
 
+                {/* Multiple Checking Shifts Section */}
                 <div className="space-y-4">
                   {slots.map((slot, idx) => {
                     const { durationMinutes } = calculateSlotMetrics(
@@ -485,26 +446,26 @@ export const ManageSchedule: React.FC = () => {
                     return (
                       <div
                         key={slot.id || idx}
-                        className="p-4 sm:p-6 rounded-[20px] sm:rounded-[22px] bg-white border border-[#e5e5ea] space-y-4 relative transition-all duration-200 hover:border-[#0066cc]/40 shadow-xs"
+                        className="p-5 rounded-2xl bg-white border border-[#e5e5ea] space-y-4 transition-all duration-150"
                       >
                         {/* Shift Header */}
-                        <div className="flex items-center justify-between gap-3 pb-3 border-b border-[#f5f5f7]">
+                        <div className="flex items-center justify-between gap-3 pb-3 border-b border-[#e5e5ea]">
                           <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                            <span className="w-7 h-7 rounded-full bg-[#0066cc]/10 text-[#0066cc] text-xs font-bold flex items-center justify-center flex-shrink-0">
+                            <span className="w-7 h-7 rounded-full bg-[#0066cc]/10 text-[#0066cc] text-xs font-semibold flex items-center justify-center flex-shrink-0">
                               {idx + 1}
                             </span>
                             <input
                               type="text"
                               value={slot.name}
                               onChange={(e) => handleSlotChange(idx, 'name', e.target.value)}
-                              placeholder="e.g. Shift 1: Morning & Afternoon"
-                              className="text-sm font-bold text-[#1d1d1f] bg-transparent border-b border-transparent hover:border-[#0066cc]/50 focus:border-[#0066cc] focus:outline-none px-1 py-0.5 transition-all truncate"
+                              placeholder="Shift Name (e.g. Morning Shift)"
+                              className="text-[15px] font-semibold text-[#1d1d1f] bg-transparent border-b border-transparent hover:border-[#d2d2d7] focus:border-[#0066cc] focus:outline-none px-1 py-0.5 transition-all truncate"
                             />
                           </div>
 
                           <div className="flex items-center gap-2 flex-shrink-0">
-                            <span className="px-3 py-1 rounded-full bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20 text-xs font-semibold flex items-center gap-1.5">
-                              <Clock className="w-3.5 h-3.5" />
+                            <span className="px-3 py-1 rounded-full bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-medium flex items-center gap-1.5">
+                              <Clock className="w-3.5 h-3.5 text-[#0066cc]" />
                               <span>
                                 {format12Hour(slot.startTime)} – {format12Hour(slot.endTime)}
                               </span>
@@ -514,7 +475,7 @@ export const ManageSchedule: React.FC = () => {
                               <button
                                 type="button"
                                 onClick={() => handleRemoveSlot(idx)}
-                                className="text-rose-500 hover:text-rose-700 p-2 rounded-full hover:bg-rose-50 transition-colors"
+                                className="text-[#86868b] hover:text-rose-600 p-2 rounded-full hover:bg-rose-50 transition-colors cursor-pointer"
                                 title="Remove this shift"
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -523,138 +484,110 @@ export const ManageSchedule: React.FC = () => {
                           </div>
                         </div>
 
-                        {/* 4 Interactive Inputs: Start Time, End Time, Avg Consultation Time, Max Patients */}
+                        {/* 4 Interactive Inputs */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                           <div>
-                            <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 flex items-center gap-1.5">
-                              <Clock className="w-3.5 h-3.5 text-[#0066cc]" />
-                              <span>Start Time</span>
+                            <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                              Start Time
                             </label>
                             <input
                               type="time"
                               required
                               value={slot.startTime}
                               onChange={(e) => handleSlotChange(idx, 'startTime', e.target.value)}
-                              className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-xs font-semibold bg-white text-[#1d1d1f] focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] transition-all"
+                              className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                             />
-                            <span className="text-[10px] text-[#86868b] mt-1 block">
-                              {format12Hour(slot.startTime)}
-                            </span>
                           </div>
 
                           <div>
-                            <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 flex items-center gap-1.5">
-                              <Clock className="w-3.5 h-3.5 text-[#0066cc]" />
-                              <span>End Time</span>
+                            <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                              End Time
                             </label>
                             <input
                               type="time"
                               required
                               value={slot.endTime}
                               onChange={(e) => handleSlotChange(idx, 'endTime', e.target.value)}
-                              className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-xs font-semibold bg-white text-[#1d1d1f] focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] transition-all"
+                              className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                             />
-                            <span className="text-[10px] text-[#86868b] mt-1 block">
-                              {format12Hour(slot.endTime)}
-                            </span>
                           </div>
 
                           <div>
-                            <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 flex items-center gap-1.5">
-                              <Timer className="w-3.5 h-3.5 text-[#0066cc]" />
-                              <span>Avg Consultation Time</span>
+                            <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                              Avg Consultation (mins)
                             </label>
-                            <div className="relative">
-                              <input
-                                type="number"
-                                min={1}
-                                max={180}
-                                required
-                                value={slot.avgConsultationMinutes || ''}
-                                onChange={(e) =>
-                                  handleSlotChange(
-                                    idx,
-                                    'avgConsultationMinutes',
-                                    e.target.value === '' ? '' : Math.max(1, Number(e.target.value))
-                                  )
-                                }
-                                placeholder="20"
-                                className="w-full h-11 pl-3.5 pr-14 rounded-xl border border-[#0066cc]/40 text-xs font-bold bg-[#0066cc]/5 text-[#0066cc] focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] transition-all"
-                              />
-                              <span className="absolute right-3 top-3 text-[11px] font-semibold text-[#0066cc]">
-                                mins
-                              </span>
-                            </div>
-                            <span className="text-[10px] text-[#86868b] mt-1 block">
-                              Doctor consultation pace
-                            </span>
+                            <input
+                              type="number"
+                              min={1}
+                              max={180}
+                              required
+                              value={slot.avgConsultationMinutes || ''}
+                              onChange={(e) =>
+                                handleSlotChange(
+                                  idx,
+                                  'avgConsultationMinutes',
+                                  e.target.value === '' ? '' : Math.max(1, Number(e.target.value))
+                                )
+                              }
+                              placeholder="20"
+                              className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                            />
                           </div>
 
                           <div>
-                            <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 flex items-center gap-1.5">
-                              <Users className="w-3.5 h-3.5 text-[#10b981]" />
-                              <span>Max Patients (Capacity)</span>
+                            <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                              Max Patients
                             </label>
-                            <div className="relative">
-                              <input
-                                type="number"
-                                min={1}
-                                max={200}
-                                required
-                                value={slot.maxPatients || ''}
-                                onChange={(e) =>
-                                  handleSlotChange(
-                                    idx,
-                                    'maxPatients',
-                                    e.target.value === '' ? '' : Math.max(1, Number(e.target.value))
-                                  )
-                                }
-                                placeholder="25"
-                                className="w-full h-11 pl-3.5 pr-12 rounded-xl border border-[#e5e5ea] text-xs font-bold bg-white text-[#1d1d1f] focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] transition-all"
-                              />
-                              <span className="absolute right-3 top-3 text-[11px] font-semibold text-[#86868b]">
-                                pts
-                              </span>
-                            </div>
-                            <span className="text-[10px] text-[#86868b] mt-1 block">
-                              Total shift intake limit
-                            </span>
+                            <input
+                              type="number"
+                              min={1}
+                              max={200}
+                              required
+                              value={slot.maxPatients || ''}
+                              onChange={(e) =>
+                                handleSlotChange(
+                                  idx,
+                                  'maxPatients',
+                                  e.target.value === '' ? '' : Math.max(1, Number(e.target.value))
+                                )
+                              }
+                              placeholder="25"
+                              className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                            />
                           </div>
                         </div>
 
                         {/* Shift Pacing Insights & Assistance Bar */}
-                        <div className="p-3.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea]/60 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 text-xs">
-                          <div className="flex flex-wrap items-center gap-2 text-[#48484a]">
-                            <span className="font-semibold text-[#1d1d1f]">
-                              Shift Duration: {durationMinutes} mins
+                        <div className="p-3 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] flex flex-col md:flex-row items-start md:items-center justify-between gap-3 text-xs">
+                          <div className="flex flex-wrap items-center gap-2 text-[#86868b]">
+                            <span className="font-medium text-[#1d1d1f]">
+                              Duration: {durationMinutes} mins
                             </span>
-                            <span className="text-[#86868b]">•</span>
+                            <span>•</span>
                             <span>
-                              Doctor Pace: <strong className="text-[#0066cc]">~{slot.avgConsultationMinutes || 15}m per patient</strong>
+                              Pace: <strong className="text-[#1d1d1f]">~{slot.avgConsultationMinutes || 15}m / patient</strong>
                             </span>
-                            <span className="text-[#86868b]">•</span>
+                            <span>•</span>
                             <span>
-                              Daily Quota: <strong className="text-[#1d1d1f]">{slot.maxPatients} patients</strong>
+                              Capacity: <strong className="text-[#1d1d1f]">{slot.maxPatients} patients</strong>
                             </span>
                           </div>
 
-                          <div className="flex flex-wrap items-center gap-2 self-start sm:self-end md:self-auto">
+                          <div className="flex flex-wrap items-center gap-2">
                             <button
                               type="button"
                               onClick={() => handleAutoPace(idx)}
-                              title="Calculate pace by dividing shift duration by max patients"
-                              className="px-2.5 py-1 rounded-lg bg-white border border-[#e5e5ea] text-[#0066cc] font-semibold text-[11px] hover:bg-blue-50 transition-all flex items-center gap-1 shadow-2xs cursor-pointer"
+                              className="px-3 py-1 rounded-full bg-white border border-[#e5e5ea] text-[#0066cc] font-medium text-xs hover:bg-[#0066cc]/5 transition-all flex items-center gap-1 cursor-pointer"
                             >
-                              <Sparkles className="w-3 h-3 text-[#0066cc]" />
+                              <Timer className="w-3 h-3 text-[#0066cc]" />
                               <span>Auto-calc Pace</span>
                             </button>
                             <button
                               type="button"
                               onClick={() => handleAutoCapacity(idx)}
-                              title="Calculate max patients capacity by dividing shift duration by pace"
-                              className="px-2.5 py-1 rounded-lg bg-white border border-[#e5e5ea] text-[#48484a] font-semibold text-[11px] hover:bg-[#e8e8ed] transition-all flex items-center gap-1 shadow-2xs cursor-pointer"
+                              className="px-3 py-1 rounded-full bg-white border border-[#e5e5ea] text-[#1d1d1f] font-medium text-xs hover:bg-[#e8e8ed] transition-all flex items-center gap-1 cursor-pointer"
                             >
-                              <Users className="w-3 h-3 text-[#48484a]" />
+                              <Users className="w-3 h-3 text-[#86868b]" />
                               <span>Auto-calc Capacity</span>
                             </button>
                           </div>
@@ -663,73 +596,51 @@ export const ManageSchedule: React.FC = () => {
                     );
                   })}
                 </div>
-              </div>
 
-              {/* Consultation Fee in Indian Rupees (₹ INR) */}
-              <div className="p-4 sm:p-6 rounded-[20px] sm:rounded-[22px] bg-white border border-[#e5e5ea] shadow-xs space-y-4">
-                <div className="flex items-center gap-2 pb-2 border-b border-[#f0f0f0]">
-                  <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
-                    <IndianRupee className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-bold text-[#1d1d1f]">
-                      Consultation Fee at {selectedClinic?.clinicName}
-                    </h3>
-                    <p className="text-xs text-[#86868b]">
-                      Indian Rupees (₹ INR) consultation fee applied to patients booking at this facility.
-                    </p>
+                {/* Consultation Fee in Indian Rupees (₹ INR) */}
+                <div className="p-5 rounded-2xl bg-white border border-[#e5e5ea] space-y-4">
+                  <div className="max-w-sm">
+                    <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                      Consultation Fee (₹ INR){selectedClinic ? ` at ${selectedClinic.clinicName}` : ''}
+                    </label>
+                    <div className="flex items-center w-full h-11 rounded-xl border border-[#d2d2d7] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus-within:border-[#0066cc] focus-within:ring-4 focus-within:ring-[#0066cc]/10 transition-all duration-150 overflow-hidden">
+                      <span className="h-full px-3.5 bg-[#f5f5f7] border-r border-[#d2d2d7] flex items-center justify-center select-none text-[14px] font-semibold text-[#1d1d1f]">
+                        ₹
+                      </span>
+                      <input
+                        type="number"
+                        min={0}
+                        step={10}
+                        required
+                        value={consultationFee}
+                        onChange={(e) => setConsultationFee(Number(e.target.value))}
+                        placeholder="500"
+                        className="w-full h-full px-3.5 bg-transparent text-[14px] font-medium text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:outline-none"
+                      />
+                    </div>
                   </div>
                 </div>
 
-                <div className="max-w-sm">
-                  <label className="block text-xs font-semibold text-[#1d1d1f] mb-1.5">
-                    Fee Amount (₹ INR)
-                  </label>
-                  <div className="relative">
-                    <span className="absolute left-3.5 top-2.5 text-base font-bold text-[#1d1d1f]">
-                      ₹
-                    </span>
-                    <input
-                      type="number"
-                      min={0}
-                      step={10}
-                      required
-                      value={consultationFee}
-                      onChange={(e) => setConsultationFee(Number(e.target.value))}
-                      placeholder="500"
-                      className="w-full h-11 pl-9 pr-4 rounded-xl border border-[#e5e5ea] text-sm font-bold bg-white text-[#1d1d1f] focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] transition-all"
-                    />
-                  </div>
-                  <p className="text-[11px] text-[#86868b] mt-1.5 leading-relaxed">
-                    Patients will see ₹{consultationFee || 0} when booking an appointment token for your desk{selectedClinic ? ` at ${selectedClinic.clinicName}` : ''}.
-                  </p>
+                {/* Save Button */}
+                <div className="pt-2 flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    className="w-full sm:w-auto h-11 px-8 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-medium transition-all duration-150 shadow-[0_2px_8px_rgba(0,102,204,0.2),0_1px_2px_rgba(0,0,0,0.06)] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+                  >
+                    {saving
+                      ? 'Saving Schedule...'
+                      : selectedClinic
+                      ? `Save Schedule for ${selectedClinic.clinicName}`
+                      : 'Save Schedule'}
+                  </button>
                 </div>
-              </div>
-
-              {/* Save Button */}
-              <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-4">
-                <p className="text-xs text-[#86868b]">
-                  Changes to timings, pace, and fees update live queue allocation immediately.
-                </p>
-                <AppleButton
-                  variant="primary"
-                  size="md"
-                  type="submit"
-                  disabled={saving}
-                  className="w-full sm:w-auto px-8 py-3 rounded-full text-sm font-semibold shadow-xs"
-                >
-                  {saving
-                    ? 'Saving Schedule...'
-                    : selectedClinic
-                    ? `Save Schedule for ${selectedClinic.clinicName} (₹${consultationFee || 0})`
-                    : `Save Independent Schedule (₹${consultationFee || 0})`}
-                </AppleButton>
-              </div>
-            </form>
-          </UtilityCard>
+              </form>
+            </UtilityCard>
           </>
         )}
       </div>
     </DashboardLayout>
   );
 };
+

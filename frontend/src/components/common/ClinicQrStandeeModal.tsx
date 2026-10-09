@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { X, Printer, Copy, Check, QrCode, Building2, MapPin } from 'lucide-react';
-import { AppleButton } from '../ui/AppleButton';
+import { X, Printer, Copy, Check } from 'lucide-react';
+import { BrandLogo } from '../ui/BrandLogo';
 
 interface ClinicQrStandeeModalProps {
   isOpen: boolean;
@@ -38,45 +38,41 @@ export const ClinicQrStandeeModal: React.FC<ClinicQrStandeeModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
-      <div className="relative w-full max-w-lg bg-white rounded-[24px] border border-[#e5e5ea] shadow-2xl overflow-hidden p-6 sm:p-8 text-center print:border-none print:shadow-none print:p-0">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xl animate-fadeIn">
+      <div className="relative w-full max-w-[450px] bg-white rounded-[28px] border border-[#e5e5ea] shadow-[0_24px_64px_rgba(0,0,0,0.12),0_4px_16px_rgba(0,0,0,0.04)] overflow-hidden p-6 sm:p-7 text-center print:border-none print:shadow-none print:p-0">
         {/* Close Button (Hidden on Print) */}
         <button
+          type="button"
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 rounded-full text-[#86868b] hover:text-[#1d1d1f] hover:bg-black/[0.05] transition-colors print:hidden cursor-pointer"
+          className="absolute top-4 right-4 w-8 h-8 rounded-full bg-[#f5f5f7] hover:bg-[#e5e5ea] flex items-center justify-center text-[#86868b] hover:text-[#1d1d1f] transition-colors print:hidden cursor-pointer"
         >
-          <X className="w-5 h-5" />
+          <X className="w-4 h-4" />
         </button>
 
-        {/* Header */}
-        <div className="mb-4">
-          <div className="w-12 h-12 rounded-2xl bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center mx-auto mb-3">
-            <QrCode className="w-6 h-6" />
+        {/* Brand & Header */}
+        <div className="flex flex-col items-center text-center mb-5">
+          <div className="mb-2.5">
+            <BrandLogo variant="full" size="md" imgClassName="h-7 w-auto object-contain mx-auto" />
           </div>
-          <h2 className="text-xl sm:text-2xl font-semibold text-[#1d1d1f] tracking-tight">
+          <h2 className="text-[22px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">
             Clinic Check-In Standee
           </h2>
-          <p className="text-xs text-[#86868b] mt-1 max-w-sm mx-auto">
-            Place this QR standee at the reception desk for patients to verify on-site arrival.
-          </p>
         </div>
 
         {/* Printable Standee Card */}
-        <div className="my-5 p-6 rounded-2xl bg-[#fafafc] border border-[#e5e5ea] text-center print:border print:bg-white print:my-0">
-          <div className="flex items-center justify-center gap-1.5 text-xs font-semibold text-[#0066cc] uppercase tracking-wider mb-2">
-            <Building2 className="w-3.5 h-3.5" />
-            <span>{clinicName}</span>
+        <div className="my-4 p-5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] text-center print:border print:bg-white print:my-0">
+          <div className="text-sm font-semibold text-[#1d1d1f] mb-1">
+            {clinicName}
           </div>
 
           {clinicAddress && (
-            <p className="text-[11px] text-[#86868b] mb-4 flex items-center justify-center gap-1">
-              <MapPin className="w-3 h-3 text-[#86868b]" />
-              <span>{clinicAddress}</span>
+            <p className="text-xs text-[#86868b] mb-4">
+              {clinicAddress}
             </p>
           )}
 
           {/* QR Code Container */}
-          <div className="w-52 h-52 mx-auto bg-white p-3 rounded-2xl border border-[#e5e5ea] shadow-xs flex items-center justify-center mb-4">
+          <div className="w-48 h-48 mx-auto bg-white p-3 rounded-2xl border border-[#d2d2d7] shadow-[0_1px_2px_rgba(0,0,0,0.04)] flex items-center justify-center mb-3.5">
             <img
               src={qrImageUrl}
               alt={`${clinicName} Arrival QR Code`}
@@ -84,21 +80,16 @@ export const ClinicQrStandeeModal: React.FC<ClinicQrStandeeModalProps> = ({
             />
           </div>
 
-          <div className="space-y-1">
-            <p className="text-xs font-semibold text-[#1d1d1f]">
-              Scan with Phone Camera to Check In
-            </p>
-            <p className="text-[11px] text-[#86868b] max-w-xs mx-auto">
-              Open your camera or MediArca app to confirm presence and notify your doctor.
-            </p>
-          </div>
+          <p className="text-xs font-medium text-[#1d1d1f]">
+            Scan with phone camera to check in
+          </p>
 
           {checkinCode && (
-            <div className="mt-4 pt-3 border-t border-[#e5e5ea]/80">
-              <span className="text-[10px] uppercase font-semibold text-[#86868b] tracking-wider block">
-                6-Digit Desk Security Code
+            <div className="mt-3.5 pt-3 border-t border-[#e5e5ea]">
+              <span className="text-xs font-medium text-[#86868b] block">
+                6-Digit Desk Code
               </span>
-              <span className="text-base font-bold tracking-widest text-[#1d1d1f] mt-0.5 inline-block">
+              <span className="text-base font-semibold tracking-widest text-[#1d1d1f] mt-0.5 inline-block">
                 {checkinCode}
               </span>
             </div>
@@ -106,26 +97,27 @@ export const ClinicQrStandeeModal: React.FC<ClinicQrStandeeModalProps> = ({
         </div>
 
         {/* Action Buttons (Hidden on Print) */}
-        <div className="flex items-center gap-2.5 print:hidden pt-2">
-          <AppleButton
-            variant="ghost"
+        <div className="flex items-center gap-2.5 print:hidden pt-1">
+          <button
+            type="button"
             onClick={handleCopyLink}
-            className="flex-1 flex items-center justify-center gap-1.5"
+            className="flex-1 h-11 px-4 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] border border-[#e5e5ea] text-[#1d1d1f] text-sm font-medium transition-all flex items-center justify-center gap-1.5 cursor-pointer"
           >
-            {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+            {copied ? <Check className="w-4 h-4 text-[#0066cc]" /> : <Copy className="w-4 h-4" />}
             <span>{copied ? 'Link Copied' : 'Copy Link'}</span>
-          </AppleButton>
+          </button>
 
-          <AppleButton
-            variant="primary"
+          <button
+            type="button"
             onClick={handlePrint}
-            className="flex-1 flex items-center justify-center gap-1.5 shadow-sm"
+            className="flex-1 h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-medium transition-all duration-150 shadow-[0_2px_8px_rgba(0,102,204,0.2),0_1px_2px_rgba(0,0,0,0.06)] flex items-center justify-center gap-1.5 cursor-pointer"
           >
-            <Printer className="w-3.5 h-3.5" />
+            <Printer className="w-4 h-4" />
             <span>Print Standee</span>
-          </AppleButton>
+          </button>
         </div>
       </div>
     </div>
   );
 };
+

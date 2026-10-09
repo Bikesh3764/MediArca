@@ -13,8 +13,6 @@ import {
   Users,
   Bell,
   CheckCheck,
-  Clock,
-  AlertCircle,
   ChevronDown,
   Info,
   HelpCircle,
@@ -203,8 +201,8 @@ export const GlobalNav: React.FC = () => {
         <div className="max-h-96 overflow-y-auto divide-y divide-[#f5f5f7]">
           {notifications.length === 0 ? (
             <div className="p-8 text-center text-[#86868b]">
-              <Bell className="w-6 h-6 mx-auto mb-2 text-[#d2d2d7]" />
-              <p className="text-xs">No notifications yet</p>
+              <p className="text-xs font-medium text-[#1d1d1f]">No notifications yet</p>
+              <p className="text-[11px] text-[#86868b] mt-0.5">Queue updates and alerts will appear here.</p>
             </div>
           ) : (
             notifications.map((notif) => {
@@ -220,15 +218,6 @@ export const GlobalNav: React.FC = () => {
                     notif.isRead ? 'bg-white hover:bg-[#fafafc]' : 'bg-[#0066cc]/[0.04] hover:bg-[#0066cc]/[0.08]'
                   }`}
                 >
-                  <div className="p-2 rounded-xl bg-white border border-[#e5e5ea] flex-shrink-0 mt-0.5 shadow-2xs">
-                    {notif.type === 'APPOINTMENT' && <Calendar className="w-3.5 h-3.5 text-[#0066cc]" />}
-                    {notif.type === 'QUEUE' && <Clock className="w-3.5 h-3.5 text-amber-600" />}
-                    {notif.type === 'CLINICAL' && <Stethoscope className="w-3.5 h-3.5 text-emerald-600" />}
-                    {notif.type === 'SYSTEM' && <ShieldCheck className="w-3.5 h-3.5 text-purple-600" />}
-                    {!['APPOINTMENT', 'QUEUE', 'CLINICAL', 'SYSTEM'].includes(notif.type) && (
-                      <AlertCircle className="w-3.5 h-3.5 text-[#0066cc]" />
-                    )}
-                  </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-1 mb-0.5">
                       <h4 className="text-xs font-semibold text-[#1d1d1f] truncate">
@@ -303,12 +292,14 @@ export const GlobalNav: React.FC = () => {
             Home
           </Link>
 
-          <Link
-            to="/doctors"
-            className={getNavLinkClass(isActive('/doctors'))}
-          >
-            Find Doctors
-          </Link>
+          {user?.role !== 'DOCTOR' && (
+            <Link
+              to="/doctors"
+              className={getNavLinkClass(isActive('/doctors'))}
+            >
+              Find Doctors
+            </Link>
+          )}
 
           {user?.role === 'PATIENT' && (
             <>
@@ -514,11 +505,8 @@ export const GlobalNav: React.FC = () => {
                     <span>{getInitials(user.fullName)}</span>
                   )}
                 </div>
-                <span className="text-xs text-[#1d1d1f] max-w-[120px] truncate font-medium">
+                <span className="text-xs text-[#1d1d1f] max-w-[140px] truncate font-medium">
                   {user.fullName}
-                </span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-white text-[#1d1d1f] font-medium border border-black/[0.06]">
-                  {user.role}
                 </span>
               </Link>
               <button
@@ -567,11 +555,6 @@ export const GlobalNav: React.FC = () => {
               {notificationsOpen && renderNotificationDropdown(true)}
             </div>
           )}
-          {user && (
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#0066cc]/10 text-[#0066cc] font-semibold border border-[#0066cc]/20 hidden sm:inline-flex">
-              {user.role}
-            </span>
-          )}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="p-2 text-[#1d1d1f] hover:text-black focus:outline-none rounded-full hover:bg-black/[0.04] transition-colors"
@@ -610,13 +593,15 @@ export const GlobalNav: React.FC = () => {
               Home
             </Link>
 
-            <Link
-              to="/doctors"
-              onClick={closeMenu}
-              className={getMobileNavLinkClass(isActive('/doctors'))}
-            >
-              Find Doctors
-            </Link>
+            {user?.role !== 'DOCTOR' && (
+              <Link
+                to="/doctors"
+                onClick={closeMenu}
+                className={getMobileNavLinkClass(isActive('/doctors'))}
+              >
+                Find Doctors
+              </Link>
+            )}
 
 
 
@@ -702,7 +687,7 @@ export const GlobalNav: React.FC = () => {
 
             {/* More / Company Links */}
             <div className="pt-2 mt-2 border-t border-[#f0f0f2] space-y-1">
-              <span className="px-3.5 text-[10px] font-semibold uppercase tracking-wider text-[#86868b]">
+              <span className="px-3.5 text-xs font-semibold tracking-tight text-[#86868b]">
                 More
               </span>
               <Link

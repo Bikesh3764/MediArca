@@ -1,7 +1,6 @@
 import { Component, ErrorInfo, ReactNode } from 'react';
 import { RefreshCw, Home } from 'lucide-react';
 import { AppleButton } from './AppleButton';
-import { BrandLogo } from './BrandLogo';
 
 interface Props {
   children: ReactNode;
@@ -38,49 +37,44 @@ export class ErrorBoundary extends Component<Props, State> {
   public render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen bg-[#f5f5f7] flex flex-col justify-center items-center px-4 sm:px-6 text-center select-none">
-          <div className="w-16 h-16 rounded-3xl bg-white border border-[#e5e5ea] flex items-center justify-center text-[#0066cc] shadow-2xs mb-6 p-2">
-            <BrandLogo variant="icon" size="lg" />
-          </div>
-
-          <span className="text-xs font-semibold text-[#0066cc] uppercase tracking-wider mb-2">
-            MediArca Clinical System
-          </span>
-
-          <h1 className="text-2xl sm:text-3xl font-semibold text-[#1d1d1f] tracking-tight mb-3">
-            Something unexpected occurred
-          </h1>
-
-          <p className="text-sm text-[#86868b] max-w-md mx-auto leading-relaxed mb-8">
-            An unexpected application state occurred. Your session data is intact. You can reload this view or return to the main dashboard.
-          </p>
-
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            <AppleButton
-              variant="primary"
-              size="md"
-              onClick={this.handleReload}
-              className="flex items-center gap-2"
-            >
-              <RefreshCw className="w-4 h-4" />
-              Reload Application
-            </AppleButton>
-            <AppleButton
-              variant="ghost"
-              size="md"
-              onClick={this.handleReset}
-              className="flex items-center gap-2"
-            >
-              <Home className="w-4 h-4" />
-              Return Home
-            </AppleButton>
-          </div>
-
-          {this.state.error && (
-            <div className="mt-8 max-w-xl text-left p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-sans tracking-tight overflow-auto max-h-40">
-              {this.state.error.toString()}
+        <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center p-4 sm:p-6 select-none">
+          <div className="max-w-[450px] w-full bg-white rounded-[28px] border border-[#e5e5ea] shadow-[0_24px_60px_rgba(0,0,0,0.08),0_2px_10px_rgba(0,0,0,0.03)] p-6 sm:p-7 text-center space-y-5">
+            <div>
+              <h1 className="text-[22px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">
+                Something unexpected occurred
+              </h1>
+              <p className="text-[13px] text-[#86868b] mt-1.5 leading-relaxed">
+                An unexpected application state occurred. Your session data is intact. You can reload this view or return to the main dashboard.
+              </p>
             </div>
-          )}
+
+            {this.state.error && (
+              <div className="text-left p-3.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-[#48484a] text-xs font-mono overflow-auto max-h-36">
+                {this.state.error.toString()}
+              </div>
+            )}
+
+            <div className="flex flex-wrap items-center justify-center gap-2.5 pt-1">
+              <AppleButton
+                variant="primary"
+                size="md"
+                onClick={this.handleReload}
+                className="flex items-center gap-2"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Reload Application
+              </AppleButton>
+              <AppleButton
+                variant="secondary"
+                size="md"
+                onClick={this.handleReset}
+                className="flex items-center gap-2"
+              >
+                <Home className="w-4 h-4" />
+                Return Home
+              </AppleButton>
+            </div>
+          </div>
         </div>
       );
     }

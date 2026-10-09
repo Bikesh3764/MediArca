@@ -95,7 +95,7 @@ export const FAQ: React.FC = () => {
                 </button>
 
                 {isOpen && (
-                  <div className="px-5 sm:px-6 pb-6 pt-1 text-xs sm:text-sm text-[#555558] leading-relaxed border-t border-[#f0f0f2]">
+                  <div className="px-5 sm:px-6 pb-6 pt-1 text-xs sm:text-sm text-[#48484a] leading-relaxed border-t border-[#f0f0f2]">
                     {faq.answer}
                   </div>
                 )}

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { ALL_SPECIALTIES } from '../../services/api';
-import { Search, ChevronDown, Check, X, Stethoscope, Edit3 } from 'lucide-react';
+import { Search, ChevronDown, Check, X, Stethoscope } from 'lucide-react';
 
 export interface SearchableSpecialtySelectProps {
   value: string;
@@ -127,7 +127,7 @@ export const SearchableSpecialtySelect: React.FC<SearchableSpecialtySelectProps>
           <button
             type="button"
             onClick={() => setIsOpen(!isOpen)}
-            className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-[14px] bg-white text-[#1d1d1f] hover:border-[#0066cc]/50 focus:outline-none focus:border-[#0066cc] focus:ring-2 focus:ring-[#0066cc]/20 transition-all flex items-center justify-between text-left cursor-pointer"
+            className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:border-[#0066cc]/60 focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 flex items-center justify-between text-left cursor-pointer"
           >
             <span className="truncate">{displayLabel}</span>
             <ChevronDown
@@ -139,21 +139,18 @@ export const SearchableSpecialtySelect: React.FC<SearchableSpecialtySelectProps>
 
           {/* If 'Other' is selected in Form mode, render write-in custom text field */}
           {allowOther && value === 'Other' && (
-            <div className="mt-2.5">
-              <label className="block text-[11px] font-medium text-[#48484a] mb-1">
-                Specify Your Medical Specialty *
+            <div className="mt-3">
+              <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                Specify Medical Specialty
               </label>
-              <div className="relative">
-                <Edit3 className="w-3.5 h-3.5 text-[#86868b] absolute left-3 top-3.5 pointer-events-none" />
-                <input
-                  type="text"
-                  required
-                  value={customValue}
-                  onChange={(e) => onCustomChange?.(e.target.value)}
-                  placeholder="e.g. Trichology, Diabetology, Pediatric Cardiology"
-                  className="w-full h-10 pl-9 pr-3.5 rounded-xl border border-[#0066cc]/40 bg-[#f8fbff] text-[13px] text-[#1d1d1f] placeholder-[#86868b] focus:outline-none focus:border-[#0066cc] focus:ring-2 focus:ring-[#0066cc]/20 transition-all"
-                />
-              </div>
+              <input
+                type="text"
+                required
+                value={customValue}
+                onChange={(e) => onCustomChange?.(e.target.value)}
+                placeholder="e.g. Trichology, Diabetology, Pediatric Cardiology"
+                className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+              />
             </div>
           )}
         </div>

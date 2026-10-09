@@ -22,8 +22,8 @@ export const QueueBadge: React.FC<QueueBadgeProps> = ({
     pulseColor = 'bg-[#0066cc]';
     statusText = 'In Consultation';
   } else if (status === 'COMPLETED') {
-    statusBg = 'bg-gray-100 text-gray-700 border-gray-300';
-    pulseColor = 'bg-gray-400';
+    statusBg = 'bg-[#f5f5f7] text-[#86868b] border-[#e5e5ea]';
+    pulseColor = 'bg-[#86868b]';
     statusText = 'Consultation Completed';
   } else if (status === 'CANCELLED') {
     statusBg = 'bg-rose-50 text-rose-600 border-rose-200';

@@ -100,7 +100,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
     : 'Standard Hours';
 
   return (
-    <div className="bg-white rounded-[20px] border border-[#e5e5ea] shadow-[0_1px_3px_rgba(0,0,0,0.03),0_8px_24px_rgba(0,0,0,0.03)] overflow-hidden hover:border-[#0066cc]/30 transition-all duration-150">
+    <div className="bg-white rounded-[24px] border border-[#e5e5ea] shadow-[0_1px_2px_rgba(0,0,0,0.03),0_8px_24px_rgba(0,0,0,0.03)] overflow-hidden hover:border-[#0066cc]/30 transition-all duration-150">
       <div className="p-5 sm:p-6">
         {/* Unified Apple Card Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -116,14 +116,14 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
                   loading="lazy"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center font-semibold text-xl text-[#0066cc] bg-[#0066cc]/10">
+                <div className="w-full h-full flex items-center justify-center font-semibold text-xl text-white bg-[#0066cc]">
                   {(rawDocName || 'D')[0]}
                 </div>
               )}
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="text-[17px] font-semibold text-[#1d1d1f] tracking-tight">
+                <h3 className="text-[17px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">
                   {doctorDisplayName}
                 </h3>
                 <CabinStatusBadge status={doctor.cabinStatus} expectedReturnTime={doctor.expectedReturnTime} size="sm" />
@@ -153,7 +153,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
             {status === 'PENDING_APPROVAL' ? (
               <div className="flex flex-col items-end gap-1.5">
                 <div className="bg-[#f5f5f7] border border-[#e5e5ea] px-4 py-1.5 rounded-2xl flex items-baseline gap-2">
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">Est. Token</span>
+                  <span className="text-xs font-medium text-[#86868b]">Est. Token</span>
                   <span className="text-2xl font-bold text-[#1d1d1f] tracking-tight">#{estToken}</span>
                 </div>
                 <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-[11px] font-medium text-[#86868b]">
@@ -171,17 +171,17 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
                 <span className="text-xs font-semibold text-[#1d1d1f]">Completed • Token #{queueNumber}</span>
               </div>
             ) : status === 'IN_CONSULTATION' || liveQueue?.isYourTurn ? (
-              <div className="bg-[#1d1d1f] text-white px-4 py-2 rounded-2xl flex items-baseline gap-2 shadow-2xs">
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-white/70">Serving</span>
+              <div className="bg-[#0066cc] text-white px-4 py-2 rounded-2xl flex items-baseline gap-2 shadow-2xs">
+                <span className="text-xs font-medium text-white/80">Serving</span>
                 <span className="text-2xl font-bold text-white tracking-tight">#{queueNumber}</span>
               </div>
             ) : status === 'CANCELLED' || status === 'REJECTED' ? (
-              <div className="bg-rose-50 border border-rose-200 px-3.5 py-1.5 rounded-full text-xs font-semibold text-rose-700">
+              <div className="bg-rose-50/80 border border-rose-200/80 px-3.5 py-1.5 rounded-full text-xs font-semibold text-rose-700">
                 {status === 'REJECTED' ? 'Declined' : 'Cancelled'}
               </div>
             ) : (
               <div className="bg-[#f5f5f7] border border-[#e5e5ea] px-4 py-2 rounded-2xl flex items-baseline gap-2">
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">Queue</span>
+                <span className="text-xs font-medium text-[#86868b]">Queue</span>
                 <span className="text-2xl font-bold text-[#0066cc] tracking-tight">#{queueNumber}</span>
               </div>
             )}
@@ -191,7 +191,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
         {/* 3-Tile Apple Metadata Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-5">
           {/* Tile 1: Date */}
-          <div className="bg-[#f5f5f7] rounded-xl p-3.5 border border-black/[0.03] flex flex-col justify-center">
+          <div className="bg-[#f5f5f7] rounded-xl p-3.5 border border-[#e5e5ea] flex flex-col justify-center">
             <span className="text-[11px] font-medium text-[#86868b]">Date</span>
             <div className="text-[14px] font-semibold text-[#1d1d1f] mt-0.5 flex items-center gap-1.5">
               <Calendar className="w-3.5 h-3.5 text-[#0066cc] shrink-0" />
@@ -200,7 +200,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
           </div>
 
           {/* Tile 2: Shift */}
-          <div className="bg-[#f5f5f7] rounded-xl p-3.5 border border-black/[0.03] flex flex-col justify-center">
+          <div className="bg-[#f5f5f7] rounded-xl p-3.5 border border-[#e5e5ea] flex flex-col justify-center">
             <span className="text-[11px] font-medium text-[#86868b]">Shift</span>
             <div className="text-[14px] font-semibold text-[#1d1d1f] mt-0.5 flex items-center gap-1.5 truncate">
               <Clock className="w-3.5 h-3.5 text-[#0066cc] shrink-0" />
@@ -209,7 +209,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
           </div>
 
           {/* Tile 3: Est. Time / Status */}
-          <div className="bg-[#f5f5f7] rounded-xl p-3.5 border border-black/[0.03] flex flex-col justify-center">
+          <div className="bg-[#f5f5f7] rounded-xl p-3.5 border border-[#e5e5ea] flex flex-col justify-center">
             <span className="text-[11px] font-medium text-[#86868b]">
               {status === 'COMPLETED' || status === 'EXPIRED' || status === 'CANCELLED' || status === 'REJECTED' ? 'Status' : 'Est. Time'}
             </span>
@@ -225,7 +225,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
               ) : liveQueue?.isYourTurn ? (
                 <span className="text-[#0066cc] font-semibold">Your Turn</span>
               ) : liveQueue?.isShiftPassed ? (
-                <span className="text-amber-600">Shift Ended</span>
+                <span className="text-[#86868b]">Shift Ended</span>
               ) : isToday && liveQueue?.isShiftActive && liveQueue?.liveEstimatedTime ? (
                 <span className="text-[#0066cc]">~{liveQueue.liveEstimatedTime}</span>
               ) : (
@@ -237,7 +237,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
 
         {/* Reason for Visit (only when custom/non-default) */}
         {appointment.reasonForVisit && appointment.reasonForVisit !== 'General Medical Consultation' && (
-          <div className="mt-3 px-3 py-1.5 rounded-lg bg-[#f5f5f7] text-xs text-[#86868b] flex items-center gap-2">
+          <div className="mt-3 px-3.5 py-2 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-xs text-[#86868b] flex items-center gap-2">
             <span className="text-[11px] font-medium text-[#86868b] shrink-0">Reason:</span>
             <span className="text-[#1d1d1f] font-medium truncate">{appointment.reasonForVisit}</span>
           </div>
@@ -245,9 +245,9 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
 
         {/* Patient Details (When booked for dependent/family member or explicit patient name) */}
         {(appointment.isForOther || (Boolean(appointment.patientName) && appointment.patient?.user?.fullName && appointment.patientName !== appointment.patient.user.fullName)) && (
-          <div className="mt-3.5 p-3 rounded-xl bg-[#0066cc]/5 border border-[#0066cc]/15 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+          <div className="mt-3.5 p-3.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="px-2 py-0.5 rounded-full bg-[#0066cc]/10 text-[#0066cc] font-semibold text-[10px]">
+              <span className="px-2.5 py-0.5 rounded-full bg-[#0066cc]/10 text-[#0066cc] font-semibold text-[11px]">
                 {appointment.isForOther ? 'Family / Dependent' : 'Patient'}
               </span>
               <span className="font-semibold text-[#1d1d1f]">
@@ -270,7 +270,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
 
         {/* Pending Receptionist Verification Callout */}
         {status === 'PENDING_APPROVAL' && (
-          <div className="mt-4 p-4 rounded-[16px] bg-[#f5f5f7] border border-[#e5e5ea]">
+          <div className="mt-4 p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea]">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
@@ -291,9 +291,9 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
                 <div className="shrink-0">
                   <a
                     href={`tel:${deskPhone.replace(/\s+/g, '')}`}
-                    className="inline-flex items-center gap-1.5 h-8 px-4 rounded-full bg-[#1d1d1f] hover:bg-black text-white text-xs font-medium active:scale-[0.97] transition-all duration-150 shadow-2xs select-none cursor-pointer"
+                    className="inline-flex items-center gap-1.5 h-9 px-4 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-medium active:scale-[0.98] transition-all duration-150 shadow-[0_2px_8px_rgba(0,102,204,0.2)] select-none cursor-pointer"
                   >
-                    <Phone className="w-3 h-3 text-[#86868b] shrink-0" />
+                    <Phone className="w-3.5 h-3.5 shrink-0" />
                     <span>Call {receptionistName}: {formatDisplayPhone(deskPhone)}</span>
                   </a>
                 </div>
@@ -311,7 +311,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
             </div>
             <Link
               to={`/book/${doctor.id}?clinicId=${appointment.clinicId || ''}`}
-              className="inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-[#0066cc] text-white text-xs font-medium hover:bg-[#0071e3] active:scale-[0.97] transition-all duration-150 select-none cursor-pointer self-start sm:self-auto"
+              className="inline-flex items-center justify-center h-8 px-4 rounded-full bg-[#0066cc] text-white text-xs font-medium hover:bg-[#0071e3] active:scale-[0.97] transition-all duration-150 select-none cursor-pointer self-start sm:self-auto"
             >
               Book Again
             </Link>
@@ -332,7 +332,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
                 type="button"
                 disabled={togglingPresence}
                 onClick={() => handleTogglePresence(false)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white hover:bg-[#fafafc] text-[#86868b] hover:text-[#1d1d1f] border border-[#e5e5ea] text-[11px] font-medium active:scale-[0.97] transition-all duration-150 shadow-2xs cursor-pointer select-none self-start sm:self-auto"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white hover:bg-[#e8e8ed] text-[#86868b] hover:text-[#1d1d1f] border border-[#e5e5ea] text-[11px] font-medium active:scale-[0.97] transition-all duration-150 cursor-pointer select-none self-start sm:self-auto"
               >
                 <span>{togglingPresence ? 'Updating...' : 'Step Out (Not in Cabin)'}</span>
               </button>
@@ -372,14 +372,14 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
 
         {/* Doctor Shift Concluded Notice for Confirmed WAITING Tickets */}
         {isToday && status === 'WAITING' && liveQueue?.isShiftPassed && (
-          <div className="mt-3.5 p-4 rounded-2xl bg-amber-50/80 border border-amber-200/80 text-xs">
+          <div className="mt-3.5 p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] text-xs">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="min-w-0">
-                <div className="flex items-center gap-2 text-amber-900 font-semibold">
-                  <Clock className="w-4 h-4 text-amber-700 shrink-0" />
+                <div className="flex items-center gap-2 text-[#1d1d1f] font-semibold">
+                  <Clock className="w-4 h-4 text-[#86868b] shrink-0" />
                   <span>Doctor Shift Concluded • Token #{queueNumber} Remains Valid</span>
                 </div>
-                <p className="text-[#48484a] mt-1 text-[11px] leading-relaxed">
+                <p className="text-[#86868b] mt-1 text-[11px] leading-relaxed">
                   If your doctor is consulting overtime, please stay nearby in the waiting area. Otherwise, please speak with the reception desk to reschedule your visit or shift your token to the next day.
                 </p>
               </div>
@@ -387,9 +387,9 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
                 <div className="shrink-0">
                   <a
                     href={`tel:${deskPhone.replace(/\s+/g, '')}`}
-                    className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-full bg-amber-900 hover:bg-black text-white text-xs font-medium active:scale-[0.97] transition-all duration-150 shadow-2xs select-none cursor-pointer"
+                    className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-medium active:scale-[0.97] transition-all duration-150 select-none cursor-pointer"
                   >
-                    <Phone className="w-3 h-3 text-amber-200 shrink-0" />
+                    <Phone className="w-3 h-3 shrink-0" />
                     <span>Contact Desk: {formatDisplayPhone(deskPhone)}</span>
                   </a>
                 </div>
@@ -406,30 +406,30 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
                 <span className="w-2 h-2 rounded-full bg-[#0066cc] shrink-0"></span>
                 Live Queue Flow
               </span>
-              <div className="px-3 py-1 rounded-full bg-white border border-[#e5e5ea] text-xs font-medium text-[#48484a] shadow-[0_1px_2px_rgba(0,0,0,0.02)] select-none">
+              <div className="px-3 py-1 rounded-full bg-white border border-[#e5e5ea] text-xs font-medium text-[#48484a] select-none">
                 Serving: <strong className="text-[#1d1d1f] font-semibold">{liveQueue.currentServingQueueNumber > 0 ? `Queue #${liveQueue.currentServingQueueNumber}` : 'Waiting to Call'}</strong>
               </div>
             </div>
 
             {doctor.cabinStatus === 'STEPPED_OUT' && (
-              <div className="mb-3.5 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-900 text-xs flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0"></span>
+              <div className="mb-3.5 p-3 rounded-xl bg-white border border-[#e5e5ea] text-[#1d1d1f] text-xs flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-[#86868b] shrink-0"></span>
                 <span>
                   <strong>Doctor stepped out:</strong> Expected back {doctor.expectedReturnTime ? `around ${doctor.expectedReturnTime}` : 'soon'}.
                 </span>
               </div>
             )}
             {doctor.cabinStatus === 'NOT_IN_CABIN' && (
-              <div className="mb-3.5 p-3 rounded-xl bg-gray-100 border border-gray-200 text-gray-700 text-xs flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-gray-400 shrink-0"></span>
+              <div className="mb-3.5 p-3 rounded-xl bg-white border border-[#e5e5ea] text-[#86868b] text-xs flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-[#d2d2d7] shrink-0"></span>
                 <span>
-                  <strong>Doctor not yet in cabin:</strong> Waiting for doctor arrival.
+                  <strong className="text-[#1d1d1f]">Doctor not yet in cabin:</strong> Waiting for doctor arrival.
                 </span>
               </div>
             )}
 
             {liveQueue.isYourTurn ? (
-              <div className="flex items-center gap-3 text-[#1d1d1f] bg-white p-3.5 sm:p-4 rounded-xl text-xs sm:text-sm font-medium border border-[#0066cc]/30 shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
+              <div className="flex items-center gap-3 text-[#1d1d1f] bg-white p-3.5 sm:p-4 rounded-xl text-xs sm:text-sm font-medium border border-[#0066cc]/30">
                 <CheckCircle2 className="w-5 h-5 text-[#0066cc] shrink-0" />
                 <div>
                   <span className="font-semibold text-[#1d1d1f] block">It is your turn now!</span>
@@ -438,8 +438,8 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-3">
-                <div className="bg-white rounded-xl p-3 sm:p-3.5 border border-[#e5e5ea] flex flex-col justify-between shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
-                  <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">
+                <div className="bg-white rounded-xl p-3 sm:p-3.5 border border-[#e5e5ea] flex flex-col justify-between">
+                  <span className="text-xs font-medium text-[#86868b]">
                     Patients Ahead
                   </span>
                   <div className="mt-1.5">
@@ -452,8 +452,8 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
                   </div>
                 </div>
 
-                <div className="bg-white rounded-xl p-3 sm:p-3.5 border border-[#e5e5ea] flex flex-col justify-between shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
-                  <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">
+                <div className="bg-white rounded-xl p-3 sm:p-3.5 border border-[#e5e5ea] flex flex-col justify-between">
+                  <span className="text-xs font-medium text-[#86868b]">
                     Estimated Wait
                   </span>
                   <div className="mt-1.5">
@@ -472,13 +472,13 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
 
         {/* Doctor Summary & Review Card for Completed Consultations */}
         {status === 'COMPLETED' && (
-          <div className="mt-4 p-4 rounded-xl bg-[#fafafc] border border-[#e5e5ea] space-y-3">
+          <div className="mt-4 p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] space-y-3">
             {appointment.clinicalNotes && (
               <div>
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-[#0066cc] block mb-1">
+                <span className="text-xs font-semibold text-[#0066cc] block mb-1 tracking-tight">
                   Doctor's Summary
                 </span>
-                <div className="text-xs text-[#1d1d1f] whitespace-pre-wrap break-words leading-relaxed font-normal bg-white p-3 rounded-lg border border-[#e5e5ea]">
+                <div className="text-xs text-[#1d1d1f] whitespace-pre-wrap break-words leading-relaxed font-normal bg-white p-3.5 rounded-xl border border-[#e5e5ea]">
                   {appointment.clinicalNotes}
                 </div>
               </div>
@@ -486,17 +486,17 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
 
             {/* Patient Review Widget */}
             {submittedReview ? (
-              <div className="pt-2 border-t border-[#f0f0f0] text-xs">
+              <div className="pt-2 border-t border-[#e5e5ea] text-xs">
                 <div className="flex items-center gap-1.5 mb-1">
                   <span className="text-[#86868b] font-medium">Your Feedback:</span>
-                  <div className="flex text-amber-400">
+                  <div className="flex text-[#0066cc]">
                     {[1, 2, 3, 4, 5].map((star) => (
                       <Star
                         key={star}
                         className={`w-3.5 h-3.5 ${
                           star <= (submittedReview.rating || 5)
-                            ? 'fill-amber-400 text-amber-400'
-                            : 'text-gray-300'
+                            ? 'fill-[#0066cc] text-[#0066cc]'
+                            : 'text-[#d2d2d7]'
                         }`}
                       />
                     ))}
@@ -510,11 +510,11 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
                 )}
               </div>
             ) : (
-              <div className="pt-2 border-t border-[#f0f0f0]">
-                <span className="text-[11px] font-semibold text-[#1d1d1f] block mb-1.5">
+              <div className="pt-2 border-t border-[#e5e5ea]">
+                <span className="text-xs font-medium text-[#1d1d1f] block mb-1.5 tracking-tight">
                   How was your consultation experience?
                 </span>
-                <div className="flex items-center gap-1 mb-2">
+                <div className="flex items-center gap-1 mb-2.5">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <button
                       key={star}
@@ -525,8 +525,8 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
                       <Star
                         className={`w-4 h-4 ${
                           star <= rating
-                            ? 'fill-amber-400 text-amber-400'
-                            : 'text-gray-300 hover:text-amber-300'
+                            ? 'fill-[#0066cc] text-[#0066cc]'
+                            : 'text-[#d2d2d7] hover:text-[#0066cc]/60'
                         }`}
                       />
                     </button>
@@ -539,17 +539,16 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
                     value={comment}
                     onChange={(e) => setComment(e.target.value)}
                     placeholder="Optional feedback..."
-                    className="flex-1 h-8 px-3 rounded-lg border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
+                    className="flex-1 h-10 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-xs text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                   />
-                  <AppleButton
-                    variant="primary"
-                    size="sm"
+                  <button
+                    type="button"
                     disabled={submittingReview}
                     onClick={handleSubmitReview}
-                    className="text-xs px-3.5 py-1 rounded-lg bg-[#0066cc] hover:bg-[#0071e3] shadow-none"
+                    className="h-10 px-5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-xs font-medium transition-all duration-150 cursor-pointer select-none disabled:opacity-60"
                   >
                     {submittingReview ? 'Submitting...' : 'Submit'}
-                  </AppleButton>
+                  </button>
                 </div>
                 {reviewError && (
                   <p className="text-[11px] text-rose-600 mt-1">{reviewError}</p>
@@ -560,34 +559,18 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
         )}
 
         {/* Action Footer */}
-        <div className="mt-4 pt-3.5 border-t border-[#f0f0f2] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <div className="text-xs text-[#86868b] flex items-center gap-1.5">
-            <span>Pass ID:</span>
-            <span className="font-semibold tracking-wide text-[11px] text-[#1d1d1f] bg-[#f5f5f7] border border-[#e5e5ea] px-2 py-0.5 rounded-md select-all uppercase">
-              {appointment.id.slice(0, 8)}
-            </span>
+        {(status === 'WAITING' || status === 'PENDING_APPROVAL') && onCancel && (
+          <div className="mt-4 pt-3.5 border-t border-[#f0f0f2] flex items-center justify-end">
+            <AppleButton
+              variant="ghost"
+              size="sm"
+              onClick={() => onCancel(appointment.id)}
+              className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 text-xs font-semibold px-3.5 py-1 rounded-full w-full sm:w-auto active:scale-[0.97] transition-all duration-150 cursor-pointer select-none"
+            >
+              {status === 'PENDING_APPROVAL' ? 'Withdraw Request' : 'Cancel Token'}
+            </AppleButton>
           </div>
-
-          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-            {status === 'COMPLETED' ? (
-              <span className="text-xs font-semibold px-3 py-1 rounded-full bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea] flex items-center gap-1.5 select-none">
-                <CheckCircle2 className="w-3.5 h-3.5 text-[#0066cc]" />
-                <span>Consultation Completed</span>
-              </span>
-            ) : null}
-
-            {(status === 'WAITING' || status === 'PENDING_APPROVAL') && onCancel && (
-              <AppleButton
-                variant="ghost"
-                size="sm"
-                onClick={() => onCancel(appointment.id)}
-                className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 text-xs font-semibold px-3.5 py-1 rounded-full w-full sm:w-auto active:scale-[0.97] transition-all duration-150 cursor-pointer select-none"
-              >
-                {status === 'PENDING_APPROVAL' ? 'Withdraw Request' : 'Cancel Token'}
-              </AppleButton>
-            )}
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );

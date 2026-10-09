@@ -2,14 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import { api, Appointment } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
-import { AppleButton } from '../../components/ui/AppleButton';
-import { UtilityCard } from '../../components/ui/UtilityCard';
 import {
-  QrCode,
   CheckCircle2,
   AlertCircle,
   ArrowRight,
-  UserCheck,
 } from 'lucide-react';
 
 export const ClinicCheckIn: React.FC = () => {
@@ -103,129 +99,112 @@ export const ClinicCheckIn: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center p-4 sm:p-6">
       <div className="max-w-md w-full">
-        {/* Apple Clean Header without tacky badges */}
-        <div className="text-center mb-6">
-          <h1 className="text-2xl sm:text-3xl font-semibold text-[#1d1d1f] tracking-tight">
-            Clinic Check-In
-          </h1>
-          <p className="text-sm text-[#86868b] mt-1.5">
-            Confirm your physical arrival at the clinic.
-          </p>
-        </div>
+        <div className="bg-white rounded-[28px] border border-[#e5e5ea] shadow-[0_24px_60px_rgba(0,0,0,0.08),0_2px_10px_rgba(0,0,0,0.03)] p-6 sm:p-8">
+          <div className="mb-6">
+            <h1 className="text-[22px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">
+              Clinic Check-In
+            </h1>
+            <p className="text-[13px] text-[#86868b] mt-1 leading-relaxed">
+              Confirm your physical arrival at the clinic.
+            </p>
+          </div>
 
-        <UtilityCard className="p-6 sm:p-8">
           {/* Direct Visit / Informational Guide (When no QR params in URL) */}
           {!hasQueryParams && !errorMessage && !successData && (
-            <div className="text-center py-2">
-              <div className="w-14 h-14 rounded-2xl bg-black/[0.04] text-[#1d1d1f] flex items-center justify-center mx-auto mb-4">
-                <QrCode className="w-7 h-7" />
-              </div>
-              <h3 className="text-lg font-semibold text-[#1d1d1f] tracking-tight">
-                Scan Counter QR Standee
-              </h3>
-              <p className="text-xs text-[#86868b] mt-1.5 leading-relaxed max-w-xs mx-auto">
-                Clinic arrival is confirmed in person by scanning the physical QR standee placed at the reception counter.
-              </p>
-
+            <div className="space-y-5">
               {/* Steps Guide */}
-              <div className="my-6 p-4 rounded-2xl bg-[#fafafc] border border-[#e5e5ea] text-left space-y-3.5">
+              <div className="p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] space-y-3.5">
                 <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full bg-black/[0.05] text-[#1d1d1f] text-xs font-semibold flex items-center justify-center shrink-0 mt-0.5">
+                  <div className="w-6 h-6 rounded-full bg-white border border-[#e5e5ea] text-[#1d1d1f] text-xs font-semibold flex items-center justify-center shrink-0 mt-0.5">
                     1
                   </div>
                   <div>
-                    <p className="text-xs font-medium text-[#1d1d1f]">Arrive at the Clinic</p>
-                    <p className="text-[11px] text-[#86868b]">Reach the front desk before your estimated consultation time.</p>
+                    <p className="text-xs font-semibold text-[#1d1d1f]">Arrive at the Clinic</p>
+                    <p className="text-[11px] text-[#86868b] mt-0.5">Reach the front desk before your estimated consultation time.</p>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full bg-black/[0.05] text-[#1d1d1f] text-xs font-semibold flex items-center justify-center shrink-0 mt-0.5">
+                  <div className="w-6 h-6 rounded-full bg-white border border-[#e5e5ea] text-[#1d1d1f] text-xs font-semibold flex items-center justify-center shrink-0 mt-0.5">
                     2
                   </div>
                   <div>
-                    <p className="text-xs font-medium text-[#1d1d1f]">Scan QR Standee</p>
-                    <p className="text-[11px] text-[#86868b]">Open your phone camera to scan the desk display.</p>
+                    <p className="text-xs font-semibold text-[#1d1d1f]">Scan QR Standee</p>
+                    <p className="text-[11px] text-[#86868b] mt-0.5">Open your phone camera to scan the reception desk display.</p>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full bg-black/[0.05] text-[#1d1d1f] text-xs font-semibold flex items-center justify-center shrink-0 mt-0.5">
+                  <div className="w-6 h-6 rounded-full bg-white border border-[#e5e5ea] text-[#1d1d1f] text-xs font-semibold flex items-center justify-center shrink-0 mt-0.5">
                     3
                   </div>
                   <div>
-                    <p className="text-xs font-medium text-[#1d1d1f]">Arrival Verified</p>
-                    <p className="text-[11px] text-[#86868b]">Your queue token updates to 'Arrived' automatically.</p>
+                    <p className="text-xs font-semibold text-[#1d1d1f]">Arrival Verified</p>
+                    <p className="text-[11px] text-[#86868b] mt-0.5">Your queue token updates to Arrived automatically.</p>
                   </div>
                 </div>
               </div>
 
               <div className="space-y-2.5">
                 {user ? (
-                  <AppleButton
-                    variant="primary"
+                  <button
+                    type="button"
                     onClick={() => navigate('/patient/appointments')}
-                    className="w-full flex items-center justify-center gap-2"
+                    className="w-full h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-medium transition-all duration-150 shadow-[0_2px_8px_rgba(0,102,204,0.2),0_1px_2px_rgba(0,0,0,0.06)] flex items-center justify-center gap-2 cursor-pointer select-none"
                   >
                     <span>View My Active Passes</span>
                     <ArrowRight className="w-4 h-4" />
-                  </AppleButton>
+                  </button>
                 ) : (
-                  <AppleButton
-                    variant="primary"
+                  <button
+                    type="button"
                     onClick={() => navigate('/login?redirect=/patient/appointments')}
-                    className="w-full flex items-center justify-center gap-2"
+                    className="w-full h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-medium transition-all duration-150 shadow-[0_2px_8px_rgba(0,102,204,0.2),0_1px_2px_rgba(0,0,0,0.06)] flex items-center justify-center gap-2 cursor-pointer select-none"
                   >
                     <span>Sign In to View Passes</span>
                     <ArrowRight className="w-4 h-4" />
-                  </AppleButton>
+                  </button>
                 )}
 
-                <AppleButton
-                  variant="ghost"
+                <button
+                  type="button"
                   onClick={() => navigate('/doctors')}
-                  className="w-full"
+                  className="w-full h-11 px-6 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] active:scale-[0.98] text-[#1d1d1f] border border-[#e5e5ea] text-sm font-medium transition-all duration-150 flex items-center justify-center cursor-pointer select-none"
                 >
                   Find Doctors & Clinics
-                </AppleButton>
+                </button>
               </div>
             </div>
           )}
 
           {/* Not Logged In Prompt (When valid QR params exist) */}
           {hasQueryParams && !loadingAuth && !user && (
-            <div className="text-center py-2">
-              <div className="w-14 h-14 rounded-2xl bg-black/[0.04] text-[#1d1d1f] flex items-center justify-center mx-auto mb-4">
-                <UserCheck className="w-7 h-7" />
-              </div>
-              <h3 className="text-lg font-semibold text-[#1d1d1f] tracking-tight">
-                Sign In to Confirm Arrival
-              </h3>
-              <p className="text-xs text-[#86868b] mt-1.5 leading-relaxed max-w-xs mx-auto">
-                Sign in with the phone number or account used to book your token so we can verify your appointment.
+            <div className="space-y-5">
+              <p className="text-xs text-[#86868b] leading-relaxed">
+                Sign in with the account used to book your token so we can verify your appointment.
               </p>
-              <div className="mt-6 space-y-2.5">
-                <AppleButton
-                  variant="primary"
+              <div className="space-y-2.5">
+                <button
+                  type="button"
                   onClick={() => {
                     const currentTarget = `${location.pathname}${location.search}`;
                     navigate(`/login?redirect=${encodeURIComponent(currentTarget)}`);
                   }}
-                  className="w-full flex items-center justify-center gap-2"
+                  className="w-full h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-medium transition-all duration-150 shadow-[0_2px_8px_rgba(0,102,204,0.2),0_1px_2px_rgba(0,0,0,0.06)] flex items-center justify-center gap-2 cursor-pointer select-none"
                 >
                   <span>Sign In & Verify</span>
                   <ArrowRight className="w-4 h-4" />
-                </AppleButton>
-                <AppleButton
-                  variant="ghost"
+                </button>
+                <button
+                  type="button"
                   onClick={() => {
                     const currentTarget = `${location.pathname}${location.search}`;
                     navigate(`/signup?redirect=${encodeURIComponent(currentTarget)}`);
                   }}
-                  className="w-full"
+                  className="w-full h-11 px-6 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] active:scale-[0.98] text-[#1d1d1f] border border-[#e5e5ea] text-sm font-medium transition-all duration-150 flex items-center justify-center cursor-pointer select-none"
                 >
                   New Patient? Create Account
-                </AppleButton>
+                </button>
               </div>
             </div>
           )}
@@ -233,7 +212,7 @@ export const ClinicCheckIn: React.FC = () => {
           {/* Checking In Loader */}
           {hasQueryParams && checkingIn && (
             <div className="text-center py-8">
-              <div className="w-10 h-10 rounded-full border-2 border-[#0066cc] border-t-transparent animate-spin mx-auto mb-4"></div>
+              <div className="w-8 h-8 rounded-full border-2 border-[#0066cc] border-t-transparent animate-spin mx-auto mb-3"></div>
               <h3 className="text-sm font-semibold text-[#1d1d1f]">Verifying Check-In...</h3>
               <p className="text-xs text-[#86868b] mt-1">Connecting to clinic reception desk...</p>
             </div>
@@ -241,19 +220,16 @@ export const ClinicCheckIn: React.FC = () => {
 
           {/* Success Check-In Confirmation */}
           {successData && !checkingIn && (
-            <div className="text-center py-2">
-              <div className="w-14 h-14 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-3">
-                <CheckCircle2 className="w-8 h-8" />
+            <div className="space-y-5">
+              <div className="p-3.5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] flex items-center gap-2.5 text-xs text-[#1d1d1f]">
+                <CheckCircle2 className="w-4 h-4 text-[#0066cc] shrink-0" />
+                <span className="font-medium">
+                  {successMessage || 'Arrival confirmed! Doctor and front desk have been notified.'}
+                </span>
               </div>
-              <h3 className="text-xl font-semibold text-[#1d1d1f] tracking-tight">
-                Arrival Confirmed
-              </h3>
-              <p className="text-xs text-[#86868b] mt-1 max-w-xs mx-auto">
-                {successMessage || 'Doctor and front desk have been notified that you are at the clinic.'}
-              </p>
 
               {/* Ticket Capsule */}
-              <div className="my-6 p-4 rounded-2xl bg-[#fafafc] border border-[#e5e5ea] text-left space-y-2.5">
+              <div className="p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] space-y-2.5">
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-[#86868b]">Queue Token</span>
                   <span className="text-lg font-bold text-[#0066cc]">#{successData.queueNumber}</span>
@@ -278,39 +254,44 @@ export const ClinicCheckIn: React.FC = () => {
                 )}
               </div>
 
-              <AppleButton
-                variant="primary"
+              <button
+                type="button"
                 onClick={() => navigate('/patient/appointments')}
-                className="w-full flex items-center justify-center gap-2"
+                className="w-full h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-medium transition-all duration-150 shadow-[0_2px_8px_rgba(0,102,204,0.2),0_1px_2px_rgba(0,0,0,0.06)] flex items-center justify-center gap-2 cursor-pointer select-none"
               >
                 <span>View Live Queue Pass</span>
                 <ArrowRight className="w-4 h-4" />
-              </AppleButton>
+              </button>
             </div>
           )}
 
           {/* Error / Notice State */}
           {hasQueryParams && errorMessage && !checkingIn && !successData && (
-            <div className="text-center py-2">
-              <div className="w-14 h-14 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center mx-auto mb-4">
-                <AlertCircle className="w-7 h-7" />
+            <div className="space-y-5">
+              <div className="p-3.5 rounded-2xl bg-rose-50/80 border border-rose-200/80 text-rose-700 text-xs flex items-start gap-2.5 leading-relaxed">
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                <span>{errorMessage}</span>
               </div>
-              <h3 className="text-base font-semibold text-[#1d1d1f]">Check-In Notice</h3>
-              <p className="text-xs text-[#555558] bg-[#fafafc] p-3.5 rounded-xl border border-[#e5e5ea] mt-3 leading-relaxed text-left">
-                {errorMessage}
-              </p>
 
-              <div className="mt-6 flex flex-col gap-2.5">
-                <AppleButton variant="primary" onClick={handleManualCheckIn}>
+              <div className="flex flex-col gap-2.5">
+                <button
+                  type="button"
+                  onClick={handleManualCheckIn}
+                  className="w-full h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-medium transition-all duration-150 shadow-[0_2px_8px_rgba(0,102,204,0.2),0_1px_2px_rgba(0,0,0,0.06)] flex items-center justify-center cursor-pointer select-none"
+                >
                   Try Again
-                </AppleButton>
-                <AppleButton variant="ghost" onClick={() => navigate('/patient/appointments')}>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigate('/patient/appointments')}
+                  className="w-full h-11 px-6 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] active:scale-[0.98] text-[#1d1d1f] border border-[#e5e5ea] text-sm font-medium transition-all duration-150 flex items-center justify-center cursor-pointer select-none"
+                >
                   Go to My Appointments
-                </AppleButton>
+                </button>
               </div>
             </div>
           )}
-        </UtilityCard>
+        </div>
       </div>
     </div>
   );

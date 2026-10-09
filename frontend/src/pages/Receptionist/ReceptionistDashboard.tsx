@@ -11,9 +11,8 @@ import {
 import { sanitizeIndianPhone, formatIndianPhone, isValidIndianPhone } from '../../utils/phoneUtils';
 import { useVisibilityPolling } from '../../utils/useVisibilityPolling';
 import { useAuth } from '../../context/AuthContext';
-import { AppleButton } from '../../components/ui/AppleButton';
 import { DashboardLayout, DashboardNavItem } from '../../components/layout/DashboardLayout';
-import { CabinStatusBadge, CabinStatusControl } from '../../components/ui/DoctorCabinPresence';
+import { CabinStatusControl } from '../../components/ui/DoctorCabinPresence';
 import {
   Clock,
   UserPlus,
@@ -22,16 +21,12 @@ import {
   X,
   Printer,
   Stethoscope,
-  Building2,
   ShieldCheck,
-  Lock,
   Phone,
-  CreditCard,
   Check,
   Search,
   Bell,
   QrCode,
-  Calendar,
   RefreshCw,
   ChevronDown,
   ChevronUp,
@@ -69,7 +64,7 @@ export const ReceptionistDashboard: React.FC = () => {
 
   const [data, setData] = useState<ReceptionistDashboardData | null>(null);
   const [, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'walkin' | 'queue' | 'pending' | 'doctors' | 'notifications'>('walkin');
+  const [activeTab, setActiveTab] = useState<'queue' | 'walkin' | 'pending' | 'doctors' | 'notifications'>('queue');
 
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -131,7 +126,7 @@ export const ReceptionistDashboard: React.FC = () => {
   const [queueAppointments, setQueueAppointments] = useState<ReceptionistQueueItem[]>([]);
   const [queueLoading, setQueueLoading] = useState(false);
   const [queueSearch, setQueueSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'ALL' | 'WAITING' | 'IN_CONSULTATION' | 'COMPLETED' | 'CANCELLED' | 'EXPIRED'>('ALL');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'WAITING' | 'IN_CONSULTATION' | 'COMPLETED' | 'CANCELLED'>('ALL');
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -166,33 +161,6 @@ export const ReceptionistDashboard: React.FC = () => {
     }
   };
 
-  const handleConfirmReschedule = async () => {
-    if (!rescheduleTarget) return;
-    if (!rescheduleDate) {
-      setRescheduleError('Please choose a new appointment date.');
-      return;
-    }
-    setRescheduling(true);
-    setRescheduleError(null);
-    try {
-      const res = await api.rescheduleAppointment(rescheduleTarget.appointmentId, {
-        newDate: rescheduleDate,
-        newSlotId: rescheduleSlotId || undefined,
-      });
-      const newQueueNum = res?.data?.queueNumber || res?.data?.appointment?.queueNumber;
-      setSuccessMsg(
-        `Appointment for ${rescheduleTarget.patientName} successfully shifted to ${rescheduleDate}${newQueueNum ? ` (New Token #${newQueueNum})` : ''}.`
-      );
-      setRescheduleTarget(null);
-      if (activeTab === 'queue' && queueDoctorId) fetchQueue();
-      if (activeTab === 'pending') fetchPendingAppointments();
-    } catch (err: any) {
-      setRescheduleError(err.message || 'Failed to reschedule appointment');
-    } finally {
-      setRescheduling(false);
-    }
-  };
-
   const fetchPendingAppointments = useCallback(async () => {
     try {
       setPendingLoading(true);
@@ -220,7 +188,6 @@ export const ReceptionistDashboard: React.FC = () => {
           setSlotId((prev) => prev || res.doctors[0].slots[0].id);
         }
       }
-      // Refresh pending approvals badge and notifications
       try {
         const pendingRes = await api.getPendingAppointments();
         setPendingAppointments(pendingRes);
@@ -252,16 +219,6 @@ export const ReceptionistDashboard: React.FC = () => {
       mounted = false;
     };
   }, [fetchDeskData]);
-
-  // Periodic real-time sync for notifications and desk queues only while tab is active/visible (FIX-012)
-  useVisibilityPolling(
-    () => {
-      fetchNotifications();
-      fetchPendingAppointments();
-    },
-    15000,
-    Boolean(user) && user?.role?.toUpperCase() === 'RECEPTIONIST'
-  );
 
   // Fetch queue when queueDoctorId or queueDate changes
   const fetchQueue = useCallback(async (docId?: string, dateStr?: string) => {
@@ -298,6 +255,19 @@ export const ReceptionistDashboard: React.FC = () => {
     }
   }, [queueDoctorId, queueDate]);
 
+  // Periodic real-time sync while tab is visible
+  useVisibilityPolling(
+    () => {
+      fetchNotifications();
+      fetchPendingAppointments();
+      if (activeTab === 'queue' && queueDoctorId) {
+        fetchQueue();
+      }
+    },
+    15000,
+    Boolean(user) && user?.role?.toUpperCase() === 'RECEPTIONIST'
+  );
+
   useEffect(() => {
     let mounted = true;
     queueMicrotask(() => {
@@ -317,12 +287,40 @@ export const ReceptionistDashboard: React.FC = () => {
     };
   }, [activeTab, queueDoctorId, queueDate, fetchQueue, fetchPendingAppointments, fetchNotifications]);
 
+  const handleConfirmReschedule = async () => {
+    if (!rescheduleTarget) return;
+    if (!rescheduleDate) {
+      setRescheduleError('Please choose a new appointment date.');
+      return;
+    }
+    setRescheduling(true);
+    setRescheduleError(null);
+    try {
+      const res = await api.rescheduleAppointment(rescheduleTarget.appointmentId, {
+        newDate: rescheduleDate,
+        newSlotId: rescheduleSlotId || undefined,
+      });
+      const newQueueNum = res?.data?.queueNumber || res?.data?.appointment?.queueNumber;
+      setSuccessMsg(
+        `Appointment for ${rescheduleTarget.patientName} shifted to ${rescheduleDate}${newQueueNum ? ` (Token #${newQueueNum})` : ''}.`
+      );
+      setRescheduleTarget(null);
+      if (queueDoctorId) fetchQueue();
+      fetchPendingAppointments();
+      fetchDeskData();
+    } catch (err: any) {
+      setRescheduleError(err.message || 'Failed to reschedule appointment');
+    } finally {
+      setRescheduling(false);
+    }
+  };
+
   const handleApprovePendingAppointment = async (apptId: string) => {
     try {
       setApprovingId(apptId);
       setError(null);
       const res = await api.approveAppointment(apptId);
-      setSuccessMsg(res.message || 'Payment confirmed! Positive queue token has been assigned.');
+      setSuccessMsg(res.message || 'Booking confirmed and queue token assigned.');
       await fetchPendingAppointments();
       fetchDeskData();
       if (queueDoctorId) {
@@ -342,7 +340,7 @@ export const ReceptionistDashboard: React.FC = () => {
     try {
       setRejectingId(apptId);
       setError(null);
-      const res = await api.rejectAppointment(apptId, 'Unverified booking request declined by receptionist.');
+      const res = await api.rejectAppointment(apptId, 'Booking request declined by reception desk.');
       setSuccessMsg(res.message || 'Booking request declined.');
       await fetchPendingAppointments();
       fetchDeskData();
@@ -404,7 +402,6 @@ export const ReceptionistDashboard: React.FC = () => {
     if (currentSlotStatus?.isPassed) return true;
     if (walkinPreview?.isPassed && (!slotId || slotId === walkinPreview.selectedSlotId)) return true;
 
-    // Local evaluation for today's date
     const todayStr = getLocalDateString();
     if (appointmentDate === todayStr && slotId && activeSelectedDoctor?.slots) {
       const slotObj = activeSelectedDoctor.slots.find((s) => s.id === slotId);
@@ -459,7 +456,7 @@ export const ReceptionistDashboard: React.FC = () => {
         updateUser({ ...updatedUser, mustChangePassword: false });
       }
       await refreshUser();
-      setSuccessMsg('Temporary password changed successfully. Receptionist desk unlocked.');
+      setSuccessMsg('Temporary password updated. Reception desk unlocked.');
     } catch (err: any) {
       setPasswordError(err.message || 'Failed to update password');
     } finally {
@@ -471,7 +468,7 @@ export const ReceptionistDashboard: React.FC = () => {
   const handleWalkinSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedDoctorId || !patientName.trim() || !patientPhone.trim()) {
-      setError('Please provide doctor, patient name, and phone number');
+      setError('Please provide doctor, patient name, and mobile number');
       return;
     }
 
@@ -505,7 +502,7 @@ export const ReceptionistDashboard: React.FC = () => {
         appointmentDate,
         slotId: slotId || undefined,
         clinicId: effectiveClinicId || undefined,
-        reasonForVisit: reasonForVisit.trim() || 'Rapid Walk-in Consultation',
+        reasonForVisit: reasonForVisit.trim() || 'Walk-in Consultation',
       });
 
       const queuedDoctor = linkedDoctors.find((d) => d.doctorId === selectedDoctorId);
@@ -527,7 +524,7 @@ export const ReceptionistDashboard: React.FC = () => {
         clinicName: data?.clinic?.clinicName,
         clinicAddress: data?.clinic?.address,
       });
-      setSuccessMsg(`Token #${queueNum} assigned to ${savedPatientName}`);
+      setSuccessMsg(`Token #${queueNum} issued for ${savedPatientName}`);
 
       // Reset form
       setPatientName('');
@@ -551,8 +548,8 @@ export const ReceptionistDashboard: React.FC = () => {
       const targetDoctor = linkedDoctors.find((d) => d.doctorId === queueDoctorId);
       if (targetDoctor?.cabinStatus && targetDoctor.cabinStatus !== 'IN_CABIN') {
         const awayMsg = targetDoctor.cabinStatus === 'STEPPED_OUT'
-          ? `Dr. ${targetDoctor.fullName} has stepped out of the cabin${targetDoctor.expectedReturnTime ? ` (expected return ~${targetDoctor.expectedReturnTime})` : ''}. Doctor must be 'In Cabin' before calling patients into consultation.`
-          : `Dr. ${targetDoctor.fullName} is currently marked as 'Not in Cabin'. Doctor must be 'In Cabin' before calling patients into consultation.`;
+          ? `${cleanDoctorName(targetDoctor.fullName)} has stepped out${targetDoctor.expectedReturnTime ? ` (expected return ~${targetDoctor.expectedReturnTime})` : ''}. Doctor must be In Cabin before calling patients.`
+          : `${cleanDoctorName(targetDoctor.fullName)} is currently Not in Cabin. Doctor must be In Cabin before calling patients.`;
         alert(awayMsg);
         return;
       }
@@ -561,11 +558,11 @@ export const ReceptionistDashboard: React.FC = () => {
       if (targetAppt) {
         const targetDate = targetAppt.appointmentDate || queueDate;
         if (targetDate !== getLocalDateString()) {
-          alert(`Cannot call in an appointment scheduled for ${targetDate}. Only patients scheduled for today can be called into consultation.`);
+          alert(`Cannot call in an appointment scheduled for ${targetDate}. Only today's appointments can be called in.`);
           return;
         }
         if (!targetAppt.isCheckedIn) {
-          alert('Patient has not checked in at the clinic yet. Please mark patient arrival first.');
+          alert('Patient has not checked in at the clinic yet. Please mark arrival first.');
           return;
         }
       }
@@ -606,10 +603,19 @@ export const ReceptionistDashboard: React.FC = () => {
     }
   };
 
+  // Organized Sidebar Navigation: Live Queue first as primary workspace
   const navItems: DashboardNavItem[] = [
     {
+      id: 'queue',
+      label: 'Live Queue',
+      icon: Clock,
+      active: activeTab === 'queue',
+      onClick: () => setActiveTab('queue'),
+      badge: queueAppointments.length > 0 ? queueAppointments.length : undefined,
+    },
+    {
       id: 'walkin',
-      label: 'Walk-in Entry',
+      label: 'Walk-in Booking',
       icon: UserPlus,
       active: activeTab === 'walkin',
       onClick: () => setActiveTab('walkin'),
@@ -621,14 +627,6 @@ export const ReceptionistDashboard: React.FC = () => {
       active: activeTab === 'pending',
       onClick: () => setActiveTab('pending'),
       badge: pendingAppointments.length > 0 ? pendingAppointments.length : undefined,
-    },
-    {
-      id: 'queue',
-      label: 'Live Queue',
-      icon: Clock,
-      active: activeTab === 'queue',
-      onClick: () => setActiveTab('queue'),
-      badge: queueAppointments.length > 0 ? queueAppointments.length : undefined,
     },
     {
       id: 'doctors',
@@ -655,575 +653,927 @@ export const ReceptionistDashboard: React.FC = () => {
     .filter((v, i, a) => a.indexOf(v) === i)
     .join(', ');
 
-  const titleText = data?.clinic?.clinicName ? `${data.clinic.clinicName} Desk` : 'Reception Desk';
-  const subtitleText = displayLocation ? `${displayLocation} • Reception Console` : 'Front Desk Operations';
+  const titleText = data?.clinic?.clinicName ? `${data.clinic.clinicName}` : 'Reception Desk';
+  const subtitleText = displayLocation ? `${displayLocation}` : 'Front Desk Operations';
+
+  const totalTodayBookings = linkedDoctors.reduce((sum, d) => sum + d.todayTotalBookings, 0);
+  const totalWaitingPatients = linkedDoctors.reduce((sum, d) => sum + d.todayWaitingPatients, 0);
 
   return (
     <DashboardLayout
       portalType="RECEPTIONIST"
-      portalSubtitle="RECEPTION DESK"
+      portalSubtitle="Reception Desk"
       navItems={navItems}
       title={titleText}
       subtitle={subtitleText}
       headerAction={
         <div className="flex items-center gap-2">
-          {data?.clinic?.id && (
-            <AppleButton
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsStandeeModalOpen(true)}
-              className="flex items-center gap-1.5 text-xs text-[#0066cc] hover:text-[#0071e3] hover:bg-[#0066cc]/5 border border-[#0066cc]/20 cursor-pointer"
+          {activeTab !== 'walkin' && (
+            <button
+              type="button"
+              onClick={() => setActiveTab('walkin')}
+              className="h-9 px-4 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-xs font-medium inline-flex items-center gap-1.5 shadow-[0_2px_8px_rgba(0,102,204,0.2)] transition-all cursor-pointer"
             >
-              <QrCode className="w-3.5 h-3.5" />
-              <span>Clinic QR Standee</span>
-            </AppleButton>
+              <UserPlus className="w-3.5 h-3.5" />
+              <span>Walk-in Token</span>
+            </button>
           )}
-          <AppleButton
-            variant="ghost"
-            size="sm"
+          {data?.clinic?.id && (
+            <button
+              type="button"
+              onClick={() => setIsStandeeModalOpen(true)}
+              className="h-9 px-3.5 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-medium inline-flex items-center gap-1.5 transition-all active:scale-[0.98] cursor-pointer"
+            >
+              <QrCode className="w-3.5 h-3.5 text-[#0066cc]" />
+              <span>QR Standee</span>
+            </button>
+          )}
+          <button
+            type="button"
             onClick={() => {
               fetchDeskData();
               fetchNotifications();
               if (activeTab === 'queue' && queueDoctorId) fetchQueue();
               if (activeTab === 'pending') fetchPendingAppointments();
             }}
-            className="flex items-center gap-1.5 text-xs cursor-pointer"
+            className="h-9 px-3.5 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-medium inline-flex items-center gap-1.5 transition-all active:scale-[0.98] cursor-pointer"
           >
-            <RefreshCw className="w-3.5 h-3.5" />
+            <RefreshCw className="w-3.5 h-3.5 text-[#86868b]" />
             <span>Refresh</span>
-          </AppleButton>
+          </button>
         </div>
       }
     >
       <div className="space-y-6 print:hidden">
-        {/* Banner Feedback */}
+        {/* Feedback Banners */}
         {successMsg && (
-          <div className="p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] text-xs flex items-center justify-between shadow-xs">
+          <div className="p-3.5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] text-xs flex items-center justify-between">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-[#0066cc] flex-shrink-0" />
-              <span>{successMsg}</span>
+              <span className="font-medium">{successMsg}</span>
             </div>
-            <button onClick={() => setSuccessMsg(null)} className="text-[#86868b] hover:text-[#1d1d1f]">
+            <button onClick={() => setSuccessMsg(null)} className="text-[#86868b] hover:text-[#1d1d1f] p-1">
               <X className="w-4 h-4" />
             </button>
           </div>
         )}
 
         {error && (
-          <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center justify-between shadow-xs">
+          <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center justify-between">
             <div className="flex items-center gap-2">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
-              <span>{error}</span>
+              <span className="font-medium">{error}</span>
             </div>
-            <button onClick={() => setError(null)} className="text-rose-700 hover:text-rose-900">
+            <button onClick={() => setError(null)} className="text-rose-700 hover:text-rose-900 p-1">
               <X className="w-4 h-4" />
             </button>
           </div>
         )}
 
-        {/* 1. Metrics Overview */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+        {/* 1. Compact 4-Column Metric Strip */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <div
-            onClick={() => setActiveTab('doctors')}
-            className={`bg-white rounded-[18px] sm:rounded-2xl border p-3.5 sm:p-5 shadow-xs cursor-pointer transition-all active:scale-[0.99] ${
-              activeTab === 'doctors' ? 'border-[#0066cc]/50 ring-1 ring-[#0066cc]/20' : 'border-[#e5e5ea] hover:border-black/15'
+            onClick={() => setActiveTab('queue')}
+            className={`bg-white rounded-[20px] border p-4 sm:p-5 shadow-[0_2px_12px_rgba(0,0,0,0.03)] cursor-pointer transition-all active:scale-[0.99] ${
+              activeTab === 'queue' ? 'border-[#0066cc] ring-2 ring-[#0066cc]/10' : 'border-[#e5e5ea] hover:border-[#d2d2d7]'
             }`}
           >
-            <span className="text-[10px] sm:text-[11px] font-semibold text-[#86868b] uppercase tracking-wider block mb-1.5 sm:mb-2">
-              Assigned Doctors
-            </span>
-            <div className="text-xl sm:text-3xl font-bold tracking-tight text-[#1d1d1f]">
-              {linkedDoctors.length}
+            <span className="text-xs font-medium text-[#86868b] block">Waiting in Queue</span>
+            <div className="text-2xl sm:text-3xl font-semibold tracking-tight text-[#0066cc] mt-1">
+              {totalWaitingPatients}
             </div>
-            <p className="text-[11px] sm:text-xs text-[#86868b] mt-1">Practitioners at desk</p>
+          </div>
+
+          <div
+            onClick={() => setActiveTab('queue')}
+            className="bg-white rounded-[20px] border border-[#e5e5ea] hover:border-[#d2d2d7] p-4 sm:p-5 shadow-[0_2px_12px_rgba(0,0,0,0.03)] cursor-pointer transition-all active:scale-[0.99]"
+          >
+            <span className="text-xs font-medium text-[#86868b] block">Today's Bookings</span>
+            <div className="text-2xl sm:text-3xl font-semibold tracking-tight text-[#1d1d1f] mt-1">
+              {totalTodayBookings}
+            </div>
           </div>
 
           <div
             onClick={() => setActiveTab('pending')}
-            className={`bg-white rounded-[18px] sm:rounded-2xl border p-3.5 sm:p-5 shadow-xs cursor-pointer transition-all active:scale-[0.99] ${
-              activeTab === 'pending' ? 'border-[#0066cc]/50 ring-1 ring-[#0066cc]/20' : 'border-[#e5e5ea] hover:border-black/15'
+            className={`bg-white rounded-[20px] border p-4 sm:p-5 shadow-[0_2px_12px_rgba(0,0,0,0.03)] cursor-pointer transition-all active:scale-[0.99] ${
+              activeTab === 'pending' ? 'border-[#0066cc] ring-2 ring-[#0066cc]/10' : 'border-[#e5e5ea] hover:border-[#d2d2d7]'
             }`}
           >
-            <div className="flex items-center justify-between mb-1.5 sm:mb-2">
-              <span className="text-[10px] sm:text-[11px] font-semibold text-[#86868b] uppercase tracking-wider">
-                Pending Approvals
-              </span>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-[#86868b]">Pending Approvals</span>
               {pendingAppointments.length > 0 && (
-                <span className="w-2 h-2 rounded-full bg-[#0066cc]"></span>
+                <span className="w-2 h-2 rounded-full bg-[#0066cc]" />
               )}
             </div>
-            <div className="text-xl sm:text-3xl font-bold tracking-tight text-[#1d1d1f]">
+            <div className="text-2xl sm:text-3xl font-semibold tracking-tight text-[#1d1d1f] mt-1">
               {pendingAppointments.length}
             </div>
-            <p className="text-[11px] sm:text-xs text-[#86868b] mt-1">
-              {pendingAppointments.length === 1 ? '1 awaiting' : `${pendingAppointments.length} awaiting`}
-            </p>
           </div>
 
           <div
-            onClick={() => setActiveTab('queue')}
-            className={`bg-white rounded-[18px] sm:rounded-2xl border p-3.5 sm:p-5 shadow-xs cursor-pointer transition-all active:scale-[0.99] ${
-              activeTab === 'queue' ? 'border-[#0066cc]/50 ring-1 ring-[#0066cc]/20' : 'border-[#e5e5ea] hover:border-black/15'
+            onClick={() => setActiveTab('doctors')}
+            className={`bg-white rounded-[20px] border p-4 sm:p-5 shadow-[0_2px_12px_rgba(0,0,0,0.03)] cursor-pointer transition-all active:scale-[0.99] ${
+              activeTab === 'doctors' ? 'border-[#0066cc] ring-2 ring-[#0066cc]/10' : 'border-[#e5e5ea] hover:border-[#d2d2d7]'
             }`}
           >
-            <span className="text-[10px] sm:text-[11px] font-semibold text-[#86868b] uppercase tracking-wider block mb-1.5 sm:mb-2">
-              Today's Bookings
-            </span>
-            <div className="text-xl sm:text-3xl font-bold tracking-tight text-[#1d1d1f]">
-              {linkedDoctors.reduce((sum, d) => sum + d.todayTotalBookings, 0)}
+            <span className="text-xs font-medium text-[#86868b] block">Assigned Doctors</span>
+            <div className="text-2xl sm:text-3xl font-semibold tracking-tight text-[#1d1d1f] mt-1">
+              {linkedDoctors.length}
             </div>
-            <p className="text-[11px] sm:text-xs text-[#86868b] mt-1">Total registered today</p>
-          </div>
-
-          <div
-            onClick={() => setActiveTab('queue')}
-            className={`bg-white rounded-[18px] sm:rounded-2xl border p-3.5 sm:p-5 shadow-xs cursor-pointer transition-all active:scale-[0.99] ${
-              activeTab === 'queue' ? 'border-[#0066cc]/50 ring-1 ring-[#0066cc]/20' : 'border-[#e5e5ea] hover:border-black/15'
-            }`}
-          >
-            <span className="text-[10px] sm:text-[11px] font-semibold text-[#86868b] uppercase tracking-wider block mb-1.5 sm:mb-2">
-              Patients Waiting
-            </span>
-            <div className="text-xl sm:text-3xl font-bold tracking-tight text-[#1d1d1f]">
-              {linkedDoctors.reduce((sum, d) => sum + d.todayWaitingPatients, 0)}
-            </div>
-            <p className="text-[11px] sm:text-xs text-[#86868b] mt-1">In today's queue</p>
           </div>
         </div>
 
-        {/* 2. Main Content Container */}
-        <div className="bg-white rounded-[20px] sm:rounded-2xl border border-[#e5e5ea] p-4 sm:p-7 shadow-xs">
-          {/* TAB 1: Rapid Walk-in Booking */}
-          {activeTab === 'walkin' && (
-            <div>
-              <div className="mb-6 pb-4 border-b border-[#f0f0f0]">
-                <h3 className="text-base font-semibold text-[#1d1d1f]">
-                  Walk-in Patient Booking
-                </h3>
-                <p className="text-xs text-[#86868b] mt-0.5">
-                  Generate queue tokens for patients arriving directly at reception.
-                </p>
-              </div>
-
-              {linkedDoctors.length === 0 ? (
-                <div className="py-12 text-center">
-                  <div className="w-12 h-12 rounded-full bg-[#f5f5f7] text-[#86868b] flex items-center justify-center mx-auto mb-3">
-                    <Stethoscope className="w-6 h-6" />
-                  </div>
-                  <h4 className="text-sm font-semibold text-[#1d1d1f] mb-1">No Doctors Linked Yet</h4>
-                  <p className="text-xs text-[#86868b] max-w-xs mx-auto mb-4">
-                    Link doctors to your desk roster first in the "Linked Doctors Desk" tab before booking walk-ins.
-                  </p>
-                  <AppleButton variant="primary" size="sm" onClick={() => setActiveTab('doctors')}>
-                    Go to Doctor Desk Roster
-                  </AppleButton>
+        {/* 2. Primary Workspace Container */}
+        <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-5 sm:p-7 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
+          {/* TAB 1: LIVE QUEUE (Primary Front Desk View) */}
+          {activeTab === 'queue' && (
+            <div className="space-y-5">
+              {/* Top Controls Row: Title + Doctor & Date Selectors */}
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-[#f0f0f2]">
+                <div className="flex items-center gap-2.5">
+                  <h3 className="text-base sm:text-lg font-semibold text-[#1d1d1f] tracking-tight">
+                    Live Patient Queue
+                  </h3>
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea]">
+                    {queueAppointments.length}
+                  </span>
                 </div>
-              ) : (
-                <form onSubmit={handleWalkinSubmit} className="space-y-5 max-w-2xl">
-                  {/* Select Doctor */}
-                  <div>
-                    <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5">
-                      Select Practitioner
-                    </label>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {linkedDoctors.map((doc) => {
-                        const isSelected = selectedDoctorId === doc.doctorId;
-                        return (
-                          <div
-                            key={doc.doctorId}
-                            onClick={() => {
-                              setSelectedDoctorId(doc.doctorId);
-                              setSlotId(doc.slots[0]?.id || '');
-                            }}
-                            className={`p-3.5 rounded-2xl border cursor-pointer transition-all flex items-center gap-3 ${
-                              isSelected
-                                ? 'bg-[#0066cc]/5 border-[#0066cc] shadow-xs'
-                                : 'bg-[#fafafc] border-[#e5e5ea] hover:border-gray-300'
-                            }`}
-                          >
-                            <div className="w-10 h-10 rounded-full bg-white border border-[#e5e5ea] overflow-hidden flex-shrink-0">
-                              {doc.avatarUrl ? (
-                                <img
-                                  src={getFileUrl(doc.avatarUrl)}
-                                  alt={doc.fullName}
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center font-semibold text-xs text-[#0066cc]">
-                                  {doc.fullName[0]}
-                                </div>
-                              )}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between gap-1">
-                                <div className="font-semibold text-xs text-[#1d1d1f] truncate">
-                                  {cleanDoctorName(doc.fullName)}
-                                </div>
-                                {isSelected && (
-                                  <span className="text-[10px] font-bold text-[#0066cc] bg-[#0066cc]/10 px-2 py-0.5 rounded-full border border-[#0066cc]/20 shrink-0">
-                                    Token #{walkinPreview?.nextQueueNumber || 1}
-                                  </span>
-                                )}
-                              </div>
-                              <div className="text-[11px] text-[#0066cc] font-medium">{doc.specialty}</div>
-                              <div className="mt-1 flex items-center gap-1.5 flex-wrap">
-                                <CabinStatusBadge status={doc.cabinStatus} expectedReturnTime={doc.expectedReturnTime} size="sm" />
-                                <span className="text-[10px] text-[#86868b]">
-                                  ₹{doc.consultationFee.toFixed(0)} • {doc.todayWaitingPatients} waiting
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
 
-                  {/* Date & Shift */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-[13px] font-semibold text-[#1d1d1f] mb-1.5">
-                        Consultation Date
-                      </label>
-                      <input
-                        type="date"
-                        required
-                        value={appointmentDate}
-                        onChange={(e) => setAppointmentDate(e.target.value)}
-                        className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-sm bg-white text-[#1d1d1f] focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] transition-all"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[13px] font-semibold text-[#1d1d1f] mb-1.5">
-                        Checking Shift
-                      </label>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+                  {linkedDoctors.length > 0 && (
+                    <div className="relative">
                       <select
-                        value={slotId}
-                        onChange={(e) => setSlotId(e.target.value)}
-                        className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-sm bg-white text-[#1d1d1f] focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] transition-all cursor-pointer"
+                        value={queueDoctorId}
+                        onChange={(e) => setQueueDoctorId(e.target.value)}
+                        className="h-10 pl-3.5 pr-8 rounded-xl border border-[#d2d2d7] text-xs font-medium bg-white text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all focus:outline-none focus:ring-4 focus:ring-[#0066cc]/10 focus:border-[#0066cc] appearance-none cursor-pointer w-full sm:w-auto"
                       >
-                        {activeSelectedDoctor?.slots.map((s) => {
-                          const sStatus = walkinPreview?.availableSlots?.find((as) => as.slot.id === s.id);
-                          const isEnded = sStatus?.isPassed;
-                          return (
-                            <option key={s.id} value={s.id}>
-                              {s.name} ({s.startTime} – {s.endTime}) {isEnded ? '• (Ended)' : ''}
-                            </option>
-                          );
-                        })}
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* Shift Ended Notice Banner */}
-                  {isSelectedShiftEnded && (
-                    <div className="p-4 rounded-2xl bg-amber-50/90 border border-amber-200/90 text-amber-900 text-xs sm:text-[13px] flex items-start gap-3 shadow-2xs">
-                      <Clock className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                      <div>
-                        <p className="font-semibold text-amber-900">Shift Ended for Today</p>
-                        <p className="text-amber-700 mt-0.5 leading-relaxed">
-                          This checking shift has already ended for today. New queue tokens cannot be generated for concluded shifts. Please select an upcoming shift or choose tomorrow's date.
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Shift Full Notice Banner */}
-                  {!isSelectedShiftEnded && isSelectedShiftFull && (
-                    <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 text-xs sm:text-[13px] flex items-start gap-3 shadow-2xs">
-                      <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-                      <div>
-                        <p className="font-semibold text-rose-900">Shift Capacity Reached</p>
-                        <p className="text-rose-700 mt-0.5 leading-relaxed">
-                          This shift has reached its maximum patient capacity. Please pick another active shift or choose a different date.
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Clinic / Facility Attribution */}
-                  {activeSelectedDoctor?.clinics && activeSelectedDoctor.clinics.length > 0 && (
-                    <div>
-                      <label className="block text-[13px] font-semibold text-[#1d1d1f] mb-1.5 flex items-center gap-1.5">
-                        <Building2 className="w-3.5 h-3.5 text-[#0066cc]" />
-                        Clinic / Facility Attribution
-                      </label>
-                      <select
-                        value={walkinClinicId}
-                        onChange={(e) => setWalkinClinicId(e.target.value)}
-                        className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-sm bg-white text-[#1d1d1f] focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] transition-all cursor-pointer"
-                      >
-                        {activeSelectedDoctor.clinics.map((c) => (
-                          <option key={c.clinicId} value={c.clinicId}>
-                            {c.clinic.clinicName} — {c.clinic.address}{c.clinic.city ? `, ${c.clinic.city}` : ''}
+                        {linkedDoctors.map((doc) => (
+                          <option key={doc.doctorId} value={doc.doctorId}>
+                            {cleanDoctorName(doc.fullName)} — {doc.specialty}
                           </option>
                         ))}
                       </select>
+                      <ChevronDown className="w-3.5 h-3.5 text-[#86868b] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                     </div>
                   )}
 
-                  {/* Live Token Allocation Preview */}
-                  <div className="p-4 sm:p-5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
-                    <div className="flex items-center gap-3.5">
-                      <div className="w-12 h-12 rounded-2xl bg-white border border-[#e5e5ea] flex items-center justify-center text-[#0066cc] font-bold text-xl shadow-xs shrink-0">
-                        #{walkinPreview?.nextQueueNumber || 1}
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs sm:text-[13px] font-semibold text-[#1d1d1f]">
-                            Allocated Token Number
-                          </span>
-                          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
-                            isSelectedShiftEnded
-                              ? 'bg-amber-50 text-amber-700 border-amber-200'
-                              : 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                          }`}>
-                            {isSelectedShiftEnded ? 'Shift Ended' : 'Guaranteed Token'}
-                          </span>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="date"
+                      value={queueDate}
+                      onChange={(e) => setQueueDate(e.target.value)}
+                      className="h-10 px-3.5 rounded-xl border border-[#d2d2d7] text-xs font-medium bg-white text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all focus:outline-none focus:ring-4 focus:ring-[#0066cc]/10 focus:border-[#0066cc] flex-1 sm:flex-initial"
+                    />
+                    {queueDate !== getLocalDateString() && (
+                      <button
+                        type="button"
+                        onClick={() => setQueueDate(getLocalDateString())}
+                        className="h-10 px-3.5 rounded-xl bg-[#f5f5f7] hover:bg-[#e8e8ed] text-xs font-medium text-[#0066cc] border border-[#e5e5ea] transition-all cursor-pointer shrink-0"
+                      >
+                        Today
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Selected Doctor Cabin Presence Bar */}
+              {(() => {
+                const targetDoctor = linkedDoctors.find((d) => d.doctorId === queueDoctorId);
+                if (!targetDoctor) return null;
+                return (
+                  <CabinStatusControl
+                    currentStatus={targetDoctor.cabinStatus}
+                    expectedReturnTime={targetDoctor.expectedReturnTime}
+                    doctorId={targetDoctor.doctorId}
+                    doctorName={cleanDoctorName(targetDoctor.fullName)}
+                    onStatusChange={(newStatus, newReturnTime) => {
+                      setData((prev) => {
+                        if (!prev) return prev;
+                        return {
+                          ...prev,
+                          doctors: prev.doctors.map((d) =>
+                            d.doctorId === targetDoctor.doctorId
+                              ? { ...d, cabinStatus: newStatus, expectedReturnTime: newReturnTime }
+                              : d
+                          ),
+                        };
+                      });
+                    }}
+                  />
+                );
+              })()}
+
+              {/* Filter Pills & Search Bar */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+                  {(
+                    [
+                      { id: 'ALL', label: 'All' },
+                      { id: 'WAITING', label: 'Waiting' },
+                      { id: 'IN_CONSULTATION', label: 'In Consultation' },
+                      { id: 'COMPLETED', label: 'Completed' },
+                      { id: 'CANCELLED', label: 'Cancelled' },
+                    ] as const
+                  ).map((tab) => {
+                    const count =
+                      tab.id === 'ALL'
+                        ? queueAppointments.length
+                        : queueAppointments.filter((a) => a.status === tab.id).length;
+                    const isActive = statusFilter === tab.id;
+                    return (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        onClick={() => setStatusFilter(tab.id)}
+                        className={`h-8 px-3.5 rounded-full text-xs font-medium transition-all active:scale-[0.98] whitespace-nowrap cursor-pointer inline-flex items-center gap-1.5 ${
+                          isActive
+                            ? 'bg-[#0066cc] text-white'
+                            : 'bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f]'
+                        }`}
+                      >
+                        <span>{tab.label}</span>
+                        <span className={`text-[11px] ${isActive ? 'text-white/80' : 'text-[#86868b]'}`}>
+                          {count}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="relative w-full sm:w-64">
+                  <Search className="w-3.5 h-3.5 text-[#86868b] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={queueSearch}
+                    onChange={(e) => setQueueSearch(e.target.value)}
+                    placeholder="Search patient, phone, token..."
+                    className="w-full h-9 pl-9 pr-8 rounded-full border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
+                  />
+                  {queueSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setQueueSearch('')}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#86868b] hover:text-[#1d1d1f] p-0.5 cursor-pointer"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Queue Content */}
+              {linkedDoctors.length === 0 ? (
+                <div className="py-14 text-center bg-[#fafafc] rounded-2xl border border-[#e5e5ea]">
+                  <p className="text-sm font-semibold text-[#1d1d1f]">No Doctors Assigned</p>
+                  <p className="text-xs text-[#86868b] mt-1 max-w-sm mx-auto">
+                    Ask your clinic administrator to assign practitioners to your reception desk.
+                  </p>
+                </div>
+              ) : queueLoading ? (
+                <div className="py-14 text-center text-xs text-[#86868b]">Loading live queue...</div>
+              ) : queueAppointments.length === 0 ? (
+                <div className="py-14 text-center bg-[#fafafc] rounded-2xl border border-[#e5e5ea]">
+                  <p className="text-sm font-semibold text-[#1d1d1f]">No Patients in Queue</p>
+                  <p className="text-xs text-[#86868b] mt-1 mb-4">
+                    No appointments scheduled for {queueDate}.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('walkin')}
+                    className="h-9 px-4 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-medium transition-all active:scale-[0.98] cursor-pointer"
+                  >
+                    Issue Walk-in Token
+                  </button>
+                </div>
+              ) : (() => {
+                const filteredAppointments = queueAppointments.filter((appt) => {
+                  if (statusFilter !== 'ALL' && appt.status !== statusFilter) return false;
+                  if (!queueSearch.trim()) return true;
+                  const q = queueSearch.toLowerCase().trim();
+                  const name = (appt.patientName || '').toLowerCase();
+                  const phone = (appt.patientPhone || '').toLowerCase();
+                  const token = String(appt.queueNumber || '');
+                  return name.includes(q) || phone.includes(q) || token.includes(q);
+                });
+
+                const queueDoctor = linkedDoctors.find((d) => d.doctorId === queueDoctorId);
+                const isDoctorAway = Boolean(queueDoctor?.cabinStatus && queueDoctor.cabinStatus !== 'IN_CABIN');
+                const isTodayQueue = queueDate === getLocalDateString();
+
+                if (filteredAppointments.length === 0) {
+                  return (
+                    <div className="py-12 text-center bg-[#fafafc] rounded-2xl border border-[#e5e5ea]">
+                      <p className="text-sm font-semibold text-[#1d1d1f]">No Matching Patients</p>
+                      <p className="text-xs text-[#86868b] mt-1 mb-3">
+                        No patients match your active filter or search criteria.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setQueueSearch('');
+                          setStatusFilter('ALL');
+                        }}
+                        className="h-8 px-4 rounded-full text-xs font-medium bg-white border border-[#e5e5ea] text-[#1d1d1f] hover:bg-[#f5f5f7] transition-all cursor-pointer"
+                      >
+                        Reset Filters
+                      </button>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="divide-y divide-[#f0f0f2] border border-[#e5e5ea] rounded-2xl overflow-hidden bg-white">
+                    {filteredAppointments.map((appt) => {
+                      const canMarkArrival = !['EXPIRED', 'CANCELLED', 'REJECTED', 'COMPLETED'].includes(appt.status);
+                      const canCallIn =
+                        appt.status === 'WAITING' &&
+                        appt.isCheckedIn &&
+                        !isDoctorAway &&
+                        (appt.appointmentDate || queueDate) === getLocalDateString();
+
+                      return (
+                        <div
+                          key={appt.id}
+                          className="p-4 sm:px-5 sm:py-4 hover:bg-[#fafafc] transition-colors flex flex-col lg:flex-row lg:items-center justify-between gap-3.5"
+                        >
+                          {/* Left: Token + Patient Details */}
+                          <div className="flex items-start sm:items-center gap-3.5 min-w-0">
+                            <div className="w-11 h-11 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] flex items-center justify-center font-semibold text-sm text-[#0066cc] shrink-0">
+                              #{appt.queueNumber}
+                            </div>
+
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-semibold text-sm text-[#1d1d1f] truncate">
+                                  {appt.patientName}
+                                </span>
+                                <span
+                                  className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${
+                                    appt.status === 'IN_CONSULTATION'
+                                      ? 'bg-[#0066cc]/10 text-[#0066cc] border-[#0066cc]/20'
+                                      : appt.status === 'WAITING'
+                                      ? 'bg-[#f5f5f7] text-[#1d1d1f] border-[#e5e5ea]'
+                                      : 'bg-[#f5f5f7] text-[#86868b] border-[#e5e5ea]'
+                                  }`}
+                                >
+                                  {appt.status === 'IN_CONSULTATION'
+                                    ? 'In Cabin'
+                                    : appt.status === 'WAITING'
+                                    ? 'Waiting'
+                                    : appt.status === 'COMPLETED'
+                                    ? 'Completed'
+                                    : appt.status === 'CANCELLED'
+                                    ? 'Cancelled'
+                                    : 'Expired'}
+                                </span>
+                              </div>
+
+                              <div className="flex items-center gap-2.5 text-xs text-[#86868b] mt-1 flex-wrap">
+                                {appt.patientPhone && <span>{appt.patientPhone}</span>}
+                                {appt.estimatedTime && (
+                                  <>
+                                    <span>•</span>
+                                    <span className="text-[#1d1d1f] font-medium">{appt.estimatedTime}</span>
+                                  </>
+                                )}
+                                {appt.reasonForVisit &&
+                                  appt.reasonForVisit !== 'General Medical Consultation' &&
+                                  appt.reasonForVisit !== 'Walk-in Consultation' &&
+                                  appt.reasonForVisit !== 'Rapid Walk-in Consultation' && (
+                                    <>
+                                      <span>•</span>
+                                      <span className="truncate max-w-[220px]">{appt.reasonForVisit}</span>
+                                    </>
+                                  )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Right: Arrival Toggle + Queue Actions */}
+                          <div className="flex items-center justify-between sm:justify-end gap-2 flex-wrap pt-2 lg:pt-0 border-t lg:border-t-0 border-[#f0f0f2]">
+                            {/* Arrival Check-In Pill */}
+                            {canMarkArrival && (
+                              <button
+                                type="button"
+                                disabled={togglingCheckinId === appt.id}
+                                onClick={() => handleToggleCheckIn(appt.id, appt.isCheckedIn)}
+                                className={`h-8 px-3 rounded-full text-xs font-medium inline-flex items-center gap-1.5 transition-all cursor-pointer ${
+                                  appt.isCheckedIn
+                                    ? 'bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/25'
+                                    : 'bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea]'
+                                }`}
+                                title={appt.isCheckedIn ? 'Click to undo arrival' : 'Mark patient arrived at clinic'}
+                              >
+                                <span
+                                  className={`w-1.5 h-1.5 rounded-full ${
+                                    appt.isCheckedIn ? 'bg-[#0066cc]' : 'bg-[#86868b]'
+                                  }`}
+                                />
+                                <span>{appt.isCheckedIn ? 'At Clinic' : 'Mark Arrived'}</span>
+                              </button>
+                            )}
+
+                            <div className="flex items-center gap-1.5">
+                              {/* Primary Action: Call In or Complete */}
+                              {canCallIn && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleStatusChange(appt.id, 'IN_CONSULTATION')}
+                                  className="h-8 px-3.5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-medium transition-all active:scale-[0.98] cursor-pointer"
+                                >
+                                  Call In
+                                </button>
+                              )}
+
+                              {appt.status === 'WAITING' && appt.isCheckedIn && isDoctorAway && isTodayQueue && (
+                                <span className="h-8 px-3 rounded-full bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea] text-xs font-medium inline-flex items-center">
+                                  Doctor Away
+                                </span>
+                              )}
+
+                              {appt.status === 'IN_CONSULTATION' && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleStatusChange(appt.id, 'COMPLETED')}
+                                  className="h-8 px-3.5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-medium transition-all active:scale-[0.98] cursor-pointer"
+                                >
+                                  Complete
+                                </button>
+                              )}
+
+                              {/* Shift Date */}
+                              {(appt.status === 'WAITING' || appt.status === 'PENDING_APPROVAL') && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setRescheduleTarget({
+                                      appointmentId: appt.id,
+                                      patientName: appt.patientName,
+                                      doctorName: queueDoctor?.fullName || 'Practitioner',
+                                      currentDate: queueDate,
+                                      currentQueueNumber: appt.queueNumber,
+                                      doctorId: queueDoctorId,
+                                      slotId: appt.slotId,
+                                    });
+                                    const d = new Date(queueDate);
+                                    d.setDate(d.getDate() + 1);
+                                    setRescheduleDate(getLocalDateString(d));
+                                    setRescheduleSlotId(appt.slotId || '');
+                                    setRescheduleError(null);
+                                  }}
+                                  className="h-8 px-3 rounded-full text-[#1d1d1f] hover:bg-[#f5f5f7] text-xs font-medium border border-[#e5e5ea] transition-all cursor-pointer"
+                                  title="Reschedule to another date"
+                                >
+                                  Shift
+                                </button>
+                              )}
+
+                              {/* Cancel */}
+                              {appt.status === 'WAITING' && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleStatusChange(appt.id, 'CANCELLED')}
+                                  className="h-8 px-3 rounded-full text-[#86868b] hover:text-rose-600 hover:bg-rose-50 text-xs font-medium border border-[#e5e5ea] transition-all cursor-pointer"
+                                >
+                                  Cancel
+                                </button>
+                              )}
+
+                              {/* Reprint Pass */}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setBookedPass({
+                                    queueNumber: appt.queueNumber,
+                                    estimatedTime: appt.estimatedTime,
+                                    checkingWindow: appt.checkingWindow,
+                                    appointmentDate: queueDate,
+                                    patientName: appt.patientName,
+                                    patientPhone: appt.patientPhone,
+                                    doctorName: queueDoctor?.fullName || 'Practitioner',
+                                    doctorSpecialty: queueDoctor?.specialty,
+                                    clinicName: data?.clinic?.clinicName,
+                                    clinicAddress: data?.clinic?.address,
+                                  });
+                                }}
+                                className="w-8 h-8 flex items-center justify-center rounded-full text-[#86868b] hover:text-[#1d1d1f] hover:bg-[#f5f5f7] border border-[#e5e5ea] transition-colors cursor-pointer"
+                                title="Print Token Slip"
+                              >
+                                <Printer className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
                         </div>
-                        <p className="text-xs text-[#86868b] mt-0.5">
-                          Assigned upon walk-in booking for {appointmentDate}.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-4 self-end sm:self-center border-t sm:border-t-0 pt-2 sm:pt-0 border-[#e5e5ea] w-full sm:w-auto justify-between sm:justify-end">
-                      <div className="text-right">
-                        <span className="text-[11px] text-[#86868b] block font-medium">Est. Consultation</span>
-                        <span className="text-xs sm:text-[13px] font-semibold text-[#1d1d1f]">
-                          {previewLoading ? 'Updating...' : walkinPreview?.estimatedTime || 'Immediate'}
-                        </span>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-[11px] text-[#86868b] block font-medium">Waiting Ahead</span>
-                        <span className="text-xs sm:text-[13px] font-semibold text-[#1d1d1f]">
-                          {previewLoading ? '...' : `${walkinPreview?.patientsAhead ?? 0} patients`}
-                        </span>
-                      </div>
-                    </div>
+                      );
+                    })}
                   </div>
+                );
+              })()}
+            </div>
+          )}
 
-                  {/* Booking For Toggle */}
-                  <div>
-                    <label className="block text-[13px] font-semibold text-[#1d1d1f] mb-1.5">
-                      Booking For:
-                    </label>
-                    <div className="flex rounded-full bg-[#f5f5f7] p-1 border border-[#e5e5ea] max-w-xs mb-3 shadow-xs">
-                      <button
-                        type="button"
-                        onClick={() => setBookingFor('self')}
-                        className={`flex-1 py-1.5 text-xs sm:text-[13px] font-semibold rounded-full transition-all active:scale-[0.98] ${
-                          bookingFor === 'self'
-                            ? 'bg-white text-[#1d1d1f] shadow-xs'
-                            : 'text-[#86868b] hover:text-[#1d1d1f]'
-                        }`}
-                      >
-                        Patient Themselves
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setBookingFor('other')}
-                        className={`flex-1 py-1.5 text-xs sm:text-[13px] font-semibold rounded-full transition-all active:scale-[0.98] ${
-                          bookingFor === 'other'
-                            ? 'bg-white text-[#1d1d1f] shadow-xs'
-                            : 'text-[#86868b] hover:text-[#1d1d1f]'
-                        }`}
-                      >
-                        Dependent / Family
-                      </button>
-                    </div>
-                  </div>
+          {/* TAB 2: WALK-IN BOOKING (Balanced 2-Column Layout) */}
+          {activeTab === 'walkin' && (
+            <div>
+              <div className="flex items-center justify-between gap-4 mb-6 pb-4 border-b border-[#f0f0f2]">
+                <div>
+                  <h3 className="text-base sm:text-lg font-semibold text-[#1d1d1f] tracking-tight">
+                    Walk-in Patient Booking
+                  </h3>
+                  <p className="text-xs text-[#86868b] mt-0.5">
+                    Issue an immediate queue token for patients arriving at the desk.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('queue')}
+                  className="h-8 px-3.5 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-xs font-medium text-[#1d1d1f] border border-[#e5e5ea] transition-all cursor-pointer shrink-0"
+                >
+                  View Queue
+                </button>
+              </div>
 
-                  {/* Patient Name, Age & Phone */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div className="sm:col-span-1">
-                      <label className="block text-[13px] font-semibold text-[#1d1d1f] mb-1">
-                        Patient Full Name *
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={patientName}
-                        onChange={(e) => setPatientName(e.target.value)}
-                        placeholder="e.g. Rahul Ray"
-                        className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-sm bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
-                      />
-                    </div>
-
+              {linkedDoctors.length === 0 ? (
+                <div className="py-14 text-center bg-[#fafafc] rounded-2xl border border-[#e5e5ea]">
+                  <p className="text-sm font-semibold text-[#1d1d1f]">No Doctors Assigned</p>
+                  <p className="text-xs text-[#86868b] mt-1 max-w-xs mx-auto">
+                    Ask your clinic administrator to assign doctors to your reception desk before issuing walk-in tokens.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                  {/* Left Column (7 cols): Walk-in Registration Form */}
+                  <form onSubmit={handleWalkinSubmit} className="lg:col-span-7 space-y-5">
+                    {/* 1. Practitioner Selection */}
                     <div>
-                      <label className="block text-[13px] font-semibold text-[#1d1d1f] mb-1">
-                        Patient Age
+                      <label className="block text-xs font-medium text-[#1d1d1f] mb-2 tracking-tight">
+                        Select Practitioner
                       </label>
-                      <input
-                        type="text"
-                        value={patientAge}
-                        onChange={(e) => setPatientAge(e.target.value)}
-                        placeholder="e.g. 12"
-                        className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-sm bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
-                      />
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        {linkedDoctors.map((doc) => {
+                          const isSelected = selectedDoctorId === doc.doctorId;
+                          return (
+                            <div
+                              key={doc.doctorId}
+                              onClick={() => {
+                                setSelectedDoctorId(doc.doctorId);
+                                setSlotId(doc.slots[0]?.id || '');
+                              }}
+                              className={`p-3.5 rounded-2xl border cursor-pointer transition-all flex items-center gap-3 ${
+                                isSelected
+                                  ? 'bg-[#0066cc]/[0.04] border-[#0066cc] ring-2 ring-[#0066cc]/10'
+                                  : 'bg-white border-[#e5e5ea] hover:border-[#d2d2d7]'
+                              }`}
+                            >
+                              <div className="w-10 h-10 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] overflow-hidden shrink-0">
+                                {doc.avatarUrl ? (
+                                  <img
+                                    src={getFileUrl(doc.avatarUrl)}
+                                    alt={doc.fullName}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center font-semibold text-xs text-[#0066cc]">
+                                    {doc.fullName[0]}
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="font-semibold text-xs text-[#1d1d1f] truncate">
+                                  {cleanDoctorName(doc.fullName)}
+                                </div>
+                                <div className="text-[11px] text-[#0066cc] font-medium truncate">
+                                  {doc.specialty}
+                                </div>
+                                <div className="text-[11px] text-[#86868b] mt-0.5">
+                                  ₹{doc.consultationFee.toFixed(0)} • {doc.todayWaitingPatients} waiting
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
 
-                    <div>
-                      <label className="block text-[13px] font-semibold text-[#1d1d1f] mb-1">
-                        Mobile Number *
-                      </label>
-                      <div className="flex rounded-xl border border-[#e5e5ea] overflow-hidden focus-within:ring-2 focus-within:ring-[#0066cc]/20 focus-within:border-[#0066cc] bg-white transition-all h-11">
-                        <span className="inline-flex items-center px-3 bg-[#f5f5f7] border-r border-[#e5e5ea] text-[#1d1d1f] font-semibold text-[13px] select-none">
-                          +91
-                        </span>
+                    {/* 2. Date & Checking Shift */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                      <div>
+                        <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                          Consultation Date
+                        </label>
                         <input
-                          type="tel"
-                          inputMode="numeric"
+                          type="date"
                           required
-                          value={sanitizeIndianPhone(patientPhone)}
-                          onChange={(e) => setPatientPhone(sanitizeIndianPhone(e.target.value))}
-                          placeholder="98765 43210"
-                          maxLength={10}
-                          className="flex-1 h-full px-3.5 text-sm bg-transparent focus:outline-none text-[#1d1d1f] placeholder:text-[#86868b]"
+                          value={appointmentDate}
+                          onChange={(e) => setAppointmentDate(e.target.value)}
+                          className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all"
                         />
                       </div>
-                    </div>
-                  </div>
 
-                  {/* Gender & Reason */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-[13px] font-semibold text-[#1d1d1f] mb-1">Gender</label>
-                      <select
-                        value={gender}
-                        onChange={(e) => setGender(e.target.value)}
-                        className="w-full h-11 px-3 rounded-xl border border-[#e5e5ea] text-sm bg-white text-[#1d1d1f] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
+                      <div>
+                        <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                          Checking Shift
+                        </label>
+                        <div className="relative">
+                          <select
+                            value={slotId}
+                            onChange={(e) => setSlotId(e.target.value)}
+                            className="w-full h-11 pl-3.5 pr-8 rounded-xl border border-[#d2d2d7] bg-white text-[13px] text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all appearance-none cursor-pointer"
+                          >
+                            {activeSelectedDoctor?.slots.map((s) => {
+                              const sStatus = walkinPreview?.availableSlots?.find((as) => as.slot.id === s.id);
+                              const isEnded = sStatus?.isPassed;
+                              return (
+                                <option key={s.id} value={s.id}>
+                                  {s.name} ({s.startTime} – {s.endTime}) {isEnded ? '• Ended' : ''}
+                                </option>
+                              );
+                            })}
+                          </select>
+                          <ChevronDown className="w-4 h-4 text-[#86868b] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Multi-clinic selector only if doctor practices at multiple clinics */}
+                    {activeSelectedDoctor?.clinics && activeSelectedDoctor.clinics.length > 1 && (
+                      <div>
+                        <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                          Clinic Facility
+                        </label>
+                        <select
+                          value={walkinClinicId}
+                          onChange={(e) => setWalkinClinicId(e.target.value)}
+                          className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[13px] text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all cursor-pointer"
+                        >
+                          {activeSelectedDoctor.clinics.map((c) => (
+                            <option key={c.clinicId} value={c.clinicId}>
+                              {c.clinic.clinicName} — {c.clinic.address}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    {/* Shift Status Warnings */}
+                    {isSelectedShiftEnded && (
+                      <div className="p-3.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-xs text-[#1d1d1f]">
+                        <span className="font-semibold">Shift Ended for Today:</span> Please choose an upcoming shift or select tomorrow's date.
+                      </div>
+                    )}
+
+                    {!isSelectedShiftEnded && isSelectedShiftFull && (
+                      <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-800">
+                        <span className="font-semibold">Shift Capacity Reached:</span> This shift is full. Please select another shift or date.
+                      </div>
+                    )}
+
+                    {/* 3. Patient Information */}
+                    <div className="pt-2 border-t border-[#f0f0f2] space-y-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <label className="text-xs font-medium text-[#1d1d1f] tracking-tight">
+                          Patient Details
+                        </label>
+                        <div className="p-1 bg-[#f5f5f7] border border-[#e5e5ea] rounded-xl flex gap-1 w-full sm:w-64 select-none">
+                          <button
+                            type="button"
+                            onClick={() => setBookingFor('self')}
+                            className={`flex-1 py-1.5 text-xs rounded-lg transition-all cursor-pointer ${
+                              bookingFor === 'self'
+                                ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs'
+                                : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
+                            }`}
+                          >
+                            Self
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setBookingFor('other')}
+                            className={`flex-1 py-1.5 text-xs rounded-lg transition-all cursor-pointer ${
+                              bookingFor === 'other'
+                                ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs'
+                                : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
+                            }`}
+                          >
+                            Family / Other
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                        <div>
+                          <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                            Patient Full Name *
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            value={patientName}
+                            onChange={(e) => setPatientName(e.target.value)}
+                            placeholder="e.g. Rahul Ray"
+                            className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                            Mobile Number *
+                          </label>
+                          <div className="flex items-center w-full h-11 rounded-xl border border-[#d2d2d7] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus-within:border-[#0066cc] focus-within:ring-4 focus-within:ring-[#0066cc]/10 transition-all overflow-hidden">
+                            <div className="h-full px-3.5 bg-[#f5f5f7] border-r border-[#d2d2d7] flex items-center justify-center select-none text-[13px] font-semibold text-[#1d1d1f]">
+                              +91
+                            </div>
+                            <input
+                              type="tel"
+                              inputMode="numeric"
+                              required
+                              value={sanitizeIndianPhone(patientPhone)}
+                              onChange={(e) => setPatientPhone(sanitizeIndianPhone(e.target.value))}
+                              placeholder="98765 43210"
+                              maxLength={10}
+                              className="flex-1 h-full px-3.5 text-[14px] bg-transparent focus:outline-none text-[#1d1d1f] placeholder:text-[#a1a1a6]"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+                        <div>
+                          <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                            Age {bookingFor === 'other' ? '*' : ''}
+                          </label>
+                          <input
+                            type="text"
+                            value={patientAge}
+                            onChange={(e) => setPatientAge(e.target.value)}
+                            placeholder="e.g. 28"
+                            className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                            Gender
+                          </label>
+                          <select
+                            value={gender}
+                            onChange={(e) => setGender(e.target.value)}
+                            className="w-full h-11 px-3 rounded-xl border border-[#d2d2d7] bg-white text-[13px] text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all"
+                          >
+                            <option value="Not Specified">Select</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                          </select>
+                        </div>
+
+                        <div className="col-span-2">
+                          <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                            Chief Complaint (Optional)
+                          </label>
+                          <input
+                            type="text"
+                            value={reasonForVisit}
+                            onChange={(e) => setReasonForVisit(e.target.value)}
+                            placeholder="e.g. Fever, general checkup"
+                            className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="pt-2">
+                      <button
+                        type="submit"
+                        disabled={bookingLoading || isSelectedShiftEnded || isSelectedShiftFull}
+                        className={`w-full h-11 px-6 rounded-full text-sm font-medium transition-all flex items-center justify-center ${
+                          isSelectedShiftEnded || isSelectedShiftFull
+                            ? 'bg-[#e5e5ea] text-[#86868b] cursor-not-allowed'
+                            : 'bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white shadow-[0_2px_8px_rgba(0,102,204,0.2)] cursor-pointer'
+                        }`}
                       >
-                        <option value="Not Specified">Not Specified</option>
-                        <option value="Male">Male</option>
-                        <option value="Female">Female</option>
-                        <option value="Other">Other</option>
-                      </select>
+                        {bookingLoading
+                          ? 'Issuing Token...'
+                          : isSelectedShiftEnded
+                          ? 'Shift Ended — Select Another Slot'
+                          : isSelectedShiftFull
+                          ? 'Shift Full — Maximum Capacity Reached'
+                          : `Issue Walk-in Token (#${walkinPreview?.nextQueueNumber || 1})`}
+                      </button>
+                    </div>
+                  </form>
+
+                  {/* Right Column (5 cols): Live Token Allocation Summary Card */}
+                  <div className="lg:col-span-5 bg-[#f5f5f7] rounded-[20px] border border-[#e5e5ea] p-5 sm:p-6 space-y-5">
+                    <div className="flex items-center justify-between border-b border-[#e5e5ea] pb-4">
+                      <div>
+                        <span className="text-xs font-medium text-[#86868b] block">
+                          Next Queue Token
+                        </span>
+                        <span className="text-xs text-[#1d1d1f] font-medium mt-0.5 block">
+                          {appointmentDate}
+                        </span>
+                      </div>
+                      <span
+                        className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${
+                          isSelectedShiftEnded || isSelectedShiftFull
+                            ? 'bg-white text-[#86868b] border-[#e5e5ea]'
+                            : 'bg-[#0066cc]/10 text-[#0066cc] border-[#0066cc]/20'
+                        }`}
+                      >
+                        {isSelectedShiftEnded
+                          ? 'Shift Ended'
+                          : isSelectedShiftFull
+                          ? 'Shift Full'
+                          : 'Available'}
+                      </span>
                     </div>
 
-                    <div className="sm:col-span-2">
-                      <label className="block text-[13px] font-semibold text-[#1d1d1f] mb-1">
-                        Reason for Visit / Chief Symptoms
-                      </label>
-                      <input
-                        type="text"
-                        value={reasonForVisit}
-                        onChange={(e) => setReasonForVisit(e.target.value)}
-                        placeholder="e.g. Acute fever, migraine, blood pressure check"
-                        className="w-full h-11 px-4 rounded-xl border border-[#e5e5ea] text-sm bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
-                      />
+                    <div className="py-3 text-center bg-white rounded-2xl border border-[#e5e5ea]">
+                      <span className="text-[11px] font-medium text-[#86868b] uppercase tracking-wider block">
+                        Token Number
+                      </span>
+                      <div className="text-4xl font-bold text-[#0066cc] tracking-tight my-1">
+                        #{walkinPreview?.nextQueueNumber || 1}
+                      </div>
+                      <span className="text-xs text-[#86868b]">
+                        {previewLoading ? 'Calculating...' : `Est. Time: ${walkinPreview?.estimatedTime || 'Immediate'}`}
+                      </span>
+                    </div>
+
+                    <div className="space-y-2.5 text-xs">
+                      <div className="flex items-center justify-between py-1.5 border-b border-[#e5e5ea]">
+                        <span className="text-[#86868b]">Practitioner</span>
+                        <span className="font-semibold text-[#1d1d1f]">
+                          {cleanDoctorName(activeSelectedDoctor?.fullName)}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between py-1.5 border-b border-[#e5e5ea]">
+                        <span className="text-[#86868b]">Patients Ahead</span>
+                        <span className="font-semibold text-[#1d1d1f]">
+                          {previewLoading ? '...' : `${walkinPreview?.patientsAhead ?? 0} waiting`}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between py-1.5">
+                        <span className="text-[#86868b]">Consultation Fee</span>
+                        <span className="text-sm font-semibold text-[#1d1d1f]">
+                          ₹{activeSelectedDoctor?.consultationFee?.toFixed(0) || 0}
+                        </span>
+                      </div>
                     </div>
                   </div>
-
-                  <div className="pt-3">
-                    <AppleButton
-                      variant={isSelectedShiftEnded || isSelectedShiftFull ? 'secondary' : 'primary'}
-                      size="lg"
-                      type="submit"
-                      disabled={bookingLoading || isSelectedShiftEnded || isSelectedShiftFull}
-                      className={`w-full sm:w-auto px-8 transition-all ${
-                        isSelectedShiftEnded || isSelectedShiftFull
-                          ? 'opacity-60 cursor-not-allowed bg-[#e5e5ea] text-[#86868b] border border-[#d1d1d6] shadow-none hover:bg-[#e5e5ea] hover:text-[#86868b]'
-                          : 'cursor-pointer'
-                      }`}
-                    >
-                      {bookingLoading
-                        ? 'Issuing Token...'
-                        : isSelectedShiftEnded
-                        ? 'Shift Ended — Select Another Slot or Date'
-                        : isSelectedShiftFull
-                        ? 'Shift Full — Maximum Capacity Reached'
-                        : `Generate Guaranteed Queue Token (#${walkinPreview?.nextQueueNumber || 1})`}
-                    </AppleButton>
-                  </div>
-                </form>
+                </div>
               )}
             </div>
           )}
 
-          {/* TAB: Pending Approvals & Online Bookings */}
+          {/* TAB 3: PENDING APPROVALS (Clean Horizontal Cards) */}
           {activeTab === 'pending' && (
-            <div>
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-[#f0f0f0]">
-                <div>
-                  <h3 className="text-base font-semibold text-[#1d1d1f] flex items-center gap-2">
+            <div className="space-y-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#f0f0f2]">
+                <div className="flex items-center gap-2.5">
+                  <h3 className="text-base sm:text-lg font-semibold text-[#1d1d1f] tracking-tight">
                     Pending Approvals
-                    {pendingAppointments.length > 0 && (
-                      <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea]">
-                        {pendingAppointments.length} pending
-                      </span>
-                    )}
                   </h3>
-                  <p className="text-xs text-[#86868b] mt-0.5">
-                    Review incoming online bookings and issue official queue tokens.
-                  </p>
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea]">
+                    {pendingAppointments.length}
+                  </span>
                 </div>
 
-                <AppleButton
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => fetchPendingAppointments()}
-                  disabled={pendingLoading}
-                  className="flex-shrink-0"
-                >
-                  {pendingLoading ? 'Refreshing...' : 'Refresh'}
-                </AppleButton>
-              </div>
-
-              {/* Search Bar for Pending Approvals */}
-              {pendingAppointments.length > 0 && (
-                <div className="mb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#f0f0f0]">
-                  <div className="relative flex-1 max-w-md">
-                    <Search className="w-4 h-4 text-[#86868b] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                {pendingAppointments.length > 0 && (
+                  <div className="relative w-full sm:w-64">
+                    <Search className="w-3.5 h-3.5 text-[#86868b] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                     <input
                       type="text"
                       value={pendingSearch}
                       onChange={(e) => setPendingSearch(e.target.value)}
-                      placeholder="Search by patient name, phone, or doctor..."
+                      placeholder="Search patient, phone, doctor..."
                       className="w-full h-9 pl-9 pr-8 rounded-full border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
                     />
                     {pendingSearch && (
                       <button
                         type="button"
                         onClick={() => setPendingSearch('')}
-                        aria-label="Clear search"
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#86868b] hover:text-[#1d1d1f] p-0.5"
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#86868b] hover:text-[#1d1d1f] p-0.5 cursor-pointer"
                       >
                         <X className="w-3.5 h-3.5" />
                       </button>
                     )}
                   </div>
-                  {pendingSearch && (
-                    <div className="text-[11px] text-[#86868b] font-medium">
-                      Showing {
-                        pendingAppointments.filter((appt) => {
-                          const q = pendingSearch.toLowerCase().trim();
-                          const patient = (appt.patientName || appt.patient?.user?.fullName || '').toLowerCase();
-                          const phone = (appt.patientPhone || appt.patient?.user?.phone || '').toLowerCase();
-                          const doctor = (appt.doctor?.user?.fullName || '').toLowerCase();
-                          const specialty = (appt.doctor?.specialty || '').toLowerCase();
-                          const reason = (appt.reasonForVisit || '').toLowerCase();
-                          return patient.includes(q) || phone.includes(q) || doctor.includes(q) || specialty.includes(q) || reason.includes(q);
-                        }).length
-                      } of {pendingAppointments.length} pending
-                    </div>
-                  )}
-                </div>
-              )}
+                )}
+              </div>
 
               {pendingLoading ? (
-                <div className="py-16 text-center text-xs text-[#86868b]">
+                <div className="py-14 text-center text-xs text-[#86868b]">
                   Loading pending online bookings...
                 </div>
               ) : pendingAppointments.length === 0 ? (
-                <div className="py-16 text-center text-xs text-[#86868b] bg-[#fafafc] rounded-2xl border border-dashed border-[#e5e5ea]">
-                  <div className="w-10 h-10 rounded-full bg-[#f5f5f7] text-[#1d1d1f] flex items-center justify-center mx-auto mb-3">
-                    <CheckCircle2 className="w-5 h-5 text-[#0066cc]" />
-                  </div>
+                <div className="py-14 text-center bg-[#fafafc] rounded-2xl border border-[#e5e5ea]">
                   <p className="font-semibold text-sm text-[#1d1d1f]">All Bookings Processed</p>
-                  <p className="mt-1 text-xs max-w-sm mx-auto text-[#86868b]">
-                    No pending online patient bookings awaiting confirmation.
+                  <p className="mt-1 text-xs text-[#86868b]">
+                    No online bookings are awaiting reception confirmation.
                   </p>
                 </div>
               ) : (() => {
@@ -1234,130 +1584,88 @@ export const ReceptionistDashboard: React.FC = () => {
                   const phone = (appt.patientPhone || appt.patient?.user?.phone || '').toLowerCase();
                   const doctor = (appt.doctor?.user?.fullName || '').toLowerCase();
                   const specialty = (appt.doctor?.specialty || '').toLowerCase();
-                  const reason = (appt.reasonForVisit || '').toLowerCase();
-                  return patient.includes(q) || phone.includes(q) || doctor.includes(q) || specialty.includes(q) || reason.includes(q);
+                  return patient.includes(q) || phone.includes(q) || doctor.includes(q) || specialty.includes(q);
                 });
 
                 if (filteredPending.length === 0) {
                   return (
-                    <div className="py-16 text-center bg-[#fafafc] rounded-2xl border border-dashed border-[#e5e5ea]">
-                      <div className="w-12 h-12 rounded-full bg-[#f5f5f7] text-[#86868b] flex items-center justify-center mx-auto mb-3">
-                        <Search className="w-6 h-6" />
-                      </div>
-                      <p className="font-semibold text-sm text-[#1d1d1f]">No Matching Patients Found</p>
-                      <p className="mt-1 text-xs max-w-sm mx-auto text-[#86868b]">
-                        No pending online bookings match "{pendingSearch}". Check the patient name spelling or clear your search filter.
+                    <div className="py-12 text-center bg-[#fafafc] rounded-2xl border border-[#e5e5ea]">
+                      <p className="font-semibold text-sm text-[#1d1d1f]">No Matching Requests</p>
+                      <p className="mt-1 text-xs text-[#86868b] mb-3">
+                        No pending bookings match "{pendingSearch}".
                       </p>
-                      <div className="mt-4">
-                        <button
-                          type="button"
-                          onClick={() => setPendingSearch('')}
-                          className="px-4 py-1.5 rounded-full text-xs font-semibold bg-white border border-[#e5e5ea] text-[#1d1d1f] hover:bg-gray-50 shadow-xs transition-all active:scale-[0.98]"
-                        >
-                          Clear Search
-                        </button>
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setPendingSearch('')}
+                        className="h-8 px-4 rounded-full text-xs font-medium bg-white border border-[#e5e5ea] text-[#1d1d1f] hover:bg-[#f5f5f7] transition-all cursor-pointer"
+                      >
+                        Clear Search
+                      </button>
                     </div>
                   );
                 }
 
                 return (
-                  <div className="space-y-4">
+                  <div className="divide-y divide-[#f0f0f2] border border-[#e5e5ea] rounded-2xl overflow-hidden bg-white">
                     {filteredPending.map((appt) => {
-                    const fee = appt.fee || appt.doctor?.consultationFee || 0;
-                    const isApproving = approvingId === appt.id;
-                    const isRejecting = rejectingId === appt.id;
-                    const patientDisplay = appt.patientName || appt.patient?.user?.fullName || 'Patient';
-                    const phoneDisplay = appt.patientPhone || appt.patient?.user?.phone || '';
+                      const fee = appt.fee || appt.doctor?.consultationFee || 0;
+                      const isApproving = approvingId === appt.id;
+                      const isRejecting = rejectingId === appt.id;
+                      const patientDisplay = appt.patientName || appt.patient?.user?.fullName || 'Patient';
+                      const phoneDisplay = appt.patientPhone || appt.patient?.user?.phone || '';
 
-                    return (
-                      <div
-                        key={appt.id}
-                        className="p-5 rounded-2xl bg-white border border-[#e5e5ea] hover:border-black/20 transition-all shadow-xs space-y-4"
-                      >
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#f0f0f0] pb-3">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea] flex items-center gap-1.5">
-                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-                              Pending Confirmation
-                            </span>
-                            <span className="text-xs text-[#86868b]">
-                              {appt.createdAt ? new Date(appt.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : 'Recently'}
-                            </span>
-                          </div>
-                          <div className="text-right">
-                            <span className="text-xs text-[#86868b]">Token:</span>{' '}
-                            <span className="text-xs font-medium text-[#86868b]">Assigned on confirm</span>
-                          </div>
-                        </div>
+                      return (
+                        <div
+                          key={appt.id}
+                          className="p-4 sm:px-5 sm:py-4 hover:bg-[#fafafc] transition-colors flex flex-col lg:flex-row lg:items-center justify-between gap-4"
+                        >
+                          {/* Patient & Visit Summary */}
+                          <div className="space-y-1 min-w-0 flex-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-semibold text-sm text-[#1d1d1f]">
+                                {patientDisplay}
+                              </span>
+                              {appt.isForOther && (
+                                <span className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea]">
+                                  Family{appt.patientAge ? ` • ${appt.patientAge}y` : ''}
+                                </span>
+                              )}
+                              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#0066cc]/10 text-[#0066cc]">
+                                ₹{fee}
+                              </span>
+                            </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-                          {/* Patient Info */}
-                          <div className="space-y-1.5 p-3.5 rounded-xl bg-[#fafafc] border border-[#f0f0f0]">
-                            <span className="text-[10px] font-semibold text-[#86868b] uppercase tracking-wider block">
-                              Patient
-                            </span>
-                            <div className="font-semibold text-sm text-[#1d1d1f]">{patientDisplay}</div>
-                            {appt.isForOther && (
-                              <div className="text-[11px] text-[#0066cc] font-medium">
-                                Dependent / Family • Age: {appt.patientAge || 'N/A'} {appt.patientGender ? `• ${appt.patientGender}` : ''}
-                              </div>
+                            <div className="flex items-center gap-2.5 text-xs text-[#86868b] flex-wrap">
+                              <span className="font-medium text-[#1d1d1f]">
+                                {cleanDoctorName(appt.doctor?.user?.fullName)} ({appt.doctor?.specialty})
+                              </span>
+                              <span>•</span>
+                              <span>
+                                {appt.appointmentDate} • {appt.checkingWindow || 'General Shift'}
+                              </span>
+                              {phoneDisplay && (
+                                <>
+                                  <span>•</span>
+                                  <a
+                                    href={`tel:${phoneDisplay}`}
+                                    className="inline-flex items-center gap-1 text-[#0066cc] hover:underline font-medium"
+                                  >
+                                    <Phone className="w-3 h-3" />
+                                    <span>{phoneDisplay}</span>
+                                  </a>
+                                </>
+                              )}
+                            </div>
+
+                            {appt.reasonForVisit && appt.reasonForVisit !== 'General Medical Consultation' && (
+                              <p className="text-xs text-[#86868b] pt-0.5 truncate max-w-xl">
+                                Reason: {appt.reasonForVisit}
+                              </p>
                             )}
-                            {phoneDisplay && (
-                              <div className="flex items-center gap-1.5 pt-1">
-                                <a
-                                  href={`tel:${phoneDisplay}`}
-                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#f5f5f7] text-[#1d1d1f] hover:bg-gray-200 border border-[#e5e5ea] font-medium text-[11px] transition-colors"
-                                >
-                                  <Phone className="w-3 h-3 text-[#86868b]" />
-                                  <span>{phoneDisplay}</span>
-                                </a>
-                              </div>
-                            )}
                           </div>
 
-                          {/* Practitioner & Appointment Slot */}
-                          <div className="space-y-1.5 p-3.5 rounded-xl bg-[#fafafc] border border-[#f0f0f0]">
-                            <span className="text-[10px] font-semibold text-[#86868b] uppercase tracking-wider block">
-                              Practitioner & Slot
-                            </span>
-                            <div className="font-semibold text-sm text-[#1d1d1f]">
-                              {cleanDoctorName(appt.doctor?.user?.fullName)}
-                            </div>
-                            <div className="text-[#0066cc] font-medium">{appt.doctor?.specialty}</div>
-                            <div className="text-[#86868b] flex items-center gap-1">
-                              <Clock className="w-3 h-3" />
-                              {appt.appointmentDate} • {appt.checkingWindow || 'General Shift'}
-                            </div>
-                          </div>
-
-                          {/* Fee & Payment Verification */}
-                          <div className="space-y-1.5 p-3.5 rounded-xl bg-[#fafafc] border border-[#f0f0f0]">
-                            <span className="text-[10px] font-semibold text-[#86868b] uppercase tracking-wider block">
-                              Consultation Fee
-                            </span>
-                            <div className="text-2xl font-bold text-[#1d1d1f]">
-                              ₹{fee}
-                            </div>
-                            <p className="text-[10px] text-[#86868b] leading-snug">
-                              Payment due at reception desk.
-                            </p>
-                          </div>
-                        </div>
-
-                        {appt.reasonForVisit && (
-                          <div className="text-xs text-[#86868b] px-3 py-2 rounded-xl bg-[#f5f5f7]">
-                            <span className="font-medium text-[#1d1d1f]">Reason for Visit:</span> {appt.reasonForVisit}
-                          </div>
-                        )}
-
-                        <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-[#f0f0f0]">
-                          <div className="text-[11px] text-[#86868b] flex items-center gap-1.5">
-                            <CreditCard className="w-3.5 h-3.5 text-[#86868b]" />
-                            <span>Confirming assigns official queue token to patient pass.</span>
-                          </div>
-
-                          <div className="flex items-center gap-2 w-full sm:w-auto">
+                          {/* Actions */}
+                          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap pt-2 lg:pt-0 border-t lg:border-t-0 border-[#f0f0f2]">
                             <button
                               type="button"
                               disabled={isRejecting || isApproving}
@@ -1377,18 +1685,16 @@ export const ReceptionistDashboard: React.FC = () => {
                                 setRescheduleSlotId(appt.slotId || '');
                                 setRescheduleError(null);
                               }}
-                              className="px-3.5 py-2 rounded-full text-xs font-medium text-[#0066cc] hover:bg-[#0066cc]/10 border border-[#0066cc]/30 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-1 cursor-pointer"
-                              title="Shift patient appointment to another date"
+                              className="h-8 px-3 rounded-full text-xs font-medium text-[#1d1d1f] hover:bg-[#f5f5f7] border border-[#e5e5ea] transition-all cursor-pointer disabled:opacity-50"
                             >
-                              <Calendar className="w-3.5 h-3.5" />
-                              <span>Shift Date</span>
+                              Shift Date
                             </button>
 
                             <button
                               type="button"
                               disabled={isRejecting || isApproving}
                               onClick={() => handleRejectPendingAppointment(appt.id)}
-                              className="flex-1 sm:flex-initial px-4 py-2 rounded-full text-xs font-medium text-[#86868b] hover:text-rose-600 hover:bg-rose-50 border border-[#e5e5ea] transition-all active:scale-[0.98] disabled:opacity-50"
+                              className="h-8 px-3.5 rounded-full text-xs font-medium text-[#86868b] hover:text-rose-600 hover:bg-rose-50 border border-[#e5e5ea] transition-all cursor-pointer disabled:opacity-50"
                             >
                               {isRejecting ? 'Declining...' : 'Decline'}
                             </button>
@@ -1397,568 +1703,31 @@ export const ReceptionistDashboard: React.FC = () => {
                               type="button"
                               disabled={isApproving || isRejecting}
                               onClick={() => handleApprovePendingAppointment(appt.id)}
-                              className="flex-1 sm:flex-initial px-5 py-2 rounded-full text-xs font-semibold text-white bg-[#0066cc] hover:bg-[#0055b3] shadow-xs transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-1.5"
+                              className="h-8 px-4 rounded-full text-xs font-medium text-white bg-[#0066cc] hover:bg-[#0071e3] transition-all active:scale-[0.98] disabled:opacity-50 inline-flex items-center gap-1.5 cursor-pointer"
                             >
                               <Check className="w-3.5 h-3.5" />
-                              {isApproving ? 'Confirming...' : `Confirm & Issue Token (₹${fee})`}
+                              <span>{isApproving ? 'Confirming...' : 'Confirm & Issue Token'}</span>
                             </button>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              );
-            })()}
-          </div>
-        )}
-
-          {/* TAB 2: Live Queue Manager */}
-          {activeTab === 'queue' && (
-            <div>
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                <div>
-                  <h3 className="text-base font-semibold text-[#1d1d1f]">Live Queue</h3>
-                </div>
-
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full sm:w-auto">
-                  <select
-                    value={queueDoctorId}
-                    onChange={(e) => setQueueDoctorId(e.target.value)}
-                    className="h-10 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] text-[#1d1d1f] transition-all focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] w-full sm:w-auto"
-                  >
-                    {linkedDoctors.map((doc) => (
-                      <option key={doc.doctorId} value={doc.doctorId}>
-                        {doc.fullName} ({doc.specialty})
-                      </option>
-                    ))}
-                  </select>
-
-                  <input
-                    type="date"
-                    value={queueDate}
-                    onChange={(e) => setQueueDate(e.target.value)}
-                    className="h-10 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-[#f5f5f7] text-[#1d1d1f] transition-all focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] w-full sm:w-auto"
-                  />
-
-                  <AppleButton
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => fetchQueue()}
-                    className="flex-shrink-0 w-full sm:w-auto justify-center"
-                  >
-                    Refresh
-                  </AppleButton>
-                </div>
-              </div>
-
-              {/* Doctor Cabin Availability & Presence Control */}
-              {(() => {
-                const targetDoctor = linkedDoctors.find((d) => d.doctorId === queueDoctorId);
-                if (!targetDoctor) return null;
-                return (
-                  <div className="mb-6">
-                    <CabinStatusControl
-                      currentStatus={targetDoctor.cabinStatus}
-                      expectedReturnTime={targetDoctor.expectedReturnTime}
-                      doctorId={targetDoctor.doctorId}
-                      doctorName={targetDoctor.fullName}
-                      onStatusChange={(newStatus, newReturnTime) => {
-                        setData((prev) => {
-                          if (!prev) return prev;
-                          return {
-                            ...prev,
-                            doctors: prev.doctors.map((d) =>
-                              d.doctorId === targetDoctor.doctorId
-                                ? { ...d, cabinStatus: newStatus, expectedReturnTime: newReturnTime }
-                                : d
-                            ),
-                          };
-                        });
-                      }}
-                    />
+                      );
+                    })}
                   </div>
                 );
-              })()}
-
-              {/* Status Filter & Live Queue Search */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-4 border-b border-[#f0f0f0]">
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
-                  {(['ALL', 'WAITING', 'IN_CONSULTATION', 'COMPLETED', 'CANCELLED', 'EXPIRED'] as const).map((st) => (
-                    <button
-                      key={st}
-                      type="button"
-                      onClick={() => setStatusFilter(st)}
-                      className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all active:scale-[0.98] whitespace-nowrap ${
-                        statusFilter === st
-                          ? 'bg-[#1d1d1f] text-white shadow-xs'
-                          : 'bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f]'
-                      }`}
-                    >
-                      {st.replace('_', ' ')}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={queueSearch}
-                    onChange={(e) => setQueueSearch(e.target.value)}
-                    placeholder="Search patient, phone, token #..."
-                    className="h-9 px-4 rounded-full border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] w-full sm:w-64"
-                  />
-                  {queueSearch && (
-                    <button
-                      type="button"
-                      onClick={() => setQueueSearch('')}
-                      className="text-xs text-[#86868b] hover:text-[#1d1d1f]"
-                    >
-                      Clear
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {queueLoading ? (
-                <div className="py-12 text-center text-xs text-[#86868b]">Loading live queue...</div>
-              ) : queueAppointments.length === 0 ? (
-                <div className="py-12 text-center">
-                  <div className="w-12 h-12 rounded-full bg-[#f5f5f7] text-[#86868b] flex items-center justify-center mx-auto mb-3">
-                    <Clock className="w-6 h-6" />
-                  </div>
-                  <h4 className="text-sm font-semibold text-[#1d1d1f] mb-1">Queue is Empty</h4>
-                  <p className="text-xs text-[#86868b] max-w-xs mx-auto mb-4">
-                    No patients booked in this queue for {queueDate}.
-                  </p>
-                  <AppleButton variant="primary" size="sm" onClick={() => setActiveTab('walkin')}>
-                    Book First Walk-in
-                  </AppleButton>
-                </div>
-              ) : (() => {
-                const filteredAppointments = queueAppointments.filter((appt) => {
-                  if (statusFilter !== 'ALL' && appt.status !== statusFilter) return false;
-                  if (!queueSearch.trim()) return true;
-                  const q = queueSearch.toLowerCase().trim();
-                  const name = (appt.patientName || '').toLowerCase();
-                  const phone = (appt.patientPhone || '').toLowerCase();
-                  const token = String(appt.queueNumber || '');
-                  return name.includes(q) || phone.includes(q) || token.includes(q);
-                });
-
-                if (filteredAppointments.length === 0) {
-                  return (
-                    <div className="py-12 text-center">
-                      <p className="text-xs text-[#86868b]">
-                        No patients match status "{statusFilter}" and search "{queueSearch}".
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setStatusFilter('ALL');
-                          setQueueSearch('');
-                        }}
-                        className="mt-2 text-xs text-[#0066cc] font-semibold hover:underline"
-                      >
-                        Reset Filters
-                      </button>
-                    </div>
-                  );
-                }
-
-                const queueDoctor = linkedDoctors.find((d) => d.doctorId === queueDoctorId);
-                const isDoctorAway = queueDoctor?.cabinStatus && queueDoctor.cabinStatus !== 'IN_CABIN';
-
-                return (
-                  <>
-                    {/* Mobile Responsive Cards (< 640px) */}
-                    <div className="block sm:hidden space-y-3">
-                      {filteredAppointments.map((appt) => (
-                        <div key={appt.id} className="p-4 rounded-2xl bg-white border border-[#e5e5ea] shadow-xs space-y-3">
-                          {/* Header: Token + Patient Name + Status */}
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex items-center gap-2">
-                              <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-xl bg-[#0066cc]/10 text-[#0066cc] font-bold text-sm border border-[#0066cc]/20">
-                                #{appt.queueNumber}
-                              </span>
-                              <div>
-                                <h4 className="font-semibold text-sm text-[#1d1d1f] leading-snug">{appt.patientName}</h4>
-                                <div className="text-xs text-[#86868b]">{appt.patientPhone}</div>
-                              </div>
-                            </div>
-                            <span
-                              className={`px-2.5 py-1 rounded-full text-[10px] font-semibold border ${
-                                appt.status === 'COMPLETED'
-                                  ? 'bg-[#f5f5f7] text-[#86868b] border-[#e5e5ea]'
-                                  : appt.status === 'IN_CONSULTATION'
-                                  ? 'bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20'
-                                  : appt.status === 'WAITING'
-                                  ? 'bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea]'
-                                  : appt.status === 'EXPIRED'
-                                  ? 'bg-slate-100 text-slate-600 border border-slate-200'
-                                  : 'bg-[#f5f5f7] text-gray-500 border-[#e5e5ea]'
-                              }`}
-                            >
-                              {appt.status === 'EXPIRED' ? 'Expired' : appt.status.replace('_', ' ')}
-                            </span>
-                          </div>
-
-                          {/* Meta Row: Time & Reason */}
-                          <div className="flex items-center justify-between text-xs text-[#86868b] pt-1 border-t border-[#f0f0f2]">
-                            <div className="flex items-center gap-1.5 font-medium text-[#1d1d1f]">
-                              <Clock className="w-3.5 h-3.5 text-[#86868b]" />
-                              <span>{appt.estimatedTime || 'Pending'}</span>
-                            </div>
-                            {appt.reasonForVisit && appt.reasonForVisit !== 'General Medical Consultation' && (
-                              <span className="text-[11px] text-[#86868b] truncate max-w-[150px]">{appt.reasonForVisit}</span>
-                            )}
-                          </div>
-
-                          {/* Arrival Toggle & Actions Bar */}
-                          <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#f0f0f2]">
-                            {/* Arrival button */}
-                            <button
-                              type="button"
-                              disabled={togglingCheckinId === appt.id || ['EXPIRED', 'CANCELLED', 'REJECTED'].includes(appt.status)}
-                              onClick={() => handleToggleCheckIn(appt.id, appt.isCheckedIn)}
-                              className={`h-9 px-3 rounded-full text-xs font-semibold inline-flex items-center gap-1.5 transition-all cursor-pointer ${
-                                ['EXPIRED', 'CANCELLED', 'REJECTED'].includes(appt.status)
-                                  ? 'bg-slate-50 text-slate-400 border border-slate-200 cursor-not-allowed opacity-60'
-                                  : appt.isCheckedIn
-                                  ? 'bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/25'
-                                  : 'bg-slate-100 text-slate-700 border border-slate-300'
-                              }`}
-                            >
-                              {togglingCheckinId === appt.id ? (
-                                <span className="w-3.5 h-3.5 rounded-full border-2 border-current border-t-transparent animate-spin inline-block"></span>
-                              ) : appt.isCheckedIn ? (
-                                <>
-                                  <span className="w-2 h-2 rounded-full bg-[#0066cc]"></span>
-                                  <span>At Clinic</span>
-                                </>
-                              ) : (
-                                <>
-                                  <span className="w-2 h-2 rounded-full bg-gray-300"></span>
-                                  <span>Mark Arrived</span>
-                                </>
-                              )}
-                            </button>
-
-                            {/* Action Buttons */}
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              {appt.status === 'WAITING' && (
-                                isDoctorAway ? (
-                                  <span className="px-3 py-1.5 rounded-full bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea] text-xs font-medium opacity-60">
-                                    Doctor Away
-                                  </span>
-                                ) : !appt.isCheckedIn ? (
-                                  <span className="px-3 py-1.5 rounded-full bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea] text-xs font-medium opacity-60">
-                                    Awaiting
-                                  </span>
-                                ) : (appt.appointmentDate || queueDate) !== getLocalDateString() ? (
-                                  <span className="px-3 py-1.5 rounded-full bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea] text-xs font-medium opacity-60">
-                                    Other Date
-                                  </span>
-                                ) : (
-                                  <button
-                                    type="button"
-                                    onClick={() => handleStatusChange(appt.id, 'IN_CONSULTATION')}
-                                    className="h-9 px-4 rounded-full bg-[#0066cc] hover:bg-[#0055b3] text-white text-xs font-semibold shadow-xs transition-all active:scale-[0.98] cursor-pointer"
-                                  >
-                                    Call In
-                                  </button>
-                                )
-                              )}
-                              {appt.status === 'IN_CONSULTATION' && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleStatusChange(appt.id, 'COMPLETED')}
-                                  className="h-9 px-4 rounded-full bg-[#1d1d1f] hover:bg-black text-white text-xs font-semibold shadow-xs transition-all active:scale-[0.98] cursor-pointer"
-                                >
-                                  Completed
-                                </button>
-                              )}
-                              {(appt.status === 'WAITING' || appt.status === 'PENDING_APPROVAL') && (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const queueDoctor = linkedDoctors.find((d) => d.doctorId === queueDoctorId);
-                                    setRescheduleTarget({
-                                      appointmentId: appt.id,
-                                      patientName: appt.patientName,
-                                      doctorName: queueDoctor?.fullName || 'Practitioner',
-                                      currentDate: queueDate,
-                                      currentQueueNumber: appt.queueNumber,
-                                      doctorId: queueDoctorId,
-                                      slotId: appt.slotId,
-                                    });
-                                    const d = new Date(queueDate);
-                                    d.setDate(d.getDate() + 1);
-                                    setRescheduleDate(getLocalDateString(d));
-                                    setRescheduleSlotId(appt.slotId || '');
-                                    setRescheduleError(null);
-                                  }}
-                                  className="h-9 px-3 rounded-full text-[#0066cc] hover:bg-[#0066cc]/10 text-xs font-medium border border-[#0066cc]/30 transition-all cursor-pointer inline-flex items-center gap-1"
-                                  title="Shift Date"
-                                >
-                                  <Calendar className="w-3.5 h-3.5" />
-                                  <span>Shift</span>
-                                </button>
-                              )}
-                              {appt.status !== 'CANCELLED' && appt.status !== 'COMPLETED' && appt.status !== 'IN_CONSULTATION' && appt.status !== 'EXPIRED' && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleStatusChange(appt.id, 'CANCELLED')}
-                                  className="h-9 px-3 rounded-full text-[#86868b] hover:text-rose-600 hover:bg-rose-50 text-xs font-medium border border-[#e5e5ea] transition-all"
-                                >
-                                  Cancel
-                                </button>
-                              )}
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const queueDoctor = linkedDoctors.find((d) => d.doctorId === queueDoctorId);
-                                  setBookedPass({
-                                    queueNumber: appt.queueNumber,
-                                    estimatedTime: appt.estimatedTime,
-                                    checkingWindow: appt.checkingWindow,
-                                    appointmentDate: queueDate,
-                                    patientName: appt.patientName,
-                                    patientPhone: appt.patientPhone,
-                                    doctorName: queueDoctor?.fullName || 'Practitioner',
-                                    doctorSpecialty: queueDoctor?.specialty,
-                                    clinicName: data?.clinic?.clinicName,
-                                    clinicAddress: data?.clinic?.address,
-                                  });
-                                }}
-                                className="w-9 h-9 flex items-center justify-center rounded-full text-[#86868b] hover:text-[#0066cc] hover:bg-gray-100 border border-[#e5e5ea] transition-colors"
-                                title="Reprint Pass"
-                              >
-                                <Printer className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Desktop Table View (>= 640px) */}
-                    <div className="hidden sm:block overflow-x-auto">
-                      <table className="w-full text-left text-xs">
-                      <thead>
-                        <tr className="border-b border-[#e5e5ea] text-[#86868b] font-medium">
-                          <th className="pb-3 pl-2">Token</th>
-                          <th className="pb-3">Patient</th>
-                          <th className="pb-3">Contact</th>
-                          <th className="pb-3">Time</th>
-                          <th className="pb-3 text-center">Arrival</th>
-                          <th className="pb-3">Status</th>
-                          <th className="pb-3 text-right pr-2">Action</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-[#f0f0f0]">
-                        {filteredAppointments.map((appt) => (
-                          <tr key={appt.id} className="hover:bg-[#fafafc]">
-                            <td className="py-3 pl-2">
-                              <span className="font-bold text-sm text-[#0066cc]">
-                                #{appt.queueNumber}
-                              </span>
-                            </td>
-
-                            <td className="py-3">
-                              <div className="font-medium text-[#1d1d1f]">{appt.patientName}</div>
-                              {appt.reasonForVisit && appt.reasonForVisit !== 'General Medical Consultation' && (
-                                <div className="text-[10px] text-[#86868b]">{appt.reasonForVisit}</div>
-                              )}
-                            </td>
-
-                            <td className="py-3 text-[#86868b] font-medium">{appt.patientPhone}</td>
-
-                            <td className="py-3 text-[#1d1d1f]">
-                              <div className="font-medium">{appt.estimatedTime || 'Pending'}</div>
-                            </td>
-
-                            <td className="py-3 text-center">
-                               <button
-                                type="button"
-                                disabled={togglingCheckinId === appt.id || ['EXPIRED', 'CANCELLED', 'REJECTED'].includes(appt.status)}
-                                onClick={() => handleToggleCheckIn(appt.id, appt.isCheckedIn)}
-                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all cursor-pointer ${
-                                  ['EXPIRED', 'CANCELLED', 'REJECTED'].includes(appt.status)
-                                    ? 'bg-slate-50 text-slate-400 border border-slate-200 cursor-not-allowed opacity-60'
-                                    : appt.isCheckedIn
-                                    ? 'bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/25 hover:bg-[#0066cc]/15'
-                                    : 'bg-slate-100 text-slate-600 border border-slate-300 hover:bg-slate-200 hover:text-slate-800'
-                                }`}
-                                title={
-                                  ['EXPIRED', 'CANCELLED', 'REJECTED'].includes(appt.status)
-                                    ? `Cannot mark arrival for ${appt.status.toLowerCase()} appointment`
-                                    : appt.isCheckedIn
-                                    ? "Click to untick / undo arrival"
-                                    : "Click to mark patient arrived at clinic"
-                                }
-                              >
-                                {togglingCheckinId === appt.id ? (
-                                  <span className="w-3 h-3 rounded-full border-2 border-current border-t-transparent animate-spin inline-block"></span>
-                                ) : appt.isCheckedIn ? (
-                                  <>
-                                    <span className="w-1.5 h-1.5 rounded-full bg-[#0066cc]"></span>
-                                    <span>At Clinic</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <span className="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
-                                    <span>Mark Arrived</span>
-                                  </>
-                                )}
-                              </button>
-                            </td>
-
-                            <td className="py-3">
-                              <span
-                                className={`px-2.5 py-0.5 rounded-full text-[10px] font-medium border ${
-                                  appt.status === 'COMPLETED'
-                                    ? 'bg-[#f5f5f7] text-[#86868b] border-[#e5e5ea]'
-                                    : appt.status === 'IN_CONSULTATION'
-                                    ? 'bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20'
-                                    : appt.status === 'WAITING'
-                                    ? 'bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea]'
-                                    : appt.status === 'EXPIRED'
-                                    ? 'bg-slate-100 text-slate-600 border border-slate-200'
-                                    : 'bg-[#f5f5f7] text-gray-500 border-[#e5e5ea]'
-                                }`}
-                              >
-                                {appt.status === 'EXPIRED' ? 'Expired' : appt.status.replace('_', ' ')}
-                              </span>
-                            </td>
-
-                            <td className="py-3 text-right pr-2">
-                              <div className="inline-flex items-center gap-1.5">
-                                {appt.status === 'WAITING' && (
-                                  isDoctorAway ? (
-                                    <button
-                                      type="button"
-                                      disabled={true}
-                                      className="px-3.5 py-1.5 rounded-full bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea] text-[11px] font-medium opacity-60 cursor-not-allowed whitespace-nowrap"
-                                      title={`Doctor has ${queueDoctor?.cabinStatus === 'STEPPED_OUT' ? 'stepped out' : 'not entered cabin'}. Patient cannot be called in until doctor returns.`}
-                                    >
-                                      Doctor {queueDoctor?.cabinStatus === 'STEPPED_OUT' ? 'Stepped Out' : 'Away'}
-                                    </button>
-                                  ) : !appt.isCheckedIn ? (
-                                    <button
-                                      type="button"
-                                      disabled={true}
-                                      className="px-3.5 py-1.5 rounded-full bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea] text-[11px] font-medium opacity-60 cursor-not-allowed whitespace-nowrap"
-                                      title="Patient has not checked in at clinic yet. Mark patient arrival first."
-                                    >
-                                      Awaiting Arrival
-                                    </button>
-                                  ) : (appt.appointmentDate || queueDate) !== getLocalDateString() ? (
-                                    <button
-                                      type="button"
-                                      disabled={true}
-                                      className="px-3.5 py-1.5 rounded-full bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea] text-[11px] font-medium opacity-60 cursor-not-allowed whitespace-nowrap"
-                                      title="Cannot call in an appointment scheduled for another date."
-                                    >
-                                      Scheduled for {appt.appointmentDate || queueDate}
-                                    </button>
-                                  ) : (
-                                    <button
-                                      onClick={() => handleStatusChange(appt.id, 'IN_CONSULTATION')}
-                                      className="px-3.5 py-1.5 rounded-full bg-[#0066cc] hover:bg-[#0055b3] text-white text-[11px] font-semibold shadow-xs transition-all active:scale-[0.98] cursor-pointer whitespace-nowrap"
-                                    >
-                                      Call In
-                                    </button>
-                                  )
-                                )}
-                                {appt.status === 'IN_CONSULTATION' && (
-                                  <button
-                                    onClick={() => handleStatusChange(appt.id, 'COMPLETED')}
-                                    className="px-3.5 py-1.5 rounded-full bg-[#1d1d1f] hover:bg-black text-white text-[11px] font-semibold shadow-xs transition-all active:scale-[0.98] cursor-pointer"
-                                  >
-                                    Mark Completed
-                                  </button>
-                                )}
-                                {(appt.status === 'WAITING' || appt.status === 'PENDING_APPROVAL') && (
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      const queueDoctor = linkedDoctors.find((d) => d.doctorId === queueDoctorId);
-                                      setRescheduleTarget({
-                                        appointmentId: appt.id,
-                                        patientName: appt.patientName,
-                                        doctorName: queueDoctor?.fullName || 'Practitioner',
-                                        currentDate: queueDate,
-                                        currentQueueNumber: appt.queueNumber,
-                                        doctorId: queueDoctorId,
-                                        slotId: appt.slotId,
-                                      });
-                                      const d = new Date(queueDate);
-                                      d.setDate(d.getDate() + 1);
-                                      setRescheduleDate(getLocalDateString(d));
-                                      setRescheduleSlotId(appt.slotId || '');
-                                      setRescheduleError(null);
-                                    }}
-                                    className="px-2.5 py-1.5 rounded-full text-[#0066cc] hover:bg-[#0066cc]/10 text-[11px] font-medium border border-[#0066cc]/30 transition-all cursor-pointer inline-flex items-center gap-1"
-                                    title="Shift patient appointment to another date/shift"
-                                  >
-                                    <Calendar className="w-3 h-3" />
-                                    <span>Shift Date</span>
-                                  </button>
-                                )}
-                                {appt.status !== 'CANCELLED' && appt.status !== 'COMPLETED' && appt.status !== 'IN_CONSULTATION' && appt.status !== 'EXPIRED' && (
-                                  <button
-                                    onClick={() => handleStatusChange(appt.id, 'CANCELLED')}
-                                    className="px-2.5 py-1 rounded-full text-[#86868b] hover:text-rose-600 hover:bg-rose-50 text-[11px] font-medium border border-[#e5e5ea] transition-all"
-                                  >
-                                    Cancel
-                                  </button>
-                                )}
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const queueDoctor = linkedDoctors.find((d) => d.doctorId === queueDoctorId);
-                                    setBookedPass({
-                                      queueNumber: appt.queueNumber,
-                                      estimatedTime: appt.estimatedTime,
-                                      checkingWindow: appt.checkingWindow,
-                                      appointmentDate: queueDate,
-                                      patientName: appt.patientName,
-                                      patientPhone: appt.patientPhone,
-                                      doctorName: queueDoctor?.fullName || 'Practitioner',
-                                      doctorSpecialty: queueDoctor?.specialty,
-                                      clinicName: data?.clinic?.clinicName,
-                                      clinicAddress: data?.clinic?.address,
-                                    });
-                                  }}
-                                  className="p-1.5 rounded-full text-[#86868b] hover:text-[#0066cc] hover:bg-gray-100 border border-[#e5e5ea] transition-colors"
-                                  title="Reprint Token Pass"
-                                >
-                                  <Printer className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </>
-              );
               })()}
             </div>
           )}
 
-          {/* TAB 3: Assigned Doctors Desk Roster */}
+          {/* TAB 4: ASSIGNED DOCTORS ROSTER */}
           {activeTab === 'doctors' && (
-            <div className="space-y-6">
-              <div className="flex items-center justify-between gap-3 mb-6 pb-4 border-b border-[#f0f0f0]">
+            <div className="space-y-5">
+              <div className="flex items-center justify-between gap-3 pb-4 border-b border-[#f0f0f2]">
                 <div>
-                  <h3 className="text-base font-semibold text-[#1d1d1f]">
+                  <h3 className="text-base sm:text-lg font-semibold text-[#1d1d1f] tracking-tight">
                     Assigned Practitioners
                   </h3>
                   <p className="text-xs text-[#86868b] mt-0.5">
-                    Clinic doctor presence and queue operations.
+                    Manage cabin presence and view live queues for your assigned doctors.
                   </p>
                 </div>
                 <span className="text-xs font-medium px-3 py-1 rounded-full bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea]">
@@ -1966,101 +1735,104 @@ export const ReceptionistDashboard: React.FC = () => {
                 </span>
               </div>
 
-              <div>
-                {linkedDoctors.length === 0 ? (
-                  <div className="py-12 text-center text-xs text-[#86868b] bg-[#fafafc] rounded-2xl border border-dashed border-[#e5e5ea]">
-                    <Stethoscope className="w-8 h-8 text-[#86868b] mx-auto mb-2 opacity-50" />
-                    <p className="font-semibold text-[#1d1d1f]">No Doctors Assigned Yet</p>
-                    <p className="mt-1">Please ask your Clinic Administrator to assign practitioners to your desk.</p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-                    {linkedDoctors.map((doc) => (
-                      <div
-                        key={doc.doctorId}
-                        className="p-5 rounded-2xl bg-white border border-[#e5e5ea] shadow-xs space-y-4 hover:border-black/15 transition-all"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] overflow-hidden flex-shrink-0">
-                              {doc.avatarUrl ? (
-                                <img src={getFileUrl(doc.avatarUrl)} alt={doc.fullName} className="w-full h-full object-cover" />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center font-bold text-sm text-[#0066cc]">
-                                  {doc.fullName[0]}
-                                </div>
-                              )}
-                            </div>
-                            <div>
-                              <div className="font-semibold text-sm text-[#1d1d1f] tracking-tight">
-                                {cleanDoctorName(doc.fullName)}
+              {linkedDoctors.length === 0 ? (
+                <div className="py-14 text-center bg-[#fafafc] rounded-2xl border border-[#e5e5ea]">
+                  <p className="font-semibold text-sm text-[#1d1d1f]">No Doctors Assigned Yet</p>
+                  <p className="mt-1 text-xs text-[#86868b]">
+                    Please ask your Clinic Administrator to assign practitioners to your desk.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                  {linkedDoctors.map((doc) => (
+                    <div
+                      key={doc.doctorId}
+                      className="p-5 rounded-2xl bg-white border border-[#e5e5ea] space-y-4"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-11 h-11 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] overflow-hidden shrink-0">
+                            {doc.avatarUrl ? (
+                              <img src={getFileUrl(doc.avatarUrl)} alt={doc.fullName} className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center font-semibold text-sm text-[#0066cc]">
+                                {doc.fullName[0]}
                               </div>
-                              <div className="text-xs text-[#0066cc] font-medium">{doc.specialty}</div>
-                              <div className="text-[11px] text-[#86868b] mt-0.5">{data?.clinic?.clinicName || 'Clinic Desk'}</div>
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="font-semibold text-sm text-[#1d1d1f] tracking-tight truncate">
+                              {cleanDoctorName(doc.fullName)}
+                            </div>
+                            <div className="text-xs text-[#0066cc] font-medium">{doc.specialty}</div>
+                            <div className="text-xs text-[#86868b] mt-0.5">
+                              ₹{doc.consultationFee} • {doc.todayTotalBookings} booked today ({doc.todayWaitingPatients} waiting)
                             </div>
                           </div>
-
-                          <div className="text-right flex-shrink-0">
-                            <span className="text-sm font-semibold text-[#1d1d1f] block">
-                              ₹{doc.consultationFee}
-                            </span>
-                            <span className="text-[11px] text-[#86868b]">
-                              {doc.todayTotalBookings} booked today
-                            </span>
-                          </div>
                         </div>
 
-                        {/* Interactive Cabin Presence Control */}
-                        <div className="pt-2 border-t border-[#f0f0f0]">
-                          <CabinStatusControl
-                            currentStatus={doc.cabinStatus}
-                            expectedReturnTime={doc.expectedReturnTime}
-                            doctorId={doc.doctorId}
-                            doctorName={cleanDoctorName(doc.fullName)}
-                            onStatusChange={(newStatus, newReturnTime) => {
-                              setData((prev) => {
-                                if (!prev) return prev;
-                                return {
-                                  ...prev,
-                                  doctors: prev.doctors.map((d) =>
-                                    d.doctorId === doc.doctorId
-                                      ? { ...d, cabinStatus: newStatus, expectedReturnTime: newReturnTime }
-                                      : d
-                                  ),
-                                };
-                              });
-                            }}
-                          />
-                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setQueueDoctorId(doc.doctorId);
+                            setActiveTab('queue');
+                          }}
+                          className="h-8 px-3.5 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-xs font-medium text-[#1d1d1f] border border-[#e5e5ea] transition-all cursor-pointer shrink-0"
+                        >
+                          Open Queue
+                        </button>
                       </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+
+                      <div className="pt-3 border-t border-[#f0f0f2]">
+                        <CabinStatusControl
+                          currentStatus={doc.cabinStatus}
+                          expectedReturnTime={doc.expectedReturnTime}
+                          doctorId={doc.doctorId}
+                          doctorName={cleanDoctorName(doc.fullName)}
+                          onStatusChange={(newStatus, newReturnTime) => {
+                            setData((prev) => {
+                              if (!prev) return prev;
+                              return {
+                                ...prev,
+                                doctors: prev.doctors.map((d) =>
+                                  d.doctorId === doc.doctorId
+                                    ? { ...d, cabinStatus: newStatus, expectedReturnTime: newReturnTime }
+                                    : d
+                                ),
+                              };
+                            });
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
-          {/* 5. Notifications Tab */}
+          {/* TAB 5: DESK NOTIFICATIONS */}
           {activeTab === 'notifications' && (
-            <div className="space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#f0f0f0]">
+            <div className="space-y-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#f0f0f2]">
                 <div>
-                  <h3 className="text-lg font-semibold text-[#1d1d1f]">Desk Notifications</h3>
+                  <h3 className="text-base sm:text-lg font-semibold text-[#1d1d1f] tracking-tight">
+                    Desk Notifications
+                  </h3>
                   <p className="text-xs text-[#86868b] mt-0.5">
-                    Real-time alerts for incoming bookings and on-site patient check-ins.
+                    Alerts for incoming online bookings and patient arrival check-ins.
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
                   {unreadNotifCount > 0 && (
-                    <AppleButton
-                      variant="ghost"
-                      size="sm"
+                    <button
+                      type="button"
                       onClick={handleMarkAllNotifsRead}
-                      className="text-xs text-[#0066cc] hover:text-[#0071e3]"
+                      className="h-8 px-3.5 rounded-full text-xs font-medium text-[#0066cc] hover:bg-[#0066cc]/5 transition-all cursor-pointer inline-flex items-center gap-1"
                     >
-                      <Check className="w-3.5 h-3.5 mr-1" />
-                      Mark all read
-                    </AppleButton>
+                      <Check className="w-3.5 h-3.5" />
+                      <span>Mark all read</span>
+                    </button>
                   )}
                   <div className="bg-[#f5f5f7] p-1 rounded-full border border-[#e5e5ea] flex">
                     <button
@@ -2089,7 +1861,6 @@ export const ReceptionistDashboard: React.FC = () => {
                 </div>
               </div>
 
-              {/* Notification List */}
               {(() => {
                 const filtered = notifications.filter((n) =>
                   notifFilter === 'UNREAD' ? !n.isRead : true
@@ -2097,22 +1868,19 @@ export const ReceptionistDashboard: React.FC = () => {
 
                 if (filtered.length === 0) {
                   return (
-                    <div className="py-16 text-center">
-                      <div className="w-12 h-12 rounded-full bg-[#f5f5f7] text-[#86868b] flex items-center justify-center mx-auto mb-3">
-                        <Bell className="w-6 h-6" />
-                      </div>
+                    <div className="py-14 text-center bg-[#fafafc] rounded-2xl border border-[#e5e5ea]">
                       <h4 className="text-sm font-semibold text-[#1d1d1f]">
-                        {notifFilter === 'UNREAD' ? 'No unread desk notifications' : 'No notifications yet'}
+                        {notifFilter === 'UNREAD' ? 'No Unread Notifications' : 'No Notifications Yet'}
                       </h4>
                       <p className="text-xs text-[#86868b] mt-1 max-w-sm mx-auto">
-                        When patients book appointments or check in at the reception desk, instant notifications will appear here.
+                        Booking requests and patient arrival alerts will appear here automatically.
                       </p>
                     </div>
                   );
                 }
 
                 return (
-                  <div className="space-y-3">
+                  <div className="divide-y divide-[#f0f0f2] border border-[#e5e5ea] rounded-2xl overflow-hidden bg-white">
                     {filtered.map((item) => {
                       const isExpanded = expandedNotifId === item.id;
                       return (
@@ -2122,73 +1890,37 @@ export const ReceptionistDashboard: React.FC = () => {
                             if (!item.isRead) handleMarkOneNotifRead(item.id);
                             setExpandedNotifId(isExpanded ? null : item.id);
                           }}
-                          className={`p-4 rounded-2xl border transition-all cursor-pointer ${
-                            !item.isRead
-                              ? 'bg-[#0066cc]/[0.02] border-[#0066cc]/30 hover:border-[#0066cc]'
-                              : 'bg-white border-[#e5e5ea] hover:border-black/15'
+                          className={`p-4 sm:px-5 transition-colors cursor-pointer ${
+                            !item.isRead ? 'bg-[#0066cc]/[0.02] hover:bg-[#0066cc]/[0.04]' : 'hover:bg-[#fafafc]'
                           }`}
                         >
                           <div className="flex items-start justify-between gap-3">
-                            <div className="flex items-start gap-3 min-w-0">
-                              <div
-                                className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
-                                  !item.isRead
-                                    ? 'bg-[#0066cc]/10 text-[#0066cc]'
-                                    : 'bg-[#f5f5f7] text-[#86868b]'
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2">
+                                {!item.isRead && (
+                                  <span className="w-2 h-2 rounded-full bg-[#0066cc] shrink-0" />
+                                )}
+                                <h4 className="text-xs font-semibold text-[#1d1d1f] tracking-tight">
+                                  {item.title}
+                                </h4>
+                                <span className="text-[11px] text-[#86868b]">
+                                  • {new Date(item.createdAt).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}
+                                </span>
+                              </div>
+                              <p
+                                className={`text-xs text-[#48484a] mt-1 leading-relaxed ${
+                                  isExpanded ? '' : 'line-clamp-2'
                                 }`}
                               >
-                                <Bell className="w-4 h-4" />
-                              </div>
-                              <div className="min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <h4 className="text-xs font-semibold text-[#1d1d1f] tracking-tight">
-                                    {item.title}
-                                  </h4>
-                                  {!item.isRead && (
-                                    <span className="w-2 h-2 rounded-full bg-[#0066cc] shrink-0"></span>
-                                  )}
-                                </div>
-                                <p
-                                  className={`text-xs text-[#48484a] mt-1 leading-relaxed ${
-                                    isExpanded ? '' : 'line-clamp-2'
-                                  }`}
-                                >
-                                  {item.message}
-                                </p>
-                                <div className="flex items-center gap-3 mt-2 text-[10px] text-[#86868b]">
-                                  <span>{new Date(item.createdAt).toLocaleString()}</span>
-                                  {item.type && (
-                                    <span className="uppercase font-semibold tracking-wider px-2 py-0.5 rounded-full bg-[#f5f5f7] border border-[#e5e5ea]">
-                                      {item.type.replace(/_/g, ' ')}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
+                                {item.message}
+                              </p>
                             </div>
-                            <div className="shrink-0 flex items-center gap-1">
-                              {!item.isRead && (
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleMarkOneNotifRead(item.id);
-                                  }}
-                                  className="text-[11px] font-medium text-[#0066cc] hover:underline px-2 py-1"
-                                >
-                                  Mark read
-                                </button>
-                              )}
-                              <button
-                                type="button"
-                                className="p-1 text-[#86868b] hover:text-[#1d1d1f]"
-                              >
-                                {isExpanded ? (
-                                  <ChevronUp className="w-4 h-4" />
-                                ) : (
-                                  <ChevronDown className="w-4 h-4" />
-                                )}
-                              </button>
-                            </div>
+                            <button
+                              type="button"
+                              className="p-1 text-[#86868b] hover:text-[#1d1d1f] shrink-0"
+                            >
+                              {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                            </button>
                           </div>
                         </div>
                       );
@@ -2204,26 +1936,30 @@ export const ReceptionistDashboard: React.FC = () => {
       {/* 3. Guaranteed Queue Token Pass Modal */}
       {bookedPass && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn print:hidden">
-          <div className="bg-white rounded-t-[28px] sm:rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-5 sm:p-8 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-8 shadow-2xl max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 duration-300">
-            {/* Apple Drag Handle Pill */}
+          <div className="bg-white rounded-t-[28px] sm:rounded-[28px] border border-[#e5e5ea] max-w-md w-full p-6 sm:p-7 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-7 shadow-[0_12px_40px_rgba(0,0,0,0.08)] max-h-[92vh] overflow-y-auto">
             <div className="sm:hidden w-10 h-1 bg-[#d2d2d7] rounded-full mx-auto mb-3" />
-            <div className="text-center pb-4 border-b border-[#f0f0f0]">
-              <div className="w-10 h-10 rounded-full bg-[#f5f5f7] text-[#1d1d1f] flex items-center justify-center mx-auto mb-3">
-                <CheckCircle2 className="w-5 h-5 text-[#0066cc]" />
+            <div className="flex items-start justify-between pb-4 border-b border-[#f0f0f2]">
+              <div>
+                <h3 className="text-[20px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">
+                  Walk-in Token Issued
+                </h3>
+                <p className="text-xs text-[#86868b] mt-0.5">Live consultation queue pass</p>
               </div>
-              <h3 className="text-lg font-semibold text-[#1d1d1f]">Walk-in Token Issued</h3>
-              <p className="text-xs text-[#86868b] mt-0.5">Live consultation queue pass</p>
+              <button
+                type="button"
+                onClick={() => setBookedPass(null)}
+                className="p-1.5 rounded-full text-[#86868b] hover:text-[#1d1d1f] hover:bg-[#f5f5f7] cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
 
-            {/* Token Badge Display */}
-            <div className="my-6 p-6 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] text-center space-y-3">
-              <span className="text-xs font-semibold text-[#86868b] uppercase tracking-wider block">
-                Queue Token Number
-              </span>
+            <div className="my-5 p-5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] text-center space-y-2.5">
+              <span className="text-xs font-medium text-[#86868b] block">Queue Token Number</span>
               <div className="text-5xl font-bold text-[#0066cc] tracking-tight">
                 #{bookedPass.queueNumber}
               </div>
-              <div className="pt-2 border-t border-[#e5e5ea] grid grid-cols-2 gap-2 text-xs">
+              <div className="pt-2.5 border-t border-[#e5e5ea] grid grid-cols-2 gap-2 text-xs">
                 <div>
                   <span className="text-[11px] text-[#86868b] block">Est. Consultation</span>
                   <span className="font-semibold text-[#1d1d1f]">{bookedPass.estimatedTime || 'Active'}</span>
@@ -2235,57 +1971,49 @@ export const ReceptionistDashboard: React.FC = () => {
               </div>
             </div>
 
-            <div className="space-y-2 text-xs mb-6 p-3 rounded-xl bg-blue-50/50 border border-blue-100">
+            <div className="space-y-2 text-xs mb-6 p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea]">
               <div className="flex justify-between">
-                <span className="text-[#86868b]">Patient Name:</span>
+                <span className="text-[#86868b]">Patient</span>
                 <span className="font-semibold text-[#1d1d1f]">{bookedPass.patientName}</span>
               </div>
               {bookedPass.patientPhone && (
                 <div className="flex justify-between">
-                  <span className="text-[#86868b]">Patient Phone:</span>
+                  <span className="text-[#86868b]">Phone</span>
                   <span className="font-semibold text-[#1d1d1f]">{bookedPass.patientPhone}</span>
                 </div>
               )}
               <div className="flex justify-between">
-                <span className="text-[#86868b]">Doctor:</span>
+                <span className="text-[#86868b]">Doctor</span>
                 <span className="font-semibold text-[#1d1d1f]">{cleanDoctorName(bookedPass.doctorName)}</span>
               </div>
-              {bookedPass.doctorSpecialty && (
-                <div className="flex justify-between">
-                  <span className="text-[#86868b]">Specialty:</span>
-                  <span className="font-semibold text-[#1d1d1f]">{bookedPass.doctorSpecialty}</span>
-                </div>
-              )}
               <div className="flex justify-between">
-                <span className="text-[#86868b]">Date:</span>
+                <span className="text-[#86868b]">Date</span>
                 <span className="font-semibold text-[#1d1d1f]">{bookedPass.appointmentDate}</span>
               </div>
             </div>
 
-            <div className="flex gap-2">
-              <AppleButton
-                variant="secondary"
-                size="md"
+            <div className="flex gap-2.5">
+              <button
+                type="button"
                 onClick={() => window.print()}
-                className="flex-1 flex items-center justify-center gap-1.5"
+                className="flex-1 h-11 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-medium inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer"
               >
                 <Printer className="w-4 h-4" />
-                Print Token
-              </AppleButton>
-              <AppleButton
-                variant="primary"
-                size="md"
+                <span>Print Slip</span>
+              </button>
+              <button
+                type="button"
                 onClick={() => setBookedPass(null)}
-                className="flex-1"
+                className="flex-1 h-11 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-medium transition-all cursor-pointer"
               >
-                Done / Next Patient
-              </AppleButton>
+                Done
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Dedicated Printable Thermal Token Pass */}
+      {/* Printable Thermal Token Slip */}
       {bookedPass && (
         <div className="hidden print:block font-sans text-black p-6 bg-white max-w-xs mx-auto border-2 border-black rounded-xl">
           <div className="text-center pb-3 border-b-2 border-dashed border-gray-400">
@@ -2296,7 +2024,7 @@ export const ReceptionistDashboard: React.FC = () => {
               <p className="text-[11px] text-gray-700 mt-0.5">{bookedPass.clinicAddress}</p>
             )}
             <p className="text-[10px] text-gray-600 mt-1 uppercase tracking-wider">
-              Guaranteed Queue Token
+              Consultation Queue Token
             </p>
           </div>
 
@@ -2325,12 +2053,6 @@ export const ReceptionistDashboard: React.FC = () => {
               <span className="text-gray-600">Doctor:</span>
               <span className="font-bold">{cleanDoctorName(bookedPass.doctorName)}</span>
             </div>
-            {bookedPass.doctorSpecialty && (
-              <div className="flex justify-between">
-                <span className="text-gray-600">Specialty:</span>
-                <span>{bookedPass.doctorSpecialty}</span>
-              </div>
-            )}
             <div className="flex justify-between">
               <span className="text-gray-600">Date:</span>
               <span>{bookedPass.appointmentDate}</span>
@@ -2344,9 +2066,7 @@ export const ReceptionistDashboard: React.FC = () => {
           </div>
 
           <div className="pt-3 text-center text-[10px] text-gray-600 leading-tight">
-            Please retain this slip and listen for token announcement.
-            <br />
-            MediArca Digital OPD
+            Please retain this slip and wait for your token call.
           </div>
         </div>
       )}
@@ -2354,18 +2074,16 @@ export const ReceptionistDashboard: React.FC = () => {
       {/* Mandatory Password Change Modal for Provisioned Accounts */}
       {user?.mustChangePassword && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-md animate-fadeIn print:hidden">
-          <div className="bg-white rounded-t-[28px] sm:rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-5 sm:p-8 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-8 shadow-2xl relative text-left max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 duration-300">
-            {/* Apple Drag Handle Pill */}
+          <div className="bg-white rounded-t-[28px] sm:rounded-[28px] border border-[#e5e5ea] max-w-md w-full p-6 sm:p-7 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-7 shadow-2xl relative text-left max-h-[92vh] overflow-y-auto">
             <div className="sm:hidden w-10 h-1 bg-[#d2d2d7] rounded-full mx-auto mb-3" />
-            <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center mx-auto mb-4 border border-amber-500/20">
-              <ShieldCheck className="w-6 h-6" />
+            <div className="mb-5">
+              <h2 className="text-[20px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">
+                Update Temporary Password
+              </h2>
+              <p className="text-xs text-[#86868b] mt-1 leading-relaxed">
+                Please set a permanent password to unlock your reception desk.
+              </p>
             </div>
-            <h2 className="text-xl font-bold text-[#1d1d1f] text-center mb-1">
-              Update Temporary Password
-            </h2>
-            <p className="text-xs text-[#86868b] text-center mb-6 leading-relaxed">
-              Your clinic administrator provisioned your account with a temporary password. For clinical data security, you must set a permanent password before accessing the receptionist desk.
-            </p>
 
             {passwordError && (
               <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
@@ -2376,70 +2094,60 @@ export const ReceptionistDashboard: React.FC = () => {
 
             <form onSubmit={handleChangePassword} className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
+                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
                   Current Temporary Password
                 </label>
-                <div className="relative">
-                  <input
-                    type="password"
-                    required
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                    placeholder="Enter temporary password"
-                    className="w-full h-11 px-3.5 pl-9 rounded-xl border border-[#e5e5ea] text-sm focus:outline-none focus:border-[#0066cc]"
-                  />
-                  <Lock className="w-4 h-4 text-[#86868b] absolute left-3 top-3.5" />
-                </div>
+                <input
+                  type="password"
+                  required
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  placeholder="Enter temporary password"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all"
+                />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
+                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
                   New Permanent Password (min. 8 characters)
                 </label>
-                <div className="relative">
-                  <input
-                    type="password"
-                    required
-                    minLength={8}
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Enter new password (min. 8 characters)"
-                    className="w-full h-11 px-3.5 pl-9 rounded-xl border border-[#e5e5ea] text-sm focus:outline-none focus:border-[#0066cc]"
-                  />
-                  <Lock className="w-4 h-4 text-[#86868b] absolute left-3 top-3.5" />
-                </div>
+                <input
+                  type="password"
+                  required
+                  minLength={8}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Min. 8 characters"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all"
+                />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
+                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
                   Confirm New Password
                 </label>
-                <div className="relative">
-                  <input
-                    type="password"
-                    required
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Re-enter new password"
-                    className="w-full h-11 px-3.5 pl-9 rounded-xl border border-[#e5e5ea] text-sm focus:outline-none focus:border-[#0066cc]"
-                  />
-                  <Lock className="w-4 h-4 text-[#86868b] absolute left-3 top-3.5" />
-                </div>
+                <input
+                  type="password"
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Re-enter new password"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all"
+                />
               </div>
 
-              <AppleButton
-                variant="primary"
-                size="lg"
+              <button
                 type="submit"
                 disabled={changingPassword}
-                className="w-full mt-2 shadow-sm"
+                className="w-full h-11 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-sm font-medium transition-all cursor-pointer disabled:opacity-60 mt-2"
               >
-                {changingPassword ? 'Updating Password...' : 'Save & Unlock Receptionist Desk'}
-              </AppleButton>
+                {changingPassword ? 'Updating...' : 'Save & Unlock Desk'}
+              </button>
             </form>
           </div>
         </div>
       )}
+
       {/* Clinic QR Check-In Standee Modal */}
       {data?.clinic && (
         <ClinicQrStandeeModal
@@ -2456,50 +2164,44 @@ export const ReceptionistDashboard: React.FC = () => {
       {/* Reschedule Appointment Modal */}
       {rescheduleTarget && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn print:hidden">
-          <div className="bg-white rounded-t-[28px] sm:rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-6 sm:p-7 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-7 shadow-2xl space-y-5 max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 duration-300">
-            {/* Apple Drag Handle Pill */}
+          <div className="bg-white rounded-t-[28px] sm:rounded-[28px] border border-[#e5e5ea] max-w-md w-full p-6 sm:p-7 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-7 shadow-2xl space-y-5 max-h-[92vh] overflow-y-auto">
             <div className="sm:hidden w-10 h-1 bg-[#d2d2d7] rounded-full mx-auto mb-3" />
-            <div className="flex items-center justify-between pb-3 border-b border-[#f0f0f0]">
-              <div className="flex items-center gap-2">
-                <div className="w-9 h-9 rounded-full bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center">
-                  <Calendar className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-base font-semibold text-[#1d1d1f]">Reschedule Appointment</h3>
-                  <p className="text-xs text-[#86868b]">Shift patient visit to another date or shift</p>
-                </div>
+            <div className="flex items-start justify-between pb-3 border-b border-[#f0f0f2]">
+              <div>
+                <h3 className="text-[20px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">
+                  Reschedule Appointment
+                </h3>
+                <p className="text-xs text-[#86868b] mt-0.5">Shift patient visit to another date or shift</p>
               </div>
               <button
                 type="button"
                 onClick={() => setRescheduleTarget(null)}
-                className="text-[#86868b] hover:text-[#1d1d1f] p-1.5 rounded-full hover:bg-black/5 cursor-pointer"
+                className="text-[#86868b] hover:text-[#1d1d1f] p-1.5 rounded-full hover:bg-[#f5f5f7] cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Target details card */}
-            <div className="p-3.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] space-y-1.5 text-xs">
+            <div className="p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] space-y-1.5 text-xs">
               <div className="flex justify-between">
-                <span className="text-[#86868b]">Patient:</span>
+                <span className="text-[#86868b]">Patient</span>
                 <span className="font-semibold text-[#1d1d1f]">{rescheduleTarget.patientName}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[#86868b]">Doctor:</span>
+                <span className="text-[#86868b]">Doctor</span>
                 <span className="font-semibold text-[#1d1d1f]">{cleanDoctorName(rescheduleTarget.doctorName)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[#86868b]">Current Schedule:</span>
+                <span className="text-[#86868b]">Current Date</span>
                 <span className="font-medium text-[#1d1d1f]">
                   {rescheduleTarget.currentDate}
-                  {rescheduleTarget.currentQueueNumber ? ` (Token #${rescheduleTarget.currentQueueNumber})` : ''}
+                  {rescheduleTarget.currentQueueNumber ? ` (#${rescheduleTarget.currentQueueNumber})` : ''}
                 </span>
               </div>
             </div>
 
-            {/* Date Selection */}
             <div>
-              <label className="text-xs font-semibold text-[#1d1d1f] block mb-1.5">
+              <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
                 New Appointment Date
               </label>
               <input
@@ -2507,7 +2209,7 @@ export const ReceptionistDashboard: React.FC = () => {
                 min={getLocalDateString()}
                 value={rescheduleDate}
                 onChange={(e) => setRescheduleDate(e.target.value)}
-                className="w-full h-10 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
+                className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] text-[14px] bg-white text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:ring-4 focus:ring-[#0066cc]/10 focus:border-[#0066cc]"
               />
               <div className="flex gap-2 mt-2">
                 <button
@@ -2517,7 +2219,7 @@ export const ReceptionistDashboard: React.FC = () => {
                     d.setDate(d.getDate() + 1);
                     setRescheduleDate(getLocalDateString(d));
                   }}
-                  className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-[#f5f5f7] hover:bg-gray-200 text-[#1d1d1f] border border-[#e5e5ea] transition-all cursor-pointer"
+                  className="px-3 py-1 rounded-full text-xs font-medium bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] transition-all cursor-pointer"
                 >
                   Tomorrow
                 </button>
@@ -2528,26 +2230,25 @@ export const ReceptionistDashboard: React.FC = () => {
                     d.setDate(d.getDate() + 2);
                     setRescheduleDate(getLocalDateString(d));
                   }}
-                  className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-[#f5f5f7] hover:bg-gray-200 text-[#1d1d1f] border border-[#e5e5ea] transition-all cursor-pointer"
+                  className="px-3 py-1 rounded-full text-xs font-medium bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] transition-all cursor-pointer"
                 >
-                  Day After Tomorrow
+                  In 2 Days
                 </button>
               </div>
             </div>
 
-            {/* Shift selection if doctor has multiple slots */}
             {(() => {
               const doc = linkedDoctors.find((d) => d.doctorId === rescheduleTarget.doctorId);
               if (!doc || !doc.slots || doc.slots.length <= 1) return null;
               return (
                 <div>
-                  <label className="text-xs font-semibold text-[#1d1d1f] block mb-1.5">
-                    Select Consultation Shift
+                  <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                    Consultation Shift
                   </label>
                   <select
                     value={rescheduleSlotId}
                     onChange={(e) => setRescheduleSlotId(e.target.value)}
-                    className="w-full h-10 px-3.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
+                    className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] text-[13px] bg-white text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:ring-4 focus:ring-[#0066cc]/10 focus:border-[#0066cc]"
                   >
                     <option value="">Standard Hours / Any Shift</option>
                     {doc.slots.map((s) => (
@@ -2560,10 +2261,6 @@ export const ReceptionistDashboard: React.FC = () => {
               );
             })()}
 
-            <div className="p-3 rounded-xl bg-blue-50/60 border border-blue-100 text-[11px] text-blue-900 leading-relaxed">
-              Upon rescheduling, the system will allocate a new consecutive queue token on the chosen date and automatically dispatch an SMS/in-app alert to the patient.
-            </div>
-
             {rescheduleError && (
               <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700 flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0" />
@@ -2571,25 +2268,23 @@ export const ReceptionistDashboard: React.FC = () => {
               </div>
             )}
 
-            <div className="flex gap-2.5 pt-2">
-              <AppleButton
-                variant="secondary"
-                size="md"
+            <div className="flex gap-2.5 pt-1">
+              <button
+                type="button"
                 onClick={() => setRescheduleTarget(null)}
-                className="flex-1 text-xs"
                 disabled={rescheduling}
+                className="flex-1 h-11 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-medium transition-all cursor-pointer"
               >
                 Cancel
-              </AppleButton>
-              <AppleButton
-                variant="primary"
-                size="md"
+              </button>
+              <button
+                type="button"
                 onClick={handleConfirmReschedule}
-                className="flex-1 text-xs bg-[#0066cc] hover:bg-[#0071e3] shadow-none"
                 disabled={rescheduling}
+                className="flex-1 h-11 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-medium transition-all cursor-pointer disabled:opacity-60"
               >
-                {rescheduling ? 'Rescheduling...' : 'Confirm Shift'}
-              </AppleButton>
+                {rescheduling ? 'Shifting...' : 'Confirm Shift'}
+              </button>
             </div>
           </div>
         </div>

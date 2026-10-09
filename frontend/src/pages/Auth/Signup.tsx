@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { AppleButton } from '../../components/ui/AppleButton';
 import { BrandLogo } from '../../components/ui/BrandLogo';
-import { AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { AlertCircle, Eye, EyeOff, RefreshCw } from 'lucide-react';
 import { GoogleLogin } from '@react-oauth/google';
 import { isGoogleConfigured } from '../../config/auth';
 import { SearchableSpecialtySelect } from '../../components/ui/SearchableSpecialtySelect';
@@ -91,7 +90,7 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
         payload.specialty = finalSpecialty;
         payload.qualifications = qualifications.trim() || 'MBBS, MD';
         payload.experienceYears = Number(experienceYears) || 1;
-        payload.consultationFee = 0; // Configured later upon joining a clinic
+        payload.consultationFee = 0;
         payload.checkingStartTime = '09:00';
         payload.checkingEndTime = '17:00';
       }
@@ -149,32 +148,31 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f5f5f7] flex flex-col justify-center py-8 sm:py-10 px-3 sm:px-6">
-      <div className="sm:mx-auto sm:w-full sm:max-w-[460px]">
-        {/* Brand Header */}
-        <div className="text-center mb-6">
-          <Link to="/" className="inline-block hover:opacity-90 transition-opacity mb-3">
-            <BrandLogo variant="full" size="md" imgClassName="h-8 w-auto mx-auto" />
-          </Link>
-          <h1 className="text-2xl font-semibold text-[#1d1d1f] tracking-tight">
-            Create Account
-          </h1>
-        </div>
+    <div className="min-h-screen bg-[#f5f5f7] flex flex-col justify-center py-8 sm:py-10 px-4 sm:px-6">
+      <div className="sm:mx-auto sm:w-full sm:max-w-[450px]">
+        <div className="bg-white rounded-[28px] border border-[#e5e5ea] shadow-[0_12px_40px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,0,0,0.03)] p-6 sm:p-7">
+          {/* Brand & Header */}
+          <div className="flex flex-col items-center text-center mb-6">
+            <Link to="/" className="mb-2.5 hover:opacity-90 transition-opacity">
+              <BrandLogo variant="full" size="md" imgClassName="h-7 w-auto object-contain mx-auto" />
+            </Link>
+            <h1 className="text-[22px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">
+              Create Account
+            </h1>
+          </div>
 
-        {/* Main Card */}
-        <div className="bg-white py-6 sm:py-7 px-4 sm:px-8 rounded-[20px] sm:rounded-[24px] border border-[#e5e5ea] shadow-xs">
           {/* Segmented Role Switcher */}
-          <div className="flex bg-[#f5f5f7] p-1 rounded-full border border-[#e5e5ea] mb-6">
+          <div className="p-1 bg-[#f5f5f7] border border-[#e5e5ea] rounded-xl flex gap-1 select-none mb-5">
             <button
               type="button"
               onClick={() => {
                 setRole('PATIENT');
                 setError(null);
               }}
-              className={`flex-1 py-1.5 text-xs font-semibold rounded-full transition-all cursor-pointer ${
+              className={`flex-1 py-2 text-xs rounded-lg transition-all duration-150 cursor-pointer text-center ${
                 role === 'PATIENT'
-                  ? 'bg-white text-[#1d1d1f] shadow-xs'
-                  : 'text-[#86868b] hover:text-[#1d1d1f]'
+                  ? 'bg-white text-[#1d1d1f] font-semibold shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_1px_rgba(0,0,0,0.04)] border border-black/5'
+                  : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
               }`}
             >
               Patient
@@ -185,10 +183,10 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
                 setRole('DOCTOR');
                 setError(null);
               }}
-              className={`flex-1 py-1.5 text-xs font-semibold rounded-full transition-all cursor-pointer ${
+              className={`flex-1 py-2 text-xs rounded-lg transition-all duration-150 cursor-pointer text-center ${
                 role === 'DOCTOR'
-                  ? 'bg-white text-[#1d1d1f] shadow-xs'
-                  : 'text-[#86868b] hover:text-[#1d1d1f]'
+                  ? 'bg-white text-[#1d1d1f] font-semibold shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_1px_rgba(0,0,0,0.04)] border border-black/5'
+                  : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
               }`}
             >
               Doctor
@@ -196,7 +194,7 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
           </div>
 
           {error && (
-            <div className="mb-5 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
+            <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
               <span>{error}</span>
             </div>
@@ -218,7 +216,7 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
                 <button
                   type="button"
                   onClick={handleSimulatedGoogleLogin}
-                  className="w-full h-11 px-4 rounded-full border border-[#e5e5ea] bg-white hover:bg-[#fbfbfd] text-[#1d1d1f] text-xs font-medium transition-all shadow-2xs active:scale-[0.98] flex items-center justify-center gap-2.5 cursor-pointer"
+                  className="w-full h-11 px-4 rounded-full border border-[#d2d2d7] bg-white hover:bg-[#f5f5f7] text-[#1d1d1f] text-xs font-medium transition-all shadow-[0_1px_2px_rgba(0,0,0,0.04)] active:scale-[0.98] flex items-center justify-center gap-2.5 cursor-pointer"
                 >
                   <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24">
                     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -241,9 +239,9 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
             </div>
           </div>
 
-          <form className="space-y-3.5" onSubmit={handleSubmit}>
+          <form className="space-y-4" onSubmit={handleSubmit}>
             <div>
-              <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
+              <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
                 Full Name
               </label>
               <input
@@ -251,53 +249,51 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
                 required
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                placeholder={role === 'DOCTOR' ? 'Dr. First Last' : 'First Last'}
-                className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-sm text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:border-[#0066cc] focus:ring-2 focus:ring-[#0066cc]/20 bg-[#fbfbfd] focus:bg-white"
+                placeholder={role === 'DOCTOR' ? 'Dr. First Last' : 'Your full legal name'}
+                className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
               />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
-                  Email Address
-                </label>
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@example.com"
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-sm text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:border-[#0066cc] focus:ring-2 focus:ring-[#0066cc]/20 bg-[#fbfbfd] focus:bg-white"
-                />
-              </div>
+            <div>
+              <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                Email Address
+              </label>
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="name@example.com"
+                className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+              />
+            </div>
 
-              <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
-                  Mobile Number
-                </label>
-                <div className="flex items-center w-full h-11 rounded-xl border border-[#e5e5ea] bg-[#fbfbfd] focus-within:bg-white focus-within:border-[#0066cc] focus-within:ring-2 focus-within:ring-[#0066cc]/20 transition-all overflow-hidden">
-                  <div className="h-full px-3.5 bg-[#f5f5f7] border-r border-[#e5e5ea] flex items-center justify-center select-none text-[13px] font-semibold text-[#1d1d1f]">
-                    +91
-                  </div>
-                  <input
-                    type="tel"
-                    inputMode="numeric"
-                    required
-                    maxLength={10}
-                    value={sanitizeIndianPhone(phone)}
-                    onChange={(e) => {
-                      const digits = sanitizeIndianPhone(e.target.value);
-                      setPhone(digits ? `+91 ${digits}` : '');
-                    }}
-                    placeholder="98765 43210"
-                    className="flex-1 h-full px-3.5 bg-transparent text-sm text-[#1d1d1f] placeholder:text-[#86868b] focus:outline-none"
-                  />
+            <div>
+              <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                Mobile Number
+              </label>
+              <div className="flex items-center w-full h-11 rounded-xl border border-[#d2d2d7] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus-within:border-[#0066cc] focus-within:ring-4 focus-within:ring-[#0066cc]/10 transition-all duration-150 overflow-hidden">
+                <div className="h-full px-3.5 bg-[#f5f5f7] border-r border-[#d2d2d7] flex items-center justify-center select-none text-[13px] font-semibold text-[#1d1d1f]">
+                  +91
                 </div>
+                <input
+                  type="tel"
+                  inputMode="numeric"
+                  required
+                  maxLength={10}
+                  value={sanitizeIndianPhone(phone)}
+                  onChange={(e) => {
+                    const digits = sanitizeIndianPhone(e.target.value);
+                    setPhone(digits ? `+91 ${digits}` : '');
+                  }}
+                  placeholder="98765 43210"
+                  className="flex-1 h-full px-3.5 bg-transparent text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:outline-none"
+                />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
+              <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
                 Password
               </label>
               <div className="relative">
@@ -308,12 +304,12 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Min. 8 characters"
-                  className="w-full h-11 pl-3.5 pr-10 rounded-xl border border-[#e5e5ea] text-sm text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:border-[#0066cc] focus:ring-2 focus:ring-[#0066cc]/20 bg-[#fbfbfd] focus:bg-white"
+                  className="w-full h-11 pl-3.5 pr-10 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-3 text-[#86868b] hover:text-[#1d1d1f] transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#86868b] hover:text-[#1d1d1f] transition-colors cursor-pointer"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -322,10 +318,24 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
 
             {/* Doctor Specific Fields */}
             {role === 'DOCTOR' && (
-              <div className="space-y-3 pt-2 border-t border-[#f0f0f2]">
+              <>
                 <div>
-                  <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
-                    Specialty
+                  <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                    Medical Qualifications
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={qualifications}
+                    onChange={(e) => setQualifications(e.target.value)}
+                    placeholder="e.g. MBBS, MD"
+                    className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                    Medical Specialty
                   </label>
                   <SearchableSpecialtySelect
                     value={specialty}
@@ -333,63 +343,49 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
                     customValue={customSpecialty}
                     onCustomChange={setCustomSpecialty}
                     allowOther={true}
-                    placeholder="Select or search specialty..."
+                    placeholder="Select specialty..."
                   />
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
-                      Qualifications
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={qualifications}
-                      onChange={(e) => setQualifications(e.target.value)}
-                      placeholder="e.g. MBBS, MD"
-                      className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-sm text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:border-[#0066cc] focus:ring-2 focus:ring-[#0066cc]/20 bg-[#fbfbfd] focus:bg-white"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-[#1d1d1f] mb-1">
-                      Experience (Years)
-                    </label>
-                    <input
-                      type="number"
-                      required
-                      min={0}
-                      value={experienceYears}
-                      onChange={(e) => setExperienceYears(e.target.value)}
-                      placeholder="5"
-                      className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-sm text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:border-[#0066cc] focus:ring-2 focus:ring-[#0066cc]/20 bg-[#fbfbfd] focus:bg-white"
-                    />
-                  </div>
+                <div>
+                  <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                    Years of Clinical Experience
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    min={0}
+                    max={60}
+                    value={experienceYears}
+                    onChange={(e) => setExperienceYears(e.target.value)}
+                    placeholder="e.g. 5"
+                    className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                  />
                 </div>
-
-                <p className="text-[11px] text-[#86868b] leading-relaxed">
-                  Doctor profiles require administrative license verification before appearing in search.
-                </p>
-              </div>
+              </>
             )}
 
             <div className="pt-2">
-              <AppleButton
-                variant="primary"
-                size="md"
+              <button
                 type="submit"
                 disabled={submitting}
-                className="w-full"
+                className="w-full h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-medium transition-all duration-150 shadow-[0_2px_8px_rgba(0,102,204,0.2),0_1px_2px_rgba(0,0,0,0.06)] flex items-center justify-center gap-2 cursor-pointer select-none disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                {submitting ? 'Creating Account...' : `Create ${role === 'DOCTOR' ? 'Doctor Profile' : 'Patient Account'}`}
-              </AppleButton>
+                {submitting ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>Creating Account...</span>
+                  </>
+                ) : (
+                  `Create ${role === 'DOCTOR' ? 'Doctor Profile' : 'Patient Account'}`
+                )}
+              </button>
             </div>
           </form>
         </div>
 
         {/* Footer Navigation */}
-        <p className="mt-4 text-center text-xs text-[#86868b]">
+        <p className="mt-5 text-center text-xs text-[#86868b]">
           Already registered?{' '}
           <Link
             to={role === 'DOCTOR' ? '/doctor/login' : '/patient/login'}
@@ -415,3 +411,4 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
 };
 
 export default Signup;
+
