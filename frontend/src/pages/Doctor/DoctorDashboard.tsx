@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   api,
@@ -36,7 +36,6 @@ import {
   LayoutDashboard,
   Calendar,
   QrCode,
-  ChevronRight,
   ChevronDown,
   Phone,
 } from 'lucide-react';
@@ -46,6 +45,64 @@ const getYesterdayDateString = (): string => {
   const d = new Date();
   d.setDate(d.getDate() - 1);
   return getLocalDateString(d);
+};
+
+const getCleanReason = (reason?: string | null, patientName?: string | null): string | null => {
+  if (!reason) return null;
+  const r = reason.trim();
+  if (!r) return null;
+  const lowerReason = r.toLowerCase();
+  const lowerName = (patientName || '').toLowerCase().trim();
+
+  // If redundant with patient's name
+  if (lowerName && (lowerName.includes(lowerReason) || lowerReason.includes(lowerName))) {
+    return null;
+  }
+  // If matches test noise, placeholders, or generic boilerplate
+  if (
+    lowerReason.includes('concurrent') ||
+    lowerReason.includes('walkin') ||
+    lowerReason.includes('walk-in') ||
+    lowerReason.includes('verification') ||
+    lowerReason.includes('approval test') ||
+    lowerReason === 'general consultation' ||
+    lowerReason === 'routine checkup' ||
+    lowerReason === 'consultation' ||
+    lowerReason === 'general visit' ||
+    lowerReason === 'clinic walk-in consultation'
+  ) {
+    return null;
+  }
+  return r;
+};
+
+const matchesSlot = (appt: Appointment, slotId: string, slotObj?: any): boolean => {
+  if (slotId === 'all') return true;
+  if (appt.slotId && appt.slotId === slotId) return true;
+  if (slotObj) {
+    if (slotObj.startTime && appt.checkingWindow?.includes(slotObj.startTime)) return true;
+    if (slotObj.name && appt.checkingWindow?.includes(slotObj.name)) return true;
+    if (slotObj.shiftName && appt.checkingWindow?.includes(slotObj.shiftName)) return true;
+  }
+  return false;
+};
+
+const getSlotShortLabel = (appt: Appointment, slots: any[]): string => {
+  if (appt.slotId) {
+    const matched = slots.find((s) => s.id === appt.slotId);
+    if (matched) {
+      return matched.shiftName || matched.name || `Shift ${slots.indexOf(matched) + 1}`;
+    }
+  }
+  if (appt.checkingWindow) {
+    const matched = slots.find((s) => s.startTime && appt.checkingWindow?.includes(s.startTime));
+    if (matched) {
+      return matched.shiftName || matched.name || `Shift ${slots.indexOf(matched) + 1}`;
+    }
+    const shiftMatch = appt.checkingWindow.match(/(Shift\s*\d+)/i);
+    if (shiftMatch) return shiftMatch[1];
+  }
+  return 'Shift 1';
 };
 
 export const DoctorDashboard: React.FC = () => {
@@ -90,6 +147,8 @@ export const DoctorDashboard: React.FC = () => {
 
   const [date, setDate] = useState<string>(() => getLocalDateString());
   const [queueScope, setQueueScope] = useState<'date' | 'all-upcoming'>('date');
+  const [selectedClinicId, setSelectedClinicId] = useState<string>('all');
+  const [selectedSlotId, setSelectedSlotId] = useState<string>('all');
   const [queueSearch, setQueueSearch] = useState('');
   const [queueData, setQueueData] = useState<{
     date: string;
@@ -112,10 +171,20 @@ export const DoctorDashboard: React.FC = () => {
   const [callingId, setCallingId] = useState<string | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
+  const handleClinicChange = (clinicId: string) => {
+    setSelectedClinicId(clinicId);
+    setSelectedSlotId('all');
+  };
+
   const fetchQueue = useCallback(async (showLoading = true) => {
     if (showLoading) setLoading(true);
     try {
-      const data = await api.getDoctorQueue(queueScope === 'date' ? date : undefined, queueScope);
+      const data = await api.getDoctorQueue(
+        queueScope === 'date' ? date : undefined,
+        queueScope,
+        selectedClinicId !== 'all' ? selectedClinicId : undefined,
+        selectedSlotId !== 'all' ? selectedSlotId : undefined
+      );
       setQueueData(data);
       setFetchError(null);
     } catch (err: any) {
@@ -124,7 +193,7 @@ export const DoctorDashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [date, queueScope]);
+  }, [date, queueScope, selectedClinicId, selectedSlotId]);
 
   const fetchAffiliations = useCallback(async (showLoading = true) => {
     if (showLoading) setAffiliationsLoading(true);
@@ -416,6 +485,101 @@ export const DoctorDashboard: React.FC = () => {
       path: '/doctor/profile',
     },
   ];
+
+  const currentClinic = affiliations?.clinics?.find((c) => c.clinicId === selectedClinicId);
+  const availableShifts = useMemo(() => {
+    if (selectedClinicId !== 'all' && currentClinic?.slots && currentClinic.slots.length > 0) {
+      return currentClinic.slots;
+    }
+    if (affiliations?.clinics && affiliations.clinics.length > 0) {
+      const allClinicSlots: any[] = [];
+      const seenTimes = new Set<string>();
+      affiliations.clinics.forEach((c) => {
+        (c.slots || []).forEach((s: any) => {
+          const key = `${s.startTime}-${s.endTime}`;
+          if (!seenTimes.has(key)) {
+            seenTimes.add(key);
+            allClinicSlots.push(s);
+          }
+        });
+      });
+      if (allClinicSlots.length > 0) return allClinicSlots;
+    }
+    return parseDoctorSlots(user?.doctorProfile);
+  }, [selectedClinicId, currentClinic, affiliations, user?.doctorProfile]);
+
+  const targetSlotObj = useMemo(() => {
+    return availableShifts.find((s: any) => s.id === selectedSlotId);
+  }, [availableShifts, selectedSlotId]);
+
+  const displayedWaitingQueue = useMemo(() => {
+    if (!queueData?.waitingQueue) return [];
+    return queueData.waitingQueue.filter((appt) => {
+      if (selectedClinicId !== 'all' && appt.clinicId && appt.clinicId !== selectedClinicId) {
+        return false;
+      }
+      if (selectedSlotId !== 'all' && !matchesSlot(appt, selectedSlotId, targetSlotObj)) {
+        return false;
+      }
+      return true;
+    });
+  }, [queueData, selectedClinicId, selectedSlotId, targetSlotObj]);
+
+  const displayedCompletedQueue = useMemo(() => {
+    if (!queueData?.completedQueue) return [];
+    return queueData.completedQueue.filter((appt) => {
+      if (selectedClinicId !== 'all' && appt.clinicId && appt.clinicId !== selectedClinicId) {
+        return false;
+      }
+      if (selectedSlotId !== 'all' && !matchesSlot(appt, selectedSlotId, targetSlotObj)) {
+        return false;
+      }
+      return true;
+    });
+  }, [queueData, selectedClinicId, selectedSlotId, targetSlotObj]);
+
+  const displayedActiveInConsultation = useMemo(() => {
+    if (!queueData?.activeInConsultation) return null;
+    const active = queueData.activeInConsultation;
+    if (selectedClinicId !== 'all' && active.clinicId && active.clinicId !== selectedClinicId) {
+      return null;
+    }
+    if (selectedSlotId !== 'all' && !matchesSlot(active, selectedSlotId, targetSlotObj)) {
+      return null;
+    }
+    return active;
+  }, [queueData, selectedClinicId, selectedSlotId, targetSlotObj]);
+
+  const clinicWaitingCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    if (!queueData?.waitingQueue) return counts;
+    queueData.waitingQueue.forEach((a) => {
+      if (a.clinicId) {
+        counts[a.clinicId] = (counts[a.clinicId] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [queueData]);
+
+  const slotWaitingCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    if (!queueData?.waitingQueue) return counts;
+    const clinicWaiting = selectedClinicId === 'all'
+      ? queueData.waitingQueue
+      : queueData.waitingQueue.filter((a) => a.clinicId === selectedClinicId);
+
+    availableShifts.forEach((slot: any) => {
+      counts[slot.id] = clinicWaiting.filter((a) => matchesSlot(a, slot.id, slot)).length;
+    });
+    return counts;
+  }, [queueData, selectedClinicId, availableShifts]);
+
+  const totalShiftQueueCount = useMemo(() => {
+    if (!queueData?.waitingQueue) return 0;
+    return selectedClinicId === 'all'
+      ? queueData.waitingQueue.length
+      : queueData.waitingQueue.filter((a) => a.clinicId === selectedClinicId).length;
+  }, [queueData, selectedClinicId]);
 
   return (
     <DashboardLayout
@@ -899,7 +1063,7 @@ export const DoctorDashboard: React.FC = () => {
               </div>
             )}
 
-            {/* Unified Top Control Bar: Date Scope Selector + Cabin Presence */}
+            {/* Unified Top Control Bar: Date Scope Selector + Cabin Presence + Clinic & Shift Controls */}
             <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-4 sm:p-5 shadow-[0_2px_12px_rgba(0,0,0,0.03)] space-y-3.5">
               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3.5">
                 {/* Date Filter Segmented Bar + Date Input */}
@@ -991,6 +1155,104 @@ export const DoctorDashboard: React.FC = () => {
                   />
                 </div>
               </div>
+
+              {/* Clinic & Shift Differentiation Controls */}
+              {((affiliations?.clinics && affiliations.clinics.length > 0) || availableShifts.length > 0) && (
+                <div className="pt-3.5 border-t border-[#f0f0f2] flex flex-col gap-3">
+                  {/* Clinic Selector */}
+                  {affiliations?.clinics && affiliations.clinics.length > 0 && (
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                      <span className="text-xs font-semibold text-[#1d1d1f] tracking-tight shrink-0 min-w-[50px]">
+                        Clinic:
+                      </span>
+                      <div className="p-1 bg-[#f5f5f7] border border-[#e5e5ea] rounded-full inline-flex items-center gap-0.5 overflow-x-auto max-w-full">
+                        <button
+                          type="button"
+                          onClick={() => handleClinicChange('all')}
+                          className={`h-7 sm:h-8 px-3 sm:px-3.5 rounded-full text-xs transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                            selectedClinicId === 'all'
+                              ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs border border-black/5'
+                              : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
+                          }`}
+                        >
+                          <span>All Clinics</span>
+                          <span className={`text-[11px] ${selectedClinicId === 'all' ? 'text-[#0066cc] font-semibold' : 'text-[#86868b]'}`}>
+                            {queueData?.waitingQueue?.length || 0}
+                          </span>
+                        </button>
+                        {affiliations.clinics.map((clinic) => {
+                          const count = clinicWaitingCounts[clinic.clinicId] || 0;
+                          const isSelected = selectedClinicId === clinic.clinicId;
+                          return (
+                            <button
+                              key={clinic.clinicId}
+                              type="button"
+                              onClick={() => handleClinicChange(clinic.clinicId)}
+                              className={`h-7 sm:h-8 px-3 sm:px-3.5 rounded-full text-xs transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                                isSelected
+                                  ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs border border-black/5'
+                                  : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
+                              }`}
+                            >
+                              <span>{clinic.clinicName}</span>
+                              <span className={`text-[11px] ${isSelected ? 'text-[#0066cc] font-semibold' : 'text-[#86868b]'}`}>
+                                {count}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Shift Selector */}
+                  {availableShifts.length > 0 && (
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                      <span className="text-xs font-semibold text-[#1d1d1f] tracking-tight shrink-0 min-w-[50px]">
+                        Shift:
+                      </span>
+                      <div className="p-1 bg-[#f5f5f7] border border-[#e5e5ea] rounded-full inline-flex items-center gap-0.5 overflow-x-auto max-w-full">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedSlotId('all')}
+                          className={`h-7 sm:h-8 px-3 sm:px-3.5 rounded-full text-xs transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                            selectedSlotId === 'all'
+                              ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs border border-black/5'
+                              : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
+                          }`}
+                        >
+                          <span>All Shifts</span>
+                          <span className={`text-[11px] ${selectedSlotId === 'all' ? 'text-[#0066cc] font-semibold' : 'text-[#86868b]'}`}>
+                            {totalShiftQueueCount}
+                          </span>
+                        </button>
+                        {availableShifts.map((slot: any, idx: number) => {
+                          const count = slotWaitingCounts[slot.id] || 0;
+                          const isSelected = selectedSlotId === slot.id;
+                          const slotLabel = slot.shiftName || slot.name || `Shift ${idx + 1} (${slot.startTime} – ${slot.endTime})`;
+                          return (
+                            <button
+                              key={slot.id}
+                              type="button"
+                              onClick={() => setSelectedSlotId(slot.id)}
+                              className={`h-7 sm:h-8 px-3 sm:px-3.5 rounded-full text-xs transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                                isSelected
+                                  ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs border border-black/5'
+                                  : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
+                              }`}
+                            >
+                              <span>{slotLabel}</span>
+                              <span className={`text-[11px] ${isSelected ? 'text-[#0066cc] font-semibold' : 'text-[#86868b]'}`}>
+                                {count}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Clean 3-Column Metrics Strip */}
@@ -998,69 +1260,24 @@ export const DoctorDashboard: React.FC = () => {
               <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-4 sm:p-5 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
                 <p className="text-xs text-[#86868b] font-medium">Waiting in Queue</p>
                 <h3 className="text-[26px] sm:text-[30px] font-semibold text-[#1d1d1f] mt-1 tracking-tight leading-none">
-                  {queueData?.waitingQueue.length || 0}
+                  {displayedWaitingQueue.length}
                 </h3>
               </div>
 
               <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-4 sm:p-5 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
                 <p className="text-xs text-[#86868b] font-medium">Completed</p>
                 <h3 className="text-[26px] sm:text-[30px] font-semibold text-[#0066cc] mt-1 tracking-tight leading-none">
-                  {queueData?.completedQueue.length || 0}
+                  {displayedCompletedQueue.length}
                 </h3>
               </div>
 
               <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-4 sm:p-5 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
                 <p className="text-xs text-[#86868b] font-medium">Total Bookings</p>
                 <h3 className="text-[26px] sm:text-[30px] font-semibold text-[#1d1d1f] mt-1 tracking-tight leading-none">
-                  {queueData?.totalQueue || 0}
+                  {(displayedActiveInConsultation ? 1 : 0) + displayedWaitingQueue.length + displayedCompletedQueue.length}
                 </h3>
               </div>
             </div>
-
-            {/* Upcoming Bookings Notice (Compact Single Row) */}
-            {queueData?.upcomingSummary && queueData.upcomingSummary.tomorrowCount > 0 && (queueScope !== 'date' || date !== queueData.upcomingSummary.tomorrowDate) && (
-              <div className="px-5 py-3.5 rounded-2xl bg-white border border-[#e5e5ea] text-[#1d1d1f] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
-                <p className="text-xs text-[#48484a]">
-                  <strong className="font-semibold text-[#1d1d1f]">
-                    {queueData.upcomingSummary.tomorrowCount} appointment{queueData.upcomingSummary.tomorrowCount > 1 ? 's' : ''}
-                  </strong>{' '}
-                  scheduled for tomorrow ({queueData.upcomingSummary.tomorrowDate}).
-                </p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setQueueScope('date');
-                    setDate(queueData.upcomingSummary!.tomorrowDate);
-                  }}
-                  className="h-8 px-3.5 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#0066cc] border border-[#e5e5ea] font-medium text-xs transition-all inline-flex items-center gap-1 self-start sm:self-auto flex-shrink-0 cursor-pointer"
-                >
-                  <span>View Tomorrow</span>
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            )}
-
-            {queueData?.upcomingSummary && queueData.upcomingSummary.tomorrowCount === 0 && queueData.upcomingSummary.nextDateWithBookings && (queueScope !== 'date' || date !== queueData.upcomingSummary.nextDateWithBookings) && (
-              <div className="px-5 py-3.5 rounded-2xl bg-white border border-[#e5e5ea] text-[#1d1d1f] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
-                <p className="text-xs text-[#48484a]">
-                  <strong className="font-semibold text-[#1d1d1f]">
-                    {queueData.upcomingSummary.totalUpcomingCount} upcoming appointment{queueData.upcomingSummary.totalUpcomingCount > 1 ? 's' : ''}
-                  </strong>{' '}
-                  scheduled on future dates (next: {queueData.upcomingSummary.nextDateWithBookings}).
-                </p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setQueueScope('date');
-                    setDate(queueData.upcomingSummary!.nextDateWithBookings!);
-                  }}
-                  className="h-8 px-3.5 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#0066cc] border border-[#e5e5ea] font-medium text-xs transition-all inline-flex items-center gap-1 self-start sm:self-auto flex-shrink-0 cursor-pointer"
-                >
-                  <span>View {queueData.upcomingSummary.nextDateWithBookings}</span>
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            )}
 
             {/* Main Live Queue Workspace (2-Column Grid) */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
@@ -1071,9 +1288,9 @@ export const DoctorDashboard: React.FC = () => {
                     <h3 className="text-[16px] font-semibold text-[#1d1d1f] tracking-tight">
                       Active Cabin
                     </h3>
-                    {queueData?.activeInConsultation ? (
+                    {displayedActiveInConsultation ? (
                       <span className="bg-[#0066cc]/10 text-[#0066cc] font-semibold text-xs px-2.5 py-0.5 rounded-full">
-                        Token #{queueData.activeInConsultation.queueNumber}
+                        Token #{displayedActiveInConsultation.queueNumber}
                       </span>
                     ) : (
                       <span className="bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea] font-medium text-xs px-2.5 py-0.5 rounded-full">
@@ -1082,49 +1299,60 @@ export const DoctorDashboard: React.FC = () => {
                     )}
                   </div>
 
-                  {queueData?.activeInConsultation ? (
+                  {displayedActiveInConsultation ? (
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
                         <h4 className="text-[18px] font-semibold text-[#1d1d1f] tracking-tight">
-                          {queueData.activeInConsultation.patientName || queueData.activeInConsultation.patient?.user?.fullName || 'Patient'}
+                          {displayedActiveInConsultation.patientName || displayedActiveInConsultation.patient?.user?.fullName || 'Patient'}
                         </h4>
-                        {queueData.activeInConsultation.isForOther && (
+                        {displayedActiveInConsultation.isForOther && (
                           <span className="text-[11px] font-medium px-2.5 py-0.5 rounded-full bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea]">
-                            Family ({queueData.activeInConsultation.patientAge ? `Age ${queueData.activeInConsultation.patientAge}` : 'Other'})
+                            Family ({displayedActiveInConsultation.patientAge ? `Age ${displayedActiveInConsultation.patientAge}` : 'Other'})
                           </span>
                         )}
                       </div>
                       <p className="text-xs text-[#86868b] mt-1">
-                        Scheduled for {queueData.activeInConsultation.estimatedTime}
+                        Scheduled for {displayedActiveInConsultation.estimatedTime}
                       </p>
 
-                      <div className="my-4 p-3.5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] text-[13px] text-[#1d1d1f] space-y-1.5">
-                        <div className="whitespace-pre-wrap break-words">
-                          <span className="text-[#86868b] font-medium">Reason: </span>
-                          {queueData.activeInConsultation.reasonForVisit || 'General Consultation'}
-                        </div>
-                        {queueData.activeInConsultation.symptoms && (
-                          <div className="whitespace-pre-wrap break-words">
-                            <span className="text-[#86868b] font-medium">Symptoms: </span>
-                            {queueData.activeInConsultation.symptoms}
+                      {(() => {
+                        const cleanReason = getCleanReason(
+                          displayedActiveInConsultation.reasonForVisit,
+                          displayedActiveInConsultation.patientName || displayedActiveInConsultation.patient?.user?.fullName
+                        );
+                        if (!cleanReason && !displayedActiveInConsultation.symptoms) return null;
+                        return (
+                          <div className="my-4 p-3.5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] text-[13px] text-[#1d1d1f] space-y-1.5">
+                            {cleanReason && (
+                              <div className="whitespace-pre-wrap break-words">
+                                <span className="text-[#86868b] font-medium">Reason: </span>
+                                {cleanReason}
+                              </div>
+                            )}
+                            {displayedActiveInConsultation.symptoms && (
+                              <div className="whitespace-pre-wrap break-words">
+                                <span className="text-[#86868b] font-medium">Symptoms: </span>
+                                {displayedActiveInConsultation.symptoms}
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
+                        );
+                      })()}
 
                       <div className="flex flex-col sm:flex-row items-center gap-2.5">
                         <button
                           type="button"
-                          disabled={completingId === queueData.activeInConsultation.id}
-                          onClick={() => handleCompleteConsultation(queueData.activeInConsultation!.id)}
+                          disabled={completingId === displayedActiveInConsultation.id}
+                          onClick={() => handleCompleteConsultation(displayedActiveInConsultation.id)}
                           className="w-full sm:flex-1 h-10 px-4 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
                         >
                           <CheckCircle2 className="w-4 h-4 text-white" />
-                          <span>{completingId === queueData.activeInConsultation.id ? 'Completing...' : 'Complete Consultation'}</span>
+                          <span>{completingId === displayedActiveInConsultation.id ? 'Completing...' : 'Complete Consultation'}</span>
                         </button>
                         <button
                           type="button"
                           onClick={() =>
-                            navigate(`/doctor/consultation/${queueData.activeInConsultation?.id}`)
+                            navigate(`/doctor/consultation/${displayedActiveInConsultation.id}`)
                           }
                           className="w-full sm:w-auto h-10 px-4 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer"
                         >
@@ -1153,19 +1381,19 @@ export const DoctorDashboard: React.FC = () => {
                         Waiting Queue
                       </h3>
                       <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f]">
-                        {queueData?.waitingQueue.length || 0}
+                        {displayedWaitingQueue.length}
                       </span>
                     </div>
 
                     {(() => {
-                      const filteredWaiting = queueData?.waitingQueue.filter((appt) => {
+                      const filteredWaiting = displayedWaitingQueue.filter((appt) => {
                         if (!queueSearch.trim()) return true;
                         const q = queueSearch.toLowerCase().trim();
                         const name = (appt.patientName || appt.patient?.user?.fullName || '').toLowerCase();
                         const phone = (appt.patient?.user?.phone || '').toLowerCase();
                         const token = String(appt.queueNumber || '');
                         return name.includes(q) || phone.includes(q) || token.includes(q);
-                      }) || [];
+                      });
                       const nextPresentTarget = filteredWaiting.find(
                         (appt) => appt.isCheckedIn && appt.appointmentDate === getLocalDateString()
                       );
@@ -1203,7 +1431,7 @@ export const DoctorDashboard: React.FC = () => {
                         <div key={i} className="h-20 rounded-2xl bg-[#f5f5f7] animate-pulse"></div>
                       ))}
                     </div>
-                  ) : queueData?.waitingQueue.length === 0 ? (
+                  ) : displayedWaitingQueue.length === 0 ? (
                     <div className="py-8 text-center">
                       <h4 className="text-[14px] font-semibold text-[#1d1d1f] tracking-tight">
                         Queue is Clear for {queueScope === 'all-upcoming' ? 'All Upcoming Dates' : date === getLocalDateString() ? 'Today' : date === queueData?.upcomingSummary?.tomorrowDate ? 'Tomorrow' : date}
@@ -1213,14 +1441,14 @@ export const DoctorDashboard: React.FC = () => {
                       </p>
                     </div>
                   ) : (() => {
-                    const filteredWaiting = queueData?.waitingQueue.filter((appt) => {
+                    const filteredWaiting = displayedWaitingQueue.filter((appt) => {
                       if (!queueSearch.trim()) return true;
                       const q = queueSearch.toLowerCase().trim();
                       const name = (appt.patientName || appt.patient?.user?.fullName || '').toLowerCase();
                       const phone = (appt.patient?.user?.phone || '').toLowerCase();
                       const token = String(appt.queueNumber || '');
                       return name.includes(q) || phone.includes(q) || token.includes(q);
-                    }) || [];
+                    });
 
                     if (filteredWaiting.length === 0) {
                       return (
@@ -1239,103 +1467,161 @@ export const DoctorDashboard: React.FC = () => {
                       );
                     }
 
-                    return (
-                      <div className="space-y-3">
-                        {filteredWaiting.map((appt) => (
-                          <div
-                            key={appt.id}
-                            className="rounded-2xl border border-[#e5e5ea] p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:border-[#d2d2d7] transition-all duration-150 bg-[#f5f5f7]/40"
-                          >
-                            <div className="flex items-center gap-3.5 min-w-0">
-                              <div className="w-10 h-10 rounded-xl bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center font-semibold text-[14px] shrink-0">
-                                #{appt.queueNumber}
-                              </div>
-                              <div className="min-w-0">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <h4 className="text-[14px] font-semibold text-[#1d1d1f] tracking-tight">
-                                    {appt.patientName || appt.patient?.user?.fullName || 'Patient'}
-                                  </h4>
-                                  {appt.isForOther && (
-                                    <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-white text-[#1d1d1f] border border-[#e5e5ea]">
-                                      Family ({appt.patientAge ? `${appt.patientAge}y` : 'Other'})
-                                    </span>
-                                  )}
-                                  {appt.isCheckedIn ? (
-                                    <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-[#0066cc]/10 text-[#0066cc] flex items-center gap-1">
-                                      <span className="w-1.5 h-1.5 rounded-full bg-[#0066cc]"></span>
-                                      <span>At Clinic</span>
-                                    </span>
-                                  ) : (
-                                    <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-white text-[#86868b] border border-[#e5e5ea]">
-                                      Not Arrived
-                                    </span>
-                                  )}
-                                </div>
-                                <p className="text-xs text-[#86868b] flex items-center gap-1.5 mt-1 flex-wrap">
-                                  {appt.appointmentDate && appt.appointmentDate !== getLocalDateString() && (
-                                    <span className="font-medium text-[#1d1d1f]">
-                                      {appt.appointmentDate === queueData?.upcomingSummary?.tomorrowDate ? 'Tomorrow' : appt.appointmentDate} •
-                                    </span>
-                                  )}
-                                  <span>{appt.checkingWindow || `Est. ${appt.estimatedTime}`}</span>
-                                  <span>•</span>
-                                  <span className="text-[#1d1d1f] truncate max-w-[200px]">
-                                    {appt.reasonForVisit || 'General Consultation'}
-                                  </span>
-                                </p>
-                              </div>
-                            </div>
-
-                            <div className="flex items-center gap-2 w-full sm:w-auto justify-end shrink-0">
-                              {appt.appointmentDate === getLocalDateString() ? (
-                                isDoctorAway ? (
-                                  <span className="h-8 px-3 rounded-full text-xs font-medium text-[#86868b] bg-white border border-[#e5e5ea] flex items-center">
-                                    Doctor {user?.doctorProfile?.cabinStatus === 'STEPPED_OUT' ? 'Stepped Out' : 'Away'}
-                                  </span>
-                                ) : appt.isCheckedIn ? (
-                                  <button
-                                    type="button"
-                                    disabled={callingId !== null}
-                                    onClick={() => handleCallPatient(appt.id)}
-                                    className="h-9 px-4 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer whitespace-nowrap transition-all"
-                                  >
-                                    <Play className="w-3.5 h-3.5 fill-current" />
-                                    {callingId === appt.id ? 'Calling...' : 'Call Patient'}
-                                  </button>
-                                ) : (
-                                  <button
-                                    type="button"
-                                    disabled={togglingCheckinId === appt.id}
-                                    onClick={() => handleToggleCheckIn(appt.id, false)}
-                                    className="h-9 px-3.5 rounded-full bg-white hover:bg-[#e8e8ed] border border-[#e5e5ea] flex items-center gap-1.5 text-xs font-medium text-[#1d1d1f] cursor-pointer whitespace-nowrap transition-all"
-                                  >
-                                    <CheckCircle2 className="w-3.5 h-3.5 text-[#0066cc]" />
-                                    <span>{togglingCheckinId === appt.id ? 'Updating...' : 'Mark Arrived'}</span>
-                                  </button>
-                                )
+                    const renderApptCard = (appt: Appointment) => (
+                      <div
+                        key={appt.id}
+                        className="rounded-2xl border border-[#e5e5ea] p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:border-[#d2d2d7] transition-all duration-150 bg-[#f5f5f7]/40"
+                      >
+                        <div className="flex items-center gap-3.5 min-w-0">
+                          <div className="w-10 h-10 rounded-xl bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center font-semibold text-[14px] shrink-0">
+                            #{appt.queueNumber}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h4 className="text-[14px] font-semibold text-[#1d1d1f] tracking-tight">
+                                {appt.patientName || appt.patient?.user?.fullName || 'Patient'}
+                              </h4>
+                              {appt.isForOther && (
+                                <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-white text-[#1d1d1f] border border-[#e5e5ea]">
+                                  Family ({appt.patientAge ? `${appt.patientAge}y` : 'Other'})
+                                </span>
+                              )}
+                              {appt.isCheckedIn ? (
+                                <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-[#0066cc]/10 text-[#0066cc] flex items-center gap-1">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-[#0066cc]"></span>
+                                  <span>At Clinic</span>
+                                </span>
                               ) : (
-                                <span className="h-8 px-3 rounded-full text-xs font-medium text-[#86868b] bg-white border border-[#e5e5ea] flex items-center">
-                                  {appt.appointmentDate === queueData?.upcomingSummary?.tomorrowDate ? 'Tomorrow' : appt.appointmentDate}
+                                <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-white text-[#86868b] border border-[#e5e5ea]">
+                                  Not Arrived
                                 </span>
                               )}
                             </div>
+                            <p className="text-xs text-[#86868b] flex items-center gap-1.5 mt-1 flex-wrap">
+                              {appt.appointmentDate && appt.appointmentDate !== getLocalDateString() && queueScope !== 'all-upcoming' && (
+                                <span className="font-medium text-[#1d1d1f]">
+                                  {appt.appointmentDate === queueData?.upcomingSummary?.tomorrowDate ? 'Tomorrow' : appt.appointmentDate} •
+                                </span>
+                              )}
+                              <span>Est. {appt.estimatedTime || 'Scheduled'}</span>
+                              {selectedSlotId === 'all' && availableShifts.length > 1 && (
+                                <>
+                                  <span>•</span>
+                                  <span className="font-medium text-[#1d1d1f]">
+                                    {getSlotShortLabel(appt, availableShifts)}
+                                  </span>
+                                </>
+                              )}
+                              {selectedClinicId === 'all' && affiliations?.clinics && affiliations.clinics.length > 1 && appt.clinic?.clinicName && (
+                                <>
+                                  <span>•</span>
+                                  <span className="text-[#86868b] truncate max-w-[150px]">
+                                    {appt.clinic.clinicName}
+                                  </span>
+                                </>
+                              )}
+                              {(() => {
+                                const cleanReason = getCleanReason(
+                                  appt.reasonForVisit,
+                                  appt.patientName || appt.patient?.user?.fullName
+                                );
+                                if (!cleanReason) return null;
+                                return (
+                                  <>
+                                    <span>•</span>
+                                    <span className="text-[#1d1d1f] truncate max-w-[180px]">
+                                      {cleanReason}
+                                    </span>
+                                  </>
+                                );
+                              })()}
+                            </p>
                           </div>
-                        ))}
+                        </div>
+
+                        <div className="flex items-center gap-2 w-full sm:w-auto justify-end shrink-0">
+                          {appt.appointmentDate === getLocalDateString() ? (
+                            isDoctorAway ? (
+                              <span className="h-8 px-3 rounded-full text-xs font-medium text-[#86868b] bg-white border border-[#e5e5ea] flex items-center">
+                                Doctor {user?.doctorProfile?.cabinStatus === 'STEPPED_OUT' ? 'Stepped Out' : 'Away'}
+                              </span>
+                            ) : appt.isCheckedIn ? (
+                              <button
+                                type="button"
+                                disabled={callingId !== null}
+                                onClick={() => handleCallPatient(appt.id)}
+                                className="h-9 px-4 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer whitespace-nowrap transition-all"
+                              >
+                                <Play className="w-3.5 h-3.5 fill-current" />
+                                {callingId === appt.id ? 'Calling...' : 'Call Patient'}
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                disabled={togglingCheckinId === appt.id}
+                                onClick={() => handleToggleCheckIn(appt.id, false)}
+                                className="h-9 px-3.5 rounded-full bg-white hover:bg-[#e8e8ed] border border-[#e5e5ea] flex items-center gap-1.5 text-xs font-medium text-[#1d1d1f] cursor-pointer whitespace-nowrap transition-all"
+                              >
+                                <CheckCircle2 className="w-3.5 h-3.5 text-[#0066cc]" />
+                                <span>{togglingCheckinId === appt.id ? 'Updating...' : 'Mark Arrived'}</span>
+                              </button>
+                            )
+                          ) : (
+                            <span className="h-8 px-3 rounded-full text-xs font-medium text-[#86868b] bg-white border border-[#e5e5ea] flex items-center">
+                              {appt.appointmentDate === queueData?.upcomingSummary?.tomorrowDate ? 'Tomorrow' : appt.appointmentDate}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+
+                    if (queueScope === 'all-upcoming') {
+                      const groups: Record<string, Appointment[]> = {};
+                      filteredWaiting.forEach((appt) => {
+                        const d = appt.appointmentDate || 'Upcoming';
+                        if (!groups[d]) groups[d] = [];
+                        groups[d].push(appt);
+                      });
+
+                      return (
+                        <div className="space-y-5">
+                          {Object.entries(groups).map(([groupDate, dateAppts]) => (
+                            <div key={groupDate} className="space-y-2.5">
+                              <div className="flex items-center justify-between px-1">
+                                <span className="text-xs font-semibold text-[#1d1d1f] tracking-tight">
+                                  {groupDate === queueData?.upcomingSummary?.tomorrowDate ? 'Tomorrow' : groupDate}
+                                </span>
+                                <span className="text-[11px] font-medium text-[#86868b]">
+                                  {dateAppts.length} patient{dateAppts.length > 1 ? 's' : ''}
+                                </span>
+                              </div>
+                              <div className="space-y-2.5">
+                                {dateAppts.map((appt) => renderApptCard(appt))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div className="space-y-3">
+                        {filteredWaiting.map((appt) => renderApptCard(appt))}
                       </div>
                     );
                   })()}
                 </div>
 
                 {/* Completed Consultations Card */}
-                {queueData && queueData.completedQueue.length > 0 && (
+                {displayedCompletedQueue.length > 0 && (
                   <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
                     <div className="flex items-center justify-between mb-4">
                       <h4 className="text-[15px] font-semibold text-[#1d1d1f] tracking-tight">
-                        Completed Consultations ({queueData.completedQueue.length})
+                        Completed Consultations ({displayedCompletedQueue.length})
                       </h4>
                     </div>
                     <div className="space-y-2.5">
-                      {queueData.completedQueue.map((appt) => (
+                      {displayedCompletedQueue.map((appt) => (
                         <div
                           key={appt.id}
                           className="p-3.5 rounded-2xl bg-[#f5f5f7]/60 border border-[#e5e5ea] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs"

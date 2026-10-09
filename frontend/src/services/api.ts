@@ -1511,7 +1511,9 @@ export const api = {
   // Doctor Consultation & Queue Console
   async getDoctorQueue(
     date?: string,
-    scope?: 'date' | 'all-upcoming'
+    scope?: 'date' | 'all-upcoming',
+    clinicId?: string,
+    slotId?: string
   ): Promise<{
     date: string;
     scope?: string;
@@ -1531,6 +1533,8 @@ export const api = {
     const params = new URLSearchParams();
     if (date) params.append('date', date);
     if (scope) params.append('scope', scope);
+    if (clinicId && clinicId !== 'all') params.append('clinicId', clinicId);
+    if (slotId && slotId !== 'all') params.append('slotId', slotId);
     const qs = params.toString();
     const url = qs ? `${API_BASE_URL}/consultations/queue?${qs}` : `${API_BASE_URL}/consultations/queue`;
     const res = await safeFetch(url, { headers: getHeaders() });

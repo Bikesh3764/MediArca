@@ -55,8 +55,16 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
     }
 
     const clinicId = req.query.clinicId as string;
-    if (clinicId) {
+    if (clinicId && clinicId !== 'all') {
       whereClause.clinicId = clinicId;
+    }
+
+    const slotId = req.query.slotId as string;
+    if (slotId && slotId !== 'all') {
+      whereClause.OR = [
+        { slotId: slotId },
+        { checkingWindow: { contains: slotId } },
+      ];
     }
 
     const appointments = await prisma.appointment.findMany({
@@ -102,12 +110,17 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
     const completedQueue = appointments.filter((a) => a.status === 'COMPLETED');
 
     // Calculate upcoming bookings summary across dates for this doctor
+    const upcomingWhere: any = {
+      doctorId: doctor.id,
+      appointmentDate: { gte: todayIso },
+      status: { in: ['WAITING', 'IN_CONSULTATION'] },
+    };
+    if (clinicId && clinicId !== 'all') {
+      upcomingWhere.clinicId = clinicId;
+    }
+
     const upcomingWaiting = await prisma.appointment.findMany({
-      where: {
-        doctorId: doctor.id,
-        appointmentDate: { gte: todayIso },
-        status: { in: ['WAITING', 'IN_CONSULTATION'] },
-      },
+      where: upcomingWhere,
       select: {
         id: true,
         appointmentDate: true,
