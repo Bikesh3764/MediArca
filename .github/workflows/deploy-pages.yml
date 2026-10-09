@@ -38,6 +38,7 @@ jobs:
 
       - name: Build Frontend
         env:
+          VITE_BASE: /MediArca/
           VITE_API_URL: https://mediarca-mdwk.onrender.com/api
           VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID || vars.VITE_GOOGLE_CLIENT_ID }}
         run: |
