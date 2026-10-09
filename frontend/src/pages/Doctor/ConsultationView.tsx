@@ -13,6 +13,8 @@ import {
   Building2,
   Calendar,
   Settings,
+  UserCheck,
+  Clock,
 } from 'lucide-react';
 
 export const ConsultationView: React.FC = () => {
@@ -104,6 +106,24 @@ export const ConsultationView: React.FC = () => {
     }
   };
 
+  const [callingPatient, setCallingPatient] = useState(false);
+
+  const handleCallPatient = async () => {
+    if (!appointment) return;
+    setCallingPatient(true);
+    setError(null);
+    try {
+      const updated = await api.callPatient(appointment.id);
+      setAppointment(updated);
+      setSuccessMsg(`Token #${updated.queueNumber} called into cabin.`);
+      setTimeout(() => setSuccessMsg(null), 3000);
+    } catch (err: any) {
+      setError(err.message || 'Failed to call patient into cabin');
+    } finally {
+      setCallingPatient(false);
+    }
+  };
+
   const handleCompleteConsultation = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!appointment) return;
@@ -158,6 +178,8 @@ export const ConsultationView: React.FC = () => {
   const patientName = appointment.patientName || appointment.patient?.user?.fullName || 'Patient';
   const isCompleted = appointment.status === 'COMPLETED';
   const isCancelled = appointment.status === 'CANCELLED' || appointment.status === 'REJECTED';
+  const isPendingApproval = appointment.status === 'PENDING_APPROVAL';
+  const isWaiting = appointment.status === 'WAITING';
 
   return (
     <DashboardLayout
@@ -266,13 +288,13 @@ export const ConsultationView: React.FC = () => {
               {appointment.reasonForVisit && (
                 <div>
                   <span className="font-semibold text-[#1d1d1f]">Reason for Visit: </span>
-                  <span className="text-[#48484a]">{appointment.reasonForVisit}</span>
+                  <span className="text-[#48484a] whitespace-pre-wrap break-words">{appointment.reasonForVisit}</span>
                 </div>
               )}
               {appointment.symptoms && (
                 <div>
                   <span className="font-semibold text-[#1d1d1f]">Reported Symptoms: </span>
-                  <span className="text-[#48484a]">{appointment.symptoms}</span>
+                  <span className="text-[#48484a] whitespace-pre-wrap break-words">{appointment.symptoms}</span>
                 </div>
               )}
             </div>
@@ -295,7 +317,7 @@ export const ConsultationView: React.FC = () => {
                 <span className="text-xs font-medium text-[#86868b] block mb-1.5">
                   Consultation Notes
                 </span>
-                <p className="text-[14px] text-[#1d1d1f] whitespace-pre-wrap leading-relaxed">
+                <p className="text-[14px] text-[#1d1d1f] whitespace-pre-wrap break-words leading-relaxed">
                   {clinicalNotes}
                 </p>
               </div>
@@ -322,6 +344,65 @@ export const ConsultationView: React.FC = () => {
             >
               Return to Live Queue
             </button>
+          </UtilityCard>
+        ) : isPendingApproval ? (
+          <UtilityCard className="p-6 text-center">
+            <h2 className="text-[16px] font-semibold text-[#1d1d1f] tracking-tight">Appointment Pending Approval</h2>
+            <p className="text-[13px] text-[#86868b] mt-1 mb-5">
+              This appointment request is pending front desk approval before it can enter the active queue.
+            </p>
+            <button
+              type="button"
+              onClick={() => navigate('/doctor/dashboard')}
+              className="w-full sm:w-auto h-10 px-6 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-medium transition-all inline-flex items-center justify-center cursor-pointer"
+            >
+              Return to Live Queue
+            </button>
+          </UtilityCard>
+        ) : isWaiting ? (
+          <UtilityCard className="p-6 text-center">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <Clock className="w-5 h-5 text-[#86868b]" />
+              <h2 className="text-[16px] font-semibold text-[#1d1d1f] tracking-tight">Patient in Waiting Queue</h2>
+            </div>
+            <p className="text-[13px] text-[#86868b] mb-5">
+              Token #{appointment.queueNumber} is currently waiting. Call the patient into the cabin when you are ready to begin consultation.
+            </p>
+            {appointment.isCheckedIn ? (
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => navigate('/doctor/dashboard')}
+                  className="w-full sm:w-auto h-10 px-5 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-medium transition-all cursor-pointer"
+                >
+                  Return to Live Queue
+                </button>
+                <button
+                  type="button"
+                  disabled={callingPatient}
+                  onClick={handleCallPatient}
+                  className="w-full sm:w-auto h-10 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-xs font-semibold transition-all duration-150 flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60"
+                >
+                  <UserCheck className="w-4 h-4 text-white" />
+                  <span>{callingPatient ? 'Calling...' : 'Call into Cabin'}</span>
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200/80 text-amber-800 text-xs font-medium inline-block text-left">
+                  Patient has not arrived at the clinic yet. Arrival check-in is required before beginning consultation.
+                </div>
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/doctor/dashboard')}
+                    className="w-full sm:w-auto h-10 px-6 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-medium transition-all inline-flex items-center justify-center cursor-pointer"
+                  >
+                    Return to Live Queue
+                  </button>
+                </div>
+              </div>
+            )}
           </UtilityCard>
         ) : (
           <form onSubmit={handleCompleteConsultation} className="space-y-6">
