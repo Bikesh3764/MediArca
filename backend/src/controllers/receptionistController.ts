@@ -721,7 +721,7 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
             },
             include: {
               doctor: {
-                include: { user: { select: { fullName: true } } },
+                include: { user: { select: { id: true, fullName: true } } },
               },
               clinic: {
                 select: { id: true, clinicName: true, address: true, city: true, phone: true },
@@ -751,6 +751,17 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
         newAppointment.patient.userId || (newAppointment.patient as any).user?.id,
         'Walk-in Token Booked',
         `Queue Token #${newAppointment.queueNumber} assigned for ${newAppointment.doctor?.user?.fullName || 'Practitioner'} on ${appointmentDate}.`,
+        'QUEUE'
+      ).catch(() => {});
+    }
+
+    if (newAppointment?.doctor?.userId || (newAppointment?.doctor as any)?.user?.id) {
+      const doctorUserId = newAppointment.doctor.userId || (newAppointment.doctor as any).user?.id;
+      const displayPatient = patientName ? String(patientName).trim() : (newAppointment.patient?.user?.fullName || 'Walk-in Patient');
+      createNotification(
+        doctorUserId,
+        'Walk-in Patient Added',
+        `Walk-in Patient ${displayPatient} was added to your queue (Token #${newAppointment.queueNumber}) at ${newAppointment.clinic?.clinicName || 'Clinic'}.`,
         'QUEUE'
       ).catch(() => {});
     }

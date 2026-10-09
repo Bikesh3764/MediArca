@@ -432,7 +432,7 @@ export const DoctorDetail: React.FC = () => {
                 <div className="p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] mb-4">
                   <div className="flex items-baseline justify-between mb-2">
                     <div>
-                      <span className="text-[11px] text-[#86868b] block font-medium">Your Token</span>
+                      <span className="text-[11px] text-[#86868b] block font-medium">Est. Token</span>
                       <span className="text-2xl font-bold tracking-tight text-[#0066cc]">
                         #{queuePreview.nextQueueNumber}
                       </span>

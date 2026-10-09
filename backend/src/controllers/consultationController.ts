@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import prisma from '../config/database';
 import { AuthRequest } from '../middleware/authMiddleware';
-import { getLocalDateString, timeToMinutes } from '../utils/scheduleUtils';
+import { getLocalDateString, timeToMinutes, getIndianTimeMinutes } from '../utils/scheduleUtils';
 import { canTransition } from '../utils/appointmentStateMachine';
 import { isDoctorEligibleForClinicalPractice } from '../utils/authGuards';
 import { createNotification } from '../services/notificationService';
@@ -278,9 +278,12 @@ export const callPatient = async (req: AuthRequest, res: Response): Promise<void
       return;
     }
 
-    // Verify appointment date: only today's patients can be called into active consultation
+    // Verify appointment date: allow today's patients or overnight carryover for checked-in patients
     const todayIso = getLocalDateString();
-    if (targetAppointment.appointmentDate !== todayIso) {
+    const yesterdayIso = getLocalDateString(new Date(Date.now() - 24 * 60 * 60 * 1000));
+    const currentMins = getIndianTimeMinutes(new Date());
+    const isOvernightCarryover = targetAppointment.appointmentDate === yesterdayIso && currentMins < 6 * 60 && targetAppointment.isCheckedIn;
+    if (targetAppointment.appointmentDate !== todayIso && !isOvernightCarryover) {
       res.status(400).json({
         success: false,
         message: `Cannot call an appointment scheduled for ${targetAppointment.appointmentDate}. Only patients scheduled for today (${todayIso}) can be called into the active cabin.`,
@@ -514,9 +517,11 @@ export const completeConsultation = async (req: AuthRequest, res: Response): Pro
       return;
     }
 
-    // Date check: consultations can only be finalized on the scheduled date
+    // Date check: consultations can be finalized on the scheduled date or overnight carryover
     const todayIso = getLocalDateString(new Date());
-    if (targetAppointment.appointmentDate !== todayIso) {
+    const yesterdayIso = getLocalDateString(new Date(Date.now() - 24 * 60 * 60 * 1000));
+    const isOvernightCompletion = targetAppointment.status === 'IN_CONSULTATION' && targetAppointment.appointmentDate === yesterdayIso;
+    if (targetAppointment.appointmentDate !== todayIso && !isOvernightCompletion) {
       res.status(400).json({
         success: false,
         message: `Cannot complete a consultation for ${targetAppointment.appointmentDate}. Consultations can only be completed on the scheduled appointment date (today is ${todayIso}).`,

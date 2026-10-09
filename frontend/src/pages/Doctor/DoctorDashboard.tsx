@@ -42,6 +42,12 @@ import {
 } from 'lucide-react';
 import { ClinicQrStandeeModal } from '../../components/common/ClinicQrStandeeModal';
 
+const getYesterdayDateString = (): string => {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return getLocalDateString(d);
+};
+
 export const DoctorDashboard: React.FC = () => {
   const { user, loading: loadingAuth, updateUser } = useAuth();
   const navigate = useNavigate();
@@ -305,8 +311,11 @@ export const DoctorDashboard: React.FC = () => {
 
     const target = queueData?.waitingQueue?.find((a) => a.id === appointmentId);
     if (target) {
-      if (target.appointmentDate !== getLocalDateString()) {
-        alert(`Cannot call patient scheduled for ${target.appointmentDate}. Only patients scheduled for today can be called into the active cabin.`);
+      const todayStr = getLocalDateString();
+      const yesterdayStr = getYesterdayDateString();
+      const isValidDate = target.appointmentDate === todayStr || (target.appointmentDate === yesterdayStr && target.isCheckedIn);
+      if (!isValidDate) {
+        alert(`Cannot call patient scheduled for ${target.appointmentDate}. Only patients scheduled for today or active overnight shifts can be called into the active cabin.`);
         return;
       }
       if (!target.isCheckedIn) {

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
-import { api, Doctor, format12Hour, getFileUrl, formatDoctorDegrees, ContactMessageItem } from '../../services/api';
+import { api, Doctor, format12Hour, getFileUrl, formatDoctorDegrees, ContactMessageItem, getLocalDateString } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { BrandLogo } from '../../components/ui/BrandLogo';
@@ -64,21 +64,12 @@ export const AdminDashboard: React.FC = () => {
   const [bookingViewMode, setBookingViewMode] = useState<'table' | 'by-date' | 'by-clinic'>('table');
   const [selectedAppointment, setSelectedAppointment] = useState<any | null>(null);
 
-  const getTodayDateStr = () => {
-    const d = new Date();
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
+  const getTodayDateStr = () => getLocalDateString();
 
   const getTomorrowDateStr = () => {
     const d = new Date();
     d.setDate(d.getDate() + 1);
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    return getLocalDateString(d);
   };
 
   const todayStr = getTodayDateStr();

@@ -123,10 +123,16 @@ export const BookAppointment: React.FC = () => {
         const data = await api.getDoctorById(id);
         setDoctor(data);
 
-        // Preselect clinic if provided via query params or pick first available clinic
+        // Preselect clinic if provided via query params or pick first available clinic (prioritize staffed clinics)
         if (data.clinics && data.clinics.length > 0) {
-          const matchedClinic = initialClinic ? data.clinics.find((c) => c.clinicId === initialClinic) : null;
-          const targetClinic = matchedClinic || data.clinics[0];
+          const sortedClinics = [...data.clinics].sort((a, b) => {
+            if (a.hasReceptionist && !b.hasReceptionist) return -1;
+            if (!a.hasReceptionist && b.hasReceptionist) return 1;
+            return 0;
+          });
+          data.clinics = sortedClinics;
+          const matchedClinic = initialClinic ? sortedClinics.find((c: any) => c.clinicId === initialClinic) : null;
+          const targetClinic = matchedClinic || sortedClinics[0];
           setSelectedClinicId(targetClinic.clinicId);
 
           const slots = (targetClinic.slots && targetClinic.slots.length > 0) ? targetClinic.slots : parseDoctorSlots(data);
@@ -484,9 +490,20 @@ export const BookAppointment: React.FC = () => {
               {doctor.clinics.length === 1 ? (
                 <div className="p-3.5 rounded-2xl bg-white border border-[#0066cc] ring-4 ring-[#0066cc]/10 flex items-center justify-between">
                   <div className="min-w-0 flex-1">
-                    <span className="text-sm font-semibold text-[#1d1d1f] block truncate">
-                      {doctor.clinics[0].clinic.clinicName}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold text-[#1d1d1f] truncate">
+                        {doctor.clinics[0].clinic.clinicName}
+                      </span>
+                      {doctor.clinics[0].hasReceptionist ? (
+                        <span className="text-[10px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 rounded-full shrink-0">
+                          Desk Active
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-medium text-amber-700 bg-amber-50 border border-amber-200/60 px-2 py-0.5 rounded-full shrink-0">
+                          Desk Offline
+                        </span>
+                      )}
+                    </div>
                     <span className="text-xs text-[#86868b] flex items-center gap-1 mt-0.5 truncate">
                       <MapPin className="w-3 h-3 text-[#86868b] shrink-0" />
                       <span className="truncate">{doctor.clinics[0].clinic.address}{doctor.clinics[0].clinic.city ? `, ${doctor.clinics[0].clinic.city}` : ''}</span>
@@ -514,11 +531,22 @@ export const BookAppointment: React.FC = () => {
                       >
                         <div className="flex items-center justify-between gap-1 mb-1">
                           <span className="text-sm font-semibold text-[#1d1d1f] truncate">{c.clinic.clinicName}</span>
-                          {isSelected && (
-                            <span className="w-4 h-4 rounded-full bg-[#0066cc] text-white flex items-center justify-center shrink-0">
-                              <Check className="w-2.5 h-2.5 stroke-[3]" />
-                            </span>
-                          )}
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            {c.hasReceptionist ? (
+                              <span className="text-[10px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 rounded-full">
+                                Desk Active
+                              </span>
+                            ) : (
+                              <span className="text-[10px] font-medium text-amber-700 bg-amber-50 border border-amber-200/60 px-2 py-0.5 rounded-full">
+                                Desk Offline
+                              </span>
+                            )}
+                            {isSelected && (
+                              <span className="w-4 h-4 rounded-full bg-[#0066cc] text-white flex items-center justify-center shrink-0">
+                                <Check className="w-2.5 h-2.5 stroke-[3]" />
+                              </span>
+                            )}
+                          </div>
                         </div>
                         <span className="text-xs text-[#86868b] flex items-center gap-1 truncate">
                           <MapPin className="w-3 h-3 text-[#86868b] shrink-0" />

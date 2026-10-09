@@ -1299,28 +1299,16 @@ export const ReceptionistDashboard: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Multi-clinic selector only if doctor practices at multiple clinics */}
-                    {activeSelectedDoctor?.clinics && activeSelectedDoctor.clinics.length > 1 && (
-                      <div>
-                        <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
-                          Clinic Facility
-                        </label>
-                        <div className="relative">
-                          <select
-                            value={walkinClinicId}
-                            onChange={(e) => setWalkinClinicId(e.target.value)}
-                            className="w-full h-11 pl-3.5 pr-9 rounded-xl border border-[#d2d2d7] bg-white text-[13px] text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all appearance-none cursor-pointer"
-                          >
-                            {activeSelectedDoctor.clinics.map((c) => (
-                              <option key={c.clinicId} value={c.clinicId}>
-                                {c.clinic.clinicName} — {c.clinic.address}
-                              </option>
-                            ))}
-                          </select>
-                          <ChevronDown className="w-4 h-4 text-[#86868b] absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                        </div>
+                    {/* Fixed Reception Desk Clinic Facility (DEF-06) */}
+                    <div>
+                      <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                        Clinic Facility
+                      </label>
+                      <div className="h-11 px-3.5 rounded-xl border border-[#e5e5ea] bg-[#f5f5f7] flex items-center justify-between text-[13px] text-[#1d1d1f]">
+                        <span className="font-medium truncate">{data?.clinic?.clinicName || 'Clinic Desk'}</span>
+                        <span className="text-xs text-[#86868b] truncate ml-2">{data?.clinic?.address || ''}</span>
                       </div>
-                    )}
+                    </div>
 
                     {/* Shift Status Warnings */}
                     {isSelectedShiftEnded && (

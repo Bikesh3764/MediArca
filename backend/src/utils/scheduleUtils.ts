@@ -326,6 +326,18 @@ export const validateDoctorSlots = (
         error: `Slot ${i + 1} end time (${eTime}) must be after start time (${sTime}).`,
       };
     }
+    if (endMins - startMins < 15) {
+      return {
+        valid: false,
+        error: `Slot ${i + 1} duration must be at least 15 minutes.`,
+      };
+    }
+    if (endMins - startMins > 18 * 60) {
+      return {
+        valid: false,
+        error: `Slot ${i + 1} duration cannot exceed 18 hours.`,
+      };
+    }
 
     const rawMax = Number(s.maxPatients);
     if (!Number.isFinite(rawMax) || Math.floor(rawMax) < 1 || Math.floor(rawMax) > 500) {

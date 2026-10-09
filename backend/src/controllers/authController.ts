@@ -22,53 +22,6 @@ import {
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-/**
- * Reclaims and reassigns past appointments from synthetic walk-in accounts with matching phone (BUG-12, BUG-17)
- */
-export const migrateSyntheticWalkinAppointments = async (userId: string, formattedPhone: string): Promise<number> => {
-  try {
-    const rawDigits = sanitizeIndianPhone(formattedPhone);
-    const plainWithPlus = rawDigits ? `+91${rawDigits}` : null;
-    const spacedPhone = rawDigits && rawDigits.length === 10 ? `+91 ${rawDigits.slice(0, 5)} ${rawDigits.slice(5)}` : null;
-
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      include: { patientProfile: true },
-    });
-    if (!user || !user.patientProfile) return 0;
-
-    const syntheticUsers = await prisma.user.findMany({
-      where: {
-        id: { not: userId },
-        OR: [
-          { phone: formattedPhone },
-          ...(rawDigits ? [{ phone: rawDigits }] : []),
-          ...(plainWithPlus ? [{ phone: plainWithPlus }] : []),
-          ...(spacedPhone ? [{ phone: spacedPhone }] : []),
-        ],
-        email: { contains: '@mediarca.local' },
-      },
-      include: { patientProfile: true },
-    });
-
-    let migratedCount = 0;
-    for (const synUser of syntheticUsers) {
-      if (synUser.patientProfile) {
-        const updateResult = await prisma.appointment.updateMany({
-          where: { patientId: synUser.patientProfile.id },
-          data: { patientId: user.patientProfile.id },
-        });
-        migratedCount += updateResult.count;
-        await prisma.patientProfile.delete({ where: { id: synUser.patientProfile.id } }).catch(() => {});
-        await prisma.user.delete({ where: { id: synUser.id } }).catch(() => {});
-      }
-    }
-    return migratedCount;
-  } catch (migrationErr) {
-    console.error('Failed to migrate synthetic walk-in appointments:', migrationErr);
-    return 0;
-  }
-};
 
 export const sanitizeClinicalHistoryList = (val: unknown): string | null => {
   if (val === undefined || val === null) return null;
@@ -232,6 +185,15 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     }
 
     if (existingUser) {
+      // Guard against role mutation: unverified account cannot switch roles on re-registration
+      if (existingUser.role !== normalizedRole) {
+        res.status(409).json({
+          success: false,
+          message: `An unverified account with this email already exists as a ${existingUser.role}. Please complete verification or sign up with a different email address.`,
+        });
+        return;
+      }
+
       // 1. Account-level lockout check before issuing new OTP on unverified re-registration
       const lockout = getVerificationLockout(cleanEmail);
       if (lockout.isLocked) {
