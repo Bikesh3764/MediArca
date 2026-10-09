@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { ChevronDown } from 'lucide-react';
-import { AppleButton } from '../../components/ui/AppleButton';
 
 interface FAQItem {
   id: string;
@@ -10,8 +8,7 @@ interface FAQItem {
 }
 
 export const FAQ: React.FC = () => {
-  const navigate = useNavigate();
-  const [openIds, setOpenIds] = useState<string[]>(['1']);
+  const [openIds, setOpenIds] = useState<string[]>([]);
 
   const toggleAccordion = (id: string) => {
     setOpenIds((prev) =>
@@ -59,71 +56,63 @@ export const FAQ: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-[#f5f5f7] text-[#1d1d1f] py-10 sm:py-14 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto w-full space-y-8 sm:space-y-10">
-        {/* Page Header */}
-        <div className="text-center space-y-2.5 max-w-2xl mx-auto">
-          <h1 className="text-page-title sm:text-[32px]">
+    <div className="min-h-screen bg-[#f5f5f7] text-[#1d1d1f] py-10 sm:py-16 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-3xl mx-auto space-y-10">
+        {/* Header (No pill badge) */}
+        <div className="text-center space-y-3">
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[#1d1d1f]">
             Help & FAQs
           </h1>
-          <p className="text-body text-[#6e6e73]">
-            Simple answers to common questions about booking and live queue tokens.
+          <p className="text-sm text-[#6e6e73]">
+            Simple answers to common questions about booking and queue tokens.
           </p>
         </div>
 
-        {/* Clean Unified Accordion Card */}
-        <div className="max-w-3xl mx-auto space-y-6">
-          <div className="bg-white rounded-[20px] border border-[#e5e5ea] shadow-apple-card divide-y divide-[#f0f0f2] overflow-hidden">
-            {faqs.map((faq) => {
-              const isOpen = openIds.includes(faq.id);
-              return (
-                <div key={faq.id} className="transition-colors">
-                  <button
-                    type="button"
-                    onClick={() => toggleAccordion(faq.id)}
-                    aria-expanded={isOpen}
-                    className="w-full px-5 sm:px-6 py-4 sm:py-5 text-left flex items-center justify-between gap-4 cursor-pointer hover:bg-[#fafafc] transition-colors focus-visible:outline-none focus-visible:bg-[#fafafc]"
+        {/* Accordion List */}
+        <div className="space-y-3">
+          {faqs.map((faq) => {
+            const isOpen = openIds.includes(faq.id);
+            return (
+              <div
+                key={faq.id}
+                className="bg-white rounded-[20px] border border-[#e5e5ea] overflow-hidden shadow-2xs transition-all"
+              >
+                <button
+                  type="button"
+                  onClick={() => toggleAccordion(faq.id)}
+                  className="w-full p-5 sm:p-6 text-left flex items-center justify-between gap-4 cursor-pointer hover:bg-black/[0.01] transition-colors"
+                >
+                  <span className="text-sm sm:text-base font-semibold text-[#1d1d1f]">
+                    {faq.question}
+                  </span>
+                  <div
+                    className={`w-7 h-7 rounded-full bg-[#f5f5f7] flex items-center justify-center shrink-0 transition-transform duration-200 ${
+                      isOpen ? 'rotate-180 text-[#1d1d1f]' : 'text-[#86868b]'
+                    }`}
                   >
-                    <span className="text-card-title">
-                      {faq.question}
-                    </span>
-                    <ChevronDown
-                      className={`w-4 h-4 shrink-0 transition-transform duration-200 ${
-                        isOpen ? 'rotate-180 text-[#0066cc]' : 'text-[#86868b]'
-                      }`}
-                    />
-                  </button>
+                    <ChevronDown className="w-4 h-4" />
+                  </div>
+                </button>
 
-                  {isOpen && (
-                    <div className="px-5 sm:px-6 pb-5 pt-0 text-secondary text-[14px] text-[#48484a] leading-relaxed">
-                      {faq.answer}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+                {isOpen && (
+                  <div className="px-5 sm:px-6 pb-6 pt-1 text-xs sm:text-sm text-[#555558] leading-relaxed border-t border-[#f0f0f2]">
+                    {faq.answer}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
 
-          {/* Contact Help Footer Card */}
-          <div className="apple-card p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h2 className="text-card-title">Still have a question?</h2>
-              <p className="text-secondary mt-0.5">
-                Reach out to our team anytime at{' '}
-                <a href="mailto:contact@mediarca.in" className="text-[#0066cc] font-medium hover:underline">
-                  contact@mediarca.in
-                </a>
-              </p>
-            </div>
-            <AppleButton
-              variant="secondary"
-              size="sm"
-              onClick={() => navigate('/contact')}
-              className="self-start sm:self-center shrink-0"
-            >
-              Contact Support
-            </AppleButton>
-          </div>
+        {/* Contact Help Link */}
+        <div className="p-6 rounded-[20px] bg-white border border-[#e5e5ea] text-center space-y-2">
+          <p className="text-sm font-semibold text-[#1d1d1f]">Still have a question?</p>
+          <p className="text-xs text-[#6e6e73]">
+            Feel free to write to us anytime at{' '}
+            <a href="mailto:contact@mediarca.in" className="text-[#0066cc] font-medium hover:underline">
+              contact@mediarca.in
+            </a>
+          </p>
         </div>
       </div>
     </div>

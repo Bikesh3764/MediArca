@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Mail, CheckCircle2, AlertCircle } from 'lucide-react';
 import { api } from '../../services/api';
 import { sanitizeIndianPhone, formatIndianPhone } from '../../utils/phoneUtils';
-import { AppleButton } from '../../components/ui/AppleButton';
 
 export const ContactUs: React.FC = () => {
   const [fullName, setFullName] = useState('');
@@ -40,165 +39,152 @@ export const ContactUs: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f5f5f7] text-[#1d1d1f] py-10 sm:py-14 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto w-full space-y-8 sm:space-y-10">
-        {/* Page Header */}
-        <div className="text-center space-y-2.5 max-w-2xl mx-auto">
-          <h1 className="text-page-title sm:text-[32px]">
+    <div className="min-h-screen bg-[#f5f5f7] text-[#1d1d1f] py-10 sm:py-16 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-2xl mx-auto space-y-8">
+        {/* Header */}
+        <div className="text-center space-y-3">
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[#1d1d1f]">
             Contact Us
           </h1>
-          <p className="text-body text-[#6e6e73]">
+          <p className="text-sm text-[#6e6e73]">
             Have a question, feedback, or need help with a booking? Reach out to us below.
           </p>
         </div>
 
-        <div className="max-w-2xl mx-auto space-y-6">
-          {/* Email Direct Support Card */}
-          <div className="apple-card p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-3.5">
-              <div className="w-10 h-10 rounded-xl bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center shrink-0">
-                <Mail className="w-5 h-5" />
-              </div>
-              <div>
-                <p className="text-secondary text-[12px]">Direct Email Support</p>
-                <a
-                  href="mailto:contact@mediarca.in"
-                  className="text-card-title hover:text-[#0066cc] transition-colors"
-                >
-                  contact@mediarca.in
-                </a>
-              </div>
+        {/* Email Direct Card */}
+        <div className="bg-white rounded-[20px] p-5 border border-[#e5e5ea] shadow-xs flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] flex items-center justify-center shrink-0">
+              <Mail className="w-4 h-4 text-[#1d1d1f]" />
             </div>
-            <AppleButton
-              variant="secondary"
-              size="sm"
-              onClick={() => {
-                window.location.href = 'mailto:contact@mediarca.in';
-              }}
-              className="self-start sm:self-center shrink-0"
-            >
-              Email Us
-            </AppleButton>
-          </div>
-
-          {/* Contact Message Form */}
-          <div className="apple-card p-6 sm:p-8 space-y-6">
             <div>
-              <h2 className="text-section-title">Send a Message</h2>
-              <p className="text-secondary mt-0.5">
-                Fill out the form below and our support team will respond shortly.
-              </p>
+              <p className="text-xs text-[#86868b] font-medium">Direct Email Support</p>
+              <a
+                href="mailto:contact@mediarca.in"
+                className="text-sm sm:text-base font-semibold text-[#1d1d1f] hover:text-[#0066cc] transition-colors"
+              >
+                contact@mediarca.in
+              </a>
+            </div>
+          </div>
+          <a
+            href="mailto:contact@mediarca.in"
+            className="text-xs font-semibold text-[#0066cc] hover:underline shrink-0"
+          >
+            Send Email →
+          </a>
+        </div>
+
+        {/* Contact Message Form */}
+        <div className="bg-white rounded-[24px] p-6 sm:p-8 border border-[#e5e5ea] shadow-xs space-y-6">
+          <h2 className="text-lg font-bold text-[#1d1d1f]">Send a Message</h2>
+
+          {submitted && (
+            <div className="p-4 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] text-xs flex items-center gap-3">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+              <div>
+                <p className="font-semibold text-sm">Message Sent</p>
+                <p className="text-[#6e6e73] mt-0.5">
+                  Thank you for reaching out. We will get back to you at your email soon.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {error && (
+            <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-3">
+              <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+              <div>
+                <p className="font-semibold text-sm">Failed to Send</p>
+                <p className="text-rose-700 mt-0.5">{error}</p>
+              </div>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-[#1d1d1f]">Your Name *</label>
+              <input
+                type="text"
+                required
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Enter your name"
+                className="w-full px-4 py-2.5 rounded-xl border border-[#e5e5ea] bg-[#fbfbfd] text-sm focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
+              />
             </div>
 
-            {submitted && (
-              <div className="p-4 rounded-xl bg-[#34c759]/10 border border-[#34c759]/25 text-[#1d1d1f] flex items-start gap-3">
-                <CheckCircle2 className="w-5 h-5 text-[#248a3d] shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-semibold text-[14px]">Message Sent</p>
-                  <p className="text-[13px] text-[#48484a] mt-0.5">
-                    Thank you for reaching out. We will get back to you at your email soon.
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {error && (
-              <div className="p-4 rounded-xl bg-[#ff3b30]/10 border border-[#ff3b30]/20 text-[#d70015] flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 text-[#ff3b30] shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-semibold text-[14px]">Unable to Send Message</p>
-                  <p className="text-[13px] mt-0.5">{error}</p>
-                </div>
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="ui-form-stack">
-              <div>
-                <label className="ui-label">Your Name *</label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-[#1d1d1f]">Your Email *</label>
                 <input
-                  type="text"
+                  type="email"
                   required
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  placeholder="Enter your full name"
-                  className="ui-input"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="name@example.com"
+                  className="w-full px-4 py-2.5 rounded-xl border border-[#e5e5ea] bg-[#fbfbfd] text-sm focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="ui-label">Your Email *</label>
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-[#1d1d1f]">Mobile Number (Optional)</label>
+                <div className="flex rounded-xl border border-[#e5e5ea] overflow-hidden focus-within:ring-2 focus-within:ring-[#0066cc]/20 focus-within:border-[#0066cc] bg-[#fbfbfd] focus-within:bg-white transition-all h-10">
+                  <span className="inline-flex items-center px-3 bg-[#f5f5f7] border-r border-[#e5e5ea] text-[#1d1d1f] font-semibold text-[13px] select-none">
+                    +91
+                  </span>
                   <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="name@example.com"
-                    className="ui-input"
+                    type="tel"
+                    inputMode="numeric"
+                    value={sanitizeIndianPhone(phone)}
+                    onChange={(e) => {
+                      const digits = sanitizeIndianPhone(e.target.value);
+                      setPhone(digits ? `+91 ${digits}` : '');
+                    }}
+                    placeholder="98765 43210"
+                    maxLength={10}
+                    className="flex-1 h-full px-3.5 text-sm bg-transparent focus:outline-none text-[#1d1d1f] placeholder:text-[#86868b]"
                   />
                 </div>
-
-                <div>
-                  <label className="ui-label">Mobile Number (Optional)</label>
-                  <div className="flex h-11 rounded-xl border border-[#d2d2d7]/80 bg-white overflow-hidden transition-all duration-150 hover:border-[#86868b]/60 focus-within:border-[#0066cc] focus-within:ring-[3px] focus-within:ring-[#0066cc]/15">
-                    <span className="inline-flex items-center px-3 bg-[#f5f5f7] border-r border-[#e5e5ea] text-[#48484a] font-medium text-[13px] select-none">
-                      +91
-                    </span>
-                    <input
-                      type="tel"
-                      inputMode="numeric"
-                      value={sanitizeIndianPhone(phone)}
-                      onChange={(e) => {
-                        const digits = sanitizeIndianPhone(e.target.value);
-                        setPhone(digits ? `+91 ${digits}` : '');
-                      }}
-                      placeholder="98765 43210"
-                      maxLength={10}
-                      className="flex-1 h-full px-3.5 text-[14px] bg-transparent focus:outline-none text-[#1d1d1f] placeholder:text-[#86868b]"
-                    />
-                  </div>
-                </div>
               </div>
+            </div>
 
-              <div>
-                <label className="ui-label">Subject</label>
-                <select
-                  value={subject}
-                  onChange={(e) => setSubject(e.target.value)}
-                  className="ui-select"
-                >
-                  <option value="General Inquiry">General Inquiry</option>
-                  <option value="Appointment Issue">Appointment / Queue Issue</option>
-                  <option value="Doctor or Clinic Onboarding">Doctor or Clinic Inquiry</option>
-                  <option value="Feedback">Feedback</option>
-                </select>
-              </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-[#1d1d1f]">Subject</label>
+              <select
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl border border-[#e5e5ea] bg-[#fbfbfd] text-sm focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
+              >
+                <option value="General Inquiry">General Inquiry</option>
+                <option value="Appointment Issue">Appointment / Queue Issue</option>
+                <option value="Doctor or Clinic Onboarding">Doctor or Clinic Inquiry</option>
+                <option value="Feedback">Feedback</option>
+              </select>
+            </div>
 
-              <div>
-                <label className="ui-label">Message *</label>
-                <textarea
-                  required
-                  rows={4}
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Write your message here..."
-                  className="ui-textarea resize-none"
-                />
-              </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-[#1d1d1f]">Message</label>
+              <textarea
+                required
+                rows={4}
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="Write your message here..."
+                className="w-full px-4 py-2.5 rounded-xl border border-[#e5e5ea] bg-[#fbfbfd] text-sm focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] resize-none"
+              />
+            </div>
 
-              <div className="pt-2">
-                <AppleButton
-                  type="submit"
-                  variant="primary"
-                  size="lg"
-                  disabled={loading}
-                  className="w-full"
-                >
-                  {loading ? 'Sending Message...' : 'Send Message'}
-                </AppleButton>
-              </div>
-            </form>
-          </div>
+            <div className="pt-2">
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3 px-6 rounded-full bg-[#1d1d1f] hover:bg-black text-white text-sm font-semibold transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
+              >
+                {loading ? 'Sending...' : 'Send Message'}
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </div>

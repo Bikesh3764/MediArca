@@ -106,7 +106,8 @@ function AppShell() {
     location.pathname.startsWith('/clinic/dashboard') ||
     location.pathname.startsWith('/receptionist/dashboard') ||
     location.pathname === '/clinic-checkin' ||
-    location.pathname.startsWith('/admin');
+    location.pathname === '/admin' ||
+    location.pathname === '/admin-login';
 
   return (
     <div className="flex flex-col min-h-screen">

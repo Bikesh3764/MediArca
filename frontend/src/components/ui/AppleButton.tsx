@@ -6,16 +6,8 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export interface AppleButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?:
-    | 'primary'
-    | 'secondary'
-    | 'ghost'
-    | 'destructive'
-    | 'icon'
-    | 'secondary-dark'
-    | 'glass'
-    | 'dark';
+interface AppleButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: 'primary' | 'secondary' | 'secondary-dark' | 'glass' | 'ghost' | 'dark' | 'icon';
   size?: 'sm' | 'md' | 'lg';
   children: React.ReactNode;
 }
@@ -27,67 +19,48 @@ export const AppleButton: React.FC<AppleButtonProps> = ({
   children,
   ...props
 }) => {
-  const baseClass =
-    'inline-flex items-center justify-center gap-2 rounded-full font-sans font-medium tracking-[-0.01em] select-none transition-all duration-150 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066cc]/25 focus-visible:ring-offset-1 disabled:opacity-45 disabled:pointer-events-none cursor-pointer [&_svg]:shrink-0';
+  let baseClass =
+    'inline-flex items-center justify-center font-normal transition-all duration-200 active:scale-95 disabled:opacity-40 disabled:pointer-events-none cursor-pointer';
 
   let variantClass = '';
   switch (variant) {
     case 'primary':
-      variantClass =
-        'bg-[#0066cc] hover:bg-[#0071e3] text-white border border-transparent shadow-2xs';
+      // Apple Action Blue (#0066cc) per DESIGN.md
+      variantClass = 'bg-[#0066cc] hover:bg-[#0071e3] text-white shadow-2xs hover:shadow-xs rounded-full font-medium';
       break;
     case 'secondary':
-      variantClass =
-        'bg-white hover:bg-[#f5f5f7] text-[#0066cc] border border-[#0066cc]/35 hover:border-[#0066cc]';
-      break;
-    case 'ghost':
-      variantClass =
-        'bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] hover:border-[#d2d2d7]';
-      break;
-    case 'destructive':
-      variantClass =
-        'bg-rose-50 hover:bg-rose-100/80 text-rose-600 border border-rose-200/80 hover:border-rose-300';
-      break;
-    case 'icon':
-      variantClass =
-        'bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] hover:border-[#d2d2d7] p-0';
+      // Apple secondary pill per DESIGN.md
+      variantClass = 'bg-white text-[#0066cc] border border-[#0066cc] hover:bg-[#0066cc]/5 rounded-full font-medium';
       break;
     case 'secondary-dark':
     case 'glass':
-      variantClass =
-        'bg-white/12 hover:bg-white/20 text-white border border-white/25 hover:border-white/50 backdrop-blur-md shadow-2xs';
+      // Apple translucent glass pill for dark backgrounds with high contrast white text
+      variantClass = 'bg-white/12 text-white border border-white/30 hover:bg-white/20 hover:border-white backdrop-blur-md rounded-full shadow-2xs font-medium';
+      break;
+    case 'ghost':
+      // Apple Pearl/Parchment Button capsule per DESIGN.md
+      variantClass = 'bg-[#fafafc] text-[#1d1d1f] border border-[#e5e5ea] hover:bg-white hover:border-[#d2d2d7] rounded-full font-medium';
       break;
     case 'dark':
-      variantClass =
-        'bg-[#1d1d1f] hover:bg-[#333336] text-white border border-transparent shadow-2xs';
+      // Dark utility button (SF Pro Text 14px / 400)
+      variantClass = 'bg-[#1d1d1f] text-white hover:bg-[#333333] rounded-[8px] font-medium';
+      break;
+    case 'icon':
+      variantClass = 'bg-[#d2d2d7]/40 hover:bg-[#d2d2d7]/70 text-[#1d1d1f] rounded-full p-2';
       break;
   }
 
   let sizeClass = '';
-  if (variant === 'icon') {
-    switch (size) {
-      case 'sm':
-        sizeClass = 'w-8 h-8 text-[12px] [&_svg]:w-3.5 [&_svg]:h-3.5';
-        break;
-      case 'md':
-        sizeClass = 'w-10 h-10 text-[14px] [&_svg]:w-4 [&_svg]:h-4';
-        break;
-      case 'lg':
-        sizeClass = 'w-12 h-12 text-[16px] [&_svg]:w-5 [&_svg]:h-5';
-        break;
-    }
-  } else {
-    switch (size) {
-      case 'sm':
-        sizeClass = 'h-8 px-3.5 text-[12px] [&_svg]:w-3.5 [&_svg]:h-3.5';
-        break;
-      case 'md':
-        sizeClass = 'h-10 px-5 text-[13px] sm:text-[14px] [&_svg]:w-4 [&_svg]:h-4';
-        break;
-      case 'lg':
-        sizeClass = 'h-12 px-6 text-[15px] [&_svg]:w-4 [&_svg]:h-4';
-        break;
-    }
+  switch (size) {
+    case 'sm':
+      sizeClass = variant === 'dark' ? 'px-3 py-1.5 text-[12px]' : 'px-4 py-1.5 text-[13px]';
+      break;
+    case 'md':
+      sizeClass = variant === 'dark' ? 'px-4 py-2 text-[14px]' : 'px-[22px] py-[10px] text-[14px] sm:text-[15px]';
+      break;
+    case 'lg':
+      sizeClass = 'px-7 py-3.5 text-[16px] sm:text-[17px]';
+      break;
   }
 
   return (

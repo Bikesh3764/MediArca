@@ -144,27 +144,27 @@ export const AdminDashboard: React.FC = () => {
   const getDateBadge = (dateStr: string) => {
     if (dateStr === todayStr) {
       return (
-        <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20">
+        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-[#0066cc] border border-blue-200">
           Today
         </span>
       );
     }
     if (dateStr === tomorrowStr) {
       return (
-        <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea]">
+        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
           Tomorrow
         </span>
       );
     }
     if (dateStr < todayStr) {
       return (
-        <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea]">
+        <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 text-gray-600 border border-gray-200">
           Past
         </span>
       );
     }
     return (
-      <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#f5f5f7] text-[#48484a] border border-[#e5e5ea]">
+      <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
         Upcoming
       </span>
     );
@@ -175,49 +175,49 @@ export const AdminDashboard: React.FC = () => {
     switch (s) {
       case 'WAITING':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200/80">
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
             <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
             Waiting
           </span>
         );
       case 'IN_CONSULTATION':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20">
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-[#0066cc] border border-blue-200 animate-pulse">
             <span className="w-1.5 h-1.5 rounded-full bg-[#0066cc]"></span>
             In Consultation
           </span>
         );
       case 'COMPLETED':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
             <CheckCircle2 className="w-3 h-3 text-emerald-600" />
             Completed
           </span>
         );
       case 'CANCELLED':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-50 text-rose-700 border border-rose-200/80">
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
             <XCircle className="w-3 h-3 text-rose-500" />
             Cancelled
           </span>
         );
       case 'EXPIRED':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea]">
-            <Clock className="w-3 h-3 text-[#86868b]" />
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-gray-100 text-gray-600 border border-gray-200">
+            <Clock className="w-3 h-3 text-gray-500" />
             Expired
           </span>
         );
       case 'PENDING_APPROVAL':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200/80">
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-300">
             <Clock className="w-3 h-3 text-amber-600" />
             Pending Approval
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-[#f5f5f7] text-[#48484a] border border-[#e5e5ea]">
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-gray-100 text-gray-700">
             {status}
           </span>
         );
@@ -411,30 +411,30 @@ export const AdminDashboard: React.FC = () => {
     switch (status) {
       case 'VERIFIED':
         return (
-          <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border border-emerald-200/80">
-            <CheckCircle2 className="w-3 h-3" />
+          <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full text-xs font-semibold border border-emerald-200">
+            <CheckCircle2 className="w-3.5 h-3.5" />
             Verified
           </span>
         );
       case 'SUSPENDED':
         return (
-          <span className="inline-flex items-center gap-1 bg-rose-50 text-rose-700 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border border-rose-200/80">
-            <Ban className="w-3 h-3" />
+          <span className="inline-flex items-center gap-1 bg-rose-50 text-rose-700 px-2.5 py-1 rounded-full text-xs font-semibold border border-rose-200">
+            <Ban className="w-3.5 h-3.5" />
             Suspended
           </span>
         );
       case 'REJECTED':
         return (
-          <span className="inline-flex items-center gap-1 bg-rose-50 text-rose-700 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border border-rose-200/80">
-            <XCircle className="w-3 h-3" />
+          <span className="inline-flex items-center gap-1 bg-gray-100 text-gray-700 px-2.5 py-1 rounded-full text-xs font-semibold border border-gray-300">
+            <XCircle className="w-3.5 h-3.5" />
             Rejected
           </span>
         );
       case 'PENDING':
       default:
         return (
-          <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-800 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border border-amber-200/80">
-            <Clock className="w-3 h-3" />
+          <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 px-2.5 py-1 rounded-full text-xs font-semibold border border-amber-200 animate-pulse">
+            <Clock className="w-3.5 h-3.5" />
             Pending Review
           </span>
         );
@@ -471,31 +471,25 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
-  const pendingDoctorsCount = doctors.filter((d) => getPractitionerStatus(d) === 'PENDING').length;
-  const pendingClinicsCount = clinics.filter((c) => getPractitionerStatus(c) === 'PENDING').length;
-  const totalPendingCount = pendingDoctorsCount + pendingClinicsCount;
-  const unreadMessagesCount = contactMessages.filter((m) => m.status === 'NEW').length;
-
   return (
     <div className="min-h-screen bg-[#f5f5f7] pb-16">
-      {/* Sticky Admin Navigation Bar */}
-      <header className="sticky top-0 z-40 bg-white/85 backdrop-blur-xl border-b border-[#e5e5ea] select-none">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-3">
+      {/* Sticky Apple-styled Admin Navigation Bar */}
+      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-xl border-b border-[#e5e5ea] select-none shadow-xs">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link to="/" className="flex items-center gap-2 hover:opacity-85 transition-opacity" title="Return to Main Website">
+            <Link to="/" className="flex items-center gap-2 hover:opacity-90 transition-opacity" title="Return to Main Website">
               <BrandLogo variant="full" size="md" imgClassName="h-7 w-auto" />
             </Link>
-            <div className="h-4 w-px bg-[#e5e5ea] hidden sm:block" />
-            <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea] text-[11px] font-semibold">
-              <Shield className="w-3 h-3 text-[#0066cc]" />
-              Root Admin
+            <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-700 border border-amber-500/20 text-[11px] font-semibold">
+              <Shield className="w-3 h-3 text-amber-600" />
+              Root Admin Console
             </span>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-2.5">
+          <div className="flex items-center gap-2 sm:gap-3">
             <Link
               to="/"
-              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-xs font-medium text-[#48484a] hover:bg-[#f5f5f7] hover:text-[#1d1d1f] transition-all border border-[#e5e5ea]"
+              className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-medium text-[#48484a] hover:bg-[#f5f5f7] hover:text-[#1d1d1f] transition-all border border-[#e5e5ea]"
               title="Return to Main Website"
             >
               <Globe className="w-3.5 h-3.5 text-[#86868b]" />
@@ -504,26 +498,26 @@ export const AdminDashboard: React.FC = () => {
             </Link>
 
             <AppleButton
-              variant="secondary"
+              variant="ghost"
               size="sm"
               onClick={fetchData}
-              className="gap-1.5"
+              className="flex items-center gap-1.5 text-xs text-[#48484a]"
               title="Refresh platform statistics"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-[#0066cc]' : 'text-[#48484a]'}`} />
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-[#0066cc]' : ''}`} />
               <span className="hidden md:inline">Refresh</span>
             </AppleButton>
 
             <div className="h-4 w-px bg-[#e5e5ea] hidden sm:block" />
 
-            <div className="hidden lg:flex items-center gap-2 h-8 px-3 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-[11px] text-[#48484a]">
-              <span className="font-medium truncate max-w-[160px]">{user?.email || 'admin@mediarca.com'}</span>
+            <div className="hidden lg:flex items-center gap-2 px-2.5 py-1 rounded-full bg-[#f5f5f7] text-[11px] text-[#48484a]">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="font-medium truncate max-w-[140px]">{user?.email || 'admin@mediarca.com'}</span>
             </div>
 
             <button
-              type="button"
               onClick={handleLogout}
-              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-xs font-medium text-[#48484a] hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200 transition-all border border-[#e5e5ea] cursor-pointer active:scale-[0.98]"
+              className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-medium text-rose-600 bg-rose-50 hover:bg-rose-100 transition-all border border-rose-200 cursor-pointer active:scale-[0.98]"
               title="Sign Out of Admin Console"
             >
               <LogOut className="w-3.5 h-3.5" />
@@ -533,19 +527,19 @@ export const AdminDashboard: React.FC = () => {
         </div>
       </header>
 
-      {/* Page Title & Subtitle Banner */}
-      <div className="bg-white border-b border-[#e5e5ea]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      {/* Page Title & Subtitle banner */}
+      <div className="bg-white border-b border-[#e5e5ea] px-4 sm:px-6 py-5">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h1 className="text-page-title text-[#1d1d1f]">
+            <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f]">
               Admin Dashboard
             </h1>
-            <p className="text-secondary mt-1">
-              Manage practitioner and clinic verifications, and review platform activity.
+            <p className="text-xs text-[#86868b] mt-0.5 font-normal">
+              Manage doctor and clinic verifications, view platform statistics
             </p>
           </div>
-          <div className="flex items-center gap-2 self-start sm:self-auto">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-xs font-medium text-[#1d1d1f]">
+          <div className="flex items-center gap-2 text-xs text-[#86868b]">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] font-medium text-[#1d1d1f]">
               <Users className="w-3.5 h-3.5 text-[#0066cc]" />
               {(stats?.totalDoctors || 0) + (stats?.totalClinics || clinics.length)} Registered Providers
             </span>
@@ -553,176 +547,155 @@ export const AdminDashboard: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 space-y-6">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 pt-5 sm:pt-8 space-y-6 sm:space-y-8">
         {loading && !stats ? (
           <div className="flex flex-col items-center justify-center py-24">
-            <div className="w-7 h-7 rounded-full border-2 border-[#0066cc] border-t-transparent animate-spin mb-3"></div>
-            <p className="text-xs text-[#86868b]">Loading administration records...</p>
+            <div className="w-8 h-8 rounded-full border-2 border-[#0066cc] border-t-transparent animate-spin mb-3"></div>
+            <p className="text-xs text-[#86868b]">Loading records...</p>
           </div>
         ) : (
           <>
-            {/* Normalized KPI Metrics */}
+            {/* KPI Metrics */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
-              <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-4 sm:p-5 shadow-apple-xs flex flex-col justify-between">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">Patients</span>
-                  <div className="w-8 h-8 rounded-lg bg-[#f5f5f7] border border-[#e5e5ea]/80 text-[#48484a] flex items-center justify-center shrink-0">
-                    <Users className="w-4 h-4" />
+              <UtilityCard>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-[11px] text-[#86868b] uppercase font-semibold">Patients</span>
+                    <h3 className="text-3xl font-semibold text-[#1d1d1f] mt-1">{stats?.totalPatients || 0}</h3>
+                  </div>
+                  <div className="w-10 h-10 rounded-xl bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center">
+                    <Users className="w-5 h-5" />
                   </div>
                 </div>
-                <div className="mt-2">
-                  <h3 className="text-2xl sm:text-[28px] font-bold tracking-tight text-[#1d1d1f] tabular-nums">
-                    {stats?.totalPatients || 0}
-                  </h3>
-                  <p className="text-[11px] text-[#86868b] font-medium mt-0.5">Registered accounts</p>
-                </div>
-              </div>
+              </UtilityCard>
 
-              <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-4 sm:p-5 shadow-apple-xs flex flex-col justify-between">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">Doctors</span>
-                  <div className="w-8 h-8 rounded-lg bg-[#f5f5f7] border border-[#e5e5ea]/80 text-[#48484a] flex items-center justify-center shrink-0">
-                    <ShieldCheck className="w-4 h-4" />
+              <UtilityCard>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-[11px] text-[#86868b] uppercase font-semibold">Doctors</span>
+                    <h3 className="text-3xl font-semibold text-[#1d1d1f] mt-1">{stats?.totalDoctors || 0}</h3>
+                    <p className="text-[10px] text-amber-600 font-medium mt-0.5">{stats?.pendingDoctors || 0} pending review</p>
+                  </div>
+                  <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                    <ShieldCheck className="w-5 h-5" />
                   </div>
                 </div>
-                <div className="mt-2">
-                  <h3 className="text-2xl sm:text-[28px] font-bold tracking-tight text-[#1d1d1f] tabular-nums">
-                    {stats?.totalDoctors || 0}
-                  </h3>
-                  <p className={`text-[11px] font-medium mt-0.5 ${pendingDoctorsCount > 0 ? 'text-amber-700' : 'text-[#86868b]'}`}>
-                    {stats?.pendingDoctors ?? pendingDoctorsCount} pending review
-                  </p>
-                </div>
-              </div>
+              </UtilityCard>
 
-              <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-4 sm:p-5 shadow-apple-xs flex flex-col justify-between">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">Clinics</span>
-                  <div className="w-8 h-8 rounded-lg bg-[#f5f5f7] border border-[#e5e5ea]/80 text-[#48484a] flex items-center justify-center shrink-0">
-                    <Building2 className="w-4 h-4" />
+              <UtilityCard>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-[11px] text-[#86868b] uppercase font-semibold">Clinics</span>
+                    <h3 className="text-3xl font-semibold text-[#1d1d1f] mt-1">{stats?.totalClinics || clinics.length}</h3>
+                    <p className="text-[10px] text-amber-600 font-medium mt-0.5">
+                      {clinics.filter((c) => getPractitionerStatus(c) === 'PENDING').length} pending review
+                    </p>
+                  </div>
+                  <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                    <Building2 className="w-5 h-5" />
                   </div>
                 </div>
-                <div className="mt-2">
-                  <h3 className="text-2xl sm:text-[28px] font-bold tracking-tight text-[#1d1d1f] tabular-nums">
-                    {stats?.totalClinics || clinics.length}
-                  </h3>
-                  <p className={`text-[11px] font-medium mt-0.5 ${pendingClinicsCount > 0 ? 'text-amber-700' : 'text-[#86868b]'}`}>
-                    {pendingClinicsCount} pending review
-                  </p>
-                </div>
-              </div>
+              </UtilityCard>
 
-              <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-4 sm:p-5 shadow-apple-xs flex flex-col justify-between">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">Pending Review</span>
-                  <div className={`w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 ${
-                    totalPendingCount > 0
-                      ? 'bg-amber-50 border-amber-200/80 text-amber-700'
-                      : 'bg-[#f5f5f7] border-[#e5e5ea]/80 text-[#48484a]'
-                  }`}>
-                    <AlertCircle className="w-4 h-4" />
+              <UtilityCard>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-[11px] text-[#86868b] uppercase font-semibold">Pending Review</span>
+                    <h3 className="text-3xl font-semibold text-amber-600 mt-1">
+                      {doctors.filter((d) => getPractitionerStatus(d) === 'PENDING').length +
+                        clinics.filter((c) => getPractitionerStatus(c) === 'PENDING').length}
+                    </h3>
+                    <p className="text-[10px] text-[#86868b] mt-0.5">Docs & Clinics</p>
+                  </div>
+                  <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                    <AlertCircle className="w-5 h-5" />
                   </div>
                 </div>
-                <div className="mt-2">
-                  <h3 className={`text-2xl sm:text-[28px] font-bold tracking-tight tabular-nums ${
-                    totalPendingCount > 0 ? 'text-amber-700' : 'text-[#1d1d1f]'
-                  }`}>
-                    {totalPendingCount}
-                  </h3>
-                  <p className="text-[11px] text-[#86868b] font-medium mt-0.5">Doctors & clinics</p>
-                </div>
-              </div>
+              </UtilityCard>
 
-              <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-4 sm:p-5 shadow-apple-xs flex flex-col justify-between col-span-2 md:col-span-1">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">Total Bookings</span>
-                  <div className="w-8 h-8 rounded-lg bg-[#f5f5f7] border border-[#e5e5ea]/80 text-[#48484a] flex items-center justify-center shrink-0">
-                    <Calendar className="w-4 h-4" />
+              <UtilityCard>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-[11px] text-[#86868b] uppercase font-semibold">Total Bookings</span>
+                    <h3 className="text-3xl font-semibold text-[#1d1d1f] mt-1">{stats?.totalAppointments || 0}</h3>
+                    <p className="text-[10px] text-purple-600 font-medium mt-0.5">{stats?.todayAppointments || 0} today</p>
+                  </div>
+                  <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
+                    <Calendar className="w-5 h-5" />
                   </div>
                 </div>
-                <div className="mt-2">
-                  <h3 className="text-2xl sm:text-[28px] font-bold tracking-tight text-[#1d1d1f] tabular-nums">
-                    {stats?.totalAppointments || 0}
-                  </h3>
-                  <p className="text-[11px] text-[#0066cc] font-medium mt-0.5">{stats?.todayAppointments || 0} scheduled today</p>
-                </div>
-              </div>
+              </UtilityCard>
             </div>
 
-            {/* Standardized Segmented Navigation Tabs */}
-            <div className="flex items-center justify-between border-b border-[#e5e5ea] pb-4 overflow-x-auto scrollbar-none">
-              <div className="inline-flex p-1 bg-[#f5f5f7] rounded-full border border-[#e5e5ea] whitespace-nowrap gap-1">
+            {/* Verification Navigation Tabs */}
+            <div className="flex items-center gap-2 border-b border-[#e5e5ea] pb-4 overflow-x-auto scrollbar-none">
+              <div className="inline-flex p-1 bg-[#f5f5f7] rounded-full border border-[#e5e5ea] shadow-xs whitespace-nowrap">
                 <button
-                  type="button"
                   onClick={() => setActiveTab('doctors')}
-                  className={`px-4 py-2 rounded-full text-xs flex items-center gap-2 transition-all active:scale-[0.98] cursor-pointer ${
+                  className={`px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-2 transition-all active:scale-[0.98] cursor-pointer ${
                     activeTab === 'doctors'
-                      ? 'bg-white text-[#1d1d1f] font-semibold shadow-apple-xs'
-                      : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
+                      ? 'bg-white text-[#1d1d1f] shadow-xs'
+                      : 'text-[#86868b] hover:text-[#1d1d1f]'
                   }`}
                 >
-                  <ShieldCheck className={`w-3.5 h-3.5 ${activeTab === 'doctors' ? 'text-[#0066cc]' : 'text-[#86868b]'}`} />
+                  <ShieldCheck className="w-4 h-4 text-[#0066cc]" />
                   <span>Doctor Verification</span>
-                  {pendingDoctorsCount > 0 ? (
-                    <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-semibold tabular-nums">
-                      {pendingDoctorsCount} pending
+                  {doctors.filter((d) => getPractitionerStatus(d) === 'PENDING').length > 0 ? (
+                    <span className="px-2 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-bold">
+                      {doctors.filter((d) => getPractitionerStatus(d) === 'PENDING').length} pending
                     </span>
                   ) : (
-                    <span className="text-[11px] text-[#86868b] tabular-nums">({doctors.length})</span>
+                    <span className="text-[10px] opacity-70">({doctors.length})</span>
                   )}
                 </button>
 
                 <button
-                  type="button"
                   onClick={() => setActiveTab('clinics')}
-                  className={`px-4 py-2 rounded-full text-xs flex items-center gap-2 transition-all active:scale-[0.98] cursor-pointer ${
+                  className={`px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-2 transition-all active:scale-[0.98] cursor-pointer ${
                     activeTab === 'clinics'
-                      ? 'bg-white text-[#1d1d1f] font-semibold shadow-apple-xs'
-                      : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
+                      ? 'bg-white text-[#1d1d1f] shadow-xs'
+                      : 'text-[#86868b] hover:text-[#1d1d1f]'
                   }`}
                 >
-                  <Building2 className={`w-3.5 h-3.5 ${activeTab === 'clinics' ? 'text-[#0066cc]' : 'text-[#86868b]'}`} />
+                  <Building2 className="w-4 h-4 text-indigo-600" />
                   <span>Clinic Verification</span>
-                  {pendingClinicsCount > 0 ? (
-                    <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-semibold tabular-nums">
-                      {pendingClinicsCount} pending
+                  {clinics.filter((c) => getPractitionerStatus(c) === 'PENDING').length > 0 ? (
+                    <span className="px-2 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-bold animate-pulse">
+                      {clinics.filter((c) => getPractitionerStatus(c) === 'PENDING').length} pending
                     </span>
                   ) : (
-                    <span className="text-[11px] text-[#86868b] tabular-nums">({clinics.length})</span>
+                    <span className="text-[10px] opacity-70">({clinics.length})</span>
                   )}
                 </button>
 
                 <button
-                  type="button"
                   onClick={() => setActiveTab('appointments')}
-                  className={`px-4 py-2 rounded-full text-xs flex items-center gap-2 transition-all active:scale-[0.98] cursor-pointer ${
+                  className={`px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-2 transition-all active:scale-[0.98] cursor-pointer ${
                     activeTab === 'appointments'
-                      ? 'bg-white text-[#1d1d1f] font-semibold shadow-apple-xs'
-                      : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
+                      ? 'bg-white text-[#1d1d1f] shadow-xs'
+                      : 'text-[#86868b] hover:text-[#1d1d1f]'
                   }`}
                 >
-                  <Calendar className={`w-3.5 h-3.5 ${activeTab === 'appointments' ? 'text-[#0066cc]' : 'text-[#86868b]'}`} />
-                  <span>Platform Bookings</span>
-                  <span className="text-[11px] text-[#86868b] tabular-nums">({appointments.length})</span>
+                  <Calendar className="w-4 h-4 text-purple-600" />
+                  <span>Platform Bookings ({appointments.length})</span>
                 </button>
 
                 <button
-                  type="button"
                   onClick={() => setActiveTab('messages')}
-                  className={`px-4 py-2 rounded-full text-xs flex items-center gap-2 transition-all active:scale-[0.98] cursor-pointer ${
+                  className={`px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-2 transition-all active:scale-[0.98] cursor-pointer ${
                     activeTab === 'messages'
-                      ? 'bg-white text-[#1d1d1f] font-semibold shadow-apple-xs'
-                      : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
+                      ? 'bg-white text-[#1d1d1f] shadow-xs'
+                      : 'text-[#86868b] hover:text-[#1d1d1f]'
                   }`}
                 >
-                  <Mail className={`w-3.5 h-3.5 ${activeTab === 'messages' ? 'text-[#0066cc]' : 'text-[#86868b]'}`} />
+                  <Mail className="w-4 h-4 text-emerald-600" />
                   <span>Contact Inquiries</span>
-                  {unreadMessagesCount > 0 ? (
-                    <span className="px-2 py-0.5 rounded-full bg-[#0066cc]/10 text-[#0066cc] text-[10px] font-semibold tabular-nums">
-                      {unreadMessagesCount} new
+                  {contactMessages.filter((m) => m.status === 'NEW').length > 0 ? (
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-bold">
+                      {contactMessages.filter((m) => m.status === 'NEW').length} new
                     </span>
                   ) : (
-                    <span className="text-[11px] text-[#86868b] tabular-nums">({contactMessages.length})</span>
+                    <span className="text-[10px] opacity-70">({contactMessages.length})</span>
                   )}
                 </button>
               </div>
@@ -730,151 +703,145 @@ export const AdminDashboard: React.FC = () => {
 
             {/* Tab 1: Doctor Verification Portal */}
             {activeTab === 'doctors' && (
-              <UtilityCard className="p-0 overflow-hidden">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-5 py-4 border-b border-[#e5e5ea]">
+              <UtilityCard>
+                <div className="flex justify-between items-center mb-6">
                   <div>
-                    <h3 className="text-section-title text-[#1d1d1f]">Practitioner Verification Queue</h3>
+                    <h3 className="text-lg font-semibold text-[#1d1d1f]">Practitioner Verification Queue</h3>
                     <p className="text-xs text-[#86868b] mt-0.5">
-                      Doctors must be verified by administration before appearing in patient discovery.
+                      Doctors must be verified by admin before appearing in patient searches.
                     </p>
                   </div>
-                  <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-xs font-medium text-[#48484a] self-start sm:self-auto">
-                    {doctors.length} Registered Doctor{doctors.length !== 1 ? 's' : ''}
-                  </span>
+                  <span className="text-xs text-[#86868b]">{doctors.length} Registered Doctor(s)</span>
                 </div>
 
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs">
-                    <thead className="border-b border-[#e5e5ea] bg-[#fafafa]/60 text-[11px] text-[#86868b] uppercase tracking-wider font-semibold">
+                    <thead className="border-b border-[#e5e5ea] text-[#86868b] uppercase tracking-wider font-semibold">
                       <tr>
-                        <th className="py-3 px-4">Practitioner</th>
-                        <th className="py-3 px-4">Specialty</th>
-                        <th className="py-3 px-4">Checking Shift</th>
-                        <th className="py-3 px-4">Fee</th>
-                        <th className="py-3 px-4">Verification Status</th>
-                        <th className="py-3 px-4 text-right">Actions</th>
+                        <th className="py-3 px-3">Practitioner</th>
+                        <th className="py-3 px-3">Specialty</th>
+                        <th className="py-3 px-3">Checking Shift</th>
+                        <th className="py-3 px-3">Fee</th>
+                        <th className="py-3 px-3">Verification Status</th>
+                        <th className="py-3 px-3 text-right">Action</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-[#f0f0f2]">
-                      {doctors.length === 0 ? (
-                        <tr>
-                          <td colSpan={6} className="py-12 text-center text-xs text-[#86868b]">
-                            No practitioners registered on the platform yet.
-                          </td>
-                        </tr>
-                      ) : (
-                        doctors.map((doc) => (
-                          <tr key={doc.id} className="hover:bg-[#f5f5f7]/50 transition-colors">
-                            <td className="py-3.5 px-4 align-middle">
-                              <div className="flex items-center gap-3">
-                                <div
-                                  className="w-9 h-9 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] overflow-hidden flex-shrink-0 cursor-pointer"
-                                  onClick={() => setSelectedDoctor(doc)}
-                                >
-                                  {doc.user.avatarUrl ? (
-                                    <img
-                                      src={getFileUrl(doc.user.avatarUrl)}
-                                      alt={doc.user.fullName}
-                                      className="w-full h-full object-cover"
-                                    />
-                                  ) : (
-                                    <div className="w-full h-full flex items-center justify-center font-semibold text-xs text-[#0066cc]">
-                                      {doc.user.fullName[0]}
-                                    </div>
-                                  )}
-                                </div>
-                                <div className="min-w-0">
-                                  <button
-                                    type="button"
-                                    onClick={() => setSelectedDoctor(doc)}
-                                    className="text-[13px] text-[#1d1d1f] font-semibold block text-left hover:text-[#0066cc] transition-colors cursor-pointer truncate"
-                                  >
-                                    {doc.user.fullName}
-                                  </button>
-                                  <span className="text-[11px] text-[#86868b] truncate block">{doc.user.email}</span>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="py-3.5 px-4 align-middle font-medium text-[#1d1d1f]">{doc.specialty}</td>
-                            <td className="py-3.5 px-4 align-middle text-[#48484a]">
-                              {doc.checkingStartTime
-                                ? `${format12Hour(doc.checkingStartTime)} – ${format12Hour(doc.checkingEndTime)}`
-                                : 'Flexible'}
-                            </td>
-                            <td className="py-3.5 px-4 align-middle font-semibold text-[#1d1d1f] tabular-nums">₹{doc.consultationFee}</td>
-                            <td className="py-3.5 px-4 align-middle">
-                              {renderStatusBadge(getPractitionerStatus(doc))}
-                            </td>
-                            <td className="py-3.5 px-4 align-middle text-right">
-                              <div className="flex items-center justify-end gap-2">
-                                <AppleButton
-                                  variant="secondary"
-                                  size="sm"
-                                  onClick={() => setSelectedDoctor(doc)}
-                                >
-                                  Details
-                                </AppleButton>
-
-                                {getPractitionerStatus(doc) === 'PENDING' && (
-                                  <>
-                                    <AppleButton
-                                      variant="ghost"
-                                      size="sm"
-                                      disabled={actionId === doc.id}
-                                      onClick={() => handleVerify(doc.id, 'REJECTED')}
-                                      className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 border border-rose-200/80"
-                                    >
-                                      {actionId === doc.id ? 'Updating...' : 'Reject'}
-                                    </AppleButton>
-                                    <AppleButton
-                                      variant="primary"
-                                      size="sm"
-                                      disabled={actionId === doc.id}
-                                      onClick={() => handleVerify(doc.id, 'VERIFIED')}
-                                    >
-                                      {actionId === doc.id ? 'Verifying...' : 'Approve & Verify'}
-                                    </AppleButton>
-                                  </>
+                    <tbody className="divide-y divide-[#f0f0f0]">
+                      {doctors.map((doc) => (
+                        <tr key={doc.id} className="hover:bg-[#f5f5f7]/60 transition-colors">
+                          <td className="py-3.5 px-3">
+                            <div className="flex items-center gap-3">
+                              <div
+                                className="w-8 h-8 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] overflow-hidden flex-shrink-0 cursor-pointer"
+                                onClick={() => setSelectedDoctor(doc)}
+                              >
+                                {doc.user.avatarUrl ? (
+                                  <img
+                                    src={getFileUrl(doc.user.avatarUrl)}
+                                    alt={doc.user.fullName}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center font-bold text-[#0066cc]">
+                                    {doc.user.fullName[0]}
+                                  </div>
                                 )}
+                              </div>
+                              <div>
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedDoctor(doc)}
+                                  className="text-[13px] text-[#1d1d1f] font-semibold block text-left hover:text-[#0066cc] transition-colors"
+                                >
+                                  {doc.user.fullName}
+                                </button>
+                                <span className="text-[#86868b]">{doc.user.email}</span>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-3.5 px-3 font-medium text-[#1d1d1f]">{doc.specialty}</td>
+                          <td className="py-3.5 px-3 text-[#86868b]">
+                            {doc.checkingStartTime
+                              ? `${format12Hour(doc.checkingStartTime)} – ${format12Hour(doc.checkingEndTime)}`
+                              : 'Flexible'}
+                          </td>
+                          <td className="py-3.5 px-3 font-semibold text-[#1d1d1f]">₹{doc.consultationFee}</td>
+                          <td className="py-3.5 px-3">
+                            {renderStatusBadge(getPractitionerStatus(doc))}
+                          </td>
+                          <td className="py-3.5 px-3 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <AppleButton
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setSelectedDoctor(doc)}
+                                className="text-xs"
+                              >
+                                Details
+                              </AppleButton>
 
-                                {getPractitionerStatus(doc) === 'VERIFIED' && (
+                              {getPractitionerStatus(doc) === 'PENDING' && (
+                                <>
                                   <AppleButton
                                     variant="ghost"
                                     size="sm"
                                     disabled={actionId === doc.id}
-                                    onClick={() => handleVerify(doc.id, 'SUSPENDED')}
-                                    className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 border border-rose-200/80"
+                                    onClick={() => handleVerify(doc.id, 'REJECTED')}
+                                    className="text-rose-600 hover:text-rose-700 hover:border-rose-300 text-xs"
                                   >
-                                    {actionId === doc.id ? 'Suspending...' : 'Suspend'}
+                                    {actionId === doc.id ? 'Updating...' : 'Reject'}
                                   </AppleButton>
-                                )}
-
-                                {getPractitionerStatus(doc) === 'SUSPENDED' && (
                                   <AppleButton
                                     variant="primary"
                                     size="sm"
                                     disabled={actionId === doc.id}
                                     onClick={() => handleVerify(doc.id, 'VERIFIED')}
+                                    className="text-xs"
                                   >
-                                    {actionId === doc.id ? 'Activating...' : 'Re-activate'}
+                                    {actionId === doc.id ? 'Verifying...' : 'Approve & Verify'}
                                   </AppleButton>
-                                )}
+                                </>
+                              )}
 
-                                {getPractitionerStatus(doc) === 'REJECTED' && (
-                                  <AppleButton
-                                    variant="primary"
-                                    size="sm"
-                                    disabled={actionId === doc.id}
-                                    onClick={() => handleVerify(doc.id, 'VERIFIED')}
-                                  >
-                                    {actionId === doc.id ? 'Updating...' : 'Approve & Verify'}
-                                  </AppleButton>
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-                        ))
-                      )}
+                              {getPractitionerStatus(doc) === 'VERIFIED' && (
+                                <AppleButton
+                                  variant="ghost"
+                                  size="sm"
+                                  disabled={actionId === doc.id}
+                                  onClick={() => handleVerify(doc.id, 'SUSPENDED')}
+                                  className="text-rose-600 hover:text-rose-700 hover:border-rose-300 text-xs"
+                                >
+                                  {actionId === doc.id ? 'Suspending...' : 'Suspend'}
+                                </AppleButton>
+                              )}
+
+                              {getPractitionerStatus(doc) === 'SUSPENDED' && (
+                                <AppleButton
+                                  variant="primary"
+                                  size="sm"
+                                  disabled={actionId === doc.id}
+                                  onClick={() => handleVerify(doc.id, 'VERIFIED')}
+                                  className="text-xs bg-[#10b981] hover:bg-[#059669] text-white shadow-2xs font-medium"
+                                >
+                                  {actionId === doc.id ? 'Activating...' : 'Re-activate'}
+                                </AppleButton>
+                              )}
+
+                              {getPractitionerStatus(doc) === 'REJECTED' && (
+                                <AppleButton
+                                  variant="ghost"
+                                  size="sm"
+                                  disabled={actionId === doc.id}
+                                  onClick={() => handleVerify(doc.id, 'VERIFIED')}
+                                  className="text-[#0066cc] hover:text-[#0071e3] text-xs"
+                                >
+                                  {actionId === doc.id ? 'Updating...' : 'Approve & Verify'}
+                                </AppleButton>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
                 </div>
@@ -883,83 +850,82 @@ export const AdminDashboard: React.FC = () => {
 
             {/* Tab 2: Clinic Verification Portal */}
             {activeTab === 'clinics' && (
-              <UtilityCard className="p-0 overflow-hidden">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-5 py-4 border-b border-[#e5e5ea]">
+              <UtilityCard>
+                <div className="flex justify-between items-center mb-6">
                   <div>
-                    <h3 className="text-section-title text-[#1d1d1f]">Clinic Facility Verification Queue</h3>
+                    <h3 className="text-lg font-semibold text-[#1d1d1f]">Clinic Facility Verification Queue</h3>
                     <p className="text-xs text-[#86868b] mt-0.5">
                       Clinics must be verified by MediArca administration before appearing in patient searches or doctor affiliation lists.
                     </p>
                   </div>
-                  <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-xs font-medium text-[#48484a] self-start sm:self-auto">
-                    {clinics.length} Registered Clinic{clinics.length !== 1 ? 's' : ''}
-                  </span>
+                  <span className="text-xs text-[#86868b]">{clinics.length} Registered Clinic(s)</span>
                 </div>
 
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs">
-                    <thead className="border-b border-[#e5e5ea] bg-[#fafafa]/60 text-[11px] text-[#86868b] uppercase tracking-wider font-semibold">
+                    <thead className="border-b border-[#e5e5ea] text-[#86868b] uppercase tracking-wider font-semibold">
                       <tr>
-                        <th className="py-3 px-4">Facility</th>
-                        <th className="py-3 px-4">Location</th>
-                        <th className="py-3 px-4">Capacity & Team</th>
-                        <th className="py-3 px-4">Verification Status</th>
-                        <th className="py-3 px-4 text-right">Actions</th>
+                        <th className="py-3 px-3">Facility</th>
+                        <th className="py-3 px-3">Location</th>
+                        <th className="py-3 px-3">Capacity & Team</th>
+                        <th className="py-3 px-3">Verification Status</th>
+                        <th className="py-3 px-3 text-right">Action</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-[#f0f0f2]">
+                    <tbody className="divide-y divide-[#f0f0f0]">
                       {clinics.length === 0 ? (
                         <tr>
-                          <td colSpan={5} className="py-12 text-center text-xs text-[#86868b]">
+                          <td colSpan={5} className="py-8 text-center text-xs text-[#86868b]">
                             No clinical facilities registered on the platform yet.
                           </td>
                         </tr>
                       ) : (
                         clinics.map((c) => (
-                          <tr key={c.id} className="hover:bg-[#f5f5f7]/50 transition-colors">
-                            <td className="py-3.5 px-4 align-middle">
+                          <tr key={c.id} className="hover:bg-[#f5f5f7]/60 transition-colors">
+                            <td className="py-3.5 px-3">
                               <div className="flex items-center gap-3">
-                                <div className="w-9 h-9 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-[#48484a] flex items-center justify-center flex-shrink-0">
+                                <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center flex-shrink-0 font-semibold">
                                   <Building2 className="w-4 h-4" />
                                 </div>
-                                <div className="min-w-0">
+                                <div>
                                   <button
                                     type="button"
                                     onClick={() => setSelectedClinic(c)}
-                                    className="text-[13px] text-[#1d1d1f] font-semibold block text-left hover:text-[#0066cc] transition-colors cursor-pointer truncate"
+                                    className="text-[13px] text-[#1d1d1f] font-semibold block text-left hover:text-[#0066cc] transition-colors cursor-pointer"
                                   >
                                     {c.clinicName}
                                   </button>
-                                  <div className="text-[11px] text-[#86868b] truncate">
+                                  <div className="text-[#86868b]">
                                     {c.user?.fullName} • {c.user?.email}
                                   </div>
                                   {c.phone && <div className="text-[10px] text-[#86868b]">{c.phone}</div>}
                                 </div>
                               </div>
                             </td>
-                            <td className="py-3.5 px-4 align-middle text-[#1d1d1f]">
-                              <div className="font-medium">{c.address}</div>
-                              <div className="text-[#86868b] text-[11px] mt-0.5">{c.city}</div>
+                            <td className="py-3.5 px-3 text-[#1d1d1f]">
+                              <div>{c.address}</div>
+                              <div className="text-[#86868b] text-[10px]">{c.city}</div>
                             </td>
-                            <td className="py-3.5 px-4 align-middle">
+                            <td className="py-3.5 px-3">
                               <div className="flex flex-col gap-0.5">
                                 <span className="text-[#1d1d1f] font-medium">
                                   {c._count?.doctors ?? c.doctorsCount ?? 0} Affiliated Doctor(s)
                                 </span>
-                                <span className="text-[11px] text-[#86868b]">
+                                <span className="text-[10px] text-[#86868b]">
                                   {c._count?.receptionists ?? c.receptionistsCount ?? 0} Receptionist(s) • {c._count?.appointments ?? c.appointmentsCount ?? 0} Bookings
                                 </span>
                               </div>
                             </td>
-                            <td className="py-3.5 px-4 align-middle">
+                            <td className="py-3.5 px-3">
                               {renderStatusBadge(getPractitionerStatus(c))}
                             </td>
-                            <td className="py-3.5 px-4 align-middle text-right">
-                              <div className="flex items-center justify-end gap-2">
+                            <td className="py-3.5 px-3 text-right">
+                              <div className="flex items-center justify-end gap-1.5">
                                 <AppleButton
-                                  variant="secondary"
+                                  variant="ghost"
                                   size="sm"
                                   onClick={() => setSelectedClinic(c)}
+                                  className="text-xs"
                                 >
                                   Details
                                 </AppleButton>
@@ -971,7 +937,7 @@ export const AdminDashboard: React.FC = () => {
                                       size="sm"
                                       disabled={clinicActionId === c.id}
                                       onClick={() => handleVerifyClinic(c.id, 'REJECTED')}
-                                      className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 border border-rose-200/80"
+                                      className="text-rose-600 hover:text-rose-700 hover:border-rose-300 text-xs"
                                     >
                                       {clinicActionId === c.id ? 'Updating...' : 'Reject'}
                                     </AppleButton>
@@ -980,6 +946,7 @@ export const AdminDashboard: React.FC = () => {
                                       size="sm"
                                       disabled={clinicActionId === c.id}
                                       onClick={() => handleVerifyClinic(c.id, 'VERIFIED')}
+                                      className="text-xs"
                                     >
                                       {clinicActionId === c.id ? 'Verifying...' : 'Approve & Verify'}
                                     </AppleButton>
@@ -992,7 +959,7 @@ export const AdminDashboard: React.FC = () => {
                                     size="sm"
                                     disabled={clinicActionId === c.id}
                                     onClick={() => handleVerifyClinic(c.id, 'SUSPENDED')}
-                                    className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 border border-rose-200/80"
+                                    className="text-rose-600 hover:text-rose-700 hover:border-rose-300 text-xs"
                                   >
                                     {clinicActionId === c.id ? 'Suspending...' : 'Suspend'}
                                   </AppleButton>
@@ -1004,6 +971,7 @@ export const AdminDashboard: React.FC = () => {
                                     size="sm"
                                     disabled={clinicActionId === c.id}
                                     onClick={() => handleVerifyClinic(c.id, 'VERIFIED')}
+                                    className="text-xs bg-[#10b981] hover:bg-[#059669] text-white shadow-2xs font-medium"
                                   >
                                     {clinicActionId === c.id ? 'Activating...' : 'Re-activate'}
                                   </AppleButton>
@@ -1011,10 +979,11 @@ export const AdminDashboard: React.FC = () => {
 
                                 {getPractitionerStatus(c) === 'REJECTED' && (
                                   <AppleButton
-                                    variant="primary"
+                                    variant="ghost"
                                     size="sm"
                                     disabled={clinicActionId === c.id}
                                     onClick={() => handleVerifyClinic(c.id, 'VERIFIED')}
+                                    className="text-[#0066cc] hover:text-[#0071e3] text-xs"
                                   >
                                     {clinicActionId === c.id ? 'Updating...' : 'Approve & Verify'}
                                   </AppleButton>
@@ -1037,9 +1006,9 @@ export const AdminDashboard: React.FC = () => {
                   {/* Header & View Mode Switcher */}
                   <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-[#e5e5ea]">
                     <div>
-                      <div className="flex items-center gap-2.5">
-                        <h3 className="text-section-title text-[#1d1d1f]">Platform Bookings & Queue Oversight</h3>
-                        <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#f5f5f7] border border-[#e5e5ea] text-[#48484a] tabular-nums">
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-lg font-bold text-[#1d1d1f] tracking-tight">Platform Bookings & Queue Oversight</h3>
+                        <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f]">
                           {filteredAppointments.length} of {appointments.length} Total
                         </span>
                       </div>
@@ -1049,128 +1018,128 @@ export const AdminDashboard: React.FC = () => {
                     </div>
 
                     {/* View Mode Segmented Controls */}
-                    <div className="inline-flex items-center p-1 bg-[#f5f5f7] rounded-full border border-[#e5e5ea] self-start lg:self-auto gap-1">
+                    <div className="inline-flex items-center p-1 bg-[#f5f5f7] rounded-full border border-[#e5e5ea] self-start lg:self-auto shadow-2xs">
                       <button
                         type="button"
                         onClick={() => setBookingViewMode('table')}
-                        className={`px-3.5 py-1.5 rounded-full text-xs flex items-center gap-1.5 transition-all cursor-pointer ${
+                        className={`px-3.5 py-1.5 rounded-full text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
                           bookingViewMode === 'table'
-                            ? 'bg-white text-[#1d1d1f] shadow-apple-xs font-semibold'
-                            : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
+                            ? 'bg-white text-[#1d1d1f] shadow-xs font-semibold'
+                            : 'text-[#86868b] hover:text-[#1d1d1f]'
                         }`}
                         title="View flat table of all matching bookings"
                       >
-                        <Layers className={`w-3.5 h-3.5 ${bookingViewMode === 'table' ? 'text-[#0066cc]' : 'text-[#86868b]'}`} />
+                        <Layers className="w-3.5 h-3.5 text-[#0066cc]" />
                         <span>All Records</span>
                       </button>
 
                       <button
                         type="button"
                         onClick={() => setBookingViewMode('by-date')}
-                        className={`px-3.5 py-1.5 rounded-full text-xs flex items-center gap-1.5 transition-all cursor-pointer ${
+                        className={`px-3.5 py-1.5 rounded-full text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
                           bookingViewMode === 'by-date'
-                            ? 'bg-white text-[#1d1d1f] shadow-apple-xs font-semibold'
-                            : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
+                            ? 'bg-white text-[#1d1d1f] shadow-xs font-semibold'
+                            : 'text-[#86868b] hover:text-[#1d1d1f]'
                         }`}
                         title="Group bookings chronologically by date"
                       >
-                        <CalendarDays className={`w-3.5 h-3.5 ${bookingViewMode === 'by-date' ? 'text-[#0066cc]' : 'text-[#86868b]'}`} />
+                        <CalendarDays className="w-3.5 h-3.5 text-purple-600" />
                         <span>Organize by Date</span>
                       </button>
 
                       <button
                         type="button"
                         onClick={() => setBookingViewMode('by-clinic')}
-                        className={`px-3.5 py-1.5 rounded-full text-xs flex items-center gap-1.5 transition-all cursor-pointer ${
+                        className={`px-3.5 py-1.5 rounded-full text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
                           bookingViewMode === 'by-clinic'
-                            ? 'bg-white text-[#1d1d1f] shadow-apple-xs font-semibold'
-                            : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
+                            ? 'bg-white text-[#1d1d1f] shadow-xs font-semibold'
+                            : 'text-[#86868b] hover:text-[#1d1d1f]'
                         }`}
                         title="Group bookings by clinic facility"
                       >
-                        <Building2 className={`w-3.5 h-3.5 ${bookingViewMode === 'by-clinic' ? 'text-[#0066cc]' : 'text-[#86868b]'}`} />
+                        <Building2 className="w-3.5 h-3.5 text-indigo-600" />
                         <span>Organize by Clinic</span>
                       </button>
                     </div>
                   </div>
 
-                  {/* Normalized Summary Metric Counters Bar */}
+                  {/* Summary Metric Counters Bar */}
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-3 my-5">
-                    <div className="p-3 sm:p-3.5 rounded-2xl bg-[#f5f5f7]/70 border border-[#e5e5ea]">
-                      <span className="text-[10px] text-[#86868b] uppercase tracking-wider font-semibold block">Total Shown</span>
-                      <strong className="text-lg font-bold text-[#1d1d1f] tabular-nums mt-1 block">{filteredAppointments.length}</strong>
+                    <div className="p-3 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-center">
+                      <span className="text-[10px] text-[#86868b] uppercase font-semibold block">Total Shown</span>
+                      <strong className="text-lg font-bold text-[#1d1d1f] mt-0.5 block">{filteredAppointments.length}</strong>
                     </div>
 
-                    <div className="p-3 sm:p-3.5 rounded-2xl bg-[#f5f5f7]/70 border border-[#e5e5ea]">
-                      <span className="text-[10px] text-[#86868b] uppercase tracking-wider font-semibold block">Today's Visits</span>
-                      <strong className="text-lg font-bold text-[#0066cc] tabular-nums mt-1 block">
+                    <div className="p-3 rounded-xl bg-blue-50/60 border border-blue-200/60 text-center">
+                      <span className="text-[10px] text-blue-700 uppercase font-semibold block">Today's Visits</span>
+                      <strong className="text-lg font-bold text-[#0066cc] mt-0.5 block">
                         {filteredAppointments.filter((a) => a.appointmentDate === todayStr).length}
                       </strong>
                     </div>
 
-                    <div className="p-3 sm:p-3.5 rounded-2xl bg-[#f5f5f7]/70 border border-[#e5e5ea]">
-                      <span className="text-[10px] text-[#86868b] uppercase tracking-wider font-semibold block">Waiting</span>
-                      <strong className="text-lg font-bold text-amber-700 tabular-nums mt-1 block">
+                    <div className="p-3 rounded-xl bg-amber-50/70 border border-amber-200 text-center">
+                      <span className="text-[10px] text-amber-800 uppercase font-semibold block">Waiting</span>
+                      <strong className="text-lg font-bold text-amber-700 mt-0.5 block">
                         {filteredAppointments.filter((a) => (a.status || '').toUpperCase() === 'WAITING').length}
                       </strong>
                     </div>
 
-                    <div className="p-3 sm:p-3.5 rounded-2xl bg-[#f5f5f7]/70 border border-[#e5e5ea]">
-                      <span className="text-[10px] text-[#86868b] uppercase tracking-wider font-semibold block">In Cabin</span>
-                      <strong className="text-lg font-bold text-[#0066cc] tabular-nums mt-1 block">
+                    <div className="p-3 rounded-xl bg-indigo-50/70 border border-indigo-200 text-center">
+                      <span className="text-[10px] text-indigo-800 uppercase font-semibold block">In Cabin</span>
+                      <strong className="text-lg font-bold text-indigo-600 mt-0.5 block">
                         {filteredAppointments.filter((a) => (a.status || '').toUpperCase() === 'IN_CONSULTATION').length}
                       </strong>
                     </div>
 
-                    <div className="p-3 sm:p-3.5 rounded-2xl bg-[#f5f5f7]/70 border border-[#e5e5ea]">
-                      <span className="text-[10px] text-[#86868b] uppercase tracking-wider font-semibold block">Completed</span>
-                      <strong className="text-lg font-bold text-emerald-700 tabular-nums mt-1 block">
+                    <div className="p-3 rounded-xl bg-emerald-50/70 border border-emerald-200 text-center">
+                      <span className="text-[10px] text-emerald-800 uppercase font-semibold block">Completed</span>
+                      <strong className="text-lg font-bold text-emerald-700 mt-0.5 block">
                         {filteredAppointments.filter((a) => (a.status || '').toUpperCase() === 'COMPLETED').length}
                       </strong>
                     </div>
 
-                    <div className="p-3 sm:p-3.5 rounded-2xl bg-[#f5f5f7]/70 border border-[#e5e5ea]">
-                      <span className="text-[10px] text-[#86868b] uppercase tracking-wider font-semibold block">Cancelled / Off</span>
-                      <strong className="text-lg font-bold text-rose-600 tabular-nums mt-1 block">
+                    <div className="p-3 rounded-xl bg-rose-50/60 border border-rose-200 text-center">
+                      <span className="text-[10px] text-rose-800 uppercase font-semibold block">Cancelled/Off</span>
+                      <strong className="text-lg font-bold text-rose-600 mt-0.5 block">
                         {filteredAppointments.filter((a) => ['CANCELLED', 'EXPIRED'].includes((a.status || '').toUpperCase())).length}
                       </strong>
                     </div>
                   </div>
 
                   {/* Interactive Filter Control Panel (Date, Clinic, Status, Search) */}
-                  <div className="p-4 rounded-2xl bg-[#f5f5f7]/60 border border-[#e5e5ea] space-y-3.5">
+                  <div className="p-4 rounded-2xl bg-[#fafafc] border border-[#e5e5ea] space-y-3.5">
                     <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
                       {/* Search Bar */}
                       <div className="relative flex-1">
-                        <Search className="w-4 h-4 text-[#86868b] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        <Search className="w-4 h-4 text-[#86868b] absolute left-3.5 top-1/2 -translate-y-1/2" />
                         <input
                           type="text"
                           value={bookingSearchQuery}
                           onChange={(e) => setBookingSearchQuery(e.target.value)}
                           placeholder="Search patient, practitioner, clinic, token #..."
-                          className="w-full h-10 pl-9 pr-8 text-xs rounded-xl bg-white border border-[#e5e5ea] text-[#1d1d1f] placeholder-[#86868b] focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] transition-all"
+                          className="w-full pl-9 pr-8 py-2 text-xs rounded-xl bg-white border border-[#e5e5ea] text-[#1d1d1f] placeholder-[#86868b] focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] transition-all"
                         />
                         {bookingSearchQuery && (
                           <button
                             type="button"
                             onClick={() => setBookingSearchQuery('')}
-                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#86868b] hover:text-[#1d1d1f] cursor-pointer"
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#86868b] hover:text-[#1d1d1f]"
                           >
                             <X className="w-3.5 h-3.5" />
                           </button>
                         )}
                       </div>
 
-                      {/* Clinic & Status Filter Selectors */}
-                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+                      {/* Clinic Filter Selector */}
+                      <div className="flex items-center gap-2">
                         <div className="relative min-w-[200px]">
                           <select
                             value={bookingClinicFilter}
                             onChange={(e) => setBookingClinicFilter(e.target.value)}
                             aria-label="Filter bookings by clinic facility"
-                            className="w-full h-10 appearance-none pl-8 pr-7 text-xs rounded-xl bg-white border border-[#e5e5ea] text-[#1d1d1f] font-medium focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] cursor-pointer transition-all"
+                            className="w-full appearance-none pl-8 pr-7 py-2 text-xs rounded-xl bg-white border border-[#e5e5ea] text-[#1d1d1f] font-medium focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] cursor-pointer transition-all"
                           >
-                            <option value="ALL">All Clinics ({appointments.length})</option>
+                            <option value="ALL">🏥 All Clinics ({appointments.length})</option>
                             {clinicFilterOptions.map((c) => (
                               <option key={c.id} value={c.name}>
                                 {c.name} ({c.count})
@@ -1181,12 +1150,13 @@ export const AdminDashboard: React.FC = () => {
                           <ChevronDown className="w-3.5 h-3.5 text-[#86868b] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                         </div>
 
-                        <div className="relative min-w-[150px]">
+                        {/* Status Filter Selector */}
+                        <div className="relative min-w-[140px]">
                           <select
                             value={bookingStatusFilter}
                             onChange={(e) => setBookingStatusFilter(e.target.value)}
                             aria-label="Filter bookings by consultation status"
-                            className="w-full h-10 appearance-none pl-8 pr-7 text-xs rounded-xl bg-white border border-[#e5e5ea] text-[#1d1d1f] font-medium focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] cursor-pointer transition-all"
+                            className="w-full appearance-none pl-8 pr-7 py-2 text-xs rounded-xl bg-white border border-[#e5e5ea] text-[#1d1d1f] font-medium focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] cursor-pointer transition-all"
                           >
                             <option value="ALL">All Statuses</option>
                             <option value="WAITING">Waiting</option>
@@ -1203,10 +1173,10 @@ export const AdminDashboard: React.FC = () => {
                     </div>
 
                     {/* Date Quick Filter Pills + Custom Date Picker */}
-                    <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2.5 border-t border-[#e5e5ea]">
+                    <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t border-[#f0f0f2]">
                       <div className="flex flex-wrap items-center gap-1.5">
                         <span className="text-[11px] font-semibold text-[#86868b] mr-1 flex items-center gap-1">
-                          <Calendar className="w-3 h-3 text-[#86868b]" />
+                          <Calendar className="w-3 h-3 text-[#0066cc]" />
                           Date:
                         </span>
 
@@ -1218,7 +1188,7 @@ export const AdminDashboard: React.FC = () => {
                           }}
                           className={`px-3 py-1 rounded-full text-xs transition-all cursor-pointer ${
                             bookingDateFilter === 'ALL'
-                              ? 'bg-[#1d1d1f] text-white font-semibold shadow-apple-xs'
+                              ? 'bg-[#1d1d1f] text-white font-semibold shadow-xs'
                               : 'bg-white border border-[#e5e5ea] text-[#48484a] hover:bg-[#f5f5f7]'
                           }`}
                         >
@@ -1233,7 +1203,7 @@ export const AdminDashboard: React.FC = () => {
                           }}
                           className={`px-3 py-1 rounded-full text-xs transition-all cursor-pointer ${
                             bookingDateFilter === 'TODAY'
-                              ? 'bg-[#0066cc] text-white font-semibold shadow-apple-xs'
+                              ? 'bg-[#0066cc] text-white font-semibold shadow-xs'
                               : 'bg-white border border-[#e5e5ea] text-[#48484a] hover:bg-[#f5f5f7]'
                           }`}
                         >
@@ -1248,7 +1218,7 @@ export const AdminDashboard: React.FC = () => {
                           }}
                           className={`px-3 py-1 rounded-full text-xs transition-all cursor-pointer ${
                             bookingDateFilter === 'TOMORROW'
-                              ? 'bg-[#1d1d1f] text-white font-semibold shadow-apple-xs'
+                              ? 'bg-purple-600 text-white font-semibold shadow-xs'
                               : 'bg-white border border-[#e5e5ea] text-[#48484a] hover:bg-[#f5f5f7]'
                           }`}
                         >
@@ -1263,7 +1233,7 @@ export const AdminDashboard: React.FC = () => {
                           }}
                           className={`px-3 py-1 rounded-full text-xs transition-all cursor-pointer ${
                             bookingDateFilter === 'PAST'
-                              ? 'bg-[#1d1d1f] text-white font-semibold shadow-apple-xs'
+                              ? 'bg-gray-700 text-white font-semibold shadow-xs'
                               : 'bg-white border border-[#e5e5ea] text-[#48484a] hover:bg-[#f5f5f7]'
                           }`}
                         >
@@ -1272,7 +1242,7 @@ export const AdminDashboard: React.FC = () => {
 
                         {/* Custom Date Input */}
                         <div className="inline-flex items-center gap-1.5 ml-1 pl-2 border-l border-[#e5e5ea]">
-                          <span className="text-[11px] text-[#86868b] font-medium">Specific:</span>
+                          <span className="text-[10px] text-[#86868b] font-medium">Specific:</span>
                           <input
                             type="date"
                             value={bookingCustomDate}
@@ -1283,7 +1253,7 @@ export const AdminDashboard: React.FC = () => {
                             }}
                             className={`px-2.5 py-1 text-xs rounded-lg border transition-all cursor-pointer ${
                               bookingDateFilter === 'CUSTOM'
-                                ? 'bg-[#0066cc]/10 border-[#0066cc]/40 text-[#0066cc] font-semibold'
+                                ? 'bg-blue-50 border-[#0066cc] text-[#0066cc] font-semibold'
                                 : 'bg-white border-[#e5e5ea] text-[#1d1d1f]'
                             }`}
                           />
@@ -1295,7 +1265,7 @@ export const AdminDashboard: React.FC = () => {
                         <button
                           type="button"
                           onClick={handleResetBookingFilters}
-                          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium text-[#48484a] bg-white hover:bg-[#f5f5f7] border border-[#e5e5ea] transition-all cursor-pointer active:scale-95"
+                          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-all cursor-pointer active:scale-95"
                         >
                           <RotateCcw className="w-3 h-3" />
                           <span>Reset Filters</span>
@@ -1307,59 +1277,58 @@ export const AdminDashboard: React.FC = () => {
                   {/* Empty State */}
                   {filteredAppointments.length === 0 && (
                     <div className="p-12 text-center my-6 rounded-2xl border border-dashed border-[#e5e5ea] bg-white">
-                      <div className="w-11 h-11 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] flex items-center justify-center mx-auto mb-3 text-[#86868b]">
-                        <Calendar className="w-5 h-5 text-[#86868b]" />
+                      <div className="w-12 h-12 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] flex items-center justify-center mx-auto mb-3 text-[#86868b]">
+                        <Calendar className="w-6 h-6 text-[#86868b]" />
                       </div>
                       <h4 className="text-sm font-semibold text-[#1d1d1f]">No Bookings Found</h4>
                       <p className="text-xs text-[#86868b] mt-1 max-w-sm mx-auto">
                         No appointments match your active date ({bookingDateFilter !== 'ALL' ? bookingDateFilter : 'selected'}), clinic, or search filter.
                       </p>
-                      <AppleButton
-                        variant="secondary"
-                        size="sm"
+                      <button
+                        type="button"
                         onClick={handleResetBookingFilters}
-                        className="mt-4"
+                        className="mt-4 px-4 py-1.5 rounded-full text-xs font-semibold bg-[#1d1d1f] hover:bg-black text-white transition-all cursor-pointer"
                       >
                         Clear All Filters
-                      </AppleButton>
+                      </button>
                     </div>
                   )}
 
                   {/* MODE 1: ALL RECORDS FLAT TABLE */}
                   {bookingViewMode === 'table' && filteredAppointments.length > 0 && (
-                    <div className="overflow-x-auto mt-5 rounded-2xl border border-[#e5e5ea]">
+                    <div className="overflow-x-auto mt-5">
                       <table className="w-full text-left text-xs">
-                        <thead className="border-b border-[#e5e5ea] bg-[#fafafa]/60 text-[11px] text-[#86868b] uppercase tracking-wider font-semibold">
+                        <thead className="border-b border-[#e5e5ea] text-[#86868b] uppercase tracking-wider font-semibold">
                           <tr>
-                            <th className="py-3 px-4">Date</th>
-                            <th className="py-3 px-4">Queue Token</th>
-                            <th className="py-3 px-4">Patient</th>
-                            <th className="py-3 px-4">Practitioner</th>
-                            <th className="py-3 px-4">Clinic / Facility</th>
-                            <th className="py-3 px-4">Status</th>
-                            <th className="py-3 px-4">Est. Time</th>
-                            <th className="py-3 px-4 text-right">Details</th>
+                            <th className="py-3 px-3">Date</th>
+                            <th className="py-3 px-3">Queue Token</th>
+                            <th className="py-3 px-3">Patient</th>
+                            <th className="py-3 px-3">Practitioner</th>
+                            <th className="py-3 px-3">Clinic / Facility</th>
+                            <th className="py-3 px-3">Status</th>
+                            <th className="py-3 px-3">Est. Time</th>
+                            <th className="py-3 px-3 text-right">Details</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-[#f0f0f2] bg-white">
+                        <tbody className="divide-y divide-[#f0f0f0]">
                           {filteredAppointments.map((appt) => {
                             const clinicInfo = resolveClinic(appt);
                             return (
-                              <tr key={appt.id} className="hover:bg-[#f5f5f7]/50 transition-colors">
-                                <td className="py-3.5 px-4 align-middle">
+                              <tr key={appt.id} className="hover:bg-[#f5f5f7]/60 transition-colors">
+                                <td className="py-3 px-3">
                                   <div className="flex items-center gap-1.5">
-                                    <span className="font-semibold text-[#1d1d1f] tabular-nums">{appt.appointmentDate}</span>
+                                    <span className="font-semibold text-[#1d1d1f]">{appt.appointmentDate}</span>
                                     {getDateBadge(appt.appointmentDate)}
                                   </div>
                                 </td>
-                                <td className="py-3.5 px-4 align-middle font-bold text-[#0066cc] tabular-nums">Queue #{appt.queueNumber}</td>
-                                <td className="py-3.5 px-4 align-middle">
+                                <td className="py-3 px-3 font-bold text-[#0066cc]">Queue #{appt.queueNumber}</td>
+                                <td className="py-3 px-3">
                                   <div>
                                     <span className="font-medium text-[#1d1d1f]">
                                       {appt.patient?.user?.fullName || appt.patientName || 'Unknown Patient'}
                                     </span>
                                     {appt.isForOther && appt.patientName && (
-                                      <span className="ml-1.5 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-[#f5f5f7] text-[#48484a] border border-[#e5e5ea]">
+                                      <span className="ml-1.5 px-1.5 py-0.2 rounded text-[9px] font-semibold bg-purple-50 text-purple-700 border border-purple-200">
                                         Family
                                       </span>
                                     )}
@@ -1368,34 +1337,34 @@ export const AdminDashboard: React.FC = () => {
                                     </span>
                                   </div>
                                 </td>
-                                <td className="py-3.5 px-4 align-middle">
+                                <td className="py-3 px-3">
                                   <div>
                                     <span className="font-medium text-[#1d1d1f]">{appt.doctor?.user?.fullName || 'Practitioner'}</span>
-                                    <span className="text-[11px] text-[#86868b] block mt-0.5">
+                                    <span className="text-[11px] text-[#0066cc] block mt-0.5">
                                       {appt.doctor?.specialty || 'Specialist'}
                                     </span>
                                   </div>
                                 </td>
-                                <td className="py-3.5 px-4 align-middle">
-                                  <div className="flex items-start gap-2">
-                                    <Building2 className="w-3.5 h-3.5 text-[#86868b] shrink-0 mt-0.5" />
+                                <td className="py-3 px-3">
+                                  <div className="flex items-start gap-1.5">
+                                    <Building2 className="w-3.5 h-3.5 text-indigo-600 shrink-0 mt-0.5" />
                                     <div>
                                       <span className="font-medium text-[#1d1d1f]">{clinicInfo.name}</span>
                                       {clinicInfo.city && (
-                                        <span className="text-[11px] text-[#86868b] block mt-0.5">
+                                        <span className="text-[10px] text-[#86868b] block mt-0.5">
                                           {clinicInfo.city}
                                         </span>
                                       )}
                                     </div>
                                   </div>
                                 </td>
-                                <td className="py-3.5 px-4 align-middle">{renderAppointmentStatusBadge(appt.status)}</td>
-                                <td className="py-3.5 px-4 align-middle text-[#48484a] font-medium tabular-nums">{appt.estimatedTime || 'N/A'}</td>
-                                <td className="py-3.5 px-4 align-middle text-right">
+                                <td className="py-3 px-3">{renderAppointmentStatusBadge(appt.status)}</td>
+                                <td className="py-3 px-3 text-[#86868b] font-medium">{appt.estimatedTime || 'N/A'}</td>
+                                <td className="py-3 px-3 text-right">
                                   <button
                                     type="button"
                                     onClick={() => setSelectedAppointment(appt)}
-                                    className="p-1.5 rounded-full hover:bg-[#f5f5f7] text-[#48484a] hover:text-[#1d1d1f] border border-transparent hover:border-[#e5e5ea] transition-all cursor-pointer"
+                                    className="p-1.5 rounded-full hover:bg-white text-[#0066cc] hover:text-[#0055b3] border border-transparent hover:border-[#e5e5ea] transition-all cursor-pointer"
                                     title="Inspect Booking Details"
                                   >
                                     <Eye className="w-4 h-4" />
@@ -1411,7 +1380,7 @@ export const AdminDashboard: React.FC = () => {
 
                   {/* MODE 2: GROUPED BY DATE */}
                   {bookingViewMode === 'by-date' && filteredAppointments.length > 0 && (
-                    <div className="space-y-5 mt-6">
+                    <div className="space-y-6 mt-6">
                       {appointmentsByDate.map(([dateStr, items]) => {
                         const waitingCount = items.filter((i) => (i.status || '').toUpperCase() === 'WAITING').length;
                         const completedCount = items.filter((i) => (i.status || '').toUpperCase() === 'COMPLETED').length;
@@ -1419,19 +1388,19 @@ export const AdminDashboard: React.FC = () => {
                         return (
                           <div
                             key={dateStr}
-                            className="bg-white rounded-2xl border border-[#e5e5ea] overflow-hidden shadow-apple-xs"
+                            className="bg-white rounded-2xl border border-[#e5e5ea] overflow-hidden shadow-2xs"
                           >
                             {/* Date Group Header */}
-                            <div className="px-4 py-3.5 bg-[#f5f5f7]/60 border-b border-[#e5e5ea] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <div className="px-4 py-3.5 bg-[#fbfbfd] border-b border-[#e5e5ea] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                               <div className="flex items-center gap-2.5">
-                                <div className="w-8 h-8 rounded-xl bg-white border border-[#e5e5ea] text-[#48484a] flex items-center justify-center shrink-0">
+                                <div className="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
                                   <CalendarDays className="w-4 h-4" />
                                 </div>
                                 <div>
                                   <div className="flex items-center gap-2">
-                                    <h4 className="text-sm font-semibold text-[#1d1d1f]">{formatDisplayDate(dateStr)}</h4>
+                                    <h4 className="text-sm font-bold text-[#1d1d1f]">{formatDisplayDate(dateStr)}</h4>
                                     {getDateBadge(dateStr)}
-                                    <span className="text-xs text-[#86868b] tabular-nums">({dateStr})</span>
+                                    <span className="text-xs text-[#86868b]">({dateStr})</span>
                                   </div>
                                   <p className="text-[11px] text-[#86868b] mt-0.5">
                                     {items.length} booking{items.length !== 1 ? 's' : ''} scheduled • {waitingCount} waiting • {completedCount} completed
@@ -1439,7 +1408,7 @@ export const AdminDashboard: React.FC = () => {
                                 </div>
                               </div>
 
-                              <span className="px-3 py-1 rounded-full text-xs font-medium bg-white border border-[#e5e5ea] text-[#1d1d1f] self-start sm:self-center tabular-nums">
+                              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white border border-[#e5e5ea] text-[#1d1d1f] self-start sm:self-center">
                                 {items.length} Token{items.length !== 1 ? 's' : ''}
                               </span>
                             </div>
@@ -1447,30 +1416,30 @@ export const AdminDashboard: React.FC = () => {
                             {/* Date Appointments Table */}
                             <div className="overflow-x-auto">
                               <table className="w-full text-left text-xs">
-                                <thead className="border-b border-[#e5e5ea] text-[11px] text-[#86868b] uppercase tracking-wider font-semibold bg-[#fafafa]/60">
+                                <thead className="border-b border-[#f0f0f2] text-[#86868b] uppercase tracking-wider font-semibold bg-[#fafafa]">
                                   <tr>
-                                    <th className="py-2.5 px-4">Token #</th>
-                                    <th className="py-2.5 px-4">Patient</th>
-                                    <th className="py-2.5 px-4">Practitioner</th>
-                                    <th className="py-2.5 px-4">Clinic Facility</th>
-                                    <th className="py-2.5 px-4">Status</th>
-                                    <th className="py-2.5 px-4">Est. Time</th>
-                                    <th className="py-2.5 px-4 text-right">Details</th>
+                                    <th className="py-2.5 px-3">Token #</th>
+                                    <th className="py-2.5 px-3">Patient</th>
+                                    <th className="py-2.5 px-3">Practitioner</th>
+                                    <th className="py-2.5 px-3">Clinic Facility</th>
+                                    <th className="py-2.5 px-3">Status</th>
+                                    <th className="py-2.5 px-3">Est. Time</th>
+                                    <th className="py-2.5 px-3 text-right">Details</th>
                                   </tr>
                                 </thead>
-                                <tbody className="divide-y divide-[#f0f0f2]">
+                                <tbody className="divide-y divide-[#f0f0f0]">
                                   {items.map((appt) => {
                                     const clinicInfo = resolveClinic(appt);
                                     return (
-                                      <tr key={appt.id} className="hover:bg-[#f5f5f7]/50 transition-colors">
-                                        <td className="py-3 px-4 align-middle font-bold text-[#0066cc] tabular-nums">Queue #{appt.queueNumber}</td>
-                                        <td className="py-3 px-4 align-middle">
+                                      <tr key={appt.id} className="hover:bg-[#f5f5f7]/60 transition-colors">
+                                        <td className="py-3 px-3 font-bold text-[#0066cc]">Queue #{appt.queueNumber}</td>
+                                        <td className="py-3 px-3">
                                           <div>
                                             <span className="font-medium text-[#1d1d1f]">
                                               {appt.patient?.user?.fullName || appt.patientName || 'Unknown Patient'}
                                             </span>
                                             {appt.isForOther && appt.patientName && (
-                                              <span className="ml-1.5 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-[#f5f5f7] text-[#48484a] border border-[#e5e5ea]">
+                                              <span className="ml-1.5 px-1.5 py-0.2 rounded text-[9px] font-semibold bg-purple-50 text-purple-700 border border-purple-200">
                                                 Family
                                               </span>
                                             )}
@@ -1479,34 +1448,34 @@ export const AdminDashboard: React.FC = () => {
                                             </span>
                                           </div>
                                         </td>
-                                        <td className="py-3 px-4 align-middle">
+                                        <td className="py-3 px-3">
                                           <div>
                                             <span className="font-medium text-[#1d1d1f]">{appt.doctor?.user?.fullName || 'Practitioner'}</span>
-                                            <span className="text-[11px] text-[#86868b] block mt-0.5">
+                                            <span className="text-[11px] text-[#0066cc] block mt-0.5">
                                               {appt.doctor?.specialty || 'Specialist'}
                                             </span>
                                           </div>
                                         </td>
-                                        <td className="py-3 px-4 align-middle">
-                                          <div className="flex items-start gap-2">
-                                            <Building2 className="w-3.5 h-3.5 text-[#86868b] shrink-0 mt-0.5" />
+                                        <td className="py-3 px-3">
+                                          <div className="flex items-start gap-1.5">
+                                            <Building2 className="w-3.5 h-3.5 text-indigo-600 shrink-0 mt-0.5" />
                                             <div>
                                               <span className="font-medium text-[#1d1d1f]">{clinicInfo.name}</span>
                                               {clinicInfo.city && (
-                                                <span className="text-[11px] text-[#86868b] block mt-0.5">
+                                                <span className="text-[10px] text-[#86868b] block mt-0.5">
                                                   {clinicInfo.city}
                                                 </span>
                                               )}
                                             </div>
                                           </div>
                                         </td>
-                                        <td className="py-3 px-4 align-middle">{renderAppointmentStatusBadge(appt.status)}</td>
-                                        <td className="py-3 px-4 align-middle text-[#48484a] font-medium tabular-nums">{appt.estimatedTime || 'N/A'}</td>
-                                        <td className="py-3 px-4 align-middle text-right">
+                                        <td className="py-3 px-3">{renderAppointmentStatusBadge(appt.status)}</td>
+                                        <td className="py-3 px-3 text-[#86868b] font-medium">{appt.estimatedTime || 'N/A'}</td>
+                                        <td className="py-3 px-3 text-right">
                                           <button
                                             type="button"
                                             onClick={() => setSelectedAppointment(appt)}
-                                            className="p-1.5 rounded-full hover:bg-[#f5f5f7] text-[#48484a] hover:text-[#1d1d1f] border border-transparent hover:border-[#e5e5ea] transition-all cursor-pointer"
+                                            className="p-1.5 rounded-full hover:bg-white text-[#0066cc] hover:text-[#0055b3] border border-transparent hover:border-[#e5e5ea] transition-all cursor-pointer"
                                             title="Inspect Booking Details"
                                           >
                                             <Eye className="w-4 h-4" />
@@ -1526,7 +1495,7 @@ export const AdminDashboard: React.FC = () => {
 
                   {/* MODE 3: GROUPED BY CLINIC */}
                   {bookingViewMode === 'by-clinic' && filteredAppointments.length > 0 && (
-                    <div className="space-y-5 mt-6">
+                    <div className="space-y-6 mt-6">
                       {appointmentsByClinic.map(({ clinicInfo, items }) => {
                         const doctorsInClinic = Array.from(new Set(items.map((i) => i.doctor?.user?.fullName).filter(Boolean)));
                         const waitingCount = items.filter((i) => (i.status || '').toUpperCase() === 'WAITING').length;
@@ -1535,19 +1504,19 @@ export const AdminDashboard: React.FC = () => {
                         return (
                           <div
                             key={clinicInfo.name}
-                            className="bg-white rounded-2xl border border-[#e5e5ea] overflow-hidden shadow-apple-xs"
+                            className="bg-white rounded-2xl border border-[#e5e5ea] overflow-hidden shadow-2xs"
                           >
                             {/* Clinic Group Header */}
-                            <div className="px-4 py-3.5 bg-[#f5f5f7]/60 border-b border-[#e5e5ea] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <div className="px-4 py-3.5 bg-[#fbfbfd] border-b border-[#e5e5ea] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                               <div className="flex items-center gap-2.5">
-                                <div className="w-8 h-8 rounded-xl bg-white border border-[#e5e5ea] text-[#48484a] flex items-center justify-center shrink-0">
+                                <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
                                   <Building2 className="w-4 h-4" />
                                 </div>
                                 <div>
                                   <div className="flex items-center gap-2">
-                                    <h4 className="text-sm font-semibold text-[#1d1d1f]">{clinicInfo.name}</h4>
+                                    <h4 className="text-sm font-bold text-[#1d1d1f]">{clinicInfo.name}</h4>
                                     {clinicInfo.city && (
-                                      <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-white border border-[#e5e5ea] text-[#48484a]">
+                                      <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 text-gray-700">
                                         {clinicInfo.city}
                                       </span>
                                     )}
@@ -1559,10 +1528,10 @@ export const AdminDashboard: React.FC = () => {
                               </div>
 
                               <div className="flex items-center gap-2 self-start sm:self-center">
-                                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-amber-50 text-amber-800 border border-amber-200/80 tabular-nums">
+                                <span className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-amber-50 text-amber-800 border border-amber-200">
                                   {waitingCount} Waiting
                                 </span>
-                                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200/80 tabular-nums">
+                                <span className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-800 border border-emerald-200">
                                   {completedCount} Completed
                                 </span>
                               </div>
@@ -1571,34 +1540,34 @@ export const AdminDashboard: React.FC = () => {
                             {/* Clinic Appointments Table */}
                             <div className="overflow-x-auto">
                               <table className="w-full text-left text-xs">
-                                <thead className="border-b border-[#e5e5ea] text-[11px] text-[#86868b] uppercase tracking-wider font-semibold bg-[#fafafa]/60">
+                                <thead className="border-b border-[#f0f0f2] text-[#86868b] uppercase tracking-wider font-semibold bg-[#fafafa]">
                                   <tr>
-                                    <th className="py-2.5 px-4">Date</th>
-                                    <th className="py-2.5 px-4">Token #</th>
-                                    <th className="py-2.5 px-4">Patient</th>
-                                    <th className="py-2.5 px-4">Practitioner</th>
-                                    <th className="py-2.5 px-4">Status</th>
-                                    <th className="py-2.5 px-4">Est. Time</th>
-                                    <th className="py-2.5 px-4 text-right">Details</th>
+                                    <th className="py-2.5 px-3">Date</th>
+                                    <th className="py-2.5 px-3">Token #</th>
+                                    <th className="py-2.5 px-3">Patient</th>
+                                    <th className="py-2.5 px-3">Practitioner</th>
+                                    <th className="py-2.5 px-3">Status</th>
+                                    <th className="py-2.5 px-3">Est. Time</th>
+                                    <th className="py-2.5 px-3 text-right">Details</th>
                                   </tr>
                                 </thead>
-                                <tbody className="divide-y divide-[#f0f0f2]">
+                                <tbody className="divide-y divide-[#f0f0f0]">
                                   {items.map((appt) => (
-                                    <tr key={appt.id} className="hover:bg-[#f5f5f7]/50 transition-colors">
-                                      <td className="py-3 px-4 align-middle">
+                                    <tr key={appt.id} className="hover:bg-[#f5f5f7]/60 transition-colors">
+                                      <td className="py-3 px-3">
                                         <div className="flex items-center gap-1.5">
-                                          <span className="font-semibold text-[#1d1d1f] tabular-nums">{appt.appointmentDate}</span>
+                                          <span className="font-semibold text-[#1d1d1f]">{appt.appointmentDate}</span>
                                           {getDateBadge(appt.appointmentDate)}
                                         </div>
                                       </td>
-                                      <td className="py-3 px-4 align-middle font-bold text-[#0066cc] tabular-nums">Queue #{appt.queueNumber}</td>
-                                      <td className="py-3 px-4 align-middle">
+                                      <td className="py-3 px-3 font-bold text-[#0066cc]">Queue #{appt.queueNumber}</td>
+                                      <td className="py-3 px-3">
                                         <div>
                                           <span className="font-medium text-[#1d1d1f]">
                                             {appt.patient?.user?.fullName || appt.patientName || 'Unknown Patient'}
                                           </span>
                                           {appt.isForOther && appt.patientName && (
-                                            <span className="ml-1.5 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-[#f5f5f7] text-[#48484a] border border-[#e5e5ea]">
+                                            <span className="ml-1.5 px-1.5 py-0.2 rounded text-[9px] font-semibold bg-purple-50 text-purple-700 border border-purple-200">
                                               Family
                                             </span>
                                           )}
@@ -1607,21 +1576,21 @@ export const AdminDashboard: React.FC = () => {
                                           </span>
                                         </div>
                                       </td>
-                                      <td className="py-3 px-4 align-middle">
+                                      <td className="py-3 px-3">
                                         <div>
                                           <span className="font-medium text-[#1d1d1f]">{appt.doctor?.user?.fullName || 'Practitioner'}</span>
-                                          <span className="text-[11px] text-[#86868b] block mt-0.5">
+                                          <span className="text-[11px] text-[#0066cc] block mt-0.5">
                                             {appt.doctor?.specialty || 'Specialist'}
                                           </span>
                                         </div>
                                       </td>
-                                      <td className="py-3 px-4 align-middle">{renderAppointmentStatusBadge(appt.status)}</td>
-                                      <td className="py-3 px-4 align-middle text-[#48484a] font-medium tabular-nums">{appt.estimatedTime || 'N/A'}</td>
-                                      <td className="py-3 px-4 align-middle text-right">
+                                      <td className="py-3 px-3">{renderAppointmentStatusBadge(appt.status)}</td>
+                                      <td className="py-3 px-3 text-[#86868b] font-medium">{appt.estimatedTime || 'N/A'}</td>
+                                      <td className="py-3 px-3 text-right">
                                         <button
                                           type="button"
                                           onClick={() => setSelectedAppointment(appt)}
-                                          className="p-1.5 rounded-full hover:bg-[#f5f5f7] text-[#48484a] hover:text-[#1d1d1f] border border-transparent hover:border-[#e5e5ea] transition-all cursor-pointer"
+                                          className="p-1.5 rounded-full hover:bg-white text-[#0066cc] hover:text-[#0055b3] border border-transparent hover:border-[#e5e5ea] transition-all cursor-pointer"
                                           title="Inspect Booking Details"
                                         >
                                           <Eye className="w-4 h-4" />
@@ -1644,47 +1613,45 @@ export const AdminDashboard: React.FC = () => {
             {/* Tab 4: Contact Form Messages & Inquiries */}
             {activeTab === 'messages' && (
               <UtilityCard>
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-5 mb-5 border-b border-[#e5e5ea]">
+                <div className="flex justify-between items-center mb-6">
                   <div>
-                    <h3 className="text-section-title text-[#1d1d1f]">User Contact Inquiries</h3>
+                    <h3 className="text-lg font-semibold text-[#1d1d1f]">User Contact Inquiries</h3>
                     <p className="text-xs text-[#86868b] mt-0.5">
                       Messages submitted by visitors, patients, doctors, or clinics via the Contact Us form.
                     </p>
                   </div>
-                  <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-xs font-medium text-[#48484a] self-start sm:self-auto">
-                    {contactMessages.length} Total
-                  </span>
+                  <span className="text-xs text-[#86868b]">{contactMessages.length} Total</span>
                 </div>
 
                 {contactMessages.length === 0 ? (
-                  <div className="p-12 text-center text-xs text-[#86868b] bg-[#f5f5f7]/50 rounded-2xl border border-dashed border-[#e5e5ea]">
+                  <div className="p-12 text-center text-xs text-[#86868b] bg-[#fbfbfd] rounded-2xl border border-dashed border-[#e5e5ea]">
                     No messages received yet. All new inquiries submitted through the website will appear here with instant email reply options.
                   </div>
                 ) : (
-                  <div className="space-y-3.5">
+                  <div className="space-y-4">
                     {contactMessages.map((msg) => (
                       <div
                         key={msg.id}
                         className={`p-4 sm:p-5 rounded-2xl border transition-all ${
                           msg.status === 'NEW'
-                            ? 'bg-[#0066cc]/[0.02] border-[#0066cc]/30 shadow-apple-xs'
+                            ? 'bg-emerald-50/30 border-emerald-200 shadow-2xs'
                             : 'bg-white border-[#e5e5ea]'
                         }`}
                       >
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#f0f0f2]">
                           <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] flex items-center justify-center font-semibold text-xs text-[#1d1d1f]">
+                            <div className="w-9 h-9 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] flex items-center justify-center font-bold text-xs text-[#1d1d1f]">
                               {msg.fullName ? msg.fullName[0]?.toUpperCase() : 'U'}
                             </div>
                             <div>
                               <div className="flex items-center gap-2">
                                 <span className="font-semibold text-sm text-[#1d1d1f]">{msg.fullName}</span>
                                 {msg.status === 'NEW' ? (
-                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20">
-                                    New
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                                    NEW
                                   </span>
                                 ) : (
-                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea]">
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#f5f5f7] text-[#86868b]">
                                     Read
                                   </span>
                                 )}
@@ -1699,21 +1666,20 @@ export const AdminDashboard: React.FC = () => {
                           </div>
 
                           <div className="flex items-center gap-2 self-end sm:self-center">
-                            <span className="text-[11px] text-[#86868b] tabular-nums">
+                            <span className="text-[11px] text-[#86868b]">
                               {new Date(msg.createdAt).toLocaleDateString()} {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </span>
                             {msg.status === 'NEW' && (
-                              <AppleButton
-                                variant="secondary"
-                                size="sm"
+                              <button
                                 onClick={() => handleMarkMessageRead(msg.id)}
+                                className="px-2.5 py-1 rounded-full text-[11px] font-medium border border-[#e5e5ea] bg-white text-[#1d1d1f] hover:bg-[#f5f5f7] cursor-pointer"
                               >
                                 Mark Read
-                              </AppleButton>
+                              </button>
                             )}
                             <a
                               href={`mailto:${msg.email}?subject=Re: ${encodeURIComponent(msg.subject)}`}
-                              className="inline-flex items-center justify-center h-8 px-3.5 rounded-full text-xs font-medium bg-[#0066cc] hover:bg-[#0055b3] text-white transition-all cursor-pointer"
+                              className="px-3 py-1 rounded-full text-[11px] font-semibold bg-[#1d1d1f] hover:bg-black text-white cursor-pointer"
                             >
                               Reply Email
                             </a>
@@ -1732,18 +1698,17 @@ export const AdminDashboard: React.FC = () => {
                 )}
               </UtilityCard>
             )}
-          </>
+        </>
         )}
       </div>
 
       {/* Doctor Verification Credentials Inspection Modal */}
       {selectedDoctor && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-t-[28px] sm:rounded-[24px] border border-[#e5e5ea] max-w-lg w-full p-5 sm:p-7 shadow-apple-float space-y-5 max-h-[90vh] overflow-y-auto">
-            <div className="w-10 h-1 rounded-full bg-[#d2d2d7] mx-auto mb-1 sm:hidden" />
-            <div className="flex justify-between items-start pb-4 border-b border-[#f0f0f2]">
-              <div className="flex items-center gap-3.5">
-                <div className="w-12 h-12 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] overflow-hidden flex items-center justify-center font-semibold text-base text-[#0066cc] shrink-0">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-[20px] sm:rounded-[24px] border border-[#e5e5ea] max-w-lg w-full p-5 sm:p-8 shadow-2xl space-y-5">
+            <div className="flex justify-between items-start pb-4 border-b border-[#f0f0f0]">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] overflow-hidden flex items-center justify-center font-bold text-lg text-[#0066cc]">
                   {selectedDoctor.user.avatarUrl ? (
                     <img src={getFileUrl(selectedDoctor.user.avatarUrl)} alt={selectedDoctor.user.fullName} className="w-full h-full object-cover" />
                   ) : (
@@ -1751,15 +1716,14 @@ export const AdminDashboard: React.FC = () => {
                   )}
                 </div>
                 <div>
-                  <h3 className="text-card-title text-[#1d1d1f]">{selectedDoctor.user.fullName}</h3>
-                  <div className="flex flex-wrap items-center gap-2 mt-1">
-                    <span className="text-xs text-[#48484a] font-medium">{selectedDoctor.specialty}</span>
+                  <h3 className="text-lg font-semibold text-[#1d1d1f]">{selectedDoctor.user.fullName}</h3>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <p className="text-xs text-[#0066cc] font-medium">{selectedDoctor.specialty}</p>
                     {renderStatusBadge(getPractitionerStatus(selectedDoctor))}
                   </div>
                 </div>
               </div>
               <button
-                type="button"
                 onClick={() => setSelectedDoctor(null)}
                 className="p-1.5 rounded-full hover:bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f] active:scale-95 transition-all cursor-pointer"
               >
@@ -1767,50 +1731,50 @@ export const AdminDashboard: React.FC = () => {
               </button>
             </div>
 
-            <div className="space-y-3.5 text-xs">
-              <div className="grid grid-cols-2 gap-3 p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea]">
+            <div className="space-y-3 text-xs">
+              <div className="grid grid-cols-2 gap-3 p-3.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea]">
                 <div>
-                  <span className="text-[10px] uppercase tracking-wider font-semibold text-[#86868b] block">Qualifications</span>
-                  <strong className="text-[#1d1d1f] mt-0.5 block">{formatDoctorDegrees(selectedDoctor.qualifications)}</strong>
+                  <span className="text-[#86868b] block">Qualifications:</span>
+                  <strong className="text-[#1d1d1f]">{formatDoctorDegrees(selectedDoctor.qualifications)}</strong>
                 </div>
                 <div>
-                  <span className="text-[10px] uppercase tracking-wider font-semibold text-[#86868b] block">Experience</span>
-                  <strong className="text-[#1d1d1f] mt-0.5 block">{selectedDoctor.experienceYears} Years</strong>
+                  <span className="text-[#86868b] block">Experience:</span>
+                  <strong className="text-[#1d1d1f]">{selectedDoctor.experienceYears} Years</strong>
                 </div>
                 <div>
-                  <span className="text-[10px] uppercase tracking-wider font-semibold text-[#86868b] block">Consultation Fee</span>
-                  <strong className="text-[#1d1d1f] tabular-nums mt-0.5 block">₹{selectedDoctor.consultationFee}</strong>
+                  <span className="text-[#86868b] block">Consultation Fee:</span>
+                  <strong className="text-[#1d1d1f]">₹{selectedDoctor.consultationFee}</strong>
                 </div>
                 <div>
-                  <span className="text-[10px] uppercase tracking-wider font-semibold text-[#86868b] block">Checking Window</span>
-                  <strong className="text-[#0066cc] mt-0.5 block">
+                  <span className="text-[#86868b] block">Checking Window:</span>
+                  <strong className="text-[#0066cc]">
                     {selectedDoctor.checkingStartTime ? `${format12Hour(selectedDoctor.checkingStartTime)} – ${format12Hour(selectedDoctor.checkingEndTime)}` : 'Flexible'}
                   </strong>
                 </div>
               </div>
 
               <div>
-                <span className="text-[11px] text-[#86868b] font-semibold block mb-1.5">Clinic Address</span>
-                <p className="text-[#1d1d1f] p-3.5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea]">
+                <span className="text-[#86868b] font-semibold block mb-1">Clinic Address:</span>
+                <p className="text-[#1d1d1f] p-2.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea]">
                   {selectedDoctor.clinicAddress || 'MediArca Clinic Facility'}
                 </p>
               </div>
 
               <div>
-                <span className="text-[11px] text-[#86868b] font-semibold block mb-1.5">Professional Bio & Practice Philosophy</span>
-                <p className="text-[#48484a] p-3.5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] leading-relaxed">
+                <span className="text-[#86868b] font-semibold block mb-1">Professional Bio & Practice Philosophy:</span>
+                <p className="text-[#1d1d1f] p-2.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] leading-relaxed">
                   {selectedDoctor.bio || 'Dedicated medical practitioner accepting outpatient consultations.'}
                 </p>
               </div>
 
-              <div className="flex flex-wrap justify-between items-center gap-2 pt-1 text-[11px] text-[#86868b]">
-                <span>Email: <strong className="text-[#48484a] font-medium">{selectedDoctor.user.email}</strong></span>
-                <span>Phone: <strong className="text-[#48484a] font-medium">{selectedDoctor.user.phone || 'N/A'}</strong></span>
+              <div className="flex justify-between items-center pt-2">
+                <span className="text-[#86868b]">Email: {selectedDoctor.user.email}</span>
+                <span className="text-[#86868b]">Phone: {selectedDoctor.user.phone || 'N/A'}</span>
               </div>
             </div>
 
-            <div className="pt-4 border-t border-[#f0f0f2] flex items-center justify-between gap-2">
-              <AppleButton variant="secondary" size="sm" onClick={() => setSelectedDoctor(null)}>
+            <div className="pt-4 border-t border-[#f0f0f0] flex items-center justify-between">
+              <AppleButton variant="ghost" size="sm" onClick={() => setSelectedDoctor(null)}>
                 Close
               </AppleButton>
               <div className="flex items-center gap-2">
@@ -1823,7 +1787,7 @@ export const AdminDashboard: React.FC = () => {
                       await handleVerify(selectedDoctor.id, 'SUSPENDED');
                       setSelectedDoctor(null);
                     }}
-                    className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 border border-rose-200/80"
+                    className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 border border-rose-200"
                   >
                     <Ban className="w-3.5 h-3.5 mr-1" />
                     Suspend Credentials
@@ -1838,6 +1802,7 @@ export const AdminDashboard: React.FC = () => {
                       await handleVerify(selectedDoctor.id, 'VERIFIED');
                       setSelectedDoctor(null);
                     }}
+                    className="bg-emerald-600 hover:bg-emerald-700"
                   >
                     <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
                     Re-activate Practitioner
@@ -1852,6 +1817,7 @@ export const AdminDashboard: React.FC = () => {
                       await handleVerify(selectedDoctor.id, 'VERIFIED');
                       setSelectedDoctor(null);
                     }}
+                    className="bg-emerald-600 hover:bg-emerald-700"
                   >
                     <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
                     Re-evaluate & Approve
@@ -1867,7 +1833,7 @@ export const AdminDashboard: React.FC = () => {
                         await handleVerify(selectedDoctor.id, 'REJECTED');
                         setSelectedDoctor(null);
                       }}
-                      className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 border border-rose-200/80"
+                      className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 border border-rose-200"
                     >
                       <XCircle className="w-3.5 h-3.5 mr-1" />
                       Reject Application
@@ -1894,24 +1860,22 @@ export const AdminDashboard: React.FC = () => {
 
       {/* Clinic Facility Inspection & Verification Modal */}
       {selectedClinic && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-t-[28px] sm:rounded-[24px] border border-[#e5e5ea] max-w-lg w-full p-5 sm:p-7 shadow-apple-float space-y-5 max-h-[90vh] overflow-y-auto">
-            <div className="w-10 h-1 rounded-full bg-[#d2d2d7] mx-auto mb-1 sm:hidden" />
-            <div className="flex justify-between items-start pb-4 border-b border-[#f0f0f2]">
-              <div className="flex items-center gap-3.5">
-                <div className="w-12 h-12 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] text-[#48484a] flex items-center justify-center shrink-0">
-                  <Building2 className="w-5 h-5" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-[20px] sm:rounded-[24px] border border-[#e5e5ea] max-w-lg w-full p-5 sm:p-8 shadow-2xl space-y-5">
+            <div className="flex justify-between items-start pb-4 border-b border-[#f0f0f0]">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-lg">
+                  <Building2 className="w-6 h-6" />
                 </div>
                 <div>
-                  <h3 className="text-card-title text-[#1d1d1f]">{selectedClinic.clinicName}</h3>
-                  <div className="flex flex-wrap items-center gap-2 mt-1">
-                    <span className="text-xs text-[#86868b]">Clinical Healthcare Facility</span>
+                  <h3 className="text-lg font-semibold text-[#1d1d1f] tracking-tight">{selectedClinic.clinicName}</h3>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <p className="text-xs text-[#86868b]">Clinical Healthcare Facility Verification</p>
                     {renderStatusBadge(getPractitionerStatus(selectedClinic))}
                   </div>
                 </div>
               </div>
               <button
-                type="button"
                 onClick={() => setSelectedClinic(null)}
                 className="p-1.5 rounded-full hover:bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f] active:scale-95 transition-all cursor-pointer"
               >
@@ -1920,68 +1884,68 @@ export const AdminDashboard: React.FC = () => {
             </div>
 
             <div className="space-y-3.5 text-xs text-[#1d1d1f]">
-              <div className="grid grid-cols-2 gap-3 p-4 bg-[#f5f5f7] rounded-2xl border border-[#e5e5ea]">
+              <div className="grid grid-cols-2 gap-3 p-3 bg-[#f5f5f7] rounded-xl border border-[#e5e5ea]">
                 <div>
-                  <span className="text-[10px] text-[#86868b] uppercase tracking-wider font-semibold block">Facility Address</span>
+                  <span className="text-[10px] text-[#86868b] uppercase font-semibold block">Facility Address</span>
                   <p className="font-medium mt-0.5">{selectedClinic.address}</p>
                 </div>
                 <div>
-                  <span className="text-[10px] text-[#86868b] uppercase tracking-wider font-semibold block">City & State</span>
+                  <span className="text-[10px] text-[#86868b] uppercase font-semibold block">City & State</span>
                   <p className="font-medium mt-0.5">{selectedClinic.city || 'Not Specified'}{selectedClinic.state ? `, ${selectedClinic.state}` : ''}</p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-3 p-4 bg-[#f5f5f7] rounded-2xl border border-[#e5e5ea] text-center">
+              <div className="grid grid-cols-3 gap-3 p-3 bg-[#f5f5f7] rounded-xl border border-[#e5e5ea] text-center">
                 <div>
-                  <span className="text-[10px] text-[#86868b] uppercase tracking-wider font-semibold block">Doctors</span>
-                  <p className="text-base font-bold text-[#1d1d1f] tabular-nums mt-0.5">
+                  <span className="text-[10px] text-[#86868b] uppercase font-semibold block">Doctors</span>
+                  <p className="text-base font-bold text-[#1d1d1f] mt-0.5">
                     {selectedClinic._count?.doctors ?? selectedClinic.doctorsCount ?? 0}
                   </p>
                 </div>
                 <div>
-                  <span className="text-[10px] text-[#86868b] uppercase tracking-wider font-semibold block">Receptionists</span>
-                  <p className="text-base font-bold text-[#1d1d1f] tabular-nums mt-0.5">
+                  <span className="text-[10px] text-[#86868b] uppercase font-semibold block">Receptionists</span>
+                  <p className="text-base font-bold text-[#0066cc] mt-0.5">
                     {selectedClinic._count?.receptionists ?? selectedClinic.receptionistsCount ?? 0}
                   </p>
                 </div>
                 <div>
-                  <span className="text-[10px] text-[#86868b] uppercase tracking-wider font-semibold block">Bookings</span>
-                  <p className="text-base font-bold text-[#0066cc] tabular-nums mt-0.5">
+                  <span className="text-[10px] text-[#86868b] uppercase font-semibold block">Bookings</span>
+                  <p className="text-base font-bold text-emerald-600 mt-0.5">
                     {selectedClinic._count?.appointments ?? selectedClinic.appointmentsCount ?? 0}
                   </p>
                 </div>
               </div>
 
-              <div className="p-4 bg-white border border-[#e5e5ea] rounded-2xl space-y-2.5">
-                <span className="text-[10px] text-[#86868b] uppercase tracking-wider font-semibold block">Primary Administrative Contact</span>
-                <div className="grid grid-cols-2 gap-2.5 text-xs">
+              <div className="p-3 bg-white border border-[#e5e5ea] rounded-xl space-y-2">
+                <span className="text-[10px] text-[#86868b] uppercase font-semibold block">Primary Administrative Contact</span>
+                <div className="grid grid-cols-2 gap-2 text-xs">
                   <div>
-                    <span className="text-[#86868b] block text-[10px]">Admin Full Name</span>
-                    <span className="font-medium mt-0.5 block">{selectedClinic.user?.fullName || 'N/A'}</span>
+                    <span className="text-[#86868b] block text-[10px]">Admin Full Name:</span>
+                    <span className="font-medium">{selectedClinic.user?.fullName || 'N/A'}</span>
                   </div>
                   <div>
-                    <span className="text-[#86868b] block text-[10px]">Direct Email</span>
-                    <span className="font-medium text-[#1d1d1f] mt-0.5 block truncate">{selectedClinic.user?.email || 'N/A'}</span>
+                    <span className="text-[#86868b] block text-[10px]">Direct Email:</span>
+                    <span className="font-medium text-[#1d1d1f]">{selectedClinic.user?.email || 'N/A'}</span>
                   </div>
                   <div>
-                    <span className="text-[#86868b] block text-[10px]">Facility Phone</span>
-                    <span className="font-medium mt-0.5 block">{selectedClinic.phone || selectedClinic.user?.phone || 'N/A'}</span>
+                    <span className="text-[#86868b] block text-[10px]">Facility Phone:</span>
+                    <span>{selectedClinic.phone || selectedClinic.user?.phone || 'N/A'}</span>
                   </div>
                   <div>
-                    <span className="text-[#86868b] block text-[10px]">Registration Date</span>
-                    <span className="font-medium mt-0.5 block">{selectedClinic.createdAt ? new Date(selectedClinic.createdAt).toLocaleDateString() : 'N/A'}</span>
+                    <span className="text-[#86868b] block text-[10px]">Registration Date:</span>
+                    <span>{selectedClinic.createdAt ? new Date(selectedClinic.createdAt).toLocaleDateString() : 'N/A'}</span>
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center justify-between p-3.5 rounded-2xl border border-[#e5e5ea] bg-[#f5f5f7]/60">
-                <span className="text-[#48484a] font-medium">Platform Verification State</span>
+              <div className="flex items-center justify-between p-3 rounded-xl border border-[#e5e5ea] bg-[#fafafc]">
+                <span className="text-[#86868b] font-medium">Platform Verification State:</span>
                 {renderStatusBadge(getPractitionerStatus(selectedClinic))}
               </div>
             </div>
 
-            <div className="pt-4 border-t border-[#f0f0f2] flex items-center justify-between gap-2">
-              <AppleButton variant="secondary" size="sm" onClick={() => setSelectedClinic(null)}>
+            <div className="pt-4 border-t border-[#f0f0f0] flex items-center justify-between">
+              <AppleButton variant="ghost" size="sm" onClick={() => setSelectedClinic(null)}>
                 Close
               </AppleButton>
               <div className="flex items-center gap-2">
@@ -1994,7 +1958,7 @@ export const AdminDashboard: React.FC = () => {
                       await handleVerifyClinic(selectedClinic.id, 'SUSPENDED');
                       setSelectedClinic(null);
                     }}
-                    className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 border border-rose-200/80"
+                    className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 border border-rose-200"
                   >
                     <Ban className="w-3.5 h-3.5 mr-1" />
                     Suspend Verification
@@ -2009,6 +1973,7 @@ export const AdminDashboard: React.FC = () => {
                       await handleVerifyClinic(selectedClinic.id, 'VERIFIED');
                       setSelectedClinic(null);
                     }}
+                    className="bg-emerald-600 hover:bg-emerald-700"
                   >
                     <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
                     Re-activate Facility
@@ -2023,6 +1988,7 @@ export const AdminDashboard: React.FC = () => {
                       await handleVerifyClinic(selectedClinic.id, 'VERIFIED');
                       setSelectedClinic(null);
                     }}
+                    className="bg-emerald-600 hover:bg-emerald-700"
                   >
                     <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
                     Re-evaluate & Approve
@@ -2038,7 +2004,7 @@ export const AdminDashboard: React.FC = () => {
                         await handleVerifyClinic(selectedClinic.id, 'REJECTED');
                         setSelectedClinic(null);
                       }}
-                      className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 border border-rose-200/80"
+                      className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 border border-rose-200"
                     >
                       <XCircle className="w-3.5 h-3.5 mr-1" />
                       Reject Application
@@ -2065,17 +2031,16 @@ export const AdminDashboard: React.FC = () => {
 
       {/* Platform Booking Inspection Modal */}
       {selectedAppointment && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-t-[28px] sm:rounded-[24px] border border-[#e5e5ea] max-w-lg w-full p-5 sm:p-7 shadow-apple-float space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="w-10 h-1 rounded-full bg-[#d2d2d7] mx-auto mb-1 sm:hidden" />
-            <div className="flex justify-between items-start pb-3.5 border-b border-[#f0f0f2]">
-              <div className="flex items-center gap-3.5">
-                <div className="w-11 h-11 rounded-2xl bg-[#0066cc]/10 border border-[#0066cc]/20 text-[#0066cc] flex items-center justify-center font-bold text-sm tabular-nums shrink-0">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-[20px] sm:rounded-[24px] border border-[#e5e5ea] max-w-lg w-full p-5 sm:p-7 shadow-2xl space-y-4">
+            <div className="flex justify-between items-start pb-3 border-b border-[#f0f0f0]">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-2xl bg-blue-50 text-[#0066cc] flex items-center justify-center font-bold text-base">
                   #{selectedAppointment.queueNumber}
                 </div>
                 <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="text-card-title text-[#1d1d1f]">Queue Token #{selectedAppointment.queueNumber}</h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base font-bold text-[#1d1d1f]">Queue Token #{selectedAppointment.queueNumber}</h3>
                     {renderAppointmentStatusBadge(selectedAppointment.status)}
                   </div>
                   <p className="text-xs text-[#86868b] mt-0.5">
@@ -2092,37 +2057,35 @@ export const AdminDashboard: React.FC = () => {
               </button>
             </div>
 
-            <div className="space-y-3.5 text-xs text-[#1d1d1f]">
+            <div className="space-y-3 text-xs text-[#1d1d1f]">
               {/* Patient Block */}
-              <div className="p-4 bg-[#f5f5f7] rounded-2xl border border-[#e5e5ea] space-y-2">
-                <span className="text-[10px] text-[#86868b] uppercase tracking-wider font-semibold block">Patient Information</span>
-                <div className="grid grid-cols-2 gap-2.5">
+              <div className="p-3 bg-[#f5f5f7] rounded-xl border border-[#e5e5ea] space-y-1.5">
+                <span className="text-[10px] text-[#86868b] uppercase font-semibold block">Patient Information</span>
+                <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <span className="text-[#86868b] block text-[10px]">Patient Name</span>
-                    <strong className="text-[#1d1d1f] mt-0.5 inline-block">
+                    <span className="text-[#86868b] block text-[10px]">Patient Name:</span>
+                    <strong className="text-[#1d1d1f]">
                       {selectedAppointment.patient?.user?.fullName || selectedAppointment.patientName || 'Walk-in Patient'}
                     </strong>
                     {selectedAppointment.isForOther && (
-                      <span className="ml-1.5 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-white border border-[#e5e5ea] text-[#48484a]">
-                        Family
-                      </span>
+                      <span className="ml-1 text-[10px] text-purple-700 font-semibold">(Family Member)</span>
                     )}
                   </div>
                   <div>
-                    <span className="text-[#86868b] block text-[10px]">Contact Phone</span>
-                    <span className="font-medium text-[#1d1d1f] mt-0.5 block">
+                    <span className="text-[#86868b] block text-[10px]">Contact Phone:</span>
+                    <span className="font-medium text-[#1d1d1f]">
                       {selectedAppointment.patient?.user?.phone || 'Not Provided'}
                     </span>
                   </div>
                   <div>
-                    <span className="text-[#86868b] block text-[10px]">Email Address</span>
-                    <span className="font-medium text-[#1d1d1f] truncate mt-0.5 block">
+                    <span className="text-[#86868b] block text-[10px]">Email Address:</span>
+                    <span className="font-medium text-[#1d1d1f] truncate block">
                       {selectedAppointment.patient?.user?.email || 'N/A'}
                     </span>
                   </div>
                   <div>
-                    <span className="text-[#86868b] block text-[10px]">Arrival Status</span>
-                    <span className="font-medium text-[#1d1d1f] mt-0.5 block">
+                    <span className="text-[#86868b] block text-[10px]">Arrival Status:</span>
+                    <span className="font-medium text-[#1d1d1f]">
                       {selectedAppointment.isCheckedIn ? 'Checked-in at Desk' : 'Not Checked-in'}
                     </span>
                   </div>
@@ -2130,32 +2093,32 @@ export const AdminDashboard: React.FC = () => {
               </div>
 
               {/* Doctor & Clinic Block */}
-              <div className="p-4 bg-[#f5f5f7] rounded-2xl border border-[#e5e5ea] space-y-2">
-                <span className="text-[10px] text-[#86868b] uppercase tracking-wider font-semibold block">Clinical Facility & Practitioner</span>
-                <div className="grid grid-cols-2 gap-2.5">
+              <div className="p-3 bg-[#f5f5f7] rounded-xl border border-[#e5e5ea] space-y-1.5">
+                <span className="text-[10px] text-[#86868b] uppercase font-semibold block">Clinical Facility & Practitioner</span>
+                <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <span className="text-[#86868b] block text-[10px]">Attending Practitioner</span>
-                    <strong className="text-[#1d1d1f] mt-0.5 block">{selectedAppointment.doctor?.user?.fullName || 'Practitioner'}</strong>
-                    <span className="text-[11px] text-[#86868b] block">{selectedAppointment.doctor?.specialty}</span>
+                    <span className="text-[#86868b] block text-[10px]">Attending Practitioner:</span>
+                    <strong className="text-[#1d1d1f]">{selectedAppointment.doctor?.user?.fullName || 'Practitioner'}</strong>
+                    <span className="text-[10px] text-[#0066cc] block">{selectedAppointment.doctor?.specialty}</span>
                   </div>
                   <div>
-                    <span className="text-[#86868b] block text-[10px]">Facility Name</span>
-                    <strong className="text-[#1d1d1f] mt-0.5 block">{resolveClinic(selectedAppointment).name}</strong>
+                    <span className="text-[#86868b] block text-[10px]">Facility Name:</span>
+                    <strong className="text-[#1d1d1f]">{resolveClinic(selectedAppointment).name}</strong>
                     {resolveClinic(selectedAppointment).city && (
-                      <span className="text-[11px] text-[#86868b] block">{resolveClinic(selectedAppointment).city}</span>
+                      <span className="text-[10px] text-[#86868b] block">{resolveClinic(selectedAppointment).city}</span>
                     )}
                   </div>
-                  <div className="col-span-2 pt-1 border-t border-[#e5e5ea]/80">
-                    <span className="text-[#86868b] block text-[10px]">Shift / Window</span>
-                    <span className="text-[#1d1d1f] font-medium mt-0.5 block">{selectedAppointment.checkingWindow || 'Default Clinical Shift'}</span>
+                  <div className="col-span-2">
+                    <span className="text-[#86868b] block text-[10px]">Shift / Window:</span>
+                    <span className="text-[#1d1d1f] font-medium">{selectedAppointment.checkingWindow || 'Default Clinical Shift'}</span>
                   </div>
                 </div>
               </div>
 
               {/* Clinical Notes / Reason */}
               {(selectedAppointment.reasonForVisit || selectedAppointment.symptoms) && (
-                <div className="p-4 bg-white border border-[#e5e5ea] rounded-2xl space-y-1">
-                  <span className="text-[10px] text-[#86868b] uppercase tracking-wider font-semibold block">Reason for Visit / Symptoms</span>
+                <div className="p-3 bg-white border border-[#e5e5ea] rounded-xl space-y-1">
+                  <span className="text-[10px] text-[#86868b] uppercase font-semibold block">Reason for Visit / Symptoms</span>
                   <p className="text-xs text-[#48484a] leading-relaxed">
                     {selectedAppointment.reasonForVisit || selectedAppointment.symptoms}
                   </p>
@@ -2163,8 +2126,8 @@ export const AdminDashboard: React.FC = () => {
               )}
             </div>
 
-            <div className="pt-3.5 border-t border-[#f0f0f2] flex justify-end">
-              <AppleButton variant="secondary" size="sm" onClick={() => setSelectedAppointment(null)}>
+            <div className="pt-3 border-t border-[#f0f0f0] flex justify-end">
+              <AppleButton variant="ghost" size="sm" onClick={() => setSelectedAppointment(null)}>
                 Close
               </AppleButton>
             </div>
@@ -2174,4 +2137,3 @@ export const AdminDashboard: React.FC = () => {
     </div>
   );
 };
-

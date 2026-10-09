@@ -29,6 +29,7 @@ export const CameraQrScannerModal: React.FC<CameraQrScannerModalProps> = ({
 
   const parseQrText = (text: string): { clinicId: string; code: string } | null => {
     try {
+      // 1. Try URL parameter parsing (e.g. ...#/clinic-checkin?clinicId=xxx&code=yyy or ?clinicId=xxx&code=yyy)
       if (text.includes('clinicId') && text.includes('code')) {
         let queryString = '';
         if (text.includes('?')) {
@@ -44,6 +45,7 @@ export const CameraQrScannerModal: React.FC<CameraQrScannerModalProps> = ({
         }
       }
 
+      // 2. Try JSON parsing
       if (text.startsWith('{') && text.endsWith('}')) {
         const parsed = JSON.parse(text);
         if (parsed.clinicId && parsed.code) {
@@ -68,6 +70,7 @@ export const CameraQrScannerModal: React.FC<CameraQrScannerModalProps> = ({
     }, 600);
   }, [scannedFeedback, onScanSuccess, onClose]);
 
+  // Start Camera
   const startCamera = useCallback(async () => {
     setCameraError(null);
     try {
@@ -97,6 +100,7 @@ export const CameraQrScannerModal: React.FC<CameraQrScannerModalProps> = ({
     }
   }, []);
 
+  // Stop Camera
   const stopCamera = useCallback(() => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop());
@@ -108,6 +112,7 @@ export const CameraQrScannerModal: React.FC<CameraQrScannerModalProps> = ({
     }
   }, []);
 
+  // Frame scanning loop
   useEffect(() => {
     if (!isOpen || mode !== 'camera' || scannedFeedback) {
       stopCamera();
@@ -167,43 +172,38 @@ export const CameraQrScannerModal: React.FC<CameraQrScannerModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-md animate-fadeIn">
-      <div className="relative w-full max-w-[440px] bg-white/95 backdrop-blur-xl rounded-t-[24px] sm:rounded-[24px] border border-[#e5e5ea] shadow-apple-float overflow-hidden p-6 sm:p-8 max-h-[90vh] overflow-y-auto text-center">
-        {/* Mobile Sheet Drag Handle */}
-        <div className="w-10 h-1 rounded-full bg-[#d2d2d7] mx-auto mb-5 sm:hidden" />
-
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
+      <div className="relative w-full max-w-md bg-white rounded-[24px] border border-[#e5e5ea] shadow-2xl overflow-hidden p-6 text-center">
         {/* Close Button */}
         <button
-          type="button"
           onClick={onClose}
-          className="absolute top-5 right-5 w-8 h-8 rounded-full bg-[#f5f5f7] hover:bg-[#ebebf0] text-[#6e6e73] hover:text-[#1d1d1f] flex items-center justify-center transition-colors cursor-pointer z-10"
-          aria-label="Close"
+          className="absolute top-4 right-4 p-2 rounded-full text-[#86868b] hover:text-[#1d1d1f] hover:bg-black/[0.05] transition-colors cursor-pointer z-10"
         >
-          <X className="w-4 h-4" />
+          <X className="w-5 h-5" />
         </button>
 
         {/* Header */}
-        <div className="mb-5">
-          <div className="w-11 h-11 rounded-2xl bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center mx-auto mb-3.5">
-            <Camera className="w-5 h-5" />
+        <div className="mb-4">
+          <div className="w-12 h-12 rounded-2xl bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center mx-auto mb-3">
+            <Camera className="w-6 h-6" />
           </div>
-          <h2 className="text-section-title">
+          <h2 className="text-xl font-semibold text-[#1d1d1f] tracking-tight">
             Scan Clinic QR Standee
           </h2>
-          <p className="text-secondary mt-1 max-w-xs mx-auto">
+          <p className="text-xs text-[#86868b] mt-1 max-w-xs mx-auto">
             Point your camera at the physical QR standee at the reception desk to verify your arrival.
           </p>
         </div>
 
-        {/* Segmented Toggle: Camera vs Code */}
-        <div className="flex rounded-full bg-[#f5f5f7] p-1 border border-[#e5e5ea] mb-6">
+        {/* Tab Toggle: Camera vs Code */}
+        <div className="flex rounded-full bg-[#f5f5f7] p-1 border border-[#e5e5ea] mb-5">
           <button
             type="button"
             onClick={() => setMode('camera')}
-            className={`flex-1 py-1.5 text-[13px] font-semibold rounded-full transition-all cursor-pointer ${
+            className={`flex-1 py-1.5 text-xs font-semibold rounded-full transition-all cursor-pointer ${
               mode === 'camera'
-                ? 'bg-white text-[#1d1d1f] shadow-2xs'
-                : 'text-[#6e6e73] hover:text-[#1d1d1f]'
+                ? 'bg-white text-[#1d1d1f] shadow-xs'
+                : 'text-[#86868b] hover:text-[#1d1d1f]'
             }`}
           >
             Camera Scanner
@@ -211,10 +211,10 @@ export const CameraQrScannerModal: React.FC<CameraQrScannerModalProps> = ({
           <button
             type="button"
             onClick={() => setMode('manual')}
-            className={`flex-1 py-1.5 text-[13px] font-semibold rounded-full transition-all cursor-pointer ${
+            className={`flex-1 py-1.5 text-xs font-semibold rounded-full transition-all cursor-pointer ${
               mode === 'manual'
-                ? 'bg-white text-[#1d1d1f] shadow-2xs'
-                : 'text-[#6e6e73] hover:text-[#1d1d1f]'
+                ? 'bg-white text-[#1d1d1f] shadow-xs'
+                : 'text-[#86868b] hover:text-[#1d1d1f]'
             }`}
           >
             Enter 6-Digit Code
@@ -225,13 +225,13 @@ export const CameraQrScannerModal: React.FC<CameraQrScannerModalProps> = ({
         {mode === 'camera' && (
           <div>
             {cameraError ? (
-              <div className="my-4 p-5 rounded-2xl bg-amber-50 border border-amber-200/80 text-center">
-                <AlertCircle className="w-7 h-7 text-amber-600 mx-auto mb-2.5" />
-                <p className="text-[14px] text-[#1d1d1f] font-semibold mb-1.5">Camera Unavailable</p>
-                <p className="text-xs text-[#6e6e73] mb-4 leading-relaxed">{cameraError}</p>
+              <div className="my-6 p-6 rounded-2xl bg-amber-50 border border-amber-200 text-center">
+                <AlertCircle className="w-8 h-8 text-amber-600 mx-auto mb-3" />
+                <p className="text-xs text-[#1d1d1f] font-medium mb-2">Camera Unavailable</p>
+                <p className="text-[11px] text-[#555558] mb-4 leading-relaxed">{cameraError}</p>
                 <AppleButton
                   variant="primary"
-                  size="md"
+                  size="sm"
                   onClick={() => setMode('manual')}
                   className="w-full"
                 >
@@ -239,7 +239,7 @@ export const CameraQrScannerModal: React.FC<CameraQrScannerModalProps> = ({
                 </AppleButton>
               </div>
             ) : (
-              <div className="relative w-full aspect-square max-w-[280px] mx-auto rounded-2xl overflow-hidden bg-[#1d1d1f] border border-[#e5e5ea] flex items-center justify-center">
+              <div className="relative w-full aspect-square max-w-[300px] mx-auto rounded-2xl overflow-hidden bg-black border border-[#e5e5ea] shadow-inner flex items-center justify-center">
                 <video
                   ref={videoRef}
                   className="w-full h-full object-cover"
@@ -251,20 +251,21 @@ export const CameraQrScannerModal: React.FC<CameraQrScannerModalProps> = ({
                 {/* Viewfinder overlay */}
                 <div className="absolute inset-0 border-2 border-white/20 rounded-2xl pointer-events-none flex items-center justify-center">
                   <div className="w-48 h-48 border-2 border-[#0066cc] rounded-xl relative shadow-[0_0_20px_rgba(0,102,204,0.3)]">
+                    {/* Laser scan line animation */}
                     <div className="w-full h-0.5 bg-[#0066cc] shadow-[0_0_8px_#0066cc] absolute top-0 left-0 animate-pulse transition-all" />
                   </div>
                 </div>
 
                 {scannedFeedback && (
                   <div className="absolute inset-0 bg-emerald-600/90 backdrop-blur-xs flex flex-col items-center justify-center text-white animate-fadeIn">
-                    <CheckCircle2 className="w-11 h-11 mb-2" />
-                    <p className="text-sm font-semibold">QR Code Verified</p>
+                    <CheckCircle2 className="w-12 h-12 mb-2 animate-bounce" />
+                    <p className="text-sm font-semibold">QR Code Verified!</p>
                   </div>
                 )}
               </div>
             )}
 
-            <p className="text-meta mt-4">
+            <p className="text-[11px] text-[#86868b] mt-4">
               Hold your camera steady over the front desk standee.
             </p>
           </div>
@@ -272,32 +273,30 @@ export const CameraQrScannerModal: React.FC<CameraQrScannerModalProps> = ({
 
         {/* Manual Code Mode */}
         {mode === 'manual' && (
-          <form onSubmit={handleManualSubmit} className="space-y-5 text-left">
+          <form onSubmit={handleManualSubmit} className="space-y-4 my-2 text-left">
             <div>
-              <label className="ui-label text-center">
+              <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5">
                 6-Digit Clinic Security Code
               </label>
               <input
                 type="text"
-                inputMode="numeric"
                 maxLength={6}
                 value={manualCode}
                 onChange={(e) => setManualCode(e.target.value.replace(/\D/g, ''))}
-                placeholder="123456"
-                className="w-full h-14 px-4 rounded-xl border border-[#d2d2d7] bg-white text-center text-2xl font-bold tracking-[0.25em] text-[#1d1d1f] focus:outline-none focus:ring-[3px] focus:ring-[#0066cc]/15 focus:border-[#0066cc] transition-all"
+                placeholder="e.g. 123456"
+                className="w-full px-4 py-3 rounded-xl border border-[#e5e5ea] text-center text-lg font-bold tracking-widest text-[#1d1d1f] focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
                 autoFocus
               />
-              <p className="text-meta mt-2 text-center">
-                Printed directly beneath the QR code on the desk standee.
+              <p className="text-[11px] text-[#86868b] mt-1 text-center">
+                The 6-digit code printed directly beneath the QR code on the desk standee.
               </p>
             </div>
 
             <AppleButton
               type="submit"
               variant="primary"
-              size="lg"
               disabled={manualCode.trim().length !== 6}
-              className="w-full"
+              className="w-full flex items-center justify-center gap-2 mt-4"
             >
               <span>Confirm Arrival</span>
               <ArrowRight className="w-4 h-4" />

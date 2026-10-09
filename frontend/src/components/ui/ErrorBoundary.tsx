@@ -39,19 +39,19 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       return (
         <div className="min-h-screen bg-[#f5f5f7] flex flex-col justify-center items-center px-4 sm:px-6 text-center select-none">
-          <div className="w-16 h-16 rounded-[20px] bg-white border border-[#e5e5ea] flex items-center justify-center text-[#0066cc] shadow-apple-card mb-6 p-2">
+          <div className="w-16 h-16 rounded-3xl bg-white border border-[#e5e5ea] flex items-center justify-center text-[#0066cc] shadow-2xs mb-6 p-2">
             <BrandLogo variant="icon" size="lg" />
           </div>
 
-          <span className="text-[11px] font-semibold text-[#0066cc] uppercase tracking-[0.06em] mb-2">
+          <span className="text-xs font-semibold text-[#0066cc] uppercase tracking-wider mb-2">
             MediArca Clinical System
           </span>
 
-          <h1 className="text-page-title mb-3">
+          <h1 className="text-2xl sm:text-3xl font-semibold text-[#1d1d1f] tracking-tight mb-3">
             Something unexpected occurred
           </h1>
 
-          <p className="text-secondary max-w-md mx-auto mb-8">
+          <p className="text-sm text-[#86868b] max-w-md mx-auto leading-relaxed mb-8">
             An unexpected application state occurred. Your session data is intact. You can reload this view or return to the main dashboard.
           </p>
 
@@ -60,14 +60,16 @@ export class ErrorBoundary extends Component<Props, State> {
               variant="primary"
               size="md"
               onClick={this.handleReload}
+              className="flex items-center gap-2"
             >
               <RefreshCw className="w-4 h-4" />
               Reload Application
             </AppleButton>
             <AppleButton
-              variant="secondary"
+              variant="ghost"
               size="md"
               onClick={this.handleReset}
+              className="flex items-center gap-2"
             >
               <Home className="w-4 h-4" />
               Return Home
@@ -75,7 +77,7 @@ export class ErrorBoundary extends Component<Props, State> {
           </div>
 
           {this.state.error && (
-            <div className="mt-8 max-w-xl text-left p-4 rounded-xl bg-[#ff3b30]/10 border border-[#ff3b30]/20 text-[#ff3b30] text-xs font-sans tracking-tight overflow-auto max-h-40">
+            <div className="mt-8 max-w-xl text-left p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-sans tracking-tight overflow-auto max-h-40">
               {this.state.error.toString()}
             </div>
           )}

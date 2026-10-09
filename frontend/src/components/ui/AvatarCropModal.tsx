@@ -221,28 +221,27 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
   const currentRenderedH = imgDimensions.height * fitScale * zoom;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/40 backdrop-blur-xs animate-fadeIn">
-      <div className="relative w-full max-w-lg bg-white rounded-[24px] border border-[#e5e5ea] shadow-apple-float overflow-hidden flex flex-col max-h-[92vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/60 backdrop-blur-md animate-fadeIn">
+      <div className="relative w-full max-w-lg bg-white rounded-[26px] sm:rounded-[30px] border border-[#e5e5ea] shadow-2xl overflow-hidden flex flex-col max-h-[94vh]">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-[#e5e5ea] flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-[#f0f0f2] flex items-center justify-between">
           <div>
-            <h3 className="text-card-title text-[#1d1d1f]">Adjust &amp; Fit Profile Photo</h3>
-            <p className="text-meta mt-0.5">Scale and position your headshot inside the frame</p>
+            <h3 className="text-lg font-bold text-[#1d1d1f] tracking-tight">Adjust & Fit Doctor Photo</h3>
+            <p className="text-xs text-[#86868b] mt-0.5">Scale and position your headshot so it fits the card area</p>
           </div>
           <button
             onClick={onClose}
             disabled={processing}
-            className="w-8 h-8 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] flex items-center justify-center text-[#6e6e73] hover:text-[#1d1d1f] transition-colors cursor-pointer"
-            aria-label="Close modal"
+            className="w-8 h-8 rounded-full bg-[#f5f5f7] hover:bg-[#e5e5ea] flex items-center justify-center text-[#86868b] hover:text-[#1d1d1f] transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Viewport & Cropping Area */}
-        <div className="p-5 sm:p-6 bg-[#f5f5f7]/60 flex flex-col items-center select-none overflow-y-auto">
+        <div className="p-5 sm:p-6 bg-[#fbfbfd] flex flex-col items-center select-none overflow-y-auto">
           {/* Aspect Ratio Switcher */}
-          <div className="flex items-center gap-1 p-1 bg-[#f5f5f7] border border-[#e5e5ea] rounded-full text-[12px] font-semibold mb-4">
+          <div className="flex items-center gap-1.5 p-1 bg-[#f0f0f4] rounded-full text-xs font-semibold mb-4">
             <button
               type="button"
               onClick={() => {
@@ -250,13 +249,13 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
                 setZoom(1);
                 setOffset({ x: 0, y: 0 });
               }}
-              className={`px-3.5 py-1.5 rounded-full transition-all cursor-pointer ${
+              className={`px-3.5 py-1.5 rounded-full transition-all ${
                 selectedRatio === '1:1'
-                  ? 'bg-white text-[#1d1d1f] shadow-apple-xs'
-                  : 'text-[#6e6e73] hover:text-[#1d1d1f]'
+                  ? 'bg-white text-[#0066cc] shadow-xs'
+                  : 'text-[#86868b] hover:text-[#1d1d1f]'
               }`}
             >
-              1:1 Square
+              1:1 Square (Full Avatar)
             </button>
             <button
               type="button"
@@ -265,10 +264,10 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
                 setZoom(1);
                 setOffset({ x: 0, y: 0 });
               }}
-              className={`px-3.5 py-1.5 rounded-full transition-all cursor-pointer ${
+              className={`px-3.5 py-1.5 rounded-full transition-all ${
                 selectedRatio === '4:3'
-                  ? 'bg-white text-[#1d1d1f] shadow-apple-xs'
-                  : 'text-[#6e6e73] hover:text-[#1d1d1f]'
+                  ? 'bg-white text-[#0066cc] shadow-xs'
+                  : 'text-[#86868b] hover:text-[#1d1d1f]'
               }`}
             >
               4:3 Card Banner
@@ -287,16 +286,17 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
               height: `${boxHeight}px`,
               maxWidth: '100%',
             }}
-            className="relative rounded-[20px] overflow-hidden bg-white border-2 border-[#0066cc] shadow-apple-md cursor-grab active:cursor-grabbing touch-none flex items-center justify-center mx-auto"
+            className="relative rounded-[22px] overflow-hidden bg-white border-2 border-[#0066cc] shadow-lg cursor-grab active:cursor-grabbing touch-none flex items-center justify-center mx-auto"
           >
             {/* Guide overlay */}
-            <div className="absolute inset-0 pointer-events-none z-20 flex flex-col justify-between p-3 border border-black/5 rounded-[18px]">
-              <div className="flex justify-between items-center text-[10px] font-medium text-[#1d1d1f] bg-white/90 backdrop-blur-md px-2.5 py-0.5 rounded-full border border-[#e5e5ea] shadow-apple-xs w-fit">
+            <div className="absolute inset-0 pointer-events-none z-20 flex flex-col justify-between p-3 border border-black/10 rounded-[20px]">
+              <div className="flex justify-between items-center text-[10px] font-medium text-[#1d1d1f] bg-white/90 backdrop-blur-md px-2.5 py-0.5 rounded-full border border-black/5 shadow-xs w-fit">
                 <span className="flex items-center gap-1">
                   <Move className="w-3 h-3 text-[#0066cc]" /> Drag to center face
                 </span>
               </div>
               <div className="flex justify-center">
+                {/* Subtle circular boundary guide */}
                 <div
                   style={{
                     width: selectedRatio === '1:1' ? '260px' : '220px',
@@ -305,7 +305,7 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
                   className="rounded-full border border-dashed border-[#0066cc]/40 pointer-events-none"
                 />
               </div>
-              <div className="text-[10px] font-medium text-[#6e6e73] bg-white/90 backdrop-blur-md px-2 py-0.5 rounded-full border border-[#e5e5ea] shadow-apple-xs w-fit self-end">
+              <div className="text-[10px] font-medium text-[#86868b] bg-white/90 backdrop-blur-md px-2 py-0.5 rounded-full border border-black/5 shadow-xs w-fit self-end">
                 {selectedRatio === '1:1' ? '1:1 Square' : '4:3 Card'}
               </div>
             </div>
@@ -332,7 +332,7 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
             <button
               type="button"
               onClick={handleFitEntirePhoto}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-medium bg-[#0066cc]/10 text-[#0066cc] hover:bg-[#0066cc]/15 transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#0066cc]/10 text-[#0066cc] hover:bg-[#0066cc]/20 transition-colors"
             >
               <Maximize2 className="w-3.5 h-3.5" />
               Fit Full Photo (100%)
@@ -340,7 +340,7 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
             <button
               type="button"
               onClick={handleFocusFace}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-medium bg-white border border-[#e5e5ea] text-[#1d1d1f] hover:bg-[#f5f5f7] transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#f0f0f4] text-[#1d1d1f] hover:bg-[#e5e5ea] transition-colors"
             >
               <User className="w-3.5 h-3.5 text-[#0066cc]" />
               Focus Face
@@ -348,9 +348,9 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
           </div>
 
           {/* Zoom Slider & Reset */}
-          <div className="w-full max-w-sm mt-4 space-y-2">
+          <div className="w-full max-w-sm mt-4 space-y-2.5">
             <div className="flex items-center gap-3">
-              <ZoomOut className="w-4 h-4 text-[#6e6e73] shrink-0" />
+              <ZoomOut className="w-4 h-4 text-[#86868b] shrink-0" />
               <input
                 type="range"
                 min="0.5"
@@ -360,20 +360,20 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
                 onChange={(e) => setZoom(parseFloat(e.target.value))}
                 className="w-full h-1.5 bg-[#e5e5ea] rounded-full appearance-none accent-[#0066cc] cursor-pointer"
               />
-              <ZoomIn className="w-4 h-4 text-[#6e6e73] shrink-0" />
-              <span className="text-[12px] font-semibold text-[#1d1d1f] w-12 text-right tabular-nums">
+              <ZoomIn className="w-4 h-4 text-[#86868b] shrink-0" />
+              <span className="text-xs font-semibold text-[#1d1d1f] w-14 text-right">
                 {Math.round(zoom * 100)}%
               </span>
             </div>
 
-            <div className="flex items-center justify-between text-meta">
+            <div className="flex items-center justify-between text-xs text-[#86868b]">
               <span>
-                {zoom === 1 ? 'Whole photo is fully fitted' : 'Drag image to frame desired area'}
+                {zoom === 1 ? 'Whole photo is fully fitted' : 'Drag image to frame desired face area'}
               </span>
               <button
                 type="button"
                 onClick={handleFitEntirePhoto}
-                className="inline-flex items-center gap-1 font-medium text-[#0066cc] hover:text-[#0055b3] transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1 font-medium text-[#0066cc] hover:text-[#0071e3] transition-colors"
               >
                 <RotateCcw className="w-3 h-3" />
                 Reset Fit
@@ -383,9 +383,9 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
         </div>
 
         {/* Footer Actions */}
-        <div className="p-4 sm:px-6 sm:py-4 bg-white border-t border-[#e5e5ea] flex flex-col sm:flex-row items-center justify-between gap-3">
-          <span className="text-meta text-center sm:text-left">
-            Photo saves at 800px high-definition clarity
+        <div className="p-4 sm:px-6 sm:py-4 bg-white border-t border-[#f0f0f2] flex flex-col sm:flex-row items-center justify-between gap-3">
+          <span className="text-[11px] text-[#86868b] text-center sm:text-left">
+            Photo will save at 800px retina clarity
           </span>
           <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
             <AppleButton
@@ -393,7 +393,7 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
               size="sm"
               disabled={processing}
               onClick={onClose}
-              className="flex-1 sm:flex-initial"
+              className="text-xs px-4 flex-1 sm:flex-initial"
             >
               Cancel
             </AppleButton>
@@ -402,10 +402,10 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
               size="sm"
               disabled={processing}
               onClick={handleCropAndSave}
-              className="flex-1 sm:flex-initial"
+              className="text-xs px-5 bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white flex items-center justify-center gap-1.5 shadow-xs font-semibold cursor-pointer transition-all flex-1 sm:flex-initial"
             >
-              <Check className="w-3.5 h-3.5" />
-              <span>{processing ? 'Saving...' : 'Apply & Save Photo'}</span>
+              <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+              <span>{processing ? 'Framing & Saving...' : 'Apply & Save Headshot'}</span>
             </AppleButton>
           </div>
         </div>

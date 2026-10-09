@@ -18,23 +18,23 @@ export const QueueBadge: React.FC<QueueBadgeProps> = ({
   let statusText = 'Waiting in Queue';
 
   if (status === 'IN_CONSULTATION') {
-    statusBg = 'bg-[#0066cc]/10 text-[#0066cc] border-[#0066cc]/30 font-semibold';
+    statusBg = 'bg-[#0066cc]/10 text-[#0066cc] border-[#0066cc]/30';
     pulseColor = 'bg-[#0066cc]';
     statusText = 'In Consultation';
   } else if (status === 'COMPLETED') {
-    statusBg = 'bg-[#f5f5f7] text-[#48484a] border-[#e5e5ea]';
-    pulseColor = 'bg-[#86868b]';
+    statusBg = 'bg-gray-100 text-gray-700 border-gray-300';
+    pulseColor = 'bg-gray-400';
     statusText = 'Consultation Completed';
   } else if (status === 'CANCELLED') {
-    statusBg = 'bg-[#ff3b30]/10 text-[#ff3b30] border-[#ff3b30]/20';
-    pulseColor = 'bg-[#ff3b30]';
+    statusBg = 'bg-rose-50 text-rose-600 border-rose-200';
+    pulseColor = 'bg-rose-400';
     statusText = 'Cancelled';
   }
 
   const sizeClasses = {
-    sm: 'text-[12px] px-2.5 py-1',
-    md: 'text-[13px] px-3.5 py-1.5',
-    lg: 'text-[15px] px-5 py-2 font-semibold',
+    sm: 'text-xs px-2.5 py-1',
+    md: 'text-sm px-3.5 py-1.5',
+    lg: 'text-base px-5 py-2 font-semibold',
   };
 
   return (

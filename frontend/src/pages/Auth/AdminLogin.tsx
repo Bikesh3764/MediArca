@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { BrandLogo } from '../../components/ui/BrandLogo';
-import { AppleButton } from '../../components/ui/AppleButton';
 import { Shield, Lock, Eye, EyeOff, AlertCircle, ArrowLeft, CheckCircle2 } from 'lucide-react';
 
 export const AdminLogin: React.FC = () => {
@@ -41,64 +40,65 @@ export const AdminLogin: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f5f5f7] flex flex-col justify-center py-10 sm:py-14 px-4 sm:px-6">
-      <div className="mx-auto w-full max-w-[440px]">
-        {/* Brand Header */}
-        <div className="text-center mb-6 space-y-2">
-          <Link to="/" className="inline-block hover:opacity-90 transition-opacity">
-            <BrandLogo variant="full" size="md" imgClassName="h-8 w-auto mx-auto" />
-          </Link>
-          <div className="pt-1">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea]">
-              <Shield className="w-3.5 h-3.5 text-[#0066cc]" />
-              <span>Root Admin</span>
-            </span>
-          </div>
-          <div className="space-y-1">
-            <h1 className="text-page-title">
-              Administrator Sign In
-            </h1>
-            <p className="text-secondary">
-              Authorized MediArca administration access only.
-            </p>
-          </div>
+    <div className="min-h-screen bg-[#0d1117] text-white flex flex-col justify-center py-8 sm:py-12 px-3 sm:px-6 lg:px-8 selection:bg-amber-500 selection:text-black">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
+        <Link to="/" className="inline-block mb-3 hover:opacity-90 transition-opacity">
+          <BrandLogo variant="full" size="md" theme="dark" imgClassName="h-7 w-auto" />
+        </Link>
+        {/* Security Shield Icon */}
+        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 mb-5 shadow-inner">
+          <Shield className="w-7 h-7" />
         </div>
 
-        {/* Main Auth Surface */}
-        <div className="bg-white p-6 sm:p-8 rounded-[24px] border border-[#e5e5ea] shadow-apple-card">
+        <h1 className="text-2xl font-bold tracking-tight text-white flex items-center justify-center gap-2">
+          MediArca Terminal
+          <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+            Root Admin
+          </span>
+        </h1>
+        <p className="mt-2 text-xs text-neutral-400">
+          Authorized administrator access only
+        </p>
+      </div>
+
+      <div className="mt-6 sm:mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="bg-[#161b22] py-6 sm:py-8 px-4 sm:px-10 rounded-[20px] sm:rounded-2xl border border-white/10 shadow-2xl backdrop-blur-xl relative overflow-hidden">
+
           {error && (
-            <div className="mb-5 p-3.5 rounded-xl bg-rose-50 border border-rose-200/80 text-rose-700 text-[13px] flex items-start gap-2.5">
-              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+            <div className="mb-5 p-3 rounded-xl bg-rose-950/60 border border-rose-500/40 text-rose-300 text-xs flex items-center gap-2.5 animate-in fade-in">
+              <AlertCircle className="w-4 h-4 flex-shrink-0 text-rose-400" />
               <span>{error}</span>
             </div>
           )}
 
           {authenticated && (
-            <div className="mb-5 p-3.5 rounded-xl bg-emerald-50 border border-emerald-200/80 text-emerald-800 text-[13px] flex items-start gap-2.5">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-              <span>Admin credentials verified. Opening control center...</span>
+            <div className="mb-5 p-3 rounded-xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-xs flex items-center gap-2.5 animate-in fade-in">
+              <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-emerald-400" />
+              <span>Admin credentials verified. Opening command center...</span>
             </div>
           )}
 
-          <form onSubmit={handleAdminSubmit} className="ui-form-stack">
+          <form onSubmit={handleAdminSubmit} className="space-y-4">
             <div>
-              <label className="ui-label">
-                Administrator Email
+              <label className="block text-xs font-semibold text-neutral-300 mb-1.5 tracking-wide">
+                ADMINISTRATOR EMAIL
               </label>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@mediarca.com"
-                className="ui-input"
-                disabled={submitting || authenticated}
-              />
+              <div className="relative">
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="admin@mediarca.com"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#0d1117] border border-white/15 text-white placeholder-neutral-600 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-all"
+                  disabled={submitting || authenticated}
+                />
+              </div>
             </div>
 
             <div>
-              <label className="ui-label">
-                Master Access Key
+              <label className="block text-xs font-semibold text-neutral-300 mb-1.5 tracking-wide">
+                MASTER ACCESS KEY
               </label>
               <div className="relative">
                 <input
@@ -106,48 +106,54 @@ export const AdminLogin: React.FC = () => {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter administrator password"
-                  className="ui-input pr-10"
+                  placeholder="••••••••••••"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#0d1117] border border-white/15 text-white placeholder-neutral-600 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-all pr-10"
                   disabled={submitting || authenticated}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#86868b] hover:text-[#1d1d1f] p-1 transition-colors cursor-pointer"
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-300 transition-colors"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
             </div>
 
-            <div className="pt-1">
-              <AppleButton
+            <div className="pt-2">
+              <button
                 type="submit"
-                variant="primary"
-                size="lg"
                 disabled={submitting || authenticated}
-                className="w-full"
+                className="w-full py-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-black font-semibold text-xs tracking-wider uppercase transition-all shadow-xs disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
               >
-                <Lock className="w-4 h-4" />
-                <span>{submitting ? 'Signing In...' : 'Sign In as Admin'}</span>
-              </AppleButton>
+                {submitting ? (
+                  <>
+                    <div className="w-3.5 h-3.5 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
+                    <span>Verifying...</span>
+                  </>
+                ) : (
+                  <>
+                    <Lock className="w-3.5 h-3.5" />
+                    <span>Sign In as Admin</span>
+                  </>
+                )}
+              </button>
             </div>
           </form>
 
           {/* Security Notice */}
-          <div className="mt-6 pt-4 border-t border-[#f0f0f2] text-center">
-            <p className="text-[12px] text-[#86868b]">
-              Protected platform governance console.
+          <div className="mt-6 pt-4 border-t border-white/5 text-center">
+            <p className="text-[11px] text-neutral-500 leading-relaxed">
+              Authorized administrator access only.
             </p>
           </div>
         </div>
 
         {/* Back Link */}
-        <div className="mt-5 text-center">
+        <div className="mt-6 text-center">
           <Link
             to="/"
-            className="inline-flex items-center gap-1.5 text-[13px] font-medium text-[#6e6e73] hover:text-[#1d1d1f] transition-colors"
+            className="inline-flex items-center gap-1.5 text-xs text-neutral-400 hover:text-white transition-colors"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Return to MediArca Home</span>

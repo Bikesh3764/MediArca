@@ -425,54 +425,50 @@ export const Home: React.FC = () => {
 
   return (
     <div className="flex flex-col min-h-screen bg-[#f5f5f7]">
-      {/* 1. Hero Section — Clean, Calm, Focused Queue Discovery */}
-      <section className="relative overflow-hidden border-b border-[#e5e5ea] py-12 sm:py-16 md:py-20 px-4 sm:px-6 flex items-center justify-center">
+      {/* 1. Hero Section - Healthcare Themed Canvas with Queue Booking Focus */}
+      <section className="relative overflow-hidden border-b border-[#e5e5ea] py-16 sm:py-20 md:py-24 px-4 sm:px-6 flex items-center justify-center min-h-[420px] sm:min-h-[460px]">
+        {/* Healthcare Themed Hero Background Photo - Clearly Visible */}
         <div className="absolute inset-0 pointer-events-none select-none overflow-hidden">
           <img
             src={healthcareHeroBg}
             alt="Healthcare clinical facility"
             className="w-full h-full object-cover object-center"
           />
-          <div className="absolute inset-0 bg-white/70 backdrop-blur-[2px]" />
+          {/* Subtle light balance so the hospital photo is vibrant and clearly visible */}
+          <div className="absolute inset-0 bg-white/55" />
         </div>
 
-        <div className="relative z-10 max-w-3xl mx-auto text-center w-full">
-          <h1 className="font-display text-[28px] sm:text-[36px] md:text-[44px] font-semibold text-[#1d1d1f] tracking-[-0.026em] leading-[1.12] max-w-2xl mx-auto">
-            Book doctor queue tokens.{' '}
-            <span className="text-[#0066cc]">Skip the waiting room.</span>
+        <div className="relative z-10 max-w-4xl mx-auto text-center w-full">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-[#1d1d1f] tracking-tight leading-[1.08] max-w-3xl mx-auto">
+            Book doctor queue tokens. <span className="text-[#0066cc]">Skip the waiting room.</span>
           </h1>
-          <p className="mt-3 text-[14px] sm:text-[16px] text-[#48484a] max-w-xl mx-auto leading-relaxed">
-            Find verified clinics and specialists near you, reserve your live queue pass online, and arrive right on time.
-          </p>
 
-          {/* Unified Search Experience: Search -> Location -> Find */}
-          <div className="mt-7 sm:mt-8 max-w-2xl mx-auto bg-white/95 backdrop-blur-xl p-2 rounded-[20px] sm:rounded-full border border-[#e5e5ea] shadow-apple-hover flex flex-col sm:flex-row items-stretch sm:items-center gap-1.5 sm:gap-2">
-            <div className="flex items-center gap-2.5 flex-1 min-w-0 h-11 sm:h-10 px-3.5">
+          {/* Unified Apple Dual Search Bar (Two Searches in One Bar) */}
+          <div className="mt-8 sm:mt-10 max-w-2xl mx-auto backdrop-blur-md bg-white/95 p-2 sm:p-2.5 rounded-[24px] sm:rounded-full border border-black/[0.1] shadow-[0_10px_36px_rgba(0,0,0,0.12)] flex flex-col sm:flex-row items-center gap-2">
+            <div className="flex items-center gap-2.5 flex-1 w-full px-3.5 py-1">
               <Search className="w-4 h-4 text-[#86868b] shrink-0" />
               <input
                 type="text"
                 value={heroSearchQuery}
                 onChange={(e) => setHeroSearchQuery(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleHeroSearch()}
-                placeholder="Doctor, clinic, or specialty..."
-                className="w-full bg-transparent text-[14px] text-[#1d1d1f] placeholder:text-[#86868b] focus:outline-none truncate"
+                placeholder="Search doctor, clinic or specialty..."
+                className="w-full bg-transparent text-sm text-[#1d1d1f] placeholder-[#86868b] focus:outline-none"
               />
               {heroSearchQuery && (
                 <button
                   type="button"
                   onClick={() => setHeroSearchQuery('')}
-                  className="text-[#86868b] hover:text-[#1d1d1f] p-0.5 cursor-pointer shrink-0"
-                  aria-label="Clear search"
+                  className="text-[#86868b] hover:text-[#1d1d1f] cursor-pointer"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
               )}
             </div>
 
-            <div className="sm:hidden h-px w-full bg-[#f0f0f2]" />
-            <div className="hidden sm:block w-px h-5 bg-[#e5e5ea] shrink-0" />
+            <div className="hidden sm:block w-px h-6 bg-[#e0e0e0]" />
 
-            <div className="flex items-center gap-2.5 w-full sm:w-48 h-11 sm:h-10 px-3.5 shrink-0">
+            <div className="flex items-center gap-2.5 w-full sm:w-52 px-3.5 py-1">
               <MapPin className="w-4 h-4 text-[#86868b] shrink-0" />
               <input
                 type="text"
@@ -480,47 +476,43 @@ export const Home: React.FC = () => {
                 onChange={(e) => setHeroLocationQuery(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleHeroSearch()}
                 placeholder="City or location..."
-                className="w-full bg-transparent text-[14px] text-[#1d1d1f] placeholder:text-[#86868b] focus:outline-none truncate"
+                className="w-full bg-transparent text-sm text-[#1d1d1f] placeholder-[#86868b] focus:outline-none"
               />
               {heroLocationQuery && (
                 <button
                   type="button"
                   onClick={() => setHeroLocationQuery('')}
-                  className="text-[#86868b] hover:text-[#1d1d1f] p-0.5 cursor-pointer shrink-0"
-                  aria-label="Clear location"
+                  className="text-[#86868b] hover:text-[#1d1d1f] cursor-pointer"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
               )}
             </div>
 
-            <AppleButton
+            <button
               type="button"
-              variant="primary"
-              size="md"
               onClick={handleHeroSearch}
-              className="w-full sm:w-auto px-6 shrink-0"
+              className="w-full sm:w-auto h-10 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-sm font-medium transition-all duration-150 active:scale-[0.97] inline-flex items-center justify-center gap-2 cursor-pointer select-none shrink-0 shadow-[0_1px_2px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,102,204,0.15)]"
             >
               <Search className="w-4 h-4" />
               <span>Search</span>
-            </AppleButton>
+            </button>
           </div>
         </div>
       </section>
 
       {/* 2. Main Discovery Workspace */}
-      <section id="catalog-section" className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 sm:py-10 flex-1">
-        {/* Navigation & Search Controls Header */}
-        <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3 pb-6 mb-6 sm:mb-8 border-b border-[#e5e5ea]">
-          {/* Segmented Switcher: Clinics vs Doctors */}
-          <div className="h-11 grid grid-cols-2 sm:inline-flex items-center p-1 bg-[#e8e8ed]/70 rounded-full border border-[#e5e5ea] shrink-0">
+      <section id="catalog-section" className="w-full px-4 sm:px-6 lg:px-10 xl:px-14 py-8 sm:py-10 flex-1">
+        {/* Navigation & Search Bar Header */}
+        <div className="flex flex-col sm:flex-row items-center gap-3.5 sm:gap-4 pb-6 mb-8 border-b border-[#e5e5ea]">
+          <div className="h-11 inline-flex items-center p-1 bg-[#f5f5f7] rounded-full border border-[#e5e5ea] shrink-0">
             <button
               type="button"
               onClick={() => handleSectionSwitch('clinics')}
-              className={`h-full flex items-center justify-center gap-2 px-5 rounded-full text-[13px] font-semibold transition-all cursor-pointer active:scale-[0.98] ${
+              className={`h-full flex items-center gap-2 px-5 rounded-full text-xs sm:text-sm font-semibold transition-all cursor-pointer active:scale-95 ${
                 activeSection === 'clinics'
-                  ? 'bg-white text-[#1d1d1f] shadow-2xs'
-                  : 'text-[#6e6e73] hover:text-[#1d1d1f]'
+                  ? 'bg-white text-[#1d1d1f] shadow-xs'
+                  : 'text-[#86868b] hover:text-[#1d1d1f]'
               }`}
             >
               <Building2 className={`w-4 h-4 ${activeSection === 'clinics' ? 'text-[#0066cc]' : 'text-[#86868b]'}`} />
@@ -529,10 +521,10 @@ export const Home: React.FC = () => {
             <button
               type="button"
               onClick={() => handleSectionSwitch('doctors')}
-              className={`h-full flex items-center justify-center gap-2 px-5 rounded-full text-[13px] font-semibold transition-all cursor-pointer active:scale-[0.98] ${
+              className={`h-full flex items-center gap-2 px-5 rounded-full text-xs sm:text-sm font-semibold transition-all cursor-pointer active:scale-95 ${
                 activeSection === 'doctors'
-                  ? 'bg-white text-[#1d1d1f] shadow-2xs'
-                  : 'text-[#6e6e73] hover:text-[#1d1d1f]'
+                  ? 'bg-white text-[#1d1d1f] shadow-xs'
+                  : 'text-[#86868b] hover:text-[#1d1d1f]'
               }`}
             >
               <Stethoscope className={`w-4 h-4 ${activeSection === 'doctors' ? 'text-[#0066cc]' : 'text-[#86868b]'}`} />
@@ -540,147 +532,146 @@ export const Home: React.FC = () => {
             </button>
           </div>
 
-          {/* Search & Location Bar for Clinics */}
+          {/* Search bar beside Clinics & Doctors Switch */}
           {activeSection === 'clinics' && !selectedClinic && (
-            <div className="flex-1 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 min-w-0">
-              <div className="flex-1 h-11 bg-white px-3.5 rounded-xl sm:rounded-full border border-[#d2d2d7]/80 focus-within:border-[#0066cc] focus-within:ring-[3px] focus-within:ring-[#0066cc]/15 flex items-center gap-2.5 min-w-0 transition-all">
+            <div className="flex-1 h-11 bg-white px-3.5 rounded-full border border-[#e5e5ea] flex items-center gap-2.5 sm:gap-3">
+              <div className="flex items-center gap-2 flex-1 h-full min-w-0">
                 <Search className="w-4 h-4 text-[#86868b] shrink-0" />
                 <input
                   type="text"
                   value={clinicSearchQuery}
                   onChange={(e) => setClinicSearchQuery(e.target.value)}
-                  placeholder="Search clinics by name or locality..."
-                  className="w-full h-full bg-transparent text-[14px] text-[#1d1d1f] placeholder:text-[#86868b] focus:outline-none truncate"
+                  placeholder="Search clinics by name or address..."
+                  className="w-full h-full bg-transparent text-xs sm:text-sm text-[#1d1d1f] placeholder-[#86868b] focus:outline-none"
                 />
                 {clinicSearchQuery && (
                   <button
                     type="button"
                     onClick={() => setClinicSearchQuery('')}
-                    className="text-[#86868b] hover:text-[#1d1d1f] cursor-pointer shrink-0"
+                    className="text-[#86868b] hover:text-[#1d1d1f] cursor-pointer"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
                 )}
               </div>
 
-              <div className="grid grid-cols-2 sm:flex items-center gap-2 shrink-0">
-                <div className="h-11 bg-white px-3.5 rounded-xl sm:rounded-full border border-[#d2d2d7]/80 flex items-center sm:w-40 min-w-0">
-                  <AppleFilterSelect
-                    value={clinicSelectedState}
-                    onChange={(val) => {
-                      setClinicSelectedState(val);
-                      setClinicSelectedCity('All');
-                    }}
-                    options={clinicStateOptions}
-                    placeholder="All States"
-                    allLabel="All States"
-                    allCount={clinics.length}
-                    variant="bar"
-                    searchable={true}
-                  />
-                </div>
+              <div className="hidden sm:block w-px h-5 bg-[#e5e5ea] shrink-0" />
 
-                <div className="h-11 bg-white px-3.5 rounded-xl sm:rounded-full border border-[#d2d2d7]/80 flex items-center sm:w-40 min-w-0">
-                  <AppleFilterSelect
-                    value={clinicSelectedCity}
-                    onChange={setClinicSelectedCity}
-                    options={clinicCityOptions}
-                    placeholder={clinicSelectedState !== 'All' ? `All in ${clinicSelectedState}` : 'All Cities'}
-                    allLabel={clinicSelectedState !== 'All' ? `All in ${clinicSelectedState}` : 'All Cities'}
-                    allCount={
-                      clinicSelectedState !== 'All'
-                        ? clinics.filter((c) =>
-                            (c.state && c.state.toLowerCase() === clinicSelectedState.toLowerCase()) ||
-                            (c.address && c.address.toLowerCase().includes(clinicSelectedState.toLowerCase()))
-                          ).length
-                        : clinics.length
-                    }
-                    variant="bar"
-                    searchable={clinicCityOptions.length > 5}
-                  />
-                </div>
-
-                {(clinicSearchQuery || clinicSelectedCity !== 'All' || clinicSelectedState !== 'All') && (
-                  <button
-                    type="button"
-                    onClick={resetClinicFilters}
-                    className="col-span-2 sm:col-span-1 h-9 sm:h-11 px-3.5 rounded-full text-[13px] font-medium text-[#6e6e73] hover:text-[#1d1d1f] bg-white sm:bg-transparent border border-[#e5e5ea] sm:border-transparent hover:bg-black/[0.04] cursor-pointer active:scale-95 shrink-0"
-                  >
-                    Reset
-                  </button>
-                )}
+              {/* State Filter */}
+              <div className="w-36 sm:w-44 h-full flex items-center shrink-0">
+                <AppleFilterSelect
+                  value={clinicSelectedState}
+                  onChange={(val) => {
+                    setClinicSelectedState(val);
+                    setClinicSelectedCity('All');
+                  }}
+                  options={clinicStateOptions}
+                  placeholder="All States"
+                  allLabel="All States"
+                  allCount={clinics.length}
+                  variant="bar"
+                  searchable={true}
+                />
               </div>
+
+              <div className="hidden sm:block w-px h-5 bg-[#e5e5ea] shrink-0" />
+
+              {/* City Filter */}
+              <div className="w-36 sm:w-44 h-full flex items-center shrink-0">
+                <AppleFilterSelect
+                  value={clinicSelectedCity}
+                  onChange={setClinicSelectedCity}
+                  options={clinicCityOptions}
+                  placeholder={clinicSelectedState !== 'All' ? `All in ${clinicSelectedState}` : 'All Cities'}
+                  allLabel={clinicSelectedState !== 'All' ? `All in ${clinicSelectedState}` : 'All Cities'}
+                  allCount={
+                    clinicSelectedState !== 'All'
+                      ? clinics.filter((c) =>
+                          (c.state && c.state.toLowerCase() === clinicSelectedState.toLowerCase()) ||
+                          (c.address && c.address.toLowerCase().includes(clinicSelectedState.toLowerCase()))
+                        ).length
+                      : clinics.length
+                  }
+                  variant="bar"
+                  searchable={clinicCityOptions.length > 5}
+                />
+              </div>
+
+              {(clinicSearchQuery || clinicSelectedCity !== 'All' || clinicSelectedState !== 'All') && (
+                <button
+                  type="button"
+                  onClick={resetClinicFilters}
+                  className="h-7 px-2.5 rounded-full text-xs font-normal text-[#86868b] hover:text-[#1d1d1f] hover:bg-black/[0.04] cursor-pointer active:scale-95 shrink-0"
+                >
+                  Reset
+                </button>
+              )}
             </div>
           )}
 
-          {/* Search & Location Bar for Doctors */}
           {activeSection === 'doctors' && (
-            <div className="flex-1 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 min-w-0">
-              <div className="flex-1 h-11 bg-white px-3.5 rounded-xl sm:rounded-full border border-[#d2d2d7]/80 focus-within:border-[#0066cc] focus-within:ring-[3px] focus-within:ring-[#0066cc]/15 flex items-center gap-2.5 min-w-0 transition-all">
+            <div className="flex-1 h-11 bg-white px-3.5 rounded-full border border-[#e5e5ea] flex items-center gap-2.5 sm:gap-3">
+              <div className="flex items-center gap-2 flex-1 h-full min-w-0">
                 <Search className="w-4 h-4 text-[#86868b] shrink-0" />
                 <input
                   type="text"
                   value={doctorSearchQuery}
                   onChange={(e) => setDoctorSearchQuery(e.target.value)}
                   placeholder="Search doctors by name or specialty..."
-                  className="w-full h-full bg-transparent text-[14px] text-[#1d1d1f] placeholder:text-[#86868b] focus:outline-none truncate"
+                  className="w-full h-full bg-transparent text-xs sm:text-sm text-[#1d1d1f] placeholder-[#86868b] focus:outline-none"
                 />
                 {doctorSearchQuery && (
                   <button
                     type="button"
                     onClick={() => setDoctorSearchQuery('')}
-                    className="text-[#86868b] hover:text-[#1d1d1f] cursor-pointer shrink-0"
+                    className="text-[#86868b] hover:text-[#1d1d1f] cursor-pointer"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
                 )}
               </div>
 
-              <div className="flex items-center gap-2 shrink-0">
-                <div className="flex-1 sm:w-48 h-11 bg-white px-3.5 rounded-xl sm:rounded-full border border-[#d2d2d7]/80 focus-within:border-[#0066cc] focus-within:ring-[3px] focus-within:ring-[#0066cc]/15 flex items-center gap-2 min-w-0 transition-all">
-                  <MapPin className="w-4 h-4 text-[#86868b] shrink-0" />
-                  <input
-                    type="text"
-                    value={doctorLocationQuery}
-                    onChange={(e) => setDoctorLocationQuery(e.target.value)}
-                    placeholder="City or locality..."
-                    className="w-full h-full bg-transparent text-[14px] text-[#1d1d1f] placeholder:text-[#86868b] focus:outline-none truncate"
-                  />
-                  {doctorLocationQuery && (
-                    <button
-                      type="button"
-                      onClick={() => setDoctorLocationQuery('')}
-                      className="text-[#86868b] hover:text-[#1d1d1f] cursor-pointer shrink-0"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
+              <div className="hidden sm:block w-px h-5 bg-[#e5e5ea] shrink-0" />
 
-                {/* Mobile Filter Toggle */}
-                <button
-                  type="button"
-                  onClick={() => setDoctorMobileFiltersOpen(!doctorMobileFiltersOpen)}
-                  className={`lg:hidden h-11 px-4 rounded-xl sm:rounded-full border text-[13px] font-medium flex items-center gap-1.5 shrink-0 transition-colors cursor-pointer ${
-                    doctorMobileFiltersOpen
-                      ? 'bg-[#0066cc]/10 border-[#0066cc]/30 text-[#0066cc]'
-                      : 'bg-white border-[#d2d2d7]/80 text-[#1d1d1f]'
-                  }`}
-                >
-                  <SlidersHorizontal className="w-3.5 h-3.5" />
-                  <span>Filters</span>
-                </button>
-
-                {(doctorSearchQuery || doctorLocationQuery || selectedSpecialty !== 'All' || selectedCity !== 'All' || selectedState !== 'All' || minExperience > 0 || maxFee < 3000) && (
+              <div className="flex items-center gap-2 w-36 sm:w-44 h-full shrink-0">
+                <MapPin className="w-4 h-4 text-[#86868b] shrink-0" />
+                <input
+                  type="text"
+                  value={doctorLocationQuery}
+                  onChange={(e) => setDoctorLocationQuery(e.target.value)}
+                  placeholder="City or locality..."
+                  className="w-full h-full bg-transparent text-xs sm:text-sm text-[#1d1d1f] placeholder-[#86868b] focus:outline-none"
+                />
+                {doctorLocationQuery && (
                   <button
                     type="button"
-                    onClick={resetDoctorFilters}
-                    className="h-11 px-3 rounded-xl sm:rounded-full text-[13px] font-medium text-[#6e6e73] hover:text-[#1d1d1f] hover:bg-black/[0.04] cursor-pointer active:scale-95 shrink-0"
+                    onClick={() => setDoctorLocationQuery('')}
+                    className="text-[#86868b] hover:text-[#1d1d1f] cursor-pointer"
                   >
-                    Reset
+                    <X className="w-3.5 h-3.5" />
                   </button>
                 )}
               </div>
+
+              {/* Mobile Filter Toggle */}
+              <button
+                type="button"
+                onClick={() => setDoctorMobileFiltersOpen(!doctorMobileFiltersOpen)}
+                className="lg:hidden h-7 px-3 rounded-full border border-[#e5e5ea] bg-[#f5f5f7] text-xs font-medium text-[#1d1d1f] flex items-center gap-1.5 shrink-0"
+              >
+                <SlidersHorizontal className="w-3.5 h-3.5" />
+                <span>Filters</span>
+              </button>
+
+              {(doctorSearchQuery || doctorLocationQuery || selectedSpecialty !== 'All' || selectedCity !== 'All' || selectedState !== 'All' || minExperience > 0 || maxFee < 3000) && (
+                <button
+                  type="button"
+                  onClick={resetDoctorFilters}
+                  className="h-7 px-2.5 rounded-full text-xs font-normal text-[#86868b] hover:text-[#1d1d1f] hover:bg-black/[0.04] cursor-pointer active:scale-95 shrink-0"
+                >
+                  Reset
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -688,81 +679,78 @@ export const Home: React.FC = () => {
         {/* SECTION A: CLINICS DISCOVERY */}
         {activeSection === 'clinics' && (
           <div>
+            {/* If a clinic is selected, show its full dedicated view with practicing doctors & time slots */}
             {selectedClinic ? (
-              <div className="space-y-6 sm:space-y-8">
+              <div className="space-y-8 animate-fadeIn">
                 {/* Selected Clinic Header Card */}
-                <div className="apple-card flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="flex items-start sm:items-center gap-4 min-w-0">
-                    <div className="w-12 h-12 rounded-2xl bg-[#0066cc]/10 flex items-center justify-center text-[#0066cc] shrink-0">
-                      <Building2 className="w-6 h-6" />
-                    </div>
-                    <div className="min-w-0">
-                      <h2 className="text-section-title truncate mb-1">
-                        {selectedClinic.clinicName}
-                      </h2>
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[13px] text-[#86868b]">
-                        <span className="inline-flex items-center gap-1.5 text-[#48484a]">
-                          <MapPin className="w-3.5 h-3.5 text-[#0066cc] shrink-0" />
-                          <span className="truncate max-w-[260px] sm:max-w-md">
-                            {getClinicLocationDisplay(selectedClinic)}
+                <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-5 sm:p-6 shadow-xs">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-start sm:items-center gap-4 min-w-0">
+                      <div className="w-12 h-12 rounded-2xl bg-[#0066cc]/10 flex items-center justify-center text-[#0066cc] shrink-0">
+                        <Building2 className="w-6 h-6" />
+                      </div>
+                      <div className="min-w-0">
+                        <h2 className="text-xl sm:text-2xl font-semibold text-[#1d1d1f] tracking-tight truncate mb-1">
+                          {selectedClinic.clinicName}
+                        </h2>
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-[#86868b]">
+                          <span className="inline-flex items-center gap-1.5 font-medium text-[#48484a]">
+                            <MapPin className="w-3.5 h-3.5 text-[#0066cc] shrink-0" />
+                            <span className="truncate max-w-xs sm:max-w-md">
+                              {getClinicLocationDisplay(selectedClinic)}
+                            </span>
                           </span>
-                        </span>
-                        {selectedClinic.phone && (
-                          <a
-                            href={`tel:${selectedClinic.phone}`}
-                            className="inline-flex items-center gap-1.5 text-[#48484a] hover:text-[#0066cc] transition-colors"
-                          >
-                            <Phone className="w-3.5 h-3.5 text-[#0066cc] shrink-0" />
-                            <span>{formatDisplayPhone(selectedClinic.phone)}</span>
-                          </a>
-                        )}
-                        <span className="inline-flex items-center gap-1 text-[12px] px-2.5 py-0.5 rounded-full bg-[#f5f5f7] text-[#1d1d1f] font-medium border border-[#e5e5ea]">
-                          <Stethoscope className="w-3 h-3 text-[#0066cc]" />
-                          {clinicPracticingDoctors.length} {clinicPracticingDoctors.length === 1 ? 'Doctor' : 'Doctors'}
-                        </span>
+                          {selectedClinic.phone && (
+                            <a
+                              href={`tel:${selectedClinic.phone}`}
+                              className="inline-flex items-center gap-1.5 font-medium text-[#48484a] hover:text-[#0066cc] transition-colors"
+                            >
+                              <Phone className="w-3.5 h-3.5 text-[#0066cc] shrink-0" />
+                              <span>{formatDisplayPhone(selectedClinic.phone)}</span>
+                            </a>
+                          )}
+                          <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md bg-[#f5f5f7] text-[#1d1d1f] font-medium border border-[#e5e5ea]">
+                            <Stethoscope className="w-3 h-3 text-[#0066cc]" />
+                            {clinicPracticingDoctors.length} {clinicPracticingDoctors.length === 1 ? 'Specialist' : 'Specialists'}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <AppleButton
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setSelectedClinic(null)}
-                    className="self-start sm:self-center shrink-0"
-                  >
-                    <ArrowLeft className="w-3.5 h-3.5" />
-                    <span>All Clinics</span>
-                  </AppleButton>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedClinic(null)}
+                      className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-xs font-semibold text-[#1d1d1f] transition-all cursor-pointer self-start sm:self-center shrink-0 border border-[#e5e5ea]"
+                    >
+                      <ArrowLeft className="w-3.5 h-3.5" />
+                      <span>All Clinics</span>
+                    </button>
+                  </div>
                 </div>
 
                 {/* Practicing Doctors Section */}
                 <div>
-                  <div className="mb-5">
-                    <h3 className="text-section-title">
+                  <div className="mb-6">
+                    <h3 className="text-xl sm:text-2xl font-semibold text-[#1d1d1f] tracking-tight">
                       Doctors at this clinic
                     </h3>
-                    <p className="text-secondary mt-0.5">
-                      Select a doctor to book your live outpatient queue token.
-                    </p>
                   </div>
 
                   {clinicPracticingDoctors.length === 0 ? (
-                    <div className="apple-card p-10 text-center max-w-md mx-auto">
-                      <div className="w-11 h-11 rounded-2xl bg-[#f5f5f7] flex items-center justify-center mx-auto mb-3 text-[#86868b]">
-                        <Stethoscope className="w-5 h-5" />
-                      </div>
-                      <h4 className="text-card-title mb-1">
+                    <div className="bg-white rounded-[18px] border border-[#e0e0e0] p-12 text-center max-w-md mx-auto">
+                      <Stethoscope className="w-8 h-8 text-[#86868b] mx-auto mb-3" />
+                      <h4 className="text-base font-semibold text-[#1d1d1f] mb-1">
                         No doctors listed
                       </h4>
-                      <p className="text-secondary mb-5">
-                        No active specialists are listed at this facility right now.
+                      <p className="text-xs text-[#86868b] mb-4">
+                        No doctors listed right now.
                       </p>
                       <AppleButton variant="secondary" size="sm" onClick={() => setSelectedClinic(null)}>
                         Back to Clinics
                       </AppleButton>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5 sm:gap-6">
                       {clinicPracticingDoctors.map((docItem) => {
                         const doctor = docItem.doctor;
                         const slots = parseDoctorSlots({
@@ -775,9 +763,9 @@ export const Home: React.FC = () => {
                         return (
                           <div
                             key={doctor.id}
-                            className="w-full bg-white rounded-[20px] border border-[#e5e5ea] shadow-apple-card hover:border-[#d2d2d7] hover:shadow-apple-hover overflow-hidden transition-all duration-200 flex flex-col justify-between group"
+                            className="w-full bg-white rounded-[20px] border border-[#e0e0e0] overflow-hidden hover:border-[#0066cc]/40 transition-all duration-200 flex flex-col justify-between group"
                           >
-                            {/* Doctor Photo Banner */}
+                            {/* Doctor Photo Banner - Natural 16:10 proportion displaying the full photo */}
                             <div
                               onClick={() => navigate(getDoctorDetailPath(doctor.id))}
                               className="relative w-full aspect-[16/10] bg-[#f5f5f7] border-b border-[#f0f0f2] overflow-hidden cursor-pointer flex items-center justify-center"
@@ -797,44 +785,45 @@ export const Home: React.FC = () => {
                               <div
                                 className={`doc-fallback-banner w-full h-full ${
                                   doctor.user?.avatarUrl ? 'hidden' : 'flex'
-                                } items-center justify-center font-semibold text-3xl text-white bg-[#0066cc] select-none`}
+                                } items-center justify-center font-bold text-3xl text-white bg-[#0066cc] select-none`}
                               >
                                 {(doctor.user?.fullName ? doctor.user.fullName.replace(/^Dr\.\s*/i, '').trim()[0] : null) || 'D'}
                               </div>
                             </div>
 
-                            {/* Card Body: Name -> Specialty -> Location -> Availability -> Fee -> Action */}
-                            <div className="p-5 flex-1 flex flex-col justify-between">
+                            {/* Card Body with Refined Apple Typography */}
+                            <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between">
                               <div>
-                                <div className="flex items-start justify-between gap-2">
+                                {/* Header: Doctor Name & Experience */}
+                                <div className="flex items-start justify-between gap-2.5">
                                   <div className="min-w-0">
                                     <h3
                                       onClick={() => navigate(getDoctorDetailPath(doctor.id))}
-                                      className="text-card-title hover:text-[#0066cc] cursor-pointer transition-colors truncate"
+                                      className="text-[17px] font-semibold text-[#1d1d1f] hover:text-[#0066cc] cursor-pointer tracking-tight transition-colors duration-150 truncate leading-snug"
                                       title={doctor.user.fullName}
                                     >
                                       {doctor.user.fullName}
                                     </h3>
-                                    <p className="mt-0.5 text-[13px] font-medium text-[#0066cc] truncate">
-                                      {doctor.specialty}
-                                      {cleanDegrees ? (
-                                        <span className="text-[#86868b] font-normal"> · {cleanDegrees}</span>
-                                      ) : null}
-                                    </p>
+                                    <div className="mt-1 flex items-center gap-1.5 text-xs text-[#86868b] truncate">
+                                      <span className="font-medium text-[#0066cc]">{doctor.specialty}</span>
+                                      {cleanDegrees && (
+                                        <>
+                                          <span className="text-[#c7c7cc] select-none">•</span>
+                                          <span className="font-medium text-[#48484a]">{cleanDegrees}</span>
+                                        </>
+                                      )}
+                                    </div>
                                   </div>
-                                  <span className="text-[11px] font-medium text-[#6e6e73] bg-[#f5f5f7] px-2.5 py-0.5 rounded-full border border-[#e5e5ea] shrink-0 whitespace-nowrap">
-                                    {doctor.experienceYears}y exp
+                                  <span className="text-[11px] font-medium text-[#48484a] bg-[#f5f5f7] px-2.5 py-0.5 rounded-full border border-[#e5e5ea] shrink-0 whitespace-nowrap select-none">
+                                    {doctor.experienceYears} yrs exp
                                   </span>
                                 </div>
 
-                                <div className="mt-3.5 space-y-1.5 text-[13px] text-[#48484a]">
+                                {/* Shift Timing: Bold, Clear Apple Row */}
+                                <div className="mt-3.5 space-y-2 text-xs">
                                   <div className="flex items-center gap-2 min-w-0">
-                                    <MapPin className="w-3.5 h-3.5 text-[#86868b] shrink-0" />
-                                    <span className="truncate">{selectedClinic.clinicName}</span>
-                                  </div>
-                                  <div className="flex items-center gap-2 min-w-0 text-[#86868b]">
                                     <Clock className="w-3.5 h-3.5 text-[#86868b] shrink-0" />
-                                    <span className="truncate">
+                                    <span className="truncate text-[#48484a] font-medium tracking-tight">
                                       {slots.length > 0
                                         ? `${format12Hour(slots[0].startTime)} – ${format12Hour(slots[0].endTime)}`
                                         : doctor.checkingStartTime
@@ -842,39 +831,38 @@ export const Home: React.FC = () => {
                                         : 'Consultation hours'}
                                     </span>
                                     {slots.length > 1 && (
-                                      <span className="text-[11px] font-medium text-[#0066cc] shrink-0">
-                                        +{slots.length - 1} more
+                                      <span className="text-[10px] font-medium text-[#0066cc] bg-[#0066cc]/8 px-2 py-0.5 rounded-full border border-[#0066cc]/15 shrink-0 select-none">
+                                        +{slots.length - 1} slots
                                       </span>
                                     )}
                                   </div>
                                 </div>
                               </div>
 
-                              {/* Card Footer: Fee & Primary Action */}
+                              {/* Card Footer: Fee & Apple Action Blue Pill Button */}
                               <div className="mt-4 pt-3.5 border-t border-[#f0f0f2] flex items-center justify-between gap-3">
                                 <div className="flex items-baseline gap-1">
-                                  <span className="text-[18px] font-semibold text-[#1d1d1f] tracking-tight">
+                                  <span className="text-[21px] font-bold text-[#1d1d1f] tracking-tight">
                                     ₹{effectiveFee.toFixed(0)}
                                   </span>
-                                  <span className="text-[12px] text-[#86868b]">/ visit</span>
+                                  <span className="text-xs text-[#86868b] font-normal">/ visit</span>
                                 </div>
 
                                 {docItem.hasReceptionist === false ? (
                                   <span
-                                    className="h-8 px-3.5 rounded-full text-[12px] font-medium text-[#86868b] bg-[#f5f5f7] border border-[#e5e5ea] inline-flex items-center justify-center select-none"
+                                    className="h-8 px-3.5 rounded-full text-[11px] font-medium text-[#86868b] bg-[#f5f5f7] border border-[#e5e5ea] inline-flex items-center justify-center select-none"
                                     title="Online booking is closed because no receptionist is currently assigned for this doctor at this facility."
                                   >
                                     No Desk Staff
                                   </span>
                                 ) : (
-                                  <AppleButton
+                                  <button
                                     type="button"
-                                    variant="primary"
-                                    size="sm"
                                     onClick={() => navigate(getDoctorBookPath(doctor.id, selectedClinic.id, slots[0]?.id))}
+                                    className="h-8 min-w-[78px] px-5 rounded-full text-xs font-medium text-white bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.97] transition-all duration-150 ease-out cursor-pointer select-none shadow-[0_1px_2px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,102,204,0.15)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066cc]/40 inline-flex items-center justify-center"
                                   >
                                     Book
-                                  </AppleButton>
+                                  </button>
                                 )}
                               </div>
                             </div>
@@ -886,34 +874,33 @@ export const Home: React.FC = () => {
                 </div>
               </div>
             ) : (
-              /* Verified Clinics Grid */
-              <div>
+              /* If no clinic is selected, show list of verified clinics */
+              <div className="space-y-6">
+                {/* Clinics Cards Grid */}
                 {loadingClinics ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5 sm:gap-6">
                     {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
                       <div
                         key={i}
-                        className="h-72 rounded-[20px] bg-white border border-[#e5e5ea] shadow-apple-card animate-pulse p-5"
+                        className="h-72 rounded-[20px] bg-white border border-[#e0e0e0] animate-pulse p-4"
                       />
                     ))}
                   </div>
                 ) : filteredClinics.length === 0 ? (
-                  <div className="apple-card p-10 text-center max-w-md mx-auto">
-                    <div className="w-11 h-11 rounded-2xl bg-[#f5f5f7] flex items-center justify-center mx-auto mb-3 text-[#86868b]">
-                      <Building2 className="w-5 h-5" />
-                    </div>
-                    <h3 className="text-card-title mb-1">
+                  <div className="bg-white rounded-[24px] border border-[#e0e0e0] p-12 text-center max-w-md mx-auto">
+                    <Building2 className="w-10 h-10 text-[#86868b] mx-auto mb-3" />
+                    <h3 className="text-base font-semibold text-[#1d1d1f] mb-1">
                       No clinics found
                     </h3>
-                    <p className="text-secondary mb-5">
-                      Try searching with a different clinic name or location.
+                    <p className="text-xs text-[#86868b] mb-5">
+                      Try searching with a different name or location.
                     </p>
                     <AppleButton variant="secondary" size="sm" onClick={resetClinicFilters}>
-                      Reset Filters
+                      Reset
                     </AppleButton>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5 sm:gap-6">
                     {filteredClinics.map((clinic) => {
                       const docCount = (clinic.doctors && Array.isArray(clinic.doctors))
                         ? clinic.doctors.length
@@ -924,7 +911,7 @@ export const Home: React.FC = () => {
                         <div
                           key={clinic.id}
                           onClick={() => setSelectedClinic(clinic)}
-                          className="w-full bg-white rounded-[20px] border border-[#e5e5ea] shadow-apple-card hover:border-[#d2d2d7] hover:shadow-apple-hover overflow-hidden transition-all duration-200 flex flex-col justify-between group cursor-pointer"
+                          className="w-full bg-white rounded-[20px] border border-[#e0e0e0] overflow-hidden hover:border-[#0066cc]/40 transition-all duration-200 flex flex-col justify-between group cursor-pointer"
                         >
                           {/* Top Facility Photography Banner */}
                           <div className="relative w-full aspect-[16/10] bg-[#f5f5f7] border-b border-[#f0f0f2] overflow-hidden flex items-center justify-center">
@@ -933,55 +920,57 @@ export const Home: React.FC = () => {
                               alt={clinic.clinicName}
                               className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
                             />
+                            {/* Doctor Count Pill Badge Overlay */}
+                            <div className="absolute top-3 right-3">
+                              <span className="text-[11px] font-medium text-[#1d1d1f] bg-white/95 backdrop-blur-sm px-3 py-1 rounded-full border border-black/5 shadow-2xs">
+                                {docCount === 1 ? '1 Doctor' : `${docCount} Doctors`}
+                              </span>
+                            </div>
                           </div>
 
-                          {/* Card Body — Same Visual Hierarchy as Doctor Cards */}
-                          <div className="p-5 flex-1 flex flex-col justify-between">
+                          {/* Card Body */}
+                          <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between">
                             <div>
+                              {/* Clinic Name */}
                               <h3
-                                className="text-card-title group-hover:text-[#0066cc] transition-colors truncate"
+                                className="text-[16px] sm:text-[17px] font-semibold text-[#1d1d1f] tracking-tight leading-snug group-hover:text-[#0066cc] transition-colors truncate"
                                 title={clinic.clinicName}
                               >
                                 {clinic.clinicName}
                               </h3>
-                              <p className="mt-0.5 text-[13px] font-medium text-[#0066cc]">
-                                {docCount === 1 ? '1 Specialist Doctor' : `${docCount} Specialist Doctors`}
-                              </p>
 
-                              <div className="mt-3.5 space-y-1.5 text-[13px] text-[#48484a]">
-                                <div className="flex items-start gap-2 min-w-0">
-                                  <MapPin className="w-3.5 h-3.5 text-[#86868b] shrink-0 mt-0.5" />
-                                  <span className="line-clamp-2 leading-snug">
+                              {/* Location & Contact Info */}
+                              <div className="mt-3 space-y-2.5">
+                                <p className="flex items-start gap-2 text-[13px] leading-snug">
+                                  <MapPin className="w-4 h-4 text-[#0066cc] shrink-0 mt-0.5" />
+                                  <span className="line-clamp-2 font-semibold text-[#1d1d1f] tracking-tight">
                                     {locationDisplay}
                                   </span>
-                                </div>
+                                </p>
                                 {clinic.phone && (
-                                  <div className="flex items-center gap-2 text-[#86868b]">
-                                    <Phone className="w-3.5 h-3.5 text-[#86868b] shrink-0" />
-                                    <span className="truncate">{formatDisplayPhone(clinic.phone)}</span>
+                                  <div className="pt-0.5">
+                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-xs font-semibold text-[#1d1d1f] tracking-tight">
+                                      <Phone className="w-3.5 h-3.5 text-[#0066cc]" />
+                                      <span>{formatDisplayPhone(clinic.phone)}</span>
+                                    </span>
                                   </div>
                                 )}
                               </div>
                             </div>
 
-                            {/* Card Footer — Matching Doctor Card Footer */}
-                            <div className="mt-4 pt-3.5 border-t border-[#f0f0f2] flex items-center justify-between gap-3">
-                              <span className="text-[12px] font-medium text-[#86868b]">
-                                Verified Clinic
-                              </span>
-
-                              <AppleButton
+                            {/* Apple HIG Card Footer */}
+                            <div className="mt-4 pt-3.5 border-t border-[#f0f0f2]">
+                              <button
                                 type="button"
-                                variant="primary"
-                                size="sm"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setSelectedClinic(clinic);
                                 }}
+                                className="w-full h-9 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-[13px] font-semibold tracking-tight transition-all duration-200 active:scale-[0.98] inline-flex items-center justify-center gap-1.5 cursor-pointer shadow-none group-hover:bg-[#0071e3]"
                               >
                                 <span>View Doctors</span>
-                                <ChevronRight className="w-3.5 h-3.5" />
-                              </AppleButton>
+                                <ChevronRight className="w-3.5 h-3.5 text-white/90 transition-transform duration-200 group-hover:translate-x-0.5" />
+                              </button>
                             </div>
                           </div>
                         </div>
@@ -996,27 +985,29 @@ export const Home: React.FC = () => {
 
         {/* SECTION B: DOCTORS DISCOVERY */}
         {activeSection === 'doctors' && (
-          <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start">
-            {/* Desktop Left Filter Sidebar — Subordinate to Search */}
-            <aside className="hidden lg:block w-64 bg-white rounded-[20px] border border-[#e5e5ea] shadow-apple-card p-5 shrink-0 space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-[#f0f0f2]">
+          <div className="flex flex-col lg:flex-row gap-8 items-start">
+            {/* Desktop Left Filter Sidebar */}
+            <aside className="hidden lg:block w-72 bg-white rounded-[20px] border border-[#e0e0e0] p-5 shrink-0 space-y-5">
+              <div className="flex items-center justify-between pb-3.5 border-b border-[#f0f0f2]">
                 <div className="flex items-center gap-2">
-                  <SlidersHorizontal className="w-3.5 h-3.5 text-[#86868b]" />
-                  <h3 className="text-[13px] font-semibold text-[#1d1d1f]">Filters</h3>
+                  <SlidersHorizontal className="w-4 h-4 text-[#86868b]" />
+                  <h3 className="text-sm font-semibold text-[#1d1d1f] tracking-tight">Filters</h3>
                 </div>
                 {(doctorSearchQuery || doctorLocationQuery || selectedSpecialty !== 'All' || selectedCity !== 'All' || selectedState !== 'All' || minExperience > 0 || maxFee < 3000) && (
                   <button
                     type="button"
                     onClick={resetDoctorFilters}
-                    className="text-[12px] font-medium text-[#0066cc] hover:text-[#0071e3] transition-colors flex items-center gap-1 cursor-pointer"
+                    className="h-6 px-2.5 rounded-full text-xs font-medium text-[#0066cc] hover:text-white bg-[#0066cc]/10 hover:bg-[#0066cc] border border-[#0066cc]/20 hover:border-[#0066cc] transition-all flex items-center gap-1 cursor-pointer active:scale-95 group shadow-2xs"
+                    title="Reset all filters"
                   >
-                    <RotateCcw className="w-3 h-3" />
+                    <RotateCcw className="w-3 h-3 group-hover:-rotate-90 transition-transform duration-200" />
                     <span>Reset</span>
                   </button>
                 )}
               </div>
 
               <div className="space-y-4">
+                {/* State */}
                 <div>
                   <AppleFilterSelect
                     label="State"
@@ -1031,6 +1022,7 @@ export const Home: React.FC = () => {
                   />
                 </div>
 
+                {/* City */}
                 <div>
                   <AppleFilterSelect
                     label="City"
@@ -1043,8 +1035,9 @@ export const Home: React.FC = () => {
                   />
                 </div>
 
+                {/* Specialty */}
                 <div>
-                  <label className="ui-label">
+                  <label className="block text-xs font-medium text-[#86868b] mb-1.5">
                     Specialty
                   </label>
                   <SearchableSpecialtySelect
@@ -1057,10 +1050,11 @@ export const Home: React.FC = () => {
                   />
                 </div>
 
+                {/* Max Consultation Fee Slider */}
                 <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-[13px] font-medium text-[#1d1d1f]">Max Fee</span>
-                    <span className="text-[13px] font-semibold text-[#0066cc]">Up to ₹{maxFee}</span>
+                  <div className="flex items-center justify-between text-xs font-medium text-[#86868b] mb-1.5">
+                    <span>Fee Limit</span>
+                    <span className="text-[#1d1d1f] font-semibold">Up to ₹{maxFee}</span>
                   </div>
                   <input
                     type="range"
@@ -1069,19 +1063,20 @@ export const Home: React.FC = () => {
                     step="100"
                     value={maxFee}
                     onChange={(e) => setMaxFee(Number(e.target.value))}
-                    className="w-full h-1.5 bg-[#e5e5ea] rounded-lg appearance-none cursor-pointer accent-[#0066cc]"
+                    className="w-full h-1 bg-[#e5e5ea] rounded-lg appearance-none cursor-pointer accent-[#0066cc]"
                   />
-                  <div className="flex justify-between text-[11px] text-[#86868b] mt-1">
+                  <div className="flex justify-between text-[11px] text-[#86868b] mt-1 font-normal">
                     <span>₹300</span>
                     <span>₹3000</span>
                   </div>
                 </div>
 
+                {/* Experience Segmented Control */}
                 <div>
-                  <label className="ui-label">
+                  <label className="block text-xs font-medium text-[#86868b] mb-1.5">
                     Experience
                   </label>
-                  <div className="p-1 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] grid grid-cols-4 gap-1">
+                  <div className="p-0.5 rounded-lg bg-[#e5e5ea]/70 grid grid-cols-4 gap-0.5">
                     {[
                       { label: 'All', value: 0 },
                       { label: '5+ yr', value: 5 },
@@ -1092,10 +1087,10 @@ export const Home: React.FC = () => {
                         key={item.value}
                         type="button"
                         onClick={() => setMinExperience(item.value)}
-                        className={`py-1.5 rounded-lg text-[11px] font-medium transition-all text-center cursor-pointer ${
+                        className={`py-1 rounded-md text-[11px] font-medium transition-all text-center cursor-pointer ${
                           minExperience === item.value
-                            ? 'bg-white text-[#1d1d1f] font-semibold shadow-2xs'
-                            : 'text-[#6e6e73] hover:text-[#1d1d1f]'
+                            ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs'
+                            : 'text-[#86868b] hover:text-[#1d1d1f]'
                         }`}
                       >
                         {item.label}
@@ -1107,17 +1102,17 @@ export const Home: React.FC = () => {
             </aside>
 
             {/* Main Doctor Grid */}
-            <div className="flex-1 w-full space-y-5">
+            <div className="flex-1 w-full space-y-6">
               {/* Mobile Collapsible Filters */}
               {doctorMobileFiltersOpen && (
-                <div className="lg:hidden apple-card space-y-4">
-                  <div className="flex items-center justify-between pb-3 border-b border-[#f0f0f2]">
-                    <span className="text-[13px] font-semibold text-[#1d1d1f]">Filters</span>
+                <div className="lg:hidden bg-white p-4 rounded-[20px] border border-[#e0e0e0] space-y-4">
+                  <div className="flex items-center justify-between pb-2 border-b border-[#f0f0f2]">
+                    <span className="text-xs font-semibold text-[#1d1d1f]">Filter Options</span>
                     {(doctorSearchQuery || doctorLocationQuery || selectedSpecialty !== 'All' || selectedCity !== 'All' || selectedState !== 'All' || minExperience > 0 || maxFee < 3000) && (
                       <button
                         type="button"
                         onClick={resetDoctorFilters}
-                        className="text-[12px] text-[#0066cc] font-medium flex items-center gap-1 cursor-pointer"
+                        className="text-xs text-[#0066cc] font-medium flex items-center gap-1 cursor-pointer"
                       >
                         <RotateCcw className="w-3 h-3" />
                         <span>Reset</span>
@@ -1125,7 +1120,7 @@ export const Home: React.FC = () => {
                     )}
                   </div>
                   <div>
-                    <label className="ui-label">
+                    <label className="block text-xs font-medium text-[#86868b] mb-1">
                       Specialty
                     </label>
                     <SearchableSpecialtySelect
@@ -1136,7 +1131,7 @@ export const Home: React.FC = () => {
                       counts={specialtyCounts}
                     />
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-2">
                     <div>
                       <AppleFilterSelect
                         label="State"
@@ -1156,7 +1151,7 @@ export const Home: React.FC = () => {
                         value={selectedCity}
                         onChange={setSelectedCity}
                         options={doctorCityOptions}
-                        placeholder={selectedState !== 'All' ? 'All Cities' : 'All Cities'}
+                        placeholder={selectedState !== 'All' ? `All Cities` : 'All Cities'}
                         disabled={selectedState === 'All'}
                         variant="form"
                       />
@@ -1164,9 +1159,9 @@ export const Home: React.FC = () => {
                   </div>
 
                   <div>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-[13px] font-medium text-[#1d1d1f]">Max Fee</span>
-                      <span className="text-[13px] font-semibold text-[#0066cc]">Up to ₹{maxFee}</span>
+                    <div className="flex items-center justify-between text-xs font-medium text-[#86868b] mb-1">
+                      <span>Fee Limit</span>
+                      <span className="text-[#1d1d1f] font-semibold">Up to ₹{maxFee}</span>
                     </div>
                     <input
                       type="range"
@@ -1175,19 +1170,19 @@ export const Home: React.FC = () => {
                       step="100"
                       value={maxFee}
                       onChange={(e) => setMaxFee(Number(e.target.value))}
-                      className="w-full h-1.5 bg-[#e5e5ea] rounded-lg appearance-none cursor-pointer accent-[#0066cc]"
+                      className="w-full h-1 bg-[#e5e5ea] rounded-lg appearance-none cursor-pointer accent-[#0066cc]"
                     />
-                    <div className="flex justify-between text-[11px] text-[#86868b] mt-1">
+                    <div className="flex justify-between text-[11px] text-[#86868b] mt-1 font-normal">
                       <span>₹300</span>
                       <span>₹3000</span>
                     </div>
                   </div>
 
                   <div>
-                    <label className="ui-label">
+                    <label className="block text-xs font-medium text-[#86868b] mb-1">
                       Experience
                     </label>
-                    <div className="p-1 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] grid grid-cols-4 gap-1">
+                    <div className="p-0.5 rounded-lg bg-[#e5e5ea]/70 grid grid-cols-4 gap-0.5">
                       {[
                         { label: 'All', value: 0 },
                         { label: '5+ yr', value: 5 },
@@ -1198,10 +1193,10 @@ export const Home: React.FC = () => {
                           key={item.value}
                           type="button"
                           onClick={() => setMinExperience(item.value)}
-                          className={`py-1.5 rounded-lg text-[11px] font-medium transition-all text-center cursor-pointer ${
+                          className={`py-1 rounded-md text-[11px] font-medium transition-all text-center cursor-pointer ${
                             minExperience === item.value
-                              ? 'bg-white text-[#1d1d1f] font-semibold shadow-2xs'
-                              : 'text-[#6e6e73] hover:text-[#1d1d1f]'
+                              ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs'
+                              : 'text-[#86868b] hover:text-[#1d1d1f]'
                           }`}
                         >
                           {item.label}
@@ -1214,42 +1209,41 @@ export const Home: React.FC = () => {
 
               {/* Doctor Cards Grid */}
               {loadingDoctors ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-5 sm:gap-6">
                   {[1, 2, 3, 4, 5, 6].map((i) => (
                     <div
                       key={i}
-                      className="h-80 rounded-[20px] bg-white border border-[#e5e5ea] shadow-apple-card animate-pulse p-5"
+                      className="h-80 rounded-[20px] bg-white border border-[#e0e0e0] animate-pulse p-4"
                     />
                   ))}
                 </div>
               ) : filteredDoctors.length === 0 ? (
-                <div className="apple-card p-10 text-center max-w-md mx-auto">
-                  <div className="w-11 h-11 rounded-2xl bg-[#f5f5f7] flex items-center justify-center mx-auto mb-3 text-[#86868b]">
-                    <Stethoscope className="w-5 h-5" />
-                  </div>
-                  <h3 className="text-card-title mb-1">
+                <div className="bg-white rounded-[24px] border border-[#e0e0e0] p-12 text-center max-w-md mx-auto">
+                  <Stethoscope className="w-10 h-10 text-[#86868b] mx-auto mb-3" />
+                  <h3 className="text-base font-semibold text-[#1d1d1f] mb-1">
                     No doctors found
                   </h3>
-                  <p className="text-secondary mb-5">
-                    Try searching with different terms or reset your filters.
+                  <p className="text-xs text-[#86868b] mb-5">
+                    Try searching with different terms or reset filters.
                   </p>
                   <AppleButton variant="secondary" size="sm" onClick={resetDoctorFilters}>
-                    Reset Filters
+                    Reset
                   </AppleButton>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-5 sm:gap-6">
                   {filteredDoctors.map((doctor) => {
                     const slots = parseDoctorSlots(doctor);
+                    // Strictly sanitize doctor degrees to legitimate medical degrees only (NO FACC!)
                     const cleanDegrees = formatDoctorDegrees(doctor.qualifications);
                     const primaryClinic = doctor.clinics?.find((c) => c?.clinic)?.clinic || null;
 
                     return (
                       <div
                         key={doctor.id}
-                        className="w-full bg-white rounded-[20px] border border-[#e5e5ea] shadow-apple-card hover:border-[#d2d2d7] hover:shadow-apple-hover overflow-hidden transition-all duration-200 flex flex-col justify-between group"
+                        className="w-full bg-white rounded-[20px] border border-[#e0e0e0] overflow-hidden hover:border-[#0066cc]/40 transition-all duration-200 flex flex-col justify-between group"
                       >
-                        {/* Doctor Photo Banner */}
+                        {/* Doctor Photo Banner - Natural 16:10 proportion displaying the full photo */}
                         <div
                           onClick={() => navigate(getDoctorDetailPath(doctor.id))}
                           className="relative w-full aspect-[16/10] bg-[#f5f5f7] border-b border-[#f0f0f2] overflow-hidden cursor-pointer flex items-center justify-center"
@@ -1269,57 +1263,60 @@ export const Home: React.FC = () => {
                           <div
                             className={`doc-cat-fallback-banner w-full h-full ${
                               doctor.user?.avatarUrl ? 'hidden' : 'flex'
-                            } items-center justify-center font-semibold text-3xl text-white bg-[#0066cc] select-none`}
+                            } items-center justify-center font-bold text-3xl text-white bg-[#0066cc] select-none`}
                           >
                             {(doctor.user?.fullName ? doctor.user.fullName.replace(/^Dr\.\s*/i, '').trim()[0] : null) || 'D'}
                           </div>
                         </div>
 
-                        {/* Card Body: Doctor Name -> Specialty -> Clinic/location -> Availability -> Fee -> Primary Action */}
-                        <div className="p-5 flex-1 flex flex-col justify-between">
+                        {/* Card Body with Refined Apple Typography */}
+                        <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between">
                           <div>
-                            <div className="flex items-start justify-between gap-2">
+                            {/* Header: Doctor Name & Experience */}
+                            <div className="flex items-start justify-between gap-2.5">
                               <div className="min-w-0">
                                 <h3
                                   onClick={() => navigate(getDoctorDetailPath(doctor.id))}
-                                  className="text-card-title hover:text-[#0066cc] cursor-pointer transition-colors truncate"
+                                  className="text-[17px] font-semibold text-[#1d1d1f] hover:text-[#0066cc] cursor-pointer tracking-tight transition-colors duration-150 truncate leading-snug"
                                   title={doctor.user.fullName}
                                 >
                                   {doctor.user.fullName}
                                 </h3>
-                                <p className="mt-0.5 text-[13px] font-medium text-[#0066cc] truncate">
-                                  {doctor.specialty}
-                                  {cleanDegrees ? (
-                                    <span className="text-[#86868b] font-normal"> · {cleanDegrees}</span>
-                                  ) : null}
-                                </p>
+                                <div className="mt-1 flex items-center gap-1.5 text-xs text-[#86868b] truncate">
+                                  <span className="font-medium text-[#0066cc]">{doctor.specialty}</span>
+                                  {cleanDegrees && (
+                                    <>
+                                      <span className="text-[#c7c7cc] select-none">•</span>
+                                      <span className="font-medium text-[#48484a]">{cleanDegrees}</span>
+                                    </>
+                                  )}
+                                </div>
                               </div>
-                              <span className="text-[11px] font-medium text-[#6e6e73] bg-[#f5f5f7] px-2.5 py-0.5 rounded-full border border-[#e5e5ea] shrink-0 whitespace-nowrap">
-                                {doctor.experienceYears}y exp
+                              <span className="text-[11px] font-medium text-[#48484a] bg-[#f5f5f7] px-2.5 py-0.5 rounded-full border border-[#e5e5ea] shrink-0 whitespace-nowrap select-none">
+                                {doctor.experienceYears} yrs exp
                               </span>
                             </div>
 
-                            <div className="mt-3.5 space-y-1.5 text-[13px] text-[#48484a]">
+                            {/* Practice Clinic & Shift Timing */}
+                            <div className="mt-3.5 space-y-2 text-xs">
                               {primaryClinic && (
                                 <div className="flex items-center gap-2 min-w-0">
                                   <MapPin className="w-3.5 h-3.5 text-[#86868b] shrink-0" />
-                                  <span className="truncate">
+                                  <span className="truncate text-[#1d1d1f] font-medium">
                                     {primaryClinic.clinicName}
-                                    {primaryClinic.city ? (
-                                      <span className="text-[#86868b]"> · {primaryClinic.city}</span>
-                                    ) : ''}
+                                    {primaryClinic.city ? <span className="text-[#86868b] font-normal"> · {primaryClinic.city}</span> : ''}
                                   </span>
                                   {(doctor.clinics?.length ?? 0) > 1 && (
-                                    <span className="text-[11px] font-medium text-[#0066cc] shrink-0">
+                                    <span className="text-[10px] font-medium text-[#0066cc] bg-[#0066cc]/8 px-2 py-0.5 rounded-full border border-[#0066cc]/15 shrink-0 select-none">
                                       +{(doctor.clinics?.length ?? 0) - 1} more
                                     </span>
                                   )}
                                 </div>
                               )}
 
-                              <div className="flex items-center gap-2 min-w-0 text-[#86868b]">
+                              <div className="flex items-center gap-2 min-w-0">
                                 <Clock className="w-3.5 h-3.5 text-[#86868b] shrink-0" />
-                                <span className="truncate">
+                                <span className="truncate text-[#48484a] font-medium tracking-tight">
                                   {slots.length > 0
                                     ? `${format12Hour(slots[0].startTime)} – ${format12Hour(slots[0].endTime)}`
                                     : doctor.checkingStartTime
@@ -1330,23 +1327,22 @@ export const Home: React.FC = () => {
                             </div>
                           </div>
 
-                          {/* Card Footer: Fee & Primary Action */}
+                          {/* Card Footer: Fee & Apple Action Blue Pill Button */}
                           <div className="mt-4 pt-3.5 border-t border-[#f0f0f2] flex items-center justify-between gap-3">
                             <div className="flex items-baseline gap-1">
-                              <span className="text-[18px] font-semibold text-[#1d1d1f] tracking-tight">
+                              <span className="text-[21px] font-bold text-[#1d1d1f] tracking-tight">
                                 ₹{doctor.consultationFee.toFixed(0)}
                               </span>
-                              <span className="text-[12px] text-[#86868b]">/ visit</span>
+                              <span className="text-xs text-[#86868b] font-normal">/ visit</span>
                             </div>
 
-                            <AppleButton
+                            <button
                               type="button"
-                              variant="primary"
-                              size="sm"
                               onClick={() => navigate(getDoctorBookPath(doctor.id, primaryClinic?.id))}
+                              className="h-8 min-w-[78px] px-5 rounded-full text-xs font-medium text-white bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.97] transition-all duration-150 ease-out cursor-pointer select-none shadow-[0_1px_2px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,102,204,0.15)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066cc]/40 inline-flex items-center justify-center"
                             >
                               Book
-                            </AppleButton>
+                            </button>
                           </div>
                         </div>
                       </div>

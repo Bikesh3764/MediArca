@@ -426,10 +426,10 @@ export const DoctorDashboard: React.FC = () => {
       title={`Good ${new Date().getHours() < 12 ? 'Morning' : new Date().getHours() < 17 ? 'Afternoon' : 'Evening'}, Dr. ${doctorDisplayName}`}
       subtitle={user?.doctorProfile?.specialty ? `${user.doctorProfile.specialty} • ${user?.doctorProfile?.clinicAddress || 'Practice Console'}` : 'Practice Queue & Patient Roster'}
       headerAction={
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-2">
           {affiliations?.clinics && affiliations.clinics.length > 0 && (
             <AppleButton
-              variant="secondary"
+              variant="ghost"
               size="sm"
               onClick={() => {
                 const firstClinic = affiliations.clinics[0];
@@ -442,8 +442,9 @@ export const DoctorDashboard: React.FC = () => {
                 });
                 setIsStandeeModalOpen(true);
               }}
+              className="flex items-center gap-1.5 text-xs text-[#0066cc] hover:text-[#0071e3] hover:bg-[#0066cc]/5 border border-[#0066cc]/20 cursor-pointer"
             >
-              <QrCode className="w-3.5 h-3.5 text-[#0066cc]" />
+              <QrCode className="w-3.5 h-3.5" />
               <span>Clinic QR Standee</span>
             </AppleButton>
           )}
@@ -454,86 +455,83 @@ export const DoctorDashboard: React.FC = () => {
               if (activeTab === 'queue') fetchQueue();
               else fetchAffiliations();
             }}
+            className="flex items-center gap-1.5"
           >
             <RefreshCw className="w-3.5 h-3.5" />
-            <span>Refresh</span>
+            Refresh
           </AppleButton>
           <AppleButton
             variant="primary"
             size="sm"
             onClick={scrollToQueue}
+            className="flex items-center gap-1.5 shadow-xs"
           >
             <Calendar className="w-3.5 h-3.5" />
-            <span>Manage Appointments</span>
+            Manage Appointments
           </AppleButton>
         </div>
       }
     >
       <div className="space-y-6 print:hidden">
-        {/* Segmented Tab Switcher */}
-        <div className="flex items-center justify-between border-b border-[#e5e5ea] pb-4 overflow-x-auto scrollbar-none">
-          <div className="inline-flex p-1 rounded-[14px] bg-[#e8e8ed]/70 border border-[#e5e5ea]">
-            <button
-              type="button"
-              onClick={() => setActiveTab('queue')}
-              className={`flex items-center gap-2 px-4 py-1.5 rounded-[10px] text-xs font-semibold transition-all whitespace-nowrap cursor-pointer ${
-                activeTab === 'queue'
-                  ? 'bg-white text-[#1d1d1f] shadow-xs'
-                  : 'text-[#6e6e73] hover:text-[#1d1d1f]'
-              }`}
-            >
-              <Users className="w-3.5 h-3.5" />
-              <span>Live Patient Queue</span>
-              {queueData && (
-                <span
-                  className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                    activeTab === 'queue' ? 'bg-[#0066cc]/10 text-[#0066cc]' : 'bg-black/5 text-[#6e6e73]'
-                  }`}
-                >
-                  {queueData.waitingQueue.length}
-                </span>
-              )}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setActiveTab('affiliations');
-                fetchAffiliations();
-              }}
-              className={`flex items-center gap-2 px-4 py-1.5 rounded-[10px] text-xs font-semibold transition-all whitespace-nowrap cursor-pointer ${
-                activeTab === 'affiliations'
-                  ? 'bg-white text-[#1d1d1f] shadow-xs'
-                  : 'text-[#6e6e73] hover:text-[#1d1d1f]'
-              }`}
-            >
-              <Building2 className="w-3.5 h-3.5" />
-              <span>Affiliated Clinics & Staff</span>
-              {affiliations && (
-                <span
-                  className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                    activeTab === 'affiliations' ? 'bg-[#0066cc]/10 text-[#0066cc]' : 'bg-black/5 text-[#6e6e73]'
-                  }`}
-                >
-                  {affiliations.clinics.length + affiliations.receptionists.length}
-                </span>
-              )}
-            </button>
-          </div>
+        {/* Navigation Tabs (Quick pill switch) */}
+        <div className="flex items-center gap-2 border-b border-[#e5e5ea] pb-3 overflow-x-auto scrollbar-none">
+          <button
+            onClick={() => setActiveTab('queue')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold transition-all whitespace-nowrap flex-shrink-0 ${
+              activeTab === 'queue'
+                ? 'bg-[#1d1d1f] text-white shadow-sm'
+                : 'bg-white text-[#1d1d1f] hover:bg-[#f5f5f7] border border-[#e5e5ea]'
+            }`}
+          >
+            <Users className="w-3.5 h-3.5" />
+            <span>Live Patient Queue</span>
+            {queueData && (
+              <span
+                className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                  activeTab === 'queue' ? 'bg-white/20 text-white' : 'bg-[#f5f5f7] text-[#86868b]'
+                }`}
+              >
+                {queueData.waitingQueue.length}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => {
+              setActiveTab('affiliations');
+              fetchAffiliations();
+            }}
+            className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold transition-all whitespace-nowrap flex-shrink-0 ${
+              activeTab === 'affiliations'
+                ? 'bg-[#1d1d1f] text-white shadow-sm'
+                : 'bg-white text-[#1d1d1f] hover:bg-[#f5f5f7] border border-[#e5e5ea]'
+            }`}
+          >
+            <Building2 className="w-3.5 h-3.5" />
+            <span>Affiliated Clinics & Staff</span>
+            {affiliations && (
+              <span
+                className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                  activeTab === 'affiliations' ? 'bg-white/20 text-white' : 'bg-[#f5f5f7] text-[#86868b]'
+                }`}
+              >
+                {affiliations.clinics.length + affiliations.receptionists.length}
+              </span>
+            )}
+          </button>
         </div>
 
         {activeTab === 'affiliations' ? (
-          <div className="space-y-6 animate-fadeIn">
+          <div className="space-y-8 animate-fadeIn">
             {/* Feedback Alerts */}
             {feedbackSuccess && (
-              <div className="p-4 rounded-[16px] bg-emerald-50/80 border border-emerald-200 text-emerald-900 text-xs flex items-center justify-between">
+              <div className="p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] text-xs flex items-center justify-between shadow-sm">
                 <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span className="font-medium">{feedbackSuccess}</span>
+                  <CheckCircle2 className="w-4 h-4 text-[#0066cc] flex-shrink-0" />
+                  <span>{feedbackSuccess}</span>
                 </div>
                 <button
-                  type="button"
                   onClick={() => setFeedbackSuccess(null)}
-                  className="text-emerald-700 hover:text-emerald-900 p-1 rounded-full cursor-pointer"
+                  className="text-emerald-700 hover:text-emerald-900"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -541,15 +539,14 @@ export const DoctorDashboard: React.FC = () => {
             )}
 
             {feedbackError && (
-              <div className="p-4 rounded-[16px] bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center justify-between">
+              <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center justify-between shadow-sm">
                 <div className="flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
-                  <span className="font-medium">{feedbackError}</span>
+                  <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
+                  <span>{feedbackError}</span>
                 </div>
                 <button
-                  type="button"
                   onClick={() => setFeedbackError(null)}
-                  className="text-rose-700 hover:text-rose-900 p-1 rounded-full cursor-pointer"
+                  className="text-rose-700 hover:text-rose-900"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -557,43 +554,35 @@ export const DoctorDashboard: React.FC = () => {
             )}
 
             {/* Metrics Overview */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="apple-card p-5 flex items-center justify-between">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+              <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-5 flex items-center justify-between shadow-sm">
                 <div>
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-[#6e6e73] block">
-                    Affiliated Clinics
-                  </span>
-                  <h3 className="text-2xl sm:text-3xl font-bold text-[#1d1d1f] mt-1 tracking-tight tabular-nums">
+                  <span className="text-xs text-[#86868b] font-medium">Affiliated Clinics</span>
+                  <h3 className="text-2xl sm:text-3xl font-bold text-[#1d1d1f] mt-1 tracking-tight">
                     {affiliations?.clinics.length || 0}
                   </h3>
-                  <p className="text-meta mt-0.5">Active clinical facilities</p>
                 </div>
-                <div className="w-10 h-10 rounded-[12px] bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center shrink-0">
+                <div className="w-11 h-11 rounded-2xl bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center">
                   <Building2 className="w-5 h-5" />
                 </div>
               </div>
 
-              <div className="apple-card p-5 flex items-center justify-between">
+              <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-5 flex items-center justify-between shadow-sm">
                 <div>
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-[#6e6e73] block">
-                    Linked Receptionists
-                  </span>
-                  <h3 className="text-2xl sm:text-3xl font-bold text-[#1d1d1f] mt-1 tracking-tight tabular-nums">
+                  <span className="text-xs text-[#86868b] font-medium">Linked Receptionists</span>
+                  <h3 className="text-2xl sm:text-3xl font-bold text-[#1d1d1f] mt-1 tracking-tight">
                     {affiliations?.receptionists.length || 0}
                   </h3>
-                  <p className="text-meta mt-0.5">Authorized desk staff</p>
                 </div>
-                <div className="w-10 h-10 rounded-[12px] bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center shrink-0">
+                <div className="w-11 h-11 rounded-2xl bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center">
                   <Users className="w-5 h-5" />
                 </div>
               </div>
 
-              <div className="apple-card p-5 flex items-center justify-between">
+              <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-5 flex items-center justify-between shadow-sm">
                 <div>
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-[#6e6e73] block">
-                    Clinic Attributed Revenue
-                  </span>
-                  <h3 className="text-2xl sm:text-3xl font-bold text-[#1d1d1f] mt-1 tracking-tight tabular-nums">
+                  <span className="text-xs text-[#86868b] font-medium">Clinic Attributed Revenue</span>
+                  <h3 className="text-2xl sm:text-3xl font-bold text-[#0066cc] mt-1 tracking-tight">
                     ₹{(
                       affiliations?.clinics.reduce(
                         (sum: number, c) => sum + (c.revenue || 0),
@@ -601,9 +590,8 @@ export const DoctorDashboard: React.FC = () => {
                       ) || 0
                     ).toLocaleString('en-IN')}
                   </h3>
-                  <p className="text-meta mt-0.5">Across affiliated clinics</p>
                 </div>
-                <div className="w-10 h-10 rounded-[12px] bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center shrink-0">
+                <div className="w-11 h-11 rounded-2xl bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center">
                   <IndianRupee className="w-5 h-5" />
                 </div>
               </div>
@@ -611,17 +599,17 @@ export const DoctorDashboard: React.FC = () => {
 
             {/* Incoming Clinic Affiliation Invitations */}
             {affiliations?.incomingRequests && affiliations.incomingRequests.length > 0 && (
-              <div className="apple-card p-6 border-[#0066cc]/30">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-9 h-9 rounded-[10px] bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center shrink-0">
-                    <Building2 className="w-4 h-4" />
+              <div className="bg-white rounded-[20px] border border-[#0066cc]/30 p-6 shadow-sm">
+                <div className="flex items-center gap-2.5 mb-4">
+                  <div className="w-9 h-9 rounded-xl bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center">
+                    <Building2 className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-card-title">
+                    <h3 className="text-base font-semibold text-[#1d1d1f]">
                       Incoming Clinic Invitations ({affiliations.incomingRequests.length})
                     </h3>
-                    <p className="text-meta">
-                      Verified clinics that invited you to practice at their facility.
+                    <p className="text-xs text-[#86868b]">
+                      Verified clinics that invited you to practice.
                     </p>
                   </div>
                 </div>
@@ -630,16 +618,16 @@ export const DoctorDashboard: React.FC = () => {
                   {affiliations.incomingRequests.map((req) => (
                     <div
                       key={req.affiliationId}
-                      className="rounded-[16px] border border-[#e5e5ea] p-4 bg-[#f5f5f7]/60 flex flex-col justify-between"
+                      className="rounded-2xl border border-[#e5e5ea] p-4 bg-[#f0f9ff]/40 flex flex-col justify-between"
                     >
                       <div>
                         <h4 className="font-semibold text-sm text-[#1d1d1f]">{req.clinicName}</h4>
-                        <p className="text-meta flex items-center gap-1 mt-1">
-                          <MapPin className="w-3.5 h-3.5 text-[#86868b] shrink-0" />
-                          <span>{req.address}{req.city ? `, ${req.city}` : ''}</span>
+                        <p className="text-xs text-[#86868b] flex items-center gap-1 mt-1">
+                          <MapPin className="w-3.5 h-3.5 text-[#86868b]" />
+                          {req.address}{req.city ? `, ${req.city}` : ''}
                         </p>
                         {req.phone && (
-                          <p className="text-meta mt-0.5">Phone: {req.phone}</p>
+                          <p className="text-xs text-[#86868b] mt-0.5">Phone: {req.phone}</p>
                         )}
                       </div>
                       <div className="flex items-center gap-2 mt-4 pt-3 border-t border-[#e5e5ea]">
@@ -647,19 +635,19 @@ export const DoctorDashboard: React.FC = () => {
                           size="sm"
                           variant="primary"
                           onClick={() => handleRespondClinicAffiliation(req.affiliationId, 'ACCEPT')}
-                          className="flex-1"
+                          className="flex-1 flex items-center justify-center gap-1.5"
                         >
                           <Check className="w-3.5 h-3.5" />
-                          <span>Accept</span>
+                          Accept
                         </AppleButton>
                         <AppleButton
                           size="sm"
-                          variant="destructive"
+                          variant="ghost"
                           onClick={() => handleRespondClinicAffiliation(req.affiliationId, 'REJECT')}
-                          className="flex-1"
+                          className="text-rose-600 hover:bg-rose-50 flex-1 flex items-center justify-center gap-1.5"
                         >
                           <X className="w-3.5 h-3.5" />
-                          <span>Decline</span>
+                          Decline
                         </AppleButton>
                       </div>
                     </div>
@@ -670,10 +658,10 @@ export const DoctorDashboard: React.FC = () => {
 
             {/* Pending Outgoing Clinic Requests */}
             {affiliations?.outgoingRequests && affiliations.outgoingRequests.length > 0 && (
-              <div className="apple-card p-6">
+              <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-6 shadow-sm">
                 <div className="flex items-center gap-2 mb-4">
                   <Clock3 className="w-4 h-4 text-amber-600" />
-                  <h3 className="text-card-title">
+                  <h3 className="text-base font-semibold text-[#1d1d1f]">
                     Pending Clinic Approvals ({affiliations.outgoingRequests.length})
                   </h3>
                 </div>
@@ -681,13 +669,13 @@ export const DoctorDashboard: React.FC = () => {
                   {affiliations.outgoingRequests.map((req) => (
                     <div
                       key={req.affiliationId}
-                      className="rounded-[16px] border border-amber-200 bg-amber-50/40 p-4 flex items-center justify-between gap-3"
+                      className="rounded-2xl border border-amber-200 bg-amber-50/40 p-4 flex items-center justify-between"
                     >
-                      <div className="min-w-0">
-                        <h4 className="font-semibold text-sm text-[#1d1d1f] truncate">{req.clinicName}</h4>
-                        <p className="text-meta mt-0.5 truncate">{req.address}{req.city ? `, ${req.city}` : ''}</p>
+                      <div>
+                        <h4 className="font-semibold text-sm text-[#1d1d1f]">{req.clinicName}</h4>
+                        <p className="text-xs text-[#86868b] mt-0.5">{req.address}{req.city ? `, ${req.city}` : ''}</p>
                       </div>
-                      <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 border border-amber-200 shrink-0">
+                      <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 border border-amber-300">
                         Awaiting Clinic
                       </span>
                     </div>
@@ -697,20 +685,15 @@ export const DoctorDashboard: React.FC = () => {
             )}
 
             {/* Section 1: Affiliated Clinics */}
-            <div className="apple-card p-6">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 pb-4 border-b border-[#e5e5ea]/70">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-section-title">
-                      Affiliated Clinics & Hospitals
-                    </h3>
-                    <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f]">
-                      {affiliations?.clinics.length || 0}
-                    </span>
-                  </div>
-                  <p className="text-meta mt-0.5">
-                    Manage facility schedules, consultation fees, and arrival QR standees.
-                  </p>
+            <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-6 shadow-sm">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-lg font-semibold text-[#1d1d1f] tracking-tight">
+                    Affiliated Clinics & Hospitals
+                  </h3>
+                  <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f]">
+                    {affiliations?.clinics.length || 0}
+                  </span>
                 </div>
 
                 <AppleButton
@@ -722,6 +705,7 @@ export const DoctorDashboard: React.FC = () => {
                     setClinicCityFilter('All');
                     setIsAffiliateModalOpen(true);
                   }}
+                  className="flex items-center gap-1.5 text-xs font-semibold py-2 px-4 shadow-xs"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>Affiliate New Clinic</span>
@@ -731,16 +715,16 @@ export const DoctorDashboard: React.FC = () => {
               {affiliationsLoading ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {[1, 2].map((i) => (
-                    <div key={i} className="h-32 rounded-[16px] bg-[#f5f5f7] animate-pulse" />
+                    <div key={i} className="h-32 rounded-[20px] bg-[#f5f5f7] animate-pulse" />
                   ))}
                 </div>
               ) : affiliations?.clinics.length === 0 ? (
-                <div className="p-8 text-center bg-[#f5f5f7]/60 rounded-[16px] border border-dashed border-[#d2d2d7]">
-                  <div className="w-11 h-11 rounded-[12px] bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center mx-auto mb-3">
-                    <Building2 className="w-5 h-5" />
+                <div className="p-8 text-center bg-[#f5f5f7]/50 rounded-2xl border border-dashed border-[#e5e5ea]">
+                  <div className="w-12 h-12 rounded-2xl bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center mx-auto mb-3">
+                    <Building2 className="w-6 h-6" />
                   </div>
-                  <h4 className="text-card-title">No Clinics Affiliated</h4>
-                  <p className="text-meta mt-1 max-w-md mx-auto">
+                  <h4 className="text-sm font-semibold text-[#1d1d1f]">No Clinics Affiliated</h4>
+                  <p className="text-xs text-[#86868b] mt-1 max-w-md mx-auto">
                     Search and affiliate your practice with verified clinics to configure shift timings and receive patient queue bookings.
                   </p>
                   <div className="mt-4">
@@ -753,6 +737,7 @@ export const DoctorDashboard: React.FC = () => {
                         setClinicCityFilter('All');
                         setIsAffiliateModalOpen(true);
                       }}
+                      className="inline-flex items-center gap-2 text-xs font-semibold py-2 px-4 shadow-xs"
                     >
                       <Plus className="w-3.5 h-3.5" />
                       <span>Find & Affiliate Clinic</span>
@@ -760,30 +745,30 @@ export const DoctorDashboard: React.FC = () => {
                   </div>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   {affiliations?.clinics.map((clinic) => (
                     <div
                       key={clinic.clinicId}
-                      className="rounded-[16px] border border-[#e5e5ea] p-5 hover:border-[#d2d2d7] transition-all flex flex-col justify-between bg-white"
+                      className="rounded-[20px] border border-[#e5e5ea] p-5 hover:border-[#0066cc]/30 transition-all duration-200 flex flex-col justify-between bg-white shadow-sm hover:shadow-md"
                     >
                       <div>
                         {/* Header: Icon, Name, Verified, Location, Detach */}
                         <div className="flex items-start justify-between gap-3">
-                          <div className="flex items-start gap-3 min-w-0">
-                            <div className="w-10 h-10 rounded-[12px] bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center shrink-0">
+                          <div className="flex items-start gap-3.5 min-w-0">
+                            <div className="w-10 h-10 rounded-2xl bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center font-bold flex-shrink-0">
                               <Building2 className="w-5 h-5" />
                             </div>
                             <div className="min-w-0">
                               <div className="flex items-center gap-1.5 flex-wrap">
-                                <h4 className="text-card-title truncate">
+                                <h4 className="font-semibold text-base text-[#1d1d1f] tracking-tight truncate">
                                   {clinic.clinicName}
                                 </h4>
                                 <span title="Verified Clinic" className="inline-flex">
                                   <CheckCircle2 className="w-4 h-4 text-[#0066cc] shrink-0" />
                                 </span>
                               </div>
-                              <p className="text-meta flex items-center gap-1 mt-0.5 truncate">
-                                <MapPin className="w-3.5 h-3.5 text-[#86868b] shrink-0" />
+                              <p className="text-xs text-[#86868b] flex items-center gap-1 mt-1 truncate">
+                                <MapPin className="w-3.5 h-3.5 text-[#86868b] flex-shrink-0" />
                                 <span className="truncate">{clinic.address}{clinic.city ? `, ${clinic.city}` : ''}</span>
                               </p>
                             </div>
@@ -791,7 +776,7 @@ export const DoctorDashboard: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => handleRemoveClinic(clinic.clinicId, clinic.clinicName)}
-                            className="text-[#86868b] hover:text-rose-600 hover:bg-rose-50 p-2 rounded-full transition-colors shrink-0 cursor-pointer"
+                            className="text-[#86868b] hover:text-rose-600 hover:bg-rose-50 p-2 rounded-full transition-all flex-shrink-0"
                             title="Detach from Clinic"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -799,32 +784,32 @@ export const DoctorDashboard: React.FC = () => {
                         </div>
 
                         {/* Clean Stats Row */}
-                        <div className="grid grid-cols-3 gap-2 mt-4 p-3 rounded-[12px] bg-[#f5f5f7]/70 border border-[#e5e5ea] text-center">
+                        <div className="grid grid-cols-3 gap-2 mt-4 p-3 rounded-xl bg-[#fafafc] border border-[#e5e5ea]/80 text-center">
                           <div>
-                            <span className="text-[11px] font-medium text-[#6e6e73] block">Fee</span>
-                            <span className="text-sm font-bold text-[#1d1d1f] mt-0.5 block tabular-nums">
+                            <span className="text-[11px] font-medium text-[#86868b] block">Consultation Fee</span>
+                            <span className="text-sm font-bold text-[#1d1d1f] mt-0.5 block">
                               ₹{clinic.consultationFee ?? user?.doctorProfile?.consultationFee ?? 500}
                             </span>
                           </div>
-                          <div className="border-x border-[#e5e5ea]">
-                            <span className="text-[11px] font-medium text-[#6e6e73] block">Bookings</span>
-                            <span className="text-sm font-bold text-[#1d1d1f] mt-0.5 block tabular-nums">
+                          <div className="border-x border-[#e5e5ea]/80">
+                            <span className="text-[11px] font-medium text-[#86868b] block">Bookings</span>
+                            <span className="text-sm font-bold text-[#1d1d1f] mt-0.5 block">
                               {clinic.bookingCount || 0}
                             </span>
                           </div>
                           <div>
-                            <span className="text-[11px] font-medium text-[#6e6e73] block">Revenue</span>
-                            <span className="text-sm font-bold text-[#0066cc] mt-0.5 block tabular-nums">
+                            <span className="text-[11px] font-medium text-[#86868b] block">Revenue</span>
+                            <span className="text-sm font-bold text-[#0066cc] mt-0.5 block">
                               ₹{(clinic.revenue ?? 0).toLocaleString('en-IN')}
                             </span>
                           </div>
                         </div>
 
                         {/* Shifts Status */}
-                        <div className="mt-3 flex items-center justify-between text-xs px-1 text-[#6e6e73]">
+                        <div className="mt-3 flex items-center justify-between text-xs px-1 text-[#86868b]">
                           <span className="flex items-center gap-1.5 font-medium">
                             <Clock className="w-3.5 h-3.5 text-[#0066cc]" />
-                            <span>Practice Shifts:</span>
+                            Practice Shifts:
                           </span>
                           <span className="font-semibold text-[#1d1d1f] truncate max-w-[220px]">
                             {clinic.slots && clinic.slots.length > 0
@@ -835,13 +820,13 @@ export const DoctorDashboard: React.FC = () => {
                       </div>
 
                       {/* Actions & Footer */}
-                      <div className="mt-4 pt-3 border-t border-[#e5e5ea]/70 space-y-2.5">
+                      <div className="mt-4 pt-3 border-t border-[#f5f5f7] space-y-2.5">
                         <div className="flex gap-2">
                           <AppleButton
                             size="sm"
                             variant="secondary"
                             onClick={() => navigate(`/doctor/schedule?clinic=${clinic.clinicId}`)}
-                            className="flex-1"
+                            className="flex-1 flex items-center justify-center gap-1.5 text-xs font-semibold text-[#0066cc] border-[#0066cc]/30 hover:bg-[#0066cc]/5 shadow-xs py-2"
                           >
                             <Clock className="w-3.5 h-3.5 text-[#0066cc]" />
                             <span>Shifts & Fee</span>
@@ -859,7 +844,7 @@ export const DoctorDashboard: React.FC = () => {
                               });
                               setIsStandeeModalOpen(true);
                             }}
-                            className="border border-[#e5e5ea]"
+                            className="flex items-center justify-center gap-1.5 text-xs font-medium text-[#1d1d1f] border border-[#e5e5ea] hover:bg-gray-100 py-2 px-3 cursor-pointer"
                             title="View & Print Clinic QR Standee"
                           >
                             <QrCode className="w-3.5 h-3.5 text-[#0066cc]" />
@@ -867,7 +852,7 @@ export const DoctorDashboard: React.FC = () => {
                           </AppleButton>
                         </div>
 
-                        <div className="text-[11px] text-[#6e6e73] flex items-center justify-between px-1">
+                        <div className="text-[11px] text-[#86868b] flex items-center justify-between px-1">
                           <span>Phone: {clinic.phone || 'N/A'}</span>
                           <span>Affiliated: {clinic.joinedAt ? new Date(clinic.joinedAt).toLocaleDateString() : 'Active'}</span>
                         </div>
@@ -879,9 +864,9 @@ export const DoctorDashboard: React.FC = () => {
             </div>
 
             {/* Section 2: Authorized Clinic Desk Staff */}
-            <div className="apple-card p-6">
-              <div className="flex items-center gap-2 mb-5 pb-4 border-b border-[#e5e5ea]/70">
-                <h3 className="text-section-title">
+            <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-6 shadow-sm">
+              <div className="flex items-center gap-2 mb-6">
+                <h3 className="text-lg font-semibold text-[#1d1d1f] tracking-tight">
                   Authorized Clinic Desk Staff
                 </h3>
                 <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f]">
@@ -892,14 +877,14 @@ export const DoctorDashboard: React.FC = () => {
               {affiliationsLoading ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {[1, 2].map((i) => (
-                    <div key={i} className="h-24 rounded-[16px] bg-[#f5f5f7] animate-pulse" />
+                    <div key={i} className="h-24 rounded-[20px] bg-[#f5f5f7] animate-pulse" />
                   ))}
                 </div>
               ) : affiliations?.receptionists.length === 0 ? (
-                <div className="p-8 text-center bg-[#f5f5f7]/60 rounded-[16px] border border-dashed border-[#d2d2d7]">
-                  <Users className="w-8 h-8 text-[#86868b] mx-auto mb-2 opacity-60" />
-                  <h4 className="text-card-title">No Desk Staff Assigned</h4>
-                  <p className="text-meta mt-1 max-w-md mx-auto">
+                <div className="p-8 text-center bg-[#f5f5f7]/50 rounded-2xl border border-dashed border-[#e5e5ea]">
+                  <Users className="w-10 h-10 text-[#86868b] mx-auto mb-2 opacity-60" />
+                  <h4 className="text-sm font-semibold text-[#1d1d1f]">No Desk Staff Assigned</h4>
+                  <p className="text-xs text-[#86868b] mt-1 max-w-md mx-auto">
                     Your affiliated clinic administrators can assign desk receptionists to manage queues and book walk-in appointments for you.
                   </p>
                 </div>
@@ -908,15 +893,15 @@ export const DoctorDashboard: React.FC = () => {
                   {affiliations?.receptionists.map((rec) => (
                     <div
                       key={rec.receptionistId}
-                      className="rounded-[16px] border border-[#e5e5ea] p-4 sm:p-5 hover:border-[#d2d2d7] transition-all flex items-center justify-between gap-4 bg-white"
+                      className="rounded-[20px] border border-[#e5e5ea] p-4 sm:p-5 hover:border-[#0066cc]/30 hover:shadow-md transition-all duration-200 flex items-center justify-between gap-4 bg-white shadow-xs"
                     >
                       <div className="flex items-center gap-3.5 min-w-0 flex-1">
-                        <div className="w-10 h-10 rounded-[12px] bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center shrink-0">
-                          <Users className="w-5 h-5" />
+                        <div className="w-11 h-11 rounded-2xl bg-[#0066cc]/8 text-[#0066cc] border border-[#0066cc]/15 flex items-center justify-center flex-shrink-0 shadow-2xs">
+                          <Users className="w-5 h-5 text-[#0066cc]" />
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <h4 className="text-card-title truncate">
+                            <h4 className="font-semibold text-sm text-[#1d1d1f] tracking-tight truncate">
                               {rec.fullName}
                             </h4>
                             {rec.clinicName && (
@@ -926,15 +911,15 @@ export const DoctorDashboard: React.FC = () => {
                               </span>
                             )}
                           </div>
-                          <p className="text-meta truncate mt-0.5">{rec.email}</p>
-                          <div className="flex items-center gap-2 text-[11px] text-[#6e6e73] mt-1 flex-wrap">
+                          <p className="text-xs text-[#86868b] truncate mt-0.5 font-normal">{rec.email}</p>
+                          <div className="flex items-center gap-2 text-[11px] text-[#86868b] mt-1.5 flex-wrap">
                             {rec.phone && (
                               <span className="flex items-center gap-1">
                                 <Phone className="w-3 h-3 text-[#86868b]" />
                                 <span>{rec.phone}</span>
                               </span>
                             )}
-                            {rec.phone && <span className="text-[#d2d2d7]">•</span>}
+                            {rec.phone && <span className="text-[#d1d1d6]">•</span>}
                             <span className="flex items-center gap-1">
                               <Calendar className="w-3 h-3 text-[#86868b]" />
                               <span>Linked {new Date(rec.joinedAt).toLocaleDateString()}</span>
@@ -942,15 +927,15 @@ export const DoctorDashboard: React.FC = () => {
                           </div>
                         </div>
                       </div>
-                      <AppleButton
-                        size="sm"
-                        variant="destructive"
+                      <button
+                        type="button"
                         onClick={() => handleRemoveReceptionist(rec.receptionistId, rec.fullName)}
+                        className="h-8 px-3 rounded-full text-xs font-medium text-[#86868b] hover:text-rose-600 hover:bg-rose-50 border border-[#e5e5ea] hover:border-rose-200 transition-all flex items-center gap-1.5 cursor-pointer flex-shrink-0"
                         title="Unlink Receptionist"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                         <span>Unlink</span>
-                      </AppleButton>
+                      </button>
                     </div>
                   ))}
                 </div>
@@ -958,11 +943,11 @@ export const DoctorDashboard: React.FC = () => {
             </div>
           </div>
         ) : (
-          <div className="space-y-6">
+          <div>
             {/* Verification Warning if Doctor is unverified or suspended/rejected */}
             {user?.doctorProfile?.verificationStatus === 'SUSPENDED' && (
-              <div className="p-4 rounded-[16px] bg-rose-50 border border-rose-200 text-rose-900 text-xs flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+              <div className="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-300 text-rose-900 text-xs flex items-start gap-3 shadow-sm">
+                <AlertCircle className="w-5 h-5 text-rose-600 flex-shrink-0 mt-0.5" />
                 <div>
                   <h4 className="font-semibold text-sm text-rose-900">Medical Practitioner License Suspended</h4>
                   <p className="mt-0.5 leading-relaxed text-rose-800">
@@ -972,8 +957,8 @@ export const DoctorDashboard: React.FC = () => {
               </div>
             )}
             {user?.doctorProfile?.verificationStatus === 'REJECTED' && (
-              <div className="p-4 rounded-[16px] bg-rose-50 border border-rose-200 text-rose-900 text-xs flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+              <div className="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-300 text-rose-900 text-xs flex items-start gap-3 shadow-sm">
+                <AlertCircle className="w-5 h-5 text-rose-600 flex-shrink-0 mt-0.5" />
                 <div>
                   <h4 className="font-semibold text-sm text-rose-900">Doctor Profile Application Rejected</h4>
                   <p className="mt-0.5 leading-relaxed text-rose-800">
@@ -983,8 +968,8 @@ export const DoctorDashboard: React.FC = () => {
               </div>
             )}
             {(!isVerified && user?.doctorProfile?.verificationStatus !== 'SUSPENDED' && user?.doctorProfile?.verificationStatus !== 'REJECTED') && (
-              <div className="p-4 rounded-[16px] bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start gap-3">
-                <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+              <div className="mb-6 p-4 rounded-2xl bg-amber-50 border border-amber-300 text-amber-900 text-xs flex items-start gap-3 shadow-sm">
+                <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
                 <div>
                   <h4 className="font-semibold text-sm">Doctor Profile Pending Admin Verification</h4>
                   <p className="mt-0.5 leading-relaxed text-amber-800">
@@ -996,7 +981,7 @@ export const DoctorDashboard: React.FC = () => {
 
             {/* Server Connection Issue Banner */}
             {fetchError && (
-              <div className="p-4 rounded-[16px] bg-[#0066cc]/5 border border-[#0066cc]/20 text-[#1d1d1f] text-xs flex items-center justify-between">
+              <div className="mb-6 p-4 rounded-2xl bg-blue-50 border border-blue-200 text-blue-900 text-xs flex items-center justify-between shadow-sm">
                 <div className="flex items-center gap-2">
                   <RefreshCw className="w-4 h-4 text-[#0066cc] animate-spin" />
                   <span>Connecting to cloud database... (Cloud backend may take 30s to resume from idle)</span>
@@ -1008,44 +993,46 @@ export const DoctorDashboard: React.FC = () => {
             )}
 
             {/* Doctor Live Cabin Availability & Presence */}
-            <CabinStatusControl
-              currentStatus={user?.doctorProfile?.cabinStatus}
-              expectedReturnTime={user?.doctorProfile?.expectedReturnTime}
-              onStatusChange={(newStatus, newReturnTime) => {
-                if (user?.doctorProfile) {
-                  updateUser({
-                    ...user,
-                    doctorProfile: {
-                      ...user.doctorProfile,
-                      cabinStatus: newStatus,
-                      expectedReturnTime: newReturnTime,
-                    },
-                  });
-                }
-              }}
-            />
+            <div className="mb-6">
+              <CabinStatusControl
+                currentStatus={user?.doctorProfile?.cabinStatus}
+                expectedReturnTime={user?.doctorProfile?.expectedReturnTime}
+                onStatusChange={(newStatus, newReturnTime) => {
+                  if (user?.doctorProfile) {
+                    updateUser({
+                      ...user,
+                      doctorProfile: {
+                        ...user.doctorProfile,
+                        cabinStatus: newStatus,
+                        expectedReturnTime: newReturnTime,
+                      },
+                    });
+                  }
+                }}
+              />
+            </div>
 
             {/* Top Shift & Date Selector Header */}
-            <div className="apple-card p-5 sm:p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <div className="flex items-center gap-2.5 flex-wrap">
-                <h2 className="text-section-title">{user?.fullName}</h2>
-                <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20">
+            <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-6 mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm">
+              <div className="flex items-center gap-2">
+                <h2 className="text-xl font-semibold text-[#1d1d1f] tracking-tight">{user?.fullName}</h2>
+                <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#0066cc]/10 text-[#0066cc]">
                   {user?.doctorProfile?.specialty || 'Doctor'}
                 </span>
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-meta font-medium mr-1">Date:</span>
+                <span className="text-xs font-medium text-[#86868b] mr-1">Date:</span>
                 <button
                   type="button"
                   onClick={() => {
                     setQueueScope('date');
                     setDate(getLocalDateString());
                   }}
-                  className={`h-9 px-4 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                  className={`h-9 px-4 rounded-full text-xs font-semibold transition-all active:scale-[0.98] ${
                     queueScope === 'date' && date === getLocalDateString()
-                      ? 'bg-[#0066cc] text-white shadow-xs'
-                      : 'bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea]'
+                      ? 'bg-[#1d1d1f] text-white shadow-xs'
+                      : 'bg-[#f5f5f7] hover:bg-[#e5e5ea] text-[#1d1d1f] border border-[#e5e5ea]'
                   }`}
                 >
                   Today
@@ -1057,10 +1044,10 @@ export const DoctorDashboard: React.FC = () => {
                     const tomorrowStr = queueData?.upcomingSummary?.tomorrowDate || getTomorrowDateString();
                     setDate(tomorrowStr);
                   }}
-                  className={`h-9 px-4 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
+                  className={`h-9 px-4 rounded-full text-xs font-semibold transition-all active:scale-[0.98] flex items-center gap-1.5 ${
                     queueScope === 'date' && date === (queueData?.upcomingSummary?.tomorrowDate || getTomorrowDateString())
-                      ? 'bg-[#0066cc] text-white shadow-xs'
-                      : 'bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea]'
+                      ? 'bg-[#1d1d1f] text-white shadow-xs'
+                      : 'bg-[#f5f5f7] hover:bg-[#e5e5ea] text-[#1d1d1f] border border-[#e5e5ea]'
                   }`}
                 >
                   <span>Tomorrow</span>
@@ -1079,10 +1066,10 @@ export const DoctorDashboard: React.FC = () => {
                   onClick={() => {
                     setQueueScope('all-upcoming');
                   }}
-                  className={`h-9 px-4 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
+                  className={`h-9 px-4 rounded-full text-xs font-semibold transition-all active:scale-[0.98] flex items-center gap-1.5 ${
                     queueScope === 'all-upcoming'
-                      ? 'bg-[#0066cc] text-white shadow-xs'
-                      : 'bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea]'
+                      ? 'bg-[#1d1d1f] text-white shadow-xs'
+                      : 'bg-[#f5f5f7] hover:bg-[#e5e5ea] text-[#1d1d1f] border border-[#e5e5ea]'
                   }`}
                 >
                   <span>All Upcoming</span>
@@ -1103,7 +1090,7 @@ export const DoctorDashboard: React.FC = () => {
                     setQueueScope('date');
                     setDate(e.target.value);
                   }}
-                  className="ui-input !w-auto !h-9 !px-3.5 !rounded-full !text-xs"
+                  className="h-9 px-3.5 rounded-full border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
                   title="Choose Specific Date"
                 />
               </div>
@@ -1111,128 +1098,120 @@ export const DoctorDashboard: React.FC = () => {
 
             {/* Upcoming Bookings Alert Banner */}
             {queueData?.upcomingSummary && queueData.upcomingSummary.tomorrowCount > 0 && (queueScope !== 'date' || date !== queueData.upcomingSummary.tomorrowDate) && (
-              <div className="p-4 rounded-[16px] bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="mb-6 p-4 rounded-[20px] bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-[12px] bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center shrink-0">
+                  <div className="w-10 h-10 rounded-xl bg-[#0066cc] text-white flex items-center justify-center font-bold flex-shrink-0 shadow-xs">
                     <Calendar className="w-5 h-5" />
                   </div>
                   <div>
                     <h4 className="font-semibold text-sm text-[#1d1d1f]">
                       {queueData.upcomingSummary.tomorrowCount} Appointment{queueData.upcomingSummary.tomorrowCount > 1 ? 's' : ''} Scheduled for Tomorrow ({queueData.upcomingSummary.tomorrowDate})
                     </h4>
-                    <p className="text-meta mt-0.5">
+                    <p className="text-xs text-[#86868b] mt-0.5">
                       You have patients queued for tomorrow. Switch date to review waiting patients and queue tokens.
                     </p>
                   </div>
                 </div>
-                <AppleButton
-                  variant="primary"
-                  size="sm"
+                <button
+                  type="button"
                   onClick={() => {
                     setQueueScope('date');
                     setDate(queueData.upcomingSummary!.tomorrowDate);
                   }}
-                  className="self-start sm:self-auto shrink-0"
+                  className="px-4 py-2 rounded-xl bg-[#0066cc] hover:bg-[#0071e3] text-white font-semibold text-xs transition-all shadow-xs flex items-center justify-center gap-1.5 self-start sm:self-auto flex-shrink-0"
                 >
                   <span>Switch to Tomorrow</span>
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </AppleButton>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
               </div>
             )}
 
             {/* Alert banner if bookings on future date beyond tomorrow */}
             {queueData?.upcomingSummary && queueData.upcomingSummary.tomorrowCount === 0 && queueData.upcomingSummary.nextDateWithBookings && (queueScope !== 'date' || date !== queueData.upcomingSummary.nextDateWithBookings) && (
-              <div className="p-4 rounded-[16px] bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="mb-6 p-4 rounded-[20px] bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-[12px] bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center shrink-0">
+                  <div className="w-10 h-10 rounded-xl bg-[#0066cc] text-white flex items-center justify-center font-bold flex-shrink-0 shadow-xs">
                     <Calendar className="w-5 h-5" />
                   </div>
                   <div>
                     <h4 className="font-semibold text-sm text-[#1d1d1f]">
                       {queueData.upcomingSummary.totalUpcomingCount} Upcoming Appointment{queueData.upcomingSummary.totalUpcomingCount > 1 ? 's' : ''} on Future Dates
                     </h4>
-                    <p className="text-meta mt-0.5">
+                    <p className="text-xs text-[#86868b] mt-0.5">
                       Next booked consultation date is {queueData.upcomingSummary.nextDateWithBookings}.
                     </p>
                   </div>
                 </div>
-                <AppleButton
-                  variant="primary"
-                  size="sm"
+                <button
+                  type="button"
                   onClick={() => {
                     setQueueScope('date');
                     setDate(queueData.upcomingSummary!.nextDateWithBookings!);
                   }}
-                  className="self-start sm:self-auto shrink-0"
+                  className="px-4 py-2 rounded-xl bg-[#0066cc] hover:bg-[#0071e3] text-white font-semibold text-xs transition-all shadow-xs flex items-center justify-center gap-1.5 self-start sm:self-auto flex-shrink-0"
                 >
                   <span>View {queueData.upcomingSummary.nextDateWithBookings}</span>
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </AppleButton>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
               </div>
             )}
 
-            {/* Top 2 Metric Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Top 2 Metric Cards (Matches media_1789192783321.jpg) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-6">
               {/* Card 1: Total Bookings */}
-              <div className="apple-card p-5 flex items-center justify-between">
-                <div>
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-[#6e6e73] block">
-                    Total Bookings
-                  </span>
-                  <h3 className="text-2xl sm:text-3xl font-bold text-[#1d1d1f] mt-1 tracking-tight tabular-nums">
-                    {queueData?.totalQueue || 0}
-                  </h3>
-                  <p className="text-meta mt-0.5">Scheduled for selected scope</p>
-                </div>
-                <div className="w-10 h-10 rounded-[12px] bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center shrink-0">
+              <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-6 shadow-sm transition-all hover:shadow-md">
+                <div className="w-10 h-10 rounded-xl bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center">
                   <Calendar className="w-5 h-5" />
                 </div>
+                <h3 className="text-4xl font-bold text-[#1d1d1f] mt-4 tracking-tight">
+                  {queueData?.totalQueue || 0}
+                </h3>
+                <p className="text-xs text-[#86868b] font-medium mt-1">
+                  Total Bookings
+                </p>
               </div>
 
               {/* Card 2: Completed Consultations */}
-              <div className="apple-card p-5 flex items-center justify-between">
-                <div>
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-[#6e6e73] block">
-                    Completed Consultations
-                  </span>
-                  <h3 className="text-2xl sm:text-3xl font-bold text-[#1d1d1f] mt-1 tracking-tight tabular-nums">
-                    {queueData?.completedQueue.length || 0}
-                  </h3>
-                  <p className="text-meta mt-0.5">Encounters finalized</p>
-                </div>
-                <div className="w-10 h-10 rounded-[12px] bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+              <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-6 shadow-sm transition-all hover:shadow-md">
+                <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center">
                   <CheckCircle2 className="w-5 h-5" />
                 </div>
+                <h3 className="text-4xl font-bold text-[#1d1d1f] mt-4 tracking-tight">
+                  {queueData?.completedQueue.length || 0}
+                </h3>
+                <p className="text-xs text-[#86868b] font-medium mt-1">
+                  Completed Consultations
+                </p>
               </div>
             </div>
 
-            {/* Middle 2-Column Section: Quick Actions & Recent Activity */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Middle 2-Column Section: Quick Actions & Recent Activity (Matches media_1789192783321.jpg) */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
               {/* Left: Quick Actions */}
-              <div className="apple-card p-6 flex flex-col justify-between">
+              <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-6 shadow-sm flex flex-col justify-between">
                 <div className="flex items-center gap-2 mb-4">
-                  <Zap className="w-4 h-4 text-[#0066cc]" />
-                  <h3 className="text-card-title">
+                  <Zap className="w-4 h-4 text-[#0066cc] fill-[#0066cc]" />
+                  <h3 className="text-sm font-semibold text-[#1d1d1f] tracking-tight">
                     Quick Actions
                   </h3>
                 </div>
 
-                <div className="space-y-2.5">
+                <div className="space-y-3">
                   {/* Action 1: View Appointments */}
                   <button
                     type="button"
                     onClick={scrollToQueue}
-                    className="w-full rounded-[14px] border border-[#e5e5ea] bg-[#f5f5f7]/60 hover:bg-[#f5f5f7] hover:border-[#0066cc]/30 p-3.5 flex items-center justify-between text-left transition-all group cursor-pointer"
+                    className="w-full rounded-2xl border border-[#e0f2fe] bg-[#f0f9ff]/60 hover:bg-[#f0f9ff] p-3.5 flex items-center justify-between text-left transition-all group"
                   >
                     <div className="flex items-center gap-3.5">
-                      <div className="w-10 h-10 rounded-[12px] bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center shrink-0">
+                      <div className="w-10 h-10 rounded-xl bg-[#0066cc] text-white flex items-center justify-center shadow-xs flex-shrink-0">
                         <Calendar className="w-5 h-5" />
                       </div>
                       <div>
                         <h4 className="text-sm font-semibold text-[#1d1d1f] group-hover:text-[#0066cc] transition-colors">
                           View Appointments
                         </h4>
-                        <p className="text-meta mt-0.5">
+                        <p className="text-xs text-[#86868b] mt-0.5">
                           {queueData?.totalQueue || 0} total bookings
                         </p>
                       </div>
@@ -1244,61 +1223,61 @@ export const DoctorDashboard: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setShowQrModal(true)}
-                    className="w-full rounded-[14px] border border-[#e5e5ea] bg-[#f5f5f7]/60 hover:bg-[#f5f5f7] hover:border-[#0066cc]/30 p-3.5 flex items-center justify-between text-left transition-all group cursor-pointer"
+                    className="w-full rounded-2xl border border-[#d1fae5] bg-[#f0fdf4]/70 hover:bg-[#f0fdf4] p-3.5 flex items-center justify-between text-left transition-all group"
                   >
                     <div className="flex items-center gap-3.5">
-                      <div className="w-10 h-10 rounded-[12px] bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center shrink-0">
+                      <div className="w-10 h-10 rounded-xl bg-[#10b981] text-white flex items-center justify-center shadow-xs flex-shrink-0">
                         <QrCode className="w-5 h-5" />
                       </div>
                       <div>
-                        <h4 className="text-sm font-semibold text-[#1d1d1f] group-hover:text-[#0066cc] transition-colors">
+                        <h4 className="text-sm font-semibold text-[#1d1d1f] group-hover:text-[#10b981] transition-colors">
                           Walk-in QR Code
                         </h4>
-                        <p className="text-meta mt-0.5">
+                        <p className="text-xs text-[#86868b] mt-0.5">
                           Print poster & share link
                         </p>
                       </div>
                     </div>
-                    <ChevronRight className="w-4 h-4 text-[#86868b] group-hover:text-[#0066cc] transition-colors" />
+                    <ChevronRight className="w-4 h-4 text-[#86868b] group-hover:text-[#10b981] transition-colors" />
                   </button>
 
                   {/* Action 3: Add Appointment */}
                   <button
                     type="button"
                     onClick={() => setShowAddModal(true)}
-                    className="w-full rounded-[14px] border border-[#e5e5ea] bg-[#f5f5f7]/60 hover:bg-[#f5f5f7] hover:border-[#0066cc]/30 p-3.5 flex items-center justify-between text-left transition-all group cursor-pointer"
+                    className="w-full rounded-2xl border border-[#ede9fe] bg-[#f5f3ff]/70 hover:bg-[#f5f3ff] p-3.5 flex items-center justify-between text-left transition-all group"
                   >
                     <div className="flex items-center gap-3.5">
-                      <div className="w-10 h-10 rounded-[12px] bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center shrink-0">
+                      <div className="w-10 h-10 rounded-xl bg-[#8b5cf6] text-white flex items-center justify-center shadow-xs flex-shrink-0">
                         <Plus className="w-5 h-5" />
                       </div>
                       <div>
-                        <h4 className="text-sm font-semibold text-[#1d1d1f] group-hover:text-[#0066cc] transition-colors">
+                        <h4 className="text-sm font-semibold text-[#1d1d1f] group-hover:text-[#8b5cf6] transition-colors">
                           Add Appointment
                         </h4>
-                        <p className="text-meta mt-0.5">
+                        <p className="text-xs text-[#86868b] mt-0.5">
                           Log new walk-in patient
                         </p>
                       </div>
                     </div>
-                    <ChevronRight className="w-4 h-4 text-[#86868b] group-hover:text-[#0066cc] transition-colors" />
+                    <ChevronRight className="w-4 h-4 text-[#86868b] group-hover:text-[#8b5cf6] transition-colors" />
                   </button>
                 </div>
               </div>
 
               {/* Right: Recent Activity */}
-              <div className="apple-card p-6 flex flex-col justify-between">
+              <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-6 shadow-sm flex flex-col justify-between">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
-                    <ClipboardList className="w-4 h-4 text-[#6e6e73]" />
-                    <h3 className="text-card-title">
+                    <ClipboardList className="w-4 h-4 text-[#86868b]" />
+                    <h3 className="text-sm font-semibold text-[#1d1d1f] tracking-tight">
                       Recent Activity
                     </h3>
                   </div>
                   <button
                     type="button"
                     onClick={scrollToQueue}
-                    className="text-xs font-semibold text-[#0066cc] hover:underline flex items-center gap-1 cursor-pointer"
+                    className="text-xs font-semibold text-[#0066cc] hover:underline flex items-center gap-1"
                   >
                     View All &rarr;
                   </button>
@@ -1306,13 +1285,13 @@ export const DoctorDashboard: React.FC = () => {
 
                 {(!queueData?.allAppointments || queueData.allAppointments.length === 0) ? (
                   <div className="flex-1 flex flex-col items-center justify-center py-8 text-center">
-                    <div className="w-11 h-11 rounded-[12px] bg-[#f5f5f7] flex items-center justify-center text-[#86868b] mb-3">
-                      <ClipboardList className="w-5 h-5" />
+                    <div className="w-12 h-12 rounded-2xl bg-[#f5f5f7] flex items-center justify-center text-[#86868b] mb-3">
+                      <ClipboardList className="w-6 h-6 stroke-1" />
                     </div>
                     <h4 className="text-sm font-semibold text-[#1d1d1f]">
                       No appointments for {queueScope === 'all-upcoming' ? 'upcoming dates' : date === getLocalDateString() ? 'Today' : date}
                     </h4>
-                    <p className="text-meta mt-1 max-w-xs">
+                    <p className="text-xs text-[#86868b] mt-1 max-w-xs">
                       {queueData?.upcomingSummary && queueData.upcomingSummary.tomorrowCount > 0 && date !== queueData.upcomingSummary.tomorrowDate
                         ? `You have ${queueData.upcomingSummary.tomorrowCount} appointment(s) booked for Tomorrow.`
                         : 'Patient bookings will appear here.'}
@@ -1324,7 +1303,7 @@ export const DoctorDashboard: React.FC = () => {
                           setQueueScope('date');
                           setDate(queueData.upcomingSummary!.tomorrowDate);
                         }}
-                        className="mt-3 text-xs font-semibold text-[#0066cc] hover:underline inline-flex items-center gap-1 cursor-pointer"
+                        className="mt-3 text-xs font-semibold text-[#0066cc] hover:underline inline-flex items-center gap-1"
                       >
                         Switch to Tomorrow ({queueData.upcomingSummary.tomorrowCount}) &rarr;
                       </button>
@@ -1335,17 +1314,17 @@ export const DoctorDashboard: React.FC = () => {
                     {queueData.allAppointments.slice(0, 3).map((appt) => (
                       <div
                         key={appt.id}
-                        className="p-3 rounded-[14px] border border-[#e5e5ea] hover:border-[#d2d2d7] transition-all flex items-center justify-between text-xs"
+                        className="p-3 rounded-xl border border-[#e5e5ea] hover:border-[#0066cc]/30 transition-all flex items-center justify-between text-xs"
                       >
                         <div className="flex items-center gap-3 min-w-0">
-                          <span className="w-7 h-7 rounded-[8px] bg-[#0066cc]/10 text-[#0066cc] font-bold text-[11px] flex items-center justify-center shrink-0 tabular-nums">
+                          <span className="w-7 h-7 rounded-lg bg-[#1d1d1f] text-white font-bold text-[11px] flex items-center justify-center flex-shrink-0">
                             #{appt.queueNumber}
                           </span>
                           <div className="min-w-0">
                             <p className="font-semibold text-[#1d1d1f] truncate">
                               {appt.patientName || appt.patient?.user?.fullName || 'Patient'}
                             </p>
-                            <p className="text-[11px] text-[#6e6e73] truncate">
+                            <p className="text-[11px] text-[#86868b] truncate">
                               {appt.appointmentDate && (
                                 <span className="font-medium text-[#1d1d1f] mr-1">
                                   {appt.appointmentDate === getLocalDateString() ? 'Today' : appt.appointmentDate === queueData?.upcomingSummary?.tomorrowDate ? 'Tomorrow' : appt.appointmentDate} •
@@ -1356,14 +1335,14 @@ export const DoctorDashboard: React.FC = () => {
                           </div>
                         </div>
                         <span
-                          className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full border ${
+                          className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full ${
                             appt.status === 'IN_CONSULTATION'
-                              ? 'bg-[#0066cc]/10 text-[#0066cc] border-[#0066cc]/20'
+                              ? 'bg-[#0066cc]/10 text-emerald-700 border border-emerald-200'
                               : appt.status === 'COMPLETED'
-                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                              ? 'bg-blue-50 text-[#0066cc] border border-blue-200'
                               : appt.status === 'EXPIRED'
-                              ? 'bg-[#f5f5f7] text-[#6e6e73] border-[#e5e5ea]'
-                              : 'bg-amber-50 text-amber-800 border-amber-200'
+                              ? 'bg-slate-100 text-slate-600 border border-slate-200'
+                              : 'bg-amber-50 text-amber-800 border border-amber-200'
                           }`}
                         >
                           {appt.status === 'EXPIRED' ? 'Expired' : appt.status.replace('_', ' ')}
@@ -1375,223 +1354,110 @@ export const DoctorDashboard: React.FC = () => {
               </div>
             </div>
 
-            {/* Practice Summary Card */}
-            <div className="apple-card p-5 flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-[10px] bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center shrink-0">
-                  <Clock className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-semibold text-[#1d1d1f] tracking-tight">
-                    Practice Summary
-                  </h3>
-                  <p className="text-meta">
-                    You have <strong className="text-[#1d1d1f]">{queueData?.completedQueue.length || 0}</strong> completed consultation sessions logged on MediArca.
-                  </p>
-                </div>
+            {/* Practice Summary Card (Matches media_1789192783321.jpg) */}
+            <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-6 shadow-sm mb-8">
+              <div className="flex items-center gap-2 mb-2">
+                <Clock className="w-4 h-4 text-[#0066cc]" />
+                <h3 className="text-sm font-semibold text-[#1d1d1f] tracking-tight">
+                  Practice Summary
+                </h3>
               </div>
+              <p className="text-xs text-[#86868b]">
+                You have <strong className="text-[#1d1d1f]">{queueData?.completedQueue.length || 0}</strong> completed consultation sessions logged on MediArca.
+              </p>
             </div>
 
             {/* Live Queue Station Anchor & Shifts */}
             <div id="live-queue-section" className="scroll-mt-6">
-              {/* Main Console Grid */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Active In-Consultation Patient (1 Column) */}
-                <div className="lg:col-span-1">
-                  <h3 className="text-xs font-semibold uppercase tracking-wider text-[#6e6e73] mb-3">
-                    Active Patient in Cabin
-                  </h3>
 
-                  {queueData?.activeInConsultation ? (
-                    <div className="apple-card p-6 border-[#0066cc]/30">
-                      <div className="flex justify-between items-start mb-4">
-                        <span className="bg-[#0066cc]/10 text-[#0066cc] font-semibold text-[11px] px-2.5 py-1 rounded-full border border-[#0066cc]/20">
-                          IN CONSULTATION
-                        </span>
-                        <span className="text-lg font-bold text-[#1d1d1f] tabular-nums">
-                          Queue #{queueData.activeInConsultation.queueNumber}
-                        </span>
-                      </div>
+            {/* Main Console Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Active In-Consultation Patient (1 Column) */}
+              <div className="lg:col-span-1">
+                <h3 className="text-sm font-semibold uppercase tracking-wider text-[#86868b] mb-3">
+                  Active Patient in Cabin
+                </h3>
 
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h4 className="text-lg font-semibold text-[#1d1d1f] tracking-tight">
-                          {queueData.activeInConsultation.patientName || queueData.activeInConsultation.patient?.user?.fullName || 'Patient'}
-                        </h4>
-                        {queueData.activeInConsultation.isForOther && (
-                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20">
-                            Booked for family ({queueData.activeInConsultation.patientAge ? `Age ${queueData.activeInConsultation.patientAge}` : 'Other'} • by {queueData.activeInConsultation.patient?.user?.fullName})
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-meta mt-0.5">
-                        Scheduled for {queueData.activeInConsultation.estimatedTime}
-                      </p>
-
-                      <div className="my-4 p-3.5 rounded-[12px] bg-[#f5f5f7] border border-[#e5e5ea] text-xs text-[#1d1d1f] space-y-1.5">
-                        <div>
-                          <strong className="text-[#6e6e73]">Reason: </strong>
-                          {queueData.activeInConsultation.reasonForVisit || 'General Consultation'}
-                        </div>
-                        {queueData.activeInConsultation.symptoms && (
-                          <div>
-                            <strong className="text-[#6e6e73]">Symptoms: </strong>
-                            {queueData.activeInConsultation.symptoms}
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex flex-col sm:flex-row items-center gap-2">
-                        <AppleButton
-                          variant="primary"
-                          size="md"
-                          disabled={completingId === queueData.activeInConsultation.id}
-                          onClick={() => handleCompleteConsultation(queueData.activeInConsultation!.id)}
-                          className="w-full sm:flex-1"
-                        >
-                          <CheckCircle2 className="w-4 h-4" />
-                          <span>{completingId === queueData.activeInConsultation.id ? 'Completing...' : 'Complete Consultation'}</span>
-                        </AppleButton>
-                        <AppleButton
-                          variant="secondary"
-                          size="md"
-                          onClick={() =>
-                            navigate(`/doctor/consultation/${queueData.activeInConsultation?.id}`)
-                          }
-                          className="w-full sm:w-auto"
-                        >
-                          <FileEdit className="w-3.5 h-3.5 text-[#0066cc]" />
-                          <span>Notes</span>
-                        </AppleButton>
-                      </div>
+                {queueData?.activeInConsultation ? (
+                  <div className="bg-white rounded-[20px] border border-[#0066cc]/30 p-6 shadow-sm">
+                    <div className="flex justify-between items-start mb-4">
+                      <span className="bg-[#0066cc]/10 text-[#0066cc] font-semibold text-xs px-2.5 py-1 rounded-full border border-[#0066cc]/20">
+                        IN CONSULTATION
+                      </span>
+                      <span className="text-xl font-bold text-[#1d1d1f]">
+                        Queue #{queueData.activeInConsultation.queueNumber}
+                      </span>
                     </div>
-                  ) : (
-                    <div className="apple-card p-8 text-center">
-                      <div className="w-11 h-11 rounded-[12px] bg-[#f5f5f7] text-[#86868b] flex items-center justify-center mx-auto mb-3">
-                        <Stethoscope className="w-5 h-5" />
-                      </div>
-                      <h4 className="text-card-title">Cabin is Free</h4>
-                      <p className="text-meta mt-1 leading-relaxed">
-                        No patient currently in consultation. Click "Call Patient" on the waiting queue to begin.
-                      </p>
-                    </div>
-                  )}
-                </div>
 
-                {/* Waiting Queue List (2 Columns) */}
-                <div className="lg:col-span-2">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
-                    <h3 className="text-xs font-semibold uppercase tracking-wider text-[#6e6e73]">
-                      Waiting Queue ({queueData?.waitingQueue.length || 0})
-                    </h3>
-                    {(() => {
-                      const filteredWaiting = queueData?.waitingQueue.filter((appt) => {
-                        if (!queueSearch.trim()) return true;
-                        const q = queueSearch.toLowerCase().trim();
-                        const name = (appt.patientName || appt.patient?.user?.fullName || '').toLowerCase();
-                        const phone = (appt.patient?.user?.phone || '').toLowerCase();
-                        const token = String(appt.queueNumber || '');
-                        return name.includes(q) || phone.includes(q) || token.includes(q);
-                      }) || [];
-                      const isDoctorAway = user?.doctorProfile?.cabinStatus && user.doctorProfile.cabinStatus !== 'IN_CABIN';
-                      const nextPresentTarget = filteredWaiting.find(
-                        (appt) => appt.isCheckedIn && appt.appointmentDate === getLocalDateString()
-                      );
-
-                      return (
-                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
-                          <input
-                            type="text"
-                            value={queueSearch}
-                            onChange={(e) => setQueueSearch(e.target.value)}
-                            placeholder="Search patient, phone, token..."
-                            className="ui-input !h-9 !px-3.5 !rounded-full !text-xs w-full sm:w-56"
-                          />
-                          {isDoctorAway ? (
-                            <AppleButton
-                              variant="ghost"
-                              size="sm"
-                              disabled={true}
-                              className="opacity-70 cursor-not-allowed bg-[#f5f5f7] text-[#6e6e73] border border-[#e5e5ea]"
-                              title="You have stepped out of the cabin. Change cabin presence to 'In Cabin' to resume calling patients."
-                            >
-                              <Clock className="w-3.5 h-3.5 text-amber-500" />
-                              <span>Doctor {user?.doctorProfile?.cabinStatus === 'STEPPED_OUT' ? 'Stepped Out' : 'Away'}</span>
-                            </AppleButton>
-                          ) : nextPresentTarget ? (
-                            <AppleButton
-                              variant="primary"
-                              size="sm"
-                              disabled={callingId !== null}
-                              onClick={() => handleCallPatient(nextPresentTarget.id)}
-                            >
-                              <Play className="w-3.5 h-3.5 fill-current" />
-                              <span>
-                                {callingId === nextPresentTarget.id
-                                  ? 'Calling...'
-                                  : `Call Queue #${nextPresentTarget.queueNumber} (Arrived)`}
-                              </span>
-                            </AppleButton>
-                          ) : filteredWaiting.length > 0 ? (
-                            <AppleButton
-                              variant="ghost"
-                              size="sm"
-                              disabled={true}
-                              className="opacity-60 cursor-not-allowed bg-[#f5f5f7] text-[#6e6e73] border border-[#e5e5ea]"
-                              title="Waiting patients have not arrived at the clinic yet. Once marked arrived, they can be called into consultation."
-                            >
-                              <Clock className="w-3.5 h-3.5 text-[#86868b]" />
-                              <span>Awaiting Patient Arrival</span>
-                            </AppleButton>
-                          ) : null}
-                        </div>
-                      );
-                    })()}
-                  </div>
-
-                  {loading ? (
-                    <div className="space-y-3">
-                      {[1, 2, 3].map((i) => (
-                        <div key={i} className="h-24 rounded-[16px] bg-white border border-[#e5e5ea] animate-pulse" />
-                      ))}
-                    </div>
-                  ) : queueData?.waitingQueue.length === 0 ? (
-                    <div className="apple-card p-8 text-center">
-                      <div className="w-11 h-11 rounded-[12px] bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-3">
-                        <CheckCircle2 className="w-5 h-5" />
-                      </div>
-                      <h4 className="text-card-title">
-                        Queue is Clear for {queueScope === 'all-upcoming' ? 'All Upcoming Dates' : date === getLocalDateString() ? 'Today' : date === queueData?.upcomingSummary?.tomorrowDate ? 'Tomorrow' : date}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h4 className="text-xl font-semibold text-[#1d1d1f] tracking-tight">
+                        {queueData.activeInConsultation.patientName || queueData.activeInConsultation.patient?.user?.fullName || 'Patient'}
                       </h4>
-                      <p className="text-meta mt-1 max-w-md mx-auto">
-                        {queueData?.upcomingSummary && queueData.upcomingSummary.tomorrowCount > 0 && date !== queueData.upcomingSummary.tomorrowDate ? (
-                          <span>
-                            No patients waiting today, but you have <strong className="text-[#1d1d1f]">{queueData.upcomingSummary.tomorrowCount} patient(s) booked for Tomorrow ({queueData.upcomingSummary.tomorrowDate})</strong>.
-                          </span>
-                        ) : queueData?.upcomingSummary && queueData.upcomingSummary.totalUpcomingCount > 0 && queueScope === 'date' ? (
-                          <span>
-                            No patients waiting for this date, but you have <strong className="text-[#1d1d1f]">{queueData.upcomingSummary.totalUpcomingCount} upcoming patient(s)</strong> booked on future dates.
-                          </span>
-                        ) : (
-                          'All patients scheduled for this date have either completed consultation or not yet booked.'
-                        )}
-                      </p>
-                      {queueData?.upcomingSummary && queueData.upcomingSummary.tomorrowCount > 0 && date !== queueData.upcomingSummary.tomorrowDate && (
-                        <div className="mt-4">
-                          <AppleButton
-                            variant="primary"
-                            size="sm"
-                            onClick={() => {
-                              setQueueScope('date');
-                              setDate(queueData.upcomingSummary!.tomorrowDate);
-                            }}
-                          >
-                            <span>Switch to Tomorrow's Queue ({queueData.upcomingSummary.tomorrowCount} Booked)</span>
-                            <ChevronRight className="w-3.5 h-3.5" />
-                          </AppleButton>
+                      {queueData.activeInConsultation.isForOther && (
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20">
+                          Booked for family ({queueData.activeInConsultation.patientAge ? `Age ${queueData.activeInConsultation.patientAge}` : 'Other'} • by {queueData.activeInConsultation.patient?.user?.fullName})
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-[#86868b] mt-0.5">
+                      Scheduled for {queueData.activeInConsultation.estimatedTime}
+                    </p>
+
+                    <div className="my-4 p-3 rounded-xl bg-[#f5f5f7] text-xs text-[#1d1d1f] space-y-1">
+                      <div>
+                        <strong className="text-[#86868b]">Reason: </strong>
+                        {queueData.activeInConsultation.reasonForVisit || 'General Consultation'}
+                      </div>
+                      {queueData.activeInConsultation.symptoms && (
+                        <div>
+                          <strong className="text-[#86868b]">Symptoms: </strong>
+                          {queueData.activeInConsultation.symptoms}
                         </div>
                       )}
                     </div>
-                  ) : (() => {
+
+                    <div className="flex flex-col sm:flex-row items-center gap-2">
+                      <AppleButton
+                        variant="primary"
+                        size="md"
+                        disabled={completingId === queueData.activeInConsultation.id}
+                        onClick={() => handleCompleteConsultation(queueData.activeInConsultation!.id)}
+                        className="w-full sm:flex-1 flex items-center justify-center gap-1.5 bg-[#1d1d1f] hover:bg-black text-white font-semibold cursor-pointer shadow-none"
+                      >
+                        <CheckCircle2 className="w-4 h-4 text-white" />
+                        <span>{completingId === queueData.activeInConsultation.id ? 'Completing...' : 'Mark Consultation Completed'}</span>
+                      </AppleButton>
+                      <AppleButton
+                        variant="ghost"
+                        size="md"
+                        onClick={() =>
+                          navigate(`/doctor/consultation/${queueData.activeInConsultation?.id}`)
+                        }
+                        className="w-full sm:w-auto flex items-center justify-center gap-1.5 text-xs text-[#0066cc] hover:bg-[#0066cc]/5 border border-[#0066cc]/20 cursor-pointer"
+                      >
+                        <FileEdit className="w-3.5 h-3.5" />
+                        <span>Notes</span>
+                      </AppleButton>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-8 text-center">
+                    <Stethoscope className="w-10 h-10 text-[#86868b] mx-auto mb-2" />
+                    <h4 className="text-sm font-semibold text-[#1d1d1f]">Cabin is Free</h4>
+                    <p className="text-xs text-[#86868b] mt-1 leading-relaxed">
+                      No patient currently in consultation. Click "Call Patient" on the waiting queue below.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Waiting Queue List (2 Columns) */}
+              <div className="lg:col-span-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+                  <h3 className="text-sm font-semibold uppercase tracking-wider text-[#86868b]">
+                    Waiting Queue ({queueData?.waitingQueue.length || 0})
+                  </h3>
+                  {(() => {
                     const filteredWaiting = queueData?.waitingQueue.filter((appt) => {
                       if (!queueSearch.trim()) return true;
                       const q = queueSearch.toLowerCase().trim();
@@ -1600,223 +1466,332 @@ export const DoctorDashboard: React.FC = () => {
                       const token = String(appt.queueNumber || '');
                       return name.includes(q) || phone.includes(q) || token.includes(q);
                     }) || [];
-
-                    if (filteredWaiting.length === 0) {
-                      return (
-                        <div className="apple-card p-8 text-center">
-                          <p className="text-meta">
-                            No waiting patients matching "{queueSearch}".
-                          </p>
-                          <button
-                            type="button"
-                            onClick={() => setQueueSearch('')}
-                            className="mt-2 text-xs text-[#0066cc] font-semibold hover:underline cursor-pointer"
-                          >
-                            Clear Search Filter
-                          </button>
-                        </div>
-                      );
-                    }
+                    const isDoctorAway = user?.doctorProfile?.cabinStatus && user.doctorProfile.cabinStatus !== 'IN_CABIN';
+                    const nextPresentTarget = filteredWaiting.find(
+                      (appt) => appt.isCheckedIn && appt.appointmentDate === getLocalDateString()
+                    );
 
                     return (
-                      <div className="space-y-3">
-                        {filteredWaiting.map((appt) => (
-                          <div
-                            key={appt.id}
-                            className="apple-card p-4 sm:p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:border-[#d2d2d7] transition-all"
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+                        <input
+                          type="text"
+                          value={queueSearch}
+                          onChange={(e) => setQueueSearch(e.target.value)}
+                          placeholder="Search patient, phone, token..."
+                          className="h-9 px-3.5 rounded-full border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc] w-full sm:w-56"
+                        />
+                        {isDoctorAway ? (
+                          <AppleButton
+                            variant="ghost"
+                            size="sm"
+                            disabled={true}
+                            className="flex items-center justify-center gap-1.5 whitespace-nowrap w-full sm:w-auto opacity-70 cursor-not-allowed bg-[#f5f5f7] text-[#86868b] border-[#e5e5ea]"
+                            title="You have stepped out of the cabin. Change cabin presence to 'In Cabin' to resume calling patients."
                           >
-                            <div className="flex items-center gap-3.5">
-                              <div className="w-12 h-12 rounded-[14px] bg-[#0066cc]/10 border border-[#0066cc]/20 text-[#0066cc] flex flex-col items-center justify-center font-bold shrink-0">
-                                <span className="text-[9px] uppercase tracking-wider text-[#0066cc]/80">Token</span>
-                                <span className="text-base leading-none tabular-nums">#{appt.queueNumber}</span>
-                              </div>
-                              <div>
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <h4 className="text-card-title">
-                                    {appt.patientName || appt.patient?.user?.fullName || 'Patient'}
-                                  </h4>
-                                  {appt.isForOther && (
-                                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20">
-                                      Family ({appt.patientAge ? `Age ${appt.patientAge}` : 'Other'} • by {appt.patient?.user.fullName})
-                                    </span>
-                                  )}
-                                  {appt.checkingWindow && (
-                                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-[#48484a]">
-                                      {appt.checkingWindow}
-                                    </span>
-                                  )}
-                                  {appt.appointmentDate && (
-                                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
-                                      appt.appointmentDate === getLocalDateString()
-                                        ? 'bg-[#0066cc]/10 text-[#0066cc] border-[#0066cc]/20'
-                                        : 'bg-[#f5f5f7] text-[#1d1d1f] border-[#e5e5ea]'
-                                    }`}>
-                                      {appt.appointmentDate === getLocalDateString() ? 'Today' : appt.appointmentDate === queueData?.upcomingSummary?.tomorrowDate ? 'Tomorrow' : appt.appointmentDate}
-                                    </span>
-                                  )}
-                                  {appt.isCheckedIn ? (
-                                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
-                                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
-                                      <span>At Clinic</span>
-                                    </span>
-                                  ) : (
-                                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-[#f5f5f7] text-[#6e6e73] border border-[#e5e5ea] flex items-center gap-1">
-                                      <span className="w-1.5 h-1.5 rounded-full bg-[#86868b]" />
-                                      <span>Awaiting Arrival</span>
-                                    </span>
-                                  )}
-                                </div>
-                                <p className="text-meta flex items-center gap-1.5 mt-1">
-                                  <span>Est. {appt.estimatedTime}</span>
-                                  <span>•</span>
-                                  <span className="text-[#1d1d1f] font-medium">
-                                    {appt.reasonForVisit || 'General Medical'}
-                                  </span>
-                                </p>
-                              </div>
-                            </div>
+                            <Clock className="w-3.5 h-3.5 text-amber-500" />
+                            <span>Doctor {user?.doctorProfile?.cabinStatus === 'STEPPED_OUT' ? 'Stepped Out' : 'Away'}</span>
+                          </AppleButton>
+                        ) : nextPresentTarget ? (
+                          <AppleButton
+                            variant="primary"
+                            size="sm"
+                            disabled={callingId !== null}
+                            onClick={() => handleCallPatient(nextPresentTarget.id)}
+                            className="flex items-center justify-center gap-1.5 shadow-sm whitespace-nowrap w-full sm:w-auto cursor-pointer"
+                          >
+                            <Play className="w-3.5 h-3.5 fill-current" />
+                            {callingId === nextPresentTarget.id
+                              ? 'Calling...'
+                              : `Next Patient: Call Queue #${nextPresentTarget.queueNumber} (Arrived 📍)`}
+                          </AppleButton>
+                        ) : filteredWaiting.length > 0 ? (
+                          <AppleButton
+                            variant="ghost"
+                            size="sm"
+                            disabled={true}
+                            className="flex items-center justify-center gap-1.5 whitespace-nowrap w-full sm:w-auto opacity-60 cursor-not-allowed bg-[#f5f5f7] text-[#86868b] border-[#e5e5ea]"
+                            title="Waiting patients have not arrived at the clinic yet. Once marked arrived, they can be called into consultation."
+                          >
+                            <Clock className="w-3.5 h-3.5 text-[#86868b]" />
+                            <span>Awaiting Patient Arrival</span>
+                          </AppleButton>
+                        ) : null}
+                      </div>
+                    );
+                  })()}
+                </div>
 
-                            <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-                              {appt.appointmentDate === getLocalDateString() ? (
-                                isDoctorAway ? (
-                                  <AppleButton
-                                    variant="ghost"
-                                    size="sm"
-                                    disabled={true}
-                                    className="opacity-60 cursor-not-allowed bg-[#f5f5f7] text-[#6e6e73] border border-[#e5e5ea]"
-                                    title={`Doctor has ${user?.doctorProfile?.cabinStatus === 'STEPPED_OUT' ? 'stepped out' : 'not entered cabin'}. Set presence to 'In Cabin' to call patient.`}
-                                  >
-                                    <Clock className="w-3.5 h-3.5 text-amber-500" />
-                                    <span>Doctor {user?.doctorProfile?.cabinStatus === 'STEPPED_OUT' ? 'Stepped Out' : 'Away'}</span>
-                                  </AppleButton>
-                                ) : appt.isCheckedIn ? (
-                                  <AppleButton
-                                    variant="primary"
-                                    size="sm"
-                                    disabled={callingId !== null}
-                                    onClick={() => handleCallPatient(appt.id)}
-                                  >
-                                    <Play className="w-3.5 h-3.5 fill-current" />
-                                    <span>{callingId === appt.id ? 'Calling...' : 'Call Patient'}</span>
-                                  </AppleButton>
-                                ) : (
-                                  <div className="flex items-center gap-1.5 flex-wrap sm:flex-nowrap justify-end">
-                                    <AppleButton
-                                      variant="ghost"
-                                      size="sm"
-                                      disabled={true}
-                                      className="opacity-60 cursor-not-allowed bg-[#f5f5f7] text-[#6e6e73] border border-[#e5e5ea]"
-                                      title="Patient has not arrived at the clinic yet. Mark patient arrival first."
-                                    >
-                                      <Clock className="w-3.5 h-3.5 text-[#86868b]" />
-                                      <span>Awaiting Arrival</span>
-                                    </AppleButton>
-                                    <AppleButton
-                                      variant="secondary"
-                                      size="sm"
-                                      disabled={togglingCheckinId === appt.id}
-                                      onClick={() => handleToggleCheckIn(appt.id, false)}
-                                      title="Mark patient as arrived at clinic"
-                                    >
-                                      <CheckCircle2 className="w-3.5 h-3.5 text-[#0066cc]" />
-                                      <span>{togglingCheckinId === appt.id ? 'Updating...' : 'Mark Arrived'}</span>
-                                    </AppleButton>
-                                  </div>
-                                )
+                {loading ? (
+                  <div className="space-y-3">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="h-24 rounded-[20px] bg-white border border-[#e5e5ea] animate-pulse"></div>
+                    ))}
+                  </div>
+                ) : queueData?.waitingQueue.length === 0 ? (
+                  <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-8 text-center">
+                    <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto mb-2" />
+                    <h4 className="text-base font-semibold text-[#1d1d1f]">
+                      Queue is Clear for {queueScope === 'all-upcoming' ? 'All Upcoming Dates' : date === getLocalDateString() ? 'Today' : date === queueData?.upcomingSummary?.tomorrowDate ? 'Tomorrow' : date}
+                    </h4>
+                    <p className="text-xs text-[#86868b] mt-1 max-w-md mx-auto">
+                      {queueData?.upcomingSummary && queueData.upcomingSummary.tomorrowCount > 0 && date !== queueData.upcomingSummary.tomorrowDate ? (
+                        <span>
+                          No patients waiting today, but you have <strong className="text-[#1d1d1f]">{queueData.upcomingSummary.tomorrowCount} patient(s) booked for Tomorrow ({queueData.upcomingSummary.tomorrowDate})</strong>.
+                        </span>
+                      ) : queueData?.upcomingSummary && queueData.upcomingSummary.totalUpcomingCount > 0 && queueScope === 'date' ? (
+                        <span>
+                          No patients waiting for this date, but you have <strong className="text-[#1d1d1f]">{queueData.upcomingSummary.totalUpcomingCount} upcoming patient(s)</strong> booked on future dates.
+                        </span>
+                      ) : (
+                        'All patients scheduled for this date have either completed consultation or not yet booked.'
+                      )}
+                    </p>
+                    {queueData?.upcomingSummary && queueData.upcomingSummary.tomorrowCount > 0 && date !== queueData.upcomingSummary.tomorrowDate && (
+                      <div className="mt-4">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setQueueScope('date');
+                            setDate(queueData.upcomingSummary!.tomorrowDate);
+                          }}
+                          className="px-4 py-2 rounded-xl bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-semibold transition-all inline-flex items-center gap-1.5 shadow-xs"
+                        >
+                          <span>Switch to Tomorrow's Queue ({queueData.upcomingSummary.tomorrowCount} Booked)</span>
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ) : (() => {
+                  const filteredWaiting = queueData?.waitingQueue.filter((appt) => {
+                    if (!queueSearch.trim()) return true;
+                    const q = queueSearch.toLowerCase().trim();
+                    const name = (appt.patientName || appt.patient?.user?.fullName || '').toLowerCase();
+                    const phone = (appt.patient?.user?.phone || '').toLowerCase();
+                    const token = String(appt.queueNumber || '');
+                    return name.includes(q) || phone.includes(q) || token.includes(q);
+                  }) || [];
+
+                  if (filteredWaiting.length === 0) {
+                    return (
+                      <div className="bg-white rounded-[20px] border border-[#e5e5ea] p-8 text-center">
+                        <p className="text-xs text-[#86868b]">
+                          No waiting patients matching "{queueSearch}".
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => setQueueSearch('')}
+                          className="mt-2 text-xs text-[#0066cc] font-semibold hover:underline"
+                        >
+                          Clear Search Filter
+                        </button>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="space-y-3">
+                      {filteredWaiting.map((appt) => (
+                      <div
+                        key={appt.id}
+                        className="bg-white rounded-[20px] border border-[#e5e5ea] p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:border-[#0066cc]/40 transition-all duration-200"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-2xl bg-[#1d1d1f] text-white flex flex-col items-center justify-center font-bold">
+                            <span className="text-[9px] uppercase tracking-wider text-[#0066cc]">Queue</span>
+                            <span className="text-lg leading-none">#{appt.queueNumber}</span>
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h4 className="text-[16px] font-semibold text-[#1d1d1f]">
+                                {appt.patientName || appt.patient?.user?.fullName || 'Patient'}
+                              </h4>
+                              {appt.isForOther && (
+                                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20">
+                                  Family ({appt.patientAge ? `Age ${appt.patientAge}` : 'Other'} • by {appt.patient?.user.fullName})
+                                </span>
+                              )}
+                              {appt.checkingWindow && (
+                                <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-[#0066cc]">
+                                  {appt.checkingWindow}
+                                </span>
+                              )}
+                              {appt.appointmentDate && (
+                                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
+                                  appt.appointmentDate === getLocalDateString()
+                                    ? 'bg-[#0066cc]/10 text-[#0066cc] border-[#0066cc]/20'
+                                    : appt.appointmentDate === queueData?.upcomingSummary?.tomorrowDate
+                                    ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                    : 'bg-[#f5f5f7] text-[#1d1d1f] border-[#e5e5ea]'
+                                }`}>
+                                  📅 {appt.appointmentDate === getLocalDateString() ? 'Today' : appt.appointmentDate === queueData?.upcomingSummary?.tomorrowDate ? 'Tomorrow' : appt.appointmentDate}
+                                </span>
+                              )}
+                              {appt.isCheckedIn ? (
+                                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20 flex items-center gap-1">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-[#0066cc]"></span>
+                                  <span>At Clinic 📍</span>
+                                </span>
                               ) : (
+                                <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea] flex items-center gap-1">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-[#86868b]"></span>
+                                  <span>Awaiting Arrival</span>
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-[#86868b] flex items-center gap-1.5 mt-0.5">
+                              <span>Est. {appt.estimatedTime}</span>
+                              <span>•</span>
+                              <span className="text-[#0066cc]">
+                                {appt.reasonForVisit || 'General Medical'}
+                              </span>
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                          {appt.appointmentDate === getLocalDateString() ? (
+                            isDoctorAway ? (
+                              <AppleButton
+                                variant="ghost"
+                                size="sm"
+                                disabled={true}
+                                className="opacity-60 cursor-not-allowed text-xs text-[#86868b] bg-[#f5f5f7] border border-[#e5e5ea] flex items-center gap-1 whitespace-nowrap"
+                                title={`Doctor has ${user?.doctorProfile?.cabinStatus === 'STEPPED_OUT' ? 'stepped out' : 'not entered cabin'}. Set presence to 'In Cabin' to call patient.`}
+                              >
+                                <Clock className="w-3 h-3 text-amber-500" />
+                                <span>Doctor {user?.doctorProfile?.cabinStatus === 'STEPPED_OUT' ? 'Stepped Out' : 'Away'}</span>
+                              </AppleButton>
+                            ) : appt.isCheckedIn ? (
+                              <AppleButton
+                                variant="primary"
+                                size="sm"
+                                disabled={callingId !== null}
+                                onClick={() => handleCallPatient(appt.id)}
+                                className="flex items-center gap-1.5 cursor-pointer shadow-sm whitespace-nowrap"
+                              >
+                                <Play className="w-3.5 h-3.5 fill-current" />
+                                {callingId === appt.id ? 'Calling...' : 'Call Patient'}
+                              </AppleButton>
+                            ) : (
+                              <div className="flex items-center gap-1.5 flex-wrap sm:flex-nowrap justify-end">
                                 <AppleButton
                                   variant="ghost"
                                   size="sm"
                                   disabled={true}
-                                  className="opacity-50 cursor-not-allowed bg-[#f5f5f7] text-[#6e6e73] border border-[#e5e5ea]"
-                                  title="Scheduled for a future date. Only today's arrived patients can be called."
+                                  className="opacity-60 cursor-not-allowed text-xs text-[#86868b] bg-[#f5f5f7] border border-[#e5e5ea] flex items-center gap-1 whitespace-nowrap"
+                                  title="Patient has not arrived at the clinic yet. Mark patient arrival first."
                                 >
-                                  <Clock className="w-3.5 h-3.5 text-[#86868b]" />
-                                  <span>Scheduled for {appt.appointmentDate === queueData?.upcomingSummary?.tomorrowDate ? 'Tomorrow' : appt.appointmentDate}</span>
+                                  <Clock className="w-3 h-3 text-[#86868b]" />
+                                  <span>Awaiting Arrival</span>
                                 </AppleButton>
-                              )}
-                            </div>
-                          </div>
-                        ))}
+                                <AppleButton
+                                  variant="secondary"
+                                  size="sm"
+                                  disabled={togglingCheckinId === appt.id}
+                                  onClick={() => handleToggleCheckIn(appt.id, false)}
+                                  className="flex items-center gap-1 text-xs text-[#0066cc] cursor-pointer whitespace-nowrap"
+                                  title="Mark patient as arrived at clinic"
+                                >
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-[#0066cc]" />
+                                  <span>{togglingCheckinId === appt.id ? 'Updating...' : 'Mark Arrived'}</span>
+                                </AppleButton>
+                              </div>
+                            )
+                          ) : (
+                            <AppleButton
+                              variant="ghost"
+                              size="sm"
+                              disabled={true}
+                              className="opacity-50 cursor-not-allowed text-xs text-[#86868b] bg-[#f5f5f7] border border-[#e5e5ea] flex items-center gap-1 whitespace-nowrap"
+                              title="Scheduled for a future date. Only today's arrived patients can be called."
+                            >
+                              <Clock className="w-3 h-3 text-[#86868b]" />
+                              <span>Scheduled for {appt.appointmentDate === queueData?.upcomingSummary?.tomorrowDate ? 'Tomorrow' : appt.appointmentDate}</span>
+                            </AppleButton>
+                          )}
+                        </div>
                       </div>
-                    );
-                  })()}
+                    ))}
+                  </div>
+                  );
+                })()}
 
-                  {/* Completed List Accordion */}
-                  {queueData && queueData.completedQueue.length > 0 && (
-                    <div className="mt-8">
-                      <h4 className="text-xs font-semibold uppercase tracking-wider text-[#6e6e73] mb-3">
-                        Completed Today ({queueData.completedQueue.length})
-                      </h4>
-                      <div className="space-y-2">
-                        {queueData.completedQueue.map((appt) => (
-                          <div
-                            key={appt.id}
-                            className="p-3.5 rounded-[14px] bg-white border border-[#e5e5ea] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs hover:border-[#d2d2d7] transition-all"
-                          >
-                            <div className="flex items-center gap-2.5 flex-wrap">
-                              <span className="font-semibold text-[#6e6e73] tabular-nums">Token #{appt.queueNumber}</span>
-                              <span className="font-semibold text-[#1d1d1f]">
-                                {appt.patientName || appt.patient?.user?.fullName || 'Patient'}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full font-semibold border border-emerald-200 text-[11px]">
-                                Completed
-                              </span>
-                              <AppleButton
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => navigate(`/doctor/consultation/${appt.id}`)}
-                                className="text-[#0066cc]"
-                              >
-                                Review Notes
-                              </AppleButton>
-                            </div>
+                {/* Completed List Accordion */}
+                {queueData && queueData.completedQueue.length > 0 && (
+                  <div className="mt-8">
+                    <h4 className="text-xs font-semibold uppercase tracking-wider text-[#86868b] mb-3">
+                      Completed Today ({queueData.completedQueue.length})
+                    </h4>
+                    <div className="space-y-2">
+                      {queueData.completedQueue.map((appt) => (
+                        <div
+                          key={appt.id}
+                          className="p-3.5 rounded-2xl bg-white border border-[#e5e5ea] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs hover:border-[#0066cc]/30 transition-all"
+                        >
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-semibold text-[#86868b]">Queue #{appt.queueNumber}</span>
+                            <span className="font-medium text-[#1d1d1f]">
+                              {appt.patientName || appt.patient?.user?.fullName || 'Patient'}
+                            </span>
                           </div>
-                        ))}
-                      </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[#0066cc] bg-[#0066cc]/10 px-2.5 py-0.5 rounded-full font-medium border border-[#0066cc]/20">
+                              Consultation Completed
+                            </span>
+                            <AppleButton
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => navigate(`/doctor/consultation/${appt.id}`)}
+                              className="text-[#0066cc] text-[11px] py-1 px-2.5"
+                            >
+                              Review Notes
+                            </AppleButton>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             </div>
+          </div>
           </div>
         )}
       </div>
 
-      {/* Walk-in QR Code Modal */}
+      {/* Walk-in QR Code Modal (media_1789192783321.jpg) */}
       {showQrModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fadeIn print:hidden">
-          <div className="bg-white rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-6 shadow-apple-float relative text-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-fadeIn print:hidden">
+          <div className="bg-white rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-6 shadow-2xl relative text-center">
             <button
               type="button"
               onClick={() => setShowQrModal(false)}
-              className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center text-[#6e6e73] hover:text-[#1d1d1f] rounded-full hover:bg-[#f5f5f7] transition-colors cursor-pointer"
+              className="absolute top-4 right-4 p-2 text-[#86868b] hover:text-[#1d1d1f] rounded-full hover:bg-[#f5f5f7] transition-colors"
             >
-              <X className="w-4 h-4" />
+              <X className="w-5 h-5" />
             </button>
 
-            <div className="w-11 h-11 rounded-[12px] bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center mx-auto mb-3">
-              <QrCode className="w-5 h-5" />
+            <div className="w-12 h-12 rounded-2xl bg-[#10b981]/10 text-[#10b981] flex items-center justify-center mx-auto mb-3">
+              <QrCode className="w-6 h-6" />
             </div>
 
-            <h3 className="text-section-title">
+            <h3 className="text-xl font-bold text-[#1d1d1f] tracking-tight">
               Walk-in Check-in QR Code
             </h3>
-            <p className="text-meta mt-1">
-              Patients scan this QR code at your reception or door to join today's queue directly.
+            <p className="text-xs text-[#86868b] mt-1">
+              Patients scan this QR code at your reception or door to join today's queue directly without signing up.
             </p>
 
-            <div className="my-5 p-4 rounded-[16px] bg-[#f5f5f7] border border-[#e5e5ea] inline-block">
+            <div className="my-5 p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] inline-block">
               <img
                 src={qrImageUrl}
                 alt="Doctor Walk-in QR Code"
-                className="w-52 h-52 object-contain rounded-[12px] bg-white p-2 border border-[#e5e5ea] mx-auto"
+                className="w-52 h-52 object-contain rounded-xl bg-white p-2 shadow-xs mx-auto"
               />
               <div className="mt-3 text-center">
                 <p className="font-semibold text-xs text-[#1d1d1f]">Dr. {doctorDisplayName}</p>
-                <p className="text-[11px] text-[#6e6e73]">{user?.doctorProfile?.specialty || 'Specialist'} • {user?.doctorProfile?.clinicAddress || 'Clinic'}</p>
+                <p className="text-[11px] text-[#86868b]">{user?.doctorProfile?.specialty || 'Specialist'} • {user?.doctorProfile?.clinicAddress || 'Clinic'}</p>
               </div>
             </div>
 
@@ -1826,27 +1801,28 @@ export const DoctorDashboard: React.FC = () => {
                   type="text"
                   readOnly
                   value={bookingUrl}
-                  className="ui-input !h-9 !text-xs flex-1 bg-[#f5f5f7] select-all"
+                  className="flex-1 text-xs bg-[#f5f5f7] border border-[#e5e5ea] rounded-xl px-3 py-2 text-[#1d1d1f] select-all focus:outline-none"
                 />
                 <AppleButton
                   size="sm"
                   variant={copiedLink ? 'secondary' : 'primary'}
                   onClick={handleCopyLink}
+                  className="flex items-center gap-1.5 whitespace-nowrap"
                 >
                   {copiedLink ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                  <span>{copiedLink ? 'Copied' : 'Copy'}</span>
+                  {copiedLink ? 'Copied' : 'Copy'}
                 </AppleButton>
               </div>
 
-              <div className="pt-1">
+              <div className="flex items-center gap-2 pt-1">
                 <AppleButton
                   size="md"
                   variant="secondary"
                   onClick={() => window.print()}
-                  className="w-full"
+                  className="w-full flex items-center justify-center gap-2"
                 >
                   <Printer className="w-4 h-4" />
-                  <span>Print Clinic Poster</span>
+                  Print Clinic Poster
                 </AppleButton>
               </div>
             </div>
@@ -1854,10 +1830,10 @@ export const DoctorDashboard: React.FC = () => {
         </div>
       )}
 
-      {/* Rapid Add Walk-in Patient Modal */}
+      {/* Rapid Add Walk-in Patient Modal (media_1789192783321.jpg) */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fadeIn print:hidden">
-          <div className="bg-white rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-6 shadow-apple-float relative text-left max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-fadeIn print:hidden">
+          <div className="bg-white rounded-[24px] border border-[#e5e5ea] max-w-md w-full p-6 shadow-2xl relative text-left">
             <button
               type="button"
               onClick={() => {
@@ -1865,43 +1841,43 @@ export const DoctorDashboard: React.FC = () => {
                 setWalkinError(null);
                 setWalkinSuccess(null);
               }}
-              className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center text-[#6e6e73] hover:text-[#1d1d1f] rounded-full hover:bg-[#f5f5f7] transition-colors cursor-pointer"
+              className="absolute top-4 right-4 p-2 text-[#86868b] hover:text-[#1d1d1f] rounded-full hover:bg-[#f5f5f7] transition-colors"
             >
-              <X className="w-4 h-4" />
+              <X className="w-5 h-5" />
             </button>
 
-            <div className="flex items-center gap-3 mb-5 pb-4 border-b border-[#e5e5ea]/70">
-              <div className="w-10 h-10 rounded-[12px] bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center shrink-0">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-[#8b5cf6]/10 text-[#8b5cf6] flex items-center justify-center flex-shrink-0">
                 <Plus className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-section-title">
+                <h3 className="text-lg font-bold text-[#1d1d1f] tracking-tight">
                   Add Walk-in Patient
                 </h3>
-                <p className="text-meta mt-0.5">
+                <p className="text-xs text-[#86868b]">
                   Instantly issue a live queue ticket for a walk-in patient.
                 </p>
               </div>
             </div>
 
             {walkinError && (
-              <div className="mb-4 p-3 rounded-[12px] bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+              <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
                 <span>{walkinError}</span>
               </div>
             )}
 
             {walkinSuccess && (
-              <div className="mb-4 p-3 rounded-[12px] bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              <div className="mb-4 p-3 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] text-xs flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-[#0066cc] flex-shrink-0" />
                 <span>{walkinSuccess}</span>
               </div>
             )}
 
-            <form onSubmit={handleCreateWalkin} className="space-y-4">
+            <form onSubmit={handleCreateWalkin} className="space-y-3.5 text-xs">
               <div>
-                <label className="ui-label">
-                  Patient Full Name <span className="text-rose-500">*</span>
+                <label className="block text-[11px] font-semibold text-[#86868b] uppercase mb-1">
+                  Patient Full Name *
                 </label>
                 <input
                   type="text"
@@ -1909,13 +1885,13 @@ export const DoctorDashboard: React.FC = () => {
                   placeholder="e.g. John Smith"
                   value={walkinName}
                   onChange={(e) => setWalkinName(e.target.value)}
-                  className="ui-input"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] focus:outline-none focus:border-[#0066cc]"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="ui-label">
+                  <label className="block text-[11px] font-semibold text-[#86868b] uppercase mb-1">
                     Age
                   </label>
                   <input
@@ -1923,17 +1899,17 @@ export const DoctorDashboard: React.FC = () => {
                     placeholder="e.g. 34"
                     value={walkinAge}
                     onChange={(e) => setWalkinAge(e.target.value)}
-                    className="ui-input"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] focus:outline-none focus:border-[#0066cc]"
                   />
                 </div>
                 <div>
-                  <label className="ui-label">
+                  <label className="block text-[11px] font-semibold text-[#86868b] uppercase mb-1">
                     Gender
                   </label>
                   <select
                     value={walkinGender}
                     onChange={(e) => setWalkinGender(e.target.value)}
-                    className="ui-select"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] focus:outline-none focus:border-[#0066cc]"
                   >
                     <option value="Not Specified">Not Specified</option>
                     <option value="Male">Male</option>
@@ -1944,11 +1920,11 @@ export const DoctorDashboard: React.FC = () => {
               </div>
 
               <div>
-                <label className="ui-label">
+                <label className="block text-[11px] font-semibold text-[#86868b] uppercase mb-1">
                   Mobile Number (Optional)
                 </label>
-                <div className="flex rounded-[12px] border border-[#d2d2d7] overflow-hidden focus-within:ring-3 focus-within:ring-[#0066cc]/15 focus-within:border-[#0066cc] bg-white transition-all h-11">
-                  <span className="inline-flex items-center px-3.5 bg-[#f5f5f7] border-r border-[#e5e5ea] text-[#1d1d1f] font-semibold text-[13px] select-none">
+                <div className="flex rounded-xl border border-[#e5e5ea] overflow-hidden focus-within:ring-2 focus-within:ring-[#0066cc]/20 focus-within:border-[#0066cc] bg-white transition-all h-10">
+                  <span className="inline-flex items-center px-3 bg-[#f5f5f7] border-r border-[#e5e5ea] text-[#1d1d1f] font-semibold text-[13px] select-none">
                     +91
                   </span>
                   <input
@@ -1958,7 +1934,7 @@ export const DoctorDashboard: React.FC = () => {
                     maxLength={10}
                     value={sanitizeIndianPhone(walkinPhone)}
                     onChange={(e) => setWalkinPhone(sanitizeIndianPhone(e.target.value))}
-                    className="flex-1 h-full px-3.5 text-sm bg-transparent text-[#1d1d1f] placeholder:text-[#86868b] focus:outline-none"
+                    className="flex-1 h-full px-3.5 text-xs bg-transparent text-[#1d1d1f] placeholder:text-[#86868b] focus:outline-none"
                   />
                 </div>
               </div>
@@ -1966,8 +1942,8 @@ export const DoctorDashboard: React.FC = () => {
               {/* Clinic Affiliation Venue Selector */}
               {affiliations?.clinics && affiliations.clinics.length > 1 && (
                 <div>
-                  <label className="ui-label">
-                    Clinic Venue <span className="text-rose-500">*</span>
+                  <label className="block text-[11px] font-semibold text-[#86868b] uppercase mb-1">
+                    Clinic Venue *
                   </label>
                   <select
                     required
@@ -1976,7 +1952,7 @@ export const DoctorDashboard: React.FC = () => {
                       setWalkinClinicId(e.target.value);
                       setWalkinSlotId('');
                     }}
-                    className="ui-select"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
                   >
                     <option value="">Select Clinic Venue</option>
                     {affiliations.clinics.map((c) => (
@@ -1989,19 +1965,19 @@ export const DoctorDashboard: React.FC = () => {
               )}
 
               {affiliations && affiliations.clinics.length === 0 && (
-                <div className="p-3 rounded-[12px] bg-amber-50 border border-amber-200 text-amber-800 text-xs">
+                <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs">
                   <span>No active clinic affiliations found. Please affiliate with a verified clinic to issue walk-in queue tokens.</span>
                 </div>
               )}
 
               <div>
-                <label className="ui-label">
+                <label className="block text-[11px] font-semibold text-[#86868b] uppercase mb-1">
                   Checking Shift
                 </label>
                 <select
                   value={walkinSlotId}
                   onChange={(e) => setWalkinSlotId(e.target.value)}
-                  className="ui-select"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
                 >
                   <option value="">Current / Default Shift</option>
                   {(
@@ -2017,7 +1993,7 @@ export const DoctorDashboard: React.FC = () => {
               </div>
 
               <div>
-                <label className="ui-label">
+                <label className="block text-[11px] font-semibold text-[#86868b] uppercase mb-1">
                   Reason for Visit / Symptoms
                 </label>
                 <input
@@ -2025,7 +2001,7 @@ export const DoctorDashboard: React.FC = () => {
                   placeholder="e.g. Fever, cough, general consultation"
                   value={walkinReason}
                   onChange={(e) => setWalkinReason(e.target.value)}
-                  className="ui-input"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
                 />
               </div>
 
@@ -2035,10 +2011,10 @@ export const DoctorDashboard: React.FC = () => {
                   variant="primary"
                   size="md"
                   disabled={walkinSubmitting}
-                  className="w-full"
+                  className="w-full flex items-center justify-center gap-2 bg-[#8b5cf6] hover:bg-[#7c3aed]"
                 >
                   <Plus className="w-4 h-4" />
-                  <span>{walkinSubmitting ? 'Issuing Ticket...' : 'Queue Walk-in Patient'}</span>
+                  {walkinSubmitting ? 'Issuing Ticket...' : 'Queue Walk-in Patient'}
                 </AppleButton>
               </div>
             </form>
@@ -2120,18 +2096,18 @@ export const DoctorDashboard: React.FC = () => {
 
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
-            <div className="relative w-full max-w-2xl bg-white rounded-[24px] border border-[#e5e5ea] shadow-apple-float overflow-hidden flex flex-col max-h-[88vh]">
+            <div className="relative w-full max-w-2xl bg-white rounded-[24px] border border-[#e5e5ea] shadow-2xl overflow-hidden flex flex-col max-h-[88vh]">
               {/* Modal Header */}
-              <div className="p-5 sm:p-6 border-b border-[#e5e5ea] flex items-start justify-between gap-4 bg-[#f5f5f7]/50">
+              <div className="p-5 sm:p-6 border-b border-[#e5e5ea] flex items-start justify-between gap-4 bg-[#fbfbfd]">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-[12px] bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center shrink-0">
+                  <div className="w-11 h-11 rounded-2xl bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center flex-shrink-0">
                     <Building2 className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-section-title">
+                    <h3 className="text-lg font-semibold text-[#1d1d1f] tracking-tight">
                       Affiliate Clinic or Hospital
                     </h3>
-                    <p className="text-meta mt-0.5">
+                    <p className="text-xs text-[#86868b] mt-0.5">
                       Search verified clinics and associate your practice to receive outpatient bookings.
                     </p>
                   </div>
@@ -2139,15 +2115,15 @@ export const DoctorDashboard: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsAffiliateModalOpen(false)}
-                  className="w-8 h-8 flex items-center justify-center rounded-full text-[#6e6e73] hover:text-[#1d1d1f] hover:bg-black/5 transition-colors cursor-pointer"
+                  className="p-2 rounded-full text-[#86868b] hover:text-[#1d1d1f] hover:bg-black/[0.05] transition-colors cursor-pointer"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-5 h-5" />
                 </button>
               </div>
 
               {/* In-Modal Feedback Alerts */}
               {feedbackSuccess && (
-                <div className="mx-5 mt-4 p-3 rounded-[12px] bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center justify-between">
+                <div className="mx-5 mt-4 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                     <span>{feedbackSuccess}</span>
@@ -2158,7 +2134,7 @@ export const DoctorDashboard: React.FC = () => {
                 </div>
               )}
               {feedbackError && (
-                <div className="mx-5 mt-4 p-3 rounded-[12px] bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center justify-between">
+                <div className="mx-5 mt-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
                     <span>{feedbackError}</span>
@@ -2178,7 +2154,7 @@ export const DoctorDashboard: React.FC = () => {
                     value={clinicSearchQuery}
                     onChange={(e) => setClinicSearchQuery(e.target.value)}
                     placeholder="Search clinic by name, address, or area..."
-                    className="ui-input !pl-10 !pr-9"
+                    className="w-full h-10 pl-10 pr-9 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-xs text-[#1d1d1f] placeholder:text-[#86868b] focus:outline-none focus:border-[#0066cc] focus:bg-white transition-all"
                     autoFocus
                   />
                   {clinicSearchQuery && (
@@ -2196,7 +2172,7 @@ export const DoctorDashboard: React.FC = () => {
                 <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
                   {availableStates.length > 0 && (
                     <div className="flex items-center gap-1.5">
-                      <span className="text-meta">State:</span>
+                      <span className="text-[11px] font-medium text-[#86868b]">State:</span>
                       <select
                         value={clinicStateFilter}
                         onChange={(e) => {
@@ -2217,7 +2193,7 @@ export const DoctorDashboard: React.FC = () => {
 
                   {(availableCities.length > 0 || clinicStateFilter !== 'All') && (
                     <div className="flex items-center gap-1.5">
-                      <span className="text-meta">City:</span>
+                      <span className="text-[11px] font-medium text-[#86868b]">City:</span>
                       <select
                         value={clinicCityFilter}
                         onChange={(e) => setClinicCityFilter(e.target.value)}
@@ -2233,19 +2209,19 @@ export const DoctorDashboard: React.FC = () => {
                     </div>
                   )}
 
-                  <span className="text-meta ml-auto">
+                  <span className="text-[11px] text-[#86868b] ml-auto">
                     {filteredPublicClinics.length} verified {filteredPublicClinics.length === 1 ? 'clinic' : 'clinics'} found
                   </span>
                 </div>
               </div>
 
               {/* Clinics List */}
-              <div className="p-4 sm:p-5 overflow-y-auto space-y-3 flex-1 bg-[#f5f5f7]/50">
+              <div className="p-4 sm:p-5 overflow-y-auto space-y-3 flex-1 bg-[#fafafc]">
                 {filteredPublicClinics.length === 0 ? (
                   <div className="py-12 text-center">
                     <Building2 className="w-10 h-10 text-[#86868b] mx-auto mb-2 opacity-50" />
-                    <p className="text-card-title">No Verified Clinics Found</p>
-                    <p className="text-meta mt-1 max-w-sm mx-auto">
+                    <p className="text-sm font-semibold text-[#1d1d1f]">No Verified Clinics Found</p>
+                    <p className="text-xs text-[#86868b] mt-1 max-w-sm mx-auto">
                       {clinicSearchQuery || clinicStateFilter !== 'All' || clinicCityFilter !== 'All'
                         ? 'No clinics match your current search or location filters. Try clearing your search.'
                         : 'No verified clinics are currently registered in the network.'}
@@ -2276,23 +2252,23 @@ export const DoctorDashboard: React.FC = () => {
                     return (
                       <div
                         key={c.id}
-                        className="p-4 rounded-[16px] bg-white border border-[#e5e5ea] hover:border-[#d2d2d7] transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                        className="p-4 rounded-[18px] bg-white border border-[#e5e5ea] hover:border-[#0066cc]/40 hover:shadow-xs transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
                       >
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <h4 className="text-card-title">
+                            <h4 className="font-semibold text-sm text-[#1d1d1f] tracking-tight">
                               {c.clinicName}
                             </h4>
                             <span
                               title="Verified Healthcare Facility"
-                              className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20"
+                              className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-blue-50 text-[#0066cc] border border-blue-200"
                             >
                               <CheckCircle2 className="w-3 h-3 text-[#0066cc]" />
                               Verified
                             </span>
                           </div>
 
-                          <div className="flex items-center gap-1.5 text-meta mt-1 truncate">
+                          <div className="flex items-center gap-1.5 text-xs text-[#86868b] mt-1 truncate">
                             <MapPin className="w-3.5 h-3.5 shrink-0 text-[#86868b]" />
                             <span className="truncate">
                               {c.address}
@@ -2301,7 +2277,7 @@ export const DoctorDashboard: React.FC = () => {
                             </span>
                           </div>
 
-                          <div className="flex items-center gap-3 text-[11px] text-[#6e6e73] mt-2">
+                          <div className="flex items-center gap-3 text-[11px] text-[#86868b] mt-2">
                             {c.phone && (
                               <span className="flex items-center gap-1">
                                 <Phone className="w-3 h-3" />
@@ -2315,19 +2291,19 @@ export const DoctorDashboard: React.FC = () => {
                           </div>
                         </div>
 
-                        <div className="shrink-0 flex items-center justify-end pt-2 sm:pt-0 border-t sm:border-t-0 border-[#e5e5ea]/70">
+                        <div className="shrink-0 flex items-center justify-end pt-2 sm:pt-0 border-t sm:border-t-0 border-[#f0f0f2]">
                           {isAffiliated ? (
-                            <span className="px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold flex items-center gap-1.5">
+                            <span className="px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold flex items-center gap-1.5 shadow-2xs">
                               <CheckCircle2 className="w-3.5 h-3.5" />
                               Affiliated
                             </span>
                           ) : isPending ? (
-                            <span className="px-3 py-1.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-xs font-semibold flex items-center gap-1.5">
+                            <span className="px-3 py-1.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-xs font-semibold flex items-center gap-1.5 shadow-2xs">
                               <Clock3 className="w-3.5 h-3.5" />
                               Request Pending
                             </span>
                           ) : hasIncoming ? (
-                            <span className="px-3 py-1.5 rounded-full bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20 text-xs font-semibold flex items-center gap-1.5">
+                            <span className="px-3 py-1.5 rounded-full bg-blue-50 text-[#0066cc] border border-blue-200 text-xs font-semibold flex items-center gap-1.5 shadow-2xs">
                               Clinic Requested You
                             </span>
                           ) : (
@@ -2336,6 +2312,7 @@ export const DoctorDashboard: React.FC = () => {
                               variant="primary"
                               disabled={isAddingThis}
                               onClick={() => handleAddClinic(c.id)}
+                              className="flex items-center gap-1.5 text-xs font-semibold py-1.5 px-3.5 shadow-xs"
                             >
                               {isAddingThis ? (
                                 <>
@@ -2345,7 +2322,7 @@ export const DoctorDashboard: React.FC = () => {
                               ) : (
                                 <>
                                   <Plus className="w-3.5 h-3.5" />
-                                  <span>Affiliate</span>
+                                  <span>+ Affiliate</span>
                                 </>
                               )}
                             </AppleButton>
@@ -2358,12 +2335,13 @@ export const DoctorDashboard: React.FC = () => {
               </div>
 
               {/* Modal Footer */}
-              <div className="p-4 border-t border-[#e5e5ea] bg-[#f5f5f7]/50 flex items-center justify-between text-meta px-6">
+              <div className="p-3 sm:p-4 border-t border-[#e5e5ea] bg-[#fbfbfd] flex items-center justify-between text-xs text-[#86868b] px-6">
                 <span>Only administrator-verified clinics can be affiliated.</span>
                 <AppleButton
                   size="sm"
                   variant="ghost"
                   onClick={() => setIsAffiliateModalOpen(false)}
+                  className="text-xs font-medium text-[#1d1d1f]"
                 >
                   Close
                 </AppleButton>

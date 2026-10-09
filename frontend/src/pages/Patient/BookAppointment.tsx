@@ -18,7 +18,7 @@ import { AppleButton } from '../../components/ui/AppleButton';
 import { UtilityCard } from '../../components/ui/UtilityCard';
 import {
   AlertCircle,
-  ShieldCheck,
+  CheckCircle2,
   ChevronLeft,
   Check,
   Building2,
@@ -77,6 +77,7 @@ export const BookAppointment: React.FC = () => {
     if (!doctor) return [];
     const list: Array<{ id: string; name: string; phone?: string; clinicName?: string }> = [];
 
+    // 1. Doctor-assigned receptionists for this clinic
     if (doctor.receptionists && doctor.receptionists.length > 0) {
       doctor.receptionists.forEach((r) => {
         if (!selectedClinicId || !r.clinicId || r.clinicId === selectedClinicId) {
@@ -92,6 +93,7 @@ export const BookAppointment: React.FC = () => {
       });
     }
 
+    // 2. Selected clinic's receptionists assigned to this doctor
     if (selectedClinic?.receptionists && selectedClinic.receptionists.length > 0) {
       selectedClinic.receptionists.forEach((r) => {
         if (!list.some((item) => (r.phone && item.phone === r.phone) || item.name === r.name)) {
@@ -121,6 +123,7 @@ export const BookAppointment: React.FC = () => {
         const data = await api.getDoctorById(id);
         setDoctor(data);
 
+        // Preselect clinic if provided via query params or pick first available clinic
         if (data.clinics && data.clinics.length > 0) {
           const matchedClinic = initialClinic ? data.clinics.find((c) => c.clinicId === initialClinic) : null;
           const targetClinic = matchedClinic || data.clinics[0];
@@ -146,6 +149,7 @@ export const BookAppointment: React.FC = () => {
     fetchDoctor();
   }, [id, initialClinic, initialSlot]);
 
+  // Sync queue preview dynamically when slot or date or clinic changes
   useEffect(() => {
     const fetchPreview = async () => {
       if (!id || !appointmentDate) return;
@@ -240,6 +244,7 @@ export const BookAppointment: React.FC = () => {
         patientGender: isForOther ? patientGender : undefined,
       });
 
+      // Reveal confirmed appointment and receptionist contact details
       setConfirmedAppointment(appt);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err: any) {
@@ -261,7 +266,7 @@ export const BookAppointment: React.FC = () => {
     return (
       <div className="min-h-screen bg-[#f5f5f7] flex flex-col items-center justify-center py-24">
         <div className="w-8 h-8 rounded-full border-2 border-[#0066cc] border-t-transparent animate-spin mb-3"></div>
-        <p className="text-secondary">Loading booking...</p>
+        <p className="text-xs text-[#86868b]">Loading booking...</p>
       </div>
     );
   }
@@ -269,12 +274,10 @@ export const BookAppointment: React.FC = () => {
   if (!doctor) {
     return (
       <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center py-20 px-4">
-        <div className="apple-card text-center p-8 max-w-md mx-auto">
-          <div className="w-12 h-12 rounded-2xl bg-[#ff3b30]/10 text-[#ff3b30] flex items-center justify-center mx-auto mb-4">
-            <AlertCircle className="w-6 h-6" />
-          </div>
-          <h2 className="text-section-title mb-2">Doctor Not Found</h2>
-          <p className="text-secondary mb-6">The requested doctor is unavailable or inactive.</p>
+        <div className="text-center p-8 bg-white rounded-2xl shadow-sm border border-[#e5e5ea] max-w-md mx-auto">
+          <AlertCircle className="w-12 h-12 text-rose-500 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-[#1d1d1f] mb-2">Doctor Not Found</h2>
+          <p className="text-xs text-[#86868b] mb-6">The requested doctor is unavailable or inactive.</p>
           <AppleButton variant="primary" onClick={() => navigate('/doctors')}>
             Back to Directory
           </AppleButton>
@@ -286,6 +289,7 @@ export const BookAppointment: React.FC = () => {
   const isSelectedSlotPassed = Boolean(queuePreview?.isPassed);
   const isSelectedSlotFull = Boolean(queuePreview?.isFull);
 
+  // Receptionist Contact Info resolved for confirmation screen
   const primaryReceptionist = attachedReceptionists[0];
   const deskPhone = confirmedAppointment?.receptionistPhone || primaryReceptionist?.phone || null;
   const deskName = confirmedAppointment?.receptionistName || primaryReceptionist?.name || 'Clinic Front Desk';
@@ -293,76 +297,81 @@ export const BookAppointment: React.FC = () => {
   // 1. Post-Booking Success & Receptionist Details Screen
   if (confirmedAppointment) {
     return (
-      <div className="min-h-screen bg-[#f5f5f7] pb-20">
-        <SubNav title="Appointment Requested" subtitle={doctor.user?.fullName || 'Doctor'}>
-          <AppleButton variant="ghost" size="sm" onClick={() => navigate('/doctors')}>
+      <div className="min-h-screen bg-[#f5f5f7] pb-16">
+        <SubNav title="Appointment Requested">
+          <AppleButton
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/doctors')}
+            className="flex items-center gap-1"
+          >
             <ChevronLeft className="w-4 h-4" />
-            <span>Doctors</span>
+            Doctors
           </AppleButton>
         </SubNav>
 
         <div className="max-w-xl mx-auto px-4 sm:px-6 pt-6 sm:pt-10">
-          <UtilityCard className="p-6 sm:p-8 text-center space-y-6">
-            <div className="w-14 h-14 rounded-2xl bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center mx-auto">
-              <Clock className="w-7 h-7" />
+          <UtilityCard className="text-center py-8 px-5 sm:px-8 space-y-6">
+            <div className="w-16 h-16 rounded-full bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea] flex items-center justify-center mx-auto shadow-2xs">
+              <Clock className="w-8 h-8" />
             </div>
 
             <div>
-              <span className="text-meta uppercase tracking-wider font-semibold text-[#0066cc] block mb-1">
+              <span className="text-xs font-semibold uppercase tracking-wider text-[#86868b] block mb-1">
                 Request Submitted
               </span>
-              <h2 className="text-[22px] sm:text-[26px] font-bold tracking-tight text-[#1d1d1f]">
+              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#1d1d1f]">
                 Pending Receptionist Confirmation
               </h2>
-              <p className="text-secondary mt-1">
+              <p className="text-xs text-[#86868b] mt-1 font-medium">
                 {confirmedAppointment.appointmentDate} · {confirmedAppointment.checkingWindow}
               </p>
-
-              <div className="mt-4 inline-flex items-baseline gap-2.5 px-5 py-2 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea]">
-                <span className="text-meta uppercase tracking-wider font-semibold">Estimated Token</span>
-                <span className="text-2xl font-bold text-[#0066cc] tracking-tight">
+              <div className="mt-3 inline-flex items-baseline gap-2 px-4 py-1.5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea]">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">Estimated Token</span>
+                <span className="text-xl font-bold text-[#1d1d1f] tracking-tight">
                   #{confirmedAppointment.estimatedQueueNumber || (confirmedAppointment.queueNumber > 0 ? confirmedAppointment.queueNumber : 1)}
                 </span>
               </div>
             </div>
 
-            {/* Receptionist Contact Details Card */}
-            <div className="p-5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] text-left space-y-3.5">
+            {/* Receptionist Contact Details Card (NOW REVEALED!) */}
+            <div className="p-4 sm:p-5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] text-left space-y-3">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <span className="text-[11px] font-semibold text-[#86868b] uppercase tracking-wider block">
                     Pay Receptionist to Confirm
                   </span>
-                  <h4 className="text-[15px] font-bold text-[#1d1d1f] mt-0.5">
+                  <h4 className="text-base font-bold text-[#1d1d1f] mt-0.5">
                     {deskName}
                   </h4>
-                  <p className="text-xs text-[#6e6e73] mt-0.5">
-                    {selectedClinic?.clinic.clinicName} · {selectedClinic?.clinic.address}
-                    {selectedClinic?.clinic.city ? `, ${selectedClinic.clinic.city}` : ''}
+                  <p className="text-xs text-[#86868b] mt-0.5">
+                    {selectedClinic?.clinic.clinicName} · {selectedClinic?.clinic.address}{selectedClinic?.clinic.city ? `, ${selectedClinic.clinic.city}` : ''}
                   </p>
                 </div>
                 <div className="text-right shrink-0">
-                  <span className="text-lg font-bold text-[#1d1d1f] block">₹{activeFee}</span>
-                  <span className="text-meta">Consultation Fee</span>
+                  <span className="text-base font-bold text-[#1d1d1f] block">
+                    ₹{activeFee}
+                  </span>
+                  <span className="text-[10px] text-[#86868b]">Fee</span>
                 </div>
               </div>
 
-              <p className="text-xs text-[#6e6e73] leading-relaxed pt-3 border-t border-[#e5e5ea]">
-                Your token is officially assigned by the receptionist upon payment. If another patient confirms earlier, their token will be assigned first.
+              <p className="text-xs text-[#86868b] leading-relaxed pt-2.5 border-t border-[#e5e5ea]">
+                Your token will be officially assigned by the receptionist upon payment. If another patient pays earlier, their token will be confirmed before yours.
               </p>
 
               {deskPhone ? (
                 <div className="pt-1">
                   <a
                     href={`tel:${deskPhone.replace(/\s+/g, '')}`}
-                    className="w-full h-11 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-[14px] font-medium flex items-center justify-center gap-2 active:scale-[0.98] transition-all cursor-pointer"
+                    className="w-full h-11 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-semibold flex items-center justify-center gap-2 active:scale-95 transition-all shadow-sm cursor-pointer"
                   >
                     <Phone className="w-4 h-4" />
                     <span>Call Receptionist: {formatDisplayPhone(deskPhone)}</span>
                   </a>
                 </div>
               ) : (
-                <div className="pt-1 text-center text-xs text-[#6e6e73]">
+                <div className="pt-1 text-center text-xs text-[#86868b]">
                   Please visit the clinic front desk in person to pay the consultation fee and confirm your token.
                 </div>
               )}
@@ -393,33 +402,38 @@ export const BookAppointment: React.FC = () => {
     );
   }
 
-  // 2. Main Booking Sequence: Doctor -> Clinic -> Date -> Shift -> Patient Details -> Confirmation
+  // 2. Main Booking Form (Zero receptionist details exposed before confirm)
   return (
-    <div className="min-h-screen bg-[#f5f5f7] pb-20">
-      <SubNav title="Book Appointment" subtitle={doctor.user?.fullName || 'Doctor'}>
-        <AppleButton variant="ghost" size="sm" onClick={handleBack}>
+    <div className="min-h-screen bg-[#f5f5f7] pb-16">
+      <SubNav title="Book Appointment">
+        <AppleButton
+          variant="ghost"
+          size="sm"
+          onClick={handleBack}
+          className="flex items-center gap-1"
+        >
           <ChevronLeft className="w-4 h-4" />
-          <span>Back</span>
+          Back
         </AppleButton>
       </SubNav>
 
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 pt-6 sm:pt-8">
-        <UtilityCard className="p-6 sm:p-8">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 pt-5 sm:pt-8">
+        <UtilityCard>
           {error && (
-            <div className="mb-6 p-3.5 rounded-xl bg-[#ff3b30]/8 border border-[#ff3b30]/20 text-[#d70015] text-[13px] font-medium flex items-start gap-2.5">
-              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+            <div className="mb-5 p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{error}</span>
             </div>
           )}
 
-          {/* Step 0: Doctor Summary Header */}
-          <div className="flex items-center gap-4 pb-6 border-b border-[#e5e5ea]/80">
-            <div className="w-16 h-16 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] overflow-hidden shrink-0 flex items-center justify-center">
+          {/* Doctor Info Card */}
+          <div className="flex items-center gap-4 pb-5 border-b border-[#f0f0f2]">
+            <div className="w-16 h-16 rounded-full bg-white border border-[#e5e5ea] overflow-hidden shrink-0 flex items-center justify-center shadow-xs">
               {doctor.user?.avatarUrl ? (
                 <img
                   src={getFileUrl(doctor.user.avatarUrl)}
                   alt={doctor.user?.fullName || 'Doctor'}
-                  className="w-full h-full object-cover object-top"
+                  className="w-full h-full object-cover"
                   onError={(e) => {
                     (e.currentTarget as HTMLElement).style.display = 'none';
                     const fallback = e.currentTarget.parentElement?.querySelector('.book-doc-fallback');
@@ -428,73 +442,68 @@ export const BookAppointment: React.FC = () => {
                 />
               ) : null}
               <div
-                className={`book-doc-fallback w-full h-full ${
-                  doctor.user?.avatarUrl ? 'hidden' : 'flex'
-                } items-center justify-center font-bold text-xl text-white bg-[#0066cc] select-none`}
+                className={`book-doc-fallback w-full h-full ${doctor.user?.avatarUrl ? 'hidden' : 'flex'} items-center justify-center font-bold text-xl text-white bg-[#0066cc] shadow-inner select-none`}
               >
                 {(doctor.user?.fullName ? doctor.user.fullName.replace(/^Dr\.\s*/i, '').trim()[0] : null) || 'D'}
               </div>
             </div>
-
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1.5">
-                <h3 className="text-[18px] font-bold text-[#1d1d1f] tracking-tight truncate">
+              <div className="flex items-center gap-2">
+                <h3 className="text-lg font-bold text-[#1d1d1f] tracking-tight truncate">
                   {doctor.user?.fullName || 'Doctor'}
                 </h3>
-                <ShieldCheck className="w-4 h-4 text-[#0066cc] shrink-0" />
+                <CheckCircle2 className="w-4 h-4 text-[#0066cc] shrink-0" />
               </div>
               <div className="flex flex-wrap items-center gap-2 mt-1">
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#0066cc]/10 text-[#0066cc]">
                   {doctor.specialty}
                 </span>
-                <span className="text-xs text-[#6e6e73] font-medium">
+                <span className="text-xs text-[#86868b] font-medium">
                   {formatDoctorDegrees(doctor.qualifications)}
                 </span>
               </div>
-              {selectedClinic && (
-                <p className="text-xs text-[#6e6e73] flex items-center gap-1.5 mt-1.5 truncate">
-                  <Building2 className="w-3.5 h-3.5 text-[#86868b] shrink-0" />
-                  <span className="truncate">
-                    {selectedClinic.clinic.clinicName}
-                    {selectedClinic.clinic.city ? ` · ${selectedClinic.clinic.city}` : ''}
-                  </span>
+              {selectedClinic ? (
+                <p className="text-xs text-[#6e6e73] font-medium flex items-center gap-1.5 mt-1 truncate">
+                  <Building2 className="w-3.5 h-3.5 text-[#0066cc] shrink-0" />
+                  <span className="truncate">{selectedClinic.clinic.clinicName}{selectedClinic.clinic.city ? ` · ${selectedClinic.clinic.city}` : ''}</span>
                 </p>
-              )}
+              ) : null}
             </div>
           </div>
 
-          <form onSubmit={handleBooking} className="divide-y divide-[#e5e5ea]/80">
-            {/* Step 1: Clinic Venue Selection */}
-            <div className="py-6">
-              <label className="ui-label">1. Select Clinic</label>
+          {/* Clinic Venue Selection */}
+          {!doctor.clinics || doctor.clinics.length === 0 ? (
+            <div className="py-4 border-b border-[#f0f0f2]">
+              <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start gap-2.5">
+                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <p className="leading-relaxed">
+                  Doctor is not currently affiliated with an active clinic. Online booking is disabled.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="py-4 border-b border-[#f0f0f2]">
+              <label className="block text-xs font-semibold text-[#1d1d1f] mb-2">
+                Clinic
+              </label>
 
-              {!doctor.clinics || doctor.clinics.length === 0 ? (
-                <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200/80 text-amber-900 text-xs flex items-start gap-2.5">
-                  <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                  <p className="leading-relaxed">
-                    Doctor is not currently affiliated with an active clinic. Online booking is disabled.
-                  </p>
-                </div>
-              ) : doctor.clinics.length === 1 ? (
-                <div className="p-4 rounded-xl bg-[#0066cc]/[0.03] border border-[#0066cc] ring-2 ring-[#0066cc]/12 flex items-center justify-between gap-3">
+              {doctor.clinics.length === 1 ? (
+                <div className="p-3.5 rounded-2xl bg-white border border-[#0066cc] ring-2 ring-[#0066cc]/10 shadow-xs flex items-center justify-between">
                   <div className="min-w-0 flex-1">
-                    <span className="text-[14px] font-semibold text-[#1d1d1f] block truncate">
+                    <span className="text-sm font-semibold text-[#1d1d1f] block truncate">
                       {doctor.clinics[0].clinic.clinicName}
                     </span>
-                    <span className="text-xs text-[#6e6e73] flex items-center gap-1.5 mt-1 truncate">
-                      <MapPin className="w-3.5 h-3.5 text-[#86868b] shrink-0" />
-                      <span className="truncate">
-                        {doctor.clinics[0].clinic.address}
-                        {doctor.clinics[0].clinic.city ? `, ${doctor.clinics[0].clinic.city}` : ''}
-                      </span>
+                    <span className="text-xs text-[#86868b] flex items-center gap-1 mt-0.5 truncate">
+                      <MapPin className="w-3 h-3 text-[#86868b] shrink-0" />
+                      <span className="truncate">{doctor.clinics[0].clinic.address}{doctor.clinics[0].clinic.city ? `, ${doctor.clinics[0].clinic.city}` : ''}</span>
                     </span>
                   </div>
-                  <span className="text-[13px] font-semibold text-[#1d1d1f] bg-white border border-[#e5e5ea] px-3 py-1 rounded-full shrink-0">
-                    ₹{doctor.clinics[0].consultationFee ?? doctor.consultationFee}
+                  <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full shrink-0 ml-2">
+                    Fee: ₹{doctor.clinics[0].consultationFee ?? doctor.consultationFee}
                   </span>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   {doctor.clinics.map((c) => {
                     const isSelected = selectedClinicId === c.clinicId;
                     const clinicFee = c.consultationFee ?? doctor.consultationFee;
@@ -503,30 +512,25 @@ export const BookAppointment: React.FC = () => {
                         key={c.clinicId}
                         type="button"
                         onClick={() => handleSelectClinic(c.clinicId)}
-                        className={`p-4 rounded-xl border text-left transition-all cursor-pointer ${
+                        className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer ${
                           isSelected
-                            ? 'bg-[#0066cc]/[0.03] border-[#0066cc] ring-2 ring-[#0066cc]/12'
-                            : 'bg-[#f5f5f7]/60 border-[#e5e5ea] hover:bg-white hover:border-[#d2d2d7]'
+                            ? 'bg-white border-[#0066cc] ring-2 ring-[#0066cc]/15 shadow-xs'
+                            : 'bg-[#fafafc] border-[#e5e5ea] hover:bg-white hover:border-[#d2d2d7]'
                         }`}
                       >
-                        <div className="flex items-center justify-between gap-2 mb-1">
-                          <span className="text-[14px] font-semibold text-[#1d1d1f] truncate">
-                            {c.clinic.clinicName}
-                          </span>
+                        <div className="flex items-center justify-between gap-1 mb-1">
+                          <span className="text-sm font-semibold text-[#1d1d1f] truncate">{c.clinic.clinicName}</span>
                           {isSelected && (
-                            <span className="w-5 h-5 rounded-full bg-[#0066cc] text-white flex items-center justify-center shrink-0">
-                              <Check className="w-3 h-3 stroke-[3]" />
+                            <span className="w-4 h-4 rounded-full bg-[#0066cc] text-white flex items-center justify-center shrink-0">
+                              <Check className="w-2.5 h-2.5 stroke-[3]" />
                             </span>
                           )}
                         </div>
-                        <span className="text-xs text-[#6e6e73] flex items-center gap-1 truncate">
-                          <MapPin className="w-3.5 h-3.5 text-[#86868b] shrink-0" />
-                          <span className="truncate">
-                            {c.clinic.address}
-                            {c.clinic.city ? `, ${c.clinic.city}` : ''}
-                          </span>
+                        <span className="text-xs text-[#86868b] flex items-center gap-1 truncate">
+                          <MapPin className="w-3 h-3 text-[#86868b] shrink-0" />
+                          <span className="truncate">{c.clinic.address}{c.clinic.city ? `, ${c.clinic.city}` : ''}</span>
                         </span>
-                        <div className="mt-3 pt-2.5 border-t border-[#e5e5ea]/70 flex items-center justify-between text-xs">
+                        <div className="mt-2 pt-2 border-t border-[#f0f0f2] flex items-center justify-between text-xs">
                           <span className="text-[#86868b]">Fee</span>
                           <span className="font-semibold text-[#1d1d1f]">₹{clinicFee}</span>
                         </div>
@@ -536,195 +540,209 @@ export const BookAppointment: React.FC = () => {
                 </div>
               )}
             </div>
+          )}
 
-            {/* Step 2: Date Selection */}
-            <div className="py-6">
-              <div className="flex items-center justify-between mb-2">
-                <label className="ui-label mb-0">2. Select Date</label>
-                <div className="flex items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => setAppointmentDate(getLocalDateString())}
-                    className={`px-3 py-1 rounded-full text-xs font-medium transition-all cursor-pointer ${
-                      appointmentDate === getLocalDateString()
-                        ? 'bg-[#1d1d1f] text-white'
-                        : 'bg-[#f5f5f7] text-[#6e6e73] hover:text-[#1d1d1f]'
-                    }`}
-                  >
-                    Today
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setAppointmentDate(getTomorrowDateString())}
-                    className={`px-3 py-1 rounded-full text-xs font-medium transition-all cursor-pointer ${
-                      appointmentDate === getTomorrowDateString()
-                        ? 'bg-[#1d1d1f] text-white'
-                        : 'bg-[#f5f5f7] text-[#6e6e73] hover:text-[#1d1d1f]'
-                    }`}
-                  >
-                    Tomorrow
-                  </button>
-                </div>
+          {/* Date Picker */}
+          <div className="pt-4 pb-2">
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-xs font-semibold text-[#1d1d1f]">Date</label>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setAppointmentDate(getLocalDateString())}
+                  className={`px-2.5 py-0.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
+                    appointmentDate === getLocalDateString()
+                      ? 'bg-[#1d1d1f] text-white'
+                      : 'bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f]'
+                  }`}
+                >
+                  Today
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAppointmentDate(getTomorrowDateString())}
+                  className={`px-2.5 py-0.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
+                    appointmentDate === getTomorrowDateString()
+                      ? 'bg-[#1d1d1f] text-white'
+                      : 'bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f]'
+                  }`}
+                >
+                  Tomorrow
+                </button>
               </div>
-              <input
-                type="date"
-                required
-                value={appointmentDate}
-                min={getLocalDateString()}
-                onChange={(e) => setAppointmentDate(e.target.value)}
-                className="ui-input"
-              />
             </div>
+            <input
+              type="date"
+              required
+              value={appointmentDate}
+              min={getLocalDateString()}
+              onChange={(e) => setAppointmentDate(e.target.value)}
+              className="w-full h-10 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] transition-all focus:outline-none focus:border-[#0066cc]"
+            />
+          </div>
 
-            {/* Step 3: Shift / Slot Selection & Live Queue Preview */}
-            <div className="py-6">
-              <label className="ui-label">3. Select Shift</label>
+          {/* Shift Selection */}
+          <div className="py-4 border-b border-[#f0f0f2]">
+            <label className="block text-xs font-semibold text-[#1d1d1f] mb-2">Shift</label>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {(queuePreview?.availableSlots || doctorSlots.map((s) => ({ slot: s }))).map((item: any) => {
-                  const s = item.slot;
-                  const isSelected = selectedSlotId === s.id;
-                  const slotPassed = Boolean(item.isPassed);
-                  const slotFull = Boolean(item.isFull);
-                  const cleanShiftName = s.name.replace(/\s*\([^)]*\)/, '').trim() || 'Shift';
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              {(queuePreview?.availableSlots || doctorSlots.map((s) => ({ slot: s }))).map((item: any) => {
+                const s = item.slot;
+                const isSelected = selectedSlotId === s.id;
+                const slotPassed = Boolean(item.isPassed);
+                const slotFull = Boolean(item.isFull);
+                const cleanShiftName = s.name.replace(/\s*\([^)]*\)/, '').trim() || 'Shift';
 
-                  return (
-                    <button
-                      key={s.id}
-                      type="button"
-                      disabled={slotPassed}
-                      onClick={() => setSelectedSlotId(s.id)}
-                      className={`p-4 rounded-xl border text-left transition-all ${
-                        slotPassed
-                          ? 'bg-[#f5f5f7] border-[#e5e5ea] opacity-60 cursor-not-allowed'
-                          : isSelected
-                          ? 'bg-[#0066cc]/[0.03] border-[#0066cc] ring-2 ring-[#0066cc]/12 cursor-pointer'
-                          : 'bg-[#f5f5f7]/60 border-[#e5e5ea] hover:bg-white hover:border-[#d2d2d7] cursor-pointer'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-2 mb-1">
-                        <span className="text-[14px] font-semibold text-[#1d1d1f] truncate">
-                          {cleanShiftName}
+                return (
+                  <button
+                    key={s.id}
+                    type="button"
+                    disabled={slotPassed}
+                    onClick={() => setSelectedSlotId(s.id)}
+                    className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer ${
+                      slotPassed
+                        ? 'bg-[#f5f5f7] border-[#e5e5ea] opacity-60 cursor-not-allowed'
+                        : isSelected
+                        ? 'bg-white border-[#0066cc] ring-2 ring-[#0066cc]/15 shadow-xs'
+                        : 'bg-[#fafafc] border-[#e5e5ea] hover:bg-white hover:border-[#d2d2d7]'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <span className="text-xs font-semibold text-[#1d1d1f] truncate">
+                        {cleanShiftName}
+                      </span>
+                      {isSelected && !slotPassed && (
+                        <span className="w-4 h-4 rounded-full bg-[#0066cc] text-white flex items-center justify-center shrink-0">
+                          <Check className="w-2.5 h-2.5 stroke-[3]" />
                         </span>
-                        {isSelected && !slotPassed && (
-                          <span className="w-5 h-5 rounded-full bg-[#0066cc] text-white flex items-center justify-center shrink-0">
-                            <Check className="w-3 h-3 stroke-[3]" />
-                          </span>
-                        )}
-                      </div>
+                      )}
+                    </div>
 
-                      <div className="text-[13px] text-[#0066cc] font-medium mb-2.5">
-                        {format12Hour(s.startTime)} – {format12Hour(s.endTime)}
-                      </div>
+                    <div className="text-xs text-[#0066cc] font-medium mb-1.5">
+                      {format12Hour(s.startTime)} – {format12Hour(s.endTime)}
+                    </div>
 
-                      <div>
-                        {slotPassed ? (
-                          <span className="text-[11px] font-medium px-2.5 py-0.5 rounded-full bg-[#e5e5ea] text-[#6e6e73]">
-                            Shift Ended
-                          </span>
-                        ) : slotFull ? (
-                          <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-[#ff3b30]/10 text-[#d70015]">
-                            Full
-                          </span>
-                        ) : (
-                          <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/60">
-                            Available
-                          </span>
-                        )}
-                      </div>
-                    </button>
-                  );
-                })}
+                    <div>
+                      {slotPassed ? (
+                        <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-gray-200 text-gray-700">
+                          Shift Ended
+                        </span>
+                      ) : slotFull ? (
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-rose-50 text-rose-700">
+                          Full
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">
+                          Available
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Queue Preview Tile */}
+          {queuePreview && (
+            <div className="my-4 p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea]">
+              <div className="flex items-baseline justify-between mb-2">
+                <div>
+                  <span className="text-[11px] text-[#86868b] block font-medium">Token No.</span>
+                  <span className="text-2xl sm:text-3xl font-bold tracking-tight text-[#0066cc]">
+                    {isSelectedSlotPassed ? 'Shift Ended' : `#${Math.max(1, queuePreview.nextQueueNumber || 1)}`}
+                  </span>
+                </div>
+                <div className="text-right">
+                  <span className="text-[11px] text-[#86868b] block font-medium">Est. Time</span>
+                  <span className="text-base sm:text-lg font-semibold text-[#1d1d1f]">
+                    {previewLoading ? 'Updating...' : isSelectedSlotPassed ? 'Closed' : queuePreview.estimatedTime}
+                  </span>
+                </div>
+              </div>
+              <div className="pt-2 border-t border-[#e5e5ea] text-xs text-[#86868b] flex items-center justify-between">
+                <span>{queuePreview.checkingWindow}</span>
+                <span>
+                  {isSelectedSlotPassed
+                    ? 'Pick an upcoming shift'
+                    : 'Assigned upon receptionist payment'}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Booking Form */}
+          <form onSubmit={handleBooking} className="space-y-4">
+            {/* Booking For Toggle */}
+            <div className="py-2 border-b border-[#f0f0f2] pb-4">
+              <label className="block text-xs font-semibold text-[#1d1d1f] mb-2">
+                Booking For:
+              </label>
+              <div className="flex rounded-full bg-[#f5f5f7] p-1 border border-[#e5e5ea] max-w-xs shadow-2xs">
+                <button
+                  type="button"
+                  onClick={() => setBookingFor('myself')}
+                  className={`flex-1 py-1.5 text-xs font-semibold rounded-full transition-all cursor-pointer ${
+                    bookingFor === 'myself'
+                      ? 'bg-white text-[#1d1d1f] shadow-xs'
+                      : 'text-[#86868b] hover:text-[#1d1d1f]'
+                  }`}
+                >
+                  Myself
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBookingFor('other')}
+                  className={`flex-1 py-1.5 text-xs font-semibold rounded-full transition-all cursor-pointer ${
+                    bookingFor === 'other'
+                      ? 'bg-white text-[#1d1d1f] shadow-xs'
+                      : 'text-[#86868b] hover:text-[#1d1d1f]'
+                  }`}
+                >
+                  Someone Else
+                </button>
               </div>
 
-              {/* Live Queue Preview Banner */}
-              {queuePreview && (
-                <div className="mt-4 p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea]">
-                  <div className="flex items-baseline justify-between mb-2">
-                    <div>
-                      <span className="text-meta block">Estimated Token</span>
-                      <span className="text-2xl sm:text-3xl font-bold tracking-tight text-[#0066cc]">
-                        {isSelectedSlotPassed ? 'Shift Ended' : `#${Math.max(1, queuePreview.nextQueueNumber || 1)}`}
-                      </span>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-meta block">Est. Consultation Time</span>
-                      <span className="text-base sm:text-lg font-semibold text-[#1d1d1f]">
-                        {previewLoading ? 'Updating...' : isSelectedSlotPassed ? 'Closed' : queuePreview.estimatedTime}
-                      </span>
-                    </div>
+              {bookingFor === 'other' && (
+                <div className="mt-3 p-3.5 rounded-2xl bg-[#0066cc]/5 border border-[#0066cc]/20 space-y-3">
+                  <div className="text-xs font-semibold text-[#0066cc]">
+                    Patient Details
                   </div>
-                  <div className="pt-2.5 border-t border-[#e5e5ea] text-xs text-[#6e6e73] flex items-center justify-between">
-                    <span>{queuePreview.checkingWindow}</span>
-                    <span>
-                      {isSelectedSlotPassed
-                        ? 'Pick an upcoming shift'
-                        : 'Assigned upon receptionist payment'}
-                    </span>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Step 4: Patient & Visit Information */}
-            <div className="py-6 space-y-5">
-              <div>
-                <label className="ui-label">4. Patient Details</label>
-                <div className="inline-flex rounded-full bg-[#f5f5f7] p-1 border border-[#e5e5ea] w-full sm:w-auto">
-                  <button
-                    type="button"
-                    onClick={() => setBookingFor('myself')}
-                    className={`flex-1 sm:flex-initial px-5 py-1.5 text-[13px] font-semibold rounded-full transition-all cursor-pointer ${
-                      bookingFor === 'myself'
-                        ? 'bg-white text-[#1d1d1f] shadow-2xs'
-                        : 'text-[#6e6e73] hover:text-[#1d1d1f]'
-                    }`}
-                  >
-                    Myself
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setBookingFor('other')}
-                    className={`flex-1 sm:flex-initial px-5 py-1.5 text-[13px] font-semibold rounded-full transition-all cursor-pointer ${
-                      bookingFor === 'other'
-                        ? 'bg-white text-[#1d1d1f] shadow-2xs'
-                        : 'text-[#6e6e73] hover:text-[#1d1d1f]'
-                    }`}
-                  >
-                    Someone Else
-                  </button>
-                </div>
-
-                {bookingFor === 'other' && (
-                  <div className="mt-4 p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div className="sm:col-span-1">
-                      <label className="ui-label">Full Name *</label>
+                      <label className="block text-[11px] font-semibold text-[#1d1d1f] mb-1">
+                        Full Name *
+                      </label>
                       <input
                         type="text"
                         required={bookingFor === 'other'}
                         value={patientName}
                         onChange={(e) => setPatientName(e.target.value)}
                         placeholder="e.g. Rahul Ray"
-                        className="ui-input"
+                        className="w-full h-10 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] focus:outline-none focus:border-[#0066cc]"
                       />
                     </div>
                     <div>
-                      <label className="ui-label">Age *</label>
+                      <label className="block text-[11px] font-semibold text-[#1d1d1f] mb-1">
+                        Age *
+                      </label>
                       <input
                         type="text"
                         required={bookingFor === 'other'}
                         value={patientAge}
                         onChange={(e) => setPatientAge(e.target.value)}
                         placeholder="e.g. 24"
-                        className="ui-input"
+                        className="w-full h-10 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] focus:outline-none focus:border-[#0066cc]"
                       />
                     </div>
                     <div>
-                      <label className="ui-label">Gender</label>
+                      <label className="block text-[11px] font-semibold text-[#1d1d1f] mb-1">
+                        Gender
+                      </label>
                       <select
                         value={patientGender}
                         onChange={(e) => setPatientGender(e.target.value)}
-                        className="ui-select"
+                        className="w-full h-10 px-2.5 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] focus:outline-none focus:border-[#0066cc]"
                       >
                         <option value="Male">Male</option>
                         <option value="Female">Female</option>
@@ -732,83 +750,76 @@ export const BookAppointment: React.FC = () => {
                       </select>
                     </div>
                   </div>
-                )}
-              </div>
-
-              <div className="grid grid-cols-1 gap-4">
-                <div>
-                  <label className="ui-label">Reason for Visit</label>
-                  <input
-                    type="text"
-                    value={reasonForVisit}
-                    onChange={(e) => setReasonForVisit(e.target.value)}
-                    placeholder="e.g. General consultation, checkup, follow-up"
-                    className="ui-input"
-                  />
                 </div>
-
-                <div>
-                  <label className="ui-label">
-                    Symptoms <span className="text-[#86868b] font-normal">(Optional)</span>
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={symptoms}
-                    onChange={(e) => setSymptoms(e.target.value)}
-                    placeholder="Describe any symptoms..."
-                    className="ui-textarea resize-none"
-                  />
-                </div>
-              </div>
+              )}
             </div>
 
-            {/* Step 5: Confirmation */}
-            <div className="pt-6 space-y-4">
-              <div className="p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-[14px] font-medium text-[#1d1d1f]">Consultation Fee</span>
-                  <span className="text-lg font-bold text-[#1d1d1f]">₹{activeFee}</span>
-                </div>
-                <p className="text-meta leading-relaxed">
-                  Paid directly to the clinic receptionist to confirm your token. Unconfirmed requests may be claimed by patients who confirm earlier.
-                </p>
+            <div>
+              <label className="block text-xs font-semibold text-[#1d1d1f] mb-1.5">
+                Reason for Visit
+              </label>
+              <input
+                type="text"
+                value={reasonForVisit}
+                onChange={(e) => setReasonForVisit(e.target.value)}
+                placeholder="e.g. Checkup, consultation, follow-up"
+                className="w-full h-10 px-3 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] focus:outline-none focus:border-[#0066cc]"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-[#1d1d1f] mb-1.5">
+                Symptoms <span className="text-[#86868b] font-normal">(Optional)</span>
+              </label>
+              <textarea
+                rows={2}
+                value={symptoms}
+                onChange={(e) => setSymptoms(e.target.value)}
+                placeholder="Describe any symptoms (optional)..."
+                className="w-full p-3 rounded-xl border border-[#e5e5ea] text-xs bg-white text-[#1d1d1f] focus:outline-none focus:border-[#0066cc] resize-none"
+              ></textarea>
+            </div>
+
+            {/* Fee & Confirmation Notice (ZERO receptionist contact exposed before button click!) */}
+            <div className="p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-[#86868b]">Consultation Fee</span>
+                <span className="text-base font-semibold text-[#1d1d1f]">₹{activeFee}</span>
               </div>
+              <p className="text-[11px] text-[#86868b] leading-relaxed">
+                Fee is paid directly to the receptionist to confirm your token. Unconfirmed requests may be claimed by other patients who confirm first.
+              </p>
+            </div>
 
-              {!hasActiveReceptionist && (
-                <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200/80 text-amber-900 text-xs flex items-start gap-2.5">
-                  <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                  <div>
-                    <span className="font-semibold block text-amber-950 mb-0.5">Booking Unavailable at this Clinic</span>
-                    Online queue booking is closed for this doctor at {selectedClinic?.clinic.clinicName || 'this facility'} because no front-desk receptionist is currently assigned.
-                  </div>
+            {!hasActiveReceptionist && (
+              <div className="p-3.5 rounded-2xl bg-amber-50/90 border border-amber-200 text-amber-900 text-xs flex items-start gap-2.5">
+                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-semibold block text-amber-950 mb-0.5">Booking Unavailable at this Clinic</span>
+                  Online queue booking is currently closed for this doctor at {selectedClinic?.clinic.clinicName || 'this facility'} because no front-desk receptionist is currently assigned at this clinic.
                 </div>
-              )}
+              </div>
+            )}
 
-              {isSelectedSlotPassed && (
-                <div className="p-3 rounded-xl bg-amber-50 border border-amber-200/80 text-amber-900 text-xs">
-                  This shift has ended for today. Please select an upcoming shift or a future date.
-                </div>
-              )}
+            {isSelectedSlotPassed && (
+              <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs">
+                This shift has ended for today. Pick an upcoming shift or future date.
+              </div>
+            )}
 
-              {isSelectedSlotFull && !isSelectedSlotPassed && (
-                <div className="p-3 rounded-xl bg-[#ff3b30]/8 border border-[#ff3b30]/20 text-[#d70015] text-xs">
-                  This shift is full. Please select another slot or date.
-                </div>
-              )}
+            {isSelectedSlotFull && !isSelectedSlotPassed && (
+              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs">
+                Shift is full. Select another slot or date.
+              </div>
+            )}
 
+            <div className="pt-2 flex justify-end">
               <AppleButton
                 variant="primary"
                 size="lg"
                 type="submit"
-                disabled={
-                  submitting ||
-                  isSelectedSlotPassed ||
-                  isSelectedSlotFull ||
-                  !doctor.clinics ||
-                  doctor.clinics.length === 0 ||
-                  !hasActiveReceptionist
-                }
-                className="w-full"
+                disabled={submitting || isSelectedSlotPassed || isSelectedSlotFull || !doctor.clinics || doctor.clinics.length === 0 || !hasActiveReceptionist}
+                className="w-full sm:w-auto font-semibold"
               >
                 {!doctor.clinics || doctor.clinics.length === 0
                   ? 'Booking Unavailable'
