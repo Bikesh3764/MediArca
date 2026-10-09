@@ -20,6 +20,7 @@ import {
   AlertCircle,
   CheckCircle2,
   ChevronLeft,
+  ChevronDown,
   Check,
   Building2,
   MapPin,
@@ -671,13 +672,13 @@ export const BookAppointment: React.FC = () => {
               <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
                 Booking For
               </label>
-              <div className="p-1 bg-[#f5f5f7] border border-[#e5e5ea] rounded-xl flex gap-1 max-w-xs select-none">
+              <div className="p-1 bg-[#f5f5f7] border border-[#e5e5ea] rounded-full flex gap-0.5 max-w-xs select-none">
                 <button
                   type="button"
                   onClick={() => setBookingFor('myself')}
-                  className={`flex-1 py-2 text-[13px] rounded-lg transition-all duration-150 cursor-pointer ${
+                  className={`flex-1 h-9 text-[13px] rounded-full transition-all duration-150 cursor-pointer ${
                     bookingFor === 'myself'
-                      ? 'bg-white text-[#1d1d1f] font-semibold shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_1px_rgba(0,0,0,0.04)] border border-black/5'
+                      ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs border border-black/5'
                       : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
                   }`}
                 >
@@ -686,9 +687,9 @@ export const BookAppointment: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setBookingFor('other')}
-                  className={`flex-1 py-2 text-[13px] rounded-lg transition-all duration-150 cursor-pointer ${
+                  className={`flex-1 h-9 text-[13px] rounded-full transition-all duration-150 cursor-pointer ${
                     bookingFor === 'other'
-                      ? 'bg-white text-[#1d1d1f] font-semibold shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_1px_rgba(0,0,0,0.04)] border border-black/5'
+                      ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs border border-black/5'
                       : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
                   }`}
                 >
@@ -732,15 +733,18 @@ export const BookAppointment: React.FC = () => {
                       <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
                         Gender
                       </label>
-                      <select
-                        value={patientGender}
-                        onChange={(e) => setPatientGender(e.target.value)}
-                        className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 cursor-pointer"
-                      >
-                        <option value="Male">Male</option>
-                        <option value="Female">Female</option>
-                        <option value="Other">Other</option>
-                      </select>
+                      <div className="relative">
+                        <select
+                          value={patientGender}
+                          onChange={(e) => setPatientGender(e.target.value)}
+                          className="w-full h-11 pl-3.5 pr-9 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 appearance-none cursor-pointer"
+                        >
+                          <option value="Male">Male</option>
+                          <option value="Female">Female</option>
+                          <option value="Other">Other</option>
+                        </select>
+                        <ChevronDown className="w-4 h-4 text-[#86868b] absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      </div>
                     </div>
                   </div>
                 </div>

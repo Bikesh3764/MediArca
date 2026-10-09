@@ -1130,77 +1130,74 @@ export const AdminDashboard: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Date Quick Filter Pills + Custom Date Picker */}
-                    <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t border-[#e5e5ea]">
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="text-xs font-medium text-[#86868b] mr-1 flex items-center gap-1">
-                          <Calendar className="w-3.5 h-3.5 text-[#0066cc]" />
-                          Date:
-                        </span>
+                    {/* Date Quick Filter Segmented Control + Custom Date Picker */}
+                    <div className="flex flex-wrap items-center justify-between gap-2.5 pt-3 border-t border-[#e5e5ea]">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <div className="inline-flex items-center p-1 bg-white rounded-full border border-[#e5e5ea]">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setBookingDateFilter('ALL');
+                              setBookingCustomDate('');
+                            }}
+                            className={`h-8 px-3 rounded-full text-xs transition-all cursor-pointer ${
+                              bookingDateFilter === 'ALL'
+                                ? 'bg-[#f5f5f7] text-[#1d1d1f] font-semibold shadow-2xs border border-black/5'
+                                : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
+                            }`}
+                          >
+                            All Dates
+                          </button>
 
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setBookingDateFilter('ALL');
-                            setBookingCustomDate('');
-                          }}
-                          className={`px-3 py-1 rounded-full text-xs transition-all cursor-pointer ${
-                            bookingDateFilter === 'ALL'
-                              ? 'bg-[#0066cc] text-white font-semibold shadow-xs'
-                              : 'bg-white border border-[#e5e5ea] text-[#48484a] hover:bg-[#f5f5f7]'
-                          }`}
-                        >
-                          All Dates
-                        </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setBookingDateFilter('TODAY');
+                              setBookingCustomDate('');
+                            }}
+                            className={`h-8 px-3 rounded-full text-xs transition-all cursor-pointer ${
+                              bookingDateFilter === 'TODAY'
+                                ? 'bg-[#f5f5f7] text-[#1d1d1f] font-semibold shadow-2xs border border-black/5'
+                                : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
+                            }`}
+                          >
+                            Today ({appointments.filter((a) => a.appointmentDate === todayStr).length})
+                          </button>
 
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setBookingDateFilter('TODAY');
-                            setBookingCustomDate('');
-                          }}
-                          className={`px-3 py-1 rounded-full text-xs transition-all cursor-pointer ${
-                            bookingDateFilter === 'TODAY'
-                              ? 'bg-[#0066cc] text-white font-semibold shadow-xs'
-                              : 'bg-white border border-[#e5e5ea] text-[#48484a] hover:bg-[#f5f5f7]'
-                          }`}
-                        >
-                          Today ({appointments.filter((a) => a.appointmentDate === todayStr).length})
-                        </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setBookingDateFilter('TOMORROW');
+                              setBookingCustomDate('');
+                            }}
+                            className={`h-8 px-3 rounded-full text-xs transition-all cursor-pointer ${
+                              bookingDateFilter === 'TOMORROW'
+                                ? 'bg-[#f5f5f7] text-[#1d1d1f] font-semibold shadow-2xs border border-black/5'
+                                : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
+                            }`}
+                          >
+                            Tomorrow ({appointments.filter((a) => a.appointmentDate === tomorrowStr).length})
+                          </button>
 
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setBookingDateFilter('TOMORROW');
-                            setBookingCustomDate('');
-                          }}
-                          className={`px-3 py-1 rounded-full text-xs transition-all cursor-pointer ${
-                            bookingDateFilter === 'TOMORROW'
-                              ? 'bg-[#0066cc] text-white font-semibold shadow-xs'
-                              : 'bg-white border border-[#e5e5ea] text-[#48484a] hover:bg-[#f5f5f7]'
-                          }`}
-                        >
-                          Tomorrow ({appointments.filter((a) => a.appointmentDate === tomorrowStr).length})
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setBookingDateFilter('PAST');
-                            setBookingCustomDate('');
-                          }}
-                          className={`px-3 py-1 rounded-full text-xs transition-all cursor-pointer ${
-                            bookingDateFilter === 'PAST'
-                              ? 'bg-[#0066cc] text-white font-semibold shadow-xs'
-                              : 'bg-white border border-[#e5e5ea] text-[#48484a] hover:bg-[#f5f5f7]'
-                          }`}
-                        >
-                          Past History
-                        </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setBookingDateFilter('PAST');
+                              setBookingCustomDate('');
+                            }}
+                            className={`h-8 px-3 rounded-full text-xs transition-all cursor-pointer ${
+                              bookingDateFilter === 'PAST'
+                                ? 'bg-[#f5f5f7] text-[#1d1d1f] font-semibold shadow-2xs border border-black/5'
+                                : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
+                            }`}
+                          >
+                            Past History
+                          </button>
+                        </div>
 
                         {/* Custom Date Input */}
-                        <div className="inline-flex items-center gap-1.5 ml-1 pl-2 border-l border-[#e5e5ea]">
-                          <span className="text-xs text-[#86868b] font-medium">Specific:</span>
+                        <div className="inline-flex items-center gap-1.5 h-10 px-3 rounded-full bg-white border border-[#e5e5ea]">
+                          <Calendar className="w-3.5 h-3.5 text-[#86868b]" />
                           <input
                             type="date"
                             value={bookingCustomDate}
@@ -1209,10 +1206,10 @@ export const AdminDashboard: React.FC = () => {
                               setBookingCustomDate(val);
                               setBookingDateFilter(val ? 'CUSTOM' : 'ALL');
                             }}
-                            className={`px-2.5 py-1 text-xs rounded-lg border transition-all cursor-pointer ${
+                            className={`text-xs bg-transparent focus:outline-none cursor-pointer ${
                               bookingDateFilter === 'CUSTOM'
-                                ? 'bg-[#0066cc]/10 border-[#0066cc] text-[#0066cc] font-semibold'
-                                : 'bg-white border-[#d2d2d7] text-[#1d1d1f]'
+                                ? 'text-[#0066cc] font-semibold'
+                                : 'text-[#1d1d1f] font-medium'
                             }`}
                           />
                         </div>
@@ -1223,7 +1220,7 @@ export const AdminDashboard: React.FC = () => {
                         <button
                           type="button"
                           onClick={handleResetBookingFilters}
-                          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-all cursor-pointer active:scale-95"
+                          className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-full text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-all cursor-pointer active:scale-95"
                         >
                           <RotateCcw className="w-3 h-3" />
                           <span>Reset Filters</span>
@@ -1234,7 +1231,7 @@ export const AdminDashboard: React.FC = () => {
 
                   {/* Empty State */}
                   {filteredAppointments.length === 0 && (
-                    <div className="p-12 text-center my-6 rounded-2xl border border-dashed border-[#e5e5ea] bg-white">
+                    <div className="py-12 text-center">
                       <h4 className="text-sm font-semibold text-[#1d1d1f]">No Bookings Found</h4>
                       <p className="text-xs text-[#86868b] mt-1 max-w-sm mx-auto">
                         No appointments match your active date ({bookingDateFilter !== 'ALL' ? bookingDateFilter : 'selected'}), clinic, or search filter.
@@ -1569,7 +1566,7 @@ export const AdminDashboard: React.FC = () => {
                 </div>
 
                 {contactMessages.length === 0 ? (
-                  <div className="p-12 text-center text-xs text-[#86868b] bg-[#fbfbfd] rounded-2xl border border-dashed border-[#e5e5ea]">
+                  <div className="py-12 text-center text-xs text-[#86868b]">
                     No messages received yet. All new inquiries submitted through the website will appear here with instant email reply options.
                   </div>
                 ) : (

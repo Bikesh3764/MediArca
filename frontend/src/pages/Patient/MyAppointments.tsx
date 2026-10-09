@@ -162,13 +162,13 @@ export const MyAppointments: React.FC = () => {
 
         {/* Apple Segmented Filter */}
         <div className="flex justify-center mb-8">
-          <div className="p-1 bg-[#f5f5f7] border border-[#e5e5ea] rounded-xl inline-flex gap-1 select-none">
+          <div className="p-1 bg-[#f5f5f7] border border-[#e5e5ea] rounded-full inline-flex gap-0.5 select-none">
             <button
               type="button"
               onClick={() => setActiveTab('upcoming')}
-              className={`px-5 py-2 rounded-lg text-[13px] transition-all duration-150 cursor-pointer ${
+              className={`h-9 px-5 rounded-full text-[13px] transition-all duration-150 cursor-pointer ${
                 activeTab === 'upcoming'
-                  ? 'bg-white text-[#1d1d1f] font-semibold shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_1px_rgba(0,0,0,0.04)] border border-black/5'
+                  ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs border border-black/5'
                   : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
               }`}
             >
@@ -177,9 +177,9 @@ export const MyAppointments: React.FC = () => {
             <button
               type="button"
               onClick={() => setActiveTab('past')}
-              className={`px-5 py-2 rounded-lg text-[13px] transition-all duration-150 cursor-pointer ${
+              className={`h-9 px-5 rounded-full text-[13px] transition-all duration-150 cursor-pointer ${
                 activeTab === 'past'
-                  ? 'bg-white text-[#1d1d1f] font-semibold shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_1px_rgba(0,0,0,0.04)] border border-black/5'
+                  ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs border border-black/5'
                   : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
               }`}
             >

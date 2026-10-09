@@ -16,6 +16,7 @@ import {
   Clock,
   CheckCircle2,
   ChevronLeft,
+  ChevronDown,
   AlertCircle,
   AlertTriangle,
   Plus,
@@ -373,17 +374,20 @@ export const ManageSchedule: React.FC = () => {
                     <span>Practicing Facility</span>
                   </label>
                   {clinics.length > 1 ? (
-                    <select
-                      value={selectedClinicId}
-                      onChange={(e) => handleClinicChange(e.target.value)}
-                      className="h-11 px-3.5 rounded-xl border border-[#d2d2d7] text-[14px] font-medium text-[#1d1d1f] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 cursor-pointer transition-all"
-                    >
-                      {clinics.map((c) => (
-                        <option key={c.clinicId} value={c.clinicId}>
-                          {c.clinicName} {c.city ? `(${c.city})` : ''}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="relative">
+                      <select
+                        value={selectedClinicId}
+                        onChange={(e) => handleClinicChange(e.target.value)}
+                        className="h-11 pl-3.5 pr-9 rounded-xl border border-[#d2d2d7] text-[14px] font-medium text-[#1d1d1f] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 appearance-none cursor-pointer transition-all"
+                      >
+                        {clinics.map((c) => (
+                          <option key={c.clinicId} value={c.clinicId}>
+                            {c.clinicName} {c.city ? `(${c.city})` : ''}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown className="w-4 h-4 text-[#86868b] absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    </div>
                   ) : (
                     <span className="text-xs font-medium text-[#1d1d1f] bg-white px-3.5 py-1.5 rounded-full border border-[#e5e5ea]">
                       {selectedClinic ? selectedClinic.clinicName : 'Independent Practice'}

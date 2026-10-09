@@ -194,7 +194,7 @@ export const PatientProfile: React.FC = () => {
                 <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
                   Gender
                 </label>
-                <div className="p-1 bg-[#f5f5f7] border border-[#e5e5ea] rounded-xl grid grid-cols-3 gap-1 h-11 select-none">
+                <div className="p-1 bg-[#f5f5f7] border border-[#e5e5ea] rounded-full grid grid-cols-3 gap-0.5 h-11 select-none">
                   {(['Male', 'Female', 'Other'] as const).map((option) => {
                     const active = gender === option;
                     return (
@@ -202,9 +202,9 @@ export const PatientProfile: React.FC = () => {
                         key={option}
                         type="button"
                         onClick={() => setGender(option)}
-                        className={`rounded-lg text-[13px] transition-all duration-150 cursor-pointer ${
+                        className={`rounded-full text-[13px] transition-all duration-150 cursor-pointer ${
                           active
-                            ? 'bg-white text-[#1d1d1f] font-semibold shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_1px_rgba(0,0,0,0.04)] border border-black/5'
+                            ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs border border-black/5'
                             : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
                         }`}
                       >

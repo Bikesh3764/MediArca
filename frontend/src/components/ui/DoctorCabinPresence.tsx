@@ -18,6 +18,7 @@ export const CabinStatusBadge: React.FC<CabinStatusBadgeProps> = ({
   className = '',
 }) => {
   const normalized = (status || 'IN_CABIN').toUpperCase() as CabinStatus;
+  const cleanReturn = expectedReturnTime ? expectedReturnTime.replace(/^~\s*/, '').trim() : '';
 
   if (normalized === 'STEPPED_OUT') {
     return (
@@ -26,10 +27,10 @@ export const CabinStatusBadge: React.FC<CabinStatusBadgeProps> = ({
           size === 'sm' ? 'px-2.5 py-0.5 text-[11px]' : 'px-3 py-1 text-xs'
         } ${className}`}
       >
-        <span className="w-1.5 h-1.5 rounded-full bg-[#86868b] shrink-0"></span>
+        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0"></span>
         <span>
           Stepped Out
-          {expectedReturnTime ? ` • ~${expectedReturnTime}` : ''}
+          {cleanReturn ? ` • Back ${cleanReturn}` : ''}
         </span>
       </span>
     );
@@ -43,7 +44,7 @@ export const CabinStatusBadge: React.FC<CabinStatusBadgeProps> = ({
         } ${className}`}
       >
         <span className="w-1.5 h-1.5 rounded-full bg-[#d2d2d7] shrink-0"></span>
-        <span>Not in Cabin</span>
+        <span>Away</span>
       </span>
     );
   }
@@ -82,7 +83,7 @@ export const CabinStatusControl: React.FC<CabinStatusControlProps> = ({
     ((currentStatus || 'IN_CABIN').toUpperCase() as CabinStatus) || 'IN_CABIN'
   );
   const [returnTime, setReturnTime] = useState<string | null>(initialReturnTime || null);
-  const [customTimeInput, setCustomTimeInput] = useState('');
+  const [selectedMins, setSelectedMins] = useState<number | null>(15);
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -110,6 +111,9 @@ export const CabinStatusControl: React.FC<CabinStatusControlProps> = ({
     setLoading(true);
     setErrorMsg(null);
     setFeedback(null);
+    if (estimateMinutes !== undefined) {
+      setSelectedMins(estimateMinutes);
+    }
 
     try {
       const payload: {
@@ -139,7 +143,11 @@ export const CabinStatusControl: React.FC<CabinStatusControlProps> = ({
         resultData?.expectedReturnTime !== undefined
           ? resultData.expectedReturnTime
           : newStatus === 'STEPPED_OUT'
-          ? (explicitTime !== undefined ? explicitTime : (estimateMinutes ? `in ~${estimateMinutes} mins` : returnTime))
+          ? explicitTime !== undefined
+            ? explicitTime
+            : estimateMinutes
+            ? `in ${estimateMinutes} mins`
+            : returnTime
           : null;
 
       setStatus(updatedStatus);
@@ -147,70 +155,57 @@ export const CabinStatusControl: React.FC<CabinStatusControlProps> = ({
       if (onStatusChange) {
         onStatusChange(updatedStatus, updatedReturn);
       }
-      setFeedback('Status updated');
-      setTimeout(() => setFeedback(null), 3500);
+      setFeedback('Saved');
+      setTimeout(() => setFeedback(null), 2500);
     } catch (err: any) {
       console.error('Failed to update doctor presence:', err);
-      setErrorMsg(err.message || 'Failed to update presence status');
-      setTimeout(() => setErrorMsg(null), 4000);
+      setErrorMsg(err.message || 'Update failed');
+      setTimeout(() => setErrorMsg(null), 3500);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleCustomTimeSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!customTimeInput.trim()) return;
-
-    // Convert 24-hr input (e.g. "14:30") to 12-hr format if needed
-    let formatted = customTimeInput.trim();
-    if (/^\d{1,2}:\d{2}$/.test(formatted)) {
-      const [hStr, mStr] = formatted.split(':');
-      let h = parseInt(hStr, 10);
-      const ampm = h >= 12 ? 'PM' : 'AM';
-      if (h > 12) h -= 12;
-      if (h === 0) h = 12;
-      formatted = `${h}:${mStr} ${ampm}`;
-    }
-
-    updateStatus('STEPPED_OUT', null, formatted);
-    setCustomTimeInput('');
-  };
+  const cleanReturnDisplay = returnTime ? returnTime.replace(/^~\s*/, '').trim() : null;
 
   return (
-    <div className={`rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] px-3.5 py-2.5 ${className}`}>
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <div className={`flex flex-col gap-2.5 ${className}`}>
+      <div className="flex flex-wrap items-center justify-between sm:justify-end gap-2.5">
         <div className="flex items-center gap-2">
           <span className="text-xs font-medium text-[#86868b] tracking-tight">
             Cabin Status
           </span>
           {feedback && (
-            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[#0066cc] bg-white px-2 py-0.5 rounded-full border border-[#e5e5ea]">
+            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[#0066cc] bg-[#0066cc]/8 px-2 py-0.5 rounded-full">
               <Check className="w-3 h-3 text-[#0066cc]" />
               {feedback}
             </span>
           )}
           {errorMsg && (
-            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-rose-600 bg-white px-2 py-0.5 rounded-full border border-rose-200">
+            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
               <AlertCircle className="w-3 h-3" />
               {errorMsg}
             </span>
           )}
         </div>
 
-        {/* Segmented Control Bar */}
-        <div className="inline-flex p-1 bg-white rounded-full border border-[#e5e5ea] w-full sm:w-auto gap-0.5 select-none">
+        {/* Apple Segmented Control Track */}
+        <div className="p-1 bg-[#f5f5f7] rounded-full border border-[#e5e5ea] inline-flex items-center w-full sm:w-auto gap-0.5 select-none">
           <button
             type="button"
             disabled={loading}
             onClick={() => updateStatus('IN_CABIN')}
-            className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-1 rounded-full text-xs transition-all duration-150 cursor-pointer ${
+            className={`flex-1 sm:flex-initial h-8 px-3.5 rounded-full text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
               status === 'IN_CABIN'
-                ? 'bg-[#0066cc] text-white font-medium shadow-xs'
+                ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs border border-black/5'
                 : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
             }`}
           >
-            <span className={`w-1.5 h-1.5 rounded-full ${status === 'IN_CABIN' ? 'bg-white' : 'bg-[#0066cc]'}`}></span>
+            <span
+              className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                status === 'IN_CABIN' ? 'bg-[#0066cc]' : 'bg-[#d2d2d7]'
+              }`}
+            />
             <span>In Cabin</span>
           </button>
 
@@ -218,13 +213,17 @@ export const CabinStatusControl: React.FC<CabinStatusControlProps> = ({
             type="button"
             disabled={loading}
             onClick={() => updateStatus('STEPPED_OUT', 15)}
-            className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-1 rounded-full text-xs transition-all duration-150 cursor-pointer ${
+            className={`flex-1 sm:flex-initial h-8 px-3.5 rounded-full text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
               status === 'STEPPED_OUT'
-                ? 'bg-[#1d1d1f] text-white font-medium shadow-xs'
+                ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs border border-black/5'
                 : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
             }`}
           >
-            <span className={`w-1.5 h-1.5 rounded-full ${status === 'STEPPED_OUT' ? 'bg-white' : 'bg-[#86868b]'}`}></span>
+            <span
+              className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                status === 'STEPPED_OUT' ? 'bg-amber-500' : 'bg-[#d2d2d7]'
+              }`}
+            />
             <span>Stepped Out</span>
           </button>
 
@@ -232,70 +231,72 @@ export const CabinStatusControl: React.FC<CabinStatusControlProps> = ({
             type="button"
             disabled={loading}
             onClick={() => updateStatus('NOT_IN_CABIN')}
-            className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-1 rounded-full text-xs transition-all duration-150 cursor-pointer ${
+            className={`flex-1 sm:flex-initial h-8 px-3.5 rounded-full text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
               status === 'NOT_IN_CABIN'
-                ? 'bg-[#f5f5f7] text-[#1d1d1f] font-semibold border border-[#d2d2d7]'
+                ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs border border-black/5'
                 : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
             }`}
           >
-            <span className="w-1.5 h-1.5 rounded-full bg-[#d2d2d7]"></span>
+            <span
+              className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                status === 'NOT_IN_CABIN' ? 'bg-[#86868b]' : 'bg-[#d2d2d7]'
+              }`}
+            />
             <span>Away</span>
           </button>
         </div>
       </div>
 
-      {/* Stepped Out - Return Estimate Row (Inline, No Popup) */}
+      {/* Stepped Out — Clean Inline Return Duration Selector */}
       {status === 'STEPPED_OUT' && (
-        <div className="mt-2.5 pt-2.5 border-t border-[#e5e5ea] flex flex-wrap items-center justify-between gap-2 animate-fadeIn">
+        <div className="pt-2.5 border-t border-[#f0f0f2] flex flex-wrap items-center justify-between gap-2 animate-fadeIn">
           <div className="flex items-center gap-1.5 text-xs text-[#86868b]">
             <Timer className="w-3.5 h-3.5 text-[#86868b]" />
-            <span>Return:</span>
+            <span>Expected return:</span>
             <span className="text-[#1d1d1f] font-semibold">
-              {returnTime ? `~${returnTime}` : 'Soon'}
+              {cleanReturnDisplay || 'Shortly'}
             </span>
           </div>
 
-          <div className="flex flex-wrap items-center gap-1.5">
-            {[15, 30, 45, 60].map((mins) => (
+          <div className="inline-flex items-center p-0.5 bg-[#f5f5f7] rounded-full border border-[#e5e5ea] gap-0.5">
+            {[
+              { mins: 15, label: '15m' },
+              { mins: 30, label: '30m' },
+              { mins: 45, label: '45m' },
+              { mins: 60, label: '1h' },
+            ].map(({ mins, label }) => {
+              const isSelected = selectedMins === mins && Boolean(cleanReturnDisplay);
+              return (
+                <button
+                  key={mins}
+                  type="button"
+                  disabled={loading}
+                  onClick={() => updateStatus('STEPPED_OUT', mins)}
+                  className={`h-6 px-2.5 rounded-full text-[11px] transition-all cursor-pointer ${
+                    isSelected
+                      ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs border border-black/5'
+                      : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
+            {cleanReturnDisplay && (
               <button
-                key={mins}
                 type="button"
                 disabled={loading}
-                onClick={() => updateStatus('STEPPED_OUT', mins)}
-                className="px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-white hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] transition-all cursor-pointer"
+                onClick={() => updateStatus('STEPPED_OUT', null, null)}
+                className="h-6 px-2.5 rounded-full text-[11px] font-medium text-[#86868b] hover:text-[#1d1d1f] transition-all cursor-pointer"
               >
-                ~{mins === 60 ? '1h' : `${mins}m`}
+                Clear
               </button>
-            ))}
-            <button
-              type="button"
-              disabled={loading}
-              onClick={() => updateStatus('STEPPED_OUT', null, null)}
-              className="px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-white hover:bg-[#e8e8ed] text-[#86868b] hover:text-[#1d1d1f] border border-[#e5e5ea] transition-all cursor-pointer"
-            >
-              Clear
-            </button>
-
-            <form onSubmit={handleCustomTimeSubmit} className="flex items-center gap-1">
-              <input
-                type="time"
-                value={customTimeInput}
-                onChange={(e) => setCustomTimeInput(e.target.value)}
-                className="h-6 px-2 rounded-full border border-[#d2d2d7] text-[11px] bg-white text-[#1d1d1f] focus:outline-none focus:border-[#0066cc]"
-                title="Specific Return Time"
-              />
-              <button
-                type="submit"
-                disabled={loading || !customTimeInput}
-                className="h-6 px-2.5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-[11px] font-medium transition-all disabled:opacity-40 cursor-pointer"
-              >
-                Set
-              </button>
-            </form>
+            )}
           </div>
         </div>
       )}
     </div>
   );
 };
+
 

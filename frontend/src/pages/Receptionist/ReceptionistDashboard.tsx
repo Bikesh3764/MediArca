@@ -843,31 +843,33 @@ export const ReceptionistDashboard: React.FC = () => {
                 const targetDoctor = linkedDoctors.find((d) => d.doctorId === queueDoctorId);
                 if (!targetDoctor) return null;
                 return (
-                  <CabinStatusControl
-                    currentStatus={targetDoctor.cabinStatus}
-                    expectedReturnTime={targetDoctor.expectedReturnTime}
-                    doctorId={targetDoctor.doctorId}
-                    doctorName={cleanDoctorName(targetDoctor.fullName)}
-                    onStatusChange={(newStatus, newReturnTime) => {
-                      setData((prev) => {
-                        if (!prev) return prev;
-                        return {
-                          ...prev,
-                          doctors: prev.doctors.map((d) =>
-                            d.doctorId === targetDoctor.doctorId
-                              ? { ...d, cabinStatus: newStatus, expectedReturnTime: newReturnTime }
-                              : d
-                          ),
-                        };
-                      });
-                    }}
-                  />
+                  <div className="pb-4 border-b border-[#f0f0f2]">
+                    <CabinStatusControl
+                      currentStatus={targetDoctor.cabinStatus}
+                      expectedReturnTime={targetDoctor.expectedReturnTime}
+                      doctorId={targetDoctor.doctorId}
+                      doctorName={cleanDoctorName(targetDoctor.fullName)}
+                      onStatusChange={(newStatus, newReturnTime) => {
+                        setData((prev) => {
+                          if (!prev) return prev;
+                          return {
+                            ...prev,
+                            doctors: prev.doctors.map((d) =>
+                              d.doctorId === targetDoctor.doctorId
+                                ? { ...d, cabinStatus: newStatus, expectedReturnTime: newReturnTime }
+                                : d
+                            ),
+                          };
+                        });
+                      }}
+                    />
+                  </div>
                 );
               })()}
 
-              {/* Filter Pills & Search Bar */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+              {/* Filter Segmented Bar & Search Bar */}
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                <div className="p-1 bg-[#f5f5f7] border border-[#e5e5ea] rounded-full inline-flex items-center gap-0.5 overflow-x-auto max-w-full">
                   {(
                     [
                       { id: 'ALL', label: 'All' },
@@ -887,14 +889,14 @@ export const ReceptionistDashboard: React.FC = () => {
                         key={tab.id}
                         type="button"
                         onClick={() => setStatusFilter(tab.id)}
-                        className={`h-8 px-3.5 rounded-full text-xs font-medium transition-all active:scale-[0.98] whitespace-nowrap cursor-pointer inline-flex items-center gap-1.5 ${
+                        className={`h-8 px-3.5 rounded-full text-xs transition-all whitespace-nowrap cursor-pointer inline-flex items-center gap-1.5 ${
                           isActive
-                            ? 'bg-[#0066cc] text-white'
-                            : 'bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f]'
+                            ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs border border-black/5'
+                            : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
                         }`}
                       >
                         <span>{tab.label}</span>
-                        <span className={`text-[11px] ${isActive ? 'text-white/80' : 'text-[#86868b]'}`}>
+                        <span className={`text-[11px] ${isActive ? 'text-[#0066cc] font-semibold' : 'text-[#86868b]'}`}>
                           {count}
                         </span>
                       </button>
@@ -902,14 +904,14 @@ export const ReceptionistDashboard: React.FC = () => {
                   })}
                 </div>
 
-                <div className="relative w-full sm:w-64">
+                <div className="relative w-full lg:w-64">
                   <Search className="w-3.5 h-3.5 text-[#86868b] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                   <input
                     type="text"
                     value={queueSearch}
                     onChange={(e) => setQueueSearch(e.target.value)}
                     placeholder="Search patient, phone, token..."
-                    className="w-full h-9 pl-9 pr-8 rounded-full border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
+                    className="w-full h-10 pl-9 pr-8 rounded-full border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
                   />
                   {queueSearch && (
                     <button
@@ -925,7 +927,7 @@ export const ReceptionistDashboard: React.FC = () => {
 
               {/* Queue Content */}
               {linkedDoctors.length === 0 ? (
-                <div className="py-14 text-center bg-[#fafafc] rounded-2xl border border-[#e5e5ea]">
+                <div className="py-14 text-center">
                   <p className="text-sm font-semibold text-[#1d1d1f]">No Doctors Assigned</p>
                   <p className="text-xs text-[#86868b] mt-1 max-w-sm mx-auto">
                     Ask your clinic administrator to assign practitioners to your reception desk.
@@ -934,7 +936,7 @@ export const ReceptionistDashboard: React.FC = () => {
               ) : queueLoading ? (
                 <div className="py-14 text-center text-xs text-[#86868b]">Loading live queue...</div>
               ) : queueAppointments.length === 0 ? (
-                <div className="py-14 text-center bg-[#fafafc] rounded-2xl border border-[#e5e5ea]">
+                <div className="py-14 text-center">
                   <p className="text-sm font-semibold text-[#1d1d1f]">No Patients in Queue</p>
                   <p className="text-xs text-[#86868b] mt-1 mb-4">
                     No appointments scheduled for {queueDate}.
@@ -964,7 +966,7 @@ export const ReceptionistDashboard: React.FC = () => {
 
                 if (filteredAppointments.length === 0) {
                   return (
-                    <div className="py-12 text-center bg-[#fafafc] rounded-2xl border border-[#e5e5ea]">
+                    <div className="py-12 text-center">
                       <p className="text-sm font-semibold text-[#1d1d1f]">No Matching Patients</p>
                       <p className="text-xs text-[#86868b] mt-1 mb-3">
                         No patients match your active filter or search criteria.
@@ -975,7 +977,7 @@ export const ReceptionistDashboard: React.FC = () => {
                           setQueueSearch('');
                           setStatusFilter('ALL');
                         }}
-                        className="h-8 px-4 rounded-full text-xs font-medium bg-white border border-[#e5e5ea] text-[#1d1d1f] hover:bg-[#f5f5f7] transition-all cursor-pointer"
+                        className="h-8 px-4 rounded-full text-xs font-medium bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] hover:bg-[#e8e8ed] transition-all cursor-pointer"
                       >
                         Reset Filters
                       </button>
@@ -1196,7 +1198,7 @@ export const ReceptionistDashboard: React.FC = () => {
               </div>
 
               {linkedDoctors.length === 0 ? (
-                <div className="py-14 text-center bg-[#fafafc] rounded-2xl border border-[#e5e5ea]">
+                <div className="py-14 text-center">
                   <p className="text-sm font-semibold text-[#1d1d1f]">No Doctors Assigned</p>
                   <p className="text-xs text-[#86868b] mt-1 max-w-xs mx-auto">
                     Ask your clinic administrator to assign doctors to your reception desk before issuing walk-in tokens.
@@ -1303,17 +1305,20 @@ export const ReceptionistDashboard: React.FC = () => {
                         <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
                           Clinic Facility
                         </label>
-                        <select
-                          value={walkinClinicId}
-                          onChange={(e) => setWalkinClinicId(e.target.value)}
-                          className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[13px] text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all cursor-pointer"
-                        >
-                          {activeSelectedDoctor.clinics.map((c) => (
-                            <option key={c.clinicId} value={c.clinicId}>
-                              {c.clinic.clinicName} — {c.clinic.address}
-                            </option>
-                          ))}
-                        </select>
+                        <div className="relative">
+                          <select
+                            value={walkinClinicId}
+                            onChange={(e) => setWalkinClinicId(e.target.value)}
+                            className="w-full h-11 pl-3.5 pr-9 rounded-xl border border-[#d2d2d7] bg-white text-[13px] text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all appearance-none cursor-pointer"
+                          >
+                            {activeSelectedDoctor.clinics.map((c) => (
+                              <option key={c.clinicId} value={c.clinicId}>
+                                {c.clinic.clinicName} — {c.clinic.address}
+                              </option>
+                            ))}
+                          </select>
+                          <ChevronDown className="w-4 h-4 text-[#86868b] absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        </div>
                       </div>
                     )}
 
@@ -1336,13 +1341,13 @@ export const ReceptionistDashboard: React.FC = () => {
                         <label className="text-xs font-medium text-[#1d1d1f] tracking-tight">
                           Patient Details
                         </label>
-                        <div className="p-1 bg-[#f5f5f7] border border-[#e5e5ea] rounded-xl flex gap-1 w-full sm:w-64 select-none">
+                        <div className="p-1 bg-[#f5f5f7] border border-[#e5e5ea] rounded-full flex gap-0.5 w-full sm:w-64 select-none">
                           <button
                             type="button"
                             onClick={() => setBookingFor('self')}
-                            className={`flex-1 py-1.5 text-xs rounded-lg transition-all cursor-pointer ${
+                            className={`flex-1 h-8 text-xs rounded-full transition-all cursor-pointer ${
                               bookingFor === 'self'
-                                ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs'
+                                ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs border border-black/5'
                                 : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
                             }`}
                           >
@@ -1351,9 +1356,9 @@ export const ReceptionistDashboard: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => setBookingFor('other')}
-                            className={`flex-1 py-1.5 text-xs rounded-lg transition-all cursor-pointer ${
+                            className={`flex-1 h-8 text-xs rounded-full transition-all cursor-pointer ${
                               bookingFor === 'other'
-                                ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs'
+                                ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs border border-black/5'
                                 : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
                             }`}
                           >
@@ -1417,16 +1422,19 @@ export const ReceptionistDashboard: React.FC = () => {
                           <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
                             Gender
                           </label>
-                          <select
-                            value={gender}
-                            onChange={(e) => setGender(e.target.value)}
-                            className="w-full h-11 px-3 rounded-xl border border-[#d2d2d7] bg-white text-[13px] text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all"
-                          >
-                            <option value="Not Specified">Select</option>
-                            <option value="Male">Male</option>
-                            <option value="Female">Female</option>
-                            <option value="Other">Other</option>
-                          </select>
+                          <div className="relative">
+                            <select
+                              value={gender}
+                              onChange={(e) => setGender(e.target.value)}
+                              className="w-full h-11 pl-3 pr-8 rounded-xl border border-[#d2d2d7] bg-white text-[13px] text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all appearance-none cursor-pointer"
+                            >
+                              <option value="Not Specified">Select</option>
+                              <option value="Male">Male</option>
+                              <option value="Female">Female</option>
+                              <option value="Other">Other</option>
+                            </select>
+                            <ChevronDown className="w-4 h-4 text-[#86868b] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                          </div>
                         </div>
 
                         <div className="col-span-2">
@@ -1570,7 +1578,7 @@ export const ReceptionistDashboard: React.FC = () => {
                   Loading pending online bookings...
                 </div>
               ) : pendingAppointments.length === 0 ? (
-                <div className="py-14 text-center bg-[#fafafc] rounded-2xl border border-[#e5e5ea]">
+                <div className="py-14 text-center">
                   <p className="font-semibold text-sm text-[#1d1d1f]">All Bookings Processed</p>
                   <p className="mt-1 text-xs text-[#86868b]">
                     No online bookings are awaiting reception confirmation.
@@ -1589,7 +1597,7 @@ export const ReceptionistDashboard: React.FC = () => {
 
                 if (filteredPending.length === 0) {
                   return (
-                    <div className="py-12 text-center bg-[#fafafc] rounded-2xl border border-[#e5e5ea]">
+                    <div className="py-12 text-center">
                       <p className="font-semibold text-sm text-[#1d1d1f]">No Matching Requests</p>
                       <p className="mt-1 text-xs text-[#86868b] mb-3">
                         No pending bookings match "{pendingSearch}".
@@ -1597,7 +1605,7 @@ export const ReceptionistDashboard: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setPendingSearch('')}
-                        className="h-8 px-4 rounded-full text-xs font-medium bg-white border border-[#e5e5ea] text-[#1d1d1f] hover:bg-[#f5f5f7] transition-all cursor-pointer"
+                        className="h-8 px-4 rounded-full text-xs font-medium bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] hover:bg-[#e8e8ed] transition-all cursor-pointer"
                       >
                         Clear Search
                       </button>
@@ -1736,7 +1744,7 @@ export const ReceptionistDashboard: React.FC = () => {
               </div>
 
               {linkedDoctors.length === 0 ? (
-                <div className="py-14 text-center bg-[#fafafc] rounded-2xl border border-[#e5e5ea]">
+                <div className="py-14 text-center">
                   <p className="font-semibold text-sm text-[#1d1d1f]">No Doctors Assigned Yet</p>
                   <p className="mt-1 text-xs text-[#86868b]">
                     Please ask your Clinic Administrator to assign practitioners to your desk.
@@ -1868,7 +1876,7 @@ export const ReceptionistDashboard: React.FC = () => {
 
                 if (filtered.length === 0) {
                   return (
-                    <div className="py-14 text-center bg-[#fafafc] rounded-2xl border border-[#e5e5ea]">
+                    <div className="py-14 text-center">
                       <h4 className="text-sm font-semibold text-[#1d1d1f]">
                         {notifFilter === 'UNREAD' ? 'No Unread Notifications' : 'No Notifications Yet'}
                       </h4>
@@ -2245,18 +2253,21 @@ export const ReceptionistDashboard: React.FC = () => {
                   <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
                     Consultation Shift
                   </label>
-                  <select
-                    value={rescheduleSlotId}
-                    onChange={(e) => setRescheduleSlotId(e.target.value)}
-                    className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] text-[13px] bg-white text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:ring-4 focus:ring-[#0066cc]/10 focus:border-[#0066cc]"
-                  >
-                    <option value="">Standard Hours / Any Shift</option>
-                    {doc.slots.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name} ({s.startTime} - {s.endTime})
-                      </option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={rescheduleSlotId}
+                      onChange={(e) => setRescheduleSlotId(e.target.value)}
+                      className="w-full h-11 pl-3.5 pr-9 rounded-xl border border-[#d2d2d7] text-[13px] bg-white text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:ring-4 focus:ring-[#0066cc]/10 focus:border-[#0066cc] appearance-none cursor-pointer"
+                    >
+                      <option value="">Standard Hours / Any Shift</option>
+                      {doc.slots.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.name} ({s.startTime} - {s.endTime})
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="w-4 h-4 text-[#86868b] absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
                 </div>
               );
             })()}

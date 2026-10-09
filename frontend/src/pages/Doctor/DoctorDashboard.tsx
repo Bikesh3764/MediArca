@@ -37,6 +37,7 @@ import {
   Calendar,
   QrCode,
   ChevronRight,
+  ChevronDown,
   Phone,
 } from 'lucide-react';
 import { ClinicQrStandeeModal } from '../../components/common/ClinicQrStandeeModal';
@@ -943,7 +944,7 @@ export const DoctorDashboard: React.FC = () => {
                       setQueueScope('date');
                       setDate(e.target.value);
                     }}
-                    className="h-9 px-3 rounded-full border border-[#d2d2d7] text-xs font-medium bg-white text-[#1d1d1f] transition-all focus:outline-none focus:border-[#0066cc]"
+                    className="h-10 px-3.5 rounded-full border border-[#e5e5ea] text-xs font-medium bg-[#f5f5f7] hover:bg-[#e8e8ed]/70 focus:bg-white text-[#1d1d1f] transition-all focus:outline-none focus:border-[#0066cc] cursor-pointer"
                     title="Choose Specific Date"
                   />
                 </div>
@@ -1417,16 +1418,19 @@ export const DoctorDashboard: React.FC = () => {
                   <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
                     Gender
                   </label>
-                  <select
-                    value={walkinGender}
-                    onChange={(e) => setWalkinGender(e.target.value)}
-                    className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
-                  >
-                    <option value="Not Specified">Not Specified</option>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                    <option value="Other">Other</option>
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={walkinGender}
+                      onChange={(e) => setWalkinGender(e.target.value)}
+                      className="w-full h-11 pl-3.5 pr-9 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 appearance-none cursor-pointer"
+                    >
+                      <option value="Not Specified">Not Specified</option>
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                      <option value="Other">Other</option>
+                    </select>
+                    <ChevronDown className="w-4 h-4 text-[#86868b] absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
                 </div>
               </div>
 
@@ -1456,22 +1460,25 @@ export const DoctorDashboard: React.FC = () => {
                   <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
                     Clinic Venue
                   </label>
-                  <select
-                    required
-                    value={walkinClinicId}
-                    onChange={(e) => {
-                      setWalkinClinicId(e.target.value);
-                      setWalkinSlotId('');
-                    }}
-                    className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
-                  >
-                    <option value="">Select Clinic Venue</option>
-                    {affiliations.clinics.map((c) => (
-                      <option key={c.clinicId} value={c.clinicId}>
-                        {c.clinicName} {c.city ? `(${c.city})` : ''}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <select
+                      required
+                      value={walkinClinicId}
+                      onChange={(e) => {
+                        setWalkinClinicId(e.target.value);
+                        setWalkinSlotId('');
+                      }}
+                      className="w-full h-11 pl-3.5 pr-9 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 appearance-none cursor-pointer"
+                    >
+                      <option value="">Select Clinic Venue</option>
+                      {affiliations.clinics.map((c) => (
+                        <option key={c.clinicId} value={c.clinicId}>
+                          {c.clinicName} {c.city ? `(${c.city})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="w-4 h-4 text-[#86868b] absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
                 </div>
               )}
 
@@ -1485,22 +1492,25 @@ export const DoctorDashboard: React.FC = () => {
                 <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
                   Checking Shift
                 </label>
-                <select
-                  value={walkinSlotId}
-                  onChange={(e) => setWalkinSlotId(e.target.value)}
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
-                >
-                  <option value="">Current / Default Shift</option>
-                  {(
-                    (walkinClinicId && affiliations?.clinics.find((c) => c.clinicId === walkinClinicId)?.slots) ||
-                    (affiliations?.clinics?.length === 1 && affiliations.clinics[0].slots) ||
-                    parseDoctorSlots(user?.doctorProfile)
-                  ).map((slot, i) => (
-                    <option key={slot.id || i} value={slot.id}>
-                      {slot.name} ({format12Hour(slot.startTime)}–{format12Hour(slot.endTime)})
-                    </option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <select
+                    value={walkinSlotId}
+                    onChange={(e) => setWalkinSlotId(e.target.value)}
+                    className="w-full h-11 pl-3.5 pr-9 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 appearance-none cursor-pointer"
+                  >
+                    <option value="">Current / Default Shift</option>
+                    {(
+                      (walkinClinicId && affiliations?.clinics.find((c) => c.clinicId === walkinClinicId)?.slots) ||
+                      (affiliations?.clinics?.length === 1 && affiliations.clinics[0].slots) ||
+                      parseDoctorSlots(user?.doctorProfile)
+                    ).map((slot, i) => (
+                      <option key={slot.id || i} value={slot.id}>
+                        {slot.name} ({format12Hour(slot.startTime)}–{format12Hour(slot.endTime)})
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-[#86868b] absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
               </div>
 
               <div>
@@ -1636,39 +1646,45 @@ export const DoctorDashboard: React.FC = () => {
                   {availableStates.length > 0 && (
                     <div className="flex items-center gap-1.5">
                       <span className="text-xs font-medium text-[#86868b]">State:</span>
-                      <select
-                        value={clinicStateFilter}
-                        onChange={(e) => {
-                          setClinicStateFilter(e.target.value);
-                          setClinicCityFilter('All');
-                        }}
-                        className="h-9 px-3 rounded-xl bg-white border border-[#d2d2d7] text-xs text-[#1d1d1f] focus:outline-none focus:border-[#0066cc]"
-                      >
-                        <option value="All">All States</option>
-                        {availableStates.map((st) => (
-                          <option key={st} value={st}>
-                            {st}
-                          </option>
-                        ))}
-                      </select>
+                      <div className="relative">
+                        <select
+                          value={clinicStateFilter}
+                          onChange={(e) => {
+                            setClinicStateFilter(e.target.value);
+                            setClinicCityFilter('All');
+                          }}
+                          className="h-9 pl-3 pr-8 rounded-xl bg-white border border-[#d2d2d7] text-xs text-[#1d1d1f] focus:outline-none focus:border-[#0066cc] appearance-none cursor-pointer"
+                        >
+                          <option value="All">All States</option>
+                          {availableStates.map((st) => (
+                            <option key={st} value={st}>
+                              {st}
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronDown className="w-3.5 h-3.5 text-[#86868b] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      </div>
                     </div>
                   )}
 
                   {(availableCities.length > 0 || clinicStateFilter !== 'All') && (
                     <div className="flex items-center gap-1.5">
                       <span className="text-xs font-medium text-[#86868b]">City:</span>
-                      <select
-                        value={clinicCityFilter}
-                        onChange={(e) => setClinicCityFilter(e.target.value)}
-                        className="h-9 px-3 rounded-xl bg-white border border-[#d2d2d7] text-xs text-[#1d1d1f] focus:outline-none focus:border-[#0066cc]"
-                      >
-                        <option value="All">All Cities</option>
-                        {availableCities.map((city) => (
-                          <option key={city} value={city}>
-                            {city}
-                          </option>
-                        ))}
-                      </select>
+                      <div className="relative">
+                        <select
+                          value={clinicCityFilter}
+                          onChange={(e) => setClinicCityFilter(e.target.value)}
+                          className="h-9 pl-3 pr-8 rounded-xl bg-white border border-[#d2d2d7] text-xs text-[#1d1d1f] focus:outline-none focus:border-[#0066cc] appearance-none cursor-pointer"
+                        >
+                          <option value="All">All Cities</option>
+                          {availableCities.map((city) => (
+                            <option key={city} value={city}>
+                              {city}
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronDown className="w-3.5 h-3.5 text-[#86868b] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      </div>
                     </div>
                   )}
 
