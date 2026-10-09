@@ -43,9 +43,18 @@ export const Login: React.FC<LoginProps> = ({ portal }) => {
     if (redirectParam && redirectParam.startsWith('/') && !redirectParam.startsWith('//')) {
       return redirectParam;
     }
-    const fromPath = (location.state as any)?.from?.pathname;
-    const search = (location.state as any)?.from?.search || '';
-    if (fromPath && fromPath !== '/login' && fromPath !== '/signup' && fromPath !== '/doctor/login' && fromPath !== '/patient/login') {
+    const rawFrom = (location.state as any)?.from;
+    const fromPath = typeof rawFrom === 'string' ? rawFrom : rawFrom?.pathname;
+    const search = typeof rawFrom === 'object' && rawFrom?.search ? rawFrom.search : '';
+    if (
+      fromPath &&
+      fromPath.startsWith('/') &&
+      !fromPath.startsWith('//') &&
+      fromPath !== '/login' &&
+      fromPath !== '/signup' &&
+      fromPath !== '/doctor/login' &&
+      fromPath !== '/patient/login'
+    ) {
       return `${fromPath}${search}`;
     }
     return getDestination(role);

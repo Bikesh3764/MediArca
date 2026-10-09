@@ -1247,14 +1247,17 @@ export const getPatientAppointments = async (req: AuthRequest, res: Response): P
         const currentServingQueueNumber = currentServingAppt?.queueNumber || 0;
 
         // Count patients ahead waiting in this slot in memory from batch
-        const patientsAhead = activeBatchAppointments.filter((a) =>
-          a.doctorId === appt.doctorId &&
-          a.appointmentDate === appt.appointmentDate &&
-          (appt.clinicId ? a.clinicId === appt.clinicId : true) &&
-          (appt.slotId ? a.slotId === appt.slotId : appt.checkingWindow ? a.checkingWindow === appt.checkingWindow : true) &&
-          a.queueNumber > 0 &&
-          a.queueNumber < appt.queueNumber
-        ).length;
+        const patientsAhead =
+          appt.status === 'IN_CONSULTATION'
+            ? 0
+            : activeBatchAppointments.filter((a) =>
+                a.doctorId === appt.doctorId &&
+                a.appointmentDate === appt.appointmentDate &&
+                (appt.clinicId ? a.clinicId === appt.clinicId : true) &&
+                (appt.slotId ? a.slotId === appt.slotId : appt.checkingWindow ? a.checkingWindow === appt.checkingWindow : true) &&
+                a.queueNumber > 0 &&
+                a.queueNumber < appt.queueNumber
+              ).length;
 
         // Check shift timing for today strictly using IST timezone (BUG-23)
         const slotStartMins = timeToMinutes(slot.startTime);
@@ -1269,11 +1272,13 @@ export const getPatientAppointments = async (req: AuthRequest, res: Response): P
         const isShiftPassed = isToday && currentMinutes >= slotEndMins;
         const isShiftActive = isToday && currentMinutes >= slotStartMins && currentMinutes < slotEndMins;
 
-        const estWaitMinutes = Math.round(patientsAhead * pace);
+        const estWaitMinutes = appt.status === 'IN_CONSULTATION' ? 0 : Math.round(patientsAhead * pace);
         const isYourTurn = appt.status === 'IN_CONSULTATION' || (isShiftActive && patientsAhead === 0);
 
         let liveEstimatedTime = appt.estimatedTime;
-        if (isToday) {
+        if (appt.status === 'IN_CONSULTATION') {
+          liveEstimatedTime = 'In Cabin Now';
+        } else if (isToday) {
           if (isShiftPassed) {
             liveEstimatedTime = 'Shift Ended';
           } else if (isShiftActive) {

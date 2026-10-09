@@ -1086,12 +1086,12 @@ export const DoctorDashboard: React.FC = () => {
                       </p>
 
                       <div className="my-4 p-3.5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] text-[13px] text-[#1d1d1f] space-y-1.5">
-                        <div>
+                        <div className="whitespace-pre-wrap break-words">
                           <span className="text-[#86868b] font-medium">Reason: </span>
                           {queueData.activeInConsultation.reasonForVisit || 'General Consultation'}
                         </div>
                         {queueData.activeInConsultation.symptoms && (
-                          <div>
+                          <div className="whitespace-pre-wrap break-words">
                             <span className="text-[#86868b] font-medium">Symptoms: </span>
                             {queueData.activeInConsultation.symptoms}
                           </div>

@@ -259,6 +259,13 @@ export const ManageSchedule: React.FC = () => {
         setSaving(false);
         return;
       }
+      const startMins = timeToMinutes(s.startTime);
+      const endMins = timeToMinutes(s.endTime);
+      if (endMins <= startMins) {
+        setError(`Shift end time must be after start time for ${s.name || `Shift ${i + 1}`}.`);
+        setSaving(false);
+        return;
+      }
       if (!s.maxPatients || s.maxPatients < 1) {
         setError(`Max patients capacity for ${s.name || `Shift ${i + 1}`} must be at least 1.`);
         setSaving(false);
@@ -268,6 +275,23 @@ export const ManageSchedule: React.FC = () => {
         setError(`Average consultation time for ${s.name || `Shift ${i + 1}`} must be at least 1 minute.`);
         setSaving(false);
         return;
+      }
+    }
+
+    // Check for overlapping shifts within this facility
+    for (let i = 0; i < slots.length; i++) {
+      const s1 = slots[i];
+      const start1 = timeToMinutes(s1.startTime);
+      const end1 = timeToMinutes(s1.endTime);
+      for (let j = i + 1; j < slots.length; j++) {
+        const s2 = slots[j];
+        const start2 = timeToMinutes(s2.startTime);
+        const end2 = timeToMinutes(s2.endTime);
+        if (start1 < end2 && start2 < end1) {
+          setError(`Shift overlap detected between ${s1.name || `Shift ${i + 1}`} and ${s2.name || `Shift ${j + 1}`}. Please ensure shift hours do not overlap.`);
+          setSaving(false);
+          return;
+        }
       }
     }
 
