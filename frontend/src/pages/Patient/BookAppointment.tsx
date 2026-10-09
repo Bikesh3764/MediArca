@@ -225,15 +225,23 @@ export const BookAppointment: React.FC = () => {
     }
 
     const isForOther = bookingFor === 'other';
-    if (isForOther && !patientName.trim()) {
-      setError('Please provide the patient full name.');
-      setSubmitting(false);
-      return;
-    }
-    if (isForOther && !patientAge.trim()) {
-      setError('Please provide the patient age.');
-      setSubmitting(false);
-      return;
+    if (isForOther) {
+      if (!patientName.trim()) {
+        setError('Please provide the patient full name.');
+        setSubmitting(false);
+        return;
+      }
+      if (!patientAge.trim()) {
+        setError('Please provide the patient age.');
+        setSubmitting(false);
+        return;
+      }
+      const parsedAge = parseInt(patientAge.trim(), 10);
+      if (!Number.isFinite(parsedAge) || parsedAge < 0 || parsedAge > 125) {
+        setError('Please enter a valid patient age between 0 and 125.');
+        setSubmitting(false);
+        return;
+      }
     }
 
     try {

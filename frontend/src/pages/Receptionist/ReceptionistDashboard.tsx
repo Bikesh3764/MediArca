@@ -488,6 +488,14 @@ export const ReceptionistDashboard: React.FC = () => {
       }
     }
 
+    if (patientAge.trim()) {
+      const parsedAge = parseInt(patientAge.trim(), 10);
+      if (!Number.isFinite(parsedAge) || parsedAge < 0 || parsedAge > 125) {
+        setError('Please enter a valid patient age between 0 and 125.');
+        return;
+      }
+    }
+
     setBookingLoading(true);
     setError(null);
     try {

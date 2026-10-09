@@ -432,8 +432,14 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
               <div className="flex items-center gap-3 text-[#1d1d1f] bg-white p-3.5 sm:p-4 rounded-xl text-xs sm:text-sm font-medium border border-[#0066cc]/30">
                 <CheckCircle2 className="w-5 h-5 text-[#0066cc] shrink-0" />
                 <div>
-                  <span className="font-semibold text-[#1d1d1f] block">It is your turn now!</span>
-                  <span className="text-[#86868b] text-xs font-normal mt-0.5 block">{doctorDisplayName} is ready for you in the consultation cabin.</span>
+                  <span className="font-semibold text-[#1d1d1f] block">
+                    {status === 'IN_CONSULTATION' ? 'Consultation in Progress' : 'It is your turn now!'}
+                  </span>
+                  <span className="text-[#86868b] text-xs font-normal mt-0.5 block">
+                    {status === 'IN_CONSULTATION'
+                      ? `You are currently in consultation with ${doctorDisplayName} in the cabin.`
+                      : `${doctorDisplayName} is ready for you in the consultation cabin.`}
+                  </span>
                 </div>
               </div>
             ) : (

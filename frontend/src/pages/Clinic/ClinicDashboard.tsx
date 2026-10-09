@@ -3,7 +3,7 @@ import { api, ClinicDashboardData, ClinicReceptionistItem, Doctor, getFileUrl, f
 import { useAuth } from '../../context/AuthContext';
 import { DashboardLayout, DashboardNavItem } from '../../components/layout/DashboardLayout';
 import { ClinicQrStandeeModal } from '../../components/common/ClinicQrStandeeModal';
-import { sanitizeIndianPhone } from '../../utils/phoneUtils';
+import { sanitizeIndianPhone, isValidIndianPhone, formatIndianPhone } from '../../utils/phoneUtils';
 import {
   Users,
   CalendarCheck,
@@ -206,6 +206,10 @@ export const ClinicDashboard: React.FC = () => {
       setError('Receptionist password must be at least 8 characters long.');
       return;
     }
+    if (recPhone.trim() && !isValidIndianPhone(recPhone.trim())) {
+      setError('Please provide a valid 10-digit Indian mobile number for the receptionist.');
+      return;
+    }
 
     setProvisioning(true);
     setError(null);
@@ -215,7 +219,7 @@ export const ClinicDashboard: React.FC = () => {
         fullName: recFullName.trim(),
         email: recEmail.trim(),
         password: recPassword.trim(),
-        phone: recPhone.trim() || undefined,
+        phone: recPhone.trim() ? formatIndianPhone(recPhone.trim()) : undefined,
         doctorIds: recDoctorIds,
       });
       const savedName = recFullName.trim();

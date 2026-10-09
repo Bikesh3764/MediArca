@@ -4,6 +4,7 @@ import { api, Appointment } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { DashboardLayout, DashboardNavItem } from '../../components/layout/DashboardLayout';
 import { UtilityCard } from '../../components/ui/UtilityCard';
+import { formatDisplayPhone } from '../../utils/phoneUtils';
 import {
   ChevronLeft,
   AlertCircle,
@@ -260,7 +261,9 @@ export const ConsultationView: React.FC = () => {
             <div className="space-y-1">
               <span className="text-[#86868b] font-medium block">Phone</span>
               <p className="font-semibold text-[#1d1d1f] text-[13px]">
-                {appointment.patient?.user?.phone || 'Not provided'}
+                {appointment.patientPhone || appointment.patient?.user?.phone
+                  ? formatDisplayPhone(appointment.patientPhone || appointment.patient?.user?.phone || '')
+                  : 'Not provided'}
               </p>
             </div>
 

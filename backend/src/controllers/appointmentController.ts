@@ -393,6 +393,14 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
       }
     }
 
+    if (patientAge && String(patientAge).trim()) {
+      const parsedAge = parseInt(String(patientAge).trim(), 10);
+      if (!Number.isFinite(parsedAge) || parsedAge < 0 || parsedAge > 125) {
+        res.status(400).json({ success: false, message: 'Patient age must be a valid number between 0 and 125.' });
+        return;
+      }
+    }
+
     let patient: any;
     let patientUser: any = null;
     if (req.user.role === 'DOCTOR') {

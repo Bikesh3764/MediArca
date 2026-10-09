@@ -349,6 +349,8 @@ export const AdminDashboard: React.FC = () => {
       setClinics(clinicsData);
       setAppointments(apptsData);
       setContactMessages(messagesData || []);
+      setSelectedDoctor((prev: any) => (prev ? doctorsData.find((d: any) => d.id === prev.id) || prev : null));
+      setSelectedClinic((prev: any) => (prev ? clinicsData.find((c: any) => c.id === prev.id) || prev : null));
     } catch (err) {
       console.error('Failed to load admin data:', err);
     } finally {

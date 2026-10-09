@@ -438,6 +438,14 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
       }
     }
 
+    if (patientAge && String(patientAge).trim()) {
+      const parsedAge = parseInt(String(patientAge).trim(), 10);
+      if (!Number.isFinite(parsedAge) || parsedAge < 0 || parsedAge > 125) {
+        res.status(400).json({ success: false, message: 'Patient age must be a valid number between 0 and 125.' });
+        return;
+      }
+    }
+
     if (requestedDate && !isValidAppointmentDate(requestedDate)) {
       res.status(400).json({
         success: false,
@@ -710,6 +718,7 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
               estimatedTime,
               slotId: chosenSlot.id,
               status: 'WAITING',
+              paymentStatus: 'PAID',
               reasonForVisit: reasonForVisit || 'Walk-in Consultation',
               symptoms: symptoms || null,
               isForOther: isOther,

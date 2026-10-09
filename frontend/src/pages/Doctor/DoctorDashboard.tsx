@@ -205,11 +205,24 @@ export const DoctorDashboard: React.FC = () => {
       return;
     }
 
+    if (walkinAge.trim()) {
+      const parsedAge = parseInt(walkinAge.trim(), 10);
+      if (!Number.isFinite(parsedAge) || parsedAge < 0 || parsedAge > 125) {
+        setWalkinError('Please enter a valid age between 0 and 125');
+        return;
+      }
+    }
+
+    if (!affiliations?.clinics || affiliations.clinics.length === 0) {
+      setWalkinError('Please affiliate with an active clinic facility before adding walk-in appointments.');
+      return;
+    }
+
     const effectiveClinicId =
       walkinClinicId ||
-      (affiliations?.clinics?.length === 1 ? affiliations.clinics[0].clinicId : undefined);
+      (affiliations.clinics.length === 1 ? affiliations.clinics[0].clinicId : undefined);
 
-    if (affiliations?.clinics && affiliations.clinics.length > 1 && !effectiveClinicId) {
+    if (affiliations.clinics.length > 1 && !effectiveClinicId) {
       setWalkinError('Please select which clinic venue to book the walk-in at');
       return;
     }
