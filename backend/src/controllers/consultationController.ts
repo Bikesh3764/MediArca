@@ -200,6 +200,7 @@ export const executeCallPatientTransaction = async (
       where: { id: appointmentId },
       data: { status: 'IN_CONSULTATION' },
       include: {
+        clinic: true,
         patient: {
           include: {
             user: { select: { id: true, fullName: true, email: true, phone: true } },
@@ -469,6 +470,11 @@ export const executeCompleteConsultationAtomic = async (
 
   return await prismaClient.appointment.findUnique({
     where: { id: appointmentId },
+    include: {
+      clinic: true,
+      doctor: { include: { user: { select: { fullName: true } } } },
+      patient: { include: { user: { select: { id: true, fullName: true, phone: true } } } },
+    },
   });
 };
 

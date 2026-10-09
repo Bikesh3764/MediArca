@@ -120,8 +120,23 @@ export const verifyDoctor = async (req: AuthRequest, res: Response): Promise<voi
       return;
     }
 
-    const doctor = await prisma.doctorProfile.update({
+    let targetDocProfile = await prisma.doctorProfile.findUnique({
       where: { id: doctorId },
+      select: { id: true },
+    });
+    if (!targetDocProfile) {
+      targetDocProfile = await prisma.doctorProfile.findUnique({
+        where: { userId: doctorId },
+        select: { id: true },
+      });
+    }
+    if (!targetDocProfile) {
+      res.status(404).json({ success: false, message: 'Doctor profile not found' });
+      return;
+    }
+
+    const doctor = await prisma.doctorProfile.update({
+      where: { id: targetDocProfile.id },
       data: {
         isVerified: targetIsVerified,
         verificationStatus: targetStatus,
@@ -261,8 +276,23 @@ export const verifyClinic = async (req: AuthRequest, res: Response): Promise<voi
       return;
     }
 
-    const clinic = await prisma.clinicProfile.update({
+    let targetClinicProfile = await prisma.clinicProfile.findUnique({
       where: { id: clinicId },
+      select: { id: true },
+    });
+    if (!targetClinicProfile) {
+      targetClinicProfile = await prisma.clinicProfile.findUnique({
+        where: { userId: clinicId },
+        select: { id: true },
+      });
+    }
+    if (!targetClinicProfile) {
+      res.status(404).json({ success: false, message: 'Clinic profile not found' });
+      return;
+    }
+
+    const clinic = await prisma.clinicProfile.update({
+      where: { id: targetClinicProfile.id },
       data: {
         isVerified: targetIsVerified,
         verificationStatus: targetStatus,

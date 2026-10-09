@@ -860,6 +860,7 @@ export const executeReceptionistInConsultationTransaction = async (
       where: { id: appointmentId },
       data: updatePayload,
       include: {
+        clinic: true,
         doctor: { include: { user: { select: { fullName: true } } } },
         patient: { include: { user: { select: { id: true, fullName: true, phone: true } } } },
       },
