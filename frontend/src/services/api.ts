@@ -905,6 +905,8 @@ export interface QueuePreview {
   maxDailyPatients: number;
   totalBooked: number;
   nextQueueNumber: number;
+  slotQueueNumber?: number;
+  dailyQueueNumber?: number;
   patientsAhead: number;
   estimatedTime: string;
   isFull: boolean;
@@ -1394,13 +1396,14 @@ export const api = {
           selectedSlotId: chosen.slot.id,
           selectedSlot: chosen,
           availableSlots,
-          checkingWindow: chosen.slot.name,
+          checkingWindow: chosen.slot.name.replace(/\s*\([^)]*\)/g, '').trim() || chosen.slot.name,
           checkingStartTime: chosen.slot.startTime,
           checkingEndTime: chosen.slot.endTime,
           avgConsultationMinutes: chosen.slot.avgConsultationMinutes,
           maxDailyPatients: chosen.slot.maxPatients,
           totalBooked: chosen.totalBooked,
-          nextQueueNumber: 1,
+          nextQueueNumber: (chosen.totalBooked || 0) + 1,
+          slotQueueNumber: (chosen.totalBooked || 0) + 1,
           patientsAhead: chosen.patientsAhead,
           estimatedTime: chosen.estimatedTime,
           isFull: chosen.isFull,

@@ -40,6 +40,11 @@ const formatDisplayPhone = (phone?: string) => {
   return phone.startsWith('+91') ? phone : `+91 ${phone}`;
 };
 
+const cleanSlotName = (name?: string): string => {
+  if (!name) return 'Shift';
+  return name.replace(/\s*\([^)]*\)/g, '').trim() || name;
+};
+
 export const BookAppointment: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
@@ -570,7 +575,10 @@ export const BookAppointment: React.FC = () => {
                         </div>
                         <span className="text-xs text-[#86868b] flex items-center gap-1 truncate">
                           <MapPin className="w-3 h-3 text-[#86868b] shrink-0" />
-                          <span className="truncate">{c.clinic.address}{c.clinic.city ? `, ${c.clinic.city}` : ''}</span>
+                          <span className="truncate">
+                            {c.clinic.address}
+                            {c.clinic.city && !c.clinic.address.toLowerCase().includes(c.clinic.city.toLowerCase()) ? `, ${c.clinic.city}` : ''}
+                          </span>
                         </span>
                         <div className="mt-2 pt-2 border-t border-[#e5e5ea] flex items-center justify-between text-xs">
                           <span className="text-[#86868b]">Fee</span>
@@ -703,11 +711,11 @@ export const BookAppointment: React.FC = () => {
                 </div>
               </div>
               <div className="pt-2 border-t border-[#e5e5ea] text-xs text-[#86868b] flex items-center justify-between">
-                <span>{queuePreview.checkingWindow}</span>
+                <span>{cleanSlotName(queuePreview.checkingWindow)}</span>
                 <span>
                   {isSelectedSlotPassed
                     ? 'Pick an upcoming shift'
-                    : 'Assigned upon receptionist payment'}
+                    : 'Zero upfront fee • Pay at clinic'}
                 </span>
               </div>
             </div>

@@ -96,7 +96,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
 
   // Clean shift window display
   const cleanShiftWindow = checkingWindow
-    ? checkingWindow.replace(/^Doctor Shift:\s*/i, '').replace(/^Shift\s*\d+\s*\((.+)\)$/i, '$1')
+    ? checkingWindow.replace(/^Doctor Shift:\s*/i, '').replace(/\s*\([^)]*(Afternoon|Morning|Evening)[^)]*\)/i, '').replace(/^Shift\s*\d+\s*\((.+)\)$/i, '$1').trim()
     : 'Standard Hours';
 
   return (

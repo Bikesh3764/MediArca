@@ -244,6 +244,14 @@ export const getQueuePreview = async (req: AuthRequest, res: Response): Promise<
       selectedSlotStatus = availableSlots.find((s) => !s.isPassed && !s.isFull) || availableSlots[0];
     }
 
+    // Shift-specific token number: count how many patients are already booked in this specific shift
+    const slotBookedCount = selectedSlotStatus?.totalBooked || 0;
+    const nextSlotQueueNumber = Math.max(1, slotBookedCount + 1);
+
+    // Clean shift name (stripping any legacy period descriptors like "(Afternoon)" or "(Morning)")
+    const rawShiftName = selectedSlotStatus?.slot?.name || 'Shift';
+    const cleanShiftName = rawShiftName.replace(/\s*\([^)]*\)/g, '').trim() || 'Shift';
+
     res.json({
       success: true,
       data: {
@@ -253,13 +261,15 @@ export const getQueuePreview = async (req: AuthRequest, res: Response): Promise<
         selectedSlotId: selectedSlotStatus.slot.id,
         selectedSlot: selectedSlotStatus,
         availableSlots,
-        checkingWindow: selectedSlotStatus.slot.name,
+        checkingWindow: cleanShiftName,
         checkingStartTime: selectedSlotStatus.slot.startTime,
         checkingEndTime: selectedSlotStatus.slot.endTime,
         avgConsultationMinutes: selectedSlotStatus.slot.avgConsultationMinutes,
         maxDailyPatients: selectedSlotStatus.slot.maxPatients,
         totalBooked: selectedSlotStatus.totalBooked,
-        nextQueueNumber,
+        nextQueueNumber: nextSlotQueueNumber,
+        slotQueueNumber: nextSlotQueueNumber,
+        dailyQueueNumber: nextQueueNumber,
         patientsAhead: selectedSlotStatus.patientsAhead,
         estimatedTime: selectedSlotStatus.estimatedTime,
         isFull: selectedSlotStatus.isFull,
@@ -938,7 +948,7 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
 
     let estimatedQueueNumber = newAppointment.queueNumber > 0 ? newAppointment.queueNumber : 1;
     if (isPendingBooking) {
-      const maxConfirmed = await prisma.appointment.findFirst({
+      const confirmedInSlotCount = await prisma.appointment.count({
         where: {
           doctorId: doctor.id,
           appointmentDate,
@@ -946,10 +956,8 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
           queueNumber: { gt: 0 },
           ...(chosenSlot?.id ? { slotId: chosenSlot.id } : {}),
         },
-        orderBy: { queueNumber: 'desc' },
-        select: { queueNumber: true },
       });
-      estimatedQueueNumber = Math.max(1, (maxConfirmed?.queueNumber || 0) + 1);
+      estimatedQueueNumber = Math.max(1, confirmedInSlotCount + 1);
     }
 
     const appointmentResponseData = {
@@ -1353,7 +1361,7 @@ export const getPatientAppointments = async (req: AuthRequest, res: Response): P
           (appt.clinicId ? a.clinicId === appt.clinicId : true) &&
           (appt.slotId ? a.slotId === appt.slotId : appt.checkingWindow ? a.checkingWindow === appt.checkingWindow : true)
         );
-        const maxConfirmedQueue = confirmedForShift.reduce((max, a) => Math.max(max, a.queueNumber), 0);
+        const maxConfirmedQueue = confirmedForShift.length;
         const estimatedQueueNumber = Math.max(1, maxConfirmedQueue + 1);
 
         if (slot) {
