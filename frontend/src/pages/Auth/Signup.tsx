@@ -86,9 +86,11 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
     setSubmitting(true);
 
     try {
+      const cleanEmail = email.trim().toLowerCase();
+      const cleanFullName = fullName.trim();
       const payload: any = {
-        fullName,
-        email,
+        fullName: cleanFullName,
+        email: cleanEmail,
         password,
         phone: formatIndianPhone(phone),
         role,

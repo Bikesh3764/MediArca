@@ -137,6 +137,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     }
 
     const cleanEmail = email.toLowerCase().trim();
+    const cleanFullName = fullName.trim();
     if (cleanEmail.endsWith('@mediarca.local') || cleanEmail.startsWith('walkin.')) {
       res.status(400).json({ success: false, message: 'Reserved domain or prefix cannot be used for registration.' });
       return;
@@ -228,7 +229,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         where: { id: existingUser.id },
         data: {
           passwordHash,
-          fullName: normalizedRole === 'CLINIC' ? (profileData.clinicName || fullName) : fullName,
+          fullName: normalizedRole === 'CLINIC' ? (profileData.clinicName?.trim() || cleanFullName) : cleanFullName,
           phone: targetPhone,
           role: normalizedRole,
           emailVerificationOtp: otp,
@@ -263,7 +264,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
                       upsert: {
                         update: {},
                         create: {
-                          clinicName: profileData.clinicName || fullName,
+                          clinicName: profileData.clinicName || cleanFullName,
                           address: profileData.address || profileData.clinicAddress || 'Central Healthcare Clinic',
                           city: profileData.city || null,
                           state: profileData.state || null,
@@ -278,7 +279,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         include: { patientProfile: true, doctorProfile: true, clinicProfile: true },
       });
 
-      sendVerificationOtpEmail(cleanEmail, otp, fullName).catch((mailErr) => {
+      sendVerificationOtpEmail(cleanEmail, otp, cleanFullName).catch((mailErr) => {
         console.error('Async OTP email dispatch failed on unverified re-registration:', mailErr);
       });
 
@@ -335,7 +336,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         data: {
           email: cleanEmail,
           passwordHash,
-          fullName,
+          fullName: cleanFullName,
           phone: formattedPhone,
           role: 'PATIENT',
           isEmailVerified: false,
@@ -390,7 +391,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         data: {
           email: cleanEmail,
           passwordHash,
-          fullName,
+          fullName: cleanFullName,
           phone: formattedPhone,
           role: 'DOCTOR',
           isEmailVerified: false,
@@ -419,7 +420,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         data: {
           email: cleanEmail,
           passwordHash,
-          fullName: profileData.clinicName || fullName,
+          fullName: profileData.clinicName?.trim() || cleanFullName,
           phone: formattedPhone,
           role: 'CLINIC',
           isEmailVerified: false,

@@ -12,6 +12,7 @@ import { ScrollToTop } from './components/common/ScrollToTop';
 const Home = lazy(() => import('./pages/Home'));
 const Login = lazy(() => import('./pages/Auth/Login'));
 const Signup = lazy(() => import('./pages/Auth/Signup'));
+const NotFound = lazy(() => import('./pages/NotFound').then(m => ({ default: m.NotFound })));
 const DoctorDiscovery = lazy(() => import('./pages/Patient/DoctorDiscovery').then(m => ({ default: m.DoctorDiscovery })));
 const BookAppointment = lazy(() => import('./pages/Patient/BookAppointment').then(m => ({ default: m.BookAppointment })));
 const MyAppointments = lazy(() => import('./pages/Patient/MyAppointments').then(m => ({ default: m.MyAppointments })));
@@ -27,6 +28,10 @@ const ClinicDashboard = lazy(() => import('./pages/Clinic/ClinicDashboard').then
 const ReceptionistAuth = lazy(() => import('./pages/Receptionist/ReceptionistAuth').then(m => ({ default: m.ReceptionistAuth })));
 const ReceptionistDashboard = lazy(() => import('./pages/Receptionist/ReceptionistDashboard').then(m => ({ default: m.ReceptionistDashboard })));
 const ClinicCheckIn = lazy(() => import('./pages/Patient/ClinicCheckIn').then(m => ({ default: m.ClinicCheckIn })));
+
+// Global Network & Document Title Utilities
+import { OfflineBanner } from './components/common/OfflineBanner';
+import { DocumentTitleSync } from './components/common/DocumentTitleSync';
 
 // Company & Informational Pages
 const AboutUs = lazy(() => import('./pages/Company/AboutUs').then(m => ({ default: m.AboutUs })));
@@ -108,14 +113,17 @@ function AppShell() {
 
   return (
     <div className="flex flex-col min-h-screen">
+      <DocumentTitleSync />
+      <OfflineBanner />
       {!isPortalRoute && <GlobalNav />}
       <ProfileCompletionModal />
       <main
         className={`flex-grow animate-in fade-in duration-200 ${!isPortalRoute ? 'pb-20 md:pb-0' : ''}`}
         key={location.pathname}
       >
-        <Suspense fallback={<RouteLoadingFallback />}>
-          <Routes>
+        <ErrorBoundary isInline fallbackTitle="Section Temporarily Unavailable">
+          <Suspense fallback={<RouteLoadingFallback />}>
+            <Routes>
             {/* Public & Dedicated Portals */}
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
@@ -273,10 +281,11 @@ function AppShell() {
               }
             />
 
-            {/* Fallback */}
-            <Route path="*" element={<Navigate to="/" replace />} />
+            {/* Dedicated 404 Fallback */}
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
+        </ErrorBoundary>
       </main>
       <MobileTabBar />
       {!isPortalRoute && <Footer />}

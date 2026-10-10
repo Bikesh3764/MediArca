@@ -1705,7 +1705,7 @@ export const DoctorDashboard: React.FC = () => {
       {/* Rapid Add Walk-in Patient Modal */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-md animate-fadeIn">
-          <div className="bg-white rounded-[28px] border border-[#e5e5ea] max-w-md w-full p-7 sm:p-8 shadow-[0_24px_60px_rgba(0,0,0,0.16)] relative text-left">
+          <div className="bg-white rounded-[28px] border border-[#e5e5ea] max-w-md w-full max-h-[92vh] overflow-y-auto p-6 sm:p-8 shadow-[0_24px_60px_rgba(0,0,0,0.16)] relative text-left">
             <button
               type="button"
               onClick={() => {

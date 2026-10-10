@@ -9606,6 +9606,84 @@ Follow-up Date: 2026-10-15`;
     'Fix 22: Admin inspection modals surface affiliated facilities and practitioner rosters, and contact inquiries can be deleted'
   );
 
+  // --- Fix 23: Part 8 Final System Polish, Responsive Modal, 404 Route & Offline Banner Verification ---
+  console.log('\n--- Fix 23: Part 8 Polish & Cross-Device Resilience ---');
+
+  const appPart8Content = fs.readFileSync(
+    path.join(__dirname, '../../frontend/src/App.tsx'),
+    'utf-8'
+  );
+  const notFoundPart8Content = fs.readFileSync(
+    path.join(__dirname, '../../frontend/src/pages/NotFound.tsx'),
+    'utf-8'
+  );
+  const offlineBannerPart8Content = fs.readFileSync(
+    path.join(__dirname, '../../frontend/src/components/common/OfflineBanner.tsx'),
+    'utf-8'
+  );
+  const documentTitleSyncPart8Content = fs.readFileSync(
+    path.join(__dirname, '../../frontend/src/components/common/DocumentTitleSync.tsx'),
+    'utf-8'
+  );
+  const doctorDashboardPart8Content = fs.readFileSync(
+    path.join(__dirname, '../../frontend/src/pages/Doctor/DoctorDashboard.tsx'),
+    'utf-8'
+  );
+  const signupPart8Content = fs.readFileSync(
+    path.join(__dirname, '../../frontend/src/pages/Auth/Signup.tsx'),
+    'utf-8'
+  );
+  const errorBoundaryPart8Content = fs.readFileSync(
+    path.join(__dirname, '../../frontend/src/components/ui/ErrorBoundary.tsx'),
+    'utf-8'
+  );
+
+  assert(
+    appPart8Content.includes('NotFound') &&
+    appPart8Content.includes('<Route path="*" element={<NotFound />} />'),
+    'Fix 23: App.tsx replaces silent wildcard redirect with dedicated Apple-styled NotFound page'
+  );
+
+  assert(
+    notFoundPart8Content.includes('Page Not Found') &&
+    notFoundPart8Content.includes('Return Home') &&
+    notFoundPart8Content.includes('Find Doctors'),
+    'Fix 23: NotFound page provides informative messaging and one-click recovery CTAs'
+  );
+
+  assert(
+    appPart8Content.includes('<ErrorBoundary isInline') &&
+    errorBoundaryPart8Content.includes('isInline?: boolean') &&
+    errorBoundaryPart8Content.includes('fallbackTitle?: string'),
+    'Fix 23: ErrorBoundary supports isInline contained mode preserving global navigation and header'
+  );
+
+  assert(
+    doctorDashboardPart8Content.includes('max-h-[92vh] overflow-y-auto') &&
+    doctorDashboardPart8Content.includes('Add Walk-in Patient'),
+    'Fix 23: Doctor Walk-in modal container enforces max-h-[92vh] overflow-y-auto preventing viewport clipping on mobile'
+  );
+
+  assert(
+    offlineBannerPart8Content.includes("window.addEventListener('online'") &&
+    offlineBannerPart8Content.includes("window.addEventListener('offline'") &&
+    appPart8Content.includes('<OfflineBanner />'),
+    'Fix 23: OfflineBanner monitors live network connectivity and displays floating Apple status pill'
+  );
+
+  assert(
+    documentTitleSyncPart8Content.includes('document.title = title') &&
+    documentTitleSyncPart8Content.includes('Live Queue Passes — MediArca') &&
+    appPart8Content.includes('<DocumentTitleSync />'),
+    'Fix 23: DocumentTitleSync dynamically updates browser tab title across portals'
+  );
+
+  assert(
+    signupPart8Content.includes('email.trim().toLowerCase()') &&
+    signupPart8Content.includes('fullName.trim()'),
+    'Fix 23: Signup sanitizes trailing whitespace from email and full name'
+  );
+
   console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);
