@@ -98,9 +98,28 @@ export const getMyReceptionist = async (req: AuthRequest, res: Response): Promis
       isDoctorEligibleForClinicalPractice(dr.doctor).eligible
     );
 
+    // General desk fallback: If receptionist has no explicit subset assignments, cover all active doctors of the clinic
+    let targetDoctorRecords: { id?: string; doctor: any; doctorId: string; createdAt?: Date }[] = activeAssignments;
+    if (activeAssignments.length === 0 && receptionist.clinicId && activeDoctorIds.length > 0) {
+      const allClinicDocs = await prisma.clinicDoctor.findMany({
+        where: { clinicId: receptionist.clinicId, status: { in: ['ACTIVE', 'ACCEPTED'] } },
+        include: {
+          doctor: {
+            include: {
+              user: { select: { id: true, fullName: true, email: true, phone: true, avatarUrl: true } },
+              clinics: { include: { clinic: true } },
+            },
+          },
+        },
+      });
+      targetDoctorRecords = allClinicDocs
+        .filter((cd) => isDoctorEligibleForClinicalPractice(cd.doctor).eligible)
+        .map((cd) => ({ id: cd.id, doctor: cd.doctor, doctorId: cd.doctorId, createdAt: cd.createdAt }));
+    }
+
     // Compute today's queue count for each linked doctor (scoped to this clinic)
     const doctorsWithQueue = await Promise.all(
-      activeAssignments.map(async (dr) => {
+      targetDoctorRecords.map(async (dr) => {
         const todayCount = await prisma.appointment.count({
           where: {
             doctorId: dr.doctorId,
@@ -145,7 +164,7 @@ export const getMyReceptionist = async (req: AuthRequest, res: Response): Promis
         });
 
         return {
-          affiliationId: dr.id,
+          affiliationId: dr.id || dr.doctorId,
           doctorId: dr.doctor.id,
           fullName: dr.doctor.user.fullName,
           email: dr.doctor.user.email,
@@ -161,7 +180,7 @@ export const getMyReceptionist = async (req: AuthRequest, res: Response): Promis
           cabinStatusUpdatedAt: (dr.doctor as any).cabinStatusUpdatedAt || null,
           todayTotalBookings: todayCount,
           todayWaitingPatients: waitingCount,
-          joinedAt: dr.createdAt,
+          joinedAt: dr.createdAt || new Date(),
         };
       })
     );
@@ -1207,6 +1226,20 @@ export const getPendingAppointments = async (req: AuthRequest, res: Response): P
       .filter((d) => d.status === 'ACTIVE' && (activeDoctorIds.length === 0 || activeDoctorIds.includes(d.doctorId)))
       .map((d) => d.doctorId);
 
+    // Fallback: If receptionist has no explicit subset assignments, cover all active doctors of the clinic
+    const effectiveDoctorIds = assignedDoctorIds.length > 0
+      ? assignedDoctorIds
+      : (receptionist.clinicId ? activeDoctorIds : []);
+
+    if (effectiveDoctorIds.length === 0) {
+      res.json({
+        success: true,
+        count: 0,
+        data: [],
+      });
+      return;
+    }
+
     const now = new Date();
     const istTodayStr = getLocalDateString(now);
     const currentMinutes = getIndianTimeMinutes(now);
@@ -1214,7 +1247,7 @@ export const getPendingAppointments = async (req: AuthRequest, res: Response): P
     // Auto-expire past pending requests in database
     await prisma.appointment.updateMany({
       where: {
-        doctorId: { in: assignedDoctorIds },
+        doctorId: { in: effectiveDoctorIds },
         ...(receptionist.clinicId ? { clinicId: receptionist.clinicId } : {}),
         status: 'PENDING_APPROVAL',
         appointmentDate: { lt: istTodayStr },
@@ -1224,7 +1257,7 @@ export const getPendingAppointments = async (req: AuthRequest, res: Response): P
 
     const pendingAppointments = await prisma.appointment.findMany({
       where: {
-        doctorId: { in: assignedDoctorIds },
+        doctorId: { in: effectiveDoctorIds },
         ...(receptionist.clinicId ? { clinicId: receptionist.clinicId } : {}),
         status: 'PENDING_APPROVAL',
         appointmentDate: { gte: istTodayStr },

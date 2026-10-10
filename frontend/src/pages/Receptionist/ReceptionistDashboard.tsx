@@ -184,11 +184,18 @@ export const ReceptionistDashboard: React.FC = () => {
         setWalkinClinicId(res.clinic.id);
       }
       if (res.doctors.length > 0) {
-        setSelectedDoctorId((prev) => prev || res.doctors[0].doctorId);
-        setQueueDoctorId((prev) => prev || res.doctors[0].doctorId);
-        if (res.doctors[0].slots && res.doctors[0].slots.length > 0) {
-          setSlotId((prev) => prev || res.doctors[0].slots[0].id);
+        setSelectedDoctorId((prev) => (res.doctors.some((d: any) => d.doctorId === prev) ? prev : res.doctors[0].doctorId));
+        setQueueDoctorId((prev) => (res.doctors.some((d: any) => d.doctorId === prev) ? prev : res.doctors[0].doctorId));
+        const activeDoc = res.doctors.find((d: any) => d.doctorId === selectedDoctorId) || res.doctors[0];
+        if (activeDoc?.slots && activeDoc.slots.length > 0) {
+          setSlotId((prev) => (activeDoc.slots.some((s: any) => s.id === prev) ? prev : activeDoc.slots[0].id));
+        } else {
+          setSlotId('');
         }
+      } else {
+        setSelectedDoctorId('');
+        setQueueDoctorId('');
+        setSlotId('');
       }
       try {
         const pendingRes = await api.getPendingAppointments();
@@ -565,6 +572,13 @@ export const ReceptionistDashboard: React.FC = () => {
     const targetAppt = queueAppointments.find((a) => a.id === appointmentId);
     const apptDoctorId = targetAppt?.doctorId || (queueDoctorId !== 'all' ? queueDoctorId : undefined);
     const targetDoctor = linkedDoctors.find((d) => d.doctorId === apptDoctorId);
+
+    if (status === 'CANCELLED') {
+      const patientName = targetAppt?.patientName || 'this patient';
+      if (!window.confirm(`Are you sure you want to cancel the queue appointment for ${patientName}? This action cannot be undone.`)) {
+        return;
+      }
+    }
 
     if (status === 'IN_CONSULTATION') {
       if (targetDoctor?.cabinStatus && targetDoctor.cabinStatus !== 'IN_CABIN') {
@@ -1141,8 +1155,8 @@ export const ReceptionistDashboard: React.FC = () => {
                                       doctorId: queueDoctorId,
                                       slotId: appt.slotId,
                                     });
-                                    const d = new Date(queueDate);
-                                    d.setDate(d.getDate() + 1);
+                                    const [y, m, day] = (queueDate || getLocalDateString()).split('-').map(Number);
+                                    const d = new Date(y, m - 1, day + 1);
                                     setRescheduleDate(getLocalDateString(d));
                                     setRescheduleSlotId(appt.slotId || '');
                                     setRescheduleError(null);
@@ -1158,7 +1172,12 @@ export const ReceptionistDashboard: React.FC = () => {
                               {appt.status === 'WAITING' && (
                                 <button
                                   type="button"
-                                  onClick={() => handleStatusChange(appt.id, 'CANCELLED')}
+                                  onClick={() => {
+                                    if (!window.confirm(`Are you sure you want to cancel the queue appointment for ${appt.patientName}? This action cannot be undone.`)) {
+                                      return;
+                                    }
+                                    handleStatusChange(appt.id, 'CANCELLED');
+                                  }}
                                   className="h-8 px-3 rounded-full text-[#86868b] hover:text-rose-600 hover:bg-rose-50 text-xs font-medium border border-[#e5e5ea] transition-all cursor-pointer"
                                 >
                                   Cancel
@@ -1290,6 +1309,7 @@ export const ReceptionistDashboard: React.FC = () => {
                         <input
                           type="date"
                           required
+                          min={getLocalDateString()}
                           value={appointmentDate}
                           onChange={(e) => setAppointmentDate(e.target.value)}
                           className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all"
@@ -1304,17 +1324,22 @@ export const ReceptionistDashboard: React.FC = () => {
                           <select
                             value={slotId}
                             onChange={(e) => setSlotId(e.target.value)}
-                            className="w-full h-11 pl-3.5 pr-8 rounded-xl border border-[#d2d2d7] bg-white text-[13px] text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all appearance-none cursor-pointer"
+                            disabled={!activeSelectedDoctor?.slots || activeSelectedDoctor.slots.length === 0}
+                            className="w-full h-11 pl-3.5 pr-8 rounded-xl border border-[#d2d2d7] bg-white text-[13px] text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all appearance-none cursor-pointer disabled:bg-[#f5f5f7] disabled:text-[#86868b] disabled:cursor-not-allowed"
                           >
-                            {activeSelectedDoctor?.slots.map((s) => {
-                              const sStatus = walkinPreview?.availableSlots?.find((as) => as.slot.id === s.id);
-                              const isEnded = sStatus?.isPassed;
-                              return (
-                                <option key={s.id} value={s.id}>
-                                  {s.name} ({s.startTime} – {s.endTime}) {isEnded ? '• Ended' : ''}
-                                </option>
-                              );
-                            })}
+                            {!activeSelectedDoctor?.slots || activeSelectedDoctor.slots.length === 0 ? (
+                              <option value="">No shifts configured</option>
+                            ) : (
+                              activeSelectedDoctor.slots.map((s) => {
+                                const sStatus = walkinPreview?.availableSlots?.find((as) => as.slot.id === s.id);
+                                const isEnded = sStatus?.isPassed;
+                                return (
+                                  <option key={s.id} value={s.id}>
+                                    {s.name} ({s.startTime} – {s.endTime}) {isEnded ? '• Ended' : ''}
+                                  </option>
+                                );
+                              })
+                            )}
                           </select>
                           <ChevronDown className="w-4 h-4 text-[#86868b] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                         </div>
@@ -1333,6 +1358,12 @@ export const ReceptionistDashboard: React.FC = () => {
                     </div>
 
                     {/* Shift Status Warnings */}
+                    {(!activeSelectedDoctor?.slots || activeSelectedDoctor.slots.length === 0) && (
+                      <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800">
+                        <span className="font-semibold">No Practice Shifts Configured:</span> The selected practitioner has no active checking shifts configured at this clinic facility. Please ask the doctor to configure their shift timings in Doctor Console.
+                      </div>
+                    )}
+
                     {isSelectedShiftEnded && (
                       <div className="p-3.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-xs text-[#1d1d1f]">
                         <span className="font-semibold">Shift Ended for Today:</span> Please choose an upcoming shift or select tomorrow's date.
@@ -1465,15 +1496,17 @@ export const ReceptionistDashboard: React.FC = () => {
                     <div className="pt-2">
                       <button
                         type="submit"
-                        disabled={bookingLoading || isSelectedShiftEnded || isSelectedShiftFull}
+                        disabled={bookingLoading || isSelectedShiftEnded || isSelectedShiftFull || !activeSelectedDoctor?.slots || activeSelectedDoctor.slots.length === 0}
                         className={`w-full h-11 px-6 rounded-full text-sm font-medium transition-all flex items-center justify-center ${
-                          isSelectedShiftEnded || isSelectedShiftFull
+                          isSelectedShiftEnded || isSelectedShiftFull || !activeSelectedDoctor?.slots || activeSelectedDoctor.slots.length === 0
                             ? 'bg-[#e5e5ea] text-[#86868b] cursor-not-allowed'
                             : 'bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white shadow-[0_2px_8px_rgba(0,102,204,0.2)] cursor-pointer'
                         }`}
                       >
                         {bookingLoading
                           ? 'Issuing Token...'
+                          : !activeSelectedDoctor?.slots || activeSelectedDoctor.slots.length === 0
+                          ? 'No Shifts Configured'
                           : isSelectedShiftEnded
                           ? 'Shift Ended — Select Another Slot'
                           : isSelectedShiftFull
@@ -1697,8 +1730,8 @@ export const ReceptionistDashboard: React.FC = () => {
                                   doctorId: appt.doctorId,
                                   slotId: appt.slotId,
                                 });
-                                const d = new Date(appt.appointmentDate);
-                                d.setDate(d.getDate() + 1);
+                                const [y, m, day] = (appt.appointmentDate || getLocalDateString()).split('-').map(Number);
+                                const d = new Date(y, m - 1, day + 1);
                                 setRescheduleDate(getLocalDateString(d));
                                 setRescheduleSlotId(appt.slotId || '');
                                 setRescheduleError(null);

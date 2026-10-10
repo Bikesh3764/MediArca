@@ -9478,6 +9478,59 @@ Follow-up Date: 2026-10-15`;
     'Fix 20: ClinicDashboard profile modal and ClinicQrStandeeModal are vertically scrollable on mobile viewports'
   );
 
+  // ----------------------------------------------------
+  // Fix 21: Part 6 Receptionist Desk & Walk-in Queue Safeguards
+  // ----------------------------------------------------
+  const receptionistControllerPart6Content = fs.readFileSync(
+    path.join(__dirname, '../src/controllers/receptionistController.ts'),
+    'utf-8'
+  );
+  const receptionistDashboardPart6Content = fs.readFileSync(
+    path.join(__dirname, '../../frontend/src/pages/Receptionist/ReceptionistDashboard.tsx'),
+    'utf-8'
+  );
+
+  assert(
+    receptionistControllerPart6Content.includes('General desk fallback:') &&
+    receptionistControllerPart6Content.includes('targetDoctorRecords') &&
+    receptionistControllerPart6Content.includes('effectiveDoctorIds') &&
+    receptionistControllerPart6Content.includes('const effectiveDoctorIds = assignedDoctorIds.length > 0'),
+    'Fix 21: receptionistController implements general desk fallback covering all active clinic doctors when no subset assignments exist'
+  );
+
+  assert(
+    receptionistDashboardPart6Content.includes("if (status === 'CANCELLED')") &&
+    receptionistDashboardPart6Content.includes('window.confirm') &&
+    receptionistDashboardPart6Content.includes('Are you sure you want to cancel the queue appointment for'),
+    'Fix 21: ReceptionistDashboard prevents accidental queue cancellations with explicit confirmation prompt'
+  );
+
+  assert(
+    receptionistDashboardPart6Content.includes('type="date"') &&
+    receptionistDashboardPart6Content.includes('min={getLocalDateString()}') &&
+    receptionistDashboardPart6Content.includes('value={appointmentDate}'),
+    'Fix 21: ReceptionistDashboard walk-in consultation date input locks past dates using min={getLocalDateString()}'
+  );
+
+  assert(
+    receptionistDashboardPart6Content.includes('res.doctors.some((d: any) => d.doctorId === prev) ? prev : res.doctors[0].doctorId') &&
+    receptionistDashboardPart6Content.includes("setSelectedDoctorId('')"),
+    'Fix 21: ReceptionistDashboard automatically resets selected/queue doctor when detached by clinic administration'
+  );
+
+  assert(
+    receptionistDashboardPart6Content.includes(".split('-').map(Number)") &&
+    receptionistDashboardPart6Content.includes('new Date(y, m - 1, day + 1)'),
+    'Fix 21: ReceptionistDashboard uses timezone-safe calendar date math for reschedule date calculation'
+  );
+
+  assert(
+    receptionistDashboardPart6Content.includes('No Practice Shifts Configured') &&
+    receptionistDashboardPart6Content.includes('No shifts configured') &&
+    receptionistDashboardPart6Content.includes('!activeSelectedDoctor?.slots || activeSelectedDoctor.slots.length === 0'),
+    'Fix 21: ReceptionistDashboard guards walk-in desk submission and warns when doctor has no configured shifts'
+  );
+
   console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);
