@@ -695,13 +695,25 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
             );
           }
 
-          // Highest queue number on this date across appointments for this clinic (FIX-014)
+          // Highest queue number on this date across appointments for this clinic and shift (FIX-014)
+          const slotFilter = chosenSlot?.id
+            ? {
+                OR: [
+                  { slotId: chosenSlot.id },
+                  { checkingWindow: chosenSlot.name },
+                ],
+              }
+            : chosenSlot?.name
+            ? { checkingWindow: chosenSlot.name }
+            : {};
+
           const maxQueueAppt = await tx.appointment.findFirst({
             where: {
               doctorId: doctor.id,
               appointmentDate,
               ...(targetClinicId ? { clinicId: targetClinicId } : {}),
               queueNumber: { gt: 0 },
+              ...slotFilter,
             },
             orderBy: { queueNumber: 'desc' },
             select: { queueNumber: true },
@@ -1058,7 +1070,7 @@ export const changeReceptionistPassword = async (req: AuthRequest, res: Response
 
     const { currentPassword, newPassword } = req.body;
 
-    if (!currentPassword || !newPassword) {
+    if (!currentPassword || !newPassword || typeof currentPassword !== 'string' || typeof newPassword !== 'string') {
       res.status(400).json({ success: false, message: 'Current password and new password are required' });
       return;
     }
@@ -1564,13 +1576,25 @@ export const executeApproveAppointmentTransaction = async (
       throw new Error('A valid clinic affiliation is required to approve appointments and issue queue tokens.');
     }
 
-    // Find max positive queue number on this date for this clinic (FIX-014)
+    // Find max positive queue number on this date for this clinic and shift (FIX-014)
+    const slotFilter = currentAppt.slotId
+      ? {
+          OR: [
+            { slotId: currentAppt.slotId },
+            { checkingWindow: currentAppt.checkingWindow },
+          ],
+        }
+      : currentAppt.checkingWindow
+      ? { checkingWindow: currentAppt.checkingWindow }
+      : {};
+
     const maxQueueAppt = await tx.appointment.findFirst({
       where: {
         doctorId: currentAppt.doctorId,
         appointmentDate: currentAppt.appointmentDate,
         clinicId: targetClinicId,
         queueNumber: { gt: 0 },
+        ...slotFilter,
       },
       orderBy: { queueNumber: 'desc' },
       select: { queueNumber: true },
@@ -2099,6 +2123,31 @@ export const rescheduleAppointment = async (req: AuthRequest, res: Response): Pr
             }
           }
 
+          // Resolve slot first to ensure shift-isolated queue allocation
+          let slots = parseDoctorSlots(appointment.doctor);
+          const cd =
+            appointment.doctor?.clinics?.find((c: any) => c.clinicId === appointment.clinicId) ||
+            appointment.doctor?.clinics?.[0];
+          if (cd?.slots) {
+            try {
+              const p = typeof cd.slots === 'string' ? JSON.parse(cd.slots) : cd.slots;
+              if (Array.isArray(p) && p.length > 0) slots = p;
+            } catch {}
+          }
+          const chosenSlotId = newSlotId || appointment.slotId;
+          const slot = (chosenSlotId && slots.find((s) => s.id === chosenSlotId)) || slots[0];
+
+          const slotFilter = slot?.id
+            ? {
+                OR: [
+                  { slotId: slot.id },
+                  { checkingWindow: slot.name },
+                ],
+              }
+            : slot?.name
+            ? { checkingWindow: slot.name }
+            : {};
+
           const isPending =
             appointment.status === 'PENDING_APPROVAL' ||
             appointment.paymentStatus !== 'PAID';
@@ -2113,6 +2162,7 @@ export const rescheduleAppointment = async (req: AuthRequest, res: Response): Pr
                 appointmentDate: newDate,
                 ...clinicFilter,
                 queueNumber: { lt: 0 },
+                ...slotFilter,
               },
               orderBy: { queueNumber: 'asc' },
               select: { queueNumber: true },
@@ -2125,26 +2175,13 @@ export const rescheduleAppointment = async (req: AuthRequest, res: Response): Pr
                 appointmentDate: newDate,
                 ...clinicFilter,
                 queueNumber: { gt: 0 },
+                ...slotFilter,
               },
               orderBy: { queueNumber: 'desc' },
               select: { queueNumber: true },
             });
             nextQueueNumber = (maxQueue?.queueNumber || 0) + 1;
           }
-
-          // Resolve slot
-          let slots = parseDoctorSlots(appointment.doctor);
-          const cd =
-            appointment.doctor?.clinics?.find((c: any) => c.clinicId === appointment.clinicId) ||
-            appointment.doctor?.clinics?.[0];
-          if (cd?.slots) {
-            try {
-              const p = typeof cd.slots === 'string' ? JSON.parse(cd.slots) : cd.slots;
-              if (Array.isArray(p) && p.length > 0) slots = p;
-            } catch {}
-          }
-          const chosenSlotId = newSlotId || appointment.slotId;
-          const slot = (chosenSlotId && slots.find((s) => s.id === chosenSlotId)) || slots[0];
 
           let bookedInSlot = 0;
           if (slot) {

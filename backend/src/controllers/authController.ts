@@ -112,17 +112,17 @@ export const register = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, password, fullName, phone, role = 'PATIENT', ...profileData } = req.body;
 
-    if (!email || !password || !fullName) {
-      res.status(400).json({ success: false, message: 'Email, password, and full name are required' });
+    if (!email || !password || !fullName || typeof email !== 'string' || typeof password !== 'string' || typeof fullName !== 'string') {
+      res.status(400).json({ success: false, message: 'Email, password, and full name are required and must be valid strings.' });
       return;
     }
 
-    if (typeof password !== 'string' || password.trim().length < 8) {
+    if (password.trim().length < 8) {
       res.status(400).json({ success: false, message: 'Password must be at least 8 characters long.' });
       return;
     }
 
-    const normalizedRole = role.toUpperCase();
+    const normalizedRole = typeof role === 'string' ? role.toUpperCase() : 'PATIENT';
     if (!['PATIENT', 'DOCTOR', 'CLINIC', 'RECEPTIONIST'].includes(normalizedRole)) {
       res.status(400).json({ success: false, message: 'Invalid role. Must be PATIENT, DOCTOR, or CLINIC' });
       return;
@@ -495,8 +495,8 @@ export const login = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, password } = req.body;
 
-    if (!email || !password) {
-      res.status(400).json({ success: false, message: 'Email and password are required' });
+    if (!email || !password || typeof email !== 'string' || typeof password !== 'string' || !email.trim()) {
+      res.status(400).json({ success: false, message: 'Email and password are required and must be valid strings.' });
       return;
     }
 

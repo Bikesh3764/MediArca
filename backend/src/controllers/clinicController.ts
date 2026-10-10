@@ -974,12 +974,12 @@ export const addClinicReceptionist = async (req: AuthRequest, res: Response): Pr
 
     const { fullName, email, password, phone, doctorIds = [] } = req.body;
 
-    if (!fullName || !email || !password) {
-      res.status(400).json({ success: false, message: 'Receptionist name, email, and password are required' });
+    if (!fullName || !email || !password || typeof fullName !== 'string' || typeof email !== 'string' || typeof password !== 'string') {
+      res.status(400).json({ success: false, message: 'Receptionist name, email, and password are required and must be valid strings' });
       return;
     }
 
-    if (typeof password !== 'string' || password.trim().length < 8) {
+    if (password.trim().length < 8) {
       res.status(400).json({ success: false, message: 'Password must be at least 8 characters long' });
       return;
     }
