@@ -11,6 +11,7 @@ import {
   updateClinicReceptionistDoctors,
   removeClinicReceptionist,
   respondToReceptionistRequest,
+  updateClinicProfile,
 } from '../controllers/clinicController';
 import { authenticate, authorize, requireActiveClinic } from '../middleware/authMiddleware';
 import { publicCache } from '../middleware/cacheMiddleware';
@@ -24,6 +25,7 @@ router.get('/public/:id', publicCache(60, 30), getPublicClinicById);
 // Clinic authenticated operations
 router.use(authenticate, authorize('CLINIC'));
 router.get('/my-clinic', getMyClinic);
+router.put('/profile', updateClinicProfile);
 
 // Operations strictly requiring verified, non-suspended clinic status (Finding M6)
 router.post('/doctors', requireActiveClinic, addDoctorToClinic);

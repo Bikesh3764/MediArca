@@ -49,7 +49,7 @@ export const ClinicAuth: React.FC = () => {
     }
   };
 
-  const { login, register, loginWithGoogle } = useAuth();
+  const { login, register, loginWithGoogle, logout } = useAuth();
   const navigate = useNavigate();
 
   const handleGoogleSuccess = async (credentialResponse: any) => {
@@ -59,6 +59,7 @@ export const ClinicAuth: React.FC = () => {
       try {
         const loggedUser = await loginWithGoogle(credentialResponse.credential, 'CLINIC');
         if (loggedUser.role !== 'CLINIC') {
+          logout();
           setError('This account does not have clinic administrative permissions.');
           setSubmitting(false);
           return;
@@ -87,6 +88,7 @@ export const ClinicAuth: React.FC = () => {
       const simulatedToken = `${header}.${payload}.signature`;
       const loggedUser = await loginWithGoogle(simulatedToken, 'CLINIC');
       if (loggedUser.role !== 'CLINIC') {
+        logout();
         setError('This account does not have clinic administrative permissions.');
         setSubmitting(false);
         return;
@@ -106,6 +108,7 @@ export const ClinicAuth: React.FC = () => {
     try {
       const user = await login({ email: email.trim(), password });
       if (user.role !== 'CLINIC') {
+        logout();
         setError('This account does not have clinic administrative permissions.');
         setSubmitting(false);
         return;

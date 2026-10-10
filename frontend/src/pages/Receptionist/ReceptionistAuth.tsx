@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { BrandLogo } from '../../components/ui/BrandLogo';
-import { AlertCircle, Eye, EyeOff, ChevronDown, RefreshCw } from 'lucide-react';
+import { AlertCircle, Eye, EyeOff, ChevronDown, RefreshCw, CheckCircle2 } from 'lucide-react';
 import { api, ClinicProfile } from '../../services/api';
 import { sanitizeIndianPhone, formatIndianPhone, isValidIndianPhone } from '../../utils/phoneUtils';
 
@@ -33,7 +33,7 @@ export const ReceptionistAuth: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [changingPassword, setChangingPassword] = useState(false);
 
-  const { login, updateUser } = useAuth();
+  const { login, updateUser, logout } = useAuth();
   const navigate = useNavigate();
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
@@ -43,6 +43,7 @@ export const ReceptionistAuth: React.FC = () => {
     try {
       const loggedUser = await login({ email: email.trim(), password });
       if (loggedUser.role !== 'RECEPTIONIST') {
+        logout();
         setError('This account does not have receptionist desk permissions.');
         setSubmitting(false);
         return;
@@ -106,6 +107,7 @@ export const ReceptionistAuth: React.FC = () => {
     try {
       const loggedUser = await login({ email: 'receptionist@mediarca.com', password: 'receptionist123' });
       if (loggedUser.role !== 'RECEPTIONIST') {
+        logout();
         setError('This account does not have receptionist desk permissions.');
         setSubmitting(false);
         return;
@@ -256,10 +258,36 @@ export const ReceptionistAuth: React.FC = () => {
                 />
               </div>
 
+              {/* Real-time Password Rules & Match Feedback */}
+              <div className="space-y-1.5 pt-1 text-xs">
+                <div className="flex items-center gap-2">
+                  <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center transition-colors ${
+                    newPassword.length >= 8 ? 'bg-emerald-500 text-white' : 'bg-[#e5e5ea] text-transparent'
+                  }`}>
+                    <CheckCircle2 className="w-3 h-3 stroke-[3]" />
+                  </div>
+                  <span className={newPassword.length >= 8 ? 'text-[#1d1d1f] font-medium' : 'text-[#86868b]'}>
+                    At least 8 characters
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center transition-colors ${
+                    confirmPassword && newPassword === confirmPassword
+                      ? 'bg-emerald-500 text-white'
+                      : 'bg-[#e5e5ea] text-transparent'
+                  }`}>
+                    <CheckCircle2 className="w-3 h-3 stroke-[3]" />
+                  </div>
+                  <span className={confirmPassword && newPassword === confirmPassword ? 'text-[#1d1d1f] font-medium' : 'text-[#86868b]'}>
+                    Passwords match
+                  </span>
+                </div>
+              </div>
+
               <div className="pt-2">
                 <button
                   type="submit"
-                  disabled={changingPassword}
+                  disabled={changingPassword || newPassword.length < 8 || newPassword !== confirmPassword}
                   className="w-full h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-medium transition-all duration-150 shadow-[0_2px_8px_rgba(0,102,204,0.2),0_1px_2px_rgba(0,0,0,0.06)] flex items-center justify-center gap-2 cursor-pointer select-none disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {changingPassword ? (

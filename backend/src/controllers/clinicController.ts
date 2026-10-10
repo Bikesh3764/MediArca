@@ -1404,3 +1404,55 @@ export const respondToReceptionistRequest = async (req: AuthRequest, res: Respon
   }
 };
 
+/**
+ * Update clinic profile (clinicName, address, city, state, phone)
+ */
+export const updateClinicProfile = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user || req.user.role !== 'CLINIC') {
+      res.status(403).json({ success: false, message: 'Access denied: clinic role required' });
+      return;
+    }
+
+    const { clinicName, address, city, state, phone } = req.body;
+
+    const clinic = await prisma.clinicProfile.findUnique({
+      where: { userId: req.user.id },
+    });
+
+    if (!clinic) {
+      res.status(404).json({ success: false, message: 'Clinic profile not found' });
+      return;
+    }
+
+    if (phone && !isValidIndianPhone(phone)) {
+      res.status(400).json({ success: false, message: 'Please enter a valid 10-digit Indian mobile number.' });
+      return;
+    }
+
+    const updated = await prisma.clinicProfile.update({
+      where: { id: clinic.id },
+      data: {
+        ...(clinicName && typeof clinicName === 'string' ? { clinicName: clinicName.trim() } : {}),
+        ...(address !== undefined && typeof address === 'string' ? { address: address.trim() } : {}),
+        ...(city !== undefined ? { city: city ? String(city).trim() : null } : {}),
+        ...(state !== undefined ? { state: state ? String(state).trim() : null } : {}),
+        ...(phone !== undefined ? { phone: phone ? formatIndianPhone(phone) : null } : {}),
+      },
+    });
+
+    res.json({
+      success: true,
+      message: 'Clinic profile updated successfully',
+      data: updated,
+    });
+  } catch (error: any) {
+    console.error('updateClinicProfile error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update clinic profile',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
+  }
+};
+

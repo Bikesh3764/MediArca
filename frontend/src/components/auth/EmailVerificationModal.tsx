@@ -23,6 +23,7 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [resendSuccess, setResendSuccess] = useState(false);
   const [countdown, setCountdown] = useState(60);
+  const [isAlreadyVerified, setIsAlreadyVerified] = useState(false);
 
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const { verifyOtp } = useAuth();
@@ -34,6 +35,7 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
         setError(null);
         setResendSuccess(false);
         setCountdown(60);
+        setIsAlreadyVerified(false);
       });
       return;
     }
@@ -109,6 +111,9 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
       const verifiedUser = await verifyOtp(email, fullOtp);
       onSuccess(verifiedUser);
     } catch (err: any) {
+      if (err.isAlreadyVerified || err.message?.toLowerCase().includes('already verified')) {
+        setIsAlreadyVerified(true);
+      }
       setError(err.message || 'Invalid or expired verification code.');
     } finally {
       setSubmitting(false);
@@ -130,6 +135,9 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
       setTimeout(() => setResendSuccess(false), 5000);
     } catch (err: any) {
       clearTimeout(safetyTimer);
+      if (err.isAlreadyVerified || err.message?.toLowerCase().includes('already verified')) {
+        setIsAlreadyVerified(true);
+      }
       setError(err.message || 'Failed to resend verification code. Please try again.');
     } finally {
       setResending(false);
@@ -158,15 +166,19 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
             <BrandLogo variant="full" size="md" imgClassName="h-7 w-auto object-contain mx-auto" />
           </div>
           <h3 className="text-[22px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">
-            Verify Your Email
+            {isAlreadyVerified ? 'Email Already Verified' : 'Verify Your Email'}
           </h3>
           <p className="mt-1.5 text-xs text-[#86868b]">
-            Enter the 6-digit code sent to <span className="font-medium text-[#1d1d1f]">{email}</span>
+            {isAlreadyVerified ? (
+              <span>Your account is already active. Sign in with your password to continue.</span>
+            ) : (
+              <>Enter the 6-digit code sent to <span className="font-medium text-[#1d1d1f]">{email}</span></>
+            )}
           </p>
         </div>
 
         {/* Error message */}
-        {error && (
+        {error && !isAlreadyVerified && (
           <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2 text-left">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
             <span>{error}</span>
@@ -174,68 +186,92 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
         )}
 
         {/* Resend success alert */}
-        {resendSuccess && (
+        {resendSuccess && !isAlreadyVerified && (
           <div className="mb-4 p-3 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] text-xs flex items-center gap-2 text-left">
             <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-[#0066cc]" />
             <span>A new 6-digit code has been sent.</span>
           </div>
         )}
 
-        {/* OTP Input Form */}
-        <form onSubmit={handleSubmit}>
-          <div className="flex justify-center gap-2 mb-5 max-w-full" onPaste={handlePaste}>
-            {otpDigits.map((digit, idx) => (
-              <input
-                key={idx}
-                ref={(el) => {
-                  inputRefs.current[idx] = el;
-                }}
-                type="text"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                maxLength={1}
-                value={digit}
-                onChange={(e) => handleDigitChange(idx, e.target.value)}
-                onKeyDown={(e) => handleKeyDown(idx, e)}
-                className="w-11 h-12 text-center text-lg font-semibold rounded-xl border border-[#d2d2d7] bg-white text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
-              />
-            ))}
-          </div>
+        {isAlreadyVerified ? (
+          <div className="space-y-4 my-2">
+            <div className="p-4 rounded-2xl bg-[#0066cc]/5 border border-[#0066cc]/20 text-[#1d1d1f] text-xs text-left">
+              <div className="flex items-center gap-2 font-semibold text-[#0066cc] mb-1">
+                <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                <span>Ready to Sign In</span>
+              </div>
+              <p className="text-[#86868b] leading-relaxed">
+                This email address is already verified on MediArca. Please sign in directly with your password.
+              </p>
+            </div>
 
-          <button
-            type="submit"
-            disabled={submitting || fullOtp.length !== 6}
-            className="w-full h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-medium transition-all duration-150 shadow-[0_2px_8px_rgba(0,102,204,0.2),0_1px_2px_rgba(0,0,0,0.06)] flex items-center justify-center gap-2 cursor-pointer select-none disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            {submitting ? (
-              <>
-                <RefreshCw className="w-4 h-4 animate-spin" />
-                <span>Verifying...</span>
-              </>
-            ) : (
-              'Verify & Continue'
-            )}
-          </button>
-        </form>
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-full h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-medium transition-all duration-150 shadow-[0_2px_8px_rgba(0,102,204,0.2),0_1px_2px_rgba(0,0,0,0.06)] flex items-center justify-center gap-2 cursor-pointer select-none"
+            >
+              Sign In with Password
+            </button>
+          </div>
+        ) : (
+          /* OTP Input Form */
+          <form onSubmit={handleSubmit}>
+            <div className="flex justify-center gap-2 mb-5 max-w-full" onPaste={handlePaste}>
+              {otpDigits.map((digit, idx) => (
+                <input
+                  key={idx}
+                  ref={(el) => {
+                    inputRefs.current[idx] = el;
+                  }}
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={1}
+                  value={digit}
+                  onChange={(e) => handleDigitChange(idx, e.target.value)}
+                  onKeyDown={(e) => handleKeyDown(idx, e)}
+                  className="w-11 h-12 text-center text-lg font-semibold rounded-xl border border-[#d2d2d7] bg-white text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                />
+              ))}
+            </div>
+
+            <button
+              type="submit"
+              disabled={submitting || fullOtp.length !== 6}
+              className="w-full h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-medium transition-all duration-150 shadow-[0_2px_8px_rgba(0,102,204,0.2),0_1px_2px_rgba(0,0,0,0.06)] flex items-center justify-center gap-2 cursor-pointer select-none disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {submitting ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <span>Verifying...</span>
+                </>
+              ) : (
+                'Verify & Continue'
+              )}
+            </button>
+          </form>
+        )}
 
         {/* Resend option */}
-        <div className="mt-5 pt-4 border-t border-[#e5e5ea] flex items-center justify-center text-xs">
-          <button
-            type="button"
-            onClick={handleResend}
-            disabled={countdown > 0 || resending}
-            className={`inline-flex items-center gap-1.5 font-medium transition-colors ${
-              countdown > 0 || resending
-                ? 'text-[#86868b] cursor-not-allowed'
-                : 'text-[#0066cc] hover:text-[#0071e3] cursor-pointer'
-            }`}
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${resending ? 'animate-spin' : ''}`} />
-            <span>
-              {countdown > 0 ? `Resend code in ${countdown}s` : 'Resend code'}
-            </span>
-          </button>
-        </div>
+        {!isAlreadyVerified && (
+          <div className="mt-5 pt-4 border-t border-[#e5e5ea] flex items-center justify-center text-xs">
+            <button
+              type="button"
+              onClick={handleResend}
+              disabled={countdown > 0 || resending}
+              className={`inline-flex items-center gap-1.5 font-medium transition-colors ${
+                countdown > 0 || resending
+                  ? 'text-[#86868b] cursor-not-allowed'
+                  : 'text-[#0066cc] hover:text-[#0071e3] cursor-pointer'
+              }`}
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${resending ? 'animate-spin' : ''}`} />
+              <span>
+                {countdown > 0 ? `Resend code in ${countdown}s` : 'Resend code'}
+              </span>
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

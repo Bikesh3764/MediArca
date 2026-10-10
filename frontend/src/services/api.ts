@@ -1060,6 +1060,12 @@ async function handleResponse<T>(res: Response): Promise<T> {
       error.requiresVerification = true;
       error.email = data.email;
     }
+    if (data?.isAlreadyVerified) {
+      error.isAlreadyVerified = true;
+    }
+    if (data?.retryAfterSeconds) {
+      error.retryAfterSeconds = data.retryAfterSeconds;
+    }
     throw error;
   }
   return data?.data !== undefined ? data.data : data;
@@ -1712,6 +1718,21 @@ export const api = {
   // Clinic Portal
   async getMyClinic(): Promise<ClinicDashboardData> {
     const res = await safeFetch(`${API_BASE_URL}/clinics/my-clinic`, { headers: getHeaders() });
+    return handleResponse(res);
+  },
+
+  async updateClinicProfile(data: {
+    clinicName?: string;
+    address?: string;
+    city?: string;
+    state?: string;
+    phone?: string;
+  }): Promise<any> {
+    const res = await safeFetch(`${API_BASE_URL}/clinics/profile`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
+    });
     return handleResponse(res);
   },
 

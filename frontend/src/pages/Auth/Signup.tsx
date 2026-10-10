@@ -26,7 +26,7 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [phone, setPhone] = useState(DEFAULT_PHONE_PREFIX);
+  const [phone, setPhone] = useState('');
 
   // Doctor specific fields
   const [specialty, setSpecialty] = useState('General Medicine');
@@ -290,10 +290,10 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
                   inputMode="numeric"
                   required
                   maxLength={10}
-                  value={sanitizeIndianPhone(phone)}
+                  value={phone}
                   onChange={(e) => {
-                    const digits = sanitizeIndianPhone(e.target.value);
-                    setPhone(digits ? `+91 ${digits}` : '');
+                    const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
+                    setPhone(digits);
                   }}
                   placeholder="98765 43210"
                   className="flex-1 h-full px-3.5 bg-transparent text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:outline-none"
