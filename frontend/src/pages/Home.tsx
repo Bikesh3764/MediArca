@@ -104,8 +104,41 @@ export const Home: React.FC = () => {
     setSelectedClinic(null);
     const newParams = new URLSearchParams(searchParams);
     newParams.set('tab', section);
-    setSearchParams(newParams, { replace: true });
+    newParams.delete('clinicId');
+    setSearchParams(newParams);
   };
+
+  const handleSelectClinic = (clinic: ClinicProfile) => {
+    setSelectedClinic(clinic);
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set('tab', 'clinics');
+    newParams.set('clinicId', clinic.id);
+    setSearchParams(newParams);
+  };
+
+  const handleClearClinic = () => {
+    setSelectedClinic(null);
+    const newParams = new URLSearchParams(searchParams);
+    newParams.delete('clinicId');
+    setSearchParams(newParams);
+  };
+
+  // Synchronize URL search params (e.g., browser back button) with active section & selected clinic
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab === 'doctors' || tab === 'clinics') {
+      setActiveSection(tab);
+    }
+    const clinicId = searchParams.get('clinicId');
+    if (clinicId && clinics.length > 0) {
+      const found = clinics.find((c) => c.id === clinicId);
+      if (found) {
+        setSelectedClinic(found);
+      }
+    } else if (!clinicId) {
+      setSelectedClinic(null);
+    }
+  }, [searchParams, clinics]);
 
   // Fetch Doctors and Clinics
   useEffect(() => {
@@ -410,7 +443,7 @@ export const Home: React.FC = () => {
     setClinicSelectedState('All');
   };
 
-  const getDoctorDetailPath = (docId: string) => `/book/${docId}`;
+  const getDoctorDetailPath = (docId: string) => `/doctor/${docId}`;
 
   const getDoctorBookPath = (docId: string, clinicId?: string, slotId?: string) => {
     const params = new URLSearchParams();
@@ -710,7 +743,7 @@ export const Home: React.FC = () => {
 
                     <button
                       type="button"
-                      onClick={() => setSelectedClinic(null)}
+                      onClick={handleClearClinic}
                       className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-xs font-semibold text-[#1d1d1f] transition-all cursor-pointer self-start sm:self-center shrink-0 border border-[#e5e5ea]"
                     >
                       <ArrowLeft className="w-3.5 h-3.5" />
@@ -735,7 +768,7 @@ export const Home: React.FC = () => {
                       <p className="text-xs text-[#86868b] mb-5">
                         No doctors are currently listed for this clinic.
                       </p>
-                      <AppleButton variant="secondary" size="sm" onClick={() => setSelectedClinic(null)}>
+                      <AppleButton variant="secondary" size="sm" onClick={handleClearClinic}>
                         Back to Clinics
                       </AppleButton>
                     </div>
@@ -899,7 +932,7 @@ export const Home: React.FC = () => {
                       return (
                         <div
                           key={clinic.id}
-                          onClick={() => setSelectedClinic(clinic)}
+                          onClick={() => handleSelectClinic(clinic)}
                           className="w-full bg-white rounded-[24px] border border-[#e5e5ea] shadow-[0_2px_12px_rgba(0,0,0,0.03)] overflow-hidden hover:border-[#0066cc]/40 transition-all duration-200 flex flex-col justify-between group cursor-pointer"
                         >
                           {/* Top Facility Photography Banner */}
@@ -948,7 +981,7 @@ export const Home: React.FC = () => {
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setSelectedClinic(clinic);
+                                  handleSelectClinic(clinic);
                                 }}
                                 className="h-8 px-5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-medium transition-all duration-150 active:scale-[0.97] inline-flex items-center justify-center cursor-pointer select-none shadow-[0_1px_2px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,102,204,0.15)]"
                               >

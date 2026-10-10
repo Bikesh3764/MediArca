@@ -49,7 +49,7 @@ export const Footer: React.FC = () => {
                 </Link>
               </li>
               <li>
-                <Link to="/doctors" className="hover:text-[#0066cc] transition-colors py-0.5 inline-block">
+                <Link to="/doctors?tab=clinics" className="hover:text-[#0066cc] transition-colors py-0.5 inline-block">
                   Verified Clinics
                 </Link>
               </li>

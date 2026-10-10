@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   api,
   Doctor,
@@ -39,6 +39,8 @@ export const DoctorDetail: React.FC = () => {
   const [loadingQueue, setLoadingQueue] = useState(false);
 
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const paramClinicId = searchParams.get('clinicId') || searchParams.get('clinic');
 
   useEffect(() => {
     const fetchDoctor = async () => {
@@ -47,9 +49,12 @@ export const DoctorDetail: React.FC = () => {
         const data = await api.getDoctorById(id);
         setDoctor(data);
         if (data.clinics && data.clinics.length > 0) {
-          const firstClinic = data.clinics[0];
-          setSelectedClinicId((prev) => prev || firstClinic.clinicId);
-          const clinicSlots = (firstClinic.slots && firstClinic.slots.length > 0) ? firstClinic.slots : parseDoctorSlots(data);
+          const matchedClinic = paramClinicId
+            ? data.clinics.find((c) => c.clinicId === paramClinicId || c.clinic?.id === paramClinicId)
+            : null;
+          const targetClinic = matchedClinic || data.clinics[0];
+          setSelectedClinicId((prev) => prev || targetClinic.clinicId);
+          const clinicSlots = (targetClinic.slots && targetClinic.slots.length > 0) ? targetClinic.slots : parseDoctorSlots(data);
           if (clinicSlots.length > 0) {
             setSelectedSlotId((prev) => prev || clinicSlots[0].id);
           }
@@ -66,7 +71,7 @@ export const DoctorDetail: React.FC = () => {
       }
     };
     fetchDoctor();
-  }, [id]);
+  }, [id, paramClinicId]);
 
   useEffect(() => {
     const fetchQueue = async () => {
@@ -519,7 +524,12 @@ export const DoctorDetail: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#f5f5f7] pb-16">
       <SubNav title={doctor.user?.fullName || 'Doctor'} subtitle={doctor.specialty}>
-        <AppleButton variant="ghost" size="sm" onClick={() => navigate('/doctors')} className="flex items-center gap-1">
+        <AppleButton
+          variant="ghost"
+          size="sm"
+          onClick={() => (window.history.length > 1 ? navigate(-1) : navigate('/doctors'))}
+          className="flex items-center gap-1 cursor-pointer"
+        >
           <ChevronLeft className="w-4 h-4" />
           Back
         </AppleButton>

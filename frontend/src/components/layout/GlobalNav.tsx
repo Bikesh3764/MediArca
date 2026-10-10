@@ -293,12 +293,20 @@ export const GlobalNav: React.FC = () => {
           </Link>
 
           {user?.role !== 'DOCTOR' && (
-            <Link
-              to="/doctors"
-              className={getNavLinkClass(isActive('/doctors'))}
-            >
-              Find Doctors
-            </Link>
+            <>
+              <Link
+                to="/doctors"
+                className={getNavLinkClass(isActive('/doctors') && !location.search.includes('tab=clinics'))}
+              >
+                Find Doctors
+              </Link>
+              <Link
+                to="/doctors?tab=clinics"
+                className={getNavLinkClass(isActive('/doctors') && location.search.includes('tab=clinics'))}
+              >
+                Clinics
+              </Link>
+            </>
           )}
 
           {user?.role === 'PATIENT' && (
@@ -594,13 +602,22 @@ export const GlobalNav: React.FC = () => {
             </Link>
 
             {user?.role !== 'DOCTOR' && (
-              <Link
-                to="/doctors"
-                onClick={closeMenu}
-                className={getMobileNavLinkClass(isActive('/doctors'))}
-              >
-                Find Doctors
-              </Link>
+              <>
+                <Link
+                  to="/doctors"
+                  onClick={closeMenu}
+                  className={getMobileNavLinkClass(isActive('/doctors') && !location.search.includes('tab=clinics'))}
+                >
+                  Find Doctors
+                </Link>
+                <Link
+                  to="/doctors?tab=clinics"
+                  onClick={closeMenu}
+                  className={getMobileNavLinkClass(isActive('/doctors') && location.search.includes('tab=clinics'))}
+                >
+                  Clinics
+                </Link>
+              </>
             )}
 
 

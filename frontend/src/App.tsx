@@ -81,10 +81,7 @@ const ProtectedRoute: React.FC<{
   return <>{children}</>;
 };
 
-const DoctorRouteRedirect: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
-  return <Navigate to={`/book/${id || ''}`} replace />;
-};
+const DoctorDetail = lazy(() => import('./pages/Patient/DoctorDetail').then(m => ({ default: m.DoctorDetail })));
 
 const RouteLoadingFallback: React.FC = () => (
   <div className="min-h-[50vh] flex items-center justify-center bg-transparent" role="status" aria-label="Loading view">
@@ -145,8 +142,8 @@ function AppShell() {
             {/* Directory & Booking */}
             <Route path="/doctors" element={<DoctorDiscovery />} />
             <Route path="/patient/doctors" element={<Navigate to="/doctors" replace />} />
-            <Route path="/doctor/:id" element={<DoctorRouteRedirect />} />
-            <Route path="/patient/doctor/:id" element={<DoctorRouteRedirect />} />
+            <Route path="/doctor/:id" element={<DoctorDetail />} />
+            <Route path="/patient/doctor/:id" element={<DoctorDetail />} />
             <Route
               path="/book/:id"
               element={

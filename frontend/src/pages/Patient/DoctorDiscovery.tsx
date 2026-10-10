@@ -55,7 +55,8 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialSpecialty = searchParams.get('specialty') || 'All';
 
-  const [activeSection, setActiveSection] = useState<'clinics' | 'doctors'>('doctors');
+  const initialSection = searchParams.get('tab') === 'clinics' ? 'clinics' : 'doctors';
+  const [activeSection, setActiveSection] = useState<'clinics' | 'doctors'>(initialSection);
   const [clinics, setClinics] = useState<ClinicProfile[]>([]);
   const [loadingClinics, setLoadingClinics] = useState(true);
   const [selectedClinic, setSelectedClinic] = useState<ClinicProfile | null>(null);
@@ -309,7 +310,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
     queueMicrotask(() => {
       setDoctorPage(1);
     });
-  }, [search, selectedSpecialty, sortBy, minExp, maxFee, selectedState, selectedCity]);
+  }, [search, locationQuery, selectedSpecialty, sortBy, minExp, maxFee, selectedState, selectedCity]);
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -319,6 +320,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
 
   const loadDoctors = async (
     queryText: string,
+    locationText: string,
     specialtyFilter: string,
     sortOrder: string,
     expFilter = minExp,
@@ -329,8 +331,9 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
   ) => {
     setLoading(true);
     try {
+      const combinedSearch = [queryText.trim(), locationText.trim()].filter(Boolean).join(' ');
       const res = await api.getDoctorsPaginated({
-        search: queryText.trim() || undefined,
+        search: combinedSearch || undefined,
         specialty: specialtyFilter !== 'All' ? specialtyFilter : undefined,
         minExp: expFilter > 0 ? expFilter : undefined,
         maxFee: feeCap < 3000 ? feeCap : undefined,
@@ -342,7 +345,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
       });
       setDoctors(res.data);
       setDoctorPagination(res.pagination);
-      if (specialtyFilter === 'All' && !queryText.trim() && expFilter === 0 && feeCap >= 3000 && stateFilter === 'All' && cityFilter === 'All' && targetPage === 1) {
+      if (specialtyFilter === 'All' && !combinedSearch && expFilter === 0 && feeCap >= 3000 && stateFilter === 'All' && cityFilter === 'All' && targetPage === 1) {
         setAllCatalogDoctors(res.data);
       }
     } catch (err) {
@@ -362,10 +365,10 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
   // Instant debounced search & filter sync
   useEffect(() => {
     const timer = setTimeout(() => {
-      loadDoctors(search, selectedSpecialty, sortBy, minExp, maxFee, selectedState, selectedCity, doctorPage);
+      loadDoctors(search, locationQuery, selectedSpecialty, sortBy, minExp, maxFee, selectedState, selectedCity, doctorPage);
     }, 250);
     return () => clearTimeout(timer);
-  }, [search, selectedSpecialty, sortBy, minExp, maxFee, selectedState, selectedCity, doctorPage]);
+  }, [search, locationQuery, selectedSpecialty, sortBy, minExp, maxFee, selectedState, selectedCity, doctorPage]);
 
   // Specialty counts computed against unfiltered doctors catalog
   const specialtyCounts = useMemo(() => {
@@ -454,7 +457,48 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
     });
   }, [searchParams, selectedSpecialty]);
 
-  const getDoctorDetailPath = (doctorId: string) => `/book/${doctorId}`;
+  const handleSectionSwitch = (section: 'clinics' | 'doctors') => {
+    setActiveSection(section);
+    setSelectedClinic(null);
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set('tab', section);
+    newParams.delete('clinicId');
+    setSearchParams(newParams);
+  };
+
+  const handleSelectClinic = (clinic: ClinicProfile) => {
+    setSelectedClinic(clinic);
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set('tab', 'clinics');
+    newParams.set('clinicId', clinic.id);
+    setSearchParams(newParams);
+  };
+
+  const handleClearClinic = () => {
+    setSelectedClinic(null);
+    const newParams = new URLSearchParams(searchParams);
+    newParams.delete('clinicId');
+    setSearchParams(newParams);
+  };
+
+  // Synchronize URL search params (e.g., browser back button) with active section & selected clinic
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam === 'clinics' || tabParam === 'doctors') {
+      setActiveSection(tabParam);
+    }
+    const clinicId = searchParams.get('clinicId');
+    if (clinicId && clinics.length > 0) {
+      const found = clinics.find((c) => c.id === clinicId);
+      if (found) {
+        setSelectedClinic(found);
+      }
+    } else if (!clinicId) {
+      setSelectedClinic(null);
+    }
+  }, [searchParams, clinics]);
+
+  const getDoctorDetailPath = (doctorId: string) => `/doctor/${doctorId}`;
 
   const getBookPath = (doctorId: string) => `/book/${doctorId}`;
 
@@ -465,10 +509,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
         <div className="h-11 inline-flex items-center p-1 bg-[#e8e8ed]/70 rounded-full border border-[#e5e5ea] shrink-0">
           <button
             type="button"
-            onClick={() => {
-              setActiveSection('clinics');
-              setSelectedClinic(null);
-            }}
+            onClick={() => handleSectionSwitch('clinics')}
             className={`h-full flex items-center justify-center px-6 rounded-full text-xs sm:text-sm font-semibold transition-all cursor-pointer active:scale-95 ${
               activeSection === 'clinics'
                 ? 'bg-white text-[#1d1d1f] shadow-[0_1px_3px_rgba(0,0,0,0.08)]'
@@ -479,7 +520,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
           </button>
           <button
             type="button"
-            onClick={() => setActiveSection('doctors')}
+            onClick={() => handleSectionSwitch('doctors')}
             className={`h-full flex items-center justify-center px-6 rounded-full text-xs sm:text-sm font-semibold transition-all cursor-pointer active:scale-95 ${
               activeSection === 'doctors'
                 ? 'bg-white text-[#1d1d1f] shadow-[0_1px_3px_rgba(0,0,0,0.08)]'
@@ -592,7 +633,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
 
                   <button
                     type="button"
-                    onClick={() => setSelectedClinic(null)}
+                    onClick={handleClearClinic}
                     className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-xs font-semibold text-[#1d1d1f] transition-all cursor-pointer self-start sm:self-center shrink-0 border border-[#e5e5ea]"
                   >
                     <ArrowLeft className="w-3.5 h-3.5" />
@@ -617,7 +658,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                     <p className="text-xs text-[#86868b] mb-5">
                       No doctors are currently listed for this clinic.
                     </p>
-                    <AppleButton variant="secondary" size="sm" onClick={() => setSelectedClinic(null)}>
+                    <AppleButton variant="secondary" size="sm" onClick={handleClearClinic}>
                       Back to Clinics
                     </AppleButton>
                   </div>
@@ -769,7 +810,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                     return (
                       <div
                         key={clinic.id}
-                        onClick={() => setSelectedClinic(clinic)}
+                        onClick={() => handleSelectClinic(clinic)}
                         className="w-full bg-white rounded-[24px] border border-[#e5e5ea] shadow-[0_2px_12px_rgba(0,0,0,0.03)] overflow-hidden hover:border-[#0066cc]/40 transition-all duration-200 flex flex-col justify-between group cursor-pointer"
                       >
                         {/* Top Facility Photography Banner */}
@@ -815,7 +856,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setSelectedClinic(clinic);
+                                handleSelectClinic(clinic);
                               }}
                               className="h-8 px-5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-medium transition-all duration-150 active:scale-[0.97] inline-flex items-center justify-center cursor-pointer select-none shadow-[0_1px_2px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,102,204,0.15)]"
                             >
