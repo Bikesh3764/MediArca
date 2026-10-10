@@ -50,7 +50,7 @@ export const ManageSchedule: React.FC = () => {
   const [slots, setSlots] = useState<DoctorSlot[]>([
     {
       id: 'slot_1',
-      name: 'Shift 1 (Morning)',
+      name: 'Shift 1',
       startTime: '09:00',
       endTime: '13:00',
       maxPatients: 25,
@@ -236,14 +236,11 @@ export const ManageSchedule: React.FC = () => {
 
       const maxPatients = 25;
       const avgConsultationMinutes = 20;
-      const startHour = parseInt(startTime.split(':')[0], 10);
-      const shiftPeriod = startHour >= 16 ? 'Evening' : startHour >= 12 ? 'Afternoon' : 'Morning';
-
       return [
         ...prev,
         {
           id: `slot_${Date.now()}`,
-          name: `Shift ${newIndex} (${shiftPeriod})`,
+          name: `Shift ${newIndex}`,
           startTime,
           endTime,
           maxPatients,
@@ -515,7 +512,7 @@ export const ManageSchedule: React.FC = () => {
                               type="text"
                               value={slot.name}
                               onChange={(e) => handleSlotChange(idx, 'name', e.target.value)}
-                              placeholder="Shift Name (e.g. Morning Shift)"
+                              placeholder="Shift Name (e.g. Shift 1)"
                               className="text-[15px] font-semibold text-[#1d1d1f] bg-transparent border-b border-transparent hover:border-[#d2d2d7] focus:border-[#0066cc] focus:outline-none px-1 py-0.5 transition-all truncate"
                             />
                           </div>

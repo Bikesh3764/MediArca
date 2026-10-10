@@ -414,7 +414,7 @@ export const DEMO_DOCTORS: Doctor[] = [
     slots: [
       {
         id: 'slot_sarah_1',
-        name: 'Morning Shift (09:00 AM – 11:00 AM)',
+        name: 'Shift 1',
         startTime: '09:00',
         endTime: '11:00',
         maxPatients: 50,
@@ -422,7 +422,7 @@ export const DEMO_DOCTORS: Doctor[] = [
       },
       {
         id: 'slot_sarah_2',
-        name: 'Evening Shift (05:00 PM – 08:00 PM)',
+        name: 'Shift 2',
         startTime: '17:00',
         endTime: '20:00',
         maxPatients: 60,
@@ -481,7 +481,7 @@ export const DEMO_DOCTORS: Doctor[] = [
     slots: [
       {
         id: 'slot_arjun_1',
-        name: 'Morning Clinic (10:00 AM – 01:00 PM)',
+        name: 'Shift 1',
         startTime: '10:00',
         endTime: '13:00',
         maxPatients: 45,
@@ -489,7 +489,7 @@ export const DEMO_DOCTORS: Doctor[] = [
       },
       {
         id: 'slot_arjun_2',
-        name: 'Afternoon Clinic (04:00 PM – 06:30 PM)',
+        name: 'Shift 2',
         startTime: '16:00',
         endTime: '18:30',
         maxPatients: 30,
@@ -536,7 +536,7 @@ export const DEMO_DOCTORS: Doctor[] = [
     slots: [
       {
         id: 'slot_elena_1',
-        name: 'Morning Wellness (08:30 AM – 11:30 AM)',
+        name: 'Shift 1',
         startTime: '08:30',
         endTime: '11:30',
         maxPatients: 40,
@@ -544,7 +544,7 @@ export const DEMO_DOCTORS: Doctor[] = [
       },
       {
         id: 'slot_elena_2',
-        name: 'Afternoon Consults (03:00 PM – 06:00 PM)',
+        name: 'Shift 2',
         startTime: '15:00',
         endTime: '18:00',
         maxPatients: 40,

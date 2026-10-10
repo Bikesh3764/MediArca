@@ -91,7 +91,7 @@ export const parseDoctorSlots = (doctor: any): DoctorSlot[] => {
   return [
     {
       id: 'slot_1',
-      name: `Shift 1 (${format12Hour(startTime)} – ${format12Hour(endTime)})`,
+      name: 'Shift 1',
       startTime,
       endTime,
       maxPatients,

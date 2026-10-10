@@ -97,16 +97,16 @@ const getSlotShortLabel = (appt: Appointment, slots: any[]): string => {
   if (appt.slotId) {
     const matched = slots.find((s) => s.id === appt.slotId);
     if (matched) {
-      return matched.shiftName || matched.name || `Shift ${slots.indexOf(matched) + 1}`;
+      return `Shift ${slots.indexOf(matched) + 1}`;
     }
   }
   if (appt.checkingWindow) {
-    const matched = slots.find((s) => s.startTime && appt.checkingWindow?.includes(s.startTime));
-    if (matched) {
-      return matched.shiftName || matched.name || `Shift ${slots.indexOf(matched) + 1}`;
-    }
     const shiftMatch = appt.checkingWindow.match(/(Shift\s*\d+)/i);
     if (shiftMatch) return shiftMatch[1];
+    const matched = slots.find((s) => s.startTime && appt.checkingWindow?.includes(s.startTime));
+    if (matched) {
+      return `Shift ${slots.indexOf(matched) + 1}`;
+    }
   }
   return 'Shift 1';
 };
@@ -1255,12 +1255,16 @@ export const DoctorDashboard: React.FC = () => {
                         {availableShifts.map((slot: any, idx: number) => {
                           const count = slotWaitingCounts[slot.id] || 0;
                           const isSelected = selectedSlotId === slot.id;
-                          const slotLabel = slot.shiftName || slot.name || `Shift ${idx + 1} (${slot.startTime} – ${slot.endTime})`;
+                          const slotLabel = `Shift ${idx + 1}`;
+                          const timeRange = slot.startTime && slot.endTime
+                            ? `${format12Hour(slot.startTime)} – ${format12Hour(slot.endTime)}`
+                            : undefined;
                           return (
                             <button
                               key={slot.id}
                               type="button"
                               onClick={() => setSelectedSlotId(slot.id)}
+                              title={timeRange}
                               className={`h-7 sm:h-8 px-3 sm:px-3.5 rounded-full text-xs transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
                                 isSelected
                                   ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs border border-black/5'
@@ -1890,7 +1894,7 @@ export const DoctorDashboard: React.FC = () => {
                       parseDoctorSlots(user?.doctorProfile)
                     ).map((slot, i) => (
                       <option key={slot.id || i} value={slot.id}>
-                        {slot.name} ({format12Hour(slot.startTime)}–{format12Hour(slot.endTime)})
+                        {`Shift ${i + 1}`} ({format12Hour(slot.startTime)} – {format12Hour(slot.endTime)})
                       </option>
                     ))}
                   </select>
