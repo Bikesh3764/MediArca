@@ -715,7 +715,7 @@ export const BookAppointment: React.FC = () => {
                 <span>
                   {isSelectedSlotPassed
                     ? 'Pick an upcoming shift'
-                    : 'Zero upfront fee • Pay at clinic'}
+                    : 'Assigned upon receptionist payment'}
                 </span>
               </div>
             </div>
