@@ -777,10 +777,15 @@ export const BookAppointment: React.FC = () => {
                         Age <span className="text-rose-500">*</span>
                       </label>
                       <input
-                        type="text"
+                        type="tel"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
                         required={bookingFor === 'other'}
                         value={patientAge}
-                        onChange={(e) => setPatientAge(e.target.value)}
+                        onChange={(e) => {
+                          const digitsOnly = e.target.value.replace(/\D/g, '').slice(0, 3);
+                          setPatientAge(digitsOnly);
+                        }}
                         placeholder="e.g. 24"
                         className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                       />

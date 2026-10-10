@@ -15,6 +15,7 @@ export const MyAppointments: React.FC = () => {
   const [scannerOpen, setScannerOpen] = useState(false);
   const [selectedApptForScan, setSelectedApptForScan] = useState<Appointment | null>(null);
   const [checkinMessage, setCheckinMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   const { user, loading: loadingAuth } = useAuth();
   const navigate = useNavigate();
@@ -28,6 +29,15 @@ export const MyAppointments: React.FC = () => {
       console.error('Failed to load appointments:', err);
     } finally {
       if (!isSilent) setLoading(false);
+    }
+  };
+
+  const handleManualRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await fetchAppointments(true);
+    } finally {
+      setTimeout(() => setRefreshing(false), 500);
     }
   };
 
@@ -113,11 +123,11 @@ export const MyAppointments: React.FC = () => {
               <AppleButton
                 variant="ghost"
                 size="sm"
-                onClick={() => fetchAppointments()}
+                onClick={handleManualRefresh}
                 className="flex items-center gap-1.5 text-xs"
               >
-                <RefreshCw className="w-3.5 h-3.5" />
-                Refresh
+                <RefreshCw className={`w-3.5 h-3.5 transition-transform duration-500 ${refreshing ? 'animate-spin text-[#0066cc]' : ''}`} />
+                <span>Refresh</span>
               </AppleButton>
               <AppleButton
                 variant="primary"

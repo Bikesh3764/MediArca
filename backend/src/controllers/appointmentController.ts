@@ -244,9 +244,16 @@ export const getQueuePreview = async (req: AuthRequest, res: Response): Promise<
       selectedSlotStatus = availableSlots.find((s) => !s.isPassed && !s.isFull) || availableSlots[0];
     }
 
-    // Shift-specific token number: count how many patients are already booked in this specific shift
-    const slotBookedCount = selectedSlotStatus?.totalBooked || 0;
-    const nextSlotQueueNumber = Math.max(1, slotBookedCount + 1);
+    // Shift-specific token number: count how many patients are already confirmed in this specific shift (queueNumber > 0)
+    // Matching bookAppointment logic where estimatedQueueNumber = count(queueNumber > 0 in slot) + 1
+    const confirmedInSlotCount = dayAppointments.filter((a) => {
+      if (a.queueNumber <= 0) return false;
+      if (selectedSlotStatus?.slot.id && a.slotId) return a.slotId === selectedSlotStatus.slot.id;
+      if (selectedSlotStatus?.slot.startTime && a.checkingWindow) return a.checkingWindow.includes(selectedSlotStatus.slot.startTime);
+      return slots.length === 1;
+    }).length;
+
+    const nextSlotQueueNumber = Math.max(1, confirmedInSlotCount + 1);
 
     // Clean shift name (stripping any legacy period descriptors like "(Afternoon)" or "(Morning)")
     const rawShiftName = selectedSlotStatus?.slot?.name || 'Shift';
@@ -1343,7 +1350,9 @@ export const getPatientAppointments = async (req: AuthRequest, res: Response): P
         const isShiftActive = isToday && currentMinutes >= slotStartMins && currentMinutes < slotEndMins;
 
         const estWaitMinutes = appt.status === 'IN_CONSULTATION' ? 0 : Math.round(patientsAhead * pace);
-        const isYourTurn = appt.status === 'IN_CONSULTATION' || (isShiftActive && patientsAhead === 0);
+        const isYourTurn =
+          appt.status === 'IN_CONSULTATION' ||
+          (isToday && isShiftActive && currentServingQueueNumber > 0 && currentServingQueueNumber === appt.queueNumber);
 
         let liveEstimatedTime = appt.estimatedTime;
         if (appt.status === 'IN_CONSULTATION') {

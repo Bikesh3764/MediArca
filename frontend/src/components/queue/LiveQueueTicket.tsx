@@ -170,7 +170,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
                 <CheckCircle2 className="w-3.5 h-3.5 text-[#0066cc]" />
                 <span className="text-xs font-semibold text-[#1d1d1f]">Completed • Token #{queueNumber}</span>
               </div>
-            ) : status === 'IN_CONSULTATION' || liveQueue?.isYourTurn ? (
+            ) : isToday && (status === 'IN_CONSULTATION' || (status === 'WAITING' && liveQueue?.currentServingQueueNumber === queueNumber && queueNumber > 0)) ? (
               <div className="bg-[#0066cc] text-white px-4 py-2 rounded-2xl flex items-baseline gap-2 shadow-2xs">
                 <span className="text-xs font-medium text-white/80">Serving</span>
                 <span className="text-2xl font-bold text-white tracking-tight">#{queueNumber}</span>
@@ -222,8 +222,10 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
                 <span className="text-[#86868b]">Expired</span>
               ) : status === 'CANCELLED' || status === 'REJECTED' ? (
                 <span className="text-rose-600">{status === 'REJECTED' ? 'Declined' : 'Cancelled'}</span>
-              ) : liveQueue?.isYourTurn ? (
-                <span className="text-[#0066cc] font-semibold">Your Turn</span>
+              ) : isToday && liveQueue?.currentServingQueueNumber === queueNumber && queueNumber > 0 ? (
+                <span className="text-[#0066cc] font-semibold">Called</span>
+              ) : isToday && liveQueue?.patientsAway === 0 && status === 'WAITING' ? (
+                <span className="text-[#0066cc] font-semibold">Next in Line</span>
               ) : liveQueue?.isShiftPassed ? (
                 <span className="text-[#86868b]">Shift Ended</span>
               ) : isToday && liveQueue?.isShiftActive && liveQueue?.liveEstimatedTime ? (
@@ -399,7 +401,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
         )}
 
         {/* Live Queue Position Tracker */}
-        {(status === 'WAITING' || status === 'IN_CONSULTATION') && liveQueue && (
+        {isToday && (status === 'WAITING' || status === 'IN_CONSULTATION') && liveQueue && (
           <div className="mt-4 p-4 sm:p-5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea]">
             <div className="flex items-center justify-between gap-3 mb-3.5">
               <span className="text-xs font-semibold text-[#1d1d1f] flex items-center gap-2">
@@ -428,17 +430,17 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
               </div>
             )}
 
-            {liveQueue.isYourTurn ? (
+            {status === 'IN_CONSULTATION' || (liveQueue.currentServingQueueNumber === queueNumber && queueNumber > 0) ? (
               <div className="flex items-center gap-3 text-[#1d1d1f] bg-white p-3.5 sm:p-4 rounded-xl text-xs sm:text-sm font-medium border border-[#0066cc]/30">
                 <CheckCircle2 className="w-5 h-5 text-[#0066cc] shrink-0" />
                 <div>
                   <span className="font-semibold text-[#1d1d1f] block">
-                    {status === 'IN_CONSULTATION' ? 'Consultation in Progress' : 'It is your turn now!'}
+                    {status === 'IN_CONSULTATION' ? 'Consultation in Progress' : 'Your Token Called'}
                   </span>
                   <span className="text-[#86868b] text-xs font-normal mt-0.5 block">
                     {status === 'IN_CONSULTATION'
                       ? `You are currently in consultation with ${doctorDisplayName} in the cabin.`
-                      : `${doctorDisplayName} is ready for you in the consultation cabin.`}
+                      : `Please proceed to the consultation cabin. ${doctorDisplayName} is ready for you.`}
                   </span>
                 </div>
               </div>
