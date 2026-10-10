@@ -314,6 +314,10 @@ export const ClinicDashboard: React.FC = () => {
       setProfileError('Please select or enter a City.');
       return;
     }
+    if (profilePhone.trim() && !isValidIndianPhone(profilePhone.trim())) {
+      setProfileError('Please enter a valid 10-digit Indian mobile number.');
+      return;
+    }
     setProfileError(null);
     setSavingProfile(true);
     try {
@@ -321,7 +325,7 @@ export const ClinicDashboard: React.FC = () => {
         address: profileAddress.trim(),
         state: profileState,
         city: profileCity.trim(),
-        phone: profilePhone ? formatIndianPhone(profilePhone) : undefined,
+        phone: profilePhone.trim() ? formatIndianPhone(profilePhone.trim()) : undefined,
       });
       setShowProfileModal(false);
       setSuccessMsg('Clinic location details updated successfully.');
@@ -391,15 +395,55 @@ export const ClinicDashboard: React.FC = () => {
     },
   ];
 
+  const getApptStatusBadge = (status: string) => {
+    switch (status) {
+      case 'COMPLETED':
+      case 'IN_CONSULTATION':
+        return {
+          label: status === 'COMPLETED' ? 'Completed' : 'In Consultation',
+          className: 'bg-[#0066cc]/10 text-[#0066cc]',
+        };
+      case 'PENDING_APPROVAL':
+        return {
+          label: 'Pending Desk',
+          className: 'bg-amber-50 text-amber-700 border border-amber-200/80',
+        };
+      case 'CANCELLED':
+        return {
+          label: 'Cancelled',
+          className: 'bg-rose-50 text-rose-600 border border-rose-200/80',
+        };
+      case 'REJECTED':
+        return {
+          label: 'Declined',
+          className: 'bg-rose-50 text-rose-600 border border-rose-200/80',
+        };
+      case 'EXPIRED':
+        return {
+          label: 'Expired',
+          className: 'bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea]',
+        };
+      default:
+        return {
+          label: 'Waiting',
+          className: 'bg-white text-[#1d1d1f] border border-[#e5e5ea]',
+        };
+    }
+  };
+
   return (
     <DashboardLayout
       portalType="CLINIC"
       portalSubtitle="Clinic Portal"
       navItems={navItems}
       title={clinic?.clinicName || user?.fullName || 'Clinic Partner Portal'}
-      subtitle={`${clinic?.address || 'Clinical Operations Dashboard'}${
-        clinic?.city ? ` • ${clinic.city}` : ''
-      }${clinic?.state ? `, ${clinic.state}` : ''}`}
+      subtitle={
+        clinic?.address
+          ? `${clinic.address}${clinic?.city ? ` • ${clinic.city}` : ''}${clinic?.state ? `, ${clinic.state}` : ''}`
+          : clinic?.city
+          ? `${clinic.city}${clinic?.state ? `, ${clinic.state}` : ''}`
+          : 'Clinical Operations Dashboard'
+      }
       headerAction={
         <div className="flex flex-wrap items-center gap-2">
           <button
@@ -481,7 +525,7 @@ export const ClinicDashboard: React.FC = () => {
             <div>
               <div className="font-semibold text-[#1d1d1f]">Clinic Pending Administrative Verification</div>
               <p className="text-[#86868b] text-xs mt-0.5 leading-relaxed">
-                Your clinic profile is pending review by MediArca administration. While unverified, your clinic will not appear in public clinic searches. You can still onboard doctors, manage front desk staff, and configure operations.
+                Your clinic profile is pending review by MediArca administration. While unverified, your clinic will not appear in public searches and online bookings are paused. You can configure your facility profile, onboard doctors, and prepare front desk staff ahead of verification.
               </p>
             </div>
           </div>
@@ -1143,15 +1187,14 @@ export const ClinicDashboard: React.FC = () => {
                           <div className="text-[11px] text-[#86868b]">{appt.patientPhone}</div>
                         </div>
                       </div>
-                      <span
-                        className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium ${
-                          appt.status === 'COMPLETED' || appt.status === 'IN_CONSULTATION'
-                            ? 'bg-[#0066cc]/10 text-[#0066cc]'
-                            : 'bg-white text-[#1d1d1f] border border-[#e5e5ea]'
-                        }`}
-                      >
-                        {appt.status === 'PENDING_APPROVAL' ? 'Pending' : appt.status === 'EXPIRED' ? 'Expired' : appt.status === 'IN_CONSULTATION' ? 'In Consultation' : appt.status === 'COMPLETED' ? 'Completed' : 'Waiting'}
-                      </span>
+                      {(() => {
+                        const badge = getApptStatusBadge(appt.status);
+                        return (
+                          <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium ${badge.className}`}>
+                            {badge.label}
+                          </span>
+                        );
+                      })()}
                     </div>
 
                     <div className="flex items-center justify-between text-xs text-[#86868b] pt-2 border-t border-[#e5e5ea]">
@@ -1198,15 +1241,14 @@ export const ClinicDashboard: React.FC = () => {
                         <div className="text-[11px]">{appt.estimatedTime || appt.checkingWindow}</div>
                       </td>
                       <td className="py-3.5">
-                        <span
-                          className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium ${
-                            appt.status === 'COMPLETED' || appt.status === 'IN_CONSULTATION'
-                              ? 'bg-[#0066cc]/10 text-[#0066cc]'
-                              : 'bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea]'
-                          }`}
-                        >
-                          {appt.status === 'PENDING_APPROVAL' ? 'Pending Desk' : appt.status === 'EXPIRED' ? 'Expired' : appt.status === 'IN_CONSULTATION' ? 'In Consultation' : appt.status === 'COMPLETED' ? 'Completed' : 'Waiting'}
-                        </span>
+                        {(() => {
+                          const badge = getApptStatusBadge(appt.status);
+                          return (
+                            <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium ${badge.className}`}>
+                              {badge.label}
+                            </span>
+                          );
+                        })()}
                       </td>
                       <td className="py-3.5 text-right pr-2 font-semibold text-[#1d1d1f]">
                         ₹{appt.fee}
@@ -1288,6 +1330,8 @@ export const ClinicDashboard: React.FC = () => {
                       })
                       .map((d) => {
                         const isAlreadyAdded = doctors.some((doc) => doc.doctorId === d.id);
+                        const isPendingInvitation = data?.outgoingRequests?.some((req) => req.doctorId === d.id);
+                        const isIncomingRequest = data?.incomingRequests?.some((req) => req.doctorId === d.id);
                         const docEmail = d.user?.email || '';
                         const docName = d.user?.fullName || 'Dr. Specialist';
                         return (
@@ -1297,7 +1341,9 @@ export const ClinicDashboard: React.FC = () => {
                           >
                             <div
                               className="cursor-pointer flex-1 mr-2"
-                              onClick={() => docEmail && setDoctorEmail(docEmail)}
+                              onClick={() => {
+                                if (docEmail) setDoctorEmail(docEmail);
+                              }}
                               title={docEmail ? 'Click to select email' : undefined}
                             >
                               <div className="font-semibold text-[13px] text-[#1d1d1f] hover:text-[#0066cc] transition-colors">{docName}</div>
@@ -1309,6 +1355,19 @@ export const ClinicDashboard: React.FC = () => {
                               <span className="text-[11px] text-[#86868b] px-2.5 py-1 rounded-full bg-white border border-[#e5e5ea] font-medium shrink-0">
                                 Affiliated
                               </span>
+                            ) : isPendingInvitation ? (
+                              <span className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200/80 px-2.5 py-1 rounded-full font-medium shrink-0">
+                                Invited
+                              </span>
+                            ) : isIncomingRequest ? (
+                              <button
+                                type="button"
+                                disabled={adding}
+                                onClick={() => handleQuickAdd(docEmail, d.id)}
+                                className="h-7 px-3 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold cursor-pointer transition-all active:scale-[0.98] shrink-0"
+                              >
+                                {adding ? 'Accepting...' : 'Accept'}
+                              </button>
                             ) : (
                               <button
                                 type="button"
@@ -1758,14 +1817,14 @@ export const ClinicDashboard: React.FC = () => {
                   This receptionist will only be able to view schedules, book walk-ins, and manage queues for selected practitioners.
                 </p>
 
-                {doctors.filter((d) => d.status === 'ACCEPTED').length === 0 ? (
+                {doctors.filter((d) => d.status === 'ACCEPTED' || d.status === 'ACTIVE').length === 0 ? (
                   <div className="p-4 rounded-xl bg-[#f5f5f7] text-[#86868b] text-xs border border-[#e5e5ea]">
                     No active affiliated doctors at this clinic yet. You can approve now and assign doctors later.
                   </div>
                 ) : (
                   <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                     {doctors
-                      .filter((d) => d.status === 'ACCEPTED')
+                      .filter((d) => d.status === 'ACCEPTED' || d.status === 'ACTIVE')
                       .map((doc) => {
                         const isChecked = approvalDoctorIds.includes(doc.doctorId);
                         return (
@@ -1830,8 +1889,10 @@ export const ClinicDashboard: React.FC = () => {
 
       {/* Complete Clinic Profile / Address Modal */}
       {showProfileModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xl animate-in fade-in duration-200">
-          <div className="relative w-full max-w-[500px] bg-white rounded-[28px] border border-[#e5e5ea] shadow-[0_24px_64px_rgba(0,0,0,0.12),0_4px_16px_rgba(0,0,0,0.04)] p-6 sm:p-7 text-left">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-xl animate-in fade-in duration-200">
+          <div className="relative w-full max-w-[500px] max-h-[92vh] overflow-y-auto bg-white rounded-t-[28px] sm:rounded-[28px] border border-[#e5e5ea] shadow-[0_24px_64px_rgba(0,0,0,0.12),0_4px_16px_rgba(0,0,0,0.04)] p-6 sm:p-7 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-7 text-left">
+            {/* Mobile Drag Handle */}
+            <div className="sm:hidden w-10 h-1 bg-[#d2d2d7] rounded-full mx-auto mb-4" />
             <button
               type="button"
               onClick={() => setShowProfileModal(false)}

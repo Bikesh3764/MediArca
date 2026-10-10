@@ -102,7 +102,10 @@ export const getMyClinic = async (req: AuthRequest, res: Response): Promise<void
 
     // Scalable database queries: count total bookings and fetch only recent 15 appointments
     const totalBookings = await prisma.appointment.count({
-      where: { clinicId: clinic.id },
+      where: {
+        clinicId: clinic.id,
+        status: { notIn: ['CANCELLED', 'REJECTED', 'EXPIRED'] },
+      },
     });
 
     const recentAppointments = await prisma.appointment.findMany({
@@ -138,7 +141,11 @@ export const getMyClinic = async (req: AuthRequest, res: Response): Promise<void
     const doctorStats = await Promise.all(
       activeDoctorAffiliations.map(async (cd) => {
         const bookingCount = await prisma.appointment.count({
-          where: { clinicId: clinic.id, doctorId: cd.doctorId },
+          where: {
+            clinicId: clinic.id,
+            doctorId: cd.doctorId,
+            status: { notIn: ['CANCELLED', 'REJECTED', 'EXPIRED'] },
+          },
         });
         const completedCount = await prisma.appointment.count({
           where: { clinicId: clinic.id, doctorId: cd.doctorId, status: 'COMPLETED' },

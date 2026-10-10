@@ -9440,6 +9440,44 @@ Follow-up Date: 2026-10-15`;
     'Fix 19: doctorController filters cancelled, rejected, and expired appointments out of clinic affiliation booking counts'
   );
 
+  // 19. Fix 20: Part 5 Clinic Portal & Administration Deep Remediation Verification
+  const clinicControllerPart5Content = fs.readFileSync(path.join(__dirname, '../src/controllers/clinicController.ts'), 'utf8');
+  const clinicDashboardPart5Content = fs.readFileSync(path.join(__dirname, '../../frontend/src/pages/Clinic/ClinicDashboard.tsx'), 'utf8');
+  const clinicStandeePart5Content = fs.readFileSync(path.join(__dirname, '../../frontend/src/components/common/ClinicQrStandeeModal.tsx'), 'utf8');
+
+  assert(
+    clinicControllerPart5Content.includes("status: { notIn: ['CANCELLED', 'REJECTED', 'EXPIRED'] }"),
+    'Fix 20: clinicController excludes cancelled, rejected, and expired visits from totalBookings and bookingCount'
+  );
+
+  assert(
+    clinicDashboardPart5Content.includes('const getApptStatusBadge =') &&
+    clinicDashboardPart5Content.includes("case 'CANCELLED':") &&
+    clinicDashboardPart5Content.includes("label: 'Cancelled'") &&
+    clinicDashboardPart5Content.includes("case 'REJECTED':") &&
+    clinicDashboardPart5Content.includes("label: 'Declined'"),
+    'Fix 20: ClinicDashboard correctly maps CANCELLED and REJECTED appointments to distinct badges instead of Waiting'
+  );
+
+  assert(
+    clinicDashboardPart5Content.includes('const isPendingInvitation = data?.outgoingRequests?.some') &&
+    clinicDashboardPart5Content.includes('const isIncomingRequest = data?.incomingRequests?.some') &&
+    clinicDashboardPart5Content.includes('Invited') &&
+    clinicDashboardPart5Content.includes('Accept'),
+    'Fix 20: ClinicDashboard differentiates affiliated, invited, incoming, and new doctors in quick-onboarding modal'
+  );
+
+  assert(
+    clinicDashboardPart5Content.includes("d.status === 'ACCEPTED' || d.status === 'ACTIVE'"),
+    'Fix 20: ClinicDashboard supports both ACCEPTED and ACTIVE doctor affiliations in receptionist assignment modal'
+  );
+
+  assert(
+    clinicDashboardPart5Content.includes('max-h-[92vh] overflow-y-auto') &&
+    clinicStandeePart5Content.includes('max-h-[92vh] overflow-y-auto'),
+    'Fix 20: ClinicDashboard profile modal and ClinicQrStandeeModal are vertically scrollable on mobile viewports'
+  );
+
   console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);
