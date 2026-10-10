@@ -8,6 +8,7 @@ import {
   getAllAppointments,
   getContactMessages,
   markContactMessageRead,
+  deleteContactMessage,
 } from '../controllers/adminController';
 import { authenticate, authorize } from '../middleware/authMiddleware';
 
@@ -23,5 +24,6 @@ router.post('/verify-clinic', verifyClinic);
 router.get('/appointments', getAllAppointments);
 router.get('/contact-messages', getContactMessages);
 router.patch('/contact-messages/:id/read', markContactMessageRead);
+router.delete('/contact-messages/:id', deleteContactMessage);
 
 export default router;

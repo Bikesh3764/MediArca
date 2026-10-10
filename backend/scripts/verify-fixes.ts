@@ -9531,6 +9531,81 @@ Follow-up Date: 2026-10-15`;
     'Fix 21: ReceptionistDashboard guards walk-in desk submission and warns when doctor has no configured shifts'
   );
 
+  // ----------------------------------------------------
+  // Fix 22: Part 7 Admin Portal & Verification Management Safeguards
+  // ----------------------------------------------------
+  const adminControllerPart7Content = fs.readFileSync(
+    path.join(__dirname, '../src/controllers/adminController.ts'),
+    'utf-8'
+  );
+  const adminRoutesPart7Content = fs.readFileSync(
+    path.join(__dirname, '../src/routes/adminRoutes.ts'),
+    'utf-8'
+  );
+  const apiPart7Content = fs.readFileSync(
+    path.join(__dirname, '../../frontend/src/services/api.ts'),
+    'utf-8'
+  );
+  const adminLoginPart7Content = fs.readFileSync(
+    path.join(__dirname, '../../frontend/src/pages/Auth/AdminLogin.tsx'),
+    'utf-8'
+  );
+  const adminDashboardPart7Content = fs.readFileSync(
+    path.join(__dirname, '../../frontend/src/pages/Admin/AdminDashboard.tsx'),
+    'utf-8'
+  );
+
+  assert(
+    adminControllerPart7Content.includes('clinics: {') &&
+    adminControllerPart7Content.includes('include: {') &&
+    adminControllerPart7Content.includes('clinicName: true') &&
+    adminControllerPart7Content.includes('doctors: {') &&
+    adminControllerPart7Content.includes('deleteContactMessage'),
+    'Fix 22: adminController includes affiliated clinics in getDoctorsList, affiliated doctors in getClinicsList, and provides deleteContactMessage'
+  );
+
+  assert(
+    adminRoutesPart7Content.includes("router.delete('/contact-messages/:id', deleteContactMessage)"),
+    'Fix 22: adminRoutes mounts DELETE /contact-messages/:id endpoint'
+  );
+
+  assert(
+    apiPart7Content.includes('deleteContactMessage') &&
+    apiPart7Content.includes("safeFetch(`${API_BASE_URL}/admin/contact-messages/${id}`"),
+    'Fix 22: frontend api client provides deleteContactMessage API service'
+  );
+
+  assert(
+    adminLoginPart7Content.includes('email.trim()') &&
+    adminLoginPart7Content.includes("loggedUser.role?.toUpperCase() !== 'ADMIN'") &&
+    adminLoginPart7Content.includes('admin@mediarca.com') &&
+    adminLoginPart7Content.includes('admin123'),
+    'Fix 22: AdminLogin sanitizes email whitespace, performs case-insensitive role check, and offers one-click demo credentials'
+  );
+
+  assert(
+    adminDashboardPart7Content.includes('doctorSearchQuery') &&
+    adminDashboardPart7Content.includes('doctorStatusFilter') &&
+    adminDashboardPart7Content.includes('clinicSearchQuery') &&
+    adminDashboardPart7Content.includes('clinicStatusFilter') &&
+    adminDashboardPart7Content.includes('filteredDoctors') &&
+    adminDashboardPart7Content.includes('filteredClinics'),
+    'Fix 22: AdminDashboard implements search query bars and status filter pills for both practitioner and clinic verification queues'
+  );
+
+  assert(
+    adminDashboardPart7Content.includes('appt.patientPhone || appt.patient?.user?.phone || appt.patient?.user?.email || \'Walk-in\'') &&
+    adminDashboardPart7Content.includes('selectedAppointment.patientPhone || selectedAppointment.patient?.user?.phone || \'Not Provided\''),
+    'Fix 22: AdminDashboard prioritizes appt.patientPhone over account holder phone for family and walk-in platform bookings'
+  );
+
+  assert(
+    adminDashboardPart7Content.includes('Affiliated Clinical Facilities') &&
+    adminDashboardPart7Content.includes('Affiliated Practitioners') &&
+    adminDashboardPart7Content.includes('handleDeleteContactMessage'),
+    'Fix 22: Admin inspection modals surface affiliated facilities and practitioner rosters, and contact inquiries can be deleted'
+  );
+
   console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);

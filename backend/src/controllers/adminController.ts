@@ -67,6 +67,13 @@ export const getDoctorsList = async (req: AuthRequest, res: Response): Promise<v
     const doctors = await prisma.doctorProfile.findMany({
       include: {
         user: { select: { id: true, fullName: true, email: true, phone: true, avatarUrl: true, createdAt: true } },
+        clinics: {
+          include: {
+            clinic: {
+              select: { id: true, clinicName: true, city: true, address: true, phone: true },
+            },
+          },
+        },
         _count: { select: { appointments: true, reviews: true } },
       },
       orderBy: [{ isVerified: 'asc' }, { createdAt: 'desc' }],
@@ -220,6 +227,15 @@ export const getClinicsList = async (_req: AuthRequest, res: Response): Promise<
     const clinics = await prisma.clinicProfile.findMany({
       include: {
         user: { select: { id: true, fullName: true, email: true, phone: true, createdAt: true } },
+        doctors: {
+          include: {
+            doctor: {
+              include: {
+                user: { select: { id: true, fullName: true, email: true, phone: true, avatarUrl: true } },
+              },
+            },
+          },
+        },
         _count: { select: { doctors: true, appointments: true, receptionists: true } },
       },
       orderBy: [{ isVerified: 'asc' }, { createdAt: 'desc' }],
@@ -447,6 +463,27 @@ export const markContactMessageRead = async (req: AuthRequest, res: Response): P
     res.status(500).json({
       success: false,
       message: 'Failed to update contact message status',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
+  }
+};
+
+// Admin delete contact inquiry message
+export const deleteContactMessage = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    await prisma.contactMessage.delete({
+      where: { id: String(id) },
+    });
+    res.json({
+      success: true,
+      message: 'Contact message deleted successfully',
+    });
+  } catch (error: any) {
+    console.error('deleteContactMessage error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete contact message',
       ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
     });
   }

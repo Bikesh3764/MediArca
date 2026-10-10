@@ -20,9 +20,16 @@ export const AdminLogin: React.FC = () => {
     setError(null);
     setSubmitting(true);
 
+    const cleanEmail = email.trim();
+    if (!cleanEmail) {
+      setError('Please enter your administrator ID or email.');
+      setSubmitting(false);
+      return;
+    }
+
     try {
-      const loggedUser = await login({ email, password });
-      if (loggedUser.role !== 'ADMIN') {
+      const loggedUser = await login({ email: cleanEmail, password });
+      if (loggedUser.role?.toUpperCase() !== 'ADMIN') {
         logout();
         setError('Access Denied: This account does not have platform administrator credentials.');
         return;
@@ -31,9 +38,32 @@ export const AdminLogin: React.FC = () => {
       setAuthenticated(true);
       setTimeout(() => {
         navigate('/admin', { replace: true });
-      }, 600);
+      }, 500);
     } catch (err: any) {
       setError(err.message || 'Invalid administrative credentials or account not found');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleQuickDemoLogin = async () => {
+    setEmail('admin@mediarca.com');
+    setPassword('admin123');
+    setError(null);
+    setSubmitting(true);
+    try {
+      const loggedUser = await login({ email: 'admin@mediarca.com', password: 'admin123' });
+      if (loggedUser.role?.toUpperCase() !== 'ADMIN') {
+        logout();
+        setError('Access Denied: This account does not have platform administrator credentials.');
+        return;
+      }
+      setAuthenticated(true);
+      setTimeout(() => {
+        navigate('/admin', { replace: true });
+      }, 500);
+    } catch (err: any) {
+      setError(err.message || 'Demo admin sign in failed');
     } finally {
       setSubmitting(false);
     }
@@ -121,6 +151,22 @@ export const AdminLogin: React.FC = () => {
                 ) : (
                   <span>Sign In</span>
                 )}
+              </button>
+            </div>
+
+            {/* Quick Demo Root Admin Access */}
+            <div className="pt-3 border-t border-[#f0f0f2]">
+              <div className="flex items-center justify-between text-xs text-[#86868b] mb-2">
+                <span>Demo Administrative Access</span>
+                <span className="text-[11px] font-medium text-[#1d1d1f]">admin@mediarca.com</span>
+              </div>
+              <button
+                type="button"
+                onClick={handleQuickDemoLogin}
+                disabled={submitting || authenticated}
+                className="w-full h-9 rounded-xl border border-[#e5e5ea] bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.98] disabled:opacity-60"
+              >
+                <span>Quick Sign In as Demo Root Admin</span>
               </button>
             </div>
           </form>

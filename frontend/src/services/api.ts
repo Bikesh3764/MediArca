@@ -1715,6 +1715,14 @@ export const api = {
     return handleResponse(res);
   },
 
+  async deleteContactMessage(id: string): Promise<{ success: boolean; message: string }> {
+    const res = await safeFetch(`${API_BASE_URL}/admin/contact-messages/${id}`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+    });
+    return handleResponse(res);
+  },
+
   // Clinic Portal
   async getMyClinic(): Promise<ClinicDashboardData> {
     const res = await safeFetch(`${API_BASE_URL}/clinics/my-clinic`, { headers: getHeaders() });

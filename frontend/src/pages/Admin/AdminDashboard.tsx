@@ -23,6 +23,7 @@ import {
   Eye,
   RotateCcw,
   ChevronDown,
+  Trash2,
 } from 'lucide-react';
 
 export const AdminDashboard: React.FC = () => {
@@ -54,6 +55,14 @@ export const AdminDashboard: React.FC = () => {
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
   const [selectedClinic, setSelectedClinic] = useState<any | null>(null);
   const [activeTab, setActiveTab] = useState<'doctors' | 'clinics' | 'appointments' | 'messages'>('doctors');
+
+  // Doctor Verification Filter & Search State
+  const [doctorSearchQuery, setDoctorSearchQuery] = useState('');
+  const [doctorStatusFilter, setDoctorStatusFilter] = useState<'ALL' | 'PENDING' | 'VERIFIED' | 'SUSPENDED' | 'REJECTED'>('ALL');
+
+  // Clinic Verification Filter & Search State
+  const [clinicSearchQuery, setClinicSearchQuery] = useState('');
+  const [clinicStatusFilter, setClinicStatusFilter] = useState<'ALL' | 'PENDING' | 'VERIFIED' | 'SUSPENDED' | 'REJECTED'>('ALL');
 
   // Platform Bookings Organization State
   const [bookingDateFilter, setBookingDateFilter] = useState<'ALL' | 'TODAY' | 'TOMORROW' | 'PAST' | 'CUSTOM'>('ALL');
@@ -217,6 +226,69 @@ export const AdminDashboard: React.FC = () => {
     setBookingStatusFilter('ALL');
     setBookingSearchQuery('');
   };
+
+  const getPractitionerStatus = useCallback((
+    doc: { verificationStatus?: string; isVerified?: boolean } | null | undefined
+  ): 'VERIFIED' | 'SUSPENDED' | 'REJECTED' | 'PENDING' => {
+    if (!doc) return 'PENDING';
+    if (doc.verificationStatus) {
+      const s = doc.verificationStatus.toUpperCase();
+      if (s === 'VERIFIED' || s === 'SUSPENDED' || s === 'REJECTED' || s === 'PENDING') return s as any;
+    }
+    return doc.isVerified ? 'VERIFIED' : 'PENDING';
+  }, []);
+
+  const filteredDoctors = useMemo(() => {
+    return doctors.filter((doc) => {
+      const status = getPractitionerStatus(doc);
+      if (doctorStatusFilter !== 'ALL' && status !== doctorStatusFilter) {
+        return false;
+      }
+      if (doctorSearchQuery.trim()) {
+        const q = doctorSearchQuery.toLowerCase().trim();
+        const name = (doc.user?.fullName || '').toLowerCase();
+        const email = (doc.user?.email || '').toLowerCase();
+        const spec = (doc.specialty || '').toLowerCase();
+        const phone = (doc.user?.phone || '').toLowerCase();
+        const qualifications = (doc.qualifications || '').toLowerCase();
+        return (
+          name.includes(q) ||
+          email.includes(q) ||
+          spec.includes(q) ||
+          phone.includes(q) ||
+          qualifications.includes(q)
+        );
+      }
+      return true;
+    });
+  }, [doctors, doctorStatusFilter, doctorSearchQuery, getPractitionerStatus]);
+
+  const filteredClinics = useMemo(() => {
+    return clinics.filter((c) => {
+      const status = getPractitionerStatus(c);
+      if (clinicStatusFilter !== 'ALL' && status !== clinicStatusFilter) {
+        return false;
+      }
+      if (clinicSearchQuery.trim()) {
+        const q = clinicSearchQuery.toLowerCase().trim();
+        const name = (c.clinicName || '').toLowerCase();
+        const city = (c.city || '').toLowerCase();
+        const address = (c.address || '').toLowerCase();
+        const adminName = (c.user?.fullName || '').toLowerCase();
+        const email = (c.user?.email || '').toLowerCase();
+        const phone = (c.phone || c.user?.phone || '').toLowerCase();
+        return (
+          name.includes(q) ||
+          city.includes(q) ||
+          address.includes(q) ||
+          adminName.includes(q) ||
+          email.includes(q) ||
+          phone.includes(q)
+        );
+      }
+      return true;
+    });
+  }, [clinics, clinicStatusFilter, clinicSearchQuery, getPractitionerStatus]);
 
   const isAnyBookingFilterActive =
     bookingDateFilter !== 'ALL' ||
@@ -384,17 +456,6 @@ export const AdminDashboard: React.FC = () => {
     };
   }, [user, loadingAuth, navigate]);
 
-  const getPractitionerStatus = (
-    doc: { verificationStatus?: string; isVerified?: boolean } | null | undefined
-  ): 'VERIFIED' | 'SUSPENDED' | 'REJECTED' | 'PENDING' => {
-    if (!doc) return 'PENDING';
-    if (doc.verificationStatus) {
-      const s = doc.verificationStatus.toUpperCase();
-      if (s === 'VERIFIED' || s === 'SUSPENDED' || s === 'REJECTED' || s === 'PENDING') return s as any;
-    }
-    return doc.isVerified ? 'VERIFIED' : 'PENDING';
-  };
-
   const renderStatusBadge = (status: 'VERIFIED' | 'SUSPENDED' | 'REJECTED' | 'PENDING') => {
     switch (status) {
       case 'VERIFIED':
@@ -432,13 +493,15 @@ export const AdminDashboard: React.FC = () => {
   const handleVerifyClinic = async (
     clinicId: string,
     action: 'VERIFIED' | 'SUSPENDED' | 'REJECTED' | boolean
-  ) => {
+  ): Promise<boolean> => {
     setClinicActionId(clinicId);
     try {
       await api.verifyClinic(clinicId, action);
       await fetchData();
+      return true;
     } catch (err: any) {
       alert(err.message || 'Clinic verification update failed');
+      return false;
     } finally {
       setClinicActionId(null);
     }
@@ -447,15 +510,29 @@ export const AdminDashboard: React.FC = () => {
   const handleVerify = async (
     doctorId: string,
     action: 'VERIFIED' | 'SUSPENDED' | 'REJECTED' | boolean
-  ) => {
+  ): Promise<boolean> => {
     setActionId(doctorId);
     try {
       await api.verifyDoctor(doctorId, action);
       await fetchData();
+      return true;
     } catch (err: any) {
       alert(err.message || 'Verification update failed');
+      return false;
     } finally {
       setActionId(null);
+    }
+  };
+
+  const handleDeleteContactMessage = async (id: string) => {
+    if (!window.confirm('Are you sure you want to permanently delete this contact inquiry? This cannot be undone.')) {
+      return;
+    }
+    try {
+      await api.deleteContactMessage(id);
+      setContactMessages((prev) => prev.filter((m) => m.id !== id));
+    } catch (err: any) {
+      alert(err.message || 'Failed to delete contact inquiry');
     }
   };
 
@@ -663,14 +740,62 @@ export const AdminDashboard: React.FC = () => {
             {/* Tab 1: Doctor Verification Portal */}
             {activeTab === 'doctors' && (
               <UtilityCard>
-                <div className="flex justify-between items-center mb-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
                   <div>
                     <h3 className="text-[20px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">Practitioner Verification Queue</h3>
                     <p className="text-[13px] text-[#86868b] mt-1 leading-relaxed">
                       Doctors must be verified by admin before appearing in patient searches.
                     </p>
                   </div>
-                  <span className="text-xs text-[#86868b]">{doctors.length} Registered Doctor(s)</span>
+                  <span className="text-xs text-[#86868b]">
+                    {filteredDoctors.length} of {doctors.length} Registered Doctor(s)
+                  </span>
+                </div>
+
+                {/* Search & Status Filters */}
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-5">
+                  <div className="relative flex-1 max-w-md">
+                    <Search className="w-4 h-4 text-[#86868b] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <input
+                      type="text"
+                      value={doctorSearchQuery}
+                      onChange={(e) => setDoctorSearchQuery(e.target.value)}
+                      placeholder="Search doctor by name, specialty, email..."
+                      className="w-full h-10 pl-10 pr-8 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-xs text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:outline-none focus:bg-white focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all"
+                    />
+                    {doctorSearchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setDoctorSearchQuery('')}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#86868b] hover:text-[#1d1d1f]"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="inline-flex items-center p-1 bg-[#e8e8ed]/70 rounded-full border border-[#e5e5ea] overflow-x-auto scrollbar-none self-start sm:self-auto">
+                    {(['ALL', 'PENDING', 'VERIFIED', 'SUSPENDED', 'REJECTED'] as const).map((st) => {
+                      const count = st === 'ALL'
+                        ? doctors.length
+                        : doctors.filter((d) => getPractitionerStatus(d) === st).length;
+                      return (
+                        <button
+                          key={st}
+                          type="button"
+                          onClick={() => setDoctorStatusFilter(st)}
+                          className={`px-3 py-1 rounded-full text-xs font-medium transition-all cursor-pointer whitespace-nowrap ${
+                            doctorStatusFilter === st
+                              ? 'bg-white text-[#1d1d1f] shadow-[0_1px_3px_rgba(0,0,0,0.08)] font-semibold'
+                              : 'text-[#86868b] hover:text-[#1d1d1f]'
+                          }`}
+                        >
+                          <span>{st === 'ALL' ? 'All' : st === 'PENDING' ? 'Pending' : st === 'VERIFIED' ? 'Verified' : st === 'SUSPENDED' ? 'Suspended' : 'Rejected'}</span>
+                          <span className="ml-1 opacity-70">({count})</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 <div className="overflow-x-auto">
@@ -686,7 +811,14 @@ export const AdminDashboard: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[#f0f0f0]">
-                      {doctors.map((doc) => (
+                      {filteredDoctors.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className="py-8 text-center text-xs text-[#86868b]">
+                            No practitioners match the current search or status filter.
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredDoctors.map((doc) => (
                         <tr key={doc.id} className="hover:bg-[#f5f5f7]/60 transition-colors">
                           <td className="py-3.5 px-3">
                             <div className="flex items-center gap-3">
@@ -800,7 +932,8 @@ export const AdminDashboard: React.FC = () => {
                             </div>
                           </td>
                         </tr>
-                      ))}
+                      ))
+                    )}
                     </tbody>
                   </table>
                 </div>
@@ -810,14 +943,62 @@ export const AdminDashboard: React.FC = () => {
             {/* Tab 2: Clinic Verification Portal */}
             {activeTab === 'clinics' && (
               <UtilityCard>
-                <div className="flex justify-between items-center mb-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
                   <div>
                     <h3 className="text-[20px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">Clinic Facility Verification Queue</h3>
                     <p className="text-[13px] text-[#86868b] mt-1 leading-relaxed">
                       Clinics must be verified by MediArca administration before appearing in patient searches or doctor affiliation lists.
                     </p>
                   </div>
-                  <span className="text-xs text-[#86868b]">{clinics.length} Registered Clinic(s)</span>
+                  <span className="text-xs text-[#86868b]">
+                    {filteredClinics.length} of {clinics.length} Registered Clinic(s)
+                  </span>
+                </div>
+
+                {/* Search & Status Filters */}
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-5">
+                  <div className="relative flex-1 max-w-md">
+                    <Search className="w-4 h-4 text-[#86868b] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <input
+                      type="text"
+                      value={clinicSearchQuery}
+                      onChange={(e) => setClinicSearchQuery(e.target.value)}
+                      placeholder="Search clinic by name, address, city, contact..."
+                      className="w-full h-10 pl-10 pr-8 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-xs text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:outline-none focus:bg-white focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all"
+                    />
+                    {clinicSearchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setClinicSearchQuery('')}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#86868b] hover:text-[#1d1d1f]"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="inline-flex items-center p-1 bg-[#e8e8ed]/70 rounded-full border border-[#e5e5ea] overflow-x-auto scrollbar-none self-start sm:self-auto">
+                    {(['ALL', 'PENDING', 'VERIFIED', 'SUSPENDED', 'REJECTED'] as const).map((st) => {
+                      const count = st === 'ALL'
+                        ? clinics.length
+                        : clinics.filter((c) => getPractitionerStatus(c) === st).length;
+                      return (
+                        <button
+                          key={st}
+                          type="button"
+                          onClick={() => setClinicStatusFilter(st)}
+                          className={`px-3 py-1 rounded-full text-xs font-medium transition-all cursor-pointer whitespace-nowrap ${
+                            clinicStatusFilter === st
+                              ? 'bg-white text-[#1d1d1f] shadow-[0_1px_3px_rgba(0,0,0,0.08)] font-semibold'
+                              : 'text-[#86868b] hover:text-[#1d1d1f]'
+                          }`}
+                        >
+                          <span>{st === 'ALL' ? 'All' : st === 'PENDING' ? 'Pending' : st === 'VERIFIED' ? 'Verified' : st === 'SUSPENDED' ? 'Suspended' : 'Rejected'}</span>
+                          <span className="ml-1 opacity-70">({count})</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 <div className="overflow-x-auto">
@@ -832,14 +1013,16 @@ export const AdminDashboard: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[#f0f0f0]">
-                      {clinics.length === 0 ? (
+                      {filteredClinics.length === 0 ? (
                         <tr>
                           <td colSpan={5} className="py-8 text-center text-xs text-[#86868b]">
-                            No clinical facilities registered on the platform yet.
+                            {clinicSearchQuery || clinicStatusFilter !== 'ALL'
+                              ? 'No clinical facilities match your search query or status filter.'
+                              : 'No clinical facilities registered on the platform yet.'}
                           </td>
                         </tr>
                       ) : (
-                        clinics.map((c) => (
+                        filteredClinics.map((c) => (
                           <tr key={c.id} className="hover:bg-[#f5f5f7]/60 transition-colors">
                             <td className="py-3.5 px-3">
                               <div>
@@ -965,6 +1148,11 @@ export const AdminDashboard: React.FC = () => {
                         <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f]">
                           {filteredAppointments.length} of {appointments.length} Total
                         </span>
+                        {appointments.length >= 250 && (
+                          <span className="text-[11px] text-[#86868b] hidden sm:inline">
+                            (Loaded 250 most recent records)
+                          </span>
+                        )}
                       </div>
                       <p className="text-[13px] text-[#86868b] mt-1 leading-relaxed">
                         Audit trail of queue tokens, consultation flows, and schedules organized by dates and clinical facilities.
@@ -1278,7 +1466,7 @@ export const AdminDashboard: React.FC = () => {
                                       </span>
                                     )}
                                     <span className="text-[11px] text-[#86868b] block mt-0.5">
-                                      {appt.patient?.user?.phone || appt.patient?.user?.email || 'Walk-in'}
+                                      {appt.patientPhone || appt.patient?.user?.phone || appt.patient?.user?.email || 'Walk-in'}
                                     </span>
                                   </div>
                                 </td>
@@ -1384,7 +1572,7 @@ export const AdminDashboard: React.FC = () => {
                                               </span>
                                             )}
                                             <span className="text-[11px] text-[#86868b] block mt-0.5">
-                                              {appt.patient?.user?.phone || appt.patient?.user?.email || 'Walk-in'}
+                                              {appt.patientPhone || appt.patient?.user?.phone || appt.patient?.user?.email || 'Walk-in'}
                                             </span>
                                           </div>
                                         </td>
@@ -1507,7 +1695,7 @@ export const AdminDashboard: React.FC = () => {
                                             </span>
                                           )}
                                           <span className="text-[11px] text-[#86868b] block mt-0.5">
-                                            {appt.patient?.user?.phone || appt.patient?.user?.email || 'Walk-in'}
+                                            {appt.patientPhone || appt.patient?.user?.phone || appt.patient?.user?.email || 'Walk-in'}
                                           </span>
                                         </div>
                                       </td>
@@ -1618,6 +1806,14 @@ export const AdminDashboard: React.FC = () => {
                             >
                               Reply Email
                             </a>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteContactMessage(msg.id)}
+                              className="p-1.5 rounded-full text-[#86868b] hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-all cursor-pointer"
+                              title="Delete Message"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
                           </div>
                         </div>
 
@@ -1689,10 +1885,42 @@ export const AdminDashboard: React.FC = () => {
               </div>
 
               <div>
-                <span className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">Clinic Address</span>
+                <span className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">Clinic Address / Base</span>
                 <p className="text-[#1d1d1f] p-3 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea]">
-                  {selectedDoctor.clinicAddress || 'MediArca Clinic Facility'}
+                  {selectedDoctor.clinicAddress || 'MediArca Direct Outpatient Practice'}
                 </p>
+              </div>
+
+              <div>
+                <span className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                  Affiliated Clinical Facilities ({selectedDoctor.clinics?.length || 0})
+                </span>
+                {selectedDoctor.clinics && selectedDoctor.clinics.length > 0 ? (
+                  <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+                    {selectedDoctor.clinics.map((cAff) => (
+                      <div
+                        key={cAff.id || cAff.clinicId}
+                        className="p-2.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] flex items-center justify-between"
+                      >
+                        <div>
+                          <strong className="text-[#1d1d1f] block font-medium">
+                            {cAff.clinic?.clinicName || 'Clinical Facility'}
+                          </strong>
+                          <span className="text-[11px] text-[#86868b] block">
+                            {cAff.clinic?.address || ''}{cAff.clinic?.city ? `, ${cAff.clinic.city}` : ''}
+                          </span>
+                        </div>
+                        {cAff.clinic?.phone && (
+                          <span className="text-[11px] text-[#86868b] font-medium">{cAff.clinic.phone}</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[#86868b] p-3 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-xs">
+                    {selectedDoctor.clinicAddress ? `Primary: ${selectedDoctor.clinicAddress}` : 'No multi-clinic affiliations recorded yet.'}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -1719,8 +1947,8 @@ export const AdminDashboard: React.FC = () => {
                     size="sm"
                     disabled={actionId === selectedDoctor.id}
                     onClick={async () => {
-                      await handleVerify(selectedDoctor.id, 'SUSPENDED');
-                      setSelectedDoctor(null);
+                      const ok = await handleVerify(selectedDoctor.id, 'SUSPENDED');
+                      if (ok) setSelectedDoctor(null);
                     }}
                     className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 border border-rose-200"
                   >
@@ -1734,8 +1962,8 @@ export const AdminDashboard: React.FC = () => {
                     size="sm"
                     disabled={actionId === selectedDoctor.id}
                     onClick={async () => {
-                      await handleVerify(selectedDoctor.id, 'VERIFIED');
-                      setSelectedDoctor(null);
+                      const ok = await handleVerify(selectedDoctor.id, 'VERIFIED');
+                      if (ok) setSelectedDoctor(null);
                     }}
                   >
                     <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
@@ -1748,8 +1976,8 @@ export const AdminDashboard: React.FC = () => {
                     size="sm"
                     disabled={actionId === selectedDoctor.id}
                     onClick={async () => {
-                      await handleVerify(selectedDoctor.id, 'VERIFIED');
-                      setSelectedDoctor(null);
+                      const ok = await handleVerify(selectedDoctor.id, 'VERIFIED');
+                      if (ok) setSelectedDoctor(null);
                     }}
                   >
                     <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
@@ -1763,8 +1991,8 @@ export const AdminDashboard: React.FC = () => {
                       size="sm"
                       disabled={actionId === selectedDoctor.id}
                       onClick={async () => {
-                        await handleVerify(selectedDoctor.id, 'REJECTED');
-                        setSelectedDoctor(null);
+                        const ok = await handleVerify(selectedDoctor.id, 'REJECTED');
+                        if (ok) setSelectedDoctor(null);
                       }}
                       className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 border border-rose-200"
                     >
@@ -1776,8 +2004,8 @@ export const AdminDashboard: React.FC = () => {
                       size="sm"
                       disabled={actionId === selectedDoctor.id}
                       onClick={async () => {
-                        await handleVerify(selectedDoctor.id, 'VERIFIED');
-                        setSelectedDoctor(null);
+                        const ok = await handleVerify(selectedDoctor.id, 'VERIFIED');
+                        if (ok) setSelectedDoctor(null);
                       }}
                     >
                       <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
@@ -1845,6 +2073,34 @@ export const AdminDashboard: React.FC = () => {
               </div>
 
               <div className="p-3.5 bg-white border border-[#e5e5ea] rounded-xl space-y-2">
+                <span className="text-xs font-semibold text-[#1d1d1f] block">
+                  Affiliated Practitioners ({selectedClinic.doctors?.length || 0})
+                </span>
+                {selectedClinic.doctors && selectedClinic.doctors.length > 0 ? (
+                  <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+                    {selectedClinic.doctors.map((dAff: any) => (
+                      <div
+                        key={dAff.id || dAff.doctor?.id}
+                        className="p-2 rounded-lg bg-[#f5f5f7] border border-[#e5e5ea] flex items-center justify-between text-xs"
+                      >
+                        <div>
+                          <span className="font-semibold text-[#1d1d1f] block">
+                            {dAff.doctor?.user?.fullName || 'Practitioner'}
+                          </span>
+                          <span className="text-[11px] text-[#0066cc]">
+                            {dAff.doctor?.specialty || 'General Practitioner'}
+                          </span>
+                        </div>
+                        <span className="text-[11px] text-[#86868b]">{dAff.doctor?.user?.email}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-[#86868b]">No practitioner affiliations recorded yet.</p>
+                )}
+              </div>
+
+              <div className="p-3.5 bg-white border border-[#e5e5ea] rounded-xl space-y-2">
                 <span className="text-xs font-semibold text-[#1d1d1f] block">Primary Administrative Contact</span>
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   <div>
@@ -1883,8 +2139,8 @@ export const AdminDashboard: React.FC = () => {
                     size="sm"
                     disabled={clinicActionId === selectedClinic.id}
                     onClick={async () => {
-                      await handleVerifyClinic(selectedClinic.id, 'SUSPENDED');
-                      setSelectedClinic(null);
+                      const ok = await handleVerifyClinic(selectedClinic.id, 'SUSPENDED');
+                      if (ok) setSelectedClinic(null);
                     }}
                     className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 border border-rose-200"
                   >
@@ -1898,8 +2154,8 @@ export const AdminDashboard: React.FC = () => {
                     size="sm"
                     disabled={clinicActionId === selectedClinic.id}
                     onClick={async () => {
-                      await handleVerifyClinic(selectedClinic.id, 'VERIFIED');
-                      setSelectedClinic(null);
+                      const ok = await handleVerifyClinic(selectedClinic.id, 'VERIFIED');
+                      if (ok) setSelectedClinic(null);
                     }}
                   >
                     <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
@@ -1912,8 +2168,8 @@ export const AdminDashboard: React.FC = () => {
                     size="sm"
                     disabled={clinicActionId === selectedClinic.id}
                     onClick={async () => {
-                      await handleVerifyClinic(selectedClinic.id, 'VERIFIED');
-                      setSelectedClinic(null);
+                      const ok = await handleVerifyClinic(selectedClinic.id, 'VERIFIED');
+                      if (ok) setSelectedClinic(null);
                     }}
                   >
                     <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
@@ -1927,8 +2183,8 @@ export const AdminDashboard: React.FC = () => {
                       size="sm"
                       disabled={clinicActionId === selectedClinic.id}
                       onClick={async () => {
-                        await handleVerifyClinic(selectedClinic.id, 'REJECTED');
-                        setSelectedClinic(null);
+                        const ok = await handleVerifyClinic(selectedClinic.id, 'REJECTED');
+                        if (ok) setSelectedClinic(null);
                       }}
                       className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 border border-rose-200"
                     >
@@ -1940,8 +2196,8 @@ export const AdminDashboard: React.FC = () => {
                       size="sm"
                       disabled={clinicActionId === selectedClinic.id}
                       onClick={async () => {
-                        await handleVerifyClinic(selectedClinic.id, 'VERIFIED');
-                        setSelectedClinic(null);
+                        const ok = await handleVerifyClinic(selectedClinic.id, 'VERIFIED');
+                        if (ok) setSelectedClinic(null);
                       }}
                     >
                       <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
@@ -1995,7 +2251,7 @@ export const AdminDashboard: React.FC = () => {
                   <div>
                     <span className="text-[#86868b] block text-[11px]">Contact Phone</span>
                     <span className="font-medium text-[#1d1d1f] mt-0.5 block">
-                      {selectedAppointment.patient?.user?.phone || 'Not Provided'}
+                      {selectedAppointment.patientPhone || selectedAppointment.patient?.user?.phone || 'Not Provided'}
                     </span>
                   </div>
                   <div>
