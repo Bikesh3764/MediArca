@@ -212,7 +212,15 @@ export const ManageSchedule: React.FC = () => {
 
   const handleAddSlot = () => {
     setSlots((prev) => {
-      const newIndex = prev.length + 1;
+      let maxShiftNum = 0;
+      prev.forEach((s) => {
+        const match = s.name.match(/^Shift\s+(\d+)$/i);
+        if (match) {
+          const num = parseInt(match[1], 10);
+          if (num > maxShiftNum) maxShiftNum = num;
+        }
+      });
+      const newIndex = Math.max(prev.length + 1, maxShiftNum + 1);
       let startTime = '15:00';
       let endTime = '19:00';
 
@@ -255,7 +263,13 @@ export const ManageSchedule: React.FC = () => {
       setError('You must configure at least one checking shift for this clinic.');
       return;
     }
-    setSlots((prev) => prev.filter((_, i) => i !== index));
+    setSlots((prev) => {
+      const remaining = prev.filter((_, i) => i !== index);
+      return remaining.map((s, idx) => ({
+        ...s,
+        name: /^Shift\s+\d+$/i.test(s.name) ? `Shift ${idx + 1}` : s.name,
+      }));
+    });
   };
 
   const totalMaxDailyPatients = slots.reduce((sum, s) => sum + (Number(s.maxPatients) || 0), 0);

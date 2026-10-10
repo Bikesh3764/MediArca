@@ -9411,6 +9411,35 @@ Follow-up Date: 2026-10-15`;
     'Fix 18: ManageSchedule dynamically calculates new shift times based on previous slot end times avoiding instant overlap'
   );
 
+  // 18. Fix 19: Part 4 Doctor Console Deep Remediation Verification
+  const doctorProfileContent = fs.readFileSync(path.join(__dirname, '../../frontend/src/pages/Doctor/DoctorProfile.tsx'), 'utf8');
+  const doctorControllerPart4Content = fs.readFileSync(path.join(__dirname, '../src/controllers/doctorController.ts'), 'utf8');
+
+  assert(
+    doctorDashboardContent.includes("if (selectedClinicId !== 'all' && appt.clinicId !== selectedClinicId)") &&
+    doctorDashboardContent.includes("if (selectedClinicId !== 'all' && active.clinicId !== selectedClinicId)") &&
+    doctorDashboardContent.includes('appt.appointmentDate === getYesterdayDateString()'),
+    'Fix 19: DoctorDashboard strictly filters clinic appointments without leakage and supports overnight carryovers in quick call button'
+  );
+
+  assert(
+    doctorProfileContent.includes("if (specialty === 'Other' && !customSpecialty.trim())") &&
+    doctorProfileContent.includes("setErrorMsg('Please enter your specific clinical specialty name.')"),
+    'Fix 19: DoctorProfile validates and prevents saving literal string Other as specialty'
+  );
+
+  assert(
+    manageScheduleContent.includes('const newIndex = Math.max(prev.length + 1, maxShiftNum + 1)') &&
+    manageScheduleContent.includes('name: /^Shift\\s+\\d+$/i.test(s.name) ? `Shift ${idx + 1}` : s.name'),
+    'Fix 19: ManageSchedule prevents duplicate Shift names when adding and removing shifts'
+  );
+
+  assert(
+    doctorControllerPart4Content.includes("doctorId: doctor.id,") &&
+    doctorControllerPart4Content.includes("status: { notIn: ['CANCELLED', 'REJECTED', 'EXPIRED'] }"),
+    'Fix 19: doctorController filters cancelled, rejected, and expired appointments out of clinic affiliation booking counts'
+  );
+
   console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);

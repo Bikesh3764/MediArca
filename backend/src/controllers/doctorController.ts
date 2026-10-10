@@ -672,6 +672,7 @@ export const getDoctorAffiliations = async (req: AuthRequest, res: Response): Pr
           where: {
             doctorId: doctor.id,
             clinicId: cd.clinicId,
+            status: { notIn: ['CANCELLED', 'REJECTED', 'EXPIRED'] },
           },
         });
 

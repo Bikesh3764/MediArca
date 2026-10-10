@@ -123,10 +123,14 @@ export const DoctorProfile: React.FC = () => {
     setErrorMsg(null);
     setSuccessMsg(null);
 
+    if (specialty === 'Other' && !customSpecialty.trim()) {
+      setErrorMsg('Please enter your specific clinical specialty name.');
+      setSaving(false);
+      return;
+    }
+
     const finalSpecialty =
-      specialty === 'Other' && customSpecialty.trim()
-        ? customSpecialty.trim()
-        : specialty.trim();
+      specialty === 'Other' ? customSpecialty.trim() : specialty.trim();
 
     if (!finalSpecialty) {
       setErrorMsg('Please select or specify your clinical specialty.');

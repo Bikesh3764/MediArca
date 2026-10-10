@@ -541,7 +541,7 @@ export const DoctorDashboard: React.FC = () => {
   const displayedWaitingQueue = useMemo(() => {
     if (!queueData?.waitingQueue) return [];
     return queueData.waitingQueue.filter((appt) => {
-      if (selectedClinicId !== 'all' && appt.clinicId && appt.clinicId !== selectedClinicId) {
+      if (selectedClinicId !== 'all' && appt.clinicId !== selectedClinicId) {
         return false;
       }
       if (selectedSlotId !== 'all' && !matchesSlot(appt, selectedSlotId, targetSlotObj)) {
@@ -554,7 +554,7 @@ export const DoctorDashboard: React.FC = () => {
   const displayedCompletedQueue = useMemo(() => {
     if (!queueData?.completedQueue) return [];
     return queueData.completedQueue.filter((appt) => {
-      if (selectedClinicId !== 'all' && appt.clinicId && appt.clinicId !== selectedClinicId) {
+      if (selectedClinicId !== 'all' && appt.clinicId !== selectedClinicId) {
         return false;
       }
       if (selectedSlotId !== 'all' && !matchesSlot(appt, selectedSlotId, targetSlotObj)) {
@@ -567,7 +567,7 @@ export const DoctorDashboard: React.FC = () => {
   const displayedActiveInConsultation = useMemo(() => {
     if (!queueData?.activeInConsultation) return null;
     const active = queueData.activeInConsultation;
-    if (selectedClinicId !== 'all' && active.clinicId && active.clinicId !== selectedClinicId) {
+    if (selectedClinicId !== 'all' && active.clinicId !== selectedClinicId) {
       return null;
     }
     if (selectedSlotId !== 'all' && !matchesSlot(active, selectedSlotId, targetSlotObj)) {
@@ -1437,7 +1437,10 @@ export const DoctorDashboard: React.FC = () => {
                         return name.includes(q) || phone.includes(q) || token.includes(q);
                       });
                       const nextPresentTarget = filteredWaiting.find(
-                        (appt) => appt.isCheckedIn && appt.appointmentDate === getLocalDateString()
+                        (appt) =>
+                          appt.isCheckedIn &&
+                          (appt.appointmentDate === getLocalDateString() ||
+                            appt.appointmentDate === getYesterdayDateString())
                       );
 
                       return (
