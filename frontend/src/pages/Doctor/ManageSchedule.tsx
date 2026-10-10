@@ -31,6 +31,13 @@ import {
   Calendar,
 } from 'lucide-react';
 
+const minutesToTime = (mins: number): string => {
+  const norm = ((mins % (24 * 60)) + 24 * 60) % (24 * 60);
+  const h = Math.floor(norm / 60).toString().padStart(2, '0');
+  const m = (norm % 60).toString().padStart(2, '0');
+  return `${h}:${m}`;
+};
+
 export const ManageSchedule: React.FC = () => {
   const { user, loading: loadingAuth, refreshUser } = useAuth();
   const navigate = useNavigate();
@@ -206,15 +213,37 @@ export const ManageSchedule: React.FC = () => {
   const handleAddSlot = () => {
     setSlots((prev) => {
       const newIndex = prev.length + 1;
-      const startTime = '15:00';
-      const endTime = '19:00';
+      let startTime = '15:00';
+      let endTime = '19:00';
+
+      if (prev.length > 0) {
+        let maxEndMins = 0;
+        prev.forEach((s) => {
+          const end = timeToMinutes(s.endTime);
+          if (end > maxEndMins) maxEndMins = end;
+        });
+        let nextStartMins = maxEndMins + 60; // 1-hour break between shifts
+        if (nextStartMins >= 22 * 60) {
+          nextStartMins = maxEndMins + 15;
+        }
+        if (nextStartMins >= 23 * 60) {
+          nextStartMins = 17 * 60;
+        }
+        const nextEndMins = Math.min(23 * 60 + 30, nextStartMins + 180);
+        startTime = minutesToTime(nextStartMins);
+        endTime = minutesToTime(nextEndMins);
+      }
+
       const maxPatients = 25;
       const avgConsultationMinutes = 20;
+      const startHour = parseInt(startTime.split(':')[0], 10);
+      const shiftPeriod = startHour >= 16 ? 'Evening' : startHour >= 12 ? 'Afternoon' : 'Morning';
+
       return [
         ...prev,
         {
           id: `slot_${Date.now()}`,
-          name: `Shift ${newIndex} (Evening)`,
+          name: `Shift ${newIndex} (${shiftPeriod})`,
           startTime,
           endTime,
           maxPatients,

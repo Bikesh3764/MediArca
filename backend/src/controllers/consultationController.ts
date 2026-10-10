@@ -659,3 +659,76 @@ export const completeConsultation = async (req: AuthRequest, res: Response): Pro
 
 export const completeWithPrescription = completeConsultation;
 
+export const holdConsultation = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user || req.user.role !== 'DOCTOR') {
+      res.status(403).json({ success: false, message: 'Doctor only' });
+      return;
+    }
+
+    const { appointmentId } = req.body;
+    if (!appointmentId) {
+      res.status(400).json({ success: false, message: 'appointmentId is required' });
+      return;
+    }
+
+    const doctor = await prisma.doctorProfile.findUnique({
+      where: { userId: req.user.id },
+    });
+
+    if (!doctor) {
+      res.status(404).json({ success: false, message: 'Doctor profile not found' });
+      return;
+    }
+
+    const docCheck = isDoctorEligibleForClinicalPractice(doctor);
+    if (!docCheck.eligible) {
+      res.status(403).json({ success: false, message: docCheck.reason });
+      return;
+    }
+
+    const targetAppointment = await prisma.appointment.findUnique({
+      where: { id: appointmentId },
+    });
+
+    if (!targetAppointment || targetAppointment.doctorId !== doctor.id) {
+      res.status(404).json({ success: false, message: 'Appointment not found for this doctor' });
+      return;
+    }
+
+    if (targetAppointment.status !== 'IN_CONSULTATION') {
+      res.status(400).json({
+        success: false,
+        message: `Cannot put consultation on hold: appointment status is '${targetAppointment.status}'. Only active in-consultation visits can be returned to waiting status.`,
+      });
+      return;
+    }
+
+    const updated = await prisma.appointment.update({
+      where: { id: appointmentId },
+      data: { status: 'WAITING' },
+      include: {
+        clinic: true,
+        patient: {
+          include: {
+            user: { select: { id: true, fullName: true, email: true, phone: true } },
+          },
+        },
+      },
+    });
+
+    res.json({
+      success: true,
+      message: `Token #${updated.queueNumber} placed on hold and returned to waiting queue`,
+      data: updated,
+    });
+  } catch (error: any) {
+    console.error('holdConsultation error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to put consultation on hold',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
+  }
+};
+

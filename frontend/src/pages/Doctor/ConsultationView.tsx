@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api, Appointment } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -16,6 +16,7 @@ import {
   Settings,
   UserCheck,
   Clock,
+  PauseCircle,
 } from 'lucide-react';
 
 export const ConsultationView: React.FC = () => {
@@ -31,6 +32,12 @@ export const ConsultationView: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   const [clinicalNotes, setClinicalNotes] = useState('');
+  const [vitalsBP, setVitalsBP] = useState('');
+  const [vitalsPulse, setVitalsPulse] = useState('');
+  const [vitalsTemp, setVitalsTemp] = useState('');
+  const [vitalsWeight, setVitalsWeight] = useState('');
+  const [togglingCheckin, setTogglingCheckin] = useState(false);
+  const [holdingPatient, setHoldingPatient] = useState(false);
 
   const navItems: DashboardNavItem[] = [
     {
@@ -76,6 +83,17 @@ export const ConsultationView: React.FC = () => {
           if (found.clinicalNotes) {
             setClinicalNotes(found.clinicalNotes);
           }
+          if (found.vitals) {
+            try {
+              const v = typeof found.vitals === 'object' ? found.vitals : JSON.parse(found.vitals);
+              if (v.bp) setVitalsBP(v.bp);
+              if (v.pulse) setVitalsPulse(v.pulse);
+              if (v.temp) setVitalsTemp(v.temp);
+              if (v.weight) setVitalsWeight(v.weight);
+            } catch {
+              // Ignore vitals parse error
+            }
+          }
         } else {
           setError('Encounter record could not be retrieved.');
         }
@@ -89,14 +107,35 @@ export const ConsultationView: React.FC = () => {
     fetchAppointmentData();
   }, [id, user, loadingAuth, navigate]);
 
+  const rawVitals = appointment?.vitals;
+  const parsedVitals = useMemo(() => {
+    if (!rawVitals) return null;
+    if (typeof rawVitals === 'object') return rawVitals;
+    try {
+      return JSON.parse(rawVitals);
+    } catch {
+      return null;
+    }
+  }, [rawVitals]);
+
   const handleSaveNotesDraft = async () => {
     if (!appointment) return;
     setSavingNotes(true);
     setError(null);
     try {
+      const currentVitals = (vitalsBP || vitalsPulse || vitalsTemp || vitalsWeight)
+        ? {
+            bp: vitalsBP.trim() || undefined,
+            pulse: vitalsPulse.trim() || undefined,
+            temp: vitalsTemp.trim() || undefined,
+            weight: vitalsWeight.trim() || undefined,
+          }
+        : undefined;
+
       await api.updateNotes({
         appointmentId: appointment.id,
         clinicalNotes: clinicalNotes.trim(),
+        vitals: currentVitals,
       });
       setSuccessMsg('Consultation notes saved.');
       setTimeout(() => setSuccessMsg(null), 3000);
@@ -125,6 +164,38 @@ export const ConsultationView: React.FC = () => {
     }
   };
 
+  const handleMarkArrived = async () => {
+    if (!appointment) return;
+    setTogglingCheckin(true);
+    setError(null);
+    try {
+      await api.checkInAppointmentDirect(appointment.id, true);
+      setAppointment((prev) => (prev ? { ...prev, isCheckedIn: true, checkedInAt: new Date().toISOString() } : null));
+      setSuccessMsg('Patient marked as arrived at clinic.');
+      setTimeout(() => setSuccessMsg(null), 3000);
+    } catch (err: any) {
+      setError(err.message || 'Failed to mark patient arrived');
+    } finally {
+      setTogglingCheckin(false);
+    }
+  };
+
+  const handleHoldConsultation = async () => {
+    if (!appointment) return;
+    setHoldingPatient(true);
+    setError(null);
+    try {
+      const updated = await api.holdConsultation(appointment.id);
+      setAppointment(updated);
+      setSuccessMsg(`Token #${updated.queueNumber} placed on hold and returned to waiting queue.`);
+      setTimeout(() => setSuccessMsg(null), 3000);
+    } catch (err: any) {
+      setError(err.message || 'Failed to place consultation on hold');
+    } finally {
+      setHoldingPatient(false);
+    }
+  };
+
   const handleCompleteConsultation = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!appointment) return;
@@ -133,9 +204,19 @@ export const ConsultationView: React.FC = () => {
     setError(null);
 
     try {
+      const currentVitals = (vitalsBP || vitalsPulse || vitalsTemp || vitalsWeight)
+        ? {
+            bp: vitalsBP.trim() || undefined,
+            pulse: vitalsPulse.trim() || undefined,
+            temp: vitalsTemp.trim() || undefined,
+            weight: vitalsWeight.trim() || undefined,
+          }
+        : undefined;
+
       await api.completeConsultation({
         appointmentId: appointment.id,
         clinicalNotes: clinicalNotes.trim(),
+        vitals: currentVitals,
       });
       navigate('/doctor/dashboard');
     } catch (err: any) {
@@ -302,6 +383,41 @@ export const ConsultationView: React.FC = () => {
               )}
             </div>
           )}
+
+          {/* Recorded Vitals Strip */}
+          {parsedVitals && (parsedVitals.bp || parsedVitals.pulse || parsedVitals.temp || parsedVitals.weight) && (
+            <div className="mt-4 p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea]">
+              <span className="text-xs font-semibold text-[#1d1d1f] tracking-tight block mb-2">
+                Recorded Vitals
+              </span>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
+                {parsedVitals.bp && (
+                  <div className="p-2.5 rounded-xl bg-white border border-[#e5e5ea]">
+                    <span className="text-[#86868b] block text-[11px]">Blood Pressure</span>
+                    <span className="font-semibold text-[#1d1d1f] text-[13px]">{parsedVitals.bp}</span>
+                  </div>
+                )}
+                {parsedVitals.pulse && (
+                  <div className="p-2.5 rounded-xl bg-white border border-[#e5e5ea]">
+                    <span className="text-[#86868b] block text-[11px]">Pulse</span>
+                    <span className="font-semibold text-[#1d1d1f] text-[13px]">{parsedVitals.pulse} bpm</span>
+                  </div>
+                )}
+                {parsedVitals.temp && (
+                  <div className="p-2.5 rounded-xl bg-white border border-[#e5e5ea]">
+                    <span className="text-[#86868b] block text-[11px]">Temperature</span>
+                    <span className="font-semibold text-[#1d1d1f] text-[13px]">{parsedVitals.temp}</span>
+                  </div>
+                )}
+                {parsedVitals.weight && (
+                  <div className="p-2.5 rounded-xl bg-white border border-[#e5e5ea]">
+                    <span className="text-[#86868b] block text-[11px]">Weight</span>
+                    <span className="font-semibold text-[#1d1d1f] text-[13px]">{parsedVitals.weight}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </UtilityCard>
 
         {/* Consultation Completion Form / View */}
@@ -395,13 +511,22 @@ export const ConsultationView: React.FC = () => {
                 <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200/80 text-amber-800 text-xs font-medium inline-block text-left">
                   Patient has not arrived at the clinic yet. Arrival check-in is required before beginning consultation.
                 </div>
-                <div>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                   <button
                     type="button"
                     onClick={() => navigate('/doctor/dashboard')}
-                    className="w-full sm:w-auto h-10 px-6 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-medium transition-all inline-flex items-center justify-center cursor-pointer"
+                    className="w-full sm:w-auto h-10 px-5 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-medium transition-all inline-flex items-center justify-center cursor-pointer"
                   >
                     Return to Live Queue
+                  </button>
+                  <button
+                    type="button"
+                    disabled={togglingCheckin}
+                    onClick={handleMarkArrived}
+                    className="w-full sm:w-auto h-10 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-xs font-semibold transition-all duration-150 flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60"
+                  >
+                    <CheckCircle2 className="w-4 h-4 text-white" />
+                    <span>{togglingCheckin ? 'Marking...' : 'Mark Arrived at Clinic'}</span>
                   </button>
                 </div>
               </div>
@@ -410,6 +535,52 @@ export const ConsultationView: React.FC = () => {
         ) : (
           <form onSubmit={handleCompleteConsultation} className="space-y-6">
             <UtilityCard className="p-6">
+              <span className="text-xs font-semibold text-[#1d1d1f] tracking-tight block mb-3">
+                Patient Vitals <span className="text-[#86868b] font-normal">(Optional)</span>
+              </span>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+                <div>
+                  <label className="block text-[11px] font-medium text-[#86868b] mb-1">Blood Pressure</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 120/80"
+                    value={vitalsBP}
+                    onChange={(e) => setVitalsBP(e.target.value)}
+                    className="w-full h-10 px-3 rounded-xl border border-[#d2d2d7] bg-white text-[13px] text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-medium text-[#86868b] mb-1">Pulse Rate (bpm)</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 72"
+                    value={vitalsPulse}
+                    onChange={(e) => setVitalsPulse(e.target.value)}
+                    className="w-full h-10 px-3 rounded-xl border border-[#d2d2d7] bg-white text-[13px] text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-medium text-[#86868b] mb-1">Temperature</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 98.6 °F"
+                    value={vitalsTemp}
+                    onChange={(e) => setVitalsTemp(e.target.value)}
+                    className="w-full h-10 px-3 rounded-xl border border-[#d2d2d7] bg-white text-[13px] text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-medium text-[#86868b] mb-1">Weight</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 68 kg"
+                    value={vitalsWeight}
+                    onChange={(e) => setVitalsWeight(e.target.value)}
+                    className="w-full h-10 px-3 rounded-xl border border-[#d2d2d7] bg-white text-[13px] text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all"
+                  />
+                </div>
+              </div>
+
               <div className="flex items-center justify-between gap-2 mb-3">
                 <label className="text-xs font-medium text-[#1d1d1f] tracking-tight">
                   Consultation Notes <span className="text-[#86868b] font-normal">(Optional)</span>
@@ -433,23 +604,36 @@ export const ConsultationView: React.FC = () => {
                 className="w-full rounded-xl border border-[#d2d2d7] bg-white p-3.5 text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 resize-y"
               />
 
-              <div className="mt-5 pt-4 border-t border-[#e5e5ea] flex flex-col sm:flex-row items-center justify-end gap-2.5">
+              <div className="mt-5 pt-4 border-t border-[#e5e5ea] flex flex-col sm:flex-row items-center justify-between gap-2.5">
                 <button
                   type="button"
-                  onClick={() => navigate('/doctor/dashboard')}
-                  className="w-full sm:w-auto h-10 px-5 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-medium transition-all cursor-pointer"
+                  disabled={holdingPatient}
+                  onClick={handleHoldConsultation}
+                  className="w-full sm:w-auto h-10 px-4 rounded-full bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 text-xs font-medium transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60"
+                  title="Pause and return patient to waiting queue"
                 >
-                  Back to Queue
+                  <PauseCircle className="w-3.5 h-3.5" />
+                  <span>{holdingPatient ? 'Holding...' : 'Put on Hold'}</span>
                 </button>
 
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="w-full sm:w-auto h-10 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-xs font-semibold transition-all duration-150 shadow-[0_2px_8px_rgba(0,102,204,0.2)] flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60"
-                >
-                  <CheckCircle2 className="w-4 h-4 text-white" />
-                  <span>{submitting ? 'Completing...' : 'Complete Consultation'}</span>
-                </button>
+                <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full sm:w-auto justify-end">
+                  <button
+                    type="button"
+                    onClick={() => navigate('/doctor/dashboard')}
+                    className="w-full sm:w-auto h-10 px-5 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-medium transition-all cursor-pointer"
+                  >
+                    Back to Queue
+                  </button>
+
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="w-full sm:w-auto h-10 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-xs font-semibold transition-all duration-150 shadow-[0_2px_8px_rgba(0,102,204,0.2)] flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60"
+                  >
+                    <CheckCircle2 className="w-4 h-4 text-white" />
+                    <span>{submitting ? 'Completing...' : 'Complete Consultation'}</span>
+                  </button>
+                </div>
               </div>
             </UtilityCard>
           </form>

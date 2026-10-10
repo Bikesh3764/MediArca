@@ -1608,6 +1608,15 @@ export const api = {
     return this.completeConsultation(body) as any;
   },
 
+  async holdConsultation(appointmentId: string): Promise<Appointment> {
+    const res = await safeFetch(`${API_BASE_URL}/consultations/hold`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ appointmentId }),
+    });
+    return handleResponse<Appointment>(res);
+  },
+
   // Admin
   async getAdminStats(): Promise<{
     totalPatients: number;

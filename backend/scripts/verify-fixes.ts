@@ -9365,6 +9365,52 @@ Follow-up Date: 2026-10-15`;
     'Fix 17: PatientProfile syncs ISO dateOfBirth and uses clean +91 badge + segmented gender control; ErrorBoundary eliminates font-mono'
   );
 
+  // 17. Fix 18: Doctor Portal Logical Workflow & Hold Consultation Verification
+  const consultControllerContent = fs.readFileSync(path.join(__dirname, '../src/controllers/consultationController.ts'), 'utf8');
+  const consultRoutesContent = fs.readFileSync(path.join(__dirname, '../src/routes/consultationRoutes.ts'), 'utf8');
+  const doctorDashboardContent = fs.readFileSync(path.join(__dirname, '../../frontend/src/pages/Doctor/DoctorDashboard.tsx'), 'utf8');
+  const consultViewContent = fs.readFileSync(path.join(__dirname, '../../frontend/src/pages/Doctor/ConsultationView.tsx'), 'utf8');
+  const manageScheduleContent = fs.readFileSync(path.join(__dirname, '../../frontend/src/pages/Doctor/ManageSchedule.tsx'), 'utf8');
+
+  assert(
+    consultControllerContent.includes('export const holdConsultation = async') &&
+    consultControllerContent.includes("targetAppointment.status !== 'IN_CONSULTATION'") &&
+    consultControllerContent.includes("data: { status: 'WAITING' }"),
+    'Fix 18: consultationController exports holdConsultation and safely returns IN_CONSULTATION visits to WAITING status'
+  );
+
+  assert(
+    consultRoutesContent.includes("router.post('/hold', holdConsultation)"),
+    'Fix 18: consultationRoutes registers authenticated POST /consultations/hold endpoint'
+  );
+
+  assert(
+    appointmentControllerContent.includes('doctorId !== myDoctorProfile.id && doctorId !== req.user.id'),
+    'Fix 18: appointmentController doctor walkin authorization accepts both doctor profile ID and user ID'
+  );
+
+  assert(
+    doctorDashboardContent.includes('api.holdConsultation') &&
+    doctorDashboardContent.includes('getYesterdayDateString() && appt.isCheckedIn') &&
+    doctorDashboardContent.includes('walkinDate') &&
+    doctorDashboardContent.includes("appt.reasonForVisit?.toLowerCase().includes('walk-in')"),
+    'Fix 18: DoctorDashboard integrates Hold consultation, overnight carryover patient calling, dynamic walk-in dates, and clean Walk-in badges'
+  );
+
+  assert(
+    consultViewContent.includes('handleMarkArrived') &&
+    consultViewContent.includes('handleHoldConsultation') &&
+    consultViewContent.includes('vitalsBP') &&
+    consultViewContent.includes('Recorded Vitals'),
+    'Fix 18: ConsultationView integrates direct Arrival check-in, Hold consultation, and comprehensive clinical vitals tracking'
+  );
+
+  assert(
+    manageScheduleContent.includes('const minutesToTime =') &&
+    manageScheduleContent.includes('nextStartMins = maxEndMins + 60'),
+    'Fix 18: ManageSchedule dynamically calculates new shift times based on previous slot end times avoiding instant overlap'
+  );
+
   console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);

@@ -359,7 +359,7 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
         res.status(404).json({ success: false, message: 'Doctor profile not found' });
         return;
       }
-      if (doctorId && doctorId !== myDoctorProfile.id) {
+      if (doctorId && doctorId !== myDoctorProfile.id && doctorId !== req.user.id) {
         res.status(403).json({ success: false, message: 'Doctors can only queue walk-in appointments for their own practice' });
         return;
       }

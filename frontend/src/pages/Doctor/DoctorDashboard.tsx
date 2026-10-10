@@ -38,6 +38,7 @@ import {
   QrCode,
   ChevronDown,
   Phone,
+  PauseCircle,
 } from 'lucide-react';
 import { ClinicQrStandeeModal } from '../../components/common/ClinicQrStandeeModal';
 
@@ -80,9 +81,14 @@ const matchesSlot = (appt: Appointment, slotId: string, slotObj?: any): boolean 
   if (slotId === 'all') return true;
   if (appt.slotId && appt.slotId === slotId) return true;
   if (slotObj) {
+    if (slotObj.id && appt.slotId && appt.slotId === slotObj.id) return true;
     if (slotObj.startTime && appt.checkingWindow?.includes(slotObj.startTime)) return true;
-    if (slotObj.name && appt.checkingWindow?.includes(slotObj.name)) return true;
-    if (slotObj.shiftName && appt.checkingWindow?.includes(slotObj.shiftName)) return true;
+    if (slotObj.name && appt.checkingWindow?.toLowerCase().includes(slotObj.name.toLowerCase())) return true;
+    if (slotObj.shiftName && appt.checkingWindow?.toLowerCase().includes(slotObj.shiftName.toLowerCase())) return true;
+    if (slotObj.name) {
+      const match = slotObj.name.match(/(Shift\s*\d+)/i);
+      if (match && appt.checkingWindow?.toLowerCase().includes(match[1].toLowerCase())) return true;
+    }
   }
   return false;
 };
@@ -181,9 +187,7 @@ export const DoctorDashboard: React.FC = () => {
     try {
       const data = await api.getDoctorQueue(
         queueScope === 'date' ? date : undefined,
-        queueScope,
-        selectedClinicId !== 'all' ? selectedClinicId : undefined,
-        selectedSlotId !== 'all' ? selectedSlotId : undefined
+        queueScope
       );
       setQueueData(data);
       setFetchError(null);
@@ -193,7 +197,7 @@ export const DoctorDashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [date, queueScope, selectedClinicId, selectedSlotId]);
+  }, [date, queueScope]);
 
   const fetchAffiliations = useCallback(async (showLoading = true) => {
     if (showLoading) setAffiliationsLoading(true);
@@ -256,6 +260,7 @@ export const DoctorDashboard: React.FC = () => {
   const [walkinAge, setWalkinAge] = useState('');
   const [walkinGender, setWalkinGender] = useState('Not Specified');
   const [walkinPhone, setWalkinPhone] = useState('');
+  const [walkinDate, setWalkinDate] = useState(() => getLocalDateString());
   const [walkinReason, setWalkinReason] = useState('');
   const [walkinSlotId, setWalkinSlotId] = useState('');
   const [walkinClinicId, setWalkinClinicId] = useState('');
@@ -299,9 +304,10 @@ export const DoctorDashboard: React.FC = () => {
     setWalkinSubmitting(true);
     setWalkinError(null);
     try {
+      const targetDoctorId = user?.doctorProfile?.id || user?.id || '';
       await api.bookAppointment({
-        doctorId: user?.doctorProfile?.id || user?.id || '',
-        appointmentDate: date,
+        doctorId: targetDoctorId,
+        appointmentDate: walkinDate || getLocalDateString(),
         slotId: walkinSlotId || undefined,
         reasonForVisit: walkinReason || 'Clinic Walk-in Consultation',
         isForOther: true,
@@ -315,6 +321,7 @@ export const DoctorDashboard: React.FC = () => {
       setWalkinName('');
       setWalkinAge('');
       setWalkinPhone('');
+      setWalkinDate(getLocalDateString());
       setWalkinReason('');
       setWalkinClinicId('');
       await fetchQueue();
@@ -337,6 +344,7 @@ export const DoctorDashboard: React.FC = () => {
       const res = await api.addDoctorClinic({ clinicId });
       setFeedbackSuccess(res.message || 'Clinic affiliated successfully');
       await fetchAffiliations();
+      await fetchQueue(false);
     } catch (err: any) {
       setFeedbackError(err.message || 'Failed to affiliate clinic');
     } finally {
@@ -351,7 +359,11 @@ export const DoctorDashboard: React.FC = () => {
     try {
       await api.removeDoctorClinic(clinicId);
       setFeedbackSuccess(`Detached from ${clinicName}`);
-      fetchAffiliations();
+      if (selectedClinicId === clinicId) {
+        setSelectedClinicId('all');
+      }
+      await fetchAffiliations();
+      await fetchQueue(false);
     } catch (err: any) {
       setFeedbackError(err.message || 'Failed to detach clinic');
     }
@@ -363,7 +375,8 @@ export const DoctorDashboard: React.FC = () => {
     try {
       const res = await api.respondToClinicAffiliation(affiliationId, action);
       setFeedbackSuccess(res.message || `Clinic request ${action.toLowerCase()}ed successfully`);
-      fetchAffiliations();
+      await fetchAffiliations();
+      await fetchQueue(false);
     } catch (err: any) {
       setFeedbackError(err.message || 'Failed to respond to affiliation request');
     }
@@ -376,9 +389,22 @@ export const DoctorDashboard: React.FC = () => {
     try {
       await api.removeDoctorReceptionist(receptionistId);
       setFeedbackSuccess(`Unlinked ${name}`);
-      fetchAffiliations();
+      await fetchAffiliations();
     } catch (err: any) {
       setFeedbackError(err.message || 'Failed to unlink receptionist');
+    }
+  };
+
+  const [holdingId, setHoldingId] = useState<string | null>(null);
+  const handleHoldConsultation = async (appointmentId: string) => {
+    setHoldingId(appointmentId);
+    try {
+      await api.holdConsultation(appointmentId);
+      await fetchQueue(false);
+    } catch (err: any) {
+      alert(err.message || 'Failed to put consultation on hold');
+    } finally {
+      setHoldingId(null);
     }
   };
 
@@ -1307,7 +1333,9 @@ export const DoctorDashboard: React.FC = () => {
                         </h4>
                         {displayedActiveInConsultation.isForOther && (
                           <span className="text-[11px] font-medium px-2.5 py-0.5 rounded-full bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea]">
-                            Family ({displayedActiveInConsultation.patientAge ? `Age ${displayedActiveInConsultation.patientAge}` : 'Other'})
+                            {displayedActiveInConsultation.reasonForVisit?.toLowerCase().includes('walk-in')
+                              ? `Walk-in${displayedActiveInConsultation.patientAge ? ` (Age ${displayedActiveInConsultation.patientAge})` : ''}`
+                              : `Family (${displayedActiveInConsultation.patientAge ? `Age ${displayedActiveInConsultation.patientAge}` : 'Other'})`}
                           </span>
                         )}
                       </div>
@@ -1348,6 +1376,16 @@ export const DoctorDashboard: React.FC = () => {
                         >
                           <CheckCircle2 className="w-4 h-4 text-white" />
                           <span>{completingId === displayedActiveInConsultation.id ? 'Completing...' : 'Complete Consultation'}</span>
+                        </button>
+                        <button
+                          type="button"
+                          disabled={holdingId === displayedActiveInConsultation.id}
+                          onClick={() => handleHoldConsultation(displayedActiveInConsultation.id)}
+                          className="w-full sm:w-auto h-10 px-4 rounded-full bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 text-xs font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                          title="Place patient on hold and return them to the waiting queue"
+                        >
+                          <PauseCircle className="w-3.5 h-3.5" />
+                          <span>{holdingId === displayedActiveInConsultation.id ? 'Holding...' : 'Hold'}</span>
                         </button>
                         <button
                           type="button"
@@ -1483,7 +1521,9 @@ export const DoctorDashboard: React.FC = () => {
                               </h4>
                               {appt.isForOther && (
                                 <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-white text-[#1d1d1f] border border-[#e5e5ea]">
-                                  Family ({appt.patientAge ? `${appt.patientAge}y` : 'Other'})
+                                  {appt.reasonForVisit?.toLowerCase().includes('walk-in')
+                                    ? `Walk-in${appt.patientAge ? ` (${appt.patientAge}y)` : ''}`
+                                    : `Family (${appt.patientAge ? `${appt.patientAge}y` : 'Other'})`}
                                 </span>
                               )}
                               {appt.isCheckedIn ? (
@@ -1540,7 +1580,7 @@ export const DoctorDashboard: React.FC = () => {
                         </div>
 
                         <div className="flex items-center gap-2 w-full sm:w-auto justify-end shrink-0">
-                          {appt.appointmentDate === getLocalDateString() ? (
+                          {appt.appointmentDate === getLocalDateString() || (appt.appointmentDate === getYesterdayDateString() && appt.isCheckedIn) ? (
                             isDoctorAway ? (
                               <span className="h-8 px-3 rounded-full text-xs font-medium text-[#86868b] bg-white border border-[#e5e5ea] flex items-center">
                                 Doctor {user?.doctorProfile?.cabinStatus === 'STEPPED_OUT' ? 'Stepped Out' : 'Away'}
@@ -1758,6 +1798,43 @@ export const DoctorDashboard: React.FC = () => {
                     value={sanitizeIndianPhone(walkinPhone)}
                     onChange={(e) => setWalkinPhone(sanitizeIndianPhone(e.target.value))}
                     className="w-full h-full px-3.5 bg-transparent text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:outline-none tracking-wide"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                  Consultation Date
+                </label>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setWalkinDate(getLocalDateString())}
+                    className={`h-9 px-3.5 rounded-xl text-xs font-medium border transition-all cursor-pointer ${
+                      walkinDate === getLocalDateString()
+                        ? 'bg-[#0066cc] text-white border-[#0066cc]'
+                        : 'bg-white text-[#1d1d1f] border-[#d2d2d7] hover:bg-[#f5f5f7]'
+                    }`}
+                  >
+                    Today
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setWalkinDate(getTomorrowDateString())}
+                    className={`h-9 px-3.5 rounded-xl text-xs font-medium border transition-all cursor-pointer ${
+                      walkinDate === getTomorrowDateString()
+                        ? 'bg-[#0066cc] text-white border-[#0066cc]'
+                        : 'bg-white text-[#1d1d1f] border-[#d2d2d7] hover:bg-[#f5f5f7]'
+                    }`}
+                  >
+                    Tomorrow
+                  </button>
+                  <input
+                    type="date"
+                    min={getLocalDateString()}
+                    value={walkinDate}
+                    onChange={(e) => setWalkinDate(e.target.value)}
+                    className="flex-1 h-9 px-3 rounded-xl border border-[#d2d2d7] bg-white text-[13px] text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 cursor-pointer"
                   />
                 </div>
               </div>

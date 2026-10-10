@@ -5,6 +5,7 @@ import {
   updateNotesAndVitals,
   completeConsultation,
   completeWithPrescription,
+  holdConsultation,
 } from '../controllers/consultationController';
 import { authenticate, authorize } from '../middleware/authMiddleware';
 
@@ -17,5 +18,6 @@ router.post('/call-patient', callPatient);
 router.put('/notes', updateNotesAndVitals);
 router.post('/complete', completeConsultation);
 router.post('/complete-prescription', completeWithPrescription);
+router.post('/hold', holdConsultation);
 
 export default router;
