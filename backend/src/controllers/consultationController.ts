@@ -171,8 +171,10 @@ export const executeCallPatientTransaction = async (
   clinicId?: string | null
 ) => {
   return await prismaClient.$transaction(async (tx: any) => {
-    // Concurrency control: acquire exclusive row lock on DoctorProfile to serialize queue transitions
-    if (typeof tx.$executeRaw === 'function') {
+    // Concurrency control: acquire exclusive row lock on DoctorProfile to serialize queue transitions (A-02)
+    if (typeof (tx as any).$queryRaw === 'function') {
+      await (tx as any).$queryRaw`SELECT id FROM "DoctorProfile" WHERE id = ${doctorId} FOR UPDATE;`;
+    } else if (typeof tx.$executeRaw === 'function') {
       await tx.$executeRaw`SELECT id FROM "DoctorProfile" WHERE id = ${doctorId} FOR UPDATE;`;
     }
 
@@ -704,9 +706,21 @@ export const holdConsultation = async (req: AuthRequest, res: Response): Promise
       return;
     }
 
-    const updated = await prisma.appointment.update({
-      where: { id: appointmentId },
+    const updateResult = await prisma.appointment.updateMany({
+      where: { id: appointmentId, status: 'IN_CONSULTATION' },
       data: { status: 'WAITING' },
+    });
+
+    if (updateResult.count === 0) {
+      res.status(409).json({
+        success: false,
+        message: 'Cannot put consultation on hold: appointment is no longer in consultation.',
+      });
+      return;
+    }
+
+    const updated = await prisma.appointment.findUnique({
+      where: { id: appointmentId },
       include: {
         clinic: true,
         patient: {
@@ -719,7 +733,7 @@ export const holdConsultation = async (req: AuthRequest, res: Response): Promise
 
     res.json({
       success: true,
-      message: `Token #${updated.queueNumber} placed on hold and returned to waiting queue`,
+      message: `Token #${updated?.queueNumber} placed on hold and returned to waiting queue`,
       data: updated,
     });
   } catch (error: any) {

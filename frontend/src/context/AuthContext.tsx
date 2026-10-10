@@ -37,12 +37,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else {
         setUser(null);
       }
-    } catch (error) {
-      console.error('Session restore failed:', error);
-      localStorage.removeItem('mediarca_token');
-      localStorage.removeItem('mediarca_user');
-      setUser(null);
-      setToken(null);
+    } catch (error: any) {
+      console.warn('Session refresh warning:', error);
+      // Only clear credentials if the server explicitly confirmed an invalid/expired token (401)
+      if (error?.response?.status === 401) {
+        localStorage.removeItem('mediarca_token');
+        localStorage.removeItem('mediarca_user');
+        setUser(null);
+        setToken(null);
+      } else {
+        // Transient network error or 5xx: preserve cached session so user is not logged out
+        const cached = localStorage.getItem('mediarca_user');
+        if (cached) {
+          try {
+            setUser(JSON.parse(cached));
+          } catch {
+            // retain existing state
+          }
+        }
+      }
     } finally {
       setLoading(false);
     }

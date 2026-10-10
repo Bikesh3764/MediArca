@@ -478,56 +478,65 @@ export const updateSchedule = async (req: AuthRequest, res: Response): Promise<v
         return;
       }
 
-      // Prevent physical doctor from configuring overlapping shifts across multiple clinics simultaneously (Issue 7 / Fix #8)
-      if (formattedSlots.length > 0) {
-        const otherAffiliations = await prisma.clinicDoctor.findMany({
-          where: {
-            doctorId: doctor.id,
-            clinicId: { not: clinicId },
-            status: { in: ['ACTIVE', 'ACCEPTED'] },
-            slots: { not: null },
-          },
-          include: { clinic: true },
-        });
+      // Prevent physical doctor from configuring overlapping shifts across multiple clinics simultaneously (Issue 7 / Fix #8, Finding 7)
+      const clinicUpdateData: any = {};
+      await prisma.$transaction(async (tx) => {
+        // Concurrency lock on DoctorProfile (BUG-05, A-02)
+        if (typeof (tx as any).$queryRaw === 'function') {
+          await (tx as any).$queryRaw`SELECT id FROM "DoctorProfile" WHERE id = ${doctor.id} FOR UPDATE;`;
+        } else if (typeof (tx as any).$executeRaw === 'function') {
+          await (tx as any).$executeRaw`SELECT id FROM "DoctorProfile" WHERE id = ${doctor.id} FOR UPDATE;`;
+        }
 
-        for (const otherAff of otherAffiliations) {
-          if (!isClinicActive(otherAff.clinic).active) continue;
-          let otherSlots: any[] = [];
-          try {
-            const parsed = typeof otherAff.slots === 'string' ? JSON.parse(otherAff.slots) : otherAff.slots;
-            if (Array.isArray(parsed)) otherSlots = parsed;
-          } catch {}
+        if (formattedSlots.length > 0) {
+          const otherAffiliations = await tx.clinicDoctor.findMany({
+            where: {
+              doctorId: doctor.id,
+              clinicId: { not: clinicId },
+              status: { in: ['ACTIVE', 'ACCEPTED'] },
+              slots: { not: null },
+            },
+            include: { clinic: true },
+          });
 
-          for (const newSlot of formattedSlots) {
-            const startA = timeToMinutes(newSlot.startTime);
-            const endA = timeToMinutes(newSlot.endTime);
-            for (const existingSlot of otherSlots) {
-              if (!existingSlot?.startTime || !existingSlot?.endTime) continue;
-              const startB = timeToMinutes(existingSlot.startTime);
-              const endB = timeToMinutes(existingSlot.endTime);
-              if (startA < endB && startB < endA) {
-                res.status(400).json({
-                  success: false,
-                  message: `Shift '${newSlot.name}' (${newSlot.startTime}–${newSlot.endTime}) overlaps with your active shift '${existingSlot.name || 'Shift'}' (${existingSlot.startTime}–${existingSlot.endTime}) at ${otherAff.clinic?.clinicName || 'another clinic'}. A practitioner cannot have simultaneous physical shifts at two clinics.`,
-                });
-                return;
+          for (const otherAff of otherAffiliations) {
+            if (!isClinicActive(otherAff.clinic).active) continue;
+            let otherSlots: any[] = [];
+            try {
+              const parsed = typeof otherAff.slots === 'string' ? JSON.parse(otherAff.slots) : otherAff.slots;
+              if (Array.isArray(parsed)) otherSlots = parsed;
+            } catch {}
+
+            for (const newSlot of formattedSlots) {
+              const startA = timeToMinutes(newSlot.startTime);
+              const endA = timeToMinutes(newSlot.endTime);
+              for (const existingSlot of otherSlots) {
+                if (!existingSlot?.startTime || !existingSlot?.endTime) continue;
+                const startB = timeToMinutes(existingSlot.startTime);
+                const endB = timeToMinutes(existingSlot.endTime);
+                if (startA < endB && startB < endA) {
+                  const err: any = new Error(
+                    `Shift '${newSlot.name}' (${newSlot.startTime}–${newSlot.endTime}) overlaps with your active shift '${existingSlot.name || 'Shift'}' (${existingSlot.startTime}–${existingSlot.endTime}) at ${otherAff.clinic?.clinicName || 'another clinic'}. A practitioner cannot have simultaneous physical shifts at two clinics.`
+                  );
+                  err.status = 400;
+                  throw err;
+                }
               }
             }
           }
         }
-      }
 
-      const clinicUpdateData: any = {};
-      if (formattedSlots.length > 0) {
-        clinicUpdateData.slots = JSON.stringify(formattedSlots);
-      }
-      if (consultationFee !== undefined && Number.isFinite(Number(consultationFee)) && Number(consultationFee) >= 0) {
-        clinicUpdateData.consultationFee = Number(consultationFee);
-      }
+        if (formattedSlots.length > 0) {
+          clinicUpdateData.slots = JSON.stringify(formattedSlots);
+        }
+        if (consultationFee !== undefined && Number.isFinite(Number(consultationFee)) && Number(consultationFee) >= 0) {
+          clinicUpdateData.consultationFee = Number(consultationFee);
+        }
 
-      await prisma.clinicDoctor.update({
-        where: { id: clinicAffiliation.id },
-        data: clinicUpdateData,
+        await tx.clinicDoctor.update({
+          where: { id: clinicAffiliation.id },
+          data: clinicUpdateData,
+        });
       });
 
       res.json({
@@ -583,6 +592,13 @@ export const updateSchedule = async (req: AuthRequest, res: Response): Promise<v
     });
   } catch (error: any) {
     console.error('updateSchedule error:', error);
+    if (error.status === 400) {
+      res.status(400).json({
+        success: false,
+        message: error.message || 'Schedule conflict: shifts cannot overlap across clinical facilities.',
+      });
+      return;
+    }
     res.status(500).json({
       success: false,
       message: 'Failed to update schedule',

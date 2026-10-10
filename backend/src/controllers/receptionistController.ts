@@ -602,8 +602,12 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
     while (attempts < maxAttempts) {
       try {
         newAppointment = await prisma.$transaction(async (tx) => {
-          // Concurrency control: lock practitioner row for this booking without swallowing errors (BUG-05)
-          await tx.$executeRaw`SELECT id FROM "DoctorProfile" WHERE id = ${doctor.id} FOR UPDATE;`;
+          // Concurrency control: lock practitioner row for this booking without swallowing errors (BUG-05, A-02)
+          if (typeof (tx as any).$queryRaw === 'function') {
+            await (tx as any).$queryRaw`SELECT id FROM "DoctorProfile" WHERE id = ${doctor.id} FOR UPDATE;`;
+          } else if (typeof (tx as any).$executeRaw === 'function') {
+            await (tx as any).$executeRaw`SELECT id FROM "DoctorProfile" WHERE id = ${doctor.id} FOR UPDATE;`;
+          }
 
           // Duplicate booking check within transaction (Finding H7, Bug 13: allow distinct family members on same phone)
           const cleanPatientName = patientName ? String(patientName).trim() : null;
@@ -818,9 +822,11 @@ export const executeReceptionistInConsultationTransaction = async (
   clinicId?: string | null
 ) => {
   return await prismaClient.$transaction(async (tx: any) => {
-    // Concurrency control: acquire exclusive row lock on DoctorProfile to serialize queue transitions
-    if (typeof tx.$executeRaw === 'function') {
-      await tx.$executeRaw`SELECT id FROM "DoctorProfile" WHERE id = ${doctorId} FOR UPDATE;`;
+    // Concurrency control: acquire exclusive row lock on DoctorProfile to serialize queue transitions (BUG-05, A-02)
+    if (typeof (tx as any).$queryRaw === 'function') {
+      await (tx as any).$queryRaw`SELECT id FROM "DoctorProfile" WHERE id = ${doctorId} FOR UPDATE;`;
+    } else if (typeof (tx as any).$executeRaw === 'function') {
+      await (tx as any).$executeRaw`SELECT id FROM "DoctorProfile" WHERE id = ${doctorId} FOR UPDATE;`;
     }
 
     // Guard: ensure practitioner is not actively consulting a patient at another facility (Issue 7)
@@ -1540,9 +1546,11 @@ export const executeApproveAppointmentTransaction = async (
       throw new Error(`APPOINTMENT_ALREADY_APPROVED: Appointment is already in '${currentAppt.status}' status and cannot be approved again.`);
     }
 
-    // Concurrency control: acquire exclusive row lock on DoctorProfile
-    if (typeof tx.$executeRaw === 'function') {
-      await tx.$executeRaw`SELECT id FROM "DoctorProfile" WHERE id = ${currentAppt.doctorId} FOR UPDATE;`;
+    // Concurrency control: acquire exclusive row lock on DoctorProfile (BUG-05, A-02)
+    if (typeof (tx as any).$queryRaw === 'function') {
+      await (tx as any).$queryRaw`SELECT id FROM "DoctorProfile" WHERE id = ${currentAppt.doctorId} FOR UPDATE;`;
+    } else if (typeof (tx as any).$executeRaw === 'function') {
+      await (tx as any).$executeRaw`SELECT id FROM "DoctorProfile" WHERE id = ${currentAppt.doctorId} FOR UPDATE;`;
     }
 
     // Resolve clinic ID for approval
@@ -1610,6 +1618,17 @@ export const executeApproveAppointmentTransaction = async (
       const period = eh >= 12 ? 'PM' : 'AM';
       const h12 = eh % 12 === 0 ? 12 : eh % 12;
       estTime = `${String(h12).padStart(2, '0')}:${String(em).padStart(2, '0')} ${period}`;
+    }
+
+    // Re-verify that appointment has not been cancelled/expired while waiting for lock (Finding 2 & 3)
+    if (typeof tx.appointment?.findUnique === 'function') {
+      const freshCheck = await tx.appointment.findUnique({
+        where: { id: appointmentId },
+        select: { id: true, status: true },
+      });
+      if (freshCheck && freshCheck.status !== 'PENDING_APPROVAL') {
+        throw new Error(`APPOINTMENT_ALREADY_APPROVED: Appointment is no longer in pending status (currently '${freshCheck.status}').`);
+      }
     }
 
     const updatedRecord = await tx.appointment.update({
@@ -1703,13 +1722,25 @@ export const rejectAppointment = async (req: AuthRequest, res: Response): Promis
       return;
     }
 
-    const updated = await prisma.appointment.update({
-      where: { id: appointment.id },
+    const updateResult = await prisma.appointment.updateMany({
+      where: { id: appointment.id, status: 'PENDING_APPROVAL' },
       data: {
         status: 'REJECTED',
         paymentStatus: 'FAILED',
         clinicalNotes: reason ? `Declined by reception: ${reason}` : 'Declined by reception',
       },
+    });
+
+    if (updateResult.count === 0) {
+      res.status(409).json({
+        success: false,
+        message: 'Appointment is no longer pending approval.',
+      });
+      return;
+    }
+
+    const updated = await prisma.appointment.findUnique({
+      where: { id: appointment.id },
     });
 
     if (appointment?.patient?.userId) {
@@ -1996,7 +2027,12 @@ export const rescheduleAppointment = async (req: AuthRequest, res: Response): Pr
     while (attempts < maxAttempts) {
       try {
         updatedAppt = await prisma.$transaction(async (tx) => {
-          await tx.$executeRaw`SELECT id FROM "DoctorProfile" WHERE id = ${appointment.doctorId} FOR UPDATE;`;
+          // Concurrency control: acquire exclusive row lock on DoctorProfile (BUG-05, A-02)
+          if (typeof (tx as any).$queryRaw === 'function') {
+            await (tx as any).$queryRaw`SELECT id FROM "DoctorProfile" WHERE id = ${appointment.doctorId} FOR UPDATE;`;
+          } else if (typeof (tx as any).$executeRaw === 'function') {
+            await (tx as any).$executeRaw`SELECT id FROM "DoctorProfile" WHERE id = ${appointment.doctorId} FOR UPDATE;`;
+          }
 
           // Check if patient already has an active appointment with this doctor on target date (FIX-010)
           const duplicate = await tx.appointment.findFirst({
@@ -2264,7 +2300,7 @@ export const rescheduleAppointment = async (req: AuthRequest, res: Response): Pr
     }
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to reschedule appointment',
+      message: process.env.NODE_ENV === 'production' ? 'Failed to reschedule appointment. Please try again.' : (error.message || 'Failed to reschedule appointment'),
     });
   }
 };

@@ -420,6 +420,44 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
       }
     }
 
+    let doctor = await prisma.doctorProfile.findUnique({
+      where: { id: doctorId },
+      include: {
+        user: { select: { fullName: true } },
+        clinics: {
+          where: { clinic: { isVerified: true, verificationStatus: 'VERIFIED' }, status: { in: ['ACTIVE', 'ACCEPTED'] } },
+          include: { clinic: true },
+        },
+      },
+    });
+
+    if (!doctor) {
+      doctor = await prisma.doctorProfile.findUnique({
+        where: { userId: doctorId },
+        include: {
+          user: { select: { fullName: true } },
+          clinics: {
+            where: { clinic: { isVerified: true, verificationStatus: 'VERIFIED' }, status: { in: ['ACTIVE', 'ACCEPTED'] } },
+            include: { clinic: true },
+          },
+        },
+      });
+    }
+
+    if (!doctor) {
+      res.status(404).json({ success: false, message: 'Doctor not found' });
+      return;
+    }
+
+    const docCheck = isDoctorEligibleForClinicalPractice(doctor);
+    if (!docCheck.eligible) {
+      res.status(403).json({
+        success: false,
+        message: docCheck.reason || 'This doctor is not currently verified or practice is suspended. Bookings are unavailable.',
+      });
+      return;
+    }
+
     let patient: any;
     let patientUser: any = null;
     if (req.user.role === 'DOCTOR') {
@@ -489,44 +527,6 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
           data: { userId: req.user.id },
         });
       }
-    }
-
-    let doctor = await prisma.doctorProfile.findUnique({
-      where: { id: doctorId },
-      include: {
-        user: { select: { fullName: true } },
-        clinics: {
-          where: { clinic: { isVerified: true, verificationStatus: 'VERIFIED' }, status: { in: ['ACTIVE', 'ACCEPTED'] } },
-          include: { clinic: true },
-        },
-      },
-    });
-
-    if (!doctor) {
-      doctor = await prisma.doctorProfile.findUnique({
-        where: { userId: doctorId },
-        include: {
-          user: { select: { fullName: true } },
-          clinics: {
-            where: { clinic: { isVerified: true, verificationStatus: 'VERIFIED' }, status: { in: ['ACTIVE', 'ACCEPTED'] } },
-            include: { clinic: true },
-          },
-        },
-      });
-    }
-
-    if (!doctor) {
-      res.status(404).json({ success: false, message: 'Doctor not found' });
-      return;
-    }
-
-    const docCheck = isDoctorEligibleForClinicalPractice(doctor);
-    if (!docCheck.eligible) {
-      res.status(403).json({
-        success: false,
-        message: docCheck.reason || 'This doctor is not currently verified or practice is suspended. Bookings are unavailable.',
-      });
-      return;
     }
 
     // Strictly enforce clinic affiliation: a doctor must have at least one verified active clinic to accept bookings
@@ -687,8 +687,12 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
     while (attempts < maxAttempts) {
       try {
         newAppointment = await prisma.$transaction(async (tx) => {
-          // Concurrency control: lock practitioner row for this booking without swallowing errors (BUG-05)
-          await tx.$executeRaw`SELECT id FROM "DoctorProfile" WHERE id = ${doctor.id} FOR UPDATE;`;
+          // Concurrency control: lock practitioner row for this booking without swallowing errors (BUG-05, A-02)
+          if (typeof (tx as any).$queryRaw === 'function') {
+            await (tx as any).$queryRaw`SELECT id FROM "DoctorProfile" WHERE id = ${doctor.id} FOR UPDATE;`;
+          } else if (typeof (tx as any).$executeRaw === 'function') {
+            await (tx as any).$executeRaw`SELECT id FROM "DoctorProfile" WHERE id = ${doctor.id} FOR UPDATE;`;
+          }
 
           // Re-verify duplicate booking inside the transaction
           if (req.user?.role === 'PATIENT') {
@@ -1100,15 +1104,30 @@ export const getAppointmentById = async (req: AuthRequest, res: Response): Promi
       delete (sanitizedClinic as any).receptionists;
     }
 
+    const sanitizedPatient = appointment.patient ? {
+      ...appointment.patient,
+      ...(isClinicOrRec && !isDoctor && !isPatient && !isAdmin ? {
+        allergies: undefined,
+        existingConditions: undefined,
+        currentMedications: undefined,
+        pastSurgeries: undefined,
+      } : {}),
+    } : null;
+
     res.json({
       success: true,
       data: {
         ...appointment,
+        patient: sanitizedPatient,
         doctor: sanitizedDoctor,
         clinic: sanitizedClinic,
         receptionistPhone: recContact.phone || null,
         receptionistName: recContact.name || null,
         estimatedQueueNumber,
+        ...(isClinicOrRec && !isDoctor && !isPatient && !isAdmin ? {
+          clinicalNotes: null,
+          vitals: null,
+        } : {}),
       },
     });
   } catch (error: any) {
@@ -1487,10 +1506,24 @@ export const cancelAppointment = async (req: AuthRequest, res: Response): Promis
       return;
     }
 
-    const updated = await prisma.appointment.update({
-      where: { id },
+    // Atomic status transition: update only if status still matches the pre-validated state (Finding 2)
+    const updateResult = await prisma.appointment.updateMany({
+      where: {
+        id,
+        status: appointment.status,
+      },
       data: { status: 'CANCELLED' },
     });
+
+    if (updateResult.count === 0) {
+      res.status(409).json({
+        success: false,
+        message: 'Appointment cannot be cancelled as its status was changed concurrently.',
+      });
+      return;
+    }
+
+    const updated = await prisma.appointment.findUnique({ where: { id } });
 
     if (req.user?.role === 'PATIENT' && appointment.doctor?.userId) {
       createNotification(
@@ -1892,11 +1925,12 @@ export const submitAppointmentReview = async (req: AuthRequest, res: Response): 
     const appointmentId = typeof id === 'string' ? id : Array.isArray(id) ? id[0] : '';
     const { rating, comment } = req.body;
 
-    const numRating = Math.round(Number(rating));
-    if (isNaN(numRating) || numRating < 1 || numRating > 5) {
+    const rawRating = Number(rating);
+    if (!Number.isInteger(rawRating) || rawRating < 1 || rawRating > 5) {
       res.status(400).json({ success: false, message: 'Rating must be an integer between 1 and 5 stars' });
       return;
     }
+    const numRating = rawRating;
 
     const patient = await prisma.patientProfile.findUnique({
       where: { userId: req.user.id },
@@ -1927,10 +1961,12 @@ export const submitAppointmentReview = async (req: AuthRequest, res: Response): 
       return;
     }
 
-    // Atomic review creation and rating aggregation with concurrency lock (Bug 10: Fix race condition)
+    // Atomic review creation and rating aggregation with concurrency lock (Bug 10: Fix race condition, A-02, A-15)
     const { review } = await prisma.$transaction(async (tx) => {
-      if (typeof tx.$executeRaw === 'function') {
-        await tx.$executeRaw`SELECT id FROM "DoctorProfile" WHERE id = ${appointment.doctorId} FOR UPDATE;`;
+      if (typeof (tx as any).$queryRaw === 'function') {
+        await (tx as any).$queryRaw`SELECT id FROM "DoctorProfile" WHERE id = ${appointment.doctorId} FOR UPDATE;`;
+      } else if (typeof (tx as any).$executeRaw === 'function') {
+        await (tx as any).$executeRaw`SELECT id FROM "DoctorProfile" WHERE id = ${appointment.doctorId} FOR UPDATE;`;
       }
 
       const createdReview = await tx.review.create({

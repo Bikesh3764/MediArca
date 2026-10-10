@@ -15,6 +15,7 @@ export function useVisibilityPolling(
   enabled: boolean = true
 ): void {
   const savedCallback = useRef(callback);
+  const isExecutingRef = useRef(false);
 
   useEffect(() => {
     savedCallback.current = callback;
@@ -24,12 +25,25 @@ export function useVisibilityPolling(
     if (!enabled || intervalMs <= 0) return;
 
     let timer: ReturnType<typeof setInterval> | null = null;
+    let isCancelled = false;
+
+    const executeSafely = async () => {
+      if (isExecutingRef.current || isCancelled) return;
+      isExecutingRef.current = true;
+      try {
+        await savedCallback.current();
+      } catch (err) {
+        console.warn('Visibility poll warning:', err);
+      } finally {
+        isExecutingRef.current = false;
+      }
+    };
 
     const startTimer = () => {
       if (timer) clearInterval(timer);
       timer = setInterval(() => {
         if (typeof document !== 'undefined' && document.hidden) return;
-        savedCallback.current();
+        executeSafely();
       }, intervalMs);
     };
 
@@ -41,8 +55,8 @@ export function useVisibilityPolling(
           timer = null;
         }
       } else {
-        // Immediate refresh upon returning to the tab
-        savedCallback.current();
+        // Immediate single-flight refresh upon returning to the tab
+        executeSafely();
         startTimer();
       }
     };
@@ -55,6 +69,7 @@ export function useVisibilityPolling(
     }
 
     return () => {
+      isCancelled = true;
       if (timer) clearInterval(timer);
       if (typeof document !== 'undefined') {
         document.removeEventListener('visibilitychange', handleVisibilityChange);

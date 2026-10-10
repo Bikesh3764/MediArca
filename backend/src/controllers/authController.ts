@@ -731,27 +731,12 @@ export const verifyEmailOtp = async (req: Request, res: Response): Promise<void>
     }
 
     if (user.isEmailVerified) {
-      // User is already verified: clear any pending verification tracking, issue JWT token and log them in
+      // User is already verified: reject OTP verification and require standard password login (Prevent A-01 Account Takeover)
       clearVerificationState(cleanEmail);
-      const token = jwt.sign(
-        {
-          id: user.id,
-          email: user.email,
-          role: user.role,
-          fullName: user.fullName,
-          mustChangePassword: user.mustChangePassword,
-        },
-        getJwtSecret(),
-        { expiresIn: '7d' }
-      );
-      const userWithoutPassword = sanitizeUserPayload(user);
-      res.json({
-        success: true,
-        message: 'Email is already verified',
-        data: {
-          user: userWithoutPassword,
-          token,
-        },
+      res.status(400).json({
+        success: false,
+        message: 'This email is already verified. Please sign in directly with your password.',
+        isAlreadyVerified: true,
       });
       return;
     }
@@ -774,7 +759,7 @@ export const verifyEmailOtp = async (req: Request, res: Response): Promise<void>
       return;
     }
 
-    if (user.emailVerificationOtpExpiresAt && user.emailVerificationOtpExpiresAt < new Date()) {
+    if (!user.emailVerificationOtpExpiresAt || user.emailVerificationOtpExpiresAt < new Date()) {
       res.status(400).json({ success: false, message: 'Verification code has expired. Please request a new code.' });
       return;
     }
