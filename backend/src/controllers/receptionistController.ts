@@ -1486,7 +1486,7 @@ export const approveAppointment = async (req: AuthRequest, res: Response): Promi
       return;
     }
 
-    // Atomic transaction: assign real sequential queue token (positive integer), mark WAITING and PAID, set isCheckedIn: true
+    // Atomic transaction: assign real sequential queue token (positive integer), mark WAITING and preserve online arrival status
     let updated: any;
     let attempts = 0;
     const maxAttempts = 3;
@@ -1698,8 +1698,8 @@ export const executeApproveAppointmentTransaction = async (
         approvedBy: receptionistId,
         approvedAt: new Date(),
         estimatedTime: estTime,
-        isCheckedIn: true,
-        checkedInAt: new Date(),
+        isCheckedIn: Boolean(currentAppt.isCheckedIn),
+        checkedInAt: currentAppt.checkedInAt || null,
       },
       include: {
         doctor: { include: { user: { select: { fullName: true } } } },

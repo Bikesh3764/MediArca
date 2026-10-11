@@ -5758,17 +5758,20 @@ Follow-up Date: 2026-10-15`;
   assert(approvedResult.status === 'WAITING', 'Case B: Approved appointment transitions status to WAITING');
   assert(approvedResult.paymentStatus === 'PAID', 'Case B: Approved appointment transitions paymentStatus to PAID');
   assert(approvedResult.queueNumber === 1, 'Case B: Approved appointment receives positive queue token 1');
-  assert(approvedResult.isCheckedIn === true, 'Case B: Approved appointment has isCheckedIn = true');
-  assert(approvedResult.checkedInAt != null, 'Case B: Approved appointment has non-null checkedInAt timestamp');
+  assert(approvedResult.isCheckedIn === false, 'Case B: Approved online appointment remains isCheckedIn = false until physical arrival');
+  assert(approvedResult.checkedInAt == null, 'Case B: Approved online appointment has null checkedInAt timestamp');
 
   // Case C: Walk-in booking check (FIX-002 preserved)
   assert(walkinAppt.isCheckedIn === true, 'Case C: Walk-in booking preserves isCheckedIn = true');
   assert(walkinAppt.checkedInAt != null, 'Case C: Walk-in booking preserves non-null checkedInAt');
   assert(walkinAppt.status === 'WAITING', 'Case C: Walk-in booking preserves status WAITING');
 
-  // Case D: Doctor can call the approved patient
-  const callValidation = validateCanCallPatient(approvedResult, todayDateStr);
-  assert(callValidation.allowed === true, 'Case D: Doctor can call the approved patient without arrival error');
+  // Case D: Doctor cannot call un-arrived approved patient; can call once arrival is marked
+  const callValidationBeforeArrival = validateCanCallPatient(approvedResult, todayDateStr);
+  assert(callValidationBeforeArrival.allowed === false, 'Case D: Doctor cannot call un-arrived online patient until arrival is marked');
+  const arrivedApprovedResult = { ...approvedResult, isCheckedIn: true, checkedInAt: new Date().toISOString() };
+  const callValidationAfterArrival = validateCanCallPatient(arrivedApprovedResult, todayDateStr);
+  assert(callValidationAfterArrival.allowed === true, 'Case D: Doctor can call patient once marked arrived at clinic');
 
   // Case E: Repeated approval rejection
   let repeatedApprovalThrew = false;
