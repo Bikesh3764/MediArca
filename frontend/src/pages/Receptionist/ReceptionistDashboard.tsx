@@ -1076,7 +1076,9 @@ export const ReceptionistDashboard: React.FC = () => {
                                 {appt.estimatedTime && (
                                   <>
                                     <span>•</span>
-                                    <span className="text-[#1d1d1f] font-medium">{appt.estimatedTime}</span>
+                                    <span>
+                                      Est. <span className="text-[#1d1d1f] font-medium">{appt.estimatedTime}</span>
+                                    </span>
                                   </>
                                 )}
                                 {appt.reasonForVisit &&

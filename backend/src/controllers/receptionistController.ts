@@ -372,28 +372,48 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
         inConsultationCount: appointments.filter((a) => a.status === 'IN_CONSULTATION').length,
         completedCount: appointments.filter((a) => a.status === 'COMPLETED').length,
         cancelledCount: appointments.filter((a) => a.status === 'CANCELLED').length,
-        appointments: appointments.map((a) => ({
-          id: a.id,
-          doctorId: a.doctorId,
-          queueNumber: a.queueNumber,
-          patientName: a.patientName || a.patient?.user?.fullName || 'Walk-in Patient',
-          registeredUserName: a.patient?.user?.fullName,
-          patientPhone: a.patient?.user?.phone || 'N/A',
-          gender: a.patientGender || a.patient?.gender,
-          bloodGroup: a.patient?.bloodGroup,
-          checkingWindow: a.checkingWindow,
-          estimatedTime: a.estimatedTime,
-          slotId: a.slotId,
-          status: a.status,
-          isCheckedIn: Boolean(a.isCheckedIn),
-          checkedInAt: a.checkedInAt || null,
-          reasonForVisit: a.reasonForVisit,
-          symptoms: a.symptoms,
-          isForOther: Boolean(a.isForOther),
-          patientAge: a.patientAge,
-          appointmentDate: a.appointmentDate,
-          createdAt: a.createdAt,
-        })),
+        appointments: appointments.map((a) => {
+          let resolvedEstTime = a.estimatedTime;
+          if (a.status === 'IN_CONSULTATION') {
+            resolvedEstTime = 'In Cabin';
+          } else if (a.status === 'WAITING' && a.queueNumber > 0) {
+            const matchedSlot = (a.slotId && slots.find((s: any) => s.id === a.slotId)) || slots[0];
+            if (matchedSlot?.startTime) {
+              const [sh, sm] = matchedSlot.startTime.split(':').map(Number);
+              const slotStartMins = sh * 60 + sm;
+              const pace = matchedSlot.avgConsultationMinutes || 3.0;
+              const aheadCount = appointments.filter((other) =>
+                other.status === 'WAITING' &&
+                other.queueNumber > 0 &&
+                other.queueNumber < a.queueNumber &&
+                (a.slotId ? other.slotId === a.slotId : true)
+              ).length;
+              resolvedEstTime = minutesTo12Hour(slotStartMins + Math.round(aheadCount * pace));
+            }
+          }
+          return {
+            id: a.id,
+            doctorId: a.doctorId,
+            queueNumber: a.queueNumber,
+            patientName: a.patientName || a.patient?.user?.fullName || 'Walk-in Patient',
+            registeredUserName: a.patient?.user?.fullName,
+            patientPhone: a.patient?.user?.phone || 'N/A',
+            gender: a.patientGender || a.patient?.gender,
+            bloodGroup: a.patient?.bloodGroup,
+            checkingWindow: a.checkingWindow,
+            estimatedTime: resolvedEstTime || a.estimatedTime,
+            slotId: a.slotId,
+            status: a.status,
+            isCheckedIn: Boolean(a.isCheckedIn),
+            checkedInAt: a.checkedInAt || null,
+            reasonForVisit: a.reasonForVisit,
+            symptoms: a.symptoms,
+            isForOther: Boolean(a.isForOther),
+            patientAge: a.patientAge,
+            appointmentDate: a.appointmentDate,
+            createdAt: a.createdAt,
+          };
+        }),
       },
     });
   } catch (error: any) {
@@ -740,7 +760,14 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
           const highestQueue = maxQueueAppt && maxQueueAppt.queueNumber > 0 ? maxQueueAppt.queueNumber : 0;
           const queueNumber = Math.max(1, highestQueue + 1);
 
-          const estimatedTime = slotStatus.estimatedTime;
+          const pace = chosenSlot.avgConsultationMinutes || 3.0;
+          const patientsAheadInQueue = Math.max(0, queueNumber - 1);
+          let estimatedTime = slotStatus.estimatedTime;
+          if (chosenSlot.startTime) {
+            const [sh, sm] = chosenSlot.startTime.split(':').map(Number);
+            const slotStartMins = sh * 60 + sm;
+            estimatedTime = minutesTo12Hour(slotStartMins + Math.round(patientsAheadInQueue * pace));
+          }
           const checkingWindow = chosenSlot.name;
 
           return await tx.appointment.create({
@@ -1665,16 +1692,12 @@ export const executeApproveAppointmentTransaction = async (
 
     const pace = slot?.avgConsultationMinutes || 3.0;
 
-    // Estimate start time based on ordinal position inside their specific slot (Issue 6)
+    // Estimate start time based on ordinal position inside their specific slot
     let estTime = currentAppt.estimatedTime;
     if (slot?.startTime) {
       const [sh, sm] = slot.startTime.split(':').map(Number);
-      const totalMins = sh * 60 + sm + Math.round(confirmedInSlot * pace);
-      const eh = Math.floor(totalMins / 60) % 24;
-      const em = totalMins % 60;
-      const period = eh >= 12 ? 'PM' : 'AM';
-      const h12 = eh % 12 === 0 ? 12 : eh % 12;
-      estTime = `${String(h12).padStart(2, '0')}:${String(em).padStart(2, '0')} ${period}`;
+      const slotStartMins = sh * 60 + sm;
+      estTime = minutesTo12Hour(slotStartMins + Math.round(confirmedInSlot * pace));
     }
 
     // Re-verify that appointment has not been cancelled/expired while waiting for lock (Finding 2 & 3)
