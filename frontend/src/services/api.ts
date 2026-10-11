@@ -114,6 +114,22 @@ export const calculateSlotMetrics = (
   return { durationMinutes, avgConsultationMinutes };
 };
 
+export const cleanSlotName = (name?: string | null, fallback = 'Shift'): string => {
+  if (!name || !name.trim()) return fallback;
+  return name.replace(/\s*\([^)]*\)/g, '').trim() || fallback;
+};
+
+export const formatShiftOption = (
+  slot: { name?: string | null; startTime?: string; endTime?: string },
+  isEnded?: boolean
+): string => {
+  const baseName = cleanSlotName(slot.name, 'Shift');
+  const timeFormatted = slot.startTime && slot.endTime
+    ? ` (${format12Hour(slot.startTime)} – ${format12Hour(slot.endTime)})`
+    : '';
+  return `${baseName}${timeFormatted}${isEnded ? ' • Ended' : ''}`;
+};
+
 export const parseDoctorSlots = (doctor: any): DoctorSlot[] => {
   if (doctor?.slots) {
     try {
@@ -126,7 +142,7 @@ export const parseDoctorSlots = (doctor: any): DoctorSlot[] => {
           const { avgConsultationMinutes } = calculateSlotMetrics(startTime, endTime, maxPatients);
           return {
             id: s.id || `slot_${idx + 1}`,
-            name: s.name || `Slot ${idx + 1} (${format12Hour(startTime)} – ${format12Hour(endTime)})`,
+            name: cleanSlotName(s.name, `Shift ${idx + 1}`),
             startTime,
             endTime,
             maxPatients,
@@ -147,7 +163,7 @@ export const parseDoctorSlots = (doctor: any): DoctorSlot[] => {
   return [
     {
       id: 'slot_1',
-      name: `Shift 1 (${format12Hour(startTime)} – ${format12Hour(endTime)})`,
+      name: 'Shift 1',
       startTime,
       endTime,
       maxPatients,

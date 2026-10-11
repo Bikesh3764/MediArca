@@ -9,6 +9,9 @@ import {
   Appointment,
   getFileUrl,
   QueuePreview,
+  formatShiftOption,
+  cleanSlotName,
+  format12Hour,
 } from '../../services/api';
 import { sanitizeIndianPhone, formatIndianPhone, isValidIndianPhone } from '../../utils/phoneUtils';
 import { useVisibilityPolling } from '../../utils/useVisibilityPolling';
@@ -1335,7 +1338,7 @@ export const ReceptionistDashboard: React.FC = () => {
                                 const isEnded = sStatus?.isPassed;
                                 return (
                                   <option key={s.id} value={s.id}>
-                                    {s.name} ({s.startTime} – {s.endTime}) {isEnded ? '• Ended' : ''}
+                                    {formatShiftOption(s, isEnded)}
                                   </option>
                                 );
                               })
@@ -2017,7 +2020,7 @@ export const ReceptionistDashboard: React.FC = () => {
                 </div>
                 <div>
                   <span className="text-[11px] text-[#86868b] block">Checking Shift</span>
-                  <span className="font-semibold text-[#1d1d1f]">{bookedPass.checkingWindow || 'General'}</span>
+                  <span className="font-semibold text-[#1d1d1f]">{cleanSlotName(bookedPass.checkingWindow) || 'General'}</span>
                 </div>
               </div>
             </div>
@@ -2085,7 +2088,7 @@ export const ReceptionistDashboard: React.FC = () => {
               #{bookedPass.queueNumber}
             </div>
             <div className="text-xs font-semibold text-gray-800">
-              Shift: {bookedPass.checkingWindow || 'General'}
+              Shift: {cleanSlotName(bookedPass.checkingWindow) || 'General'}
             </div>
           </div>
 
@@ -2305,7 +2308,7 @@ export const ReceptionistDashboard: React.FC = () => {
                       <option value="">Standard Hours / Any Shift</option>
                       {doc.slots.map((s) => (
                         <option key={s.id} value={s.id}>
-                          {s.name} ({s.startTime} - {s.endTime})
+                          {formatShiftOption(s)}
                         </option>
                       ))}
                     </select>

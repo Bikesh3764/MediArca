@@ -5,6 +5,7 @@ import {
   Appointment,
   parseDoctorSlots,
   format12Hour,
+  formatShiftOption,
   getLocalDateString,
   getTomorrowDateString,
   DoctorAffiliationsData,
@@ -1897,7 +1898,7 @@ export const DoctorDashboard: React.FC = () => {
                       parseDoctorSlots(user?.doctorProfile)
                     ).map((slot, i) => (
                       <option key={slot.id || i} value={slot.id}>
-                        {`Shift ${i + 1}`} ({format12Hour(slot.startTime)} – {format12Hour(slot.endTime)})
+                        {formatShiftOption(slot)}
                       </option>
                     ))}
                   </select>
