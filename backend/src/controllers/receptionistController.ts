@@ -761,6 +761,7 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
               appointmentDate,
               ...(targetClinicId ? { clinicId: targetClinicId } : {}),
               queueNumber: { gt: 0 },
+              ...slotFilter,
             },
             orderBy: { queueNumber: 'desc' },
             select: { queueNumber: true },
@@ -1590,13 +1591,25 @@ export const executeApproveAppointmentTransaction = async (
       throw new Error('A valid clinic affiliation is required to approve appointments and issue queue tokens.');
     }
 
-    // Find max positive queue number on this date for this clinic across all shifts to avoid unique constraint collision
+    // Find max positive queue number on this date for this clinic and shift (Per-shift independent queue sequence)
+    const slotFilter = currentAppt.slotId
+      ? {
+          OR: [
+            { slotId: currentAppt.slotId },
+            { checkingWindow: currentAppt.checkingWindow },
+          ],
+        }
+      : currentAppt.checkingWindow
+      ? { checkingWindow: currentAppt.checkingWindow }
+      : {};
+
     const maxQueueAppt = await tx.appointment.findFirst({
       where: {
         doctorId: currentAppt.doctorId,
         appointmentDate: currentAppt.appointmentDate,
         clinicId: targetClinicId,
         queueNumber: { gt: 0 },
+        ...slotFilter,
       },
       orderBy: { queueNumber: 'desc' },
       select: { queueNumber: true },
@@ -2170,6 +2183,7 @@ export const rescheduleAppointment = async (req: AuthRequest, res: Response): Pr
                 appointmentDate: newDate,
                 ...clinicFilter,
                 queueNumber: { lt: 0 },
+                ...slotFilter,
               },
               orderBy: { queueNumber: 'asc' },
               select: { queueNumber: true },
@@ -2182,6 +2196,7 @@ export const rescheduleAppointment = async (req: AuthRequest, res: Response): Pr
                 appointmentDate: newDate,
                 ...clinicFilter,
                 queueNumber: { gt: 0 },
+                ...slotFilter,
               },
               orderBy: { queueNumber: 'desc' },
               select: { queueNumber: true },

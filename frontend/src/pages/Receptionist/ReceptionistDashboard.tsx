@@ -1086,8 +1086,11 @@ export const ReceptionistDashboard: React.FC = () => {
                         >
                           {/* Left: Token + Patient Details */}
                           <div className="flex items-start sm:items-center gap-3.5 min-w-0">
-                            <div className="w-11 h-11 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] flex items-center justify-center font-semibold text-sm text-[#0066cc] shrink-0">
-                              #{appt.queueNumber}
+                            <div className="flex flex-col items-center justify-center min-w-[56px] px-2 py-1 rounded-2xl bg-[#0066cc]/10 border border-[#0066cc]/20 text-[#0066cc] shrink-0">
+                              <span className="font-bold text-[15px] leading-tight tracking-tight">#{appt.queueNumber}</span>
+                              <span className="text-[10px] font-semibold uppercase tracking-wider mt-0.5 truncate max-w-[56px] text-center">
+                                {appt.checkingWindow || 'Shift'}
+                              </span>
                             </div>
 
                             <div className="min-w-0 flex-1">
@@ -1095,6 +1098,18 @@ export const ReceptionistDashboard: React.FC = () => {
                                 <span className="font-semibold text-sm text-[#1d1d1f] truncate">
                                   {appt.patientName}
                                 </span>
+                                <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20">
+                                  {appt.checkingWindow || 'Shift'}
+                                </span>
+                                {(() => {
+                                  const doc = linkedDoctors.find((d) => d.doctorId === (appt.doctorId || selectedDoctorId));
+                                  if (!doc?.fullName) return null;
+                                  return (
+                                    <span className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea]">
+                                      {cleanDoctorName(doc.fullName)}
+                                    </span>
+                                  );
+                                })()}
                                 <span
                                   className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${
                                     appt.status === 'IN_CONSULTATION'

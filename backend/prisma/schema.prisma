@@ -115,7 +115,7 @@ model Appointment {
 
   review          Review?
 
-  @@unique([clinicId, doctorId, appointmentDate, queueNumber])
+  @@unique([clinicId, doctorId, appointmentDate, slotId, queueNumber])
   @@index([patientId])
   @@index([doctorId, appointmentDate])
   @@index([doctorId, appointmentDate, status])

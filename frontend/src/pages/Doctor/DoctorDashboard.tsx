@@ -1475,9 +1475,20 @@ export const DoctorDashboard: React.FC = () => {
                       Active Cabin
                     </h3>
                     {displayedActiveInConsultation ? (
-                      <span className="bg-[#0066cc]/10 text-[#0066cc] font-semibold text-xs px-2.5 py-0.5 rounded-full">
-                        Token #{displayedActiveInConsultation.queueNumber}
-                      </span>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20 font-semibold text-xs px-2.5 py-0.5 rounded-full">
+                          Token #{displayedActiveInConsultation.queueNumber}
+                        </span>
+                        <span className="bg-[#f5f5f7] text-[#0066cc] border border-[#0066cc]/20 font-semibold text-xs px-2.5 py-0.5 rounded-full">
+                          {getSlotShortLabel(displayedActiveInConsultation, availableShifts)}
+                        </span>
+                        {selectedClinicId === 'all' && (displayedActiveInConsultation.clinic?.clinicName || (user?.doctorProfile as any)?.primaryClinicAddress) && (
+                          <span className="bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea] font-medium text-xs px-2.5 py-0.5 rounded-full inline-flex items-center gap-1">
+                            <Building2 className="w-3 h-3 text-[#0066cc]" />
+                            <span className="truncate max-w-[140px]">{displayedActiveInConsultation.clinic?.clinicName || (user?.doctorProfile as any)?.primaryClinicAddress}</span>
+                          </span>
+                        )}
+                      </div>
                     ) : (
                       <span className="bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea] font-medium text-xs px-2.5 py-0.5 rounded-full">
                         Available
@@ -1491,6 +1502,15 @@ export const DoctorDashboard: React.FC = () => {
                         <h4 className="text-[18px] font-semibold text-[#1d1d1f] tracking-tight">
                           {displayedActiveInConsultation.patientName || displayedActiveInConsultation.patient?.user?.fullName || 'Patient'}
                         </h4>
+                        <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20">
+                          {getSlotShortLabel(displayedActiveInConsultation, availableShifts)}
+                        </span>
+                        {selectedClinicId === 'all' && (displayedActiveInConsultation.clinic?.clinicName || (user?.doctorProfile as any)?.primaryClinicAddress) && (
+                          <span className="text-[11px] font-medium px-2.5 py-0.5 rounded-full bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea] flex items-center gap-1">
+                            <Building2 className="w-3 h-3 text-[#0066cc]" />
+                            <span>{displayedActiveInConsultation.clinic?.clinicName || (user?.doctorProfile as any)?.primaryClinicAddress}</span>
+                          </span>
+                        )}
                         {displayedActiveInConsultation.isForOther && (
                           <span className="text-[11px] font-medium px-2.5 py-0.5 rounded-full bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea]">
                             {displayedActiveInConsultation.reasonForVisit?.toLowerCase().includes('walk-in')
@@ -1499,8 +1519,17 @@ export const DoctorDashboard: React.FC = () => {
                           </span>
                         )}
                       </div>
-                      <p className="text-xs font-medium text-[#1d1d1f] mt-1">
-                        {getSlotShortLabel(displayedActiveInConsultation, availableShifts)}
+                      <p className="text-xs font-medium text-[#1d1d1f] mt-1 flex items-center gap-1.5 flex-wrap">
+                        <span className="font-semibold text-[#0066cc]">{getSlotShortLabel(displayedActiveInConsultation, availableShifts)}</span>
+                        {selectedClinicId === 'all' && (displayedActiveInConsultation.clinic?.clinicName || (user?.doctorProfile as any)?.primaryClinicAddress) && (
+                          <>
+                            <span className="text-[#86868b]">•</span>
+                            <span className="text-[#86868b] flex items-center gap-1">
+                              <Building2 className="w-3 h-3 text-[#0066cc]" />
+                              {displayedActiveInConsultation.clinic?.clinicName || (user?.doctorProfile as any)?.primaryClinicAddress}
+                            </span>
+                          </>
+                        )}
                       </p>
 
                       {(() => {
@@ -1618,7 +1647,7 @@ export const DoctorDashboard: React.FC = () => {
                               <Play className="w-3.5 h-3.5 fill-current" />
                               {callingId === nextPresentTarget.id
                                 ? 'Calling...'
-                                : `Call #${nextPresentTarget.queueNumber}`}
+                                : `Call #${nextPresentTarget.queueNumber} (${getSlotShortLabel(nextPresentTarget, availableShifts)})`}
                             </button>
                           )}
                         </div>
@@ -1668,73 +1697,88 @@ export const DoctorDashboard: React.FC = () => {
                       );
                     }
 
-                    const renderApptCard = (appt: Appointment) => (
-                      <div
-                        key={appt.id}
-                        className="rounded-2xl border border-[#e5e5ea] p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:border-[#d2d2d7] transition-all duration-150 bg-[#f5f5f7]/40"
-                      >
-                        <div className="flex items-center gap-3.5 min-w-0">
-                          <div className="w-10 h-10 rounded-xl bg-[#0066cc]/10 text-[#0066cc] flex items-center justify-center font-semibold text-[14px] shrink-0">
-                            #{appt.queueNumber}
-                          </div>
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <h4 className="text-[14px] font-semibold text-[#1d1d1f] tracking-tight">
-                                {appt.patientName || appt.patient?.user?.fullName || 'Patient'}
-                              </h4>
-                              {appt.isForOther && (
-                                <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-white text-[#1d1d1f] border border-[#e5e5ea]">
-                                  {appt.reasonForVisit?.toLowerCase().includes('walk-in')
-                                    ? `Walk-in${appt.patientAge ? ` (${appt.patientAge}y)` : ''}`
-                                    : `Family (${appt.patientAge ? `${appt.patientAge}y` : 'Other'})`}
-                                </span>
-                              )}
-                              {appt.isCheckedIn ? (
-                                <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-[#0066cc]/10 text-[#0066cc] flex items-center gap-1">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-[#0066cc]"></span>
-                                  <span>At Clinic</span>
-                                </span>
-                              ) : (
-                                <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-white text-[#86868b] border border-[#e5e5ea]">
-                                  Not Arrived
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-xs text-[#86868b] flex items-center gap-1.5 mt-1 flex-wrap">
-                              {appt.appointmentDate && appt.appointmentDate !== getLocalDateString() && queueScope !== 'all-upcoming' && (
-                                <span className="font-medium text-[#1d1d1f]">
-                                  {appt.appointmentDate === queueData?.upcomingSummary?.tomorrowDate ? 'Tomorrow' : appt.appointmentDate} •
-                                </span>
-                              )}
-                              <span className="font-semibold text-[#1d1d1f]">
-                                {getSlotShortLabel(appt, availableShifts)}
+                    const renderApptCard = (appt: Appointment) => {
+                      const shiftLabel = getSlotShortLabel(appt, availableShifts);
+                      const clinicDisplay = appt.clinic?.clinicName || (user?.doctorProfile as any)?.primaryClinicAddress || '';
+                      return (
+                        <div
+                          key={appt.id}
+                          className="rounded-2xl border border-[#e5e5ea] p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:border-[#d2d2d7] transition-all duration-150 bg-[#f5f5f7]/40"
+                        >
+                          <div className="flex items-center gap-3.5 min-w-0">
+                            <div className="flex flex-col items-center justify-center min-w-[56px] px-2 py-1 rounded-2xl bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20 shrink-0">
+                              <span className="font-bold text-[15px] leading-tight tracking-tight">#{appt.queueNumber}</span>
+                              <span className="text-[10px] font-semibold text-[#0066cc] uppercase tracking-wider mt-0.5 truncate max-w-[56px] text-center">
+                                {shiftLabel}
                               </span>
-                              {selectedClinicId === 'all' && affiliations?.clinics && affiliations.clinics.length > 1 && appt.clinic?.clinicName && (
-                                <>
-                                  <span>•</span>
-                                  <span className="text-[#86868b] truncate max-w-[150px]">
-                                    {appt.clinic.clinicName}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <h4 className="text-[14px] font-semibold text-[#1d1d1f] tracking-tight">
+                                  {appt.patientName || appt.patient?.user?.fullName || 'Patient'}
+                                </h4>
+                                <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-white text-[#0066cc] border border-[#0066cc]/20">
+                                  {shiftLabel}
+                                </span>
+                                {selectedClinicId === 'all' && clinicDisplay && (
+                                  <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-white text-[#1d1d1f] border border-[#e5e5ea] inline-flex items-center gap-1">
+                                    <Building2 className="w-3 h-3 text-[#0066cc]" />
+                                    <span className="truncate max-w-[150px]">{clinicDisplay}</span>
                                   </span>
-                                </>
-                              )}
-                              {(() => {
-                                const cleanReason = getCleanReason(
-                                  appt.reasonForVisit,
-                                  appt.patientName || appt.patient?.user?.fullName
-                                );
-                                if (!cleanReason) return null;
-                                return (
+                                )}
+                                {appt.isForOther && (
+                                  <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-white text-[#1d1d1f] border border-[#e5e5ea]">
+                                    {appt.reasonForVisit?.toLowerCase().includes('walk-in')
+                                      ? `Walk-in${appt.patientAge ? ` (${appt.patientAge}y)` : ''}`
+                                      : `Family (${appt.patientAge ? `${appt.patientAge}y` : 'Other'})`}
+                                  </span>
+                                )}
+                                {appt.isCheckedIn ? (
+                                  <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-[#0066cc]/10 text-[#0066cc] flex items-center gap-1">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-[#0066cc]"></span>
+                                    <span>At Clinic</span>
+                                  </span>
+                                ) : (
+                                  <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-white text-[#86868b] border border-[#e5e5ea]">
+                                    Not Arrived
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs text-[#86868b] flex items-center gap-1.5 mt-1 flex-wrap">
+                                {appt.appointmentDate && appt.appointmentDate !== getLocalDateString() && queueScope !== 'all-upcoming' && (
+                                  <span className="font-medium text-[#1d1d1f]">
+                                    {appt.appointmentDate === queueData?.upcomingSummary?.tomorrowDate ? 'Tomorrow' : appt.appointmentDate} •
+                                  </span>
+                                )}
+                                <span className="font-semibold text-[#1d1d1f]">
+                                  {shiftLabel}
+                                </span>
+                                {selectedClinicId === 'all' && clinicDisplay && (
                                   <>
                                     <span>•</span>
-                                    <span className="text-[#1d1d1f] truncate max-w-[180px]">
-                                      {cleanReason}
+                                    <span className="text-[#86868b] truncate max-w-[150px]">
+                                      {clinicDisplay}
                                     </span>
                                   </>
-                                );
-                              })()}
-                            </p>
+                                )}
+                                {(() => {
+                                  const cleanReason = getCleanReason(
+                                    appt.reasonForVisit,
+                                    appt.patientName || appt.patient?.user?.fullName
+                                  );
+                                  if (!cleanReason) return null;
+                                  return (
+                                    <>
+                                      <span>•</span>
+                                      <span className="text-[#1d1d1f] truncate max-w-[180px]">
+                                        {cleanReason}
+                                      </span>
+                                    </>
+                                  );
+                                })()}
+                              </p>
+                            </div>
                           </div>
-                        </div>
 
                         <div className="flex items-center gap-1.5 w-full sm:w-auto justify-start sm:justify-end shrink-0 flex-wrap pt-2 sm:pt-0 border-t sm:border-t-0 border-[#e5e5ea]/60">
                           {/* Arrival toggle */}
@@ -1812,6 +1856,7 @@ export const DoctorDashboard: React.FC = () => {
                         </div>
                       </div>
                     );
+                  };
 
                     if (queueScope === 'all-upcoming') {
                       const groups: Record<string, Appointment[]> = {};

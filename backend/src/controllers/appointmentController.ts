@@ -812,26 +812,28 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
 
           let queueNumber: number;
           if (isPatientBooking) {
-            // Negative provisional queue token strictly within PostgreSQL 32-bit signed integer range to prevent DB overflow (scoped by clinic and doctor on date)
+            // Negative provisional queue token strictly within PostgreSQL 32-bit signed integer range to prevent DB overflow (scoped by clinic, doctor, and shift on date)
             const minQueueAppt = await tx.appointment.findFirst({
               where: {
                 doctorId: doctor.id,
                 appointmentDate,
                 ...clinicFilter,
                 queueNumber: { lt: 0 },
+                ...slotFilter,
               },
               orderBy: { queueNumber: 'asc' },
               select: { queueNumber: true },
             });
             queueNumber = minQueueAppt ? minQueueAppt.queueNumber - 1 : -1;
           } else {
-            // Direct practitioner / walk-in booking: query max positive queue number scoped by clinic and doctor on date
+            // Direct practitioner / walk-in booking: query max positive queue number scoped by clinic, doctor, and shift on date
             const maxQueueAppt = await tx.appointment.findFirst({
               where: {
                 doctorId: doctor.id,
                 appointmentDate,
                 ...clinicFilter,
                 queueNumber: { gt: 0 },
+                ...slotFilter,
               },
               orderBy: { queueNumber: 'desc' },
               select: { queueNumber: true },

@@ -5719,7 +5719,10 @@ Follow-up Date: 2026-10-15`;
               const matchDoc = !where.doctorId || a.doctorId === where.doctorId;
               const matchDate = !where.appointmentDate || a.appointmentDate === where.appointmentDate;
               const matchQueue = where.queueNumber?.gt !== undefined ? a.queueNumber > where.queueNumber.gt : true;
-              return matchDoc && matchDate && matchQueue;
+              const matchSlot = where.OR
+                ? where.OR.some((cond: any) => (cond.slotId && a.slotId === cond.slotId) || (cond.checkingWindow && a.checkingWindow === cond.checkingWindow))
+                : where.slotId ? a.slotId === where.slotId : true;
+              return matchDoc && matchDate && matchQueue && matchSlot;
             });
             matches.sort((a, b) => b.queueNumber - a.queueNumber);
             return matches[0] ? JSON.parse(JSON.stringify(matches[0])) : null;
@@ -5827,12 +5830,12 @@ Follow-up Date: 2026-10-15`;
     'recep-1'
   );
   assert(
-    shift2ApprovalResult.queueNumber === 2,
-    'Cross-shift approval: Shift 2 receives continuous token 2 across doctor and clinic, avoiding P2002 unique constraint collision'
+    shift2ApprovalResult.queueNumber === 1,
+    'Per-shift approval: Shift 2 receives its own independent token 1 (Shift 1 has #1, Shift 2 starts at #1)'
   );
   assert(
     shift2ApprovalResult.status === 'WAITING',
-    'Cross-shift approval: Shift 2 appointment is successfully transitioned to WAITING'
+    'Per-shift approval: Shift 2 appointment is successfully transitioned to WAITING'
   );
 
   // --- Test 165: FIX-004 WAITING -> COMPLETED Consultation Completion & State Machine Guards ---
@@ -6796,6 +6799,7 @@ Follow-up Date: 2026-10-15`;
 
     // Test F — Unique constraint on queue numbers preserved
     assert(
+      schemaContent.includes('@@unique([clinicId, doctorId, appointmentDate, slotId, queueNumber])') ||
       schemaContent.includes('@@unique([clinicId, doctorId, appointmentDate, queueNumber])') ||
       schemaContent.includes('@@unique([doctorId, appointmentDate, queueNumber])'),
       'Test F: Preserved unique constraint on queue numbers'
@@ -7418,8 +7422,9 @@ Follow-up Date: 2026-10-15`;
   // Static checks
   const prismaSchemaFix14 = fs.readFileSync(path.join(__dirname, '../prisma/schema.prisma'), 'utf-8');
   assert(
+    prismaSchemaFix14.includes('@@unique([clinicId, doctorId, appointmentDate, slotId, queueNumber])') ||
     prismaSchemaFix14.includes('@@unique([clinicId, doctorId, appointmentDate, queueNumber])'),
-    'Test A: schema.prisma declares @@unique([clinicId, doctorId, appointmentDate, queueNumber])'
+    'Test A: schema.prisma declares @@unique([clinicId, doctorId, appointmentDate, slotId, queueNumber])'
   );
 
   const apptCtrlContent = fs.readFileSync(path.join(__dirname, '../src/controllers/appointmentController.ts'), 'utf-8');
