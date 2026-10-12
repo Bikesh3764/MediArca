@@ -188,6 +188,7 @@ export const ReceptionistDashboard: React.FC = () => {
   const [queueLoading, setQueueLoading] = useState(false);
   const [queueSearch, setQueueSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'WAITING' | 'IN_CONSULTATION' | 'COMPLETED' | 'CANCELLED'>('WAITING');
+  const [queueShiftFilter, setQueueShiftFilter] = useState<string>('ALL');
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -422,6 +423,31 @@ export const ReceptionistDashboard: React.FC = () => {
   const linkedDoctors = data?.doctors || [];
   const activeSelectedDoctor = linkedDoctors.find((d) => d.doctorId === selectedDoctorId);
   const effectiveClinicId = data?.clinic?.id || walkinClinicId || activeSelectedDoctor?.clinics?.[0]?.clinicId;
+
+  // Distinct clean shifts available for the currently inspected queue doctor
+  const availableQueueShifts = useMemo(() => {
+    const shiftSet = new Set<string>();
+    const targetDoc = linkedDoctors.find((d) => d.doctorId === queueDoctorId);
+    if (targetDoc?.slots && Array.isArray(targetDoc.slots)) {
+      targetDoc.slots.forEach((s: any, idx: number) => {
+        const cleaned = cleanShiftDisplayName(s.name || `Shift ${idx + 1}`);
+        if (cleaned) shiftSet.add(cleaned);
+      });
+    }
+    queueAppointments.forEach((a) => {
+      const cleaned = cleanShiftDisplayName(a.checkingWindow);
+      if (cleaned) shiftSet.add(cleaned);
+    });
+    if (shiftSet.size === 0) {
+      shiftSet.add('Shift 1');
+    }
+    return Array.from(shiftSet).sort((a, b) => {
+      const numA = parseInt(a.replace(/\D/g, ''), 10) || 0;
+      const numB = parseInt(b.replace(/\D/g, ''), 10) || 0;
+      if (numA !== numB) return numA - numB;
+      return a.localeCompare(b);
+    });
+  }, [linkedDoctors, queueDoctorId, queueAppointments]);
 
   // Dynamic queue preview for walk-in token allocation
   const fetchWalkinPreview = useCallback(async () => {
@@ -900,7 +926,10 @@ export const ReceptionistDashboard: React.FC = () => {
                     <div className="relative">
                       <select
                         value={queueDoctorId}
-                        onChange={(e) => setQueueDoctorId(e.target.value)}
+                        onChange={(e) => {
+                          setQueueDoctorId(e.target.value);
+                          setQueueShiftFilter('ALL');
+                        }}
                         className="h-10 pl-3.5 pr-8 rounded-xl border border-[#d2d2d7] text-xs font-medium bg-white text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all focus:outline-none focus:ring-4 focus:ring-[#0066cc]/10 focus:border-[#0066cc] appearance-none cursor-pointer w-full sm:w-auto"
                       >
                         {linkedDoctors.map((doc) => (
@@ -912,6 +941,24 @@ export const ReceptionistDashboard: React.FC = () => {
                       <ChevronDown className="w-3.5 h-3.5 text-[#86868b] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                     </div>
                   )}
+
+                  {/* Shift Selector Drawer (Like Doctor Wise) */}
+                  <div className="relative">
+                    <select
+                      value={queueShiftFilter}
+                      onChange={(e) => setQueueShiftFilter(e.target.value)}
+                      className="h-10 pl-3.5 pr-8 rounded-xl border border-[#d2d2d7] text-xs font-medium bg-white text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all focus:outline-none focus:ring-4 focus:ring-[#0066cc]/10 focus:border-[#0066cc] appearance-none cursor-pointer w-full sm:w-auto"
+                      title="Filter queue by clinical shift"
+                    >
+                      <option value="ALL">All Shifts</option>
+                      {availableQueueShifts.map((shiftName) => (
+                        <option key={shiftName} value={shiftName}>
+                          {shiftName}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="w-3.5 h-3.5 text-[#86868b] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
 
                   <div className="flex items-center gap-2">
                     <input
@@ -976,8 +1023,12 @@ export const ReceptionistDashboard: React.FC = () => {
                   ).map((tab) => {
                     const count =
                       tab.id === 'ALL'
-                        ? queueAppointments.length
-                        : queueAppointments.filter((a) => a.status === tab.id).length;
+                        ? (queueShiftFilter === 'ALL'
+                            ? queueAppointments.length
+                            : queueAppointments.filter((a) => cleanShiftDisplayName(a.checkingWindow) === queueShiftFilter).length)
+                        : (queueShiftFilter === 'ALL'
+                            ? queueAppointments.filter((a) => a.status === tab.id).length
+                            : queueAppointments.filter((a) => a.status === tab.id && cleanShiftDisplayName(a.checkingWindow) === queueShiftFilter).length);
                     const isActive = statusFilter === tab.id;
                     return (
                       <button
@@ -1047,6 +1098,7 @@ export const ReceptionistDashboard: React.FC = () => {
               ) : (() => {
                 const filteredAppointments = queueAppointments.filter((appt) => {
                   if (statusFilter !== 'ALL' && appt.status !== statusFilter) return false;
+                  if (queueShiftFilter !== 'ALL' && cleanShiftDisplayName(appt.checkingWindow) !== queueShiftFilter) return false;
                   if (!queueSearch.trim()) return true;
                   const q = queueSearch.toLowerCase().trim();
                   const name = (appt.patientName || '').toLowerCase();
@@ -1060,22 +1112,85 @@ export const ReceptionistDashboard: React.FC = () => {
                 const isTodayQueue = queueDate === getLocalDateString();
 
                 if (filteredAppointments.length === 0) {
+                  if (queueSearch.trim()) {
+                    return (
+                      <div className="py-14 text-center">
+                        <p className="text-sm font-semibold text-[#1d1d1f]">No Results Found</p>
+                        <p className="text-xs text-[#86868b] mt-1 mb-2">
+                          No patients match &ldquo;{queueSearch}&rdquo;.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => setQueueSearch('')}
+                          className="text-xs text-[#0066cc] font-medium hover:underline cursor-pointer"
+                        >
+                          Clear Search
+                        </button>
+                      </div>
+                    );
+                  }
+
+                  if (statusFilter === 'WAITING') {
+                    return (
+                      <div className="py-14 text-center">
+                        <div className="w-12 h-12 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] flex items-center justify-center mx-auto mb-3 text-[#86868b]">
+                          <Clock className="w-5 h-5 text-[#86868b]" />
+                        </div>
+                        <p className="text-sm font-semibold text-[#1d1d1f]">No Patients in Waiting Queue</p>
+                        <p className="text-xs text-[#86868b] mt-1 max-w-sm mx-auto">
+                          There are currently no patients waiting for consultation{queueShiftFilter !== 'ALL' ? ` in ${queueShiftFilter}` : ''}.
+                        </p>
+                      </div>
+                    );
+                  }
+
+                  if (statusFilter === 'IN_CONSULTATION') {
+                    return (
+                      <div className="py-14 text-center">
+                        <div className="w-12 h-12 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] flex items-center justify-center mx-auto mb-3 text-[#86868b]">
+                          <Stethoscope className="w-5 h-5 text-[#86868b]" />
+                        </div>
+                        <p className="text-sm font-semibold text-[#1d1d1f]">No Patient in Cabin</p>
+                        <p className="text-xs text-[#86868b] mt-1 max-w-sm mx-auto">
+                          Doctor cabin is currently clear{queueShiftFilter !== 'ALL' ? ` for ${queueShiftFilter}` : ''}.
+                        </p>
+                      </div>
+                    );
+                  }
+
+                  if (statusFilter === 'COMPLETED') {
+                    return (
+                      <div className="py-14 text-center">
+                        <div className="w-12 h-12 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] flex items-center justify-center mx-auto mb-3 text-[#86868b]">
+                          <CheckCircle2 className="w-5 h-5 text-[#86868b]" />
+                        </div>
+                        <p className="text-sm font-semibold text-[#1d1d1f]">No Completed Consultations</p>
+                        <p className="text-xs text-[#86868b] mt-1 max-w-sm mx-auto">
+                          No patient visits have been marked completed yet for this date{queueShiftFilter !== 'ALL' ? ` in ${queueShiftFilter}` : ''}.
+                        </p>
+                      </div>
+                    );
+                  }
+
+                  if (statusFilter === 'CANCELLED') {
+                    return (
+                      <div className="py-14 text-center">
+                        <p className="text-sm font-semibold text-[#1d1d1f]">No Cancelled Appointments</p>
+                        <p className="text-xs text-[#86868b] mt-1 max-w-sm mx-auto">
+                          There are no cancelled appointments for this date{queueShiftFilter !== 'ALL' ? ` in ${queueShiftFilter}` : ''}.
+                        </p>
+                      </div>
+                    );
+                  }
+
                   return (
-                    <div className="py-12 text-center">
-                      <p className="text-sm font-semibold text-[#1d1d1f]">No Matching Patients</p>
-                      <p className="text-xs text-[#86868b] mt-1 mb-3">
-                        No patients match your active filter or search criteria.
+                    <div className="py-14 text-center">
+                      <p className="text-sm font-semibold text-[#1d1d1f]">
+                        No Patients {queueShiftFilter !== 'ALL' ? `in ${queueShiftFilter}` : 'Scheduled'}
                       </p>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setQueueSearch('');
-                          setStatusFilter('ALL');
-                        }}
-                        className="h-8 px-4 rounded-full text-xs font-medium bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] hover:bg-[#e8e8ed] transition-all cursor-pointer"
-                      >
-                        Reset Filters
-                      </button>
+                      <p className="text-xs text-[#86868b] mt-1 max-w-sm mx-auto">
+                        No appointments found for this selection on {queueDate}.
+                      </p>
                     </div>
                   );
                 }
