@@ -15,6 +15,11 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
 
     const doctor = await prisma.doctorProfile.findUnique({
       where: { userId: req.user.id },
+      include: {
+        clinics: {
+          include: { clinic: true },
+        },
+      },
     });
 
     if (!doctor) {
@@ -105,7 +110,21 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
       return a.queueNumber - b.queueNumber;
     });
 
-    const slots = parseDoctorSlots(doctor);
+    let slots = parseDoctorSlots(doctor);
+    if (clinicId && clinicId !== 'all') {
+      const matchedAff = (doctor.clinics || []).find((c: any) => c.clinicId === clinicId);
+      if (matchedAff?.slots) {
+        try {
+          const p = typeof matchedAff.slots === 'string' ? JSON.parse(matchedAff.slots) : matchedAff.slots;
+          if (Array.isArray(p) && p.length > 0) slots = p;
+        } catch {}
+      }
+    } else if ((doctor.clinics || []).length === 1 && (doctor.clinics as any)[0]?.slots) {
+      try {
+        const p = typeof (doctor.clinics as any)[0].slots === 'string' ? JSON.parse((doctor.clinics as any)[0].slots) : (doctor.clinics as any)[0].slots;
+        if (Array.isArray(p) && p.length > 0) slots = p;
+      } catch {}
+    }
     const currentMins = getIndianTimeMinutes();
 
     const resolvedAppointments = appointments.map((a: any) => {

@@ -2,7 +2,7 @@ name: Keep Backend & Database Alive
 
 on:
   schedule:
-    - cron: '0 */6 * * *' # Every 6 hours to ensure continuous active status
+    - cron: '*/10 * * * *' # Every 10 minutes to prevent Render 15-minute inactivity spin-down
   workflow_dispatch:
 
 jobs:

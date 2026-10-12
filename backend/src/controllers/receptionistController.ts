@@ -2079,6 +2079,19 @@ export const rescheduleAppointment = async (req: AuthRequest, res: Response): Pr
             await (tx as any).$executeRaw`SELECT id FROM "DoctorProfile" WHERE id = ${appointment.doctorId} FOR UPDATE;`;
           }
 
+          // Concurrency check: Ensure target appointment hasn't transitioned to IN_CONSULTATION, COMPLETED, CANCELLED, or EXPIRED
+          const freshAppt = await tx.appointment.findUnique({
+            where: { id: appointment.id },
+            select: { id: true, status: true },
+          });
+          if (!freshAppt || ['COMPLETED', 'CANCELLED', 'REJECTED', 'EXPIRED', 'IN_CONSULTATION'].includes(freshAppt.status)) {
+            const err: any = new Error(
+              `Cannot reschedule appointment: current status is '${freshAppt?.status || 'NOT_FOUND'}'.`
+            );
+            err.status = 400;
+            throw err;
+          }
+
           // Check if patient already has an active appointment with this doctor on target date (FIX-010)
           const duplicate = await tx.appointment.findFirst({
             where: {

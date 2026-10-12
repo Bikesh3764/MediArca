@@ -44,24 +44,29 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
   clinicName,
   doctorName,
 }) => {
-  // Preset date helper
+  // Preset date helper (using local calendar date to prevent UTC/IST timezone boundary shift)
   const getDatesForPreset = (preset: '1_MONTH' | 'THIS_MONTH' | '7_DAYS') => {
+    const formatLocal = (d: Date) => {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
     const now = new Date();
-    const endStr = now.toISOString().split('T')[0];
+    const endStr = formatLocal(now);
 
     if (preset === '1_MONTH') {
-      const start = new Date();
-      start.setDate(now.getDate() - 30);
-      return { start: start.toISOString().split('T')[0], end: endStr };
+      const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 30);
+      return { start: formatLocal(start), end: endStr };
     }
     if (preset === 'THIS_MONTH') {
       const start = new Date(now.getFullYear(), now.getMonth(), 1);
-      return { start: start.toISOString().split('T')[0], end: endStr };
+      return { start: formatLocal(start), end: endStr };
     }
     // 7_DAYS
-    const start = new Date();
-    start.setDate(now.getDate() - 7);
-    return { start: start.toISOString().split('T')[0], end: endStr };
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
+    return { start: formatLocal(start), end: endStr };
   };
 
   const [datePreset, setDatePreset] = useState<'1_MONTH' | 'THIS_MONTH' | '7_DAYS' | 'CUSTOM'>('1_MONTH');
@@ -130,7 +135,10 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
 
   // Export as CSV
   const handleExportCsv = () => {
-    if (!reportData || !reportData.appointments.length) return;
+    if (!reportData || !reportData.appointments.length) {
+      alert('No clinical appointments found for the selected reporting period.');
+      return;
+    }
 
     // Use filtered subset if it has items; otherwise fall back to all appointments in report
     const listToExport = filteredAppointments.length > 0 ? filteredAppointments : reportData.appointments;

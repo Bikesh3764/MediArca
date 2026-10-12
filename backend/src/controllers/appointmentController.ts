@@ -1586,12 +1586,12 @@ export const checkInAppointmentWithQR = async (req: AuthRequest, res: Response):
       return;
     }
 
-    const { clinicId, code, appointmentId } = req.body;
+    const { clinicId, appointmentId } = req.body;
 
-    if (!clinicId || !code) {
+    if (!clinicId) {
       res.status(400).json({
         success: false,
-        message: 'Clinic ID and physical QR security code are required to verify clinic arrival.',
+        message: 'Clinic ID is required to verify clinic arrival from QR scan.',
       });
       return;
     }
@@ -1611,16 +1611,6 @@ export const checkInAppointmentWithQR = async (req: AuthRequest, res: Response):
       res.status(403).json({
         success: false,
         message: clinicCheck.reason || 'This clinic facility is currently inactive or not verified for arrival check-ins.',
-      });
-      return;
-    }
-
-    // Anti-spoofing verification: check security code on physical poster
-    const normalizedCode = String(code).trim();
-    if (!clinic.checkinCode || clinic.checkinCode !== normalizedCode) {
-      res.status(403).json({
-        success: false,
-        message: 'Invalid clinic check-in security code. Please scan the physical QR poster displayed at the clinic.',
       });
       return;
     }

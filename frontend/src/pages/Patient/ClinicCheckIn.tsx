@@ -15,7 +15,6 @@ export const ClinicCheckIn: React.FC = () => {
   const { user, loading: loadingAuth } = useAuth();
 
   const clinicId = searchParams.get('clinicId') || '';
-  const code = searchParams.get('code') || '';
   const appointmentId = searchParams.get('appointmentId') || undefined;
 
   const [checkingIn, setCheckingIn] = useState(false);
@@ -24,12 +23,12 @@ export const ClinicCheckIn: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [autoAttempted, setAutoAttempted] = useState(false);
 
-  // Auto-attempt check-in only when both clinicId and code are present
+  // Auto-attempt check-in when clinicId is present from QR scan
   useEffect(() => {
     let mounted = true;
     if (loadingAuth || autoAttempted) return;
     if (!user) return; // Will prompt login
-    if (!clinicId || !code) return; // Direct visit: show informational guide
+    if (!clinicId) return; // Direct visit: show informational guide
 
     queueMicrotask(async () => {
       if (!mounted) return;
@@ -39,7 +38,6 @@ export const ClinicCheckIn: React.FC = () => {
       try {
         const res: any = await api.checkInWithQR({
           clinicId,
-          code,
           appointmentId,
         });
 
@@ -66,16 +64,15 @@ export const ClinicCheckIn: React.FC = () => {
     return () => {
       mounted = false;
     };
-  }, [user, loadingAuth, clinicId, code, appointmentId, autoAttempted]);
+  }, [user, loadingAuth, clinicId, appointmentId, autoAttempted]);
 
   const handleManualCheckIn = async () => {
-    if (!clinicId || !code) return;
+    if (!clinicId) return;
     setCheckingIn(true);
     setErrorMessage(null);
     try {
       const res: any = await api.checkInWithQR({
         clinicId,
-        code,
         appointmentId,
       });
 
@@ -94,7 +91,7 @@ export const ClinicCheckIn: React.FC = () => {
     }
   };
 
-  const hasQueryParams = Boolean(clinicId && code);
+  const hasQueryParams = Boolean(clinicId);
 
   return (
     <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center p-4 sm:p-6">

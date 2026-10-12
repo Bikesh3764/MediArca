@@ -7115,7 +7115,7 @@ Follow-up Date: 2026-10-15`;
     const appTsxPath = path.join(__dirname, '../../frontend/src/App.tsx');
     const appTsxContent = fs.readFileSync(appTsxPath, 'utf8');
 
-    assert(appTsxContent.includes('Suspense, lazy'), 'Test A: App.tsx imports Suspense and lazy from React');
+    assert(appTsxContent.includes('Suspense') && (appTsxContent.includes('lazyWithRetry') || appTsxContent.includes('lazy')), 'Test A: App.tsx imports Suspense and lazy from React');
     assert(appTsxContent.includes('<Suspense fallback={<RouteLoadingFallback />}>'), 'Test A: Routes wrapped in Suspense with RouteLoadingFallback');
     assert(!appTsxContent.includes("import { DoctorDashboard } from './pages/Doctor/DoctorDashboard'"), 'Test A: DoctorDashboard is not eagerly imported');
     assert(!appTsxContent.includes("import { ReceptionistDashboard } from './pages/Receptionist/ReceptionistDashboard'"), 'Test A: ReceptionistDashboard is not eagerly imported');

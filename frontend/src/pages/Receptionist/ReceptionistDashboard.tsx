@@ -1382,13 +1382,9 @@ export const ReceptionistDashboard: React.FC = () => {
                               )}
 
                               {appt.status === 'IN_CONSULTATION' && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleStatusChange(appt.id, 'COMPLETED')}
-                                  className="h-8 px-3.5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-medium transition-all active:scale-[0.98] cursor-pointer"
-                                >
-                                  Complete
-                                </button>
+                                <span className="h-8 px-3 rounded-full bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20 text-xs font-medium inline-flex items-center">
+                                  In Cabin
+                                </span>
                               )}
 
                               {/* Shift Date */}

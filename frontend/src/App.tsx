@@ -99,6 +99,12 @@ const RouteLoadingFallback: React.FC = () => (
 function AppShell() {
   const location = useLocation();
 
+  React.useEffect(() => {
+    // Eager background warm-up ping to wake up backend if sleeping
+    const apiUrl = import.meta.env.VITE_API_BASE_URL || 'https://mediarca-mdwk.onrender.com/api';
+    fetch(`${apiUrl}/health`).catch(() => {});
+  }, []);
+
   // Only enterprise staff desks and administrative backends use dedicated sidebar layouts.
   // Patient experience is fully integrated into the main website under GlobalNav.
   const isPortalRoute =

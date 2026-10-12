@@ -22,7 +22,7 @@ export const ClinicQrStandeeModal: React.FC<ClinicQrStandeeModalProps> = ({
 }) => {
   if (!isOpen) return null;
 
-  const checkinUrl = `${window.location.origin}${window.location.pathname}#/clinic-checkin?clinicId=${clinicId}&code=${checkinCode || ''}`;
+  const checkinUrl = `${window.location.origin}${window.location.pathname}#/clinic-checkin?clinicId=${clinicId}`;
   const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(checkinUrl)}`;
 
   const handlePrint = () => {

@@ -538,6 +538,32 @@ export const updateSchedule = async (req: AuthRequest, res: Response): Promise<v
           where: { id: clinicAffiliation.id },
           data: clinicUpdateData,
         });
+
+        // Sync upcoming waiting appointments with updated checkingWindow
+        if (formattedSlots.length > 0) {
+          const todayStr = getLocalDateString();
+          const upcomingAppts = await tx.appointment.findMany({
+            where: {
+              doctorId: doctor.id,
+              clinicId: clinicAffiliation.clinicId,
+              appointmentDate: { gte: todayStr },
+              status: { in: ['WAITING', 'PENDING_APPROVAL'] },
+            },
+            select: { id: true, slotId: true },
+          });
+
+          for (const appt of upcomingAppts) {
+            const matchedSlot = (appt.slotId && formattedSlots.find((s: any) => s.id === appt.slotId)) || formattedSlots[0];
+            if (matchedSlot) {
+              await tx.appointment.update({
+                where: { id: appt.id },
+                data: {
+                  checkingWindow: `${matchedSlot.startTime} – ${matchedSlot.endTime}`,
+                },
+              });
+            }
+          }
+        }
       });
 
       res.json({

@@ -1588,7 +1588,7 @@ export const api = {
     return handleResponse(res);
   },
 
-  async checkInWithQR(data: { clinicId: string; code: string; appointmentId?: string }): Promise<any> {
+  async checkInWithQR(data: { clinicId: string; code?: string; appointmentId?: string }): Promise<any> {
     const res = await safeFetch(`${API_BASE_URL}/appointments/check-in`, {
       method: 'POST',
       headers: getHeaders(),
