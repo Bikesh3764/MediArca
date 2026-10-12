@@ -599,9 +599,6 @@ export const AdminDashboard: React.FC = () => {
             <h1 className="text-[22px] font-semibold tracking-tight text-[#1d1d1f] leading-snug">
               Admin Dashboard
             </h1>
-            <p className="text-[13px] text-[#86868b] mt-1 leading-relaxed">
-              Manage doctor and clinic verifications, view platform statistics
-            </p>
           </div>
           <div className="flex items-center gap-2 text-xs text-[#86868b]">
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] font-medium text-[#1d1d1f]">

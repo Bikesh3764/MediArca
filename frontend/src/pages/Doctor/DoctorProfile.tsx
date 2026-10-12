@@ -198,7 +198,6 @@ export const DoctorProfile: React.FC = () => {
       portalType="DOCTOR"
       navItems={navItems}
       title="Profile & Settings"
-      subtitle="Manage your medical credentials, specialty, and public practitioner profile"
     >
       <div className="max-w-4xl space-y-6">
         {successMsg && (

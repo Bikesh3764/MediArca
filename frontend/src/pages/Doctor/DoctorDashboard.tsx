@@ -709,8 +709,8 @@ export const DoctorDashboard: React.FC = () => {
       }
       subtitle={
         activeTab === 'affiliations'
-          ? 'Manage affiliated healthcare facilities, practice shifts, and desk staff'
-          : user?.doctorProfile?.specialty || 'Live Outpatient Queue'
+          ? undefined
+          : user?.doctorProfile?.specialty || undefined
       }
       headerAction={
         <div className="flex items-center gap-2 flex-wrap">
@@ -848,9 +848,6 @@ export const DoctorDashboard: React.FC = () => {
                   <h3 className="text-[16px] font-semibold text-[#1d1d1f] tracking-tight">
                     Incoming Clinic Invitations ({affiliations.incomingRequests.length})
                   </h3>
-                  <p className="text-xs text-[#86868b] mt-0.5">
-                    Verified clinics that invited you to practice.
-                  </p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -956,9 +953,6 @@ export const DoctorDashboard: React.FC = () => {
               ) : affiliations?.clinics.length === 0 ? (
                 <div className="p-8 text-center bg-[#f5f5f7] rounded-2xl border border-[#e5e5ea]">
                   <h4 className="text-[15px] font-semibold text-[#1d1d1f]">No Clinics Affiliated</h4>
-                  <p className="text-xs text-[#86868b] mt-1 max-w-md mx-auto">
-                    Affiliate your practice with verified clinics to configure shift timings and receive patient queue bookings.
-                  </p>
                   <div className="mt-4">
                     <button
                       type="button"
@@ -1033,7 +1027,7 @@ export const DoctorDashboard: React.FC = () => {
                           <span className="font-medium">Practice Shifts</span>
                           <span className="font-medium text-[#1d1d1f] truncate max-w-[220px]">
                             {clinic.slots && clinic.slots.length > 0
-                              ? `${clinic.slots.length} ${clinic.slots.length === 1 ? 'Shift' : 'Shifts'} (${format12Hour(clinic.slots[0].startTime)} – ${format12Hour(clinic.slots[0].endTime)})`
+                              ? `${clinic.slots.length} ${clinic.slots.length === 1 ? 'Shift' : 'Shifts'}`
                               : 'Default schedule'}
                           </span>
                         </div>
@@ -1094,9 +1088,6 @@ export const DoctorDashboard: React.FC = () => {
               ) : affiliations?.receptionists.length === 0 ? (
                 <div className="p-8 text-center bg-[#f5f5f7] rounded-2xl border border-[#e5e5ea]">
                   <h4 className="text-[15px] font-semibold text-[#1d1d1f]">No Desk Staff Assigned</h4>
-                  <p className="text-xs text-[#86868b] mt-1 max-w-md mx-auto">
-                    Your affiliated clinic administrators can assign desk receptionists to manage queues and walk-in appointments.
-                  </p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1922,9 +1913,6 @@ export const DoctorDashboard: React.FC = () => {
               <h3 className="text-[22px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">
                 Add Walk-in Patient
               </h3>
-              <p className="text-[13px] text-[#86868b] mt-1">
-                Instantly issue a live queue ticket for a walk-in patient.
-              </p>
             </div>
 
             {walkinError && (
@@ -2173,9 +2161,6 @@ export const DoctorDashboard: React.FC = () => {
                   <h3 className="text-[20px] font-semibold text-[#1d1d1f] tracking-tight">
                     Affiliate Clinic or Hospital
                   </h3>
-                  <p className="text-[13px] text-[#86868b] mt-1">
-                    Search verified clinics and associate your practice to receive outpatient bookings.
-                  </p>
                 </div>
                 <button
                   type="button"
@@ -2442,7 +2427,6 @@ export const DoctorDashboard: React.FC = () => {
                 <h3 className="text-[20px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">
                   Shift Appointment
                 </h3>
-                <p className="text-xs text-[#86868b] mt-0.5">Move patient visit to another shift or date</p>
               </div>
               <button
                 type="button"

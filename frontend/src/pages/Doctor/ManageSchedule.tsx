@@ -349,12 +349,8 @@ export const ManageSchedule: React.FC = () => {
     <DashboardLayout
       portalType="DOCTOR"
       navItems={navItems}
-      title="Clinic Practice Schedule"
-      subtitle={
-        selectedClinic
-          ? `Manage shifts, consultation time, and fee for ${selectedClinic.clinicName}`
-          : 'Configure daily shifts and consultation fee'
-      }
+      title="Shifts & Fees"
+      subtitle={selectedClinic?.clinicName || undefined}
       headerAction={
         <button
           type="button"
@@ -362,7 +358,7 @@ export const ManageSchedule: React.FC = () => {
           className="h-9 px-4 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer"
         >
           <ChevronLeft className="w-4 h-4" />
-          <span>Back to Clinics & Staff</span>
+          <span>Back</span>
         </button>
       }
     >

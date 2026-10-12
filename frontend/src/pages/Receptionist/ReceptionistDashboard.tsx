@@ -726,7 +726,7 @@ export const ReceptionistDashboard: React.FC = () => {
     .join(', ');
 
   const titleText = data?.clinic?.clinicName ? `${data.clinic.clinicName}` : 'Reception Desk';
-  const subtitleText = displayLocation ? `${displayLocation}` : 'Front Desk Operations';
+  const subtitleText = displayLocation ? `${displayLocation}` : undefined;
 
   const totalTodayBookings = linkedDoctors.reduce((sum, d) => sum + d.todayTotalBookings, 0);
   const totalWaitingPatients = linkedDoctors.reduce((sum, d) => sum + d.todayWaitingPatients, 0);
@@ -1816,9 +1816,6 @@ export const ReceptionistDashboard: React.FC = () => {
                   <h3 className="text-base sm:text-lg font-semibold text-[#1d1d1f] tracking-tight">
                     Assigned Practitioners
                   </h3>
-                  <p className="text-xs text-[#86868b] mt-0.5">
-                    Manage cabin presence and view live queues for your assigned doctors.
-                  </p>
                 </div>
                 <span className="text-xs font-medium px-3 py-1 rounded-full bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea]">
                   {linkedDoctors.length} {linkedDoctors.length === 1 ? 'Doctor' : 'Doctors'}

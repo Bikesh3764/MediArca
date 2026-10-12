@@ -442,7 +442,7 @@ export const ClinicDashboard: React.FC = () => {
           ? `${clinic.address}${clinic?.city ? ` • ${clinic.city}` : ''}${clinic?.state ? `, ${clinic.state}` : ''}`
           : clinic?.city
           ? `${clinic.city}${clinic?.state ? `, ${clinic.state}` : ''}`
-          : 'Clinical Operations Dashboard'
+          : undefined
       }
       headerAction={
         <div className="flex flex-wrap items-center gap-2">
@@ -935,9 +935,6 @@ export const ClinicDashboard: React.FC = () => {
               <h2 className="text-[18px] font-semibold text-[#1d1d1f] tracking-tight">
                 Desk Receptionists & Front Staff
               </h2>
-              <p className="text-[13px] text-[#86868b] mt-0.5">
-                Manage credentials and assign specific affiliated practitioners to each front desk receptionist.
-              </p>
             </div>
             <button
               type="button"
@@ -1015,10 +1012,7 @@ export const ClinicDashboard: React.FC = () => {
 
           {(!data?.receptionists || data.receptionists.length === 0) ? (
             <div className="py-12 text-center">
-              <h3 className="text-[15px] font-semibold text-[#1d1d1f]">No Receptionists Provisioned</h3>
-              <p className="text-xs text-[#86868b] max-w-sm mx-auto mt-1 mb-4 leading-relaxed">
-                Provision secure login credentials for your reception staff. You can configure which doctors each receptionist manages appointments for.
-              </p>
+              <h3 className="text-[15px] font-semibold text-[#1d1d1f] mb-4">No Receptionists Provisioned</h3>
               <button
                 type="button"
                 onClick={() => setShowRecModal(true)}
@@ -1598,7 +1592,7 @@ export const ClinicDashboard: React.FC = () => {
               <div>
                 <h3 className="text-[20px] font-semibold text-[#1d1d1f] tracking-tight">Manage Doctor Desk Access</h3>
                 <p className="text-[13px] text-[#86868b] mt-0.5">
-                  Configure active doctor assignments for {editingRec.fullName}.
+                  {editingRec.fullName}
                 </p>
               </div>
               <button
