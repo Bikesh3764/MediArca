@@ -12,7 +12,6 @@ import {
   QueuePreview,
   formatShiftOption,
   cleanSlotName,
-  format12Hour,
 } from '../../services/api';
 import { sanitizeIndianPhone, formatIndianPhone, isValidIndianPhone } from '../../utils/phoneUtils';
 import { useVisibilityPolling } from '../../utils/useVisibilityPolling';
@@ -89,6 +88,18 @@ const getCleanReason = (reason?: string | null, patientName?: string | null): st
   }
 
   return r;
+};
+
+const cleanShiftDisplayName = (shiftStr?: string | null): string => {
+  if (!shiftStr || !shiftStr.trim()) return 'Shift 1';
+  const shiftNumMatch = shiftStr.match(/shift\s*(\d+)/i);
+  if (shiftNumMatch) {
+    return `Shift ${shiftNumMatch[1]}`;
+  }
+  let cleaned = shiftStr.replace(/\s*\([^)]*\)/g, '').trim();
+  cleaned = cleaned.replace(/\s*\d{1,2}:\d{2}\s*(?:AM|PM|am|pm)?\s*[-–to]\s*\d{1,2}:\d{2}\s*(?:AM|PM|am|pm)?/gi, '').trim();
+  cleaned = cleaned.replace(/\s*(?:morning|afternoon|evening|night)/gi, '').trim();
+  return cleaned || 'Shift 1';
 };
 
 export const ReceptionistDashboard: React.FC = () => {
@@ -176,7 +187,7 @@ export const ReceptionistDashboard: React.FC = () => {
   const [queueAppointments, setQueueAppointments] = useState<ReceptionistQueueItem[]>([]);
   const [queueLoading, setQueueLoading] = useState(false);
   const [queueSearch, setQueueSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'ALL' | 'WAITING' | 'IN_CONSULTATION' | 'COMPLETED' | 'CANCELLED'>('ALL');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'WAITING' | 'IN_CONSULTATION' | 'COMPLETED' | 'CANCELLED'>('WAITING');
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -956,11 +967,11 @@ export const ReceptionistDashboard: React.FC = () => {
                 <div className="p-1 bg-[#f5f5f7] border border-[#e5e5ea] rounded-full inline-flex items-center gap-0.5 overflow-x-auto max-w-full no-scrollbar">
                   {(
                     [
-                      { id: 'ALL', label: 'All' },
                       { id: 'WAITING', label: 'Waiting' },
-                      { id: 'IN_CONSULTATION', label: 'In Consultation' },
+                      { id: 'IN_CONSULTATION', label: 'In Cabin' },
                       { id: 'COMPLETED', label: 'Completed' },
                       { id: 'CANCELLED', label: 'Cancelled' },
+                      { id: 'ALL', label: 'All' },
                     ] as const
                   ).map((tab) => {
                     const count =
@@ -1069,9 +1080,98 @@ export const ReceptionistDashboard: React.FC = () => {
                   );
                 }
 
+                const getStatusPriority = (status: string): number => {
+                  switch (status) {
+                    case 'IN_CONSULTATION':
+                      return 0;
+                    case 'WAITING':
+                      return 1;
+                    case 'COMPLETED':
+                      return 2;
+                    case 'CANCELLED':
+                    case 'EXPIRED':
+                    case 'REJECTED':
+                      return 3;
+                    default:
+                      return 4;
+                  }
+                };
+
+                const groupedByShift: Record<string, ReceptionistQueueItem[]> = {};
+
+                filteredAppointments.forEach((appt) => {
+                  const shiftKey = cleanShiftDisplayName(appt.checkingWindow);
+                  if (!groupedByShift[shiftKey]) {
+                    groupedByShift[shiftKey] = [];
+                  }
+                  groupedByShift[shiftKey].push(appt);
+                });
+
+                Object.keys(groupedByShift).forEach((shiftKey) => {
+                  groupedByShift[shiftKey].sort((a, b) => {
+                    const prioA = getStatusPriority(a.status);
+                    const prioB = getStatusPriority(b.status);
+                    if (prioA !== prioB) return prioA - prioB;
+                    return (a.queueNumber || 0) - (b.queueNumber || 0);
+                  });
+                });
+
+                const sortedShiftKeys = Object.keys(groupedByShift).sort((a, b) => {
+                  const numA = parseInt(a.replace(/\D/g, ''), 10) || 0;
+                  const numB = parseInt(b.replace(/\D/g, ''), 10) || 0;
+                  if (numA !== numB) return numA - numB;
+                  return a.localeCompare(b);
+                });
+
                 return (
-                  <div className="divide-y divide-[#f0f0f2] border border-[#e5e5ea] rounded-2xl overflow-hidden bg-white">
-                    {filteredAppointments.map((appt) => {
+                  <div className="space-y-5">
+                    {sortedShiftKeys.map((shiftName) => {
+                      const shiftAppts = groupedByShift[shiftName];
+                      const waitingCount = shiftAppts.filter((a) => a.status === 'WAITING').length;
+                      const inCabinCount = shiftAppts.filter((a) => a.status === 'IN_CONSULTATION').length;
+                      const completedCount = shiftAppts.filter((a) => a.status === 'COMPLETED').length;
+                      const cancelledCount = shiftAppts.filter((a) => a.status === 'CANCELLED' || a.status === 'EXPIRED').length;
+
+                      return (
+                        <div key={shiftName} className="border border-[#e5e5ea] rounded-2xl overflow-hidden bg-white shadow-xs">
+                          {/* Apple Shift Section Header */}
+                          <div className="px-4 sm:px-5 py-3 bg-[#f5f5f7] border-b border-[#e5e5ea] flex items-center justify-between gap-3 flex-wrap">
+                            <div className="flex items-center gap-2.5">
+                              <span className="text-xs font-bold text-[#1d1d1f] uppercase tracking-wider">
+                                {shiftName}
+                              </span>
+                              <span className="text-[11px] font-medium text-[#86868b] px-2.5 py-0.5 rounded-full bg-white border border-[#e5e5ea]">
+                                {shiftAppts.length} {shiftAppts.length === 1 ? 'patient' : 'patients'}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-2 text-xs text-[#86868b] flex-wrap">
+                              {inCabinCount > 0 && (
+                                <span className="inline-flex items-center gap-1 font-medium text-[#0066cc]">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-[#0066cc] animate-pulse" />
+                                  {inCabinCount} in cabin
+                                </span>
+                              )}
+                              {waitingCount > 0 && (
+                                <span className="font-medium text-[#1d1d1f]">
+                                  {waitingCount} waiting
+                                </span>
+                              )}
+                              {completedCount > 0 && (
+                                <span className="text-[#86868b]">
+                                  {waitingCount > 0 ? '• ' : ''}{completedCount} done
+                                </span>
+                              )}
+                              {cancelledCount > 0 && (
+                                <span className="text-[#86868b]">
+                                  • {cancelledCount} cancelled
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="divide-y divide-[#f0f0f2]">
+                            {shiftAppts.map((appt) => {
                       const canMarkArrival = !['EXPIRED', 'CANCELLED', 'REJECTED', 'COMPLETED'].includes(appt.status);
                       const canCallIn =
                         appt.status === 'WAITING' &&
@@ -1079,27 +1179,42 @@ export const ReceptionistDashboard: React.FC = () => {
                         !isDoctorAway &&
                         (appt.appointmentDate || queueDate) === getLocalDateString();
 
+                      const isCancelledOrExpired = appt.status === 'CANCELLED' || appt.status === 'EXPIRED';
+
                       return (
                         <div
                           key={appt.id}
-                          className="p-4 sm:px-5 sm:py-4 hover:bg-[#fafafc] transition-colors flex flex-col lg:flex-row lg:items-center justify-between gap-3.5"
+                          className={`p-4 sm:px-5 sm:py-4 transition-colors flex flex-col lg:flex-row lg:items-center justify-between gap-3.5 ${
+                            isCancelledOrExpired ? 'bg-[#fafafc]/60 opacity-75' : 'hover:bg-[#fafafc]'
+                          }`}
                         >
                           {/* Left: Token + Patient Details */}
                           <div className="flex items-start sm:items-center gap-3.5 min-w-0">
-                            <div className="flex flex-col items-center justify-center min-w-[56px] px-2 py-1 rounded-2xl bg-[#0066cc]/10 border border-[#0066cc]/20 text-[#0066cc] shrink-0">
-                              <span className="font-bold text-[15px] leading-tight tracking-tight">#{appt.queueNumber}</span>
-                              <span className="text-[10px] font-semibold uppercase tracking-wider mt-0.5 truncate max-w-[56px] text-center">
-                                {appt.checkingWindow || 'Shift'}
-                              </span>
+                            <div
+                              className={`w-11 h-11 rounded-2xl flex items-center justify-center font-bold text-[15px] shrink-0 transition-all ${
+                                appt.status === 'IN_CONSULTATION'
+                                  ? 'bg-[#1d1d1f] text-white shadow-xs'
+                                  : appt.status === 'COMPLETED'
+                                  ? 'bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea]'
+                                  : isCancelledOrExpired
+                                  ? 'bg-[#f5f5f7] text-[#a1a1a6] border border-[#e5e5ea] line-through'
+                                  : 'bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea]'
+                              }`}
+                            >
+                              #{appt.queueNumber}
                             </div>
 
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-2 flex-wrap">
-                                <span className="font-semibold text-sm text-[#1d1d1f] truncate">
+                                <span
+                                  className={`font-semibold text-sm truncate ${
+                                    isCancelledOrExpired ? 'text-[#86868b] line-through' : 'text-[#1d1d1f]'
+                                  }`}
+                                >
                                   {appt.patientName}
                                 </span>
-                                <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20">
-                                  {appt.checkingWindow || 'Shift'}
+                                <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea]">
+                                  {cleanShiftDisplayName(appt.checkingWindow)}
                                 </span>
                                 {(() => {
                                   const doc = linkedDoctors.find((d) => d.doctorId === (appt.doctorId || selectedDoctorId));
@@ -1273,6 +1388,10 @@ export const ReceptionistDashboard: React.FC = () => {
                                 <Printer className="w-3.5 h-3.5" />
                               </button>
                             </div>
+                          </div>
+                        </div>
+                              );
+                            })}
                           </div>
                         </div>
                       );
@@ -1758,7 +1877,7 @@ export const ReceptionistDashboard: React.FC = () => {
                               </span>
                               <span>•</span>
                               <span>
-                                {appt.appointmentDate} • {appt.checkingWindow || 'General Shift'}
+                                {appt.appointmentDate} • {cleanShiftDisplayName(appt.checkingWindow)}
                               </span>
                               {phoneDisplay && (
                                 <>

@@ -116,7 +116,14 @@ export const calculateSlotMetrics = (
 
 export const cleanSlotName = (name?: string | null, fallback = 'Shift'): string => {
   if (!name || !name.trim()) return fallback;
-  return name.replace(/\s*\([^)]*\)/g, '').trim() || fallback;
+  const shiftNumMatch = name.match(/shift\s*(\d+)/i);
+  if (shiftNumMatch) {
+    return `Shift ${shiftNumMatch[1]}`;
+  }
+  let cleaned = name.replace(/\s*\([^)]*\)/g, '').trim();
+  cleaned = cleaned.replace(/\s*\d{1,2}:\d{2}\s*(?:AM|PM|am|pm)?\s*[-–to]\s*\d{1,2}:\d{2}\s*(?:AM|PM|am|pm)?/gi, '').trim();
+  cleaned = cleaned.replace(/\s*(?:morning|afternoon|evening|night)/gi, '').trim();
+  return cleaned || fallback;
 };
 
 export const formatShiftOption = (
@@ -124,10 +131,7 @@ export const formatShiftOption = (
   isEnded?: boolean
 ): string => {
   const baseName = cleanSlotName(slot.name, 'Shift');
-  const timeFormatted = slot.startTime && slot.endTime
-    ? ` (${format12Hour(slot.startTime)} – ${format12Hour(slot.endTime)})`
-    : '';
-  return `${baseName}${timeFormatted}${isEnded ? ' • Ended' : ''}`;
+  return `${baseName}${isEnded ? ' • Ended' : ''}`;
 };
 
 export const parseDoctorSlots = (doctor: any): DoctorSlot[] => {

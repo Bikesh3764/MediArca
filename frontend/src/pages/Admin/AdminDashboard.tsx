@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
-import { api, Doctor, format12Hour, getFileUrl, formatDoctorDegrees, ContactMessageItem, getLocalDateString } from '../../services/api';
+import { api, Doctor, format12Hour, getFileUrl, formatDoctorDegrees, ContactMessageItem, getLocalDateString, cleanSlotName } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { BrandLogo } from '../../components/ui/BrandLogo';
@@ -2294,8 +2294,8 @@ export const AdminDashboard: React.FC = () => {
                     )}
                   </div>
                   <div className="col-span-2">
-                    <span className="text-[#86868b] block text-[11px]">Shift / Window</span>
-                    <span className="text-[#1d1d1f] font-medium mt-0.5 block">{selectedAppointment.checkingWindow || 'Default Clinical Shift'}</span>
+                    <span className="text-[#86868b] block text-[11px]">Shift</span>
+                    <span className="text-[#1d1d1f] font-medium mt-0.5 block">{cleanSlotName(selectedAppointment.checkingWindow, 'Shift 1')}</span>
                   </div>
                 </div>
               </div>

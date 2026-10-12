@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { api, Appointment } from '../../services/api';
+import { api, Appointment, cleanSlotName } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { DashboardLayout, DashboardNavItem } from '../../components/layout/DashboardLayout';
 import { UtilityCard } from '../../components/ui/UtilityCard';
@@ -354,7 +354,7 @@ export const ConsultationView: React.FC = () => {
                 {appointment.appointmentDate}
               </p>
               <p className="text-xs text-[#86868b]">
-                {appointment.checkingWindow || appointment.estimatedTime || 'Standard'}
+                {cleanSlotName(appointment.checkingWindow, 'Shift 1')}
               </p>
             </div>
 

@@ -351,7 +351,7 @@ export const BookAppointment: React.FC = () => {
                 Pending Receptionist Confirmation
               </h2>
               <p className="text-xs text-[#86868b] mt-1 font-medium">
-                {confirmedAppointment.appointmentDate} · {confirmedAppointment.checkingWindow}
+                {confirmedAppointment.appointmentDate} · {cleanSlotName(confirmedAppointment.checkingWindow)}
               </p>
               <div className="mt-3.5 inline-flex items-baseline gap-2 px-4 py-1.5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea]">
                 <span className="text-xs font-medium text-[#86868b]">Estimated Token</span>

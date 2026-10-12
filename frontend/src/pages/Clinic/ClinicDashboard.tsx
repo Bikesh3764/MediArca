@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { api, ClinicDashboardData, ClinicReceptionistItem, Doctor, getFileUrl, formatDoctorDegrees } from '../../services/api';
+import { api, ClinicDashboardData, ClinicReceptionistItem, Doctor, getFileUrl, formatDoctorDegrees, cleanSlotName } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { DashboardLayout, DashboardNavItem } from '../../components/layout/DashboardLayout';
 import { ClinicQrStandeeModal } from '../../components/common/ClinicQrStandeeModal';
@@ -1210,7 +1210,7 @@ export const ClinicDashboard: React.FC = () => {
 
                     <div className="flex items-center justify-between text-[11px] text-[#86868b]">
                       <div>{appt.date}</div>
-                      <div>{appt.estimatedTime || appt.checkingWindow}</div>
+                      <div>{appt.estimatedTime || cleanSlotName(appt.checkingWindow)}</div>
                     </div>
                   </div>
                 ))}
@@ -1244,7 +1244,7 @@ export const ClinicDashboard: React.FC = () => {
                       <td className="py-3.5 font-medium text-[#1d1d1f]">{appt.doctorName}</td>
                       <td className="py-3.5 text-[#86868b]">
                         <div>{appt.date}</div>
-                        <div className="text-[11px]">{appt.estimatedTime || appt.checkingWindow}</div>
+                        <div className="text-[11px]">{appt.estimatedTime || cleanSlotName(appt.checkingWindow)}</div>
                       </td>
                       <td className="py-3.5">
                         {(() => {

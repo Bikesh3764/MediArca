@@ -10,6 +10,7 @@ import {
   getTomorrowDateString,
   formatDoctorDegrees,
   getFileUrl,
+  cleanSlotName,
 } from '../../services/api';
 import { SubNav } from '../../components/layout/SubNav';
 import { AppleButton } from '../../components/ui/AppleButton';
@@ -24,9 +25,7 @@ import {
   Check,
 } from 'lucide-react';
 
-const cleanSlotName = (name: string): string => {
-  return name.replace(/\s*\([^)]*\)/g, '').trim() || name;
-};
+
 
 export const DoctorDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -457,7 +456,7 @@ export const DoctorDetail: React.FC = () => {
                     </div>
                   </div>
                   <div className="pt-2 border-t border-[#e5e5ea] text-[11px] text-[#86868b] flex items-center justify-between">
-                    <span>{queuePreview.checkingWindow}</span>
+                    <span>{cleanSlotName(queuePreview.checkingWindow)}</span>
                     <span>
                       {queuePreview.patientsAhead === 0
                         ? 'Next in line'
