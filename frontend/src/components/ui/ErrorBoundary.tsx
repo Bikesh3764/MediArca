@@ -15,6 +15,19 @@ interface State {
   error: Error | null;
 }
 
+const isChunkLoadError = (err: Error | null): boolean => {
+  if (!err) return false;
+  const msg = (err.message || String(err)).toLowerCase();
+  return (
+    msg.includes('dynamically imported module') ||
+    msg.includes('loading chunk') ||
+    msg.includes('failed to fetch dynamically imported') ||
+    msg.includes('failed to load module script') ||
+    msg.includes('importing a module script failed') ||
+    err.name === 'ChunkLoadError'
+  );
+};
+
 export class ErrorBoundary extends Component<Props, State> {
   public state: State = {
     hasError: false,
@@ -27,9 +40,21 @@ export class ErrorBoundary extends Component<Props, State> {
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('Uncaught MediArca runtime error:', error, errorInfo);
+    if (isChunkLoadError(error)) {
+      const lastReload = window.sessionStorage.getItem('mediarca_boundary_chunk_reload');
+      const now = Date.now();
+      if (!lastReload || now - parseInt(lastReload, 10) > 15000) {
+        window.sessionStorage.setItem('mediarca_boundary_chunk_reload', String(now));
+        window.location.reload();
+      }
+    }
   }
 
   private handleReset = () => {
+    if (isChunkLoadError(this.state.error)) {
+      window.location.reload();
+      return;
+    }
     if (this.props.onReset) {
       this.props.onReset();
     }
@@ -45,6 +70,8 @@ export class ErrorBoundary extends Component<Props, State> {
 
   public render() {
     if (this.state.hasError) {
+      const isChunk = isChunkLoadError(this.state.error);
+
       // Localized route/section error: maintains surrounding navigation & header
       if (this.props.isInline) {
         return (
@@ -55,15 +82,19 @@ export class ErrorBoundary extends Component<Props, State> {
               </div>
               <div>
                 <h2 className="text-[20px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">
-                  {this.props.fallbackTitle || 'Section Temporarily Unavailable'}
+                  {isChunk
+                    ? 'New Version Available'
+                    : this.props.fallbackTitle || 'Section Temporarily Unavailable'}
                 </h2>
                 <p className="text-[13px] text-[#86868b] mt-1.5 leading-relaxed">
-                  {this.props.fallbackDescription ||
-                    'An unexpected issue occurred while rendering this view. You can retry loading this section or navigate to another view.'}
+                  {isChunk
+                    ? 'A new version of MediArca is live. Please reload to load the latest features.'
+                    : this.props.fallbackDescription ||
+                      'An unexpected issue occurred while rendering this view. You can retry loading this section or navigate to another view.'}
                 </p>
               </div>
 
-              {this.state.error && (
+              {this.state.error && !isChunk && (
                 <div className="text-left p-3 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-[#6e6e73] text-xs leading-relaxed overflow-auto max-h-24">
                   {this.state.error.message || this.state.error.toString()}
                 </div>
@@ -73,11 +104,11 @@ export class ErrorBoundary extends Component<Props, State> {
                 <AppleButton
                   variant="primary"
                   size="md"
-                  onClick={this.handleReset}
+                  onClick={isChunk ? this.handleReload : this.handleReset}
                   className="flex items-center gap-2 text-xs h-9 px-4 font-medium"
                 >
                   <RefreshCw className="w-3.5 h-3.5" />
-                  Try Again
+                  {isChunk ? 'Update & Reload' : 'Try Again'}
                 </AppleButton>
                 <AppleButton
                   variant="secondary"
