@@ -132,45 +132,58 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
   const handleExportCsv = () => {
     if (!reportData || !reportData.appointments.length) return;
 
+    // Use filtered subset if it has items; otherwise fall back to all appointments in report
+    const listToExport = filteredAppointments.length > 0 ? filteredAppointments : reportData.appointments;
+
     const headers = [
       'Token Number',
-      'Date',
-      'Shift',
+      'Appointment Date',
+      'Checking Shift',
       'Patient Name',
-      'Patient Phone',
+      'Patient Mobile',
       'Practitioner',
       'Specialty',
-      'Facility',
-      'Status',
-      'Fee (INR)',
+      'Facility / Clinic',
+      'Visit Status',
+      'Consultation Fee (INR)',
       'Earned Revenue (INR)',
     ];
 
-    const rows = filteredAppointments.map((appt) => [
-      `#${appt.queueNumber}`,
-      appt.appointmentDate,
-      appt.checkingWindow,
-      `"${appt.patientName.replace(/"/g, '""')}"`,
-      `"${appt.patientPhone}"`,
-      `"${(appt.doctorName || doctorName || 'Doctor').replace(/"/g, '""')}"`,
-      `"${(appt.specialty || '').replace(/"/g, '""')}"`,
-      `"${(appt.clinicName || clinicName || 'Clinic').replace(/"/g, '""')}"`,
-      appt.status,
-      appt.fee,
-      appt.earnedRevenue,
+    const escapeCsvField = (val: any): string => {
+      if (val === null || val === undefined) return '""';
+      const str = String(val).replace(/"/g, '""');
+      return `"${str}"`;
+    };
+
+    const rows = listToExport.map((appt) => [
+      escapeCsvField(`Token #${appt.queueNumber}`),
+      escapeCsvField(appt.appointmentDate),
+      escapeCsvField(appt.checkingWindow),
+      escapeCsvField(appt.patientName),
+      escapeCsvField(appt.patientPhone),
+      escapeCsvField(appt.doctorName || doctorName || 'Doctor'),
+      escapeCsvField(appt.specialty || ''),
+      escapeCsvField(appt.clinicName || clinicName || 'Clinic'),
+      escapeCsvField(appt.status),
+      escapeCsvField(appt.fee),
+      escapeCsvField(appt.earnedRevenue),
     ]);
 
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
+    const csvContent = [headers.join(','), ...rows.map((e) => e.join(','))].join('\r\n');
+    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
+    link.href = url;
     link.setAttribute(
       'download',
-      `MediArca_Report_${role}_${startDate}_to_${endDate}.csv`
+      `MediArca_Audit_${role}_${startDate}_to_${endDate}.csv`
     );
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+    }, 1500);
   };
 
   // Client-side filtering for shift and status
@@ -441,7 +454,6 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
                 <option value="ALL">All Visit Statuses</option>
                 <option value="COMPLETED">Completed Consultations</option>
                 <option value="WAITING">Waiting Queue</option>
-                <option value="IN_CONSULTATION">In Consultation</option>
                 <option value="CANCELLED">Cancelled / Declined</option>
               </select>
               <ChevronDown className="w-3 h-3 text-[#86868b] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
