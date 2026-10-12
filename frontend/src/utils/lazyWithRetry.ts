@@ -35,7 +35,13 @@ export function lazyWithRetry<T extends React.ComponentType<any>>(
       if (isChunkError && !pageHasBeenRefreshed) {
         // Mark that we are refreshing once to get the latest index.html bundle
         window.sessionStorage.setItem('mediarca_stale_chunk_refreshed', 'true');
-        window.location.reload();
+        try {
+          const url = new URL(window.location.href);
+          url.searchParams.set('_v', Date.now().toString());
+          window.location.replace(url.toString());
+        } catch {
+          window.location.reload();
+        }
         // Return an unresolving promise while the page reloads
         return new Promise<{ default: T }>(() => {});
       }

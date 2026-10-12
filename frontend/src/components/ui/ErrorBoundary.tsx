@@ -45,14 +45,14 @@ export class ErrorBoundary extends Component<Props, State> {
       const now = Date.now();
       if (!lastReload || now - parseInt(lastReload, 10) > 15000) {
         window.sessionStorage.setItem('mediarca_boundary_chunk_reload', String(now));
-        window.location.reload();
+        this.handleReload();
       }
     }
   }
 
   private handleReset = () => {
     if (isChunkLoadError(this.state.error)) {
-      window.location.reload();
+      this.handleReload();
       return;
     }
     if (this.props.onReset) {
@@ -65,7 +65,13 @@ export class ErrorBoundary extends Component<Props, State> {
   };
 
   private handleReload = () => {
-    window.location.reload();
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set('_v', Date.now().toString());
+      window.location.replace(url.toString());
+    } catch {
+      window.location.reload();
+    }
   };
 
   public render() {
