@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { api, ClinicDashboardData, ClinicReceptionistItem, Doctor, getFileUrl, formatDoctorDegrees } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { DashboardLayout, DashboardNavItem } from '../../components/layout/DashboardLayout';
@@ -36,7 +37,18 @@ export const ClinicDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
-  const [activeSection, setActiveSection] = useState<'doctors' | 'receptionists' | 'appointments'>('doctors');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab');
+  const activeSection: 'doctors' | 'receptionists' | 'appointments' =
+    tabParam === 'receptionists' || tabParam === 'appointments' ? tabParam : 'doctors';
+
+  const setActiveSection = (section: 'doctors' | 'receptionists' | 'appointments') => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set('tab', section);
+      return next;
+    });
+  };
 
   // Doctor Modal
   const [showAddModal, setShowAddModal] = useState(false);

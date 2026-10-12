@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   api,
   ReceptionistDashboardData,
@@ -102,7 +103,18 @@ export const ReceptionistDashboard: React.FC = () => {
 
   const [data, setData] = useState<ReceptionistDashboardData | null>(null);
   const [, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'queue' | 'walkin' | 'pending' | 'doctors' | 'notifications'>('queue');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlTab = searchParams.get('tab') as 'queue' | 'walkin' | 'pending' | 'doctors' | 'notifications' | null;
+  const activeTab: 'queue' | 'walkin' | 'pending' | 'doctors' | 'notifications' =
+    urlTab && ['queue', 'walkin', 'pending', 'doctors', 'notifications'].includes(urlTab) ? urlTab : 'queue';
+
+  const setActiveTab = (tab: 'queue' | 'walkin' | 'pending' | 'doctors' | 'notifications') => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set('tab', tab);
+      return next;
+    });
+  };
 
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);

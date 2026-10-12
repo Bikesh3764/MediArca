@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { api, Doctor, format12Hour, getFileUrl, formatDoctorDegrees, ContactMessageItem, getLocalDateString } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { BrandLogo } from '../../components/ui/BrandLogo';
 import { AppleButton } from '../../components/ui/AppleButton';
 import { UtilityCard } from '../../components/ui/UtilityCard';
@@ -54,7 +54,18 @@ export const AdminDashboard: React.FC = () => {
   const [clinicActionId, setClinicActionId] = useState<string | null>(null);
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
   const [selectedClinic, setSelectedClinic] = useState<any | null>(null);
-  const [activeTab, setActiveTab] = useState<'doctors' | 'clinics' | 'appointments' | 'messages'>('doctors');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlTab = searchParams.get('tab') as 'doctors' | 'clinics' | 'appointments' | 'messages' | null;
+  const activeTab: 'doctors' | 'clinics' | 'appointments' | 'messages' =
+    urlTab && ['doctors', 'clinics', 'appointments', 'messages'].includes(urlTab) ? urlTab : 'doctors';
+
+  const setActiveTab = (tab: 'doctors' | 'clinics' | 'appointments' | 'messages') => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set('tab', tab);
+      return next;
+    });
+  };
 
   // Doctor Verification Filter & Search State
   const [doctorSearchQuery, setDoctorSearchQuery] = useState('');
