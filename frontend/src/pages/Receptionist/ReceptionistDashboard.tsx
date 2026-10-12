@@ -57,6 +57,39 @@ const cleanDoctorName = (name?: string | null): string => {
   return /^dr\.?\s+/i.test(trimmed) ? trimmed : `Dr. ${trimmed}`;
 };
 
+const getCleanReason = (reason?: string | null, patientName?: string | null): string | null => {
+  if (!reason) return null;
+  const r = reason.trim();
+  if (!r) return null;
+
+  const normReason = r.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const normName = (patientName || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+  if (normName && (normName.includes(normReason) || normReason.includes(normName))) {
+    return null;
+  }
+
+  const lower = r.toLowerCase();
+  if (
+    lower.includes('walkin') ||
+    lower.includes('walk-in') ||
+    lower.includes('verification') ||
+    lower.includes('approval test') ||
+    lower === 'general consultation' ||
+    lower === 'general medical consultation' ||
+    lower === 'routine checkup' ||
+    lower === 'consultation' ||
+    lower === 'checkup' ||
+    lower === 'general visit' ||
+    lower === 'clinic walk-in consultation' ||
+    lower === 'rapid walk-in consultation'
+  ) {
+    return null;
+  }
+
+  return r;
+};
+
 export const ReceptionistDashboard: React.FC = () => {
   const { user, refreshUser, updateUser } = useAuth();
 
@@ -1081,15 +1114,16 @@ export const ReceptionistDashboard: React.FC = () => {
                                     </span>
                                   </>
                                 )}
-                                {appt.reasonForVisit &&
-                                  appt.reasonForVisit !== 'General Medical Consultation' &&
-                                  appt.reasonForVisit !== 'Walk-in Consultation' &&
-                                  appt.reasonForVisit !== 'Rapid Walk-in Consultation' && (
+                                {(() => {
+                                  const cleanReason = getCleanReason(appt.reasonForVisit, appt.patientName);
+                                  if (!cleanReason) return null;
+                                  return (
                                     <>
                                       <span>•</span>
-                                      <span className="truncate max-w-[220px]">{appt.reasonForVisit}</span>
+                                      <span className="truncate max-w-[220px]">{cleanReason}</span>
                                     </>
-                                  )}
+                                  );
+                                })()}
                               </div>
                             </div>
                           </div>

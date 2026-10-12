@@ -381,6 +381,8 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
             if (matchedSlot?.startTime) {
               const [sh, sm] = matchedSlot.startTime.split(':').map(Number);
               const slotStartMins = sh * 60 + sm;
+              let slotEndMins = matchedSlot.endTime ? timeToMinutes(matchedSlot.endTime) : slotStartMins + 240;
+              if (slotEndMins <= slotStartMins) slotEndMins += 24 * 60;
               const pace = matchedSlot.avgConsultationMinutes || 3.0;
               const aheadCount = appointments.filter((other) =>
                 other.status === 'WAITING' &&
@@ -388,7 +390,14 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
                 other.queueNumber < a.queueNumber &&
                 (a.slotId ? other.slotId === a.slotId : true)
               ).length;
-              resolvedEstTime = minutesTo12Hour(slotStartMins + Math.round(aheadCount * pace));
+
+              const todayStr = getLocalDateString();
+              const currentMins = getIndianTimeMinutes();
+              let effectiveBaseMins = slotStartMins;
+              if (a.appointmentDate === todayStr && currentMins > slotStartMins && currentMins < slotEndMins) {
+                effectiveBaseMins = currentMins;
+              }
+              resolvedEstTime = minutesTo12Hour(effectiveBaseMins + Math.round(aheadCount * pace));
             }
           }
           return {
@@ -1974,7 +1983,7 @@ export const determineRescheduleTarget = (
 
 export const rescheduleAppointment = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    if (!req.user || !['RECEPTIONIST', 'CLINIC'].includes(req.user.role)) {
+    if (!req.user || !['RECEPTIONIST', 'CLINIC', 'DOCTOR'].includes(req.user.role)) {
       res.status(403).json({ success: false, message: 'Access denied' });
       return;
     }
@@ -2057,7 +2066,17 @@ export const rescheduleAppointment = async (req: AuthRequest, res: Response): Pr
     }
 
     // Verify authority using canonical guards (Fix #2)
-    if (req.user.role === 'RECEPTIONIST') {
+    if (req.user.role === 'DOCTOR') {
+      if (appointment.doctor.userId !== req.user.id) {
+        res.status(403).json({ success: false, message: 'You do not have permission to reschedule another doctor\'s appointment' });
+        return;
+      }
+      const docCheck = isDoctorEligibleForClinicalPractice(appointment.doctor);
+      if (!docCheck.eligible) {
+        res.status(403).json({ success: false, message: docCheck.reason });
+        return;
+      }
+    } else if (req.user.role === 'RECEPTIONIST') {
       const access = await verifyReceptionistDoctorAccess(req.user.id, appointment.doctorId, appointment.clinicId);
       if (!access.authorized) {
         res.status(403).json({ success: false, message: access.reason || 'Unauthorized for this doctor or clinic' });

@@ -169,10 +169,10 @@ export const ClinicAuth: React.FC = () => {
   const handleDemoLogin = async () => {
     setError(null);
     setSubmitting(true);
-    setEmail('clinic@mediarca.com');
+    setEmail('admin@clinic.com');
     setPassword('clinic123');
     try {
-      const loggedUser = await login({ email: 'clinic@mediarca.com', password: 'clinic123' });
+      const loggedUser = await login({ email: 'admin@clinic.com', password: 'clinic123' });
       if (loggedUser.role !== 'CLINIC') {
         setError('This account does not have clinic administrative permissions.');
         setSubmitting(false);
@@ -342,7 +342,7 @@ export const ClinicAuth: React.FC = () => {
                   disabled={submitting}
                   className="w-full h-9 px-3 rounded-xl bg-[#f5f5f7] hover:bg-[#e8e8ed] border border-[#e5e5ea] text-xs font-medium text-[#1d1d1f] flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] cursor-pointer"
                 >
-                  <span>Demo Clinic Sign In</span>
+                  <span>Demo Clinic Sign In (Bikesh Clinic)</span>
                 </button>
               </div>
             </form>

@@ -11,6 +11,8 @@ import {
 } from '../controllers/appointmentController';
 import { authenticate } from '../middleware/authMiddleware';
 
+import { rescheduleAppointment } from '../controllers/receptionistController';
+
 const router = Router();
 
 // Public / Authenticated preview for doctor queue before booking
@@ -24,5 +26,6 @@ router.patch('/:id/check-in', authenticate, checkInAppointmentDirect);
 router.post('/:id/review', authenticate, submitAppointmentReview);
 router.get('/:id', authenticate, getAppointmentById);
 router.patch('/:id/cancel', authenticate, cancelAppointment);
+router.post('/:id/reschedule', authenticate, rescheduleAppointment);
 
 export default router;

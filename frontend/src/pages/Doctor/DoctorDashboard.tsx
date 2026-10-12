@@ -53,25 +53,31 @@ const getCleanReason = (reason?: string | null, patientName?: string | null): st
   if (!reason) return null;
   const r = reason.trim();
   if (!r) return null;
-  const lowerReason = r.toLowerCase();
-  const lowerName = (patientName || '').toLowerCase().trim();
+
+  const normReason = r.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const normName = (patientName || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 
   // If redundant with patient's name
-  if (lowerName && (lowerName.includes(lowerReason) || lowerReason.includes(lowerName))) {
+  if (normName && (normName.includes(normReason) || normReason.includes(normName))) {
     return null;
   }
+
+  const lower = r.toLowerCase();
   // If matches test noise, placeholders, or generic boilerplate
   if (
-    lowerReason.includes('concurrent') ||
-    lowerReason.includes('walkin') ||
-    lowerReason.includes('walk-in') ||
-    lowerReason.includes('verification') ||
-    lowerReason.includes('approval test') ||
-    lowerReason === 'general consultation' ||
-    lowerReason === 'routine checkup' ||
-    lowerReason === 'consultation' ||
-    lowerReason === 'general visit' ||
-    lowerReason === 'clinic walk-in consultation'
+    lower.includes('concurrent') ||
+    lower.includes('walkin') ||
+    lower.includes('walk-in') ||
+    lower.includes('verification') ||
+    lower.includes('approval test') ||
+    lower === 'general consultation' ||
+    lower === 'general medical consultation' ||
+    lower === 'routine checkup' ||
+    lower === 'consultation' ||
+    lower === 'checkup' ||
+    lower === 'general visit' ||
+    lower === 'clinic walk-in consultation' ||
+    lower === 'rapid walk-in consultation'
   ) {
     return null;
   }
@@ -468,6 +474,64 @@ export const DoctorDashboard: React.FC = () => {
       alert(err.message || 'Failed to update patient arrival status');
     } finally {
       setTogglingCheckinId(null);
+    }
+  };
+
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const handleCancelAppointment = async (appointmentId: string, patientName: string) => {
+    if (!window.confirm(`Are you sure you want to cancel the queue appointment for ${patientName}? This action cannot be undone.`)) {
+      return;
+    }
+    setCancellingId(appointmentId);
+    try {
+      await api.cancelAppointment(appointmentId);
+      await fetchQueue(false);
+    } catch (err: any) {
+      alert(err.message || 'Failed to cancel appointment');
+    } finally {
+      setCancellingId(null);
+    }
+  };
+
+  const [rescheduleTarget, setRescheduleTarget] = useState<{
+    appointmentId: string;
+    patientName: string;
+    doctorName: string;
+    currentDate: string;
+    currentQueueNumber?: number;
+    doctorId: string;
+    slotId?: string;
+  } | null>(null);
+  const [rescheduleDate, setRescheduleDate] = useState('');
+  const [rescheduleSlotId, setRescheduleSlotId] = useState('');
+  const [rescheduling, setRescheduling] = useState(false);
+  const [rescheduleError, setRescheduleError] = useState<string | null>(null);
+  const [rescheduleSuccess, setRescheduleSuccess] = useState<string | null>(null);
+
+  const handleConfirmReschedule = async () => {
+    if (!rescheduleTarget) return;
+    if (!rescheduleDate) {
+      setRescheduleError('Please choose a new appointment date.');
+      return;
+    }
+    setRescheduling(true);
+    setRescheduleError(null);
+    try {
+      const res = await api.doctorRescheduleAppointment(rescheduleTarget.appointmentId, {
+        newDate: rescheduleDate,
+        newSlotId: rescheduleSlotId || undefined,
+      });
+      const newQueueNum = res?.data?.queueNumber || res?.data?.appointment?.queueNumber;
+      setRescheduleSuccess(
+        `Appointment for ${rescheduleTarget.patientName} shifted to ${rescheduleDate}${newQueueNum ? ` (Token #${newQueueNum})` : ''}.`
+      );
+      setTimeout(() => setRescheduleSuccess(null), 5000);
+      setRescheduleTarget(null);
+      await fetchQueue(false);
+    } catch (err: any) {
+      setRescheduleError(err.message || 'Failed to reschedule appointment');
+    } finally {
+      setRescheduling(false);
     }
   };
 
@@ -1090,6 +1154,23 @@ export const DoctorDashboard: React.FC = () => {
               </div>
             )}
 
+            {/* Reschedule Success Feedback Banner */}
+            {rescheduleSuccess && (
+              <div className="p-4 rounded-2xl bg-[#0066cc]/10 border border-[#0066cc]/20 text-[#0066cc] text-xs flex items-center justify-between shadow-xs animate-fadeIn">
+                <div className="flex items-center gap-2 font-medium">
+                  <CheckCircle2 className="w-4 h-4 text-[#0066cc] shrink-0" />
+                  <span>{rescheduleSuccess}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setRescheduleSuccess(null)}
+                  className="text-xs font-semibold hover:underline ml-3 cursor-pointer"
+                >
+                  Dismiss
+                </button>
+              </div>
+            )}
+
             {/* Unified Top Control Bar: Date Scope Selector + Cabin Presence + Clinic & Shift Controls */}
             <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-4 sm:p-5 shadow-[0_2px_12px_rgba(0,0,0,0.03)] space-y-3.5">
               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3.5">
@@ -1344,8 +1425,8 @@ export const DoctorDashboard: React.FC = () => {
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-[#86868b] mt-1">
-                        Scheduled for {displayedActiveInConsultation.estimatedTime}
+                      <p className="text-xs font-medium text-[#1d1d1f] mt-1">
+                        {getSlotShortLabel(displayedActiveInConsultation, availableShifts)}
                       </p>
 
                       {(() => {
@@ -1551,15 +1632,9 @@ export const DoctorDashboard: React.FC = () => {
                                   {appt.appointmentDate === queueData?.upcomingSummary?.tomorrowDate ? 'Tomorrow' : appt.appointmentDate} •
                                 </span>
                               )}
-                              <span>Est. {appt.estimatedTime || 'Scheduled'}</span>
-                              {selectedSlotId === 'all' && availableShifts.length > 1 && (
-                                <>
-                                  <span>•</span>
-                                  <span className="font-medium text-[#1d1d1f]">
-                                    {getSlotShortLabel(appt, availableShifts)}
-                                  </span>
-                                </>
-                              )}
+                              <span className="font-semibold text-[#1d1d1f]">
+                                {getSlotShortLabel(appt, availableShifts)}
+                              </span>
                               {selectedClinicId === 'all' && affiliations?.clinics && affiliations.clinics.length > 1 && appt.clinic?.clinicName && (
                                 <>
                                   <span>•</span>
@@ -1587,38 +1662,79 @@ export const DoctorDashboard: React.FC = () => {
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-2 w-full sm:w-auto justify-end shrink-0">
-                          {appt.appointmentDate === getLocalDateString() || (appt.appointmentDate === getYesterdayDateString() && appt.isCheckedIn) ? (
+                        <div className="flex items-center gap-1.5 w-full sm:w-auto justify-end shrink-0 flex-wrap">
+                          {/* Arrival toggle */}
+                          <button
+                            type="button"
+                            disabled={togglingCheckinId === appt.id}
+                            onClick={() => handleToggleCheckIn(appt.id, appt.isCheckedIn)}
+                            className={`h-8 px-3 rounded-full text-xs font-medium border transition-all flex items-center gap-1.5 cursor-pointer ${
+                              appt.isCheckedIn
+                                ? 'bg-[#0066cc]/10 border-[#0066cc]/30 text-[#0066cc]'
+                                : 'bg-white border-[#e5e5ea] text-[#1d1d1f] hover:bg-[#f5f5f7]'
+                            }`}
+                            title={appt.isCheckedIn ? 'Click to unmark arrival' : 'Click to mark patient arrived at clinic'}
+                          >
+                            <CheckCircle2
+                              className={`w-3.5 h-3.5 ${appt.isCheckedIn ? 'text-[#0066cc]' : 'text-[#86868b]'}`}
+                            />
+                            <span>{togglingCheckinId === appt.id ? 'Updating...' : appt.isCheckedIn ? 'At Clinic' : 'Mark Arrived'}</span>
+                          </button>
+
+                          {/* Call Patient (if arrived and today) */}
+                          {(appt.appointmentDate === getLocalDateString() || (appt.appointmentDate === getYesterdayDateString() && appt.isCheckedIn)) && appt.isCheckedIn && (
                             isDoctorAway ? (
                               <span className="h-8 px-3 rounded-full text-xs font-medium text-[#86868b] bg-white border border-[#e5e5ea] flex items-center">
-                                Doctor {user?.doctorProfile?.cabinStatus === 'STEPPED_OUT' ? 'Stepped Out' : 'Away'}
+                                Doctor Away
                               </span>
-                            ) : appt.isCheckedIn ? (
+                            ) : (
                               <button
                                 type="button"
                                 disabled={callingId !== null}
                                 onClick={() => handleCallPatient(appt.id)}
-                                className="h-9 px-4 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer whitespace-nowrap transition-all"
+                                className="h-8 px-3.5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer whitespace-nowrap transition-all active:scale-[0.98]"
                               >
                                 <Play className="w-3.5 h-3.5 fill-current" />
-                                {callingId === appt.id ? 'Calling...' : 'Call Patient'}
-                              </button>
-                            ) : (
-                              <button
-                                type="button"
-                                disabled={togglingCheckinId === appt.id}
-                                onClick={() => handleToggleCheckIn(appt.id, false)}
-                                className="h-9 px-3.5 rounded-full bg-white hover:bg-[#e8e8ed] border border-[#e5e5ea] flex items-center gap-1.5 text-xs font-medium text-[#1d1d1f] cursor-pointer whitespace-nowrap transition-all"
-                              >
-                                <CheckCircle2 className="w-3.5 h-3.5 text-[#0066cc]" />
-                                <span>{togglingCheckinId === appt.id ? 'Updating...' : 'Mark Arrived'}</span>
+                                {callingId === appt.id ? 'Calling...' : 'Call'}
                               </button>
                             )
-                          ) : (
-                            <span className="h-8 px-3 rounded-full text-xs font-medium text-[#86868b] bg-white border border-[#e5e5ea] flex items-center">
-                              {appt.appointmentDate === queueData?.upcomingSummary?.tomorrowDate ? 'Tomorrow' : appt.appointmentDate}
-                            </span>
                           )}
+
+                          {/* Shift appointment to another shift or date */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setRescheduleTarget({
+                                appointmentId: appt.id,
+                                patientName: appt.patientName || appt.patient?.user?.fullName || 'Patient',
+                                doctorName: user?.fullName || 'Practitioner',
+                                currentDate: appt.appointmentDate || date,
+                                currentQueueNumber: appt.queueNumber,
+                                doctorId: user?.doctorProfile?.id || '',
+                                slotId: appt.slotId,
+                              });
+                              const [y, m, day] = (appt.appointmentDate || date || getLocalDateString()).split('-').map(Number);
+                              const d = new Date(y, m - 1, day + 1);
+                              setRescheduleDate(getLocalDateString(d));
+                              setRescheduleSlotId(appt.slotId || '');
+                              setRescheduleError(null);
+                            }}
+                            className="h-8 px-3 rounded-full text-[#1d1d1f] hover:bg-[#f5f5f7] text-xs font-medium border border-[#e5e5ea] transition-all cursor-pointer"
+                            title="Shift to another shift or date"
+                          >
+                            Shift
+                          </button>
+
+                          {/* Cancel appointment */}
+                          <button
+                            type="button"
+                            disabled={cancellingId === appt.id}
+                            onClick={() => handleCancelAppointment(appt.id, appt.patientName || appt.patient?.user?.fullName || 'Patient')}
+                            className="h-8 px-3 rounded-full text-[#86868b] hover:text-rose-600 hover:bg-rose-50 text-xs font-medium border border-[#e5e5ea] transition-all cursor-pointer disabled:opacity-50"
+                            title="Cancel appointment"
+                          >
+                            {cancellingId === appt.id ? 'Cancelling...' : 'Cancel'}
+                          </button>
                         </div>
                       </div>
                     );
@@ -2231,6 +2347,130 @@ export const DoctorDashboard: React.FC = () => {
           clinicPhone={selectedStandeeClinic.clinicPhone}
           checkinCode={selectedStandeeClinic.checkinCode}
         />
+      )}
+
+      {/* Reschedule / Shift Modal for Doctor */}
+      {rescheduleTarget && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn print:hidden">
+          <div className="bg-white rounded-t-[28px] sm:rounded-[28px] border border-[#e5e5ea] max-w-md w-full p-6 sm:p-7 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-7 shadow-2xl space-y-5 max-h-[92vh] overflow-y-auto">
+            <div className="sm:hidden w-10 h-1 bg-[#d2d2d7] rounded-full mx-auto mb-3" />
+            <div className="flex items-start justify-between pb-3 border-b border-[#f0f0f2]">
+              <div>
+                <h3 className="text-[20px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">
+                  Shift Appointment
+                </h3>
+                <p className="text-xs text-[#86868b] mt-0.5">Move patient visit to another shift or date</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setRescheduleTarget(null)}
+                className="text-[#86868b] hover:text-[#1d1d1f] p-1.5 rounded-full hover:bg-[#f5f5f7] cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] space-y-1.5 text-xs">
+              <div className="flex justify-between">
+                <span className="text-[#86868b]">Patient</span>
+                <span className="font-semibold text-[#1d1d1f]">{rescheduleTarget.patientName}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[#86868b]">Current Date</span>
+                <span className="font-medium text-[#1d1d1f]">
+                  {rescheduleTarget.currentDate}
+                  {rescheduleTarget.currentQueueNumber ? ` (Token #${rescheduleTarget.currentQueueNumber})` : ''}
+                </span>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                New Appointment Date
+              </label>
+              <input
+                type="date"
+                min={getLocalDateString()}
+                value={rescheduleDate}
+                onChange={(e) => setRescheduleDate(e.target.value)}
+                className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] text-[14px] bg-white text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:ring-4 focus:ring-[#0066cc]/10 focus:border-[#0066cc]"
+              />
+              <div className="flex gap-2 mt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const d = new Date();
+                    d.setDate(d.getDate() + 1);
+                    setRescheduleDate(getLocalDateString(d));
+                  }}
+                  className="px-3 py-1 rounded-full text-xs font-medium bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] transition-all cursor-pointer"
+                >
+                  Tomorrow
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const d = new Date();
+                    d.setDate(d.getDate() + 2);
+                    setRescheduleDate(getLocalDateString(d));
+                  }}
+                  className="px-3 py-1 rounded-full text-xs font-medium bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] transition-all cursor-pointer"
+                >
+                  In 2 Days
+                </button>
+              </div>
+            </div>
+
+            {availableShifts.length > 1 && (
+              <div>
+                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                  Consultation Shift
+                </label>
+                <div className="relative">
+                  <select
+                    value={rescheduleSlotId}
+                    onChange={(e) => setRescheduleSlotId(e.target.value)}
+                    className="w-full h-11 pl-3.5 pr-9 rounded-xl border border-[#d2d2d7] text-[13px] bg-white text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:ring-4 focus:ring-[#0066cc]/10 focus:border-[#0066cc] appearance-none cursor-pointer"
+                  >
+                    <option value="">Standard Shift / Any</option>
+                    {availableShifts.map((s: any, idx: number) => (
+                      <option key={s.id || idx} value={s.id}>
+                        {s.name || `Shift ${idx + 1}`}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-[#86868b] absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
+              </div>
+            )}
+
+            {rescheduleError && (
+              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{rescheduleError}</span>
+              </div>
+            )}
+
+            <div className="flex gap-2.5 pt-1">
+              <button
+                type="button"
+                onClick={() => setRescheduleTarget(null)}
+                disabled={rescheduling}
+                className="flex-1 h-11 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-medium transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmReschedule}
+                disabled={rescheduling}
+                className="flex-1 h-11 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-medium transition-all cursor-pointer disabled:opacity-60"
+              >
+                {rescheduling ? 'Shifting...' : 'Confirm Shift'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </DashboardLayout>
   );

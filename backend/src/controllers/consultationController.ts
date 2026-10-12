@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import prisma from '../config/database';
 import { AuthRequest } from '../middleware/authMiddleware';
-import { getLocalDateString, timeToMinutes, getIndianTimeMinutes } from '../utils/scheduleUtils';
+import { getLocalDateString, timeToMinutes, getIndianTimeMinutes, minutesTo12Hour, parseDoctorSlots } from '../utils/scheduleUtils';
 import { canTransition } from '../utils/appointmentStateMachine';
 import { isDoctorEligibleForClinicalPractice } from '../utils/authGuards';
 import { createNotification } from '../services/notificationService';
@@ -105,9 +105,44 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
       return a.queueNumber - b.queueNumber;
     });
 
-    const activeInConsultation = appointments.find((a) => a.status === 'IN_CONSULTATION') || null;
-    const waitingQueue = appointments.filter((a) => a.status === 'WAITING');
-    const completedQueue = appointments.filter((a) => a.status === 'COMPLETED');
+    const slots = parseDoctorSlots(doctor);
+    const currentMins = getIndianTimeMinutes();
+
+    const resolvedAppointments = appointments.map((a: any) => {
+      let resolvedEstTime = a.estimatedTime;
+      if (a.status === 'IN_CONSULTATION') {
+        resolvedEstTime = 'In Cabin';
+      } else if (a.status === 'WAITING' && a.queueNumber > 0) {
+        const matchedSlot = (a.slotId && slots.find((s: any) => s.id === a.slotId)) || slots[0];
+        if (matchedSlot?.startTime) {
+          const [sh, sm] = matchedSlot.startTime.split(':').map(Number);
+          const slotStartMins = sh * 60 + sm;
+          let slotEndMins = matchedSlot.endTime ? timeToMinutes(matchedSlot.endTime) : slotStartMins + 240;
+          if (slotEndMins <= slotStartMins) slotEndMins += 24 * 60;
+          const pace = matchedSlot.avgConsultationMinutes || 3.0;
+          const aheadCount = appointments.filter((other) =>
+            other.status === 'WAITING' &&
+            other.queueNumber > 0 &&
+            other.queueNumber < a.queueNumber &&
+            (a.slotId ? other.slotId === a.slotId : true)
+          ).length;
+
+          let effectiveBaseMins = slotStartMins;
+          if (a.appointmentDate === todayIso && currentMins > slotStartMins && currentMins < slotEndMins) {
+            effectiveBaseMins = currentMins;
+          }
+          resolvedEstTime = minutesTo12Hour(effectiveBaseMins + Math.round(aheadCount * pace));
+        }
+      }
+      return {
+        ...a,
+        estimatedTime: resolvedEstTime || a.estimatedTime,
+      };
+    });
+
+    const activeInConsultation = resolvedAppointments.find((a) => a.status === 'IN_CONSULTATION') || null;
+    const waitingQueue = resolvedAppointments.filter((a) => a.status === 'WAITING');
+    const completedQueue = resolvedAppointments.filter((a) => a.status === 'COMPLETED');
 
     // Calculate upcoming bookings summary across dates for this doctor
     const upcomingWhere: any = {
@@ -139,11 +174,11 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
       data: {
         date: dateStr,
         scope,
-        totalQueue: appointments.length,
+        totalQueue: resolvedAppointments.length,
         activeInConsultation,
         waitingQueue,
         completedQueue,
-        allAppointments: appointments,
+        allAppointments: resolvedAppointments,
         upcomingSummary: {
           tomorrowDate: tomorrowIso,
           tomorrowCount,

@@ -2044,6 +2044,15 @@ export const api = {
     return handleResponse(res);
   },
 
+  async doctorRescheduleAppointment(appointmentId: string, data: { newDate: string; newSlotId?: string }): Promise<any> {
+    const res = await safeFetch(`${API_BASE_URL}/appointments/${appointmentId}/reschedule`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
   async changeReceptionistPassword(data: { currentPassword: string; newPassword: string }): Promise<any> {
     const res = await safeFetch(`${API_BASE_URL}/receptionists/change-password`, {
       method: 'PUT',
