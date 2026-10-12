@@ -41,8 +41,10 @@ import {
   Phone,
   PauseCircle,
   SlidersHorizontal,
+  FileText,
 } from 'lucide-react';
 import { ClinicQrStandeeModal } from '../../components/common/ClinicQrStandeeModal';
+import { ClinicalReportModal } from '../../components/common/ClinicalReportModal';
 import { AppleFilterSelect, AppleFilterOption } from '../../components/ui/AppleFilterSelect';
 
 const getYesterdayDateString = (): string => {
@@ -153,6 +155,7 @@ export const DoctorDashboard: React.FC = () => {
 
   // Form and modal states for clinic affiliation
   const [isAffiliateModalOpen, setIsAffiliateModalOpen] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [clinicSearchQuery, setClinicSearchQuery] = useState('');
   const [clinicStateFilter, setClinicStateFilter] = useState('All');
   const [clinicCityFilter, setClinicCityFilter] = useState('All');
@@ -775,6 +778,14 @@ export const DoctorDashboard: React.FC = () => {
               </button>
             </>
           )}
+          <button
+            type="button"
+            onClick={() => setIsReportModalOpen(true)}
+            className="h-9 px-3.5 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
+          >
+            <FileText className="w-3.5 h-3.5 text-[#0066cc]" />
+            <span>Reports & PDF</span>
+          </button>
         </div>
       }
     >
@@ -2581,6 +2592,20 @@ export const DoctorDashboard: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Categorized Practice Report & PDF Export Modal */}
+      <ClinicalReportModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        role="DOCTOR"
+        doctorName={`Dr. ${doctorDisplayName}`}
+        initialClinicId={selectedClinicId !== 'all' ? selectedClinicId : undefined}
+        availableClinics={affiliations?.clinics?.map((c) => ({
+          clinicId: c.clinicId,
+          clinicName: c.clinicName,
+          city: c.city,
+        }))}
+      />
     </DashboardLayout>
   );
 };

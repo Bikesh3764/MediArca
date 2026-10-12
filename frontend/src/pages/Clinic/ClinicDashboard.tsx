@@ -21,7 +21,9 @@ import {
   QrCode,
   RefreshCw,
   MapPin,
+  FileText,
 } from 'lucide-react';
+import { ClinicalReportModal } from '../../components/common/ClinicalReportModal';
 import { INDIAN_STATES, getCitiesForState } from '../../utils/indiaStates';
 
 const cleanDoctorName = (name?: string | null): string => {
@@ -76,6 +78,7 @@ export const ClinicDashboard: React.FC = () => {
 
   // Clinic Check-in QR Poster Modal
   const [showPosterModal, setShowPosterModal] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
 
   // Clinic Profile Completion Modal (Address, State, City)
   const [showProfileModal, setShowProfileModal] = useState(false);
@@ -458,6 +461,14 @@ export const ClinicDashboard: React.FC = () => {
       }
       headerAction={
         <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowReportModal(true)}
+            className="h-9 px-3.5 rounded-full bg-white hover:bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer shadow-xs hover:shadow"
+          >
+            <FileText className="w-3.5 h-3.5 text-[#0066cc]" />
+            <span>Reports & PDF</span>
+          </button>
           <button
             type="button"
             onClick={() => setShowPosterModal(true)}
@@ -2012,6 +2023,19 @@ export const ClinicDashboard: React.FC = () => {
           checkinCode={clinic.checkinCode || undefined}
         />
       )}
+
+      {/* Clinic Categorized Report & PDF Export Modal */}
+      <ClinicalReportModal
+        isOpen={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        role="CLINIC"
+        clinicName={clinic?.clinicName || user?.fullName}
+        availableDoctors={doctors.map((doc) => ({
+          doctorId: doc.doctorId,
+          fullName: cleanDoctorName(doc.fullName),
+          specialty: doc.specialty,
+        }))}
+      />
     </DashboardLayout>
   );
 };

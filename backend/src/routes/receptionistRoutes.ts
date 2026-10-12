@@ -12,6 +12,7 @@ import {
   rejectAppointment,
   applyReceptionist,
   rescheduleAppointment,
+  getReceptionistReport,
 } from '../controllers/receptionistController';
 import { updateCabinStatus } from '../controllers/doctorController';
 import { checkInAppointmentDirect } from '../controllers/appointmentController';
@@ -31,6 +32,7 @@ router.put('/change-password', authenticate, authorize('RECEPTIONIST'), changeRe
 router.use(authenticate, authorize('RECEPTIONIST'), requireActiveReceptionist);
 
 router.get('/my-receptionist', getMyReceptionist);
+router.get('/report', getReceptionistReport);
 router.post('/doctors', addDoctorToReceptionist);
 router.delete('/doctors/:doctorId', removeDoctorFromReceptionist);
 router.get('/doctors/:doctorId/queue', getDoctorQueue);

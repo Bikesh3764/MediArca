@@ -35,8 +35,10 @@ import {
   RefreshCw,
   ChevronDown,
   ChevronUp,
+  FileText,
 } from 'lucide-react';
 import { ClinicQrStandeeModal } from '../../components/common/ClinicQrStandeeModal';
+import { ClinicalReportModal } from '../../components/common/ClinicalReportModal';
 
 export interface TokenPassData {
   queueNumber: number;
@@ -138,6 +140,7 @@ export const ReceptionistDashboard: React.FC = () => {
 
   // Clinic QR Standee Modal state
   const [isStandeeModalOpen, setIsStandeeModalOpen] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
   // Reschedule Appointment state
   const [rescheduleTarget, setRescheduleTarget] = useState<{
@@ -796,6 +799,14 @@ export const ReceptionistDashboard: React.FC = () => {
               <span>Walk-in Token</span>
             </button>
           )}
+          <button
+            type="button"
+            onClick={() => setIsReportModalOpen(true)}
+            className="h-9 px-3.5 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-medium inline-flex items-center gap-1.5 transition-all active:scale-[0.98] cursor-pointer"
+          >
+            <FileText className="w-3.5 h-3.5 text-[#0066cc]" />
+            <span>Reports & PDF</span>
+          </button>
           {data?.clinic?.id && (
             <button
               type="button"
@@ -2570,6 +2581,20 @@ export const ReceptionistDashboard: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Categorized Desk Report & PDF Export Modal */}
+      <ClinicalReportModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        role="RECEPTIONIST"
+        clinicName={data?.clinic?.clinicName}
+        initialDoctorId={queueDoctorId || undefined}
+        availableDoctors={linkedDoctors.map((doc) => ({
+          doctorId: doc.doctorId,
+          fullName: cleanDoctorName(doc.fullName),
+          specialty: doc.specialty,
+        }))}
+      />
     </DashboardLayout>
   );
 };

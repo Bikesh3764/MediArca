@@ -729,6 +729,87 @@ export interface ClinicAppointment {
   fee: number;
 }
 
+export interface ClinicalReportAppointment {
+  id: string;
+  queueNumber: number;
+  appointmentDate: string;
+  checkingWindow: string;
+  status: string;
+  paymentStatus: string;
+  patientName: string;
+  patientPhone: string;
+  doctorId?: string;
+  doctorName?: string;
+  specialty?: string;
+  clinicId?: string;
+  clinicName?: string;
+  fee: number;
+  earnedRevenue: number;
+}
+
+export interface ClinicalReportDoctorBreakdown {
+  doctorId: string;
+  doctorName: string;
+  specialty: string;
+  bookings: number;
+  completed: number;
+  cancelled: number;
+  revenue: number;
+}
+
+export interface ClinicalReportClinicBreakdown {
+  clinicId: string;
+  clinicName: string;
+  city: string;
+  bookings: number;
+  completed: number;
+  cancelled: number;
+  revenue: number;
+}
+
+export interface ClinicalReportShiftBreakdown {
+  shiftName: string;
+  bookings: number;
+  completed: number;
+  revenue: number;
+}
+
+export interface ClinicalReportData {
+  success: boolean;
+  reportType: 'CLINIC' | 'DOCTOR' | 'RECEPTIONIST';
+  facility?: {
+    id: string;
+    name: string;
+    city: string;
+    address: string;
+    phone?: string;
+  };
+  doctor?: {
+    id: string;
+    name: string;
+    specialty: string;
+    phone?: string;
+  };
+  dateRange: {
+    startDate: string;
+    endDate: string;
+  };
+  selectedDoctorId?: string;
+  selectedClinicId?: string;
+  summary: {
+    totalBookings: number;
+    completedCount: number;
+    inConsultationCount: number;
+    waitingCount: number;
+    cancelledCount: number;
+    totalRevenue: number;
+  };
+  byDoctor?: ClinicalReportDoctorBreakdown[];
+  byClinic?: ClinicalReportClinicBreakdown[];
+  byShift?: ClinicalReportShiftBreakdown[];
+  appointments: ClinicalReportAppointment[];
+}
+
 export interface ClinicDashboardData {
   clinic: ClinicProfile;
   doctors: ClinicDoctorStat[];
@@ -2212,6 +2293,37 @@ export const api = {
       method: 'PATCH',
       headers: getHeaders(),
     });
+    return handleResponse(res);
+  },
+
+  // Clinical Audit & Revenue Reports (1 Month / Custom Range)
+  async getClinicReport(params?: { startDate?: string; endDate?: string; doctorId?: string }): Promise<ClinicalReportData> {
+    const query = new URLSearchParams();
+    if (params?.startDate) query.append('startDate', params.startDate);
+    if (params?.endDate) query.append('endDate', params.endDate);
+    if (params?.doctorId && params.doctorId !== 'all') query.append('doctorId', params.doctorId);
+    const qs = query.toString();
+    const res = await safeFetch(`${API_BASE_URL}/clinics/report${qs ? `?${qs}` : ''}`, { headers: getHeaders() });
+    return handleResponse(res);
+  },
+
+  async getDoctorReport(params?: { startDate?: string; endDate?: string; clinicId?: string }): Promise<ClinicalReportData> {
+    const query = new URLSearchParams();
+    if (params?.startDate) query.append('startDate', params.startDate);
+    if (params?.endDate) query.append('endDate', params.endDate);
+    if (params?.clinicId && params.clinicId !== 'all') query.append('clinicId', params.clinicId);
+    const qs = query.toString();
+    const res = await safeFetch(`${API_BASE_URL}/doctors/me/report${qs ? `?${qs}` : ''}`, { headers: getHeaders() });
+    return handleResponse(res);
+  },
+
+  async getReceptionistReport(params?: { startDate?: string; endDate?: string; doctorId?: string }): Promise<ClinicalReportData> {
+    const query = new URLSearchParams();
+    if (params?.startDate) query.append('startDate', params.startDate);
+    if (params?.endDate) query.append('endDate', params.endDate);
+    if (params?.doctorId && params.doctorId !== 'all') query.append('doctorId', params.doctorId);
+    const qs = query.toString();
+    const res = await safeFetch(`${API_BASE_URL}/receptionist/report${qs ? `?${qs}` : ''}`, { headers: getHeaders() });
     return handleResponse(res);
   },
 };

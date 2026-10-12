@@ -10,6 +10,7 @@ import {
   getIndianTimeMinutes,
   minutesTo12Hour,
   timeToMinutes,
+  getLocalDateString,
 } from '../utils/scheduleUtils';
 import { isDoctorEligibleForClinicalPractice, verifyReceptionistDoctorAccess, isClinicActive } from '../utils/authGuards';
 import { parsePaginationParams, buildPaginationMetadata } from '../utils/pagination';
@@ -1291,6 +1292,198 @@ export const getDoctorReviews = async (req: Request, res: Response): Promise<voi
       message: 'Failed to fetch doctor reviews',
       ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
     });
+  }
+};
+
+/**
+ * Generate comprehensive categorized 1-month / custom range report for Doctor
+ */
+export const getDoctorReport = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user || req.user.role !== 'DOCTOR') {
+      res.status(403).json({ success: false, message: 'Access denied: Doctor only' });
+      return;
+    }
+
+    const doctor = await prisma.doctorProfile.findUnique({
+      where: { userId: req.user.id },
+      include: {
+        user: { select: { fullName: true, email: true, phone: true } },
+        clinics: {
+          where: { status: { in: ['ACCEPTED', 'ACTIVE'] } },
+          include: {
+            clinic: true,
+          },
+        },
+      },
+    });
+
+    if (!doctor) {
+      res.status(404).json({ success: false, message: 'Doctor profile not found' });
+      return;
+    }
+
+    const today = getLocalDateString();
+    const defaultStart = (() => {
+      const d = new Date();
+      d.setDate(d.getDate() - 30);
+      return getLocalDateString(d);
+    })();
+
+    const startDate = (req.query.startDate as string) || defaultStart;
+    const endDate = (req.query.endDate as string) || today;
+    const clinicId = req.query.clinicId as string;
+
+    const whereClause: any = {
+      doctorId: doctor.id,
+      appointmentDate: {
+        gte: startDate,
+        lte: endDate,
+      },
+    };
+
+    if (clinicId && clinicId !== 'all') {
+      whereClause.clinicId = clinicId;
+    }
+
+    const appointments = await prisma.appointment.findMany({
+      where: whereClause,
+      include: {
+        clinic: true,
+        patient: {
+          include: {
+            user: { select: { fullName: true, phone: true } },
+          },
+        },
+      },
+      orderBy: [
+        { appointmentDate: 'desc' },
+        { queueNumber: 'asc' },
+      ],
+    });
+
+    // Clinic fee mapping
+    const clinicFeeMap = new Map<string, number>();
+    doctor.clinics.forEach((cd) => {
+      const fee = typeof cd.consultationFee === 'number' && Number.isFinite(cd.consultationFee)
+        ? cd.consultationFee
+        : (typeof doctor.consultationFee === 'number' && Number.isFinite(doctor.consultationFee) ? doctor.consultationFee : 0);
+      clinicFeeMap.set(cd.clinicId, fee);
+    });
+
+    let totalRevenue = 0;
+    let completedCount = 0;
+    let inConsultationCount = 0;
+    let waitingCount = 0;
+    let cancelledCount = 0;
+
+    const clinicBreakdownMap = new Map<string, { clinicId: string; clinicName: string; city: string; bookings: number; completed: number; cancelled: number; revenue: number }>();
+    const shiftBreakdownMap = new Map<string, { shiftName: string; bookings: number; completed: number; revenue: number }>();
+
+    doctor.clinics.forEach((cd) => {
+      clinicBreakdownMap.set(cd.clinicId, {
+        clinicId: cd.clinicId,
+        clinicName: cd.clinic.clinicName,
+        city: cd.clinic.city || '',
+        bookings: 0,
+        completed: 0,
+        cancelled: 0,
+        revenue: 0,
+      });
+    });
+
+    const items = appointments.map((appt) => {
+      const effectiveFee = (appt.clinicId ? clinicFeeMap.get(appt.clinicId) : null) ?? (typeof doctor.consultationFee === 'number' ? doctor.consultationFee : 0);
+      const isCompletedOrPaid = appt.status === 'COMPLETED' || appt.paymentStatus === 'PAID';
+      const isCancelled = ['CANCELLED', 'REJECTED', 'EXPIRED'].includes(appt.status);
+      const earnedFee = (isCompletedOrPaid && !isCancelled) ? effectiveFee : 0;
+
+      if (appt.status === 'COMPLETED') completedCount++;
+      else if (appt.status === 'IN_CONSULTATION') inConsultationCount++;
+      else if (appt.status === 'WAITING' || appt.status === 'PENDING_APPROVAL') waitingCount++;
+      else if (isCancelled) cancelledCount++;
+
+      totalRevenue += earnedFee;
+
+      // Clinic breakdown
+      if (appt.clinicId) {
+        const cEntry = clinicBreakdownMap.get(appt.clinicId) || {
+          clinicId: appt.clinicId,
+          clinicName: appt.clinic?.clinicName || 'Affiliated Facility',
+          city: appt.clinic?.city || '',
+          bookings: 0,
+          completed: 0,
+          cancelled: 0,
+          revenue: 0,
+        };
+        cEntry.bookings++;
+        if (appt.status === 'COMPLETED') cEntry.completed++;
+        if (isCancelled) cEntry.cancelled++;
+        cEntry.revenue += earnedFee;
+        clinicBreakdownMap.set(appt.clinicId, cEntry);
+      }
+
+      // Shift breakdown
+      const rawShift = appt.checkingWindow || 'Shift 1';
+      const shiftNumMatch = rawShift.match(/shift\s*(\d+)/i);
+      const cleanShift = shiftNumMatch ? `Shift ${shiftNumMatch[1]}` : 'Shift 1';
+
+      const shiftEntry = shiftBreakdownMap.get(cleanShift) || {
+        shiftName: cleanShift,
+        bookings: 0,
+        completed: 0,
+        revenue: 0,
+      };
+      shiftEntry.bookings++;
+      if (appt.status === 'COMPLETED') shiftEntry.completed++;
+      shiftEntry.revenue += earnedFee;
+      shiftBreakdownMap.set(cleanShift, shiftEntry);
+
+      return {
+        id: appt.id,
+        queueNumber: appt.queueNumber,
+        appointmentDate: appt.appointmentDate,
+        checkingWindow: cleanShift,
+        status: appt.status,
+        paymentStatus: appt.paymentStatus,
+        patientName: appt.patientName || appt.patient?.user?.fullName || 'Walk-in Patient',
+        patientPhone: appt.patient?.user?.phone || '—',
+        clinicId: appt.clinicId,
+        clinicName: appt.clinic?.clinicName || 'Independent Practice',
+        fee: effectiveFee,
+        earnedRevenue: earnedFee,
+      };
+    });
+
+    res.json({
+      success: true,
+      reportType: 'DOCTOR',
+      doctor: {
+        id: doctor.id,
+        name: doctor.user.fullName,
+        specialty: doctor.specialty,
+        phone: doctor.user.phone || '',
+      },
+      dateRange: {
+        startDate,
+        endDate,
+      },
+      selectedClinicId: clinicId || 'all',
+      summary: {
+        totalBookings: appointments.length,
+        completedCount,
+        inConsultationCount,
+        waitingCount,
+        cancelledCount,
+        totalRevenue,
+      },
+      byClinic: Array.from(clinicBreakdownMap.values()).filter((c) => (clinicId && clinicId !== 'all' ? c.clinicId === clinicId : true)),
+      byShift: Array.from(shiftBreakdownMap.values()).sort((a, b) => a.shiftName.localeCompare(b.shiftName)),
+      appointments: items,
+    });
+  } catch (error: any) {
+    console.error('getDoctorReport error:', error);
+    res.status(500).json({ success: false, message: 'Failed to generate doctor report' });
   }
 };
 

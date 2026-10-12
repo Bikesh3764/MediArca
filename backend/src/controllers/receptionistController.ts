@@ -2363,4 +2363,230 @@ export const rescheduleAppointment = async (req: AuthRequest, res: Response): Pr
   }
 };
 
+/**
+ * Generate comprehensive categorized 1-month / custom range report for Receptionist
+ */
+export const getReceptionistReport = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user || req.user.role !== 'RECEPTIONIST') {
+      res.status(403).json({ success: false, message: 'Access denied: Receptionist only' });
+      return;
+    }
+
+    const receptionist = await prisma.receptionistProfile.findUnique({
+      where: { userId: req.user.id },
+      include: {
+        clinic: true,
+        doctors: {
+          include: {
+            doctor: {
+              include: {
+                user: { select: { fullName: true, email: true } },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!receptionist || !receptionist.clinicId) {
+      res.status(404).json({ success: false, message: 'Receptionist clinic affiliation not found' });
+      return;
+    }
+
+    // Determine doctors accessible to this receptionist
+    const activeDoctorAffiliations = await prisma.clinicDoctor.findMany({
+      where: {
+        clinicId: receptionist.clinicId,
+        status: { in: ['ACTIVE', 'ACCEPTED'] },
+      },
+      include: {
+        doctor: {
+          include: {
+            user: { select: { fullName: true } },
+          },
+        },
+      },
+    });
+
+    const activeDoctorIds = activeDoctorAffiliations.map((cd) => cd.doctorId);
+    const assignedDoctorIds = receptionist.doctors
+      .filter((dr) => dr.status === 'ACTIVE' && activeDoctorIds.includes(dr.doctorId))
+      .map((dr) => dr.doctorId);
+
+    const allowedDoctorIds = assignedDoctorIds.length > 0 ? assignedDoctorIds : activeDoctorIds;
+
+    const today = getLocalDateString();
+    const defaultStart = (() => {
+      const d = new Date();
+      d.setDate(d.getDate() - 30);
+      return getLocalDateString(d);
+    })();
+
+    const startDate = (req.query.startDate as string) || defaultStart;
+    const endDate = (req.query.endDate as string) || today;
+    const doctorId = req.query.doctorId as string;
+
+    const targetDoctorFilter = (doctorId && doctorId !== 'all')
+      ? (allowedDoctorIds.includes(doctorId) ? doctorId : 'none')
+      : { in: allowedDoctorIds };
+
+    if (targetDoctorFilter === 'none') {
+      res.status(403).json({ success: false, message: 'Doctor not assigned to your desk' });
+      return;
+    }
+
+    const appointments = await prisma.appointment.findMany({
+      where: {
+        clinicId: receptionist.clinicId,
+        doctorId: targetDoctorFilter,
+        appointmentDate: {
+          gte: startDate,
+          lte: endDate,
+        },
+      },
+      include: {
+        doctor: {
+          include: {
+            user: { select: { fullName: true } },
+          },
+        },
+        patient: {
+          include: {
+            user: { select: { fullName: true, phone: true } },
+          },
+        },
+      },
+      orderBy: [
+        { appointmentDate: 'desc' },
+        { queueNumber: 'asc' },
+      ],
+    });
+
+    // Create fee map
+    const doctorFeeMap = new Map<string, number>();
+    activeDoctorAffiliations.forEach((cd) => {
+      const fee = typeof cd.consultationFee === 'number' && Number.isFinite(cd.consultationFee)
+        ? cd.consultationFee
+        : (typeof cd.doctor.consultationFee === 'number' && Number.isFinite(cd.doctor.consultationFee) ? cd.doctor.consultationFee : 0);
+      doctorFeeMap.set(cd.doctorId, fee);
+    });
+
+    let totalRevenue = 0;
+    let completedCount = 0;
+    let inConsultationCount = 0;
+    let waitingCount = 0;
+    let cancelledCount = 0;
+
+    const doctorBreakdownMap = new Map<string, { doctorId: string; doctorName: string; specialty: string; bookings: number; completed: number; cancelled: number; revenue: number }>();
+    const shiftBreakdownMap = new Map<string, { shiftName: string; bookings: number; completed: number; revenue: number }>();
+
+    activeDoctorAffiliations
+      .filter((cd) => allowedDoctorIds.includes(cd.doctorId))
+      .forEach((cd) => {
+        doctorBreakdownMap.set(cd.doctorId, {
+          doctorId: cd.doctorId,
+          doctorName: cd.doctor.user.fullName,
+          specialty: cd.doctor.specialty,
+          bookings: 0,
+          completed: 0,
+          cancelled: 0,
+          revenue: 0,
+        });
+      });
+
+    const items = appointments.map((appt) => {
+      const effectiveFee = doctorFeeMap.get(appt.doctorId) ?? (typeof appt.doctor.consultationFee === 'number' ? appt.doctor.consultationFee : 0);
+      const isCompletedOrPaid = appt.status === 'COMPLETED' || appt.paymentStatus === 'PAID';
+      const isCancelled = ['CANCELLED', 'REJECTED', 'EXPIRED'].includes(appt.status);
+      const earnedFee = (isCompletedOrPaid && !isCancelled) ? effectiveFee : 0;
+
+      if (appt.status === 'COMPLETED') completedCount++;
+      else if (appt.status === 'IN_CONSULTATION') inConsultationCount++;
+      else if (appt.status === 'WAITING' || appt.status === 'PENDING_APPROVAL') waitingCount++;
+      else if (isCancelled) cancelledCount++;
+
+      totalRevenue += earnedFee;
+
+      // Doctor breakdown
+      const docEntry = doctorBreakdownMap.get(appt.doctorId) || {
+        doctorId: appt.doctorId,
+        doctorName: appt.doctor?.user?.fullName || 'Doctor',
+        specialty: appt.doctor?.specialty || 'General',
+        bookings: 0,
+        completed: 0,
+        cancelled: 0,
+        revenue: 0,
+      };
+      docEntry.bookings++;
+      if (appt.status === 'COMPLETED') docEntry.completed++;
+      if (isCancelled) docEntry.cancelled++;
+      docEntry.revenue += earnedFee;
+      doctorBreakdownMap.set(appt.doctorId, docEntry);
+
+      // Shift breakdown
+      const rawShift = appt.checkingWindow || 'Shift 1';
+      const shiftNumMatch = rawShift.match(/shift\s*(\d+)/i);
+      const cleanShift = shiftNumMatch ? `Shift ${shiftNumMatch[1]}` : 'Shift 1';
+
+      const shiftEntry = shiftBreakdownMap.get(cleanShift) || {
+        shiftName: cleanShift,
+        bookings: 0,
+        completed: 0,
+        revenue: 0,
+      };
+      shiftEntry.bookings++;
+      if (appt.status === 'COMPLETED') shiftEntry.completed++;
+      shiftEntry.revenue += earnedFee;
+      shiftBreakdownMap.set(cleanShift, shiftEntry);
+
+      return {
+        id: appt.id,
+        queueNumber: appt.queueNumber,
+        appointmentDate: appt.appointmentDate,
+        checkingWindow: cleanShift,
+        status: appt.status,
+        paymentStatus: appt.paymentStatus,
+        patientName: appt.patientName || appt.patient?.user?.fullName || 'Walk-in Patient',
+        patientPhone: appt.patient?.user?.phone || '—',
+        doctorId: appt.doctorId,
+        doctorName: appt.doctor?.user?.fullName || 'Doctor',
+        specialty: appt.doctor?.specialty || 'General',
+        fee: effectiveFee,
+        earnedRevenue: earnedFee,
+      };
+    });
+
+    res.json({
+      success: true,
+      reportType: 'RECEPTIONIST',
+      facility: {
+        id: receptionist.clinic?.id || '',
+        name: receptionist.clinic?.clinicName || 'Clinic Front Desk',
+        city: receptionist.clinic?.city || '',
+        address: receptionist.clinic?.address || '',
+      },
+      dateRange: {
+        startDate,
+        endDate,
+      },
+      selectedDoctorId: doctorId || 'all',
+      summary: {
+        totalBookings: appointments.length,
+        completedCount,
+        inConsultationCount,
+        waitingCount,
+        cancelledCount,
+        totalRevenue,
+      },
+      byDoctor: Array.from(doctorBreakdownMap.values()).filter((d) => (doctorId && doctorId !== 'all' ? d.doctorId === doctorId : true)),
+      byShift: Array.from(shiftBreakdownMap.values()).sort((a, b) => a.shiftName.localeCompare(b.shiftName)),
+      appointments: items,
+    });
+  } catch (error: any) {
+    console.error('getReceptionistReport error:', error);
+    res.status(500).json({ success: false, message: 'Failed to generate receptionist report' });
+  }
+};
+
 
