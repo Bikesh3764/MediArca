@@ -571,47 +571,6 @@ export const ClinicDashboard: React.FC = () => {
           </div>
         )}
 
-        {/* 1. Clinic Metrics Strip */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-5 sm:p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-[#86868b]">
-                Affiliated Doctors
-              </span>
-              {totalPendingRequests > 0 && (
-                <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#0066cc]/10 text-[#0066cc]">
-                  {totalPendingRequests} pending
-                </span>
-              )}
-            </div>
-            <div className="text-2xl sm:text-3xl font-semibold text-[#1d1d1f] tracking-tight mt-2">
-              {data?.totalDoctors ?? doctors.length}
-            </div>
-          </div>
-
-          <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-5 sm:p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-[#86868b]">
-                Facility Consultations
-              </span>
-              <span className="text-xs font-medium text-[#86868b]">
-                {data?.receptionists?.length || 0} desk staff
-              </span>
-            </div>
-            <div className="text-2xl sm:text-3xl font-semibold text-[#1d1d1f] tracking-tight mt-2">
-              {data?.totalBookings ?? 0}
-            </div>
-          </div>
-
-          <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-5 sm:p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
-            <div className="text-xs font-medium text-[#86868b]">
-              Clinic Revenue
-            </div>
-            <div className="text-2xl sm:text-3xl font-semibold text-[#1d1d1f] tracking-tight mt-2">
-              ₹{data?.totalRevenue ? data.totalRevenue.toLocaleString() : '0'}
-            </div>
-          </div>
-        </div>
 
         {/* Segmented Tab Switcher */}
         <div className="inline-flex p-1 rounded-full bg-[#e8e8ed]/80 border border-[#e5e5ea] max-w-full overflow-x-auto no-scrollbar">
