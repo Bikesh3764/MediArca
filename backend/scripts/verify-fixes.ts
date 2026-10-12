@@ -5797,6 +5797,44 @@ Follow-up Date: 2026-10-15`;
     'Case E: Repeated approval does not re-increment or corrupt the queue token'
   );
 
+  // Multi-shift cross-shift continuous queue token allocation test (Defect FIX: eliminates P2002 collision)
+  const shift2PendingAppt = {
+    id: 'appt-online-shift2',
+    doctorId: 'doc-123',
+    clinicId: 'clinic-1',
+    appointmentDate: todayDateStr,
+    queueNumber: -2,
+    slotId: 'slot_2',
+    checkingWindow: 'Shift 2 (Afternoon)',
+    estimatedTime: '04:00 PM',
+    status: 'PENDING_APPROVAL',
+    paymentStatus: 'PENDING',
+    isCheckedIn: false,
+    checkedInAt: null,
+    doctor: {
+      slots: JSON.stringify([{ id: 'slot_1', name: 'Morning Shift', startTime: '09:00', endTime: '12:00', maxPatients: 20 }, { id: 'slot_2', name: 'Shift 2', startTime: '15:00', endTime: '18:00', maxPatients: 20 }]),
+      clinics: [{ clinicId: 'clinic-1', slots: null }],
+      user: { fullName: 'Dr. Sarah Jenkins' },
+    },
+    clinic: { id: 'clinic-1', clinicName: 'Central Health' },
+    patient: { user: { fullName: 'John Doe', phone: '+919876543210' } },
+  };
+
+  mockApprovalDbState.appointments.push(JSON.parse(JSON.stringify(shift2PendingAppt)));
+  const shift2ApprovalResult = await executeApproveAppointmentTransaction(
+    mockApprovalPrisma,
+    'appt-online-shift2',
+    'recep-1'
+  );
+  assert(
+    shift2ApprovalResult.queueNumber === 2,
+    'Cross-shift approval: Shift 2 receives continuous token 2 across doctor and clinic, avoiding P2002 unique constraint collision'
+  );
+  assert(
+    shift2ApprovalResult.status === 'WAITING',
+    'Cross-shift approval: Shift 2 appointment is successfully transitioned to WAITING'
+  );
+
   // --- Test 165: FIX-004 WAITING -> COMPLETED Consultation Completion & State Machine Guards ---
   console.log('\n--- Test 165: FIX-004 WAITING -> COMPLETED Consultation Completion & State Machine Guards ---');
 

@@ -761,7 +761,6 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
               appointmentDate,
               ...(targetClinicId ? { clinicId: targetClinicId } : {}),
               queueNumber: { gt: 0 },
-              ...slotFilter,
             },
             orderBy: { queueNumber: 'desc' },
             select: { queueNumber: true },
@@ -1340,33 +1339,8 @@ export const getPendingAppointments = async (req: AuthRequest, res: Response): P
       (appt) => isDoctorEligibleForClinicalPractice(appt.doctor).eligible
     );
 
-    // Filter and auto-expire requests for today whose shift has already ended
-    const unexpiredAppointments = eligibleAppointments.filter((appt) => {
-      if (appt.appointmentDate === istTodayStr) {
-        let slots = parseDoctorSlots(appt.doctor);
-        const cd = (appt.doctor as any)?.clinics?.find((c: any) => c.clinicId === appt.clinicId);
-        if (cd?.slots) {
-          try {
-            const parsed = typeof cd.slots === 'string' ? JSON.parse(cd.slots) : cd.slots;
-            if (Array.isArray(parsed) && parsed.length > 0) slots = parsed;
-          } catch {}
-        }
-        const slot = (appt.slotId && slots.find((s) => s.id === appt.slotId)) || slots[0];
-        if (slot) {
-          const slotStartMins = timeToMinutes(slot.startTime);
-          let slotEndMins = timeToMinutes(slot.endTime);
-          if (slotEndMins <= slotStartMins) slotEndMins += 24 * 60;
-          if (currentMinutes >= slotEndMins) {
-            prisma.appointment.update({
-              where: { id: appt.id },
-              data: { status: 'EXPIRED' },
-            }).catch(() => {});
-            return false;
-          }
-        }
-      }
-      return true;
-    });
+    // Preserve today's pending appointments so receptionists can review, confirm, or reschedule them at desk
+    const unexpiredAppointments = eligibleAppointments;
 
     const enriched = unexpiredAppointments.map((appt) => {
       const cd =
@@ -1463,7 +1437,7 @@ export const approveAppointment = async (req: AuthRequest, res: Response): Promi
     const istTodayStr = getLocalDateString(now);
     const currentMinutes = getIndianTimeMinutes(now);
 
-    if (appointment.status === 'EXPIRED' || appointment.appointmentDate < istTodayStr) {
+    if (appointment.appointmentDate < istTodayStr) {
       if (appointment.status === 'PENDING_APPROVAL') {
         await prisma.appointment.update({
           where: { id: appointment.id },
@@ -1475,34 +1449,6 @@ export const approveAppointment = async (req: AuthRequest, res: Response): Promi
         message: `Cannot approve appointment request: the consultation date (${appointment.appointmentDate}) has already passed.`,
       });
       return;
-    }
-
-    if (appointment.appointmentDate === istTodayStr) {
-      let slots = parseDoctorSlots(appointment.doctor);
-      const targetClinic = appointment.doctor.clinics?.find((c: any) => c.clinicId === appointment.clinicId);
-      if (targetClinic?.slots) {
-        try {
-          const parsed = typeof targetClinic.slots === 'string' ? JSON.parse(targetClinic.slots) : targetClinic.slots;
-          if (Array.isArray(parsed) && parsed.length > 0) slots = parsed;
-        } catch {}
-      }
-      const slot = (appointment.slotId && slots.find((s) => s.id === appointment.slotId)) || slots[0];
-      if (slot) {
-        const slotStartMins = timeToMinutes(slot.startTime);
-        let slotEndMins = timeToMinutes(slot.endTime);
-        if (slotEndMins <= slotStartMins) slotEndMins += 24 * 60;
-        if (currentMinutes >= slotEndMins) {
-          await prisma.appointment.update({
-            where: { id: appointment.id },
-            data: { status: 'EXPIRED' },
-          });
-          res.status(400).json({
-            success: false,
-            message: `Cannot approve appointment request: the consultation shift (${slot.name || slot.startTime}) has already concluded for today.`,
-          });
-          return;
-        }
-      }
     }
 
     if (appointment.status !== 'PENDING_APPROVAL') {
@@ -1577,10 +1523,9 @@ export const approveAppointment = async (req: AuthRequest, res: Response): Promi
       res.status(400).json({ success: false, message: msg });
       return;
     }
-    res.status(500).json({
+    res.status(error.statusCode || error.status || 400).json({
       success: false,
-      message: 'Failed to approve appointment',
-      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+      message: error.message || 'Failed to approve appointment',
     });
   }
 };
@@ -1645,25 +1590,13 @@ export const executeApproveAppointmentTransaction = async (
       throw new Error('A valid clinic affiliation is required to approve appointments and issue queue tokens.');
     }
 
-    // Find max positive queue number on this date for this clinic and shift (FIX-014)
-    const slotFilter = currentAppt.slotId
-      ? {
-          OR: [
-            { slotId: currentAppt.slotId },
-            { checkingWindow: currentAppt.checkingWindow },
-          ],
-        }
-      : currentAppt.checkingWindow
-      ? { checkingWindow: currentAppt.checkingWindow }
-      : {};
-
+    // Find max positive queue number on this date for this clinic across all shifts to avoid unique constraint collision
     const maxQueueAppt = await tx.appointment.findFirst({
       where: {
         doctorId: currentAppt.doctorId,
         appointmentDate: currentAppt.appointmentDate,
         clinicId: targetClinicId,
         queueNumber: { gt: 0 },
-        ...slotFilter,
       },
       orderBy: { queueNumber: 'desc' },
       select: { queueNumber: true },
@@ -2237,7 +2170,6 @@ export const rescheduleAppointment = async (req: AuthRequest, res: Response): Pr
                 appointmentDate: newDate,
                 ...clinicFilter,
                 queueNumber: { lt: 0 },
-                ...slotFilter,
               },
               orderBy: { queueNumber: 'asc' },
               select: { queueNumber: true },
@@ -2250,7 +2182,6 @@ export const rescheduleAppointment = async (req: AuthRequest, res: Response): Pr
                 appointmentDate: newDate,
                 ...clinicFilter,
                 queueNumber: { gt: 0 },
-                ...slotFilter,
               },
               orderBy: { queueNumber: 'desc' },
               select: { queueNumber: true },
