@@ -1175,15 +1175,15 @@ export const DoctorDashboard: React.FC = () => {
             <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-4 sm:p-5 shadow-[0_2px_12px_rgba(0,0,0,0.03)] space-y-3.5">
               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3.5">
                 {/* Date Filter Segmented Bar + Date Input */}
-                <div className="flex flex-wrap items-center gap-2">
-                  <div className="p-1 bg-[#f5f5f7] border border-[#e5e5ea] rounded-full flex items-center gap-0.5">
+                <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                  <div className="p-1 bg-[#f5f5f7] border border-[#e5e5ea] rounded-full flex items-center gap-0.5 overflow-x-auto max-w-full no-scrollbar">
                     <button
                       type="button"
                       onClick={() => {
                         setQueueScope('date');
                         setDate(getLocalDateString());
                       }}
-                      className={`h-8 px-3.5 rounded-full text-xs transition-all cursor-pointer ${
+                      className={`h-8 px-3.5 rounded-full text-xs transition-all cursor-pointer whitespace-nowrap ${
                         queueScope === 'date' && date === getLocalDateString()
                           ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs border border-black/5'
                           : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
@@ -1198,7 +1198,7 @@ export const DoctorDashboard: React.FC = () => {
                         const tomorrowStr = queueData?.upcomingSummary?.tomorrowDate || getTomorrowDateString();
                         setDate(tomorrowStr);
                       }}
-                      className={`h-8 px-3.5 rounded-full text-xs transition-all flex items-center gap-1.5 cursor-pointer ${
+                      className={`h-8 px-3.5 rounded-full text-xs transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
                         queueScope === 'date' && date === (queueData?.upcomingSummary?.tomorrowDate || getTomorrowDateString())
                           ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs border border-black/5'
                           : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
@@ -1216,7 +1216,7 @@ export const DoctorDashboard: React.FC = () => {
                       onClick={() => {
                         setQueueScope('all-upcoming');
                       }}
-                      className={`h-8 px-3.5 rounded-full text-xs transition-all flex items-center gap-1.5 cursor-pointer ${
+                      className={`h-8 px-3.5 rounded-full text-xs transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
                         queueScope === 'all-upcoming'
                           ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs border border-black/5'
                           : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
@@ -1238,7 +1238,7 @@ export const DoctorDashboard: React.FC = () => {
                       setQueueScope('date');
                       setDate(e.target.value);
                     }}
-                    className="h-10 px-3.5 rounded-full border border-[#e5e5ea] text-xs font-medium bg-[#f5f5f7] hover:bg-[#e8e8ed]/70 focus:bg-white text-[#1d1d1f] transition-all focus:outline-none focus:border-[#0066cc] cursor-pointer"
+                    className="h-9 sm:h-10 px-3.5 rounded-full border border-[#e5e5ea] text-xs font-medium bg-[#f5f5f7] hover:bg-[#e8e8ed]/70 focus:bg-white text-[#1d1d1f] transition-all focus:outline-none focus:border-[#0066cc] cursor-pointer w-full sm:w-auto text-center"
                     title="Choose Specific Date"
                   />
                 </div>
@@ -1368,24 +1368,24 @@ export const DoctorDashboard: React.FC = () => {
             </div>
 
             {/* Clean 3-Column Metrics Strip */}
-            <div className="grid grid-cols-3 gap-3 sm:gap-4">
-              <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-4 sm:p-5 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
-                <p className="text-xs text-[#86868b] font-medium">Waiting in Queue</p>
-                <h3 className="text-[26px] sm:text-[30px] font-semibold text-[#1d1d1f] mt-1 tracking-tight leading-none">
+            <div className="grid grid-cols-3 gap-2 sm:gap-4">
+              <div className="bg-white rounded-[20px] sm:rounded-[24px] border border-[#e5e5ea] p-3 sm:p-5 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
+                <p className="text-[11px] sm:text-xs text-[#86868b] font-medium leading-tight truncate">Waiting in Queue</p>
+                <h3 className="text-[20px] sm:text-[30px] font-semibold text-[#1d1d1f] mt-1 tracking-tight leading-none">
                   {displayedWaitingQueue.length}
                 </h3>
               </div>
 
-              <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-4 sm:p-5 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
-                <p className="text-xs text-[#86868b] font-medium">Completed</p>
-                <h3 className="text-[26px] sm:text-[30px] font-semibold text-[#0066cc] mt-1 tracking-tight leading-none">
+              <div className="bg-white rounded-[20px] sm:rounded-[24px] border border-[#e5e5ea] p-3 sm:p-5 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
+                <p className="text-[11px] sm:text-xs text-[#86868b] font-medium leading-tight truncate">Completed</p>
+                <h3 className="text-[20px] sm:text-[30px] font-semibold text-[#0066cc] mt-1 tracking-tight leading-none">
                   {displayedCompletedQueue.length}
                 </h3>
               </div>
 
-              <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-4 sm:p-5 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
-                <p className="text-xs text-[#86868b] font-medium">Total Bookings</p>
-                <h3 className="text-[26px] sm:text-[30px] font-semibold text-[#1d1d1f] mt-1 tracking-tight leading-none">
+              <div className="bg-white rounded-[20px] sm:rounded-[24px] border border-[#e5e5ea] p-3 sm:p-5 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
+                <p className="text-[11px] sm:text-xs text-[#86868b] font-medium leading-tight truncate">Total Bookings</p>
+                <h3 className="text-[20px] sm:text-[30px] font-semibold text-[#1d1d1f] mt-1 tracking-tight leading-none">
                   {(displayedActiveInConsultation ? 1 : 0) + displayedWaitingQueue.length + displayedCompletedQueue.length}
                 </h3>
               </div>
@@ -1662,7 +1662,7 @@ export const DoctorDashboard: React.FC = () => {
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-1.5 w-full sm:w-auto justify-end shrink-0 flex-wrap">
+                        <div className="flex items-center gap-1.5 w-full sm:w-auto justify-start sm:justify-end shrink-0 flex-wrap pt-2 sm:pt-0 border-t sm:border-t-0 border-[#e5e5ea]/60">
                           {/* Arrival toggle */}
                           <button
                             type="button"

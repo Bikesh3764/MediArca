@@ -941,7 +941,7 @@ export const ReceptionistDashboard: React.FC = () => {
 
               {/* Filter Segmented Bar & Search Bar */}
               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-                <div className="p-1 bg-[#f5f5f7] border border-[#e5e5ea] rounded-full inline-flex items-center gap-0.5 overflow-x-auto max-w-full">
+                <div className="p-1 bg-[#f5f5f7] border border-[#e5e5ea] rounded-full inline-flex items-center gap-0.5 overflow-x-auto max-w-full no-scrollbar">
                   {(
                     [
                       { id: 'ALL', label: 'All' },
@@ -1152,7 +1152,7 @@ export const ReceptionistDashboard: React.FC = () => {
                               </button>
                             )}
 
-                            <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-1.5 flex-wrap">
                               {/* Primary Action: Call In or Complete */}
                               {canCallIn && (
                                 <button

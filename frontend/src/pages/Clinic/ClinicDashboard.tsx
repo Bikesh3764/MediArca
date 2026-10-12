@@ -602,7 +602,7 @@ export const ClinicDashboard: React.FC = () => {
         </div>
 
         {/* Segmented Tab Switcher */}
-        <div className="inline-flex p-1 rounded-full bg-[#e8e8ed]/80 border border-[#e5e5ea] max-w-full overflow-x-auto">
+        <div className="inline-flex p-1 rounded-full bg-[#e8e8ed]/80 border border-[#e5e5ea] max-w-full overflow-x-auto no-scrollbar">
           <button
             type="button"
             onClick={() => setActiveSection('doctors')}
