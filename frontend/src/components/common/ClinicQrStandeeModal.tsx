@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, Printer, Copy, Check } from 'lucide-react';
+import React from 'react';
+import { X, Printer } from 'lucide-react';
 import { BrandLogo } from '../ui/BrandLogo';
 
 interface ClinicQrStandeeModalProps {
@@ -20,18 +20,10 @@ export const ClinicQrStandeeModal: React.FC<ClinicQrStandeeModalProps> = ({
   clinicAddress,
   checkinCode,
 }) => {
-  const [copied, setCopied] = useState(false);
-
   if (!isOpen) return null;
 
   const checkinUrl = `${window.location.origin}${window.location.pathname}#/clinic-checkin?clinicId=${clinicId}&code=${checkinCode || ''}`;
   const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(checkinUrl)}`;
-
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(checkinUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
 
   const handlePrint = () => {
     window.print();
@@ -39,7 +31,7 @@ export const ClinicQrStandeeModal: React.FC<ClinicQrStandeeModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xl animate-fadeIn">
-      <div className="relative w-full max-w-[450px] max-h-[92vh] overflow-y-auto bg-white rounded-[28px] border border-[#e5e5ea] shadow-[0_24px_64px_rgba(0,0,0,0.12),0_4px_16px_rgba(0,0,0,0.04)] p-6 sm:p-7 text-center print:border-none print:shadow-none print:p-0 print:max-h-none print:overflow-visible">
+      <div className="relative w-full max-w-[420px] max-h-[92vh] overflow-y-auto bg-white rounded-[28px] border border-[#e5e5ea] shadow-[0_24px_64px_rgba(0,0,0,0.12),0_4px_16px_rgba(0,0,0,0.04)] p-6 sm:p-7 text-center print:border-none print:shadow-none print:p-0 print:max-h-none print:overflow-visible">
         {/* Close Button (Hidden on Print) */}
         <button
           type="button"
@@ -83,34 +75,14 @@ export const ClinicQrStandeeModal: React.FC<ClinicQrStandeeModalProps> = ({
           <p className="text-xs font-medium text-[#1d1d1f]">
             Scan with phone camera to check in
           </p>
-
-          {checkinCode && (
-            <div className="mt-3.5 pt-3 border-t border-[#e5e5ea]">
-              <span className="text-xs font-medium text-[#86868b] block">
-                6-Digit Desk Code
-              </span>
-              <span className="text-base font-semibold tracking-widest text-[#1d1d1f] mt-0.5 inline-block">
-                {checkinCode}
-              </span>
-            </div>
-          )}
         </div>
 
-        {/* Action Buttons (Hidden on Print) */}
-        <div className="flex items-center gap-2.5 print:hidden pt-1">
-          <button
-            type="button"
-            onClick={handleCopyLink}
-            className="flex-1 h-11 px-4 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] border border-[#e5e5ea] text-[#1d1d1f] text-sm font-medium transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-          >
-            {copied ? <Check className="w-4 h-4 text-[#0066cc]" /> : <Copy className="w-4 h-4" />}
-            <span>{copied ? 'Link Copied' : 'Copy Link'}</span>
-          </button>
-
+        {/* Action Button (Hidden on Print) */}
+        <div className="print:hidden pt-2">
           <button
             type="button"
             onClick={handlePrint}
-            className="flex-1 h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-medium transition-all duration-150 shadow-[0_2px_8px_rgba(0,102,204,0.2),0_1px_2px_rgba(0,0,0,0.06)] flex items-center justify-center gap-1.5 cursor-pointer"
+            className="w-full h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-medium transition-all duration-150 shadow-[0_2px_8px_rgba(0,102,204,0.2),0_1px_2px_rgba(0,0,0,0.06)] flex items-center justify-center gap-2 cursor-pointer"
           >
             <Printer className="w-4 h-4" />
             <span>Print Standee</span>
@@ -120,4 +92,3 @@ export const ClinicQrStandeeModal: React.FC<ClinicQrStandeeModalProps> = ({
     </div>
   );
 };
-

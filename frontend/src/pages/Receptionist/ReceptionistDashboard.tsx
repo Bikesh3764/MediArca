@@ -777,9 +777,6 @@ export const ReceptionistDashboard: React.FC = () => {
   const titleText = data?.clinic?.clinicName ? `${data.clinic.clinicName}` : 'Reception Desk';
   const subtitleText = displayLocation ? `${displayLocation}` : undefined;
 
-  const totalTodayBookings = linkedDoctors.reduce((sum, d) => sum + d.todayTotalBookings, 0);
-  const totalWaitingPatients = linkedDoctors.reduce((sum, d) => sum + d.todayWaitingPatients, 0);
-
   return (
     <DashboardLayout
       portalType="RECEPTIONIST"
@@ -851,61 +848,7 @@ export const ReceptionistDashboard: React.FC = () => {
           </div>
         )}
 
-        {/* 1. Compact 4-Column Metric Strip */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          <div
-            onClick={() => setActiveTab('queue')}
-            className={`bg-white rounded-[20px] border p-4 sm:p-5 shadow-[0_2px_12px_rgba(0,0,0,0.03)] cursor-pointer transition-all active:scale-[0.99] ${
-              activeTab === 'queue' ? 'border-[#0066cc] ring-2 ring-[#0066cc]/10' : 'border-[#e5e5ea] hover:border-[#d2d2d7]'
-            }`}
-          >
-            <span className="text-xs font-medium text-[#86868b] block">Waiting in Queue</span>
-            <div className="text-2xl sm:text-3xl font-semibold tracking-tight text-[#0066cc] mt-1">
-              {totalWaitingPatients}
-            </div>
-          </div>
-
-          <div
-            onClick={() => setActiveTab('queue')}
-            className="bg-white rounded-[20px] border border-[#e5e5ea] hover:border-[#d2d2d7] p-4 sm:p-5 shadow-[0_2px_12px_rgba(0,0,0,0.03)] cursor-pointer transition-all active:scale-[0.99]"
-          >
-            <span className="text-xs font-medium text-[#86868b] block">Today's Bookings</span>
-            <div className="text-2xl sm:text-3xl font-semibold tracking-tight text-[#1d1d1f] mt-1">
-              {totalTodayBookings}
-            </div>
-          </div>
-
-          <div
-            onClick={() => setActiveTab('pending')}
-            className={`bg-white rounded-[20px] border p-4 sm:p-5 shadow-[0_2px_12px_rgba(0,0,0,0.03)] cursor-pointer transition-all active:scale-[0.99] ${
-              activeTab === 'pending' ? 'border-[#0066cc] ring-2 ring-[#0066cc]/10' : 'border-[#e5e5ea] hover:border-[#d2d2d7]'
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-[#86868b]">Pending Approvals</span>
-              {pendingAppointments.length > 0 && (
-                <span className="w-2 h-2 rounded-full bg-[#0066cc]" />
-              )}
-            </div>
-            <div className="text-2xl sm:text-3xl font-semibold tracking-tight text-[#1d1d1f] mt-1">
-              {pendingAppointments.length}
-            </div>
-          </div>
-
-          <div
-            onClick={() => setActiveTab('doctors')}
-            className={`bg-white rounded-[20px] border p-4 sm:p-5 shadow-[0_2px_12px_rgba(0,0,0,0.03)] cursor-pointer transition-all active:scale-[0.99] ${
-              activeTab === 'doctors' ? 'border-[#0066cc] ring-2 ring-[#0066cc]/10' : 'border-[#e5e5ea] hover:border-[#d2d2d7]'
-            }`}
-          >
-            <span className="text-xs font-medium text-[#86868b] block">Assigned Doctors</span>
-            <div className="text-2xl sm:text-3xl font-semibold tracking-tight text-[#1d1d1f] mt-1">
-              {linkedDoctors.length}
-            </div>
-          </div>
-        </div>
-
-        {/* 2. Primary Workspace Container */}
+        {/* Primary Workspace Container */}
         <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-5 sm:p-7 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
           {/* TAB 1: LIVE QUEUE (Primary Front Desk View) */}
           {activeTab === 'queue' && (
@@ -1584,14 +1527,14 @@ export const ReceptionistDashboard: React.FC = () => {
                                 )}
                               </div>
                               <div className="flex-1 min-w-0">
-                                <div className="font-semibold text-xs text-[#1d1d1f] truncate">
+                                <div className="font-semibold text-xs text-[#1d1d1f] leading-snug">
                                   {cleanDoctorName(doc.fullName)}
                                 </div>
-                                <div className="text-[11px] text-[#0066cc] font-medium truncate">
+                                <div className="text-[11px] text-[#0066cc] font-medium mt-0.5">
                                   {doc.specialty}
                                 </div>
                                 <div className="text-[11px] text-[#86868b] mt-0.5">
-                                  ₹{doc.consultationFee.toFixed(0)} • {doc.todayWaitingPatients} waiting
+                                  Consultation Fee: ₹{doc.consultationFee.toFixed(0)}
                                 </div>
                               </div>
                             </div>
@@ -2097,38 +2040,25 @@ export const ReceptionistDashboard: React.FC = () => {
                       key={doc.doctorId}
                       className="p-5 rounded-2xl bg-white border border-[#e5e5ea] space-y-4"
                     >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="w-11 h-11 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] overflow-hidden shrink-0">
-                            {doc.avatarUrl ? (
-                              <img src={getFileUrl(doc.avatarUrl)} alt={doc.fullName} className="w-full h-full object-cover" />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center font-semibold text-sm text-[#0066cc]">
-                                {doc.fullName[0]}
-                              </div>
-                            )}
-                          </div>
-                          <div className="min-w-0">
-                            <div className="font-semibold text-sm text-[#1d1d1f] tracking-tight truncate">
-                              {cleanDoctorName(doc.fullName)}
+                      <div className="flex items-center gap-3.5">
+                        <div className="w-12 h-12 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] overflow-hidden shrink-0">
+                          {doc.avatarUrl ? (
+                            <img src={getFileUrl(doc.avatarUrl)} alt={doc.fullName} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center font-semibold text-base text-[#0066cc]">
+                              {doc.fullName[0]}
                             </div>
-                            <div className="text-xs text-[#0066cc] font-medium">{doc.specialty}</div>
-                            <div className="text-xs text-[#86868b] mt-0.5">
-                              ₹{doc.consultationFee} • {doc.todayTotalBookings} booked today ({doc.todayWaitingPatients} waiting)
-                            </div>
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h4 className="font-semibold text-base text-[#1d1d1f] tracking-tight leading-snug">
+                            {cleanDoctorName(doc.fullName)}
+                          </h4>
+                          <div className="text-xs text-[#0066cc] font-medium mt-0.5">{doc.specialty}</div>
+                          <div className="text-xs text-[#86868b] mt-1">
+                            Consultation Fee: ₹{doc.consultationFee}
                           </div>
                         </div>
-
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setQueueDoctorId(doc.doctorId);
-                            setActiveTab('queue');
-                          }}
-                          className="h-8 px-3.5 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-xs font-medium text-[#1d1d1f] border border-[#e5e5ea] transition-all cursor-pointer shrink-0"
-                        >
-                          Open Queue
-                        </button>
                       </div>
 
                       <div className="pt-3 border-t border-[#f0f0f2]">
