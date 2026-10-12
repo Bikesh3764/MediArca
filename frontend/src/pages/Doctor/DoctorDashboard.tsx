@@ -304,6 +304,7 @@ export const DoctorDashboard: React.FC = () => {
 
     const effectiveClinicId =
       walkinClinicId ||
+      (selectedClinicId !== 'all' ? selectedClinicId : undefined) ||
       (affiliations.clinics.length === 1 ? affiliations.clinics[0].clinicId : undefined);
 
     if (affiliations.clinics.length > 1 && !effectiveClinicId) {
@@ -717,7 +718,16 @@ export const DoctorDashboard: React.FC = () => {
             <>
               <button
                 type="button"
-                onClick={() => setShowAddModal(true)}
+                onClick={() => {
+                  if (selectedClinicId && selectedClinicId !== 'all') {
+                    setWalkinClinicId(selectedClinicId);
+                  } else if (affiliations?.clinics && affiliations.clinics.length === 1) {
+                    setWalkinClinicId(affiliations.clinics[0].clinicId);
+                  }
+                  setWalkinDate(getLocalDateString());
+                  setWalkinError(null);
+                  setShowAddModal(true);
+                }}
                 className="h-9 px-4 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-xs font-medium flex items-center gap-1.5 transition-all shadow-[0_2px_8px_rgba(0,102,204,0.2)] cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />

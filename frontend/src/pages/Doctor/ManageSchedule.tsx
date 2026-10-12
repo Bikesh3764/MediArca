@@ -4,10 +4,9 @@ import {
   api,
   DoctorSlot,
   parseDoctorSlots,
-  calculateSlotMetrics,
-  format12Hour,
   DoctorAffiliationClinic,
   timeToMinutes,
+  cleanSlotName,
 } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { DashboardLayout, DashboardNavItem } from '../../components/layout/DashboardLayout';
@@ -26,8 +25,6 @@ import {
   MapPin,
   Phone,
   Settings,
-  Timer,
-  Users,
   Calendar,
 } from 'lucide-react';
 
@@ -95,14 +92,20 @@ export const ManageSchedule: React.FC = () => {
     (clinic: DoctorAffiliationClinic) => {
       if (clinic.slots && clinic.slots.length > 0) {
         setSlots(
-          clinic.slots.map((s) => ({
+          clinic.slots.map((s, idx) => ({
             ...s,
+            name: cleanSlotName(s.name, `Shift ${idx + 1}`),
             avgConsultationMinutes: Number(s.avgConsultationMinutes) || 15,
             maxPatients: Number(s.maxPatients) || 25,
           }))
         );
       } else if (user?.doctorProfile) {
-        setSlots(parseDoctorSlots(user.doctorProfile));
+        setSlots(
+          parseDoctorSlots(user.doctorProfile).map((s, idx) => ({
+            ...s,
+            name: cleanSlotName(s.name, `Shift ${idx + 1}`),
+          }))
+        );
       }
       setConsultationFee(clinic.consultationFee ?? user?.doctorProfile?.consultationFee ?? 500);
       setError(null);
@@ -133,7 +136,12 @@ export const ManageSchedule: React.FC = () => {
       if (currentClinic) {
         syncClinicData(currentClinic);
       } else if (user?.doctorProfile) {
-        setSlots(parseDoctorSlots(user.doctorProfile));
+        setSlots(
+          parseDoctorSlots(user.doctorProfile).map((s, idx) => ({
+            ...s,
+            name: cleanSlotName(s.name, `Shift ${idx + 1}`),
+          }))
+        );
         setConsultationFee(user.doctorProfile.consultationFee ?? 500);
       }
     } catch (err: any) {
@@ -175,37 +183,6 @@ export const ManageSchedule: React.FC = () => {
     setSlots((prev) => {
       const next = [...prev];
       next[index] = { ...next[index], [field]: value };
-      return next;
-    });
-  };
-
-  // Optional quick helper: compute pace from duration / maxPatients
-  const handleAutoPace = (index: number) => {
-    setSlots((prev) => {
-      const next = [...prev];
-      const slot = next[index];
-      const { avgConsultationMinutes } = calculateSlotMetrics(
-        slot.startTime,
-        slot.endTime,
-        Number(slot.maxPatients) || 1
-      );
-      next[index] = { ...slot, avgConsultationMinutes };
-      return next;
-    });
-  };
-
-  // Optional quick helper: compute capacity from duration / avgConsultationMinutes
-  const handleAutoCapacity = (index: number) => {
-    setSlots((prev) => {
-      const next = [...prev];
-      const slot = next[index];
-      const startMins = timeToMinutes(slot.startTime);
-      let endMins = timeToMinutes(slot.endTime);
-      if (endMins <= startMins) endMins += 24 * 60;
-      const duration = Math.max(1, endMins - startMins);
-      const pace = Math.max(1, Number(slot.avgConsultationMinutes) || 15);
-      const calculatedCap = Math.max(1, Math.floor(duration / pace));
-      next[index] = { ...slot, maxPatients: calculatedCap };
       return next;
     });
   };
@@ -504,165 +481,112 @@ export const ManageSchedule: React.FC = () => {
 
                 {/* Multiple Checking Shifts Section */}
                 <div className="space-y-4">
-                  {slots.map((slot, idx) => {
-                    const { durationMinutes } = calculateSlotMetrics(
-                      slot.startTime,
-                      slot.endTime,
-                      slot.maxPatients
-                    );
-
-                    return (
-                      <div
-                        key={slot.id || idx}
-                        className="p-5 rounded-2xl bg-white border border-[#e5e5ea] space-y-4 transition-all duration-150"
-                      >
-                        {/* Shift Header */}
-                        <div className="flex items-center justify-between gap-3 pb-3 border-b border-[#e5e5ea]">
-                          <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                            <span className="w-7 h-7 rounded-full bg-[#0066cc]/10 text-[#0066cc] text-xs font-semibold flex items-center justify-center flex-shrink-0">
-                              {idx + 1}
-                            </span>
-                            <input
-                              type="text"
-                              value={slot.name}
-                              onChange={(e) => handleSlotChange(idx, 'name', e.target.value)}
-                              placeholder="Shift Name (e.g. Shift 1)"
-                              className="text-[15px] font-semibold text-[#1d1d1f] bg-transparent border-b border-transparent hover:border-[#d2d2d7] focus:border-[#0066cc] focus:outline-none px-1 py-0.5 transition-all truncate"
-                            />
-                          </div>
-
-                          <div className="flex items-center gap-2 flex-shrink-0">
-                            <span className="px-3 py-1 rounded-full bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-medium flex items-center gap-1.5">
-                              <Clock className="w-3.5 h-3.5 text-[#0066cc]" />
-                              <span>
-                                {format12Hour(slot.startTime)} – {format12Hour(slot.endTime)}
-                              </span>
-                            </span>
-
-                            {slots.length > 1 && (
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveSlot(idx)}
-                                className="text-[#86868b] hover:text-rose-600 p-2 rounded-full hover:bg-rose-50 transition-colors cursor-pointer"
-                                title="Remove this shift"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            )}
-                          </div>
+                  {slots.map((slot, idx) => (
+                    <div
+                      key={slot.id || idx}
+                      className="p-4 sm:p-5 rounded-2xl bg-white border border-[#e5e5ea] space-y-4 transition-all duration-150 shadow-[0_1px_3px_rgba(0,0,0,0.02)]"
+                    >
+                      {/* Shift Header */}
+                      <div className="flex items-center justify-between gap-3 pb-3 border-b border-[#e5e5ea]">
+                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                          <span className="w-7 h-7 rounded-full bg-[#0066cc]/10 text-[#0066cc] text-xs font-semibold flex items-center justify-center flex-shrink-0">
+                            {idx + 1}
+                          </span>
+                          <input
+                            type="text"
+                            value={slot.name}
+                            onChange={(e) => handleSlotChange(idx, 'name', e.target.value)}
+                            placeholder={`Shift ${idx + 1}`}
+                            className="text-[15px] font-semibold text-[#1d1d1f] bg-transparent border-b border-transparent hover:border-[#d2d2d7] focus:border-[#0066cc] focus:outline-none px-1 py-0.5 transition-all truncate"
+                          />
                         </div>
 
-                        {/* 4 Interactive Inputs */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                          <div>
-                            <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
-                              Start Time
-                            </label>
-                            <input
-                              type="time"
-                              required
-                              value={slot.startTime}
-                              onChange={(e) => handleSlotChange(idx, 'startTime', e.target.value)}
-                              className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
-                            />
-                          </div>
+                        {slots.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveSlot(idx)}
+                            className="text-[#86868b] hover:text-rose-600 p-2 rounded-full hover:bg-rose-50 transition-colors cursor-pointer flex-shrink-0"
+                            title="Remove this shift"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
 
-                          <div>
-                            <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
-                              End Time
-                            </label>
-                            <input
-                              type="time"
-                              required
-                              value={slot.endTime}
-                              onChange={(e) => handleSlotChange(idx, 'endTime', e.target.value)}
-                              className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
-                              Avg Consultation (mins)
-                            </label>
-                            <input
-                              type="number"
-                              min={1}
-                              max={180}
-                              required
-                              value={slot.avgConsultationMinutes || ''}
-                              onChange={(e) =>
-                                handleSlotChange(
-                                  idx,
-                                  'avgConsultationMinutes',
-                                  e.target.value === '' ? '' : Math.max(1, Number(e.target.value))
-                                )
-                              }
-                              placeholder="20"
-                              className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
-                              Max Patients
-                            </label>
-                            <input
-                              type="number"
-                              min={1}
-                              max={200}
-                              required
-                              value={slot.maxPatients || ''}
-                              onChange={(e) =>
-                                handleSlotChange(
-                                  idx,
-                                  'maxPatients',
-                                  e.target.value === '' ? '' : Math.max(1, Number(e.target.value))
-                                )
-                              }
-                              placeholder="25"
-                              className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
-                            />
-                          </div>
+                      {/* 4 Interactive Inputs */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
+                        <div>
+                          <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                            Start Time
+                          </label>
+                          <input
+                            type="time"
+                            required
+                            value={slot.startTime}
+                            onChange={(e) => handleSlotChange(idx, 'startTime', e.target.value)}
+                            className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                          />
                         </div>
 
-                        {/* Shift Pacing Insights & Assistance Bar */}
-                        <div className="p-3 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] flex flex-col md:flex-row items-start md:items-center justify-between gap-3 text-xs">
-                          <div className="flex flex-wrap items-center gap-2 text-[#86868b]">
-                            <span className="font-medium text-[#1d1d1f]">
-                              Duration: {durationMinutes} mins
-                            </span>
-                            <span>•</span>
-                            <span>
-                              Pace: <strong className="text-[#1d1d1f]">~{slot.avgConsultationMinutes || 15}m / patient</strong>
-                            </span>
-                            <span>•</span>
-                            <span>
-                              Capacity: <strong className="text-[#1d1d1f]">{slot.maxPatients} patients</strong>
-                            </span>
-                          </div>
+                        <div>
+                          <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                            End Time
+                          </label>
+                          <input
+                            type="time"
+                            required
+                            value={slot.endTime}
+                            onChange={(e) => handleSlotChange(idx, 'endTime', e.target.value)}
+                            className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                          />
+                        </div>
 
-                          <div className="flex flex-wrap items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => handleAutoPace(idx)}
-                              className="px-3 py-1 rounded-full bg-white border border-[#e5e5ea] text-[#0066cc] font-medium text-xs hover:bg-[#0066cc]/5 transition-all flex items-center gap-1 cursor-pointer"
-                            >
-                              <Timer className="w-3 h-3 text-[#0066cc]" />
-                              <span>Auto-calc Pace</span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleAutoCapacity(idx)}
-                              className="px-3 py-1 rounded-full bg-white border border-[#e5e5ea] text-[#1d1d1f] font-medium text-xs hover:bg-[#e8e8ed] transition-all flex items-center gap-1 cursor-pointer"
-                            >
-                              <Users className="w-3 h-3 text-[#86868b]" />
-                              <span>Auto-calc Capacity</span>
-                            </button>
-                          </div>
+                        <div>
+                          <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                            Avg Consultation (mins)
+                          </label>
+                          <input
+                            type="number"
+                            min={1}
+                            max={180}
+                            required
+                            value={slot.avgConsultationMinutes || ''}
+                            onChange={(e) =>
+                              handleSlotChange(
+                                idx,
+                                'avgConsultationMinutes',
+                                e.target.value === '' ? '' : Math.max(1, Number(e.target.value))
+                              )
+                            }
+                            placeholder="20"
+                            className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                            Max Patients
+                          </label>
+                          <input
+                            type="number"
+                            min={1}
+                            max={200}
+                            required
+                            value={slot.maxPatients || ''}
+                            onChange={(e) =>
+                              handleSlotChange(
+                                idx,
+                                'maxPatients',
+                                e.target.value === '' ? '' : Math.max(1, Number(e.target.value))
+                              )
+                            }
+                            placeholder="25"
+                            className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                          />
                         </div>
                       </div>
-                    );
-                  })}
+                    </div>
+                  ))}
                 </div>
 
                 {/* Consultation Fee in Indian Rupees (₹ INR) */}
