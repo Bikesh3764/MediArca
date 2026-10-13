@@ -266,6 +266,18 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
       return;
     }
 
+    const userRec = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { mustChangePassword: true },
+    });
+    if (userRec?.mustChangePassword || req.user.mustChangePassword) {
+      res.status(403).json({
+        success: false,
+        message: 'Temporary password must be changed before accessing clinical desk operations.',
+      });
+      return;
+    }
+
     const access = await verifyReceptionistDoctorAccess(req.user.id, doctorId, null);
     if (!access.authorized) {
       res.status(403).json({ success: false, message: access.reason });
@@ -2412,6 +2424,18 @@ export const getReceptionistReport = async (req: AuthRequest, res: Response): Pr
 
     if (!receptionist || !receptionist.clinicId) {
       res.status(404).json({ success: false, message: 'Receptionist clinic affiliation not found' });
+      return;
+    }
+
+    const userRec = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { mustChangePassword: true },
+    });
+    if (userRec?.mustChangePassword || req.user.mustChangePassword) {
+      res.status(403).json({
+        success: false,
+        message: 'Temporary password must be changed before accessing clinical desk operations.',
+      });
       return;
     }
 

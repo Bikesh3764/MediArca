@@ -71,7 +71,13 @@ export async function sendVerificationOtpEmail(
   recipientName?: string
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
-    const greetingName = recipientName ? recipientName.trim() : 'Valued Member';
+    const rawName = recipientName ? recipientName.trim() : 'Valued Member';
+    const greetingName = rawName
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
 
     const htmlContent = `
 <!DOCTYPE html>

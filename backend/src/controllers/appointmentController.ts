@@ -1022,7 +1022,7 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
     }
     res.status(500).json({
       success: false,
-      message: error?.message || 'Failed to book appointment. Please try again.',
+      message: 'Failed to book appointment. Please try again.',
       ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
     });
   }

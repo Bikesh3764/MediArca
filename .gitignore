@@ -42,3 +42,7 @@ Thumbs.db
 
 # Cloudflare wrangler
 .wrangler/
+
+# Scratch & local upload directories
+scratch/
+backend/uploads/

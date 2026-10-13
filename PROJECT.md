@@ -4,8 +4,8 @@
 MediArca is an Indian healthcare patient appointment and live queue management system built on:
 - **Backend**: Node.js, Express, TypeScript, Prisma ORM (PostgreSQL), JWT authentication, role-based access control.
 - **Frontend**: React 18 / 19, TypeScript, Vite, Tailwind CSS, Lucide icons, Apple Human Interface Guidelines (`DESIGN.md`).
-- **Database**: PostgreSQL (Prisma schema with models for User, DoctorProfile, PatientProfile, ClinicProfile, ReceptionistProfile, Appointment, Queue, Notification).
-- **Core Guardrails**: Zero-upfront payment (pay-at-clinic preserved), no prescription builder, demo credentials preserved, +91 Indian phone standard lock.
+- **Database**: PostgreSQL (Prisma schema with 12 models: `User`, `DoctorProfile`, `PatientProfile`, `ClinicProfile`, `ReceptionistProfile`, `ClinicDoctor`, `DoctorReceptionist`, `Appointment`, `Review`, `Notification`, `SystemConfig`, `ContactMessage`).
+- **Core Guardrails**: Zero-upfront payment (pay-at-clinic preserved), no prescription builder, demo credentials preserved, +91 Indian phone standard lock, per-portal role-scoped account uniqueness (`@@unique([email, role])`).
 
 ## Feature Inventory
 | # | Feature / Area | Description | Milestone | Source |
@@ -27,9 +27,9 @@ MediArca is an Indian healthcare patient appointment and live queue management s
 ## Milestones
 | # | Name | Scope | Dependencies | Status |
 |---|------|-------|-------------|--------|
-| M1 | Backend Concurrency & Runtime Resilience | Database env, atomic transactions, process error handlers, CORS status, reschedule logic | none | DONE (1,202/1,202 tests pass, build pass) |
-| M2 | Frontend Portals, Localization & Design Compliance | Admin INR currency, live ticket state sync, API resilience, lint hygiene, Action Blue palette | none | DONE (build pass, lint pass 0 errors / 0 warnings) |
-| M3 | Fullstack Gate Verification & Forensic Audit | Verification suite run, full builds, challenger stress test, forensic audit | M1, M2 | DONE (1,209/1,209 tests pass, builds clean, linter clean, forensic audit clean) |
+| M1 | Backend Concurrency & Runtime Resilience | Database env, atomic transactions, process error handlers, CORS status, reschedule logic | none | DONE (2,000/2,000 tests pass, build pass) |
+| M2 | Frontend Portals, Localization & Design Compliance | Admin INR currency, live ticket state sync, API resilience, lint hygiene, Action Blue palette | none | DONE (build pass, lint pass 0 errors) |
+| M3 | Fullstack Gate Verification & Forensic Audit | Verification suite run, full builds, challenger stress test, forensic audit | M1, M2 | DONE (2,000/2,000 tests pass, builds clean, linter clean, forensic audit clean) |
 
 ## Interface Contracts
 ### Queue Concurrency Contract
@@ -62,7 +62,7 @@ MediArca is an Indian healthcare patient appointment and live queue management s
 - `frontend/src/components/layout/DashboardLayout.tsx`
 - `frontend/src/pages/Clinic/ClinicDashboard.tsx`
 - `frontend/src/pages/Clinic/ClinicAuth.tsx`
-- `frontend/src/components/common/ErrorBoundary.tsx`
+- `frontend/src/components/ui/ErrorBoundary.tsx`
 
 ### Verification Owned by M3:
 - Read-only verification and test executions across `backend/` and `frontend/`.

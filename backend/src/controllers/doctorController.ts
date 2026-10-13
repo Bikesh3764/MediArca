@@ -1354,6 +1354,14 @@ export const getDoctorReport = async (req: AuthRequest, res: Response): Promise<
       return;
     }
 
+    if (!isDoctorEligibleForClinicalPractice(doctor)) {
+      res.status(403).json({
+        success: false,
+        message: 'Doctor account is not verified or is currently suspended.',
+      });
+      return;
+    }
+
     const today = getLocalDateString();
     const defaultStart = (() => {
       const d = new Date();

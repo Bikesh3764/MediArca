@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs';
 import prisma from '../config/database';
 import { AuthRequest } from '../middleware/authMiddleware';
 import { isValidIndianPhone, formatIndianPhone, sanitizeIndianPhone, findExistingAccountByPhone } from '../utils/phoneUtils';
-import { isDoctorEligibleForClinicalPractice } from '../utils/authGuards';
+import { isDoctorEligibleForClinicalPractice, isClinicActive } from '../utils/authGuards';
 import { createNotification } from '../services/notificationService';
 import { parsePaginationParams, buildPaginationMetadata } from '../utils/pagination';
 import { getLocalDateString } from '../utils/scheduleUtils';
@@ -1504,6 +1504,14 @@ export const getClinicReport = async (req: AuthRequest, res: Response): Promise<
 
     if (!clinic) {
       res.status(404).json({ success: false, message: 'Clinic profile not found' });
+      return;
+    }
+
+    if (!isClinicActive(clinic)) {
+      res.status(403).json({
+        success: false,
+        message: 'Clinic account is pending verification or suspended.',
+      });
       return;
     }
 

@@ -11,7 +11,9 @@ import {
   getTomorrowDateString,
   formatDoctorDegrees,
   getFileUrl,
+  cleanSlotName,
 } from '../../services/api';
+import { formatDisplayPhone } from '../../utils/phoneUtils';
 import { useAuth } from '../../context/AuthContext';
 import { SubNav } from '../../components/layout/SubNav';
 import { AppleButton } from '../../components/ui/AppleButton';
@@ -26,24 +28,6 @@ import {
   MapPin,
   Phone,
 } from 'lucide-react';
-
-const formatDisplayPhone = (phone?: string) => {
-  if (!phone) return '';
-  const digits = phone.replace(/\D/g, '');
-  if (digits.length === 10) {
-    return `+91 ${digits.slice(0, 5)} ${digits.slice(5)}`;
-  }
-  if (digits.length === 12 && digits.startsWith('91')) {
-    const raw10 = digits.slice(2);
-    return `+91 ${raw10.slice(0, 5)} ${raw10.slice(5)}`;
-  }
-  return phone.startsWith('+91') ? phone : `+91 ${phone}`;
-};
-
-const cleanSlotName = (name?: string): string => {
-  if (!name) return 'Shift';
-  return name.replace(/\s*\([^)]*\)/g, '').trim() || name;
-};
 
 export const BookAppointment: React.FC = () => {
   const { id } = useParams<{ id: string }>();

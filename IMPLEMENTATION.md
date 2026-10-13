@@ -69,7 +69,7 @@ Prisma ORM connects to the PostgreSQL database with the following core entities:
 ```prisma
 model User {
   id                            String    @id @default(uuid())
-  email                         String    @unique
+  email                         String
   passwordHash                  String
   fullName                      String
   phone                         String?
@@ -81,51 +81,59 @@ model User {
   emailVerificationOtpExpiresAt DateTime?
   createdAt                     DateTime  @default(now())
   updatedAt                     DateTime  @updatedAt
+
+  @@unique([email, role])
+  @@index([email])
+  @@index([phone])
 }
 ```
 
-### 3.2 Clinical Profiles & Relationships
-- **`DoctorProfile`**: Holds medical qualifications, specialties (34+ categories), clinical experience, primary clinic, verification status (`PENDING`, `VERIFIED`, `REJECTED`), cabin status (`IN_CABIN`, `STEPPED_OUT`, `NOT_IN_CABIN`), and serialized multi-slot schedules.
-- **`ClinicProfile`**: Holds legal clinic name, physical address, city, state, contact phone, check-in kiosk code (`checkinCode`), and administrative verification status.
-- **`ReceptionistProfile`**: Links front-desk operators to a parent clinic facility and assigns specific doctor desks.
-- **`ClinicDoctor`**: Two-way affiliation bridge between Clinics and Doctors. Enforces `PENDING`, `ACCEPTED`, or `REJECTED` workflows with isolated clinic-specific consultation fees and shift configurations.
-- **`Appointment`**: The atomic queue unit containing:
-  - `date`, `slotId`, `queueNumber`, `status` (`WAITING`, `IN_CONSULTATION`, `COMPLETED`, `CANCELLED`).
-  - `isForOther`, `patientName`, `patientAge`, `patientGender`.
+### 3.2 Clinical Profiles & Relationships (12 Models)
+- **`DoctorProfile`** (`1:1 User`): Holds medical qualifications, specialties (34+ categories), clinical experience, primary clinic, verification status (`PENDING`, `VERIFIED`, `SUSPENDED`, `REJECTED`), cabin status (`IN_CABIN`, `STEPPED_OUT`, `NOT_IN_CABIN`), and serialized multi-slot schedules.
+- **`PatientProfile`** (`1:1 User`): Holds patient demographics (`dateOfBirth`, `gender`, `bloodGroup`) and structured clinical history (`allergies`, `existingConditions`, `chronicConditions`, `pastSurgeries`, `currentMedications`, `emergencyContact`).
+- **`ClinicProfile`** (`1:1 User`): Holds legal clinic name, physical address, city, state, contact phone, check-in kiosk code (`checkinCode`), and administrative verification status (`PENDING`, `VERIFIED`, `SUSPENDED`, `REJECTED`).
+- **`ReceptionistProfile`** (`1:1 User`, `N:1 ClinicProfile`): Links front-desk operators to a parent clinic facility (`status`: `ACTIVE`, `PENDING`, `REJECTED`) and assigns specific doctor desks via `DoctorReceptionist`.
+- **`ClinicDoctor`** (`M:N ClinicProfile <-> DoctorProfile`, `@@unique([clinicId, doctorId])`): Two-way affiliation bridge enforcing `PENDING`, `ACCEPTED`, `ACTIVE`, or `REJECTED` workflows with isolated clinic-specific consultation fees and shift configurations.
+- **`DoctorReceptionist`** (`M:N DoctorProfile <-> ReceptionistProfile`, `@@unique([doctorId, receptionistId])`): Links receptionists to assigned doctors within a clinic (`ACTIVE`, `PENDING`, `REJECTED`).
+- **`Appointment`** (`N:1 PatientProfile`, `N:1 DoctorProfile`, `N:1 ClinicProfile?`, `1:1 Review?`): The atomic queue unit with composite uniqueness `@@unique([clinicId, doctorId, appointmentDate, slotId, queueNumber])`, containing:
+  - `appointmentDate` (`YYYY-MM-DD`), `slotId`, `queueNumber`, `status` (`PENDING_APPROVAL`, `WAITING`, `IN_CONSULTATION`, `COMPLETED`, `CANCELLED`, `REJECTED`, `EXPIRED`).
+  - `isForOther`, `patientName`, `patientAge`, `patientGender`, `patientPhone`.
   - `isCheckedIn`, `checkedInAt`.
   - `paymentStatus` (strictly pay-at-clinic / zero upfront paywall).
-- **`SystemConfig`**: Cloud environment configuration fallback table (`key`, `value`, `updatedAt`) allowing server processes to dynamically read runtime settings (e.g., SMTP credentials) directly from the database.
+- **`Review`** (`1:1 Appointment`, `N:1 DoctorProfile`, `N:1 User`): Verified post-consultation patient rating (`1-5`) and feedback comment.
+- **`Notification`** (`N:1 User`): In-app portal notifications (`title`, `message`, `type`, `isRead`).
+- **`ContactMessage`**: Public support inquiries (`fullName`, `email`, `phone`, `subject`, `message`, `status`).
+- **`SystemConfig`**: Cloud environment configuration fallback table (`key @id`, `value`, `updatedAt`) allowing server processes to dynamically read runtime settings (e.g., SMTP credentials) directly from the database.
 
 ---
 
 ## 4. Authentication, Security & Verification Engine
 
-1. **Google OAuth 2.0**:
-   - Google Sign-In automatically authenticates users and marks `isEmailVerified: true`.
-   - First-time Google accounts missing mandatory clinical information (e.g. phone, DOB, gender for patients; qualifications for doctors; address for clinics) are smoothly intercepted by a Post-Auth Profile Completion modal.
+1. **Per-Portal Account Uniqueness & Google OAuth 2.0**:
+   - Email and 10-digit Indian mobile numbers (`+91`) are scoped per portal role (`@@unique([email, role])`), allowing the same email/phone to hold distinct accounts across `PATIENT`, `DOCTOR`, `RECEPTIONIST`, and `CLINIC` portals while preventing duplicates within the same role.
+   - Google Sign-In automatically authenticates users for the requested role (`PATIENT`, `DOCTOR`, or `CLINIC`) and marks `isEmailVerified: true`.
+   - First-time Google accounts missing mandatory clinical information are intercepted by a Post-Auth Profile Completion modal.
 2. **Email OTP Verification (Gmail SMTP)**:
-   - For email/password registrations, the server generates a 6-digit numeric OTP (`100000 - 999999`) with a 10-minute expiry.
-   - HTML verification emails are dispatched via Gmail SMTP (`nodemailer`) with Apple typography and branded container.
+   - For email/password registrations, the server generates a CSPRNG 6-digit numeric OTP (`100000 - 999999`) with a 10-minute expiry, 5-attempt lockout, and 60-second resend cooldown.
+   - HTML verification emails are dispatched via Gmail SMTP (`nodemailer`) with HTML-escaped recipient names.
    - Unverified logins are blocked with HTTP 403 (`requiresVerification: true`) and auto-trigger a fresh code.
-   - Frontend features an Apple 6-digit single-box OTP modal with auto-focus, paste support, and 60-second cooldown timer.
 3. **Receptionist Provisioning & Mandatory Password Change**:
-   - Receptionists are created only by Clinic Admins with temporary credentials (`mustChangePassword: true`).
-   - On first login, receptionists are forced to establish a permanent private password (min. 8 characters) before gaining desk access.
+   - Receptionists are provisioned by Clinic Admins with temporary credentials (`mustChangePassword: true`) or via verified clinic application approval.
+   - On first login, receptionists must establish a permanent password (min. 8 characters) before accessing any clinical desk or report operations.
 
 ---
 
 ## 5. Live Queue Allocation & Clinical Algorithms
 
-1. **Atomic Token Generation**:
-   - Token numbers are allocated sequentially per Doctor + Clinic + Date + Shift using atomic database transactions.
-   - Concurrent bookings are protected against race conditions and duplicates.
+1. **Atomic Token Generation & Row Locking**:
+   - Token numbers are allocated sequentially per Doctor + Clinic + Date + Shift inside `prisma.$transaction` using PostgreSQL `SELECT id FROM "DoctorProfile" WHERE id = ... FOR UPDATE` row-level locks and retry loops (`maxAttempts = 3`).
+   - Concurrent bookings, approvals, reschedules, and consultation calls are protected against race conditions and cross-clinic active consultation conflicts.
 2. **Dynamic Consultation Time Calculation**:
    - Shift Pace: `Average Minutes = Floor(Shift Duration in Minutes / Max Patient Capacity)`.
    - Estimated Start Time: `Shift Start Time + (Queue Number - 1) * Average Minutes`.
-   - If slot time has already passed today, the UI alerts the patient and prevents past-time scheduling.
+   - If slot time has already passed today, the UI and backend prevent past-time scheduling.
 3. **Cabin Presence & Return Times**:
-   - Doctors can toggle presence: `IN_CABIN`, `STEPPED_OUT` (with estimated return time), or `NOT_IN_CABIN`.
-   - Patients viewing live queue passes receive real-time updates on doctor availability.
+   - Doctors and authorized receptionists can toggle presence: `IN_CABIN`, `STEPPED_OUT` (with estimated return time), or `NOT_IN_CABIN`.
 
 ---
 
@@ -133,31 +141,35 @@ model User {
 
 | Endpoint | Method | Role Guard | Purpose |
 | :--- | :--- | :--- | :--- |
-| `/api/auth/register` | `POST` | Public | Register new user; dispatches OTP for non-Google. |
-| `/api/auth/verify-otp` | `POST` | Public | Validates 6-digit OTP and issues JWT auth token. |
-| `/api/auth/resend-otp` | `POST` | Public | Resends fresh 6-digit OTP code. |
-| `/api/auth/login` | `POST` | Public | Authenticates credentials; checks verification status. |
-| `/api/auth/google` | `POST` | Public | Google OAuth token verification and account sync. |
-| `/api/doctors` | `GET` | Public | Search verified practitioners by specialty, city, query. |
-| `/api/appointments/preview`| `GET` | Authenticated | Calculates live token number and estimated time. |
-| `/api/appointments/book` | `POST` | `PATIENT` | Atomically creates queue pass for myself or family. |
-| `/api/consultations/call-next`| `POST` | `DOCTOR` | Calls the next waiting patient into the cabin. |
-| `/api/clinics/receptionists`| `POST` | `CLINIC` | Provisions new front-desk desk operator credentials. |
-| `/api/receptionist/walkin`| `POST` | `RECEPTIONIST`| Books immediate walk-in patient at physical clinic. |
+| `/api/auth/register` | `POST` | Public (Rate-Limited) | Register new user per role; dispatches 6-digit OTP. |
+| `/api/auth/verify-otp` | `POST` | Public (Rate-Limited) | Validates 6-digit OTP for `(email, role)` and issues JWT. |
+| `/api/auth/resend-otp` | `POST` | Public (Rate-Limited) | Resends fresh 6-digit OTP code for `(email, role)`. |
+| `/api/auth/login` | `POST` | Public (Rate-Limited) | Authenticates credentials (scoped by portal `role`). |
+| `/api/auth/google` | `POST` | Public (Rate-Limited) | Google OAuth token verification and role-scoped sync. |
+| `/api/auth/me` & `/api/auth/profile` | `GET / PUT` | Authenticated | Fetches or updates authenticated user & role profile. |
+| `/api/doctors` & `/api/doctors/:id` | `GET` | Public | Search verified practitioners, clinics, shifts, & reviews. |
+| `/api/doctors/schedule` & `/api/doctors/cabin-status` | `PUT` | `DOCTOR` (`/ RECEPTIONIST`) | Updates shift schedules (with cross-clinic overlap lock) & cabin presence. |
+| `/api/doctors/me/report` | `GET` | `DOCTOR` (Verified) | Generates categorized clinical & revenue report. |
+| `/api/appointments/queue-preview` | `GET` | Public / Cached | Calculates live token number, shift status, and ETA. |
+| `/api/appointments/book` | `POST` | `PATIENT / DOCTOR` | Atomically creates queue pass (`PENDING_APPROVAL` or walk-in `WAITING`). |
+| `/api/appointments/check-in` | `POST` | `PATIENT` | Verifies QR arrival check-in at clinic facility. |
+| `/api/appointments/:id/cancel` & `/:id/review` | `PATCH / POST` | Authenticated / `PATIENT` | Cancels booking via state machine or submits verified review. |
+| `/api/consultations/queue` & `/call-patient` | `GET / POST` | `DOCTOR` (Verified) | Fetches live queue and atomically calls patient into cabin. |
+| `/api/consultations/update-notes` & `/complete` & `/hold` | `PUT / POST` | `DOCTOR` (Verified) | Saves vitals/notes, completes consultation, or places on hold. |
+| `/api/clinic/my-clinic` & `/api/clinic/report` | `GET` | `CLINIC` (Active) | Retrieves clinic dashboard roster, metrics, and PDF/CSV reports. |
+| `/api/clinic/doctors` & `/api/clinic/receptionists` | `POST / PUT / DELETE` | `CLINIC` (Active) | Manages doctor affiliations and provisions desk receptionists. |
+| `/api/receptionists/queue/:doctorId` & `/book-walkin` | `GET / POST` | `RECEPTIONIST` (Active) | Manages live doctor queue and issues walk-in tokens. |
+| `/api/receptionists/pending-appointments` & `/:id/approve` | `GET / PATCH` | `RECEPTIONIST` (Active) | Lists, approves, or rejects online booking requests. |
+| `/api/receptionists/appointments/:id/reschedule` | `POST` | `RECEPTIONIST / DOCTOR` | Atomically reschedules appointment to a new date/shift. |
+| `/api/admin/stats`, `/doctors`, `/clinics`, `/appointments` | `GET / POST` | `ADMIN` | Platform analytics, practitioner/clinic verification, & support inbox. |
+| `/api/notifications` & `/api/health` | `GET / PUT` | Authenticated / Public | User notifications and database health liveness check. |
 
 ---
 
 ## 7. Verification & Automated Test Suite
 
 MediArca maintains an automated end-to-end verification test suite located at `backend/scripts/verify-fixes.ts`:
-- **Total Tests:** 1055+ assertions passing (100% success rate).
-- **Coverage Areas:**
-  - Phone validation & Indian +91 normalization.
-  - Multi-slot shift bounds & capacity calculations.
-  - State machine transitions (`WAITING` -> `IN_CONSULTATION` -> `COMPLETED`).
-  - Google OAuth payload normalization & post-auth profile guards.
-  - 6-digit numeric OTP generation, validation, and expiry.
-  - Dynamic SMTP credential resolution (Environment variables with database fallback).
+- **Total Assertions:** 2,000 passing assertions across unit, integration, security, and concurrency suites (0 failures).
 
 ---
 
@@ -165,8 +177,6 @@ MediArca maintains an automated end-to-end verification test suite located at `b
 
 1. **Backend (Render)**:
    - Git push to `main` triggers automatic Render Web Service build (`npm install && npm run build`).
-   - Server runs self-healing schema migrations (`ensureSchema()`) upon boot.
-   - Production secrets are stored securely in Supabase `SystemConfig` and Render dashboard.
-2. **Frontend (GitHub Pages)**:
-   - Vite builds optimized production bundle into `frontend/dist/`.
-   - GitHub Actions workflow deploys SPA bundle to GitHub Pages at `https://bikesh3764.github.io/MediArca/`.
+   - Startup command (`npm start`) executes `node scripts/deploy-migrations.js && node dist/server.js`, applying Prisma migrations before booting Express.
+2. **Frontend (Cloudflare Pages / GitHub Pages)**:
+   - Vite builds optimized production bundle into `frontend/dist/` with `_headers` disabling HTML caching (`Cache-Control: no-cache, no-store, must-revalidate`) while caching hashed `/assets/*` bundles immutable for 1 year.
