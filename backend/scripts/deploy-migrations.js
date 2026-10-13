@@ -49,4 +49,32 @@ function runMigrations() {
   }
 }
 
-runMigrations();
+async function syncCompositeIndexes() {
+  if (!process.env.DATABASE_URL) return;
+  try {
+    const { PrismaClient } = require('@prisma/client');
+    const prisma = new PrismaClient();
+    try {
+      await prisma.$executeRawUnsafe('ALTER TABLE "User" DROP CONSTRAINT IF EXISTS "User_email_key";');
+      await prisma.$executeRawUnsafe('DROP INDEX IF EXISTS "User_email_key";');
+      await prisma.$executeRawUnsafe('CREATE UNIQUE INDEX IF NOT EXISTS "User_email_role_key" ON "User"("email", "role");');
+      await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "User_email_idx" ON "User"("email");');
+      await prisma.$executeRawUnsafe('ALTER TABLE "Appointment" DROP CONSTRAINT IF EXISTS "Appointment_doctorId_appointmentDate_queueNumber_key";');
+      await prisma.$executeRawUnsafe('DROP INDEX IF EXISTS "Appointment_doctorId_appointmentDate_queueNumber_key";');
+      await prisma.$executeRawUnsafe('DROP INDEX IF EXISTS "Appointment_clinicId_doctorId_appointmentDate_queueNumber_key";');
+      await prisma.$executeRawUnsafe('CREATE UNIQUE INDEX IF NOT EXISTS "Appointment_clinicId_doctorId_appointmentDate_slotId_queueNumber_key" ON "Appointment"("clinicId", "doctorId", "appointmentDate", "slotId", "queueNumber");');
+      console.log('[Prisma Migrate] Composite uniqueness indexes verified.');
+    } finally {
+      await prisma.$disconnect();
+    }
+  } catch (err) {
+    console.warn('[Prisma Migrate] Non-fatal notice during index verification:', err.message);
+  }
+}
+
+async function main() {
+  runMigrations();
+  await syncCompositeIndexes();
+}
+
+main();
