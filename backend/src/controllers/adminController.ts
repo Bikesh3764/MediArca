@@ -191,20 +191,69 @@ export const verifyDoctor = async (req: AuthRequest, res: Response): Promise<voi
 
 export const getAllAppointments = async (_req: AuthRequest, res: Response): Promise<void> => {
   try {
+    // SEC-002: Enforce PHI minimization (HIPAA / DPDP Act) for administrative operational overview.
+    // Explicitly exclude clinicalNotes, vitals, symptoms, reasonForVisit, allergies,
+    // existingConditions, and currentMedications from the admin overview response.
     const appointments = await prisma.appointment.findMany({
-      include: {
+      select: {
+        id: true,
+        patientId: true,
+        doctorId: true,
+        clinicId: true,
+        appointmentDate: true,
+        queueNumber: true,
+        checkingWindow: true,
+        estimatedTime: true,
+        status: true,
+        paymentStatus: true,
+        approvedBy: true,
+        approvedAt: true,
+        slotId: true,
+        isForOther: true,
+        patientName: true,
+        patientAge: true,
+        patientGender: true,
+        isCheckedIn: true,
+        checkedInAt: true,
+        createdAt: true,
+        updatedAt: true,
         doctor: {
-          include: {
-            user: { select: { fullName: true, email: true, phone: true } },
+          select: {
+            id: true,
+            specialty: true,
+            clinicAddress: true,
+            user: {
+              select: {
+                id: true,
+                fullName: true,
+                email: true,
+                phone: true,
+              },
+            },
           },
         },
         patient: {
-          include: {
-            user: { select: { fullName: true, email: true, phone: true } },
+          select: {
+            id: true,
+            gender: true,
+            user: {
+              select: {
+                id: true,
+                fullName: true,
+                email: true,
+                phone: true,
+              },
+            },
           },
         },
         clinic: {
-          select: { id: true, clinicName: true, city: true, address: true, phone: true },
+          select: {
+            id: true,
+            clinicName: true,
+            city: true,
+            address: true,
+            phone: true,
+          },
         },
       },
       orderBy: { createdAt: 'desc' },

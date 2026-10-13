@@ -72,6 +72,7 @@ import prisma from './config/database';
 import { authenticate } from './middleware/authMiddleware';
 import { updateProfile } from './controllers/authController';
 import { submitContactMessage } from './controllers/adminController';
+import { securityStore } from './utils/securityStore';
 
 const isProduction = process.env.NODE_ENV === 'production';
 
@@ -84,6 +85,16 @@ if (isProduction) {
   if (!jwtSecret || jwtSecret === 'mediarca-fallback-jwt-secret' || jwtSecret.length < 32) {
     console.error('FATAL: In production, JWT_SECRET must be explicitly set with a minimum of 32 characters and cannot use default fallback.');
     process.exit(1);
+  }
+
+  // Production Distributed Security Guard (SEC-003)
+  const redisUrl = process.env.REDIS_URL;
+  const isRedisRequired = process.env.REQUIRE_REDIS !== 'false' && process.env.STRICT_DISTRIBUTED_SECURITY !== 'false';
+  if (!redisUrl || !redisUrl.trim()) {
+    console.error('FATAL CONFIGURATION ERROR: In production, REDIS_URL is strictly required for distributed rate-limiting, OTP abuse protection, and account lockout security controls across instances.');
+    if (isRedisRequired) {
+      process.exit(1);
+    }
   }
 }
 
@@ -165,9 +176,9 @@ if (!fs.existsSync(avatarsDir)) {
   fs.mkdirSync(avatarsDir, { recursive: true });
 }
 
-// Serve static uploaded public avatars
+// Serve static uploaded public avatars strictly under /uploads/avatars (SEC-001)
+// The broad parent /uploads directory static mount has been removed to prevent unauthenticated file exposure.
 app.use('/uploads/avatars', express.static(avatarsDir));
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Health Check (Supports Render /healthz and /api/health)
 // Touches PostgreSQL database so Supabase resets 7-day inactivity countdown (Finding L2)
@@ -185,23 +196,44 @@ app.get(['/healthz', '/api/health', '/'], async (_req: Request, res: Response) =
   } catch (err: any) {
     dbStatus = 'disconnected';
   }
+
+  const redisActive = securityStore.isRedisActive();
+  const redisConfigured = Boolean(process.env.REDIS_URL && process.env.REDIS_URL.trim());
+  const redisStatus = redisActive ? 'connected' : (redisConfigured ? 'disconnected' : 'unconfigured');
+
+  const isRedisRequired = isProduction && process.env.REQUIRE_REDIS !== 'false' && process.env.STRICT_DISTRIBUTED_SECURITY !== 'false';
+  const isHealthy = dbStatus === 'connected' && (!isRedisRequired || redisActive);
+
   if (isProduction) {
+    if (!isHealthy) {
+      res.status(503).json({
+        status: 'unavailable',
+        database: dbStatus,
+        redis: redisStatus,
+      });
+      return;
+    }
     res.json({
-      status: dbStatus === 'connected' ? 'ok' : 'degraded',
+      status: redisActive ? 'ok' : 'degraded',
+      database: dbStatus,
+      redis: redisStatus,
     });
     return;
   }
+
   res.json({
     status: 'ok',
     database: dbStatus,
+    redis: redisStatus,
     service: 'MediArca Production Healthcare Platform API',
     uptime: process.uptime(),
     timestamp: new Date().toISOString(),
   });
 });
 
-// Lightweight sliding-window rate limiter with periodic cleanup (BUG-10)
+// Lightweight sliding-window rate limiter with periodic cleanup (BUG-10, SEC-003)
 export const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+securityStore.bindRateLimitMap(rateLimitMap);
 
 // Periodic pruning of stale rate limit entries to prevent unbounded memory growth (BUG-10)
 export const pruneStaleRateLimits = (): number => {
@@ -237,7 +269,7 @@ export const normalizeRateLimitPath = (rawPath: string, baseUrl?: string): strin
 
 export const authRateLimiter = (maxRequests = 40, windowSeconds = 60, customScope?: string) => {
   return (req: Request, res: Response, next: NextFunction): void => {
-    const rawForwarded = req.headers['x-forwarded-for'];
+    const rawForwarded = req.headers?.['x-forwarded-for'];
     const forwardedIp = Array.isArray(rawForwarded)
       ? rawForwarded[0]
       : typeof rawForwarded === 'string'
@@ -247,20 +279,82 @@ export const authRateLimiter = (maxRequests = 40, windowSeconds = 60, customScop
     const rawPath = req.originalUrl ? req.originalUrl.split('?')[0] : (req.baseUrl || req.path);
     const pathKey = customScope || normalizeRateLimitPath(rawPath, req.baseUrl);
     const key = `${ip}:${pathKey}`;
-    const now = Date.now();
-    const entry = rateLimitMap.get(String(key));
 
-    if (entry && now < entry.resetTime) {
-      if (entry.count >= maxRequests) {
+    const isCriticalAuth = /^\/api\/(auth\/(login|register|google|verify-otp|resend-otp)|receptionists?\/apply)/i.test(
+      req.originalUrl || req.baseUrl || req.path
+    );
+
+    // If distributed storage is strictly enforced in production, handle offline/failing store explicitly
+    if (securityStore.isDistributedEnforced() && !securityStore.isRedisActive()) {
+      if (isCriticalAuth) {
+        res.setHeader('Retry-After', '15');
+        res.status(503).json({
+          success: false,
+          code: 'SECURITY_STORE_UNAVAILABLE',
+          message: 'Authentication service is temporarily unavailable. Shared security store is offline.',
+        });
+        return;
+      }
+      console.warn(`[RateLimiter] Distributed rate limiting is degraded for path ${pathKey}; using process-local fallback`);
+      const localResult = securityStore.incrementRateLimitSync(String(key), maxRequests, windowSeconds);
+      if (!localResult.allowed) {
         res.status(429).json({
           success: false,
           message: 'Too many requests. Please wait a moment before trying again.',
         });
         return;
       }
-      entry.count += 1;
-    } else {
-      rateLimitMap.set(String(key), { count: 1, resetTime: now + windowSeconds * 1000 });
+      next();
+      return;
+    }
+
+    // Distributed Redis rate limiting when Redis is active
+    if (securityStore.isRedisActive()) {
+      securityStore
+        .incrementRateLimit(key, maxRequests, windowSeconds)
+        .then((result) => {
+          if (!result.allowed) {
+            res.setHeader('Retry-After', String(result.remainingSeconds || 15));
+            res.status(429).json({
+              success: false,
+              message: 'Too many requests. Please wait a moment before trying again.',
+            });
+            return;
+          }
+          next();
+        })
+        .catch((err) => {
+          if (securityStore.isDistributedEnforced() && isCriticalAuth) {
+            res.setHeader('Retry-After', '15');
+            res.status(503).json({
+              success: false,
+              code: 'SECURITY_STORE_UNAVAILABLE',
+              message: 'Authentication service is temporarily unavailable. Shared security store is offline.',
+            });
+            return;
+          }
+          console.warn(`[RateLimiter] Distributed rate limit check degraded to local fallback for ${pathKey}`);
+          const localResult = securityStore.incrementRateLimitSync(String(key), maxRequests, windowSeconds);
+          if (!localResult.allowed) {
+            res.status(429).json({
+              success: false,
+              message: 'Too many requests. Please wait a moment before trying again.',
+            });
+            return;
+          }
+          next();
+        });
+      return;
+    }
+
+    // Resilient synchronous in-memory rate limiting
+    const localResult = securityStore.incrementRateLimitSync(String(key), maxRequests, windowSeconds);
+    if (!localResult.allowed) {
+      res.status(429).json({
+        success: false,
+        message: 'Too many requests. Please wait a moment before trying again.',
+      });
+      return;
     }
     next();
   };
@@ -375,6 +469,14 @@ export const gracefulShutdown = (
       console.log('[Graceful Shutdown] Database client disconnected successfully.');
     } catch (dbErr) {
       console.error('[Graceful Shutdown] Error disconnecting Prisma database client:', dbErr);
+    }
+
+    // 4. Disconnect distributed Redis client (SEC-003)
+    try {
+      await securityStore.disconnect();
+      console.log('[Graceful Shutdown] Distributed security store disconnected successfully.');
+    } catch (redisErr) {
+      console.error('[Graceful Shutdown] Error disconnecting distributed security store:', redisErr);
     }
 
     console.log('[Graceful Shutdown] Graceful shutdown sequence completed.');

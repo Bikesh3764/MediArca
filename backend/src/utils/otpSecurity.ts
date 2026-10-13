@@ -12,6 +12,8 @@
  * For horizontally scaled multi-instance deployments, back these maps with Redis or a shared DB table.
  */
 
+import { securityStore } from './securityStore';
+
 export interface VerificationLockoutStatus {
   isLocked: boolean;
   remainingLockoutSeconds: number;
@@ -100,6 +102,21 @@ export const getVerificationLockout = (
   return { isLocked: false, remainingLockoutSeconds: 0, lockedUntil: null };
 };
 
+export const getVerificationLockoutAsync = async (
+  email: string,
+  role?: string | null
+): Promise<VerificationLockoutStatus> => {
+  if (securityStore.isDistributedEnforced() || securityStore.isRedisActive()) {
+    const res = await securityStore.checkLockout('otp', email, role);
+    return {
+      isLocked: res.isLocked,
+      remainingLockoutSeconds: res.remainingLockoutSeconds,
+      lockedUntil: res.lockedUntil,
+    };
+  }
+  return getVerificationLockout(email, role);
+};
+
 /**
  * Records an incorrect OTP verification attempt for the given account.
  * Triggers a temporary lockout if failed attempts reach maxAttempts (default: 5).
@@ -163,6 +180,31 @@ export const recordFailedVerificationAttempt = (
   };
 };
 
+export const recordFailedVerificationAttemptAsync = async (
+  email: string,
+  role?: string | null,
+  maxAttempts = MAX_OTP_VERIFY_ATTEMPTS,
+  lockoutMinutes = OTP_LOCKOUT_MINUTES
+): Promise<VerificationAttemptResult> => {
+  if (securityStore.isDistributedEnforced() || securityStore.isRedisActive()) {
+    const res = await securityStore.recordFailedAttempt(
+      'otp',
+      email,
+      role,
+      maxAttempts,
+      lockoutMinutes * 60
+    );
+    return {
+      attempts: res.attempts,
+      isLocked: res.isLocked,
+      remainingAttempts: res.remainingAttempts,
+      lockedUntil: res.lockedUntil,
+      remainingLockoutSeconds: res.remainingLockoutSeconds,
+    };
+  }
+  return recordFailedVerificationAttempt(email, maxAttempts, lockoutMinutes, undefined, role);
+};
+
 /**
  * Clears failed attempt counters and lockout state for the given account.
  * Must be called upon successful OTP verification.
@@ -175,6 +217,16 @@ export const clearVerificationState = (email: string, role?: string | null): voi
   const baseEmail = normalizeEmail(email);
   if (baseEmail && !role) {
     verificationAttemptMap.delete(baseEmail);
+  }
+};
+
+export const clearVerificationStateAsync = async (
+  email: string,
+  role?: string | null
+): Promise<void> => {
+  clearVerificationState(email, role);
+  if (securityStore.isDistributedEnforced() || securityStore.isRedisActive()) {
+    await securityStore.clearLockout('otp', email, role);
   }
 };
 

@@ -12,11 +12,19 @@ import { isValidDobDate, validateDoctorSlots, timeToMinutes, validateDoctorNumer
 import { validateMagicBytes } from '../middleware/uploadMiddleware';
 import { isValidIndianPhone, formatIndianPhone, sanitizeIndianPhone, findExistingAccountByPhone, getPhoneSearchVariants } from '../utils/phoneUtils';
 import { sendVerificationOtpEmail } from '../utils/emailService';
-import { isClinicActive } from '../utils/authGuards';
+import {
+  checkPasswordLoginLockout,
+  recordFailedPasswordLogin,
+  clearPasswordLoginState,
+  SecurityStoreUnavailableError,
+} from '../utils/securityStore';
 import {
   recordFailedVerificationAttempt,
+  recordFailedVerificationAttemptAsync,
   getVerificationLockout,
+  getVerificationLockoutAsync,
   clearVerificationState,
+  clearVerificationStateAsync,
   checkResendCooldown,
   recordResendAttempt,
 } from '../utils/otpSecurity';
@@ -199,7 +207,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
       // 1. Account-level lockout check before issuing new OTP on unverified re-registration
       // Legacy single-arg reference retained for static verification: const lockout = getVerificationLockout(cleanEmail);
-      const lockout = getVerificationLockout(cleanEmail, normalizedRole);
+      const lockout = await getVerificationLockoutAsync(cleanEmail, normalizedRole);
       if (lockout.isLocked) {
         res.status(429).json({
           success: false,
@@ -583,6 +591,15 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       },
     });
   } catch (error: any) {
+    if (error instanceof SecurityStoreUnavailableError || error?.code === 'SECURITY_STORE_UNAVAILABLE') {
+      res.setHeader('Retry-After', '15');
+      res.status(503).json({
+        success: false,
+        code: 'SECURITY_STORE_UNAVAILABLE',
+        message: 'Registration service is temporarily unavailable. Security verification state cannot be verified across instances. Please try again in a few moments.',
+      });
+      return;
+    }
     console.error('Register error:', error);
     res.status(500).json({
       success: false,
@@ -601,8 +618,39 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    const rawForwarded = req.headers?.['x-forwarded-for'];
+    const forwardedIp = Array.isArray(rawForwarded)
+      ? rawForwarded[0]
+      : typeof rawForwarded === 'string'
+        ? rawForwarded.split(',')[0].trim()
+        : undefined;
+    const clientIp = req.ip || forwardedIp || 'unknown';
+
     const cleanLoginEmail = email.toLowerCase().trim();
     const requestedRole = typeof role === 'string' && role.trim() ? role.toUpperCase().trim() : null;
+
+    // 1. Account-level brute-force lockout check (SEC-004 dual-layer protection)
+    if (requestedRole) {
+      const lockout = await checkPasswordLoginLockout(cleanLoginEmail, requestedRole, clientIp);
+      if (lockout.isLocked) {
+        res.status(429).json({
+          success: false,
+          message: lockout.message || 'Too many failed login attempts. Your account has been temporarily locked for 15 minutes. Please try again later.',
+          remainingSeconds: lockout.remainingLockoutSeconds,
+        });
+        return;
+      }
+    } else {
+      const defaultLockout = await checkPasswordLoginLockout(cleanLoginEmail, null, clientIp);
+      if (defaultLockout.isLocked) {
+        res.status(429).json({
+          success: false,
+          message: defaultLockout.message || 'Too many failed login attempts. Your account has been temporarily locked for 15 minutes. Please try again later.',
+          remainingSeconds: defaultLockout.remainingLockoutSeconds,
+        });
+        return;
+      }
+    }
 
     const loginUserInclude = {
       patientProfile: true,
@@ -662,9 +710,21 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         include: loginUserInclude,
       });
       if (matchingUsers.length === 1) {
-        user = matchingUsers[0];
+        const candidateUser = matchingUsers[0];
+        const roleLockout = await checkPasswordLoginLockout(cleanLoginEmail, candidateUser.role, clientIp);
+        if (roleLockout.isLocked) {
+          res.status(429).json({
+            success: false,
+            message: roleLockout.message || 'Too many failed login attempts. Your account has been temporarily locked for 15 minutes. Please try again later.',
+            remainingSeconds: roleLockout.remainingLockoutSeconds,
+          });
+          return;
+        }
+        user = candidateUser;
       } else if (matchingUsers.length > 1) {
         for (const candidate of matchingUsers) {
+          const candLockout = await checkPasswordLoginLockout(cleanLoginEmail, candidate.role, clientIp);
+          if (candLockout.isLocked) continue;
           if (await bcrypt.compare(password, candidate.passwordHash)) {
             user = candidate;
             passwordAlreadyVerified = true;
@@ -672,6 +732,17 @@ export const login = async (req: Request, res: Response): Promise<void> => {
           }
         }
         if (!user) {
+          const attempt = await recordFailedPasswordLogin(cleanLoginEmail, requestedRole, clientIp);
+          if (attempt.isLocked) {
+            res.status(429).json({
+              success: false,
+              message: attempt.scope === 'client'
+                ? 'Too many failed login attempts from this network. Access is temporarily locked for 15 minutes. Please try again later.'
+                : 'Too many failed login attempts. Your account has been temporarily locked for 15 minutes. Please try again later.',
+              remainingSeconds: attempt.remainingLockoutSeconds,
+            });
+            return;
+          }
           res.status(401).json({ success: false, message: 'Invalid email or password' });
           return;
         }
@@ -679,6 +750,17 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     }
 
     if (!user) {
+      const attempt = await recordFailedPasswordLogin(cleanLoginEmail, requestedRole, clientIp);
+      if (attempt.isLocked) {
+        res.status(429).json({
+          success: false,
+          message: attempt.scope === 'client'
+            ? 'Too many failed login attempts from this network. Access is temporarily locked for 15 minutes. Please try again later.'
+            : 'Too many failed login attempts. Your account has been temporarily locked for 15 minutes. Please try again later.',
+          remainingSeconds: attempt.remainingLockoutSeconds,
+        });
+        return;
+      }
       res.status(401).json({ success: false, message: 'Invalid email or password' });
       return;
     }
@@ -693,9 +775,27 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
     const isMatch = passwordAlreadyVerified ? true : await bcrypt.compare(password, user.passwordHash);
     if (!isMatch) {
+      const attempt = await recordFailedPasswordLogin(cleanLoginEmail, user.role, clientIp);
+      if (attempt.isLocked) {
+        res.status(429).json({
+          success: false,
+          message: attempt.scope === 'client'
+            ? 'Too many failed login attempts from this network. Access is temporarily locked for 15 minutes. Please try again later.'
+            : 'Too many failed login attempts. Your account has been temporarily locked for 15 minutes. Please try again later.',
+          remainingSeconds: attempt.remainingLockoutSeconds,
+        });
+        return;
+      }
       res.status(401).json({ success: false, message: 'Invalid email or password' });
       return;
     }
+
+    // Reset failed password attempts counter immediately upon successful credentials verification (SEC-004)
+    await clearPasswordLoginState(user.email, user.role, clientIp);
+    if (requestedRole && requestedRole !== user.role) {
+      await clearPasswordLoginState(user.email, requestedRole, clientIp);
+    }
+    await clearPasswordLoginState(user.email, null, clientIp);
 
     // Check receptionist application & clinic status BEFORE email verification check (FUNC-006)
     if (user.role === 'RECEPTIONIST') {
@@ -809,6 +909,15 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       },
     });
   } catch (error: any) {
+    if (error instanceof SecurityStoreUnavailableError || error?.code === 'SECURITY_STORE_UNAVAILABLE') {
+      res.setHeader('Retry-After', '15');
+      res.status(503).json({
+        success: false,
+        code: 'SECURITY_STORE_UNAVAILABLE',
+        message: 'Authentication service is temporarily unavailable. Security verification state cannot be verified across instances. Please try again in a few moments.',
+      });
+      return;
+    }
     console.error('Login error:', error);
     res.status(500).json({
       success: false,
@@ -830,8 +939,8 @@ export const verifyEmailOtp = async (req: Request, res: Response): Promise<void>
     const cleanOtp = String(otp).trim();
     const requestedRole = typeof role === 'string' && role.trim() ? role.toUpperCase().trim() : null;
 
-    // 1. Account-level brute-force lockout check (FIX-005 / ARCH-007)
-    const lockout = getVerificationLockout(cleanEmail, requestedRole);
+    // 1. Account-level brute-force lockout check (FIX-005 / ARCH-007 / SEC-003)
+    const lockout = await getVerificationLockoutAsync(cleanEmail, requestedRole);
     if (lockout.isLocked) {
       res.status(429).json({
         success: false,
@@ -885,7 +994,7 @@ export const verifyEmailOtp = async (req: Request, res: Response): Promise<void>
 
     const effectiveRole = requestedRole || user.role || null;
     if (effectiveRole && effectiveRole !== requestedRole) {
-      const roleLockout = getVerificationLockout(cleanEmail, effectiveRole);
+      const roleLockout = await getVerificationLockoutAsync(cleanEmail, effectiveRole);
       if (roleLockout.isLocked) {
         res.status(429).json({
           success: false,
@@ -898,7 +1007,7 @@ export const verifyEmailOtp = async (req: Request, res: Response): Promise<void>
 
     if (user.isEmailVerified) {
       // User is already verified: reject OTP verification and require standard password login (Prevent A-01 Account Takeover)
-      clearVerificationState(cleanEmail, effectiveRole);
+      await clearVerificationStateAsync(cleanEmail, effectiveRole);
       res.status(400).json({
         success: false,
         message: 'This email is already verified. Please sign in directly with your password.',
@@ -908,7 +1017,7 @@ export const verifyEmailOtp = async (req: Request, res: Response): Promise<void>
     }
 
     if (!user.emailVerificationOtp || user.emailVerificationOtp !== cleanOtp) {
-      const attemptResult = recordFailedVerificationAttempt(cleanEmail, effectiveRole);
+      const attemptResult = await recordFailedVerificationAttemptAsync(cleanEmail, effectiveRole);
       if (attemptResult.isLocked) {
         res.status(429).json({
           success: false,
@@ -958,8 +1067,8 @@ export const verifyEmailOtp = async (req: Request, res: Response): Promise<void>
       }
     }
 
-    // Mark as verified and clear OTP & verification attempt state (FIX-005)
-    clearVerificationState(cleanEmail, effectiveRole);
+    // Mark as verified and clear OTP & verification attempt state (FIX-005 / SEC-003)
+    await clearVerificationStateAsync(cleanEmail, effectiveRole);
     const updatedUser = await prisma.user.update({
       where: { id: user.id },
       data: {
@@ -993,6 +1102,15 @@ export const verifyEmailOtp = async (req: Request, res: Response): Promise<void>
       },
     });
   } catch (error: any) {
+    if (error instanceof SecurityStoreUnavailableError || error?.code === 'SECURITY_STORE_UNAVAILABLE') {
+      res.setHeader('Retry-After', '15');
+      res.status(503).json({
+        success: false,
+        code: 'SECURITY_STORE_UNAVAILABLE',
+        message: 'OTP verification is temporarily unavailable. Security verification state cannot be verified across instances. Please try again in a few moments.',
+      });
+      return;
+    }
     console.error('Verify OTP error:', error);
     res.status(500).json({
       success: false,
@@ -1013,8 +1131,8 @@ export const resendEmailOtp = async (req: Request, res: Response): Promise<void>
     const cleanEmail = String(email).toLowerCase().trim();
     const requestedRole = typeof role === 'string' && role.trim() ? role.toUpperCase().trim() : null;
 
-    // 1. Account lockout check: reject resend if account is locked out from failed verification attempts (FIX-005 / ARCH-007)
-    const lockout = getVerificationLockout(cleanEmail, requestedRole);
+    // 1. Account lockout check: reject resend if account is locked out from failed verification attempts (FIX-005 / ARCH-007 / SEC-003)
+    const lockout = await getVerificationLockoutAsync(cleanEmail, requestedRole);
     if (lockout.isLocked) {
       res.status(429).json({
         success: false,
@@ -1059,7 +1177,7 @@ export const resendEmailOtp = async (req: Request, res: Response): Promise<void>
 
     const effectiveRole = requestedRole || user.role || null;
     if (effectiveRole && effectiveRole !== requestedRole) {
-      const roleLockout = getVerificationLockout(cleanEmail, effectiveRole);
+      const roleLockout = await getVerificationLockoutAsync(cleanEmail, effectiveRole);
       if (roleLockout.isLocked) {
         res.status(429).json({
           success: false,
@@ -1110,6 +1228,15 @@ export const resendEmailOtp = async (req: Request, res: Response): Promise<void>
       },
     });
   } catch (error: any) {
+    if (error instanceof SecurityStoreUnavailableError || error?.code === 'SECURITY_STORE_UNAVAILABLE') {
+      res.setHeader('Retry-After', '15');
+      res.status(503).json({
+        success: false,
+        code: 'SECURITY_STORE_UNAVAILABLE',
+        message: 'OTP resend service is temporarily unavailable. Security verification state cannot be verified across instances. Please try again in a few moments.',
+      });
+      return;
+    }
     console.error('Resend OTP error:', error);
     res.status(500).json({
       success: false,
