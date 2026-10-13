@@ -461,8 +461,12 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
               >
                 <option value="ALL">All Visit Statuses</option>
                 <option value="COMPLETED">Completed Consultations</option>
+                <option value="IN_CONSULTATION">In Cabin (Consultation)</option>
                 <option value="WAITING">Waiting Queue</option>
-                <option value="CANCELLED">Cancelled / Declined</option>
+                <option value="PENDING_APPROVAL">Pending Approval</option>
+                <option value="CANCELLED">Cancelled</option>
+                <option value="REJECTED">Rejected</option>
+                <option value="EXPIRED">Expired</option>
               </select>
               <ChevronDown className="w-3 h-3 text-[#86868b] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>

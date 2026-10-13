@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import prisma from '../config/database';
 import { AuthRequest } from '../middleware/authMiddleware';
-import { getLocalDateString, timeToMinutes, getIndianTimeMinutes, minutesTo12Hour, parseDoctorSlots } from '../utils/scheduleUtils';
+import { getLocalDateString, timeToMinutes, getIndianTimeMinutes, minutesTo12Hour, parseDoctorSlots, cleanSlotName } from '../utils/scheduleUtils';
 import { canTransition } from '../utils/appointmentStateMachine';
 import { isDoctorEligibleForClinicalPractice } from '../utils/authGuards';
 import { createNotification } from '../services/notificationService';
@@ -89,8 +89,33 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
         : { queueNumber: 'asc' },
     });
 
+    let slots = parseDoctorSlots(doctor);
+    if (clinicId && clinicId !== 'all') {
+      const matchedAff = (doctor.clinics || []).find((c: any) => c.clinicId === clinicId);
+      if (matchedAff?.slots) {
+        try {
+          const p = typeof matchedAff.slots === 'string' ? JSON.parse(matchedAff.slots) : matchedAff.slots;
+          if (Array.isArray(p) && p.length > 0) slots = p;
+        } catch {}
+      }
+    } else if ((doctor.clinics || []).length === 1 && (doctor.clinics as any)[0]?.slots) {
+      try {
+        const p = typeof (doctor.clinics as any)[0].slots === 'string' ? JSON.parse((doctor.clinics as any)[0].slots) : (doctor.clinics as any)[0].slots;
+        if (Array.isArray(p) && p.length > 0) slots = p;
+      } catch {}
+    }
+
     const getApptStartMins = (a: any): number => {
+      if (a.slotId) {
+        const matchedSlot = slots.find((s: any) => s.id === a.slotId);
+        if (matchedSlot?.startTime) return timeToMinutes(matchedSlot.startTime);
+      }
       if (a.checkingWindow) {
+        const cleanedWin = cleanSlotName(a.checkingWindow, '');
+        const matchedByName = slots.find(
+          (s: any) => cleanSlotName(s.name, '').toLowerCase() === cleanedWin.toLowerCase()
+        );
+        if (matchedByName?.startTime) return timeToMinutes(matchedByName.startTime);
         const match = a.checkingWindow.match(/(\d{1,2}:\d{2}\s*(?:AM|PM)?)/i);
         if (match) return timeToMinutes(match[1]);
       }
@@ -110,21 +135,6 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
       return a.queueNumber - b.queueNumber;
     });
 
-    let slots = parseDoctorSlots(doctor);
-    if (clinicId && clinicId !== 'all') {
-      const matchedAff = (doctor.clinics || []).find((c: any) => c.clinicId === clinicId);
-      if (matchedAff?.slots) {
-        try {
-          const p = typeof matchedAff.slots === 'string' ? JSON.parse(matchedAff.slots) : matchedAff.slots;
-          if (Array.isArray(p) && p.length > 0) slots = p;
-        } catch {}
-      }
-    } else if ((doctor.clinics || []).length === 1 && (doctor.clinics as any)[0]?.slots) {
-      try {
-        const p = typeof (doctor.clinics as any)[0].slots === 'string' ? JSON.parse((doctor.clinics as any)[0].slots) : (doctor.clinics as any)[0].slots;
-        if (Array.isArray(p) && p.length > 0) slots = p;
-      } catch {}
-    }
     const currentMins = getIndianTimeMinutes();
 
     const resolvedAppointments = appointments.map((a: any) => {
@@ -225,21 +235,48 @@ export const executeCallPatientTransaction = async (
   clinicId?: string | null
 ) => {
   return await prismaClient.$transaction(async (tx: any) => {
-    // Concurrency control: acquire exclusive row lock on DoctorProfile to serialize queue transitions (A-02)
+    // Concurrency control: acquire exclusive row lock on DoctorProfile and Appointment to serialize queue transitions (A-02, ARCH-012)
     if (typeof (tx as any).$queryRaw === 'function') {
       await (tx as any).$queryRaw`SELECT id FROM "DoctorProfile" WHERE id = ${doctorId} FOR UPDATE;`;
     } else if (typeof tx.$executeRaw === 'function') {
       await tx.$executeRaw`SELECT id FROM "DoctorProfile" WHERE id = ${doctorId} FOR UPDATE;`;
     }
+    if (typeof tx.$executeRaw === 'function') {
+      await tx.$executeRaw`SELECT id FROM "Appointment" WHERE id = ${appointmentId} FOR UPDATE;`;
+    }
 
-    // Guard: ensure practitioner is not actively consulting a patient at another clinic facility (Issue 7 / Fix #7)
-    if (clinicId && typeof tx.appointment?.findFirst === 'function') {
+    // Re-verify target appointment state inside the transaction after acquiring lock (ARCH-012)
+    if (typeof tx.appointment?.findUnique === 'function') {
+      const currentAppt = await tx.appointment.findUnique({
+        where: { id: appointmentId },
+      });
+      if (!currentAppt) {
+        throw new Error('Appointment no longer exists.');
+      }
+      if (currentAppt.doctorId && currentAppt.doctorId !== doctorId) {
+        throw new Error('Appointment does not belong to this doctor.');
+      }
+      if (clinicId && currentAppt.clinicId && currentAppt.clinicId !== clinicId) {
+        throw new Error('Appointment does not belong to this clinic facility.');
+      }
+      if (currentAppt.isCheckedIn === false) {
+        throw new Error('Patient check-in was removed before entering consultation.');
+      }
+      if (currentAppt.status && currentAppt.status !== 'WAITING' && currentAppt.status !== 'IN_CONSULTATION') {
+        throw new Error(`Cannot call patient: appointment is currently '${currentAppt.status}'.`);
+      }
+    }
+
+    // Guard: ensure practitioner is not actively consulting a patient at another clinic facility or private practice (Issue 7 / Fix #7 / ARCH-012)
+    if (typeof tx.appointment?.findFirst === 'function') {
       const activeInOtherClinic = await tx.appointment.findFirst({
         where: {
           doctorId,
           appointmentDate,
           status: 'IN_CONSULTATION',
-          clinicId: { not: clinicId },
+          ...(clinicId
+            ? { OR: [{ clinicId: { not: clinicId } }, { clinicId: null }] }
+            : { clinicId: { not: null } }),
           id: { not: appointmentId },
         },
         include: { clinic: true },
@@ -264,10 +301,22 @@ export const executeCallPatientTransaction = async (
       data: { status: 'WAITING' },
     });
 
-    // Atomically update target appointment to IN_CONSULTATION
-    return await tx.appointment.update({
-      where: { id: appointmentId },
+    // Concurrency guard: conditional atomic update ensures the appointment is strictly in an eligible state (WAITING or IN_CONSULTATION)
+    const updateResult = await tx.appointment.updateMany({
+      where: {
+        id: appointmentId,
+        status: { in: ['WAITING', 'IN_CONSULTATION'] },
+        isCheckedIn: true,
+      },
       data: { status: 'IN_CONSULTATION' },
+    });
+
+    if (updateResult.count === 0) {
+      throw new Error('Cannot call patient: appointment is no longer in an eligible waiting state.');
+    }
+
+    return await tx.appointment.findUnique({
+      where: { id: appointmentId },
       include: {
         clinic: true,
         patient: {

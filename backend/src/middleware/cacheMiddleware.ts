@@ -12,6 +12,12 @@ import { Request, Response, NextFunction } from 'express';
  */
 export const publicCache = (maxAge = 60, staleWhileRevalidate = 30) => {
   return (req: Request, res: Response, next: NextFunction): void => {
+    const existingVary =
+      typeof res.getHeader === 'function' ? String(res.getHeader('Vary') || res.getHeader('vary') || '') : '';
+    if (!existingVary.toLowerCase().includes('authorization')) {
+      res.setHeader('Vary', existingVary ? `${existingVary}, Authorization` : 'Authorization');
+    }
+
     // Only cache GET or HEAD requests
     if (req.method !== 'GET' && req.method !== 'HEAD') {
       res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');

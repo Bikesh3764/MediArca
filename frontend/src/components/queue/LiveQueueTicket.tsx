@@ -328,14 +328,18 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
                   Checked In at Clinic • Waiting Area
                 </span>
               </div>
-              <button
-                type="button"
-                disabled={togglingPresence}
-                onClick={() => handleTogglePresence(false)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white hover:bg-[#e8e8ed] text-[#86868b] hover:text-[#1d1d1f] border border-[#e5e5ea] text-[11px] font-medium active:scale-[0.97] transition-all duration-150 cursor-pointer select-none self-start sm:self-auto"
-              >
-                <span>{togglingPresence ? 'Updating...' : 'Step Out (Not in Cabin)'}</span>
-              </button>
+              {status === 'WAITING' ? (
+                <button
+                  type="button"
+                  disabled={togglingPresence}
+                  onClick={() => handleTogglePresence(false)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white hover:bg-[#e8e8ed] text-[#86868b] hover:text-[#1d1d1f] border border-[#e5e5ea] text-[11px] font-medium active:scale-[0.97] transition-all duration-150 cursor-pointer select-none self-start sm:self-auto"
+                >
+                  <span>{togglingPresence ? 'Updating...' : 'Step Out (Not in Cabin)'}</span>
+                </button>
+              ) : (
+                <span className="text-[11px] text-[#34c759] font-medium">Inside Consultation</span>
+              )}
             </div>
           ) : (
             <div className="mt-3.5 p-3.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">

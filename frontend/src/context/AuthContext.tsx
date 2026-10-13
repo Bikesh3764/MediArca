@@ -40,7 +40,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error: any) {
       console.warn('Session refresh warning:', error);
       // Only clear credentials if the server explicitly confirmed an invalid/expired token (401)
-      if (error?.response?.status === 401) {
+      if (error?.status === 401 || error?.response?.status === 401) {
         localStorage.removeItem('mediarca_token');
         localStorage.removeItem('mediarca_user');
         setUser(null);

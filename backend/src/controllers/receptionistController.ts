@@ -12,6 +12,7 @@ import {
   timeToMinutes,
   minutesTo12Hour,
   isValidAppointmentDate,
+  cleanSlotName,
 } from '../utils/scheduleUtils';
 import { formatIndianPhone, sanitizeIndianPhone, isValidIndianPhone, findExistingAccountByPhone } from '../utils/phoneUtils';
 import { canTransition } from '../utils/appointmentStateMachine';
@@ -185,6 +186,15 @@ export const getMyReceptionist = async (req: AuthRequest, res: Response): Promis
       })
     );
 
+    if (receptionist.clinic && !(receptionist.clinic as any).checkinCode && typeof (prisma.clinicProfile as any)?.update === 'function') {
+      const generatedCode = crypto.randomInt(100000, 1000000).toString();
+      await prisma.clinicProfile.update({
+        where: { id: receptionist.clinic.id },
+        data: { checkinCode: generatedCode },
+      });
+      (receptionist.clinic as any).checkinCode = generatedCode;
+    }
+
     const canAccessClinicCheckinCode = !mustChangePassword && isClinicActive(receptionist.clinic).active;
 
     res.json({
@@ -326,24 +336,6 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
       orderBy: { queueNumber: 'asc' },
     });
 
-    const getApptStartMins = (a: any): number => {
-      if (a.checkingWindow) {
-        const match = a.checkingWindow.match(/(\d{1,2}:\d{2}\s*(?:AM|PM)?)/i);
-        if (match) return timeToMinutes(match[1]);
-      }
-      return 0;
-    };
-
-    // Chronologically order appointments by slot window start time, then queueNumber (Finding 4)
-    appointments.sort((a, b) => {
-      const aSlotMins = getApptStartMins(a);
-      const bSlotMins = getApptStartMins(b);
-      if (aSlotMins !== bSlotMins) {
-        return aSlotMins - bSlotMins;
-      }
-      return a.queueNumber - b.queueNumber;
-    });
-
     let targetAffiliation: any = null;
     let slots = parseDoctorSlots(doctor);
     if (receptionist?.clinicId) {
@@ -364,6 +356,33 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
         } catch {}
       }
     }
+
+    const getApptStartMins = (a: any): number => {
+      if (a.slotId && Array.isArray(slots)) {
+        const matched = slots.find((s: any) => s && s.id === a.slotId);
+        if (matched?.startTime) return timeToMinutes(matched.startTime);
+      }
+      if (a.checkingWindow && Array.isArray(slots)) {
+        const cleanW = cleanSlotName(a.checkingWindow, '').toLowerCase();
+        const matchedByName = slots.find((s: any) => s && cleanSlotName(s.name, '').toLowerCase() === cleanW);
+        if (matchedByName?.startTime) return timeToMinutes(matchedByName.startTime);
+      }
+      if (a.checkingWindow) {
+        const match = a.checkingWindow.match(/(\d{1,2}:\d{2}\s*(?:AM|PM)?)/i);
+        if (match) return timeToMinutes(match[1]);
+      }
+      return 0;
+    };
+
+    // Chronologically order appointments by slot window start time, then queueNumber (Finding 4 / ARCH-006 / FUNC-009)
+    appointments.sort((a, b) => {
+      const aSlotMins = getApptStartMins(a);
+      const bSlotMins = getApptStartMins(b);
+      if (aSlotMins !== bSlotMins) {
+        return aSlotMins - bSlotMins;
+      }
+      return a.queueNumber - b.queueNumber;
+    });
 
     res.json({
       success: true,
@@ -560,19 +579,40 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
     const unspacedE164 = rawDigits ? `+91${rawDigits}` : '';
     const spacedSeedFormat = rawDigits ? `+91 ${rawDigits.slice(0, 5)} ${rawDigits.slice(5)}` : '';
 
-    let patientUser = await prisma.user.findFirst({
-      where: {
-        role: 'PATIENT',
-        OR: [
-          ...(normalizedPhone ? [{ phone: normalizedPhone }] : []),
-          ...(rawDigits ? [{ phone: rawDigits }] : []),
-          ...(unspacedE164 ? [{ phone: unspacedE164 }] : []),
-          ...(spacedSeedFormat ? [{ phone: spacedSeedFormat }] : []),
-          { phone: cleanPhone },
-        ],
-      },
-      include: { patientProfile: true },
-    });
+    const phoneLookupWhere = {
+      role: 'PATIENT',
+      OR: [
+        ...(normalizedPhone ? [{ phone: normalizedPhone }] : []),
+        ...(rawDigits ? [{ phone: rawDigits }] : []),
+        ...(unspacedE164 ? [{ phone: unspacedE164 }] : []),
+        ...(spacedSeedFormat ? [{ phone: spacedSeedFormat }] : []),
+        { phone: cleanPhone },
+      ],
+    };
+
+    let patientUser: any = null;
+    if (typeof (prisma.user as any)?.findMany === 'function') {
+      const candidates = await prisma.user.findMany({
+        where: phoneLookupWhere,
+        include: { patientProfile: true },
+      });
+      if (Array.isArray(candidates) && candidates.length > 0) {
+        const isSynthetic = (u: any) => {
+          const em = String(u?.email || '').toLowerCase();
+          return em.endsWith('@mediarca.local') || em.startsWith('walkin.');
+        };
+        patientUser =
+          candidates.find((u: any) => !isSynthetic(u) && u.isEmailVerified !== false) ||
+          candidates.find((u: any) => !isSynthetic(u)) ||
+          candidates[0];
+      }
+    }
+    if (!patientUser) {
+      patientUser = await prisma.user.findFirst({
+        where: phoneLookupWhere,
+        include: { patientProfile: true },
+      });
+    }
 
     if (!patientUser) {
       const unguessablePassword = crypto.randomBytes(32).toString('hex');
@@ -714,12 +754,13 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
             }
           }
 
+          // FUNC-008: Count only confirmed/completed bookings toward hard slot capacity so unapproved pending requests cannot starve walk-ins
           const dayAppointments = await tx.appointment.findMany({
             where: {
               doctorId: doctor.id,
               appointmentDate,
-              ...(receptionist.clinicId ? { clinicId: receptionist.clinicId } : {}),
-              status: { in: ['PENDING_APPROVAL', 'WAITING', 'IN_CONSULTATION', 'COMPLETED'] },
+              ...(targetClinicId ? { clinicId: targetClinicId } : {}),
+              status: { in: ['WAITING', 'IN_CONSULTATION', 'COMPLETED'] },
             },
             select: {
               id: true,
@@ -731,7 +772,7 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
 
           const bookedInSlot = dayAppointments.filter((a) => {
             if (a.slotId) return a.slotId === chosenSlot.id;
-            if (a.checkingWindow) return a.checkingWindow.includes(chosenSlot.startTime);
+            if (a.checkingWindow) return a.checkingWindow.includes(chosenSlot.startTime) || cleanSlotName(a.checkingWindow) === cleanSlotName(chosenSlot.name);
             return slots.length === 1;
           }).length;
 
@@ -789,9 +830,10 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
             const slotStartMins = sh * 60 + sm;
             estimatedTime = minutesTo12Hour(slotStartMins + Math.round(patientsAheadInQueue * pace));
           }
-          const checkingWindow = chosenSlot.name;
+          const checkingWindow = cleanSlotName(chosenSlot.name, 'Shift 1');
+          const isTodayBooking = appointmentDate === istTodayStr;
 
-          return await tx.appointment.create({
+          const created = await tx.appointment.create({
             data: {
               patientId: patientProfile!.id,
               doctorId: doctor.id,
@@ -809,8 +851,8 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
               patientName: patientName ? String(patientName).trim() : null,
               patientAge: patientAge ? String(patientAge).trim() : null,
               patientGender: gender || null,
-              isCheckedIn: true,
-              checkedInAt: new Date(),
+              isCheckedIn: isTodayBooking,
+              checkedInAt: isTodayBooking ? new Date() : null,
             },
             include: {
               doctor: {
@@ -824,6 +866,10 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
               },
             },
           });
+
+          (created as any).patientPhone =
+            normalizedPhone || cleanPhone || created.patient?.user?.phone || null;
+          return created;
         });
 
         break; // Success!
@@ -901,21 +947,48 @@ export const executeReceptionistInConsultationTransaction = async (
   clinicId?: string | null
 ) => {
   return await prismaClient.$transaction(async (tx: any) => {
-    // Concurrency control: acquire exclusive row lock on DoctorProfile to serialize queue transitions (BUG-05, A-02)
+    // Concurrency control: acquire exclusive row lock on DoctorProfile and Appointment to serialize queue transitions (BUG-05, A-02, ARCH-012)
     if (typeof (tx as any).$queryRaw === 'function') {
       await (tx as any).$queryRaw`SELECT id FROM "DoctorProfile" WHERE id = ${doctorId} FOR UPDATE;`;
     } else if (typeof (tx as any).$executeRaw === 'function') {
       await (tx as any).$executeRaw`SELECT id FROM "DoctorProfile" WHERE id = ${doctorId} FOR UPDATE;`;
     }
+    if (typeof (tx as any).$executeRaw === 'function') {
+      await (tx as any).$executeRaw`SELECT id FROM "Appointment" WHERE id = ${appointmentId} FOR UPDATE;`;
+    }
 
-    // Guard: ensure practitioner is not actively consulting a patient at another facility (Issue 7)
-    if (clinicId) {
+    // Re-verify target appointment inside transaction under DoctorProfile lock (ARCH-012)
+    if (typeof tx.appointment?.findUnique === 'function') {
+      const currentAppt = await tx.appointment.findUnique({
+        where: { id: appointmentId },
+      });
+      if (!currentAppt) {
+        throw new Error('Cannot call patient into consultation: Appointment not found.');
+      }
+      if (currentAppt.doctorId && currentAppt.doctorId !== doctorId) {
+        throw new Error('Cannot call patient into consultation: Appointment belongs to another practitioner.');
+      }
+      if (clinicId && currentAppt.clinicId && currentAppt.clinicId !== clinicId) {
+        throw new Error('Cannot call patient into consultation: Appointment belongs to another clinic facility.');
+      }
+      if (currentAppt.isCheckedIn === false) {
+        throw new Error('Cannot call patient into consultation: Patient is no longer checked in at the clinic.');
+      }
+      if (currentAppt.status && currentAppt.status !== 'WAITING' && currentAppt.status !== 'IN_CONSULTATION') {
+        throw new Error(`Cannot call patient into consultation: Appointment status is '${currentAppt.status}'.`);
+      }
+    }
+
+    // Guard: ensure practitioner is not actively consulting a patient at another facility or private practice (Issue 7 / ARCH-012)
+    if (typeof tx.appointment?.findFirst === 'function') {
       const activeInOtherClinic = await tx.appointment.findFirst({
         where: {
           doctorId,
           appointmentDate,
           status: 'IN_CONSULTATION',
-          clinicId: { not: clinicId },
+          ...(clinicId
+            ? { OR: [{ clinicId: { not: clinicId } }, { clinicId: null }] }
+            : { clinicId: { not: null } }),
           id: { not: appointmentId },
         },
         include: { clinic: true },
@@ -940,10 +1013,22 @@ export const executeReceptionistInConsultationTransaction = async (
       data: { status: 'WAITING' },
     });
 
-    // Atomically set target appointment to IN_CONSULTATION
-    return await tx.appointment.update({
-      where: { id: appointmentId },
+    // Concurrency guard: conditional atomic update ensures the appointment is strictly in an eligible state (WAITING or IN_CONSULTATION)
+    const updateResult = await tx.appointment.updateMany({
+      where: {
+        id: appointmentId,
+        status: { in: ['WAITING', 'IN_CONSULTATION'] },
+        isCheckedIn: true,
+      },
       data: updatePayload,
+    });
+
+    if (updateResult.count === 0) {
+      throw new Error('Cannot call patient into consultation: appointment is no longer in an eligible waiting state.');
+    }
+
+    return await tx.appointment.findUnique({
+      where: { id: appointmentId },
       include: {
         clinic: true,
         doctor: { include: { user: { select: { fullName: true } } } },
@@ -1065,13 +1150,26 @@ export const updateAppointmentStatus = async (req: AuthRequest, res: Response): 
         targetAppointment.clinicId
       );
     } else {
-      updated = await prisma.appointment.update({
-        where: { id: appointmentId },
-        data: updatePayload,
-        include: {
-          doctor: { include: { user: { select: { fullName: true } } } },
-          patient: { include: { user: { select: { id: true, fullName: true, phone: true } } } },
-        },
+      updated = await prisma.$transaction(async (tx) => {
+        const current = await tx.appointment.findUnique({
+          where: { id: appointmentId },
+          select: { status: true, isCheckedIn: true, doctorId: true, clinicId: true, appointmentDate: true },
+        });
+        if (!current) {
+          throw new Error('Appointment not found');
+        }
+        const stateCheck = canTransition(current.status, status, req.user?.role || 'RECEPTIONIST');
+        if (!stateCheck.allowed) {
+          throw new Error(stateCheck.reason || `Cannot transition appointment from ${current.status} to ${status}.`);
+        }
+        return await tx.appointment.update({
+          where: { id: appointmentId },
+          data: updatePayload,
+          include: {
+            doctor: { include: { user: { select: { fullName: true } } } },
+            patient: { include: { user: { select: { id: true, fullName: true, phone: true } } } },
+          },
+        });
       });
     }
 
@@ -1111,6 +1209,16 @@ export const updateAppointmentStatus = async (req: AuthRequest, res: Response): 
   } catch (error: any) {
     console.error('updateAppointmentStatus error:', error);
     if (error?.message?.includes('Cannot call patient into consultation')) {
+      res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+      return;
+    }
+    if (
+      error?.message?.includes('Cannot transition appointment') ||
+      error?.message?.includes('Appointment not found')
+    ) {
       res.status(400).json({
         success: false,
         message: error.message,
@@ -1855,7 +1963,14 @@ export const applyReceptionist = async (req: Request, res: Response): Promise<vo
       },
     });
 
-    if (existingUser) {
+    let existingRecProfile: any = (existingUser as any)?.receptionistProfile || null;
+    if (existingUser && !existingRecProfile && typeof (prisma.receptionistProfile as any)?.findUnique === 'function') {
+      existingRecProfile = await prisma.receptionistProfile.findUnique({
+        where: { userId: existingUser.id },
+      });
+    }
+
+    if (existingUser && existingRecProfile?.status !== 'REJECTED') {
       res.status(409).json({ success: false, message: 'A receptionist account with this email already exists' });
       return;
     }
@@ -1863,6 +1978,7 @@ export const applyReceptionist = async (req: Request, res: Response): Promise<vo
     if (formattedPhone) {
       const existingByPhone = await findExistingAccountByPhone(prisma, formattedPhone, {
         role: 'RECEPTIONIST',
+        excludeUserId: existingUser?.id,
       });
       if (existingByPhone) {
         res.status(409).json({
@@ -1886,25 +2002,66 @@ export const applyReceptionist = async (req: Request, res: Response): Promise<vo
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    const user = await prisma.user.create({
-      data: {
-        fullName: String(fullName).trim(),
-        email: String(email).toLowerCase().trim(),
-        passwordHash: hashedPassword,
-        role: 'RECEPTIONIST',
-        phone: formattedPhone,
-        mustChangePassword: false,
-      },
-    });
+    const runApply = async (db: any) => {
+      if (existingUser) {
+        const updatedUser = await db.user.update({
+          where: { id: existingUser.id },
+          data: {
+            fullName: String(fullName).trim(),
+            passwordHash: hashedPassword,
+            phone: formattedPhone,
+            isEmailVerified: false,
+            mustChangePassword: false,
+          },
+        });
+        const updatedRec = existingRecProfile
+          ? await db.receptionistProfile.update({
+              where: { id: existingRecProfile.id },
+              data: {
+                phone: formattedPhone,
+                clinicId: clinic.id,
+                status: 'PENDING',
+              },
+            })
+          : await db.receptionistProfile.create({
+              data: {
+                userId: updatedUser.id,
+                phone: formattedPhone,
+                clinicId: clinic.id,
+                status: 'PENDING',
+              },
+            });
+        return { user: updatedUser, receptionist: updatedRec };
+      }
 
-    const receptionist = await prisma.receptionistProfile.create({
-      data: {
-        userId: user.id,
-        phone: formattedPhone,
-        clinicId: clinic.id,
-        status: 'PENDING', // Awaiting clinic administrator approval
-      },
-    });
+      const createdUser = await db.user.create({
+        data: {
+          fullName: String(fullName).trim(),
+          email: cleanEmail,
+          passwordHash: hashedPassword,
+          role: 'RECEPTIONIST',
+          phone: formattedPhone,
+          isEmailVerified: false,
+          mustChangePassword: false,
+        },
+      });
+
+      const createdReceptionist = await db.receptionistProfile.create({
+        data: {
+          userId: createdUser.id,
+          phone: formattedPhone,
+          clinicId: clinic.id,
+          status: 'PENDING', // Awaiting clinic administrator approval
+        },
+      });
+
+      return { user: createdUser, receptionist: createdReceptionist };
+    };
+
+    const { user, receptionist } =
+      typeof (prisma as any).$transaction === 'function'
+        ? await prisma.$transaction(async (tx) => runApply(tx))
+        : await runApply(prisma);
 
     res.json({
       success: true,
@@ -2290,7 +2447,7 @@ export const rescheduleAppointment = async (req: AuthRequest, res: Response): Pr
           const tokenOffset = isPending ? 0 : bookedInSlot;
           const estStartMins = slotStartMins + tokenOffset * pace;
           const estimatedTime = minutesTo12Hour(estStartMins);
-          const checkingWindow = slot ? `${slot.startTime} – ${slot.endTime}` : (appointment.checkingWindow || 'General Hours');
+          const checkingWindow = slot ? cleanSlotName(slot.name, 'Shift 1') : (appointment.checkingWindow || 'General Hours');
 
           const updatedRecord = await tx.appointment.update({
             where: { id: appointment.id },
@@ -2459,7 +2616,8 @@ export const getReceptionistReport = async (req: AuthRequest, res: Response): Pr
       .filter((dr) => dr.status === 'ACTIVE' && activeDoctorIds.includes(dr.doctorId))
       .map((dr) => dr.doctorId);
 
-    const allowedDoctorIds = assignedDoctorIds.length > 0 ? assignedDoctorIds : activeDoctorIds;
+    const hasExplicitSubset = assignedDoctorIds.length > 0;
+    const allowedDoctorIds = hasExplicitSubset ? assignedDoctorIds : activeDoctorIds;
 
     const today = getLocalDateString();
     const defaultStart = (() => {
@@ -2472,24 +2630,28 @@ export const getReceptionistReport = async (req: AuthRequest, res: Response): Pr
     const endDate = (req.query.endDate as string) || today;
     const doctorId = req.query.doctorId as string;
 
-    const targetDoctorFilter = (doctorId && doctorId !== 'all')
-      ? (allowedDoctorIds.includes(doctorId) ? doctorId : 'none')
-      : { in: allowedDoctorIds };
-
-    if (targetDoctorFilter === 'none') {
+    if (doctorId && doctorId !== 'all' && hasExplicitSubset && !allowedDoctorIds.includes(doctorId)) {
       res.status(403).json({ success: false, message: 'Doctor not assigned to your desk' });
       return;
     }
 
-    const appointments = await prisma.appointment.findMany({
-      where: {
-        clinicId: receptionist.clinicId,
-        doctorId: targetDoctorFilter,
-        appointmentDate: {
-          gte: startDate,
-          lte: endDate,
-        },
+    // FUNC-010: When receptionist covers the full clinic desk (!hasExplicitSubset), include all historical clinic appointments
+    // so detached doctors' past completed consultations are preserved in the clinic report.
+    const whereClause: any = {
+      clinicId: receptionist.clinicId,
+      appointmentDate: {
+        gte: startDate,
+        lte: endDate,
       },
+    };
+    if (doctorId && doctorId !== 'all') {
+      whereClause.doctorId = doctorId;
+    } else if (hasExplicitSubset) {
+      whereClause.doctorId = { in: allowedDoctorIds };
+    }
+
+    const appointments = await prisma.appointment.findMany({
+      where: whereClause,
       include: {
         doctor: {
           include: {
@@ -2508,13 +2670,23 @@ export const getReceptionistReport = async (req: AuthRequest, res: Response): Pr
       ],
     });
 
-    // Create fee map
+    // Create fee and slot maps
     const doctorFeeMap = new Map<string, number>();
+    const doctorSlotsMap = new Map<string, any[]>();
     activeDoctorAffiliations.forEach((cd) => {
       const fee = typeof cd.consultationFee === 'number' && Number.isFinite(cd.consultationFee)
         ? cd.consultationFee
         : (typeof cd.doctor.consultationFee === 'number' && Number.isFinite(cd.doctor.consultationFee) ? cd.doctor.consultationFee : 0);
       doctorFeeMap.set(cd.doctorId, fee);
+
+      let cSlots = parseDoctorSlots(cd.doctor);
+      if ((cd as any).slots) {
+        try {
+          const parsed = typeof (cd as any).slots === 'string' ? JSON.parse((cd as any).slots) : (cd as any).slots;
+          if (Array.isArray(parsed) && parsed.length > 0) cSlots = parsed;
+        } catch {}
+      }
+      doctorSlotsMap.set(cd.doctorId, cSlots);
     });
 
     let totalRevenue = 0;
@@ -2527,7 +2699,7 @@ export const getReceptionistReport = async (req: AuthRequest, res: Response): Pr
     const shiftBreakdownMap = new Map<string, { shiftName: string; bookings: number; completed: number; revenue: number }>();
 
     activeDoctorAffiliations
-      .filter((cd) => allowedDoctorIds.includes(cd.doctorId))
+      .filter((cd) => !hasExplicitSubset || allowedDoctorIds.includes(cd.doctorId))
       .forEach((cd) => {
         doctorBreakdownMap.set(cd.doctorId, {
           doctorId: cd.doctorId,
@@ -2541,7 +2713,7 @@ export const getReceptionistReport = async (req: AuthRequest, res: Response): Pr
       });
 
     const items = appointments.map((appt) => {
-      const effectiveFee = doctorFeeMap.get(appt.doctorId) ?? (typeof appt.doctor.consultationFee === 'number' ? appt.doctor.consultationFee : 0);
+      const effectiveFee = doctorFeeMap.get(appt.doctorId) ?? (typeof appt.doctor?.consultationFee === 'number' ? appt.doctor.consultationFee : 0);
       const isCompletedOrPaid = appt.status === 'COMPLETED' || appt.paymentStatus === 'PAID';
       const isCancelled = ['CANCELLED', 'REJECTED', 'EXPIRED'].includes(appt.status);
       const earnedFee = (isCompletedOrPaid && !isCancelled) ? effectiveFee : 0;
@@ -2569,10 +2741,12 @@ export const getReceptionistReport = async (req: AuthRequest, res: Response): Pr
       docEntry.revenue += earnedFee;
       doctorBreakdownMap.set(appt.doctorId, docEntry);
 
-      // Shift breakdown
-      const rawShift = appt.checkingWindow || 'Shift 1';
-      const shiftNumMatch = rawShift.match(/shift\s*(\d+)/i);
-      const cleanShift = shiftNumMatch ? `Shift ${shiftNumMatch[1]}` : 'Shift 1';
+      // Shift breakdown (ARCH-009 / FUNC-009: resolve from slotId or preserve custom shift name)
+      const candidateSlots = doctorSlotsMap.get(appt.doctorId) || (appt.doctor ? parseDoctorSlots(appt.doctor) : []);
+      const matchedSlotById = appt.slotId ? candidateSlots.find((s: any) => s && s.id === appt.slotId) : null;
+      const rawShift = String(matchedSlotById?.name || appt.checkingWindow || 'Shift 1').trim();
+      const shiftNumMatch = rawShift.match(/^shift\s*(\d+)\b/i);
+      const cleanShift = shiftNumMatch ? `Shift ${shiftNumMatch[1]}` : cleanSlotName(rawShift, 'Shift 1');
 
       const shiftEntry = shiftBreakdownMap.get(cleanShift) || {
         shiftName: cleanShift,
@@ -2593,7 +2767,7 @@ export const getReceptionistReport = async (req: AuthRequest, res: Response): Pr
         status: appt.status,
         paymentStatus: appt.paymentStatus,
         patientName: appt.patientName || appt.patient?.user?.fullName || 'Walk-in Patient',
-        patientPhone: appt.patient?.user?.phone || '—',
+        patientPhone: (appt as any).patientPhone || appt.patient?.user?.phone || '—',
         doctorId: appt.doctorId,
         doctorName: appt.doctor?.user?.fullName || 'Doctor',
         specialty: appt.doctor?.specialty || 'General',

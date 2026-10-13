@@ -1,6 +1,7 @@
-export const API_BASE_URL =
-  import.meta.env.VITE_API_URL ||
-  (typeof window !== 'undefined' && window.location.hostname === 'localhost'
+const rawApiUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL;
+export const API_BASE_URL = rawApiUrl
+  ? (rawApiUrl.endsWith('/api') ? rawApiUrl : `${rawApiUrl.replace(/\/+$/, '')}/api`)
+  : (typeof window !== 'undefined' && window.location.hostname === 'localhost'
     ? 'http://localhost:5000/api'
     : 'https://mediarca-mdwk.onrender.com/api');
 
@@ -1167,6 +1168,14 @@ async function handleResponse<T>(res: Response): Promise<T> {
     if (data?.retryAfterSeconds) {
       error.retryAfterSeconds = data.retryAfterSeconds;
     }
+    const cooldown =
+      data?.data?.cooldownSeconds ??
+      data?.cooldownSeconds ??
+      data?.retryAfterSeconds ??
+      data?.remainingSeconds;
+    if (cooldown !== undefined) {
+      error.cooldownSeconds = cooldown;
+    }
     throw error;
   }
   return data?.data !== undefined ? data.data : data;
@@ -1370,9 +1379,20 @@ export const api = {
 
       const res = await safeFetch(`${API_BASE_URL}/doctors?${query.toString()}`);
       const text = await res.text();
-      const json = text ? JSON.parse(text) : {};
+      let json: any = {};
+      try {
+        json = text ? JSON.parse(text) : {};
+      } catch {
+        const error: any = new Error(
+          `Server returned error ${res.status}: ${res.statusText || 'Unexpected error'}`
+        );
+        error.status = res.status;
+        throw error;
+      }
       if (!res.ok || json?.success === false) {
-        throw new Error(json?.message || 'Failed to fetch doctors');
+        const error: any = new Error(json?.message || 'Failed to fetch doctors');
+        error.status = res.status;
+        throw error;
       }
       return {
         data: Array.isArray(json.data) ? json.data : [],
@@ -1989,9 +2009,20 @@ export const api = {
       const url = qs ? `${API_BASE_URL}/clinics/public?${qs}` : `${API_BASE_URL}/clinics/public`;
       const res = await safeFetch(url, { headers: getHeaders() });
       const text = await res.text();
-      const json = text ? JSON.parse(text) : {};
+      let json: any = {};
+      try {
+        json = text ? JSON.parse(text) : {};
+      } catch {
+        const error: any = new Error(
+          `Server returned error ${res.status}: ${res.statusText || 'Unexpected error'}`
+        );
+        error.status = res.status;
+        throw error;
+      }
       if (!res.ok || json?.success === false) {
-        throw new Error(json?.message || 'Failed to retrieve clinics');
+        const error: any = new Error(json?.message || 'Failed to retrieve clinics');
+        error.status = res.status;
+        throw error;
       }
       return {
         data: Array.isArray(json.data) ? json.data : [],
@@ -2144,9 +2175,21 @@ export const api = {
       headers: getHeaders(),
       body: JSON.stringify(data),
     });
-    const json = await res.json();
-    if (!res.ok || !json.success) {
-      throw new Error(json.message || 'API request failed');
+    const text = await res.text();
+    let json: any = {};
+    try {
+      json = text ? JSON.parse(text) : {};
+    } catch {
+      const error: any = new Error(
+        `Server returned error ${res.status}: ${res.statusText || 'Unexpected error'}`
+      );
+      error.status = res.status;
+      throw error;
+    }
+    if (!res.ok || json?.success === false) {
+      const error: any = new Error(json?.message || 'API request failed');
+      error.status = res.status;
+      throw error;
     }
     const token = json.token || json.data?.token;
     if (token) {

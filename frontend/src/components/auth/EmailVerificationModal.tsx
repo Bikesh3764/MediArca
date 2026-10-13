@@ -8,6 +8,7 @@ interface EmailVerificationModalProps {
   isOpen: boolean;
   email: string;
   role?: string;
+  initialCooldown?: number;
   onSuccess: (user: User) => void;
   onClose: () => void;
 }
@@ -16,6 +17,7 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
   isOpen,
   email,
   role,
+  initialCooldown,
   onSuccess,
   onClose,
 }) => {
@@ -24,7 +26,7 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
   const [resending, setResending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resendSuccess, setResendSuccess] = useState(false);
-  const [countdown, setCountdown] = useState(60);
+  const [countdown, setCountdown] = useState(initialCooldown ?? 60);
   const [isAlreadyVerified, setIsAlreadyVerified] = useState(false);
 
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -36,10 +38,13 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
         setOtpDigits(['', '', '', '', '', '']);
         setError(null);
         setResendSuccess(false);
-        setCountdown(60);
+        setCountdown(initialCooldown ?? 60);
         setIsAlreadyVerified(false);
       });
       return;
+    }
+    if (initialCooldown !== undefined) {
+      setCountdown(initialCooldown);
     }
     const timer = setTimeout(() => {
       inputRefs.current[0]?.focus();
@@ -139,6 +144,9 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
       clearTimeout(safetyTimer);
       if (err.isAlreadyVerified || err.message?.toLowerCase().includes('already verified')) {
         setIsAlreadyVerified(true);
+      }
+      if (err.cooldownSeconds) {
+        setCountdown(err.cooldownSeconds);
       }
       setError(err.message || 'Failed to resend verification code. Please try again.');
     } finally {

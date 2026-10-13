@@ -26,7 +26,7 @@ router.get('/public/:id', publicCache(60, 30), getPublicClinicById);
 // Clinic authenticated operations
 router.use(authenticate, authorize('CLINIC'));
 router.get('/my-clinic', getMyClinic);
-router.get('/report', getClinicReport);
+router.get('/report', requireActiveClinic, getClinicReport);
 router.put('/profile', updateClinicProfile);
 
 // Operations strictly requiring verified, non-suspended clinic status (Finding M6)

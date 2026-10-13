@@ -151,6 +151,34 @@ export const requireActiveReceptionist = async (
       }
     }
 
+    const reqPath = String(req.path || '');
+    const reqOriginalUrl = String(req.originalUrl || '').split('?')[0];
+    const isBootstrapRoute =
+      reqPath === '/my-receptionist' ||
+      reqPath === '/change-password' ||
+      reqOriginalUrl.endsWith('/my-receptionist') ||
+      reqOriginalUrl.endsWith('/change-password');
+
+    if (!isBootstrapRoute) {
+      let mustChangePassword = Boolean((req.user as any).mustChangePassword || (receptionist as any).user?.mustChangePassword);
+      if (!mustChangePassword && typeof (prisma.user as any)?.findUnique === 'function') {
+        const recUser = await prisma.user.findUnique({
+          where: { id: req.user.id },
+          select: { mustChangePassword: true },
+        });
+        if (recUser?.mustChangePassword) {
+          mustChangePassword = true;
+        }
+      }
+      if (mustChangePassword) {
+        res.status(403).json({
+          success: false,
+          message: 'Temporary password must be changed before accessing clinical desk operations.',
+        });
+        return;
+      }
+    }
+
     next();
   } catch (error: any) {
     console.error('requireActiveReceptionist error:', error);

@@ -169,11 +169,12 @@ export const ClinicAuth: React.FC = () => {
   const handleDemoLogin = async () => {
     setError(null);
     setSubmitting(true);
-    setEmail('admin@clinic.com');
+    setEmail('clinic@mediarca.com');
     setPassword('clinic123');
     try {
-      const loggedUser = await login({ email: 'admin@clinic.com', password: 'clinic123', role: 'CLINIC' });
+      const loggedUser = await login({ email: 'clinic@mediarca.com', password: 'clinic123', role: 'CLINIC' });
       if (loggedUser.role !== 'CLINIC') {
+        logout();
         setError('This account does not have clinic administrative permissions.');
         setSubmitting(false);
         return;

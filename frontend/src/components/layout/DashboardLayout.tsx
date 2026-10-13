@@ -1,13 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { BrandLogo } from '../ui/BrandLogo';
+import { api, AppNotification } from '../../services/api';
+import { useVisibilityPolling } from '../../utils/useVisibilityPolling';
 import {
   LogOut,
   Menu,
   X,
   Globe,
   ChevronRight,
+  Bell,
+  CheckCheck,
 } from 'lucide-react';
 
 export interface DashboardNavItem {
@@ -42,6 +46,55 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+
+  const fetchNotifications = useCallback(async () => {
+    if (!user) return;
+    try {
+      const res = await api.getNotifications();
+      if (res && Array.isArray(res.notifications)) {
+        setNotifications(res.notifications);
+        setUnreadCount(
+          typeof res.unreadCount === 'number'
+            ? res.unreadCount
+            : res.notifications.filter((n: any) => !n.isRead).length
+        );
+      }
+    } catch {
+      // background polling fails gracefully
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      queueMicrotask(() => fetchNotifications());
+    }
+  }, [user, fetchNotifications]);
+
+  useVisibilityPolling(fetchNotifications, 30000, Boolean(user));
+
+  const handleMarkAsRead = async (id: string) => {
+    try {
+      await api.markNotificationRead(id);
+      setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
+      setUnreadCount((prev) => Math.max(0, prev - 1));
+    } catch (err) {
+      console.error('Failed to mark notification read:', err);
+    }
+  };
+
+  const handleMarkAllRead = async () => {
+    try {
+      await api.markAllNotificationsRead();
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+      setUnreadCount(0);
+    } catch (err) {
+      console.error('Failed to mark all notifications read:', err);
+    }
+  };
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -320,11 +373,70 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 </p>
               )}
             </div>
-            {headerAction && (
-              <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
-                {headerAction}
+            <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
+              {/* Notifications Popover */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setNotificationsOpen((prev) => !prev)}
+                  className="relative p-2 rounded-xl text-[#86868b] hover:text-[#1d1d1f] hover:bg-[#f5f5f7] border border-[#e5e5ea] transition-all cursor-pointer"
+                  title="Notifications"
+                  aria-label="View notifications"
+                >
+                  <Bell className="w-4 h-4" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
+                </button>
+
+                {notificationsOpen && (
+                  <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-2xl border border-[#e5e5ea] shadow-xl z-50 overflow-hidden animate-fadeIn text-left">
+                    <div className="p-3.5 border-b border-[#e5e5ea] flex items-center justify-between">
+                      <span className="text-xs font-semibold text-[#1d1d1f]">Notifications</span>
+                      {unreadCount > 0 && (
+                        <button
+                          type="button"
+                          onClick={handleMarkAllRead}
+                          className="text-[11px] font-medium text-[#0066cc] hover:underline flex items-center gap-1 cursor-pointer"
+                        >
+                          <CheckCheck className="w-3.5 h-3.5" />
+                          Mark all as read
+                        </button>
+                      )}
+                    </div>
+                    <div className="max-h-72 overflow-y-auto divide-y divide-[#f0f0f2]">
+                      {notifications.length === 0 ? (
+                        <div className="p-6 text-center text-xs text-[#86868b]">
+                          No notifications yet
+                        </div>
+                      ) : (
+                        notifications.slice(0, 15).map((n) => (
+                          <div
+                            key={n.id}
+                            onClick={() => !n.isRead && handleMarkAsRead(n.id)}
+                            className={`p-3 text-xs transition-colors cursor-pointer ${
+                              n.isRead ? 'bg-white hover:bg-[#f5f5f7]' : 'bg-[#0066cc]/5 hover:bg-[#0066cc]/10'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="font-semibold text-[#1d1d1f]">{n.title}</span>
+                              {!n.isRead && (
+                                <span className="w-2 h-2 rounded-full bg-[#0066cc] shrink-0" />
+                              )}
+                            </div>
+                            <p className="text-[#48484a] text-[11px] mt-0.5 leading-relaxed">{n.message}</p>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
+
+              {headerAction}
+            </div>
           </div>
         </div>
 

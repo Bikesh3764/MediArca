@@ -28,6 +28,7 @@ export const Login: React.FC<LoginProps> = ({ portal }) => {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [verificationPendingEmail, setVerificationPendingEmail] = useState<string | null>(null);
+  const [verificationCooldown, setVerificationCooldown] = useState<number | undefined>(undefined);
 
   const getDestination = (role: string) => {
     if (role === 'DOCTOR') return '/doctor/dashboard';
@@ -70,6 +71,7 @@ export const Login: React.FC<LoginProps> = ({ portal }) => {
     } catch (err: any) {
       if (err.requiresVerification) {
         setVerificationPendingEmail(err.email || email.trim());
+        setVerificationCooldown(err.cooldownSeconds);
         setError(null);
         return;
       }
@@ -329,11 +331,16 @@ export const Login: React.FC<LoginProps> = ({ portal }) => {
           isOpen={Boolean(verificationPendingEmail)}
           email={verificationPendingEmail || ''}
           role={activeRole}
+          initialCooldown={verificationCooldown}
           onSuccess={(verifiedUser) => {
             setVerificationPendingEmail(null);
+            setVerificationCooldown(undefined);
             navigate(getTargetDestination(verifiedUser.role), { replace: true });
           }}
-          onClose={() => setVerificationPendingEmail(null)}
+          onClose={() => {
+            setVerificationPendingEmail(null);
+            setVerificationCooldown(undefined);
+          }}
         />
       </div>
     </div>

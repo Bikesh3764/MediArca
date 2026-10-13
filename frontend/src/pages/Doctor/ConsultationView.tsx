@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { api, Appointment, cleanSlotName } from '../../services/api';
+import { api, Appointment, cleanSlotName, getLocalDateString } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { DashboardLayout, DashboardNavItem } from '../../components/layout/DashboardLayout';
 import { UtilityCard } from '../../components/ui/UtilityCard';
@@ -150,6 +150,11 @@ export const ConsultationView: React.FC = () => {
 
   const handleCallPatient = async () => {
     if (!appointment) return;
+    const todayStr = getLocalDateString();
+    if (appointment.appointmentDate > todayStr) {
+      setError(`Cannot start consultation: Appointment is scheduled for ${appointment.appointmentDate}, which is in the future.`);
+      return;
+    }
     setCallingPatient(true);
     setError(null);
     try {

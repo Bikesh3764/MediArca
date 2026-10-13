@@ -7,7 +7,7 @@ import { isValidIndianPhone, formatIndianPhone, sanitizeIndianPhone, findExistin
 import { isDoctorEligibleForClinicalPractice, isClinicActive } from '../utils/authGuards';
 import { createNotification } from '../services/notificationService';
 import { parsePaginationParams, buildPaginationMetadata } from '../utils/pagination';
-import { getLocalDateString } from '../utils/scheduleUtils';
+import { getLocalDateString, cleanSlotName, parseDoctorSlots } from '../utils/scheduleUtils';
 
 /**
  * Get profile and statistics for currently authenticated clinic
@@ -661,6 +661,7 @@ export const removeDoctorFromClinic = async (req: AuthRequest, res: Response): P
     });
     const recIds = clinicReceptionists.map((r) => r.id);
 
+    const todayStr = getLocalDateString();
     await prisma.$transaction([
       prisma.clinicDoctor.deleteMany({
         where: {
@@ -674,6 +675,23 @@ export const removeDoctorFromClinic = async (req: AuthRequest, res: Response): P
               where: {
                 doctorId,
                 receptionistId: { in: recIds },
+              },
+            }),
+          ]
+        : []),
+      ...(typeof (prisma.appointment as any)?.updateMany === 'function'
+        ? [
+            prisma.appointment.updateMany({
+              where: {
+                clinicId: clinic.id,
+                doctorId,
+                appointmentDate: { gte: todayStr },
+                status: { in: ['PENDING_APPROVAL', 'WAITING'] },
+              },
+              data: {
+                status: 'CANCELLED',
+                isCheckedIn: false,
+                checkedInAt: null,
               },
             }),
           ]
@@ -1029,7 +1047,14 @@ export const addClinicReceptionist = async (req: AuthRequest, res: Response): Pr
       },
     });
 
-    if (existingUser) {
+    let existingRecProfile: any = (existingUser as any)?.receptionistProfile || null;
+    if (existingUser && !existingRecProfile && typeof (prisma.receptionistProfile as any)?.findUnique === 'function') {
+      existingRecProfile = await prisma.receptionistProfile.findUnique({
+        where: { userId: existingUser.id },
+      });
+    }
+
+    if (existingUser && existingRecProfile?.status !== 'REJECTED') {
       res.status(409).json({ success: false, message: 'A receptionist account with this email already exists' });
       return;
     }
@@ -1052,6 +1077,7 @@ export const addClinicReceptionist = async (req: AuthRequest, res: Response): Pr
 
       const existingPhoneUser = await findExistingAccountByPhone(prisma, formattedPhone, {
         role: 'RECEPTIONIST',
+        excludeUserId: existingUser?.id,
       });
       if (existingPhoneUser) {
         res.status(409).json({
@@ -1068,43 +1094,98 @@ export const addClinicReceptionist = async (req: AuthRequest, res: Response): Pr
       clinicDoctorIds.has(id)
     );
 
-    const newReceptionist = await prisma.user.create({
-      data: {
-        fullName: fullName.trim(),
-        email: cleanEmail,
-        passwordHash,
-        phone: formattedPhone,
-        role: 'RECEPTIONIST',
-        mustChangePassword: true,
-        receptionistProfile: {
-          create: {
-            clinicId: clinic.id,
+    const newReceptionist = existingUser
+      ? await prisma.user.update({
+          where: { id: existingUser.id },
+          data: {
+            fullName: fullName.trim(),
+            passwordHash,
             phone: formattedPhone,
-            doctors: {
-              create: validDoctorIds.map((docId: string) => ({
-                doctorId: docId,
-                status: 'ACTIVE',
-              })),
-            },
-          },
-        },
-      },
-      include: {
-        receptionistProfile: {
-          include: {
-            doctors: {
-              include: {
-                doctor: {
-                  include: {
-                    user: { select: { fullName: true } },
+            isEmailVerified: true,
+            mustChangePassword: true,
+            receptionistProfile: {
+              upsert: {
+                update: {
+                  clinicId: clinic.id,
+                  phone: formattedPhone,
+                  status: 'ACTIVE',
+                  doctors: {
+                    deleteMany: {},
+                    create: validDoctorIds.map((docId: string) => ({
+                      doctorId: docId,
+                      status: 'ACTIVE',
+                    })),
+                  },
+                },
+                create: {
+                  clinicId: clinic.id,
+                  phone: formattedPhone,
+                  status: 'ACTIVE',
+                  doctors: {
+                    create: validDoctorIds.map((docId: string) => ({
+                      doctorId: docId,
+                      status: 'ACTIVE',
+                    })),
                   },
                 },
               },
             },
           },
-        },
-      },
-    });
+          include: {
+            receptionistProfile: {
+              include: {
+                doctors: {
+                  include: {
+                    doctor: {
+                      include: {
+                        user: { select: { fullName: true } },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        })
+      : await prisma.user.create({
+          data: {
+            fullName: fullName.trim(),
+            email: cleanEmail,
+            passwordHash,
+            phone: formattedPhone,
+            role: 'RECEPTIONIST',
+            isEmailVerified: true,
+            mustChangePassword: true,
+            receptionistProfile: {
+              create: {
+                clinicId: clinic.id,
+                phone: formattedPhone,
+                status: 'ACTIVE',
+                doctors: {
+                  create: validDoctorIds.map((docId: string) => ({
+                    doctorId: docId,
+                    status: 'ACTIVE',
+                  })),
+                },
+              },
+            },
+          },
+          include: {
+            receptionistProfile: {
+              include: {
+                doctors: {
+                  include: {
+                    doctor: {
+                      include: {
+                        user: { select: { fullName: true } },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        });
 
     const { passwordHash: _, ...safeUser } = newReceptionist;
     res.status(201).json({
@@ -1357,6 +1438,14 @@ export const respondToReceptionistRequest = async (req: AuthRequest, res: Respon
       return;
     }
 
+    if (receptionist.status && receptionist.status !== 'PENDING') {
+      res.status(400).json({
+        success: false,
+        message: `Receptionist application has already been processed (${receptionist.status.toLowerCase()}).`,
+      });
+      return;
+    }
+
     const normalizedAction = String(action || '').trim().toUpperCase();
 
     if (!['ACCEPT', 'REJECT'].includes(normalizedAction)) {
@@ -1365,11 +1454,7 @@ export const respondToReceptionistRequest = async (req: AuthRequest, res: Respon
     }
 
     if (normalizedAction === 'ACCEPT') {
-      await prisma.receptionistProfile.update({
-        where: { id: receptionist.id },
-        data: { status: 'ACTIVE' },
-      });
-
+      let validDoctorIds: string[] = [];
       if (Array.isArray(doctorIds) && doctorIds.length > 0) {
         // Validate submitted doctor IDs belong to this clinic
         const clinicDoctors = await prisma.clinicDoctor.findMany({
@@ -1377,22 +1462,29 @@ export const respondToReceptionistRequest = async (req: AuthRequest, res: Respon
           select: { doctorId: true },
         });
         const clinicDoctorIds = new Set(clinicDoctors.map((cd) => cd.doctorId));
-        const validDoctorIds = doctorIds.filter((docId: string) => clinicDoctorIds.has(docId));
-
-        await prisma.doctorReceptionist.deleteMany({
-          where: { receptionistId: receptionist.id },
-        });
-
-        if (validDoctorIds.length > 0) {
-          await prisma.doctorReceptionist.createMany({
-            data: validDoctorIds.map((docId: string) => ({
-              doctorId: docId,
-              receptionistId: receptionist.id,
-              status: 'ACTIVE',
-            })),
-          });
-        }
+        validDoctorIds = doctorIds.filter((docId: string) => clinicDoctorIds.has(docId));
       }
+
+      await prisma.$transaction([
+        prisma.receptionistProfile.update({
+          where: { id: receptionist.id },
+          data: { status: 'ACTIVE' },
+        }),
+        ...(validDoctorIds.length > 0
+          ? [
+              prisma.doctorReceptionist.deleteMany({
+                where: { receptionistId: receptionist.id },
+              }),
+              prisma.doctorReceptionist.createMany({
+                data: validDoctorIds.map((docId: string) => ({
+                  doctorId: docId,
+                  receptionistId: receptionist.id,
+                  status: 'ACTIVE',
+                })),
+              }),
+            ]
+          : []),
+      ]);
 
       res.json({
         success: true,
@@ -1507,10 +1599,11 @@ export const getClinicReport = async (req: AuthRequest, res: Response): Promise<
       return;
     }
 
-    if (!isClinicActive(clinic)) {
+    const clinicCheck = isClinicActive(clinic);
+    if (!clinicCheck.active) {
       res.status(403).json({
         success: false,
-        message: 'Clinic account is pending verification or suspended.',
+        message: clinicCheck.reason || 'Clinic account is pending verification or suspended.',
       });
       return;
     }
@@ -1558,13 +1651,23 @@ export const getClinicReport = async (req: AuthRequest, res: Response): Promise<
       ],
     });
 
-    // Create doctor fee map from affiliations
+    // Create doctor fee and slot maps from affiliations
     const doctorFeeMap = new Map<string, number>();
+    const doctorSlotsMap = new Map<string, any[]>();
     clinic.doctors.forEach((cd) => {
       const fee = typeof cd.consultationFee === 'number' && Number.isFinite(cd.consultationFee)
         ? cd.consultationFee
         : (typeof cd.doctor.consultationFee === 'number' && Number.isFinite(cd.doctor.consultationFee) ? cd.doctor.consultationFee : 0);
       doctorFeeMap.set(cd.doctorId, fee);
+
+      let cSlots = parseDoctorSlots(cd.doctor);
+      if ((cd as any).slots) {
+        try {
+          const parsed = typeof (cd as any).slots === 'string' ? JSON.parse((cd as any).slots) : (cd as any).slots;
+          if (Array.isArray(parsed) && parsed.length > 0) cSlots = parsed;
+        } catch {}
+      }
+      doctorSlotsMap.set(cd.doctorId, cSlots);
     });
 
     let totalRevenue = 0;
@@ -1589,7 +1692,7 @@ export const getClinicReport = async (req: AuthRequest, res: Response): Promise<
     });
 
     const items = appointments.map((appt) => {
-      const effectiveFee = doctorFeeMap.get(appt.doctorId) ?? (typeof appt.doctor.consultationFee === 'number' ? appt.doctor.consultationFee : 0);
+      const effectiveFee = doctorFeeMap.get(appt.doctorId) ?? (typeof appt.doctor?.consultationFee === 'number' ? appt.doctor.consultationFee : 0);
       const isCompletedOrPaid = appt.status === 'COMPLETED' || appt.paymentStatus === 'PAID';
       const isCancelled = ['CANCELLED', 'REJECTED', 'EXPIRED'].includes(appt.status);
       const earnedFee = (isCompletedOrPaid && !isCancelled) ? effectiveFee : 0;
@@ -1617,10 +1720,12 @@ export const getClinicReport = async (req: AuthRequest, res: Response): Promise<
       docEntry.revenue += earnedFee;
       doctorBreakdownMap.set(appt.doctorId, docEntry);
 
-      // Clean shift name
-      const rawShift = appt.checkingWindow || 'Shift 1';
-      const shiftNumMatch = rawShift.match(/shift\s*(\d+)/i);
-      const cleanShift = shiftNumMatch ? `Shift ${shiftNumMatch[1]}` : 'Shift 1';
+      // Clean shift name (ARCH-009 / FUNC-009: resolve from slotId or preserve custom shift name)
+      const candidateSlots = doctorSlotsMap.get(appt.doctorId) || (appt.doctor ? parseDoctorSlots(appt.doctor) : []);
+      const matchedSlotById = appt.slotId ? candidateSlots.find((s: any) => s && s.id === appt.slotId) : null;
+      const rawShift = String(matchedSlotById?.name || appt.checkingWindow || 'Shift 1').trim();
+      const shiftNumMatch = rawShift.match(/^shift\s*(\d+)\b/i);
+      const cleanShift = shiftNumMatch ? `Shift ${shiftNumMatch[1]}` : cleanSlotName(rawShift, 'Shift 1');
 
       const shiftEntry = shiftBreakdownMap.get(cleanShift) || {
         shiftName: cleanShift,
@@ -1641,7 +1746,7 @@ export const getClinicReport = async (req: AuthRequest, res: Response): Promise<
         status: appt.status,
         paymentStatus: appt.paymentStatus,
         patientName: appt.patientName || appt.patient?.user?.fullName || 'Walk-in Patient',
-        patientPhone: appt.patient?.user?.phone || '—',
+        patientPhone: (appt as any).patientPhone || appt.patient?.user?.phone || '—',
         doctorId: appt.doctorId,
         doctorName: appt.doctor?.user?.fullName || 'Doctor',
         specialty: appt.doctor?.specialty || 'General',

@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import {
   api,
   ReceptionistDashboardData,
@@ -105,7 +105,8 @@ const cleanShiftDisplayName = (shiftStr?: string | null): string => {
 };
 
 export const ReceptionistDashboard: React.FC = () => {
-  const { user, refreshUser, updateUser } = useAuth();
+  const { user, refreshUser, updateUser, logout } = useAuth();
+  const navigate = useNavigate();
 
   // Mandatory password change state for provisioned receptionists
   const [currentPassword, setCurrentPassword] = useState('');
@@ -193,6 +194,17 @@ export const ReceptionistDashboard: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'WAITING' | 'IN_CONSULTATION' | 'COMPLETED' | 'CANCELLED'>('WAITING');
   const [queueShiftFilter, setQueueShiftFilter] = useState<string>('ALL');
 
+  // Track latest selections via refs to avoid stale closures in desk callbacks (ARCH-011)
+  const selectedDoctorIdRef = useRef(selectedDoctorId);
+  const queueDoctorIdRef = useRef(queueDoctorId);
+  const slotIdRef = useRef(slotId);
+
+  useEffect(() => {
+    selectedDoctorIdRef.current = selectedDoctorId;
+    queueDoctorIdRef.current = queueDoctorId;
+    slotIdRef.current = slotId;
+  }, [selectedDoctorId, queueDoctorId, slotId]);
+
   const fetchNotifications = useCallback(async () => {
     try {
       const res = await api.getNotifications();
@@ -247,11 +259,16 @@ export const ReceptionistDashboard: React.FC = () => {
         setWalkinClinicId(res.clinic.id);
       }
       if (res.doctors.length > 0) {
+        const currentSelected = selectedDoctorIdRef.current;
         setSelectedDoctorId((prev) => (res.doctors.some((d: any) => d.doctorId === prev) ? prev : res.doctors[0].doctorId));
         setQueueDoctorId((prev) => (res.doctors.some((d: any) => d.doctorId === prev) ? prev : res.doctors[0].doctorId));
-        const activeDoc = res.doctors.find((d: any) => d.doctorId === selectedDoctorId) || res.doctors[0];
+
+        const activeDoctorId = res.doctors.some((d: any) => d.doctorId === currentSelected)
+          ? currentSelected
+          : res.doctors[0].doctorId;
+        const activeDoc = res.doctors.find((d: any) => d.doctorId === activeDoctorId) || res.doctors[0];
         if (activeDoc?.slots && activeDoc.slots.length > 0) {
-          setSlotId((prev) => (activeDoc.slots.some((s: any) => s.id === prev) ? prev : activeDoc.slots[0].id));
+          setSlotId((prev) => (activeDoc.slots.some((s: any) => s.id === (slotIdRef.current || prev)) ? (slotIdRef.current || prev) : activeDoc.slots[0].id));
         } else {
           setSlotId('');
         }
@@ -276,11 +293,16 @@ export const ReceptionistDashboard: React.FC = () => {
       }
     } catch (err: any) {
       console.error('Failed to load desk data:', err);
+      if (err?.status === 401 || err?.response?.status === 401) {
+        logout();
+        navigate('/receptionist/login');
+        return;
+      }
       setError(err.message || 'Failed to load desk details');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [logout, navigate]);
 
   useEffect(() => {
     let mounted = true;
@@ -322,14 +344,20 @@ export const ReceptionistDashboard: React.FC = () => {
       }
     } catch (err: any) {
       console.error('Failed to load queue:', err);
+      if (err?.status === 401 || err?.response?.status === 401) {
+        logout();
+        navigate('/receptionist/login');
+        return;
+      }
     } finally {
       setQueueLoading(false);
     }
-  }, [queueDoctorId, queueDate]);
+  }, [queueDoctorId, queueDate, logout, navigate]);
 
   // Periodic real-time sync while tab is visible
   useVisibilityPolling(
     () => {
+      if (user?.mustChangePassword) return;
       fetchNotifications();
       fetchPendingAppointments();
       if (activeTab === 'queue' && queueDoctorId) {
@@ -337,11 +365,12 @@ export const ReceptionistDashboard: React.FC = () => {
       }
     },
     15000,
-    Boolean(user) && user?.role?.toUpperCase() === 'RECEPTIONIST'
+    Boolean(user) && user?.role?.toUpperCase() === 'RECEPTIONIST' && !user?.mustChangePassword
   );
 
   useEffect(() => {
     let mounted = true;
+    if (user?.mustChangePassword) return;
     queueMicrotask(() => {
       if (!mounted) return;
       if (activeTab === 'queue' && queueDoctorId) {
@@ -357,7 +386,7 @@ export const ReceptionistDashboard: React.FC = () => {
     return () => {
       mounted = false;
     };
-  }, [activeTab, queueDoctorId, queueDate, fetchQueue, fetchPendingAppointments, fetchNotifications]);
+  }, [activeTab, queueDoctorId, queueDate, user?.mustChangePassword, fetchQueue, fetchPendingAppointments, fetchNotifications]);
 
   const handleConfirmReschedule = async () => {
     if (!rescheduleTarget) return;
@@ -372,9 +401,15 @@ export const ReceptionistDashboard: React.FC = () => {
         newDate: rescheduleDate,
         newSlotId: rescheduleSlotId || undefined,
       });
-      const newQueueNum = res?.data?.queueNumber || res?.data?.appointment?.queueNumber;
+      const newQueueNum = res?.data?.queueNumber ?? res?.data?.appointment?.queueNumber ?? res?.queueNumber;
+      const tokenDisplay =
+        newQueueNum !== undefined && newQueueNum !== null && newQueueNum > 0
+          ? ` (Token #${newQueueNum})`
+          : newQueueNum !== undefined && newQueueNum !== null && newQueueNum < 0
+          ? ' (Pending Doctor Approval)'
+          : '';
       setSuccessMsg(
-        `Appointment for ${rescheduleTarget.patientName} shifted to ${rescheduleDate}${newQueueNum ? ` (Token #${newQueueNum})` : ''}.`
+        `Appointment for ${rescheduleTarget.patientName} shifted to ${rescheduleDate}${tokenDisplay}.`
       );
       setRescheduleTarget(null);
       if (queueDoctorId) fetchQueue();
@@ -423,7 +458,7 @@ export const ReceptionistDashboard: React.FC = () => {
     }
   };
 
-  const linkedDoctors = data?.doctors || [];
+  const linkedDoctors = useMemo(() => data?.doctors || [], [data?.doctors]);
   const activeSelectedDoctor = linkedDoctors.find((d) => d.doctorId === selectedDoctorId);
   const effectiveClinicId = data?.clinic?.id || walkinClinicId || activeSelectedDoctor?.clinics?.[0]?.clinicId;
 
@@ -1401,7 +1436,8 @@ export const ReceptionistDashboard: React.FC = () => {
                                       doctorId: queueDoctorId,
                                       slotId: appt.slotId,
                                     });
-                                    const [y, m, day] = (queueDate || getLocalDateString()).split('-').map(Number);
+                                    const baseDate = queueDate && queueDate > getLocalDateString() ? queueDate : getLocalDateString();
+                                    const [y, m, day] = baseDate.split('-').map(Number);
                                     const d = new Date(y, m - 1, day + 1);
                                     setRescheduleDate(getLocalDateString(d));
                                     setRescheduleSlotId(appt.slotId || '');
@@ -1980,7 +2016,8 @@ export const ReceptionistDashboard: React.FC = () => {
                                   doctorId: appt.doctorId,
                                   slotId: appt.slotId,
                                 });
-                                const [y, m, day] = (appt.appointmentDate || getLocalDateString()).split('-').map(Number);
+                                const baseDate = appt.appointmentDate && appt.appointmentDate > getLocalDateString() ? appt.appointmentDate : getLocalDateString();
+                                const [y, m, day] = baseDate.split('-').map(Number);
                                 const d = new Date(y, m - 1, day + 1);
                                 setRescheduleDate(getLocalDateString(d));
                                 setRescheduleSlotId(appt.slotId || '');

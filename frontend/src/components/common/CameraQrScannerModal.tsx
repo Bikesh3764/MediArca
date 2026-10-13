@@ -28,28 +28,37 @@ export const CameraQrScannerModal: React.FC<CameraQrScannerModalProps> = ({
 
   const parseQrText = (text: string): { clinicId: string; code: string } | null => {
     try {
-      // 1. Try URL parameter parsing (e.g. ...#/clinic-checkin?clinicId=xxx&code=yyy or ?clinicId=xxx&code=yyy)
-      if (text.includes('clinicId') && text.includes('code')) {
+      const raw = String(text || '').trim();
+      // 1. Try URL parameter parsing (e.g. ...#/clinic-checkin?clinicId=xxx&code=yyy or /check-in?clinicId=xxx&code=yyy)
+      if (raw.includes('clinicId')) {
         let queryString = '';
-        if (text.includes('?')) {
-          queryString = text.slice(text.indexOf('?') + 1);
+        if (raw.includes('?')) {
+          queryString = raw.slice(raw.indexOf('?') + 1);
         } else {
-          queryString = text;
+          queryString = raw;
         }
         const params = new URLSearchParams(queryString);
         const clinicId = params.get('clinicId');
-        const code = params.get('code');
-        if (clinicId && code) {
+        const code = params.get('code') || params.get('checkinCode') || '';
+        if (clinicId) {
           return { clinicId, code };
         }
       }
 
       // 2. Try JSON parsing
-      if (text.startsWith('{') && text.endsWith('}')) {
-        const parsed = JSON.parse(text);
-        if (parsed.clinicId && parsed.code) {
-          return { clinicId: parsed.clinicId, code: String(parsed.code) };
+      if (raw.startsWith('{') && raw.endsWith('}')) {
+        const parsed = JSON.parse(raw);
+        if (parsed.clinicId) {
+          return {
+            clinicId: parsed.clinicId,
+            code: String(parsed.code || parsed.checkinCode || ''),
+          };
         }
+      }
+
+      // 3. Raw 6-digit numeric code with defaultClinicId
+      if (/^\d{6}$/.test(raw) && defaultClinicId) {
+        return { clinicId: defaultClinicId, code: raw };
       }
     } catch {
       // Fallback

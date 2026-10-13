@@ -221,6 +221,20 @@ if (rateLimitPruneTimer.unref) {
   rateLimitPruneTimer.unref();
 }
 
+export const normalizeRateLimitPath = (rawPath: string, baseUrl?: string): string => {
+  if (baseUrl && ['/api/doctors', '/api/clinics', '/api/appointments/queue-preview'].includes(baseUrl)) {
+    return baseUrl;
+  }
+  const clean = String(rawPath || '').split('?')[0];
+  const publicPrefixMatch = clean.match(/^(\/api\/(?:doctors|clinics|appointments\/queue-preview))(?:\/.*)?$/i);
+  if (publicPrefixMatch) {
+    return publicPrefixMatch[1].toLowerCase();
+  }
+  return clean
+    .replace(/\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?=\/|$)/gi, '/:id')
+    .replace(/\/\d+(?=\/|$)/g, '/:id');
+};
+
 export const authRateLimiter = (maxRequests = 40, windowSeconds = 60, customScope?: string) => {
   return (req: Request, res: Response, next: NextFunction): void => {
     const rawForwarded = req.headers['x-forwarded-for'];
@@ -230,7 +244,8 @@ export const authRateLimiter = (maxRequests = 40, windowSeconds = 60, customScop
         ? rawForwarded.split(',')[0].trim()
         : undefined;
     const ip = req.ip || forwardedIp || 'client';
-    const pathKey = customScope || (req.originalUrl ? req.originalUrl.split('?')[0] : (req.baseUrl || req.path));
+    const rawPath = req.originalUrl ? req.originalUrl.split('?')[0] : (req.baseUrl || req.path);
+    const pathKey = customScope || normalizeRateLimitPath(rawPath, req.baseUrl);
     const key = `${ip}:${pathKey}`;
     const now = Date.now();
     const entry = rateLimitMap.get(String(key));

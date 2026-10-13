@@ -209,6 +209,7 @@ export const getQueuePreview = async (req: AuthRequest, res: Response): Promise<
     // Evaluate status for each slot using authoritative server time
     const availableSlots: SlotStatusResult[] = slots.map((slot) => {
       const bookedInSlot = dayAppointments.filter((a) => {
+        if (a.status === 'PENDING_APPROVAL') return false;
         if (a.slotId) return a.slotId === slot.id;
         if (a.checkingWindow) return a.checkingWindow.includes(slot.startTime);
         return slots.length === 1;
@@ -481,17 +482,31 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
       const rawDigits = sanitizeIndianPhone(cleanPhone);
 
       if (cleanPhone) {
-        patientUser = await prisma.user.findFirst({
-          where: {
-            role: 'PATIENT',
-            OR: [
-              ...(normalizedPhone ? [{ phone: normalizedPhone }] : []),
-              ...(rawDigits ? [{ phone: rawDigits }] : []),
-              { phone: cleanPhone },
-            ],
-          },
-          include: { patientProfile: true },
-        });
+        const phoneWhere = {
+          role: 'PATIENT' as const,
+          OR: [
+            ...(normalizedPhone ? [{ phone: normalizedPhone }] : []),
+            ...(rawDigits ? [{ phone: rawDigits }] : []),
+            { phone: cleanPhone },
+          ],
+        };
+        if (typeof (prisma.user as any).findMany === 'function') {
+          const candidates = await prisma.user.findMany({
+            where: phoneWhere,
+            include: { patientProfile: true },
+            orderBy: [{ isEmailVerified: 'desc' }, { createdAt: 'asc' }],
+          });
+          patientUser =
+            candidates.find((u: any) => u.isEmailVerified && !String(u.email || '').endsWith('@mediarca.local')) ||
+            candidates.find((u: any) => !String(u.email || '').endsWith('@mediarca.local')) ||
+            candidates[0] ||
+            null;
+        } else {
+          patientUser = await prisma.user.findFirst({
+            where: phoneWhere,
+            include: { patientProfile: true },
+          });
+        }
       }
       if (!patientUser) {
         const unguessablePassword = crypto.randomBytes(32).toString('hex');
@@ -627,15 +642,22 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
       }) || slots[0];
     }
 
-    // Check if patient already has an active appointment with this doctor on this day (applies to PATIENT self-booking)
-    if (req.user.role === 'PATIENT') {
+    // Check if patient already has an active appointment with this doctor on this day (applies to PATIENT self-booking and DOCTOR walk-ins)
+    if (req.user.role === 'PATIENT' || (req.user.role === 'DOCTOR' && patient?.id)) {
+      const effectiveIsForOther = Boolean(
+        isForOther ||
+        (req.user.role === 'DOCTOR' &&
+          patientUser &&
+          patientName &&
+          patientUser.fullName.trim().toLowerCase() !== String(patientName).trim().toLowerCase())
+      );
       const existingPatientBooking = await prisma.appointment.findFirst({
         where: {
           patientId: patient.id,
           doctorId: doctor.id,
           appointmentDate,
-          isForOther: Boolean(isForOther),
-          ...(isForOther && patientName
+          isForOther: effectiveIsForOther,
+          ...(effectiveIsForOther && patientName
             ? { patientName: { equals: String(patientName).trim(), mode: 'insensitive' } }
             : {}),
           status: { in: ['PENDING_APPROVAL', 'WAITING', 'IN_CONSULTATION'] },
@@ -673,7 +695,7 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
             data: { status: 'EXPIRED' },
           });
         } else {
-          const recipient = isForOther ? `for ${patientName}` : 'for yourself';
+          const recipient = effectiveIsForOther ? `for ${patientName}` : 'for yourself';
           const isPending = existingPatientBooking.status === 'PENDING_APPROVAL';
           res.status(400).json({
             success: false,
@@ -702,14 +724,21 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
           }
 
           // Re-verify duplicate booking inside the transaction
-          if (req.user?.role === 'PATIENT') {
+          if (req.user?.role === 'PATIENT' || (req.user?.role === 'DOCTOR' && patient?.id)) {
+            const effectiveIsForOtherTx = Boolean(
+              isForOther ||
+              (req.user?.role === 'DOCTOR' &&
+                patientUser &&
+                patientName &&
+                patientUser.fullName.trim().toLowerCase() !== String(patientName).trim().toLowerCase())
+            );
             const duplicateInTx = await tx.appointment.findFirst({
               where: {
                 patientId: patient.id,
                 doctorId: doctor.id,
                 appointmentDate,
-                isForOther: Boolean(isForOther),
-                ...(isForOther && patientName
+                isForOther: effectiveIsForOtherTx,
+                ...(effectiveIsForOtherTx && patientName
                   ? { patientName: { equals: String(patientName).trim(), mode: 'insensitive' } }
                   : {}),
                 status: { in: ['PENDING_APPROVAL', 'WAITING', 'IN_CONSULTATION'] },
@@ -746,7 +775,7 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
                   data: { status: 'EXPIRED' },
                 });
               } else {
-                const recipient = isForOther ? `for ${patientName}` : 'for yourself';
+                const recipient = effectiveIsForOtherTx ? `for ${patientName}` : 'for yourself';
                 throw new Error(`DUPLICATE_ACTIVE_BOOKING: You already have an active booking ${recipient} with this doctor on this date.`);
               }
             }
@@ -763,10 +792,12 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
               slotId: true,
               checkingWindow: true,
               queueNumber: true,
+              status: true,
             },
           });
 
-          const bookedInSlot = dayAppointments.filter((a) => {
+          const bookedInSlot = dayAppointments.filter((a: any) => {
+            if (a.status === 'PENDING_APPROVAL') return false;
             if (a.slotId) return a.slotId === chosenSlot!.id;
             if (a.checkingWindow) return a.checkingWindow.includes(chosenSlot!.startTime);
             return slots.length === 1;
@@ -842,6 +873,10 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
             queueNumber = highestQueue + 1;
           }
 
+          const cleanWalkinPhone = patientPhone ? String(patientPhone).trim() : '';
+          const normalizedWalkinPhone = cleanWalkinPhone ? formatIndianPhone(cleanWalkinPhone) : '';
+          const isSameDayWalkin = !isPatientBooking && appointmentDate === istTodayStr;
+
           const created = await tx.appointment.create({
             data: {
               patientId: patient!.id,
@@ -860,8 +895,8 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
               patientName: (isForOther && patientName) || (req.user?.role === 'DOCTOR' && patientName) ? String(patientName).trim() : null,
               patientAge: patientAge ? String(patientAge).trim() : null,
               patientGender: patientGender || null,
-              isCheckedIn: !isPatientBooking,
-              checkedInAt: !isPatientBooking ? new Date() : null,
+              isCheckedIn: isSameDayWalkin,
+              checkedInAt: isSameDayWalkin ? new Date() : null,
             },
             include: {
               doctor: {
@@ -895,6 +930,8 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
             },
           });
 
+          (created as any).patientPhone =
+            normalizedWalkinPhone || cleanWalkinPhone || created.patient?.user?.phone || null;
           return created;
         });
 
@@ -1586,7 +1623,15 @@ export const checkInAppointmentWithQR = async (req: AuthRequest, res: Response):
       return;
     }
 
-    const { clinicId, appointmentId } = req.body;
+    if (req.user.role && req.user.role !== 'PATIENT') {
+      res.status(403).json({
+        success: false,
+        message: 'Only patient accounts can perform QR arrival check-in.',
+      });
+      return;
+    }
+
+    const { clinicId, appointmentId, code, checkinCode } = req.body;
 
     if (!clinicId) {
       res.status(400).json({
@@ -1596,7 +1641,7 @@ export const checkInAppointmentWithQR = async (req: AuthRequest, res: Response):
       return;
     }
 
-    const clinic = await prisma.clinicProfile.findUnique({
+    let clinic = await prisma.clinicProfile.findUnique({
       where: { id: String(clinicId) },
     });
 
@@ -1611,6 +1656,22 @@ export const checkInAppointmentWithQR = async (req: AuthRequest, res: Response):
       res.status(403).json({
         success: false,
         message: clinicCheck.reason || 'This clinic facility is currently inactive or not verified for arrival check-ins.',
+      });
+      return;
+    }
+
+    if (!clinic.checkinCode && typeof (prisma.clinicProfile as any).update === 'function') {
+      clinic = await prisma.clinicProfile.update({
+        where: { id: clinic.id },
+        data: { checkinCode: crypto.randomUUID() },
+      });
+    }
+
+    const submittedCode = String(code ?? checkinCode ?? '').trim();
+    if (!submittedCode || (clinic.checkinCode && submittedCode !== String(clinic.checkinCode).trim())) {
+      res.status(403).json({
+        success: false,
+        message: 'Invalid or missing clinic QR verification code. Please scan the official QR standee at the clinic reception desk.',
       });
       return;
     }
@@ -1640,7 +1701,7 @@ export const checkInAppointmentWithQR = async (req: AuthRequest, res: Response):
         return;
       }
     } else {
-      // Find today's active appointment for this patient at this clinic
+      // Find today's appointment for this patient at this clinic, prioritizing unchecked-in WAITING appointments
       const patient = await prisma.patientProfile.findUnique({
         where: { userId: req.user.id },
       });
@@ -1650,20 +1711,43 @@ export const checkInAppointmentWithQR = async (req: AuthRequest, res: Response):
         return;
       }
 
-      appointment = await prisma.appointment.findFirst({
-        where: {
-          patientId: patient.id,
-          appointmentDate: todayStr,
-          status: { in: ['WAITING', 'IN_CONSULTATION'] },
-          clinicId: clinic.id,
-        },
-        include: {
-          patient: true,
-          doctor: { include: { user: { select: { fullName: true } } } },
-          clinic: true,
-        },
-        orderBy: { queueNumber: 'asc' },
-      });
+      if (typeof (prisma.appointment as any).findMany === 'function') {
+        const candidates = await prisma.appointment.findMany({
+          where: {
+            patientId: patient.id,
+            appointmentDate: todayStr,
+            clinicId: clinic.id,
+          },
+          include: {
+            patient: true,
+            doctor: { include: { user: { select: { fullName: true } } } },
+            clinic: true,
+          },
+          orderBy: { queueNumber: 'asc' },
+        });
+        appointment =
+          candidates.find((a: any) => a.status === 'WAITING' && !a.isCheckedIn) ||
+          candidates.find((a: any) => (a.status === 'WAITING' || a.status === 'IN_CONSULTATION') && a.isCheckedIn) ||
+          candidates.find((a: any) => a.status === 'PENDING_APPROVAL') ||
+          candidates.find((a: any) => a.status === 'EXPIRED') ||
+          candidates[0] ||
+          null;
+      } else {
+        appointment = await prisma.appointment.findFirst({
+          where: {
+            patientId: patient.id,
+            appointmentDate: todayStr,
+            status: { in: ['WAITING', 'IN_CONSULTATION'] },
+            clinicId: clinic.id,
+          },
+          include: {
+            patient: true,
+            doctor: { include: { user: { select: { fullName: true } } } },
+            clinic: true,
+          },
+          orderBy: { queueNumber: 'asc' },
+        });
+      }
     }
 
     if (!appointment) {
@@ -1672,6 +1756,17 @@ export const checkInAppointmentWithQR = async (req: AuthRequest, res: Response):
         message: `No active consultation appointment found for today (${todayStr}) at ${clinic.clinicName}.`,
       });
       return;
+    }
+
+    if (appointment.doctor && (appointment.doctor.isVerified !== undefined || appointment.doctor.verificationStatus !== undefined)) {
+      const docCheck = isDoctorEligibleForClinicalPractice(appointment.doctor);
+      if (!docCheck.eligible) {
+        res.status(403).json({
+          success: false,
+          message: docCheck.reason || 'This practitioner is currently unavailable for clinical check-ins.',
+        });
+        return;
+      }
     }
 
     if (appointment.appointmentDate !== todayStr) {
@@ -1886,6 +1981,22 @@ export const checkInAppointmentDirect = async (req: AuthRequest, res: Response):
     const todayIso = getLocalDateString();
     const newCheckedInState =
       req.body.isCheckedIn !== undefined ? Boolean(req.body.isCheckedIn) : !appointment.isCheckedIn;
+
+    if (appointment.status === 'IN_CONSULTATION' && !newCheckedInState) {
+      res.status(400).json({
+        success: false,
+        message: 'Cannot remove check-in while consultation is actively in progress.',
+      });
+      return;
+    }
+
+    if (req.user.role === 'PATIENT' && appointment.status !== 'WAITING') {
+      res.status(400).json({
+        success: false,
+        message: 'Cannot modify check-in state while consultation is in progress.',
+      });
+      return;
+    }
 
     if (newCheckedInState && appointment.appointmentDate !== todayIso) {
       res.status(400).json({

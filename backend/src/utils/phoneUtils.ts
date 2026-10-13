@@ -126,7 +126,7 @@ export const findExistingAccountByPhone = async (
     whereClause.id = { not: options.excludeUserId };
   }
 
-  return await prismaClient.user.findFirst({
+  const found = await prismaClient.user.findFirst({
     where: whereClause,
     select: {
       id: true,
@@ -136,6 +136,18 @@ export const findExistingAccountByPhone = async (
       isEmailVerified: true,
     },
   });
+
+  if (found && found.role === 'RECEPTIONIST' && typeof prismaClient?.receptionistProfile?.findUnique === 'function') {
+    const recProfile = await prismaClient.receptionistProfile.findUnique({
+      where: { userId: found.id },
+      select: { status: true },
+    });
+    if (recProfile?.status === 'REJECTED') {
+      return null;
+    }
+  }
+
+  return found;
 };
 
 

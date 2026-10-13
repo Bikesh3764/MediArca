@@ -15,6 +15,7 @@ export const ClinicCheckIn: React.FC = () => {
   const { user, loading: loadingAuth } = useAuth();
 
   const clinicId = searchParams.get('clinicId') || '';
+  const code = searchParams.get('code') || searchParams.get('checkinCode') || undefined;
   const appointmentId = searchParams.get('appointmentId') || undefined;
 
   const [checkingIn, setCheckingIn] = useState(false);
@@ -38,6 +39,7 @@ export const ClinicCheckIn: React.FC = () => {
       try {
         const res: any = await api.checkInWithQR({
           clinicId,
+          code,
           appointmentId,
         });
 
@@ -64,7 +66,7 @@ export const ClinicCheckIn: React.FC = () => {
     return () => {
       mounted = false;
     };
-  }, [user, loadingAuth, clinicId, appointmentId, autoAttempted]);
+  }, [user, loadingAuth, clinicId, code, appointmentId, autoAttempted]);
 
   const handleManualCheckIn = async () => {
     if (!clinicId) return;
@@ -73,6 +75,7 @@ export const ClinicCheckIn: React.FC = () => {
     try {
       const res: any = await api.checkInWithQR({
         clinicId,
+        code,
         appointmentId,
       });
 

@@ -1375,8 +1375,10 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
               {filteredDoctors.map((doctor) => {
                 const slots = parseDoctorSlots(doctor);
                 const cleanDegrees = formatDoctorDegrees(doctor.qualifications);
-                const primaryClinic = doctor.clinics?.find((c) => c?.clinic)?.clinic || null;
+                const primaryClinicAffiliation = doctor.clinics?.find((c) => c?.clinic) || null;
+                const primaryClinic = primaryClinicAffiliation?.clinic || null;
                 const hasClinics = Boolean(primaryClinic);
+                const effectiveFee = primaryClinicAffiliation?.consultationFee ?? doctor.consultationFee ?? 0;
 
                 // Extract all unique clinic cities for this doctor
                 const affiliatedClinics = doctor.clinics?.map((c) => c?.clinic).filter(Boolean) || [];
@@ -1504,7 +1506,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                       <div className="mt-4 pt-3.5 border-t border-[#f0f0f2] flex items-center justify-between gap-3">
                         <div className="flex items-baseline gap-1">
                           <span className="text-[21px] font-bold text-[#1d1d1f] tracking-tight">
-                            ₹{doctor.consultationFee.toFixed(0)}
+                            ₹{effectiveFee.toFixed(0)}
                           </span>
                           <span className="text-xs text-[#86868b] font-normal">/ visit</span>
                         </div>

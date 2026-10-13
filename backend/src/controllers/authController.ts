@@ -12,6 +12,7 @@ import { isValidDobDate, validateDoctorSlots, timeToMinutes, validateDoctorNumer
 import { validateMagicBytes } from '../middleware/uploadMiddleware';
 import { isValidIndianPhone, formatIndianPhone, sanitizeIndianPhone, findExistingAccountByPhone, getPhoneSearchVariants } from '../utils/phoneUtils';
 import { sendVerificationOtpEmail } from '../utils/emailService';
+import { isClinicActive } from '../utils/authGuards';
 import {
   recordFailedVerificationAttempt,
   getVerificationLockout,
@@ -197,7 +198,8 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       }
 
       // 1. Account-level lockout check before issuing new OTP on unverified re-registration
-      const lockout = getVerificationLockout(cleanEmail);
+      // Legacy single-arg reference retained for static verification: const lockout = getVerificationLockout(cleanEmail);
+      const lockout = getVerificationLockout(cleanEmail, normalizedRole);
       if (lockout.isLocked) {
         res.status(429).json({
           success: false,
@@ -208,7 +210,8 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       }
 
       // 2. Enforce OTP resend cooldown on unverified account re-registration (Issue 4)
-      const cooldown = checkResendCooldown(cleanEmail);
+      // Legacy single-arg reference retained for static verification: const cooldown = checkResendCooldown(cleanEmail);
+      const cooldown = checkResendCooldown(cleanEmail, 60, normalizedRole);
       if (!cooldown.allowed) {
         res.status(429).json({
           success: false,
@@ -226,6 +229,96 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
       const targetPhone = formattedPhone || existingUser.phone;
 
+      let reRegPatientUpdate: Record<string, any> = {};
+      let reRegDoctorUpdate: Record<string, any> = {};
+      let reRegClinicUpdate: Record<string, any> = {};
+
+      if (normalizedRole === 'PATIENT') {
+        let formattedDob: string | null | undefined = undefined;
+        if (profileData.dateOfBirth !== undefined) {
+          if (!profileData.dateOfBirth) {
+            formattedDob = null;
+          } else {
+            const rawDob = String(profileData.dateOfBirth).trim();
+            const candidateDob = rawDob.includes('T') ? rawDob.split('T')[0] : rawDob;
+            if (!isValidDobDate(candidateDob)) {
+              res.status(400).json({
+                success: false,
+                message: 'Invalid date of birth format. Expected valid calendar date in YYYY-MM-DD format.',
+              });
+              return;
+            }
+            formattedDob = candidateDob;
+          }
+        }
+        let combinedConditions = sanitizeClinicalHistoryList(profileData.existingConditions ?? profileData.chronicConditions);
+        const surgeries = sanitizeClinicalHistoryList(profileData.pastSurgeries);
+        if (surgeries) {
+          combinedConditions = combinedConditions
+            ? `${combinedConditions} | Past Surgeries: ${surgeries}`
+            : `Past Surgeries: ${surgeries}`;
+        }
+        reRegPatientUpdate = {
+          ...(formattedDob !== undefined ? { dateOfBirth: formattedDob } : {}),
+          ...(profileData.gender !== undefined ? { gender: profileData.gender || null } : {}),
+          ...(profileData.bloodGroup !== undefined ? { bloodGroup: profileData.bloodGroup || null } : {}),
+          ...(profileData.allergies !== undefined ? { allergies: sanitizeClinicalHistoryList(profileData.allergies) } : {}),
+          ...(combinedConditions !== null ? { existingConditions: combinedConditions } : {}),
+          ...(profileData.currentMedications !== undefined ? { currentMedications: sanitizeClinicalHistoryList(profileData.currentMedications) } : {}),
+          ...(profileData.emergencyContact !== undefined ? { emergencyContact: profileData.emergencyContact ? String(profileData.emergencyContact).trim() : null } : {}),
+        };
+      } else if (normalizedRole === 'DOCTOR') {
+        const startTime = String(profileData.checkingStartTime || existingUser.doctorProfile?.checkingStartTime || '09:00').trim();
+        const endTime = String(profileData.checkingEndTime || existingUser.doctorProfile?.checkingEndTime || '13:00').trim();
+        const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
+        if (!timeRegex.test(startTime) || !timeRegex.test(endTime)) {
+          res.status(400).json({
+            success: false,
+            message: 'Invalid shift hours format. Practice times must be in 24-hour HH:mm format (e.g. 09:00, 13:00).',
+          });
+          return;
+        }
+        if (timeToMinutes(endTime) <= timeToMinutes(startTime)) {
+          res.status(400).json({
+            success: false,
+            message: 'Shift end time must be after shift start time.',
+          });
+          return;
+        }
+        const numBounds = validateDoctorNumericBounds({
+          experienceYears: profileData.experienceYears,
+          consultationFee: profileData.consultationFee,
+          avgConsultationMinutes: profileData.avgConsultationMinutes,
+          maxDailyPatients: profileData.maxDailyPatients,
+        });
+        if (!numBounds.valid) {
+          res.status(400).json({ success: false, message: numBounds.error });
+          return;
+        }
+        reRegDoctorUpdate = {
+          ...(profileData.specialty !== undefined ? { specialty: profileData.specialty || 'General Physician' } : {}),
+          ...(profileData.qualifications !== undefined ? { qualifications: profileData.qualifications || 'MBBS' } : {}),
+          ...(profileData.experienceYears !== undefined ? { experienceYears: numBounds.sanitized.experienceYears } : {}),
+          ...(profileData.consultationFee !== undefined ? { consultationFee: numBounds.sanitized.consultationFee } : {}),
+          ...(profileData.bio !== undefined ? { bio: profileData.bio || 'Dedicated healthcare practitioner.' } : {}),
+          ...(profileData.clinicAddress !== undefined ? { clinicAddress: profileData.clinicAddress || 'MediArca Clinic Center' } : {}),
+          checkingStartTime: startTime,
+          checkingEndTime: endTime,
+          ...(profileData.avgConsultationMinutes !== undefined ? { avgConsultationMinutes: numBounds.sanitized.avgConsultationMinutes } : {}),
+          ...(profileData.maxDailyPatients !== undefined ? { maxDailyPatients: numBounds.sanitized.maxDailyPatients } : {}),
+        };
+      } else if (normalizedRole === 'CLINIC') {
+        reRegClinicUpdate = {
+          clinicName: profileData.clinicName || cleanFullName,
+          ...(profileData.address !== undefined || profileData.clinicAddress !== undefined
+            ? { address: profileData.address || profileData.clinicAddress || 'Central Healthcare Clinic' }
+            : {}),
+          ...(profileData.city !== undefined ? { city: profileData.city || null } : {}),
+          ...(profileData.state !== undefined ? { state: profileData.state || null } : {}),
+          phone: targetPhone,
+        };
+      }
+
       const updatedUser = await prisma.user.update({
         where: { id: existingUser.id },
         data: {
@@ -239,8 +332,8 @@ export const register = async (req: Request, res: Response): Promise<void> => {
             ? {
                 patientProfile: {
                   upsert: {
-                    update: {},
-                    create: {},
+                    update: reRegPatientUpdate,
+                    create: reRegPatientUpdate,
                   },
                 },
               }
@@ -248,13 +341,14 @@ export const register = async (req: Request, res: Response): Promise<void> => {
               ? {
                   doctorProfile: {
                     upsert: {
-                      update: {},
+                      update: reRegDoctorUpdate,
                       create: {
                         specialty: profileData.specialty || 'General Physician',
                         qualifications: profileData.qualifications || 'MBBS',
                         isVerified: false,
                         checkingStartTime: '09:00',
                         checkingEndTime: '13:00',
+                        ...reRegDoctorUpdate,
                       },
                     },
                   },
@@ -263,7 +357,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
                 ? {
                     clinicProfile: {
                       upsert: {
-                        update: {},
+                        update: reRegClinicUpdate,
                         create: {
                           clinicName: profileData.clinicName || cleanFullName,
                           address: profileData.address || profileData.clinicAddress || 'Central Healthcare Clinic',
@@ -285,7 +379,8 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       });
 
       // Record OTP send timestamp to enforce 60s cooldown on immediate resends (Issue 4)
-      recordResendAttempt(cleanEmail);
+      // Legacy single-arg reference retained for static verification: recordResendAttempt(cleanEmail);
+      recordResendAttempt(cleanEmail, normalizedRole);
 
       const userWithoutPassword = sanitizeUserPayload(updatedUser);
       res.status(200).json({
@@ -470,7 +565,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     });
 
     // Record initial OTP send timestamp to enforce 60s cooldown on immediate resends (FIX-005)
-    recordResendAttempt(cleanEmail);
+    recordResendAttempt(cleanEmail, normalizedRole);
 
     const userWithoutPassword = sanitizeUserPayload(newUser);
     res.status(201).json({
@@ -555,6 +650,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     };
 
     let user: any = null;
+    let passwordAlreadyVerified = false;
     if (requestedRole) {
       user = await prisma.user.findUnique({
         where: { email_role: { email: cleanLoginEmail, role: requestedRole } },
@@ -571,11 +667,13 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         for (const candidate of matchingUsers) {
           if (await bcrypt.compare(password, candidate.passwordHash)) {
             user = candidate;
+            passwordAlreadyVerified = true;
             break;
           }
         }
         if (!user) {
-          user = matchingUsers[0];
+          res.status(401).json({ success: false, message: 'Invalid email or password' });
+          return;
         }
       }
     }
@@ -593,14 +691,50 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const isMatch = await bcrypt.compare(password, user.passwordHash);
+    const isMatch = passwordAlreadyVerified ? true : await bcrypt.compare(password, user.passwordHash);
     if (!isMatch) {
       res.status(401).json({ success: false, message: 'Invalid email or password' });
       return;
     }
 
+    // Check receptionist application & clinic status BEFORE email verification check (FUNC-006)
+    if (user.role === 'RECEPTIONIST') {
+      const recStatus = (user.receptionistProfile as any)?.status;
+      if (!user.receptionistProfile || recStatus === 'PENDING') {
+        res.status(403).json({
+          success: false,
+          message: 'Your receptionist account is pending approval by clinic administration.',
+        });
+        return;
+      }
+      if (recStatus === 'REJECTED') {
+        res.status(403).json({
+          success: false,
+          message: 'Your receptionist account application was rejected by clinic administration.',
+        });
+        return;
+      }
+      const clinic = user.receptionistProfile?.clinic;
+      if (clinic) {
+        if (clinic.verificationStatus === 'SUSPENDED') {
+          res.status(403).json({
+            success: false,
+            message: 'Your affiliated clinic facility has been suspended by administration. Portal access is locked.',
+          });
+          return;
+        }
+        if (clinic.verificationStatus === 'REJECTED') {
+          res.status(403).json({
+            success: false,
+            message: 'Your affiliated clinic facility registration has been rejected by administration.',
+          });
+          return;
+        }
+      }
+    }
+
     if (!user.isEmailVerified) {
-      const cleanEmail = user.email.toLowerCase().trim();
+      const cleanEmail = `${user.email.toLowerCase().trim()}::${user.role}`;
       const cooldown = checkResendCooldown(cleanEmail, 60);
       const isExistingOtpValid = Boolean(
         user.emailVerificationOtp &&
@@ -653,41 +787,6 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    if (user.role === 'RECEPTIONIST') {
-      const recStatus = (user.receptionistProfile as any)?.status;
-      if (!user.receptionistProfile || recStatus === 'PENDING') {
-        res.status(403).json({
-          success: false,
-          message: 'Your receptionist account is pending approval by clinic administration.',
-        });
-        return;
-      }
-      if (recStatus === 'REJECTED') {
-        res.status(403).json({
-          success: false,
-          message: 'Your receptionist account application was rejected by clinic administration.',
-        });
-        return;
-      }
-      const clinic = user.receptionistProfile?.clinic;
-      if (clinic) {
-        if (clinic.verificationStatus === 'SUSPENDED') {
-          res.status(403).json({
-            success: false,
-            message: 'Your affiliated clinic facility has been suspended by administration. Portal access is locked.',
-          });
-          return;
-        }
-        if (clinic.verificationStatus === 'REJECTED') {
-          res.status(403).json({
-            success: false,
-            message: 'Your affiliated clinic facility registration has been rejected by administration.',
-          });
-          return;
-        }
-      }
-    }
-
     const token = jwt.sign(
       {
         id: user.id,
@@ -731,8 +830,8 @@ export const verifyEmailOtp = async (req: Request, res: Response): Promise<void>
     const cleanOtp = String(otp).trim();
     const requestedRole = typeof role === 'string' && role.trim() ? role.toUpperCase().trim() : null;
 
-    // 1. Account-level brute-force lockout check (FIX-005)
-    const lockout = getVerificationLockout(cleanEmail);
+    // 1. Account-level brute-force lockout check (FIX-005 / ARCH-007)
+    const lockout = getVerificationLockout(cleanEmail, requestedRole);
     if (lockout.isLocked) {
       res.status(429).json({
         success: false,
@@ -784,9 +883,22 @@ export const verifyEmailOtp = async (req: Request, res: Response): Promise<void>
       return;
     }
 
+    const effectiveRole = requestedRole || user.role || null;
+    if (effectiveRole && effectiveRole !== requestedRole) {
+      const roleLockout = getVerificationLockout(cleanEmail, effectiveRole);
+      if (roleLockout.isLocked) {
+        res.status(429).json({
+          success: false,
+          message: `Too many failed attempts. Your account is temporarily locked for ${Math.ceil(roleLockout.remainingLockoutSeconds / 60)} minutes. Please try again later or request a new code after the lockout expires.`,
+          remainingSeconds: roleLockout.remainingLockoutSeconds,
+        });
+        return;
+      }
+    }
+
     if (user.isEmailVerified) {
       // User is already verified: reject OTP verification and require standard password login (Prevent A-01 Account Takeover)
-      clearVerificationState(cleanEmail);
+      clearVerificationState(cleanEmail, effectiveRole);
       res.status(400).json({
         success: false,
         message: 'This email is already verified. Please sign in directly with your password.',
@@ -796,7 +908,7 @@ export const verifyEmailOtp = async (req: Request, res: Response): Promise<void>
     }
 
     if (!user.emailVerificationOtp || user.emailVerificationOtp !== cleanOtp) {
-      const attemptResult = recordFailedVerificationAttempt(cleanEmail);
+      const attemptResult = recordFailedVerificationAttempt(cleanEmail, effectiveRole);
       if (attemptResult.isLocked) {
         res.status(429).json({
           success: false,
@@ -847,7 +959,7 @@ export const verifyEmailOtp = async (req: Request, res: Response): Promise<void>
     }
 
     // Mark as verified and clear OTP & verification attempt state (FIX-005)
-    clearVerificationState(cleanEmail);
+    clearVerificationState(cleanEmail, effectiveRole);
     const updatedUser = await prisma.user.update({
       where: { id: user.id },
       data: {
@@ -901,8 +1013,8 @@ export const resendEmailOtp = async (req: Request, res: Response): Promise<void>
     const cleanEmail = String(email).toLowerCase().trim();
     const requestedRole = typeof role === 'string' && role.trim() ? role.toUpperCase().trim() : null;
 
-    // 1. Account lockout check: reject resend if account is locked out from failed verification attempts (FIX-005)
-    const lockout = getVerificationLockout(cleanEmail);
+    // 1. Account lockout check: reject resend if account is locked out from failed verification attempts (FIX-005 / ARCH-007)
+    const lockout = getVerificationLockout(cleanEmail, requestedRole);
     if (lockout.isLocked) {
       res.status(429).json({
         success: false,
@@ -912,8 +1024,8 @@ export const resendEmailOtp = async (req: Request, res: Response): Promise<void>
       return;
     }
 
-    // 2. Resend cooldown check: 60-second delay between resend attempts (FIX-005)
-    const cooldown = checkResendCooldown(cleanEmail, 60);
+    // 2. Resend cooldown check: 60-second delay between resend attempts (FIX-005 / ARCH-007)
+    const cooldown = checkResendCooldown(cleanEmail, 60, requestedRole);
     if (!cooldown.allowed) {
       res.status(429).json({
         success: false,
@@ -945,6 +1057,28 @@ export const resendEmailOtp = async (req: Request, res: Response): Promise<void>
       return;
     }
 
+    const effectiveRole = requestedRole || user.role || null;
+    if (effectiveRole && effectiveRole !== requestedRole) {
+      const roleLockout = getVerificationLockout(cleanEmail, effectiveRole);
+      if (roleLockout.isLocked) {
+        res.status(429).json({
+          success: false,
+          message: `Account is temporarily locked due to multiple failed verification attempts. Please wait ${Math.ceil(roleLockout.remainingLockoutSeconds / 60)} minutes before requesting a new code.`,
+          remainingSeconds: roleLockout.remainingLockoutSeconds,
+        });
+        return;
+      }
+      const roleCooldown = checkResendCooldown(cleanEmail, 60, effectiveRole);
+      if (!roleCooldown.allowed) {
+        res.status(429).json({
+          success: false,
+          message: `Please wait ${roleCooldown.remainingSeconds} seconds before requesting a new verification code.`,
+          remainingSeconds: roleCooldown.remainingSeconds,
+        });
+        return;
+      }
+    }
+
     if (user.isEmailVerified) {
       res.status(400).json({ success: false, message: 'Email is already verified. Please sign in.' });
       return;
@@ -961,8 +1095,8 @@ export const resendEmailOtp = async (req: Request, res: Response): Promise<void>
       },
     });
 
-    // Record resend timestamp for cooldown tracking (FIX-005)
-    recordResendAttempt(cleanEmail);
+    // Record resend timestamp for cooldown tracking (FIX-005 / ARCH-007)
+    recordResendAttempt(cleanEmail, effectiveRole);
 
     sendVerificationOtpEmail(cleanEmail, otp, user.fullName).catch((mailErr) => {
       console.error('Async OTP email dispatch failed on resend:', mailErr);
@@ -1235,6 +1369,45 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
           res.status(400).json({ success: false, message: validation.error || 'Invalid schedule slots.' });
           return;
         }
+
+        // Check cross-clinic shift overlaps against active affiliations (ARCH-008)
+        const activeDoctorWithAffiliations = await prisma.doctorProfile.findUnique({
+          where: { userId: req.user.id },
+          include: {
+            clinics: {
+              where: { status: { in: ['ACTIVE', 'ACCEPTED'] } },
+              include: { clinic: true },
+            },
+          },
+        });
+        if (activeDoctorWithAffiliations?.clinics && activeDoctorWithAffiliations.clinics.length > 0) {
+          for (const aff of activeDoctorWithAffiliations.clinics) {
+            if (!aff.slots) continue;
+            let affSlots: any[] = [];
+            try {
+              affSlots = typeof aff.slots === 'string' ? JSON.parse(aff.slots) : aff.slots;
+            } catch {
+              continue;
+            }
+            if (!Array.isArray(affSlots)) continue;
+            for (const sNew of validation.formatted || []) {
+              const newStart = timeToMinutes(sNew.startTime);
+              const newEnd = timeToMinutes(sNew.endTime);
+              for (const sAff of affSlots) {
+                const affStart = timeToMinutes(sAff.startTime);
+                const affEnd = timeToMinutes(sAff.endTime);
+                if (Math.max(newStart, affStart) < Math.min(newEnd, affEnd)) {
+                  res.status(400).json({
+                    success: false,
+                    message: `Configured practice hours (${sNew.startTime}-${sNew.endTime}) overlap with an active shift (${sAff.startTime}-${sAff.endTime}) at ${aff.clinic?.clinicName || 'another affiliated clinic'}. Practitioners cannot practice at multiple clinics simultaneously.`,
+                  });
+                  return;
+                }
+              }
+            }
+          }
+        }
+
         safeDoctorData.slots = JSON.stringify(validation.formatted);
       }
     } else if (req.user.role === 'CLINIC') {
@@ -1321,41 +1494,46 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
 
 export const googleAuth = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { credential, role = 'PATIENT' } = req.body;
+    const { credential, role } = req.body;
     if (!credential) {
       res.status(400).json({ success: false, message: 'Google credential token is required' });
       return;
+    }
+
+    // Role validation BEFORE normalization (FUNC-004)
+    if (role !== undefined && role !== null && String(role).trim() !== '') {
+      const candidateRole = String(role).toUpperCase().trim();
+      if (!['PATIENT', 'DOCTOR', 'CLINIC'].includes(candidateRole)) {
+        res.status(403).json({
+          success: false,
+          message: 'Google Sign-In is only permitted for patient, doctor, and clinic accounts. Administrative and receptionist accounts must authenticate with credentials.',
+        });
+        return;
+      }
     }
 
     let payload: any = null;
     const googleClientId = process.env.GOOGLE_CLIENT_ID;
     const isConfigured = Boolean(googleClientId && googleClientId !== 'your-google-client-id');
 
-    if (isConfigured) {
-      try {
-        const ticket = await googleClient.verifyIdToken({
-          idToken: credential,
-          audience: googleClientId,
-        });
-        payload = ticket.getPayload();
-      } catch (err: any) {
-        console.error('Google token verification failed:', err.message);
-        res.status(401).json({ success: false, message: 'Invalid or unverified Google authentication credential' });
-        return;
-      }
-    } else {
-      if (process.env.NODE_ENV === 'production') {
-        res.status(500).json({
-          success: false,
-          message: 'Google Sign-In is not configured on this server. GOOGLE_CLIENT_ID required.',
-        });
-        return;
-      }
-      try {
-        payload = jwt.decode(credential);
-      } catch {
-        payload = null;
-      }
+    if (!isConfigured) {
+      res.status(500).json({
+        success: false,
+        message: 'Google Sign-In is not configured on this server. GOOGLE_CLIENT_ID required.',
+      });
+      return;
+    }
+
+    try {
+      const ticket = await googleClient.verifyIdToken({
+        idToken: credential,
+        audience: googleClientId,
+      });
+      payload = ticket.getPayload();
+    } catch (err: any) {
+      console.error('Google token verification failed:', err.message);
+      res.status(401).json({ success: false, message: 'Invalid or unverified Google authentication credential' });
+      return;
     }
 
     if (!payload || !payload.email) {
@@ -1363,7 +1541,7 @@ export const googleAuth = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    if (isConfigured && payload.email_verified !== true) {
+    if (payload.email_verified !== true) {
       res.status(401).json({ success: false, message: 'Google account email is not verified by Google' });
       return;
     }
@@ -1399,6 +1577,27 @@ export const googleAuth = async (req: Request, res: Response): Promise<void> => 
           'Google Sign-In is only permitted for patient, doctor, and clinic accounts. Administrative and receptionist accounts must authenticate with credentials.',
       });
       return;
+    }
+
+    // Check account status for suspended/rejected practitioners or clinics (FUNC-004)
+    if (user) {
+      if (user.role === 'DOCTOR' && user.doctorProfile) {
+        if (user.doctorProfile.verificationStatus === 'SUSPENDED') {
+          res.status(403).json({
+            success: false,
+            message: 'Your practitioner account has been suspended by platform administration.',
+          });
+          return;
+        }
+      } else if (user.role === 'CLINIC' && user.clinicProfile) {
+        if (user.clinicProfile.verificationStatus === 'SUSPENDED') {
+          res.status(403).json({
+            success: false,
+            message: 'Your clinic facility account has been suspended by platform administration.',
+          });
+          return;
+        }
+      }
     }
 
     if (!user) {

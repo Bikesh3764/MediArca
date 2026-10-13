@@ -5,6 +5,7 @@ import { BrandLogo } from '../../components/ui/BrandLogo';
 import { AlertCircle, Eye, EyeOff, ChevronDown, RefreshCw, CheckCircle2 } from 'lucide-react';
 import { api, ClinicProfile } from '../../services/api';
 import { sanitizeIndianPhone, formatIndianPhone, isValidIndianPhone } from '../../utils/phoneUtils';
+import { EmailVerificationModal } from '../../components/auth/EmailVerificationModal';
 
 export const ReceptionistAuth: React.FC = () => {
   const [authMode, setAuthMode] = useState<'login' | 'apply'>('login');
@@ -15,6 +16,8 @@ export const ReceptionistAuth: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [verificationPendingEmail, setVerificationPendingEmail] = useState<string | null>(null);
+  const [verificationCooldown, setVerificationCooldown] = useState<number | undefined>(undefined);
 
   // Apply form fields
   const [applyFullName, setApplyFullName] = useState('');
@@ -56,6 +59,12 @@ export const ReceptionistAuth: React.FC = () => {
       }
       navigate('/receptionist/dashboard');
     } catch (err: any) {
+      if (err.requiresVerification) {
+        setVerificationPendingEmail(err.email || email.trim());
+        setVerificationCooldown(err.cooldownSeconds);
+        setError(null);
+        return;
+      }
       setError(err.message || 'Invalid receptionist credentials');
     } finally {
       setSubmitting(false);
@@ -580,6 +589,24 @@ export const ReceptionistAuth: React.FC = () => {
           </Link>
         </p>
       </div>
+
+      {/* Email Verification Modal */}
+      <EmailVerificationModal
+        isOpen={Boolean(verificationPendingEmail)}
+        email={verificationPendingEmail || ''}
+        role="RECEPTIONIST"
+        initialCooldown={verificationCooldown}
+        onSuccess={(verifiedUser) => {
+          setVerificationPendingEmail(null);
+          setVerificationCooldown(undefined);
+          updateUser(verifiedUser);
+          navigate('/receptionist/dashboard', { replace: true });
+        }}
+        onClose={() => {
+          setVerificationPendingEmail(null);
+          setVerificationCooldown(undefined);
+        }}
+      />
     </div>
   );
 };

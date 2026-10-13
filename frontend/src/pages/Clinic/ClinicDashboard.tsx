@@ -105,7 +105,7 @@ export const ClinicDashboard: React.FC = () => {
 
   const fetchAvailableDoctors = useCallback(async () => {
     try {
-      const docs = await api.getDoctors();
+      const docs = await api.getDoctors({ limit: 50 });
       setAllDoctors(docs.filter((d: any) => d.isVerified));
     } catch (err) {
       console.error('Failed to load doctor catalog:', err);

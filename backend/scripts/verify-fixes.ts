@@ -9730,6 +9730,195 @@ Follow-up Date: 2026-10-15`;
     'Fix 23: Signup sanitizes trailing whitespace from email and full name'
   );
 
+  // --- Master Sprint Regression Suite (ARCH-001..ARCH-017 & FUNC-001..FUNC-018) ---
+  console.log('\n--- Master Sprint Regression Suite (ARCH-001..ARCH-017 & FUNC-001..FUNC-018) ---');
+
+  const sp_scheduleUtilsContent = fs.readFileSync(path.join(__dirname, '../src/utils/scheduleUtils.ts'), 'utf-8');
+  const sp_otpSecurityContent = fs.readFileSync(path.join(__dirname, '../src/utils/otpSecurity.ts'), 'utf-8');
+  const sp_authMiddlewareContent = fs.readFileSync(path.join(__dirname, '../src/middleware/authMiddleware.ts'), 'utf-8');
+  const sp_serverContent = fs.readFileSync(path.join(__dirname, '../src/server.ts'), 'utf-8');
+  const sp_clinicRoutesContent = fs.readFileSync(path.join(__dirname, '../src/routes/clinicRoutes.ts'), 'utf-8');
+  const sp_doctorControllerContent = fs.readFileSync(path.join(__dirname, '../src/controllers/doctorController.ts'), 'utf-8');
+  const sp_clinicControllerContent = fs.readFileSync(path.join(__dirname, '../src/controllers/clinicController.ts'), 'utf-8');
+  const sp_receptionistControllerContent = fs.readFileSync(path.join(__dirname, '../src/controllers/receptionistController.ts'), 'utf-8');
+  const sp_appointmentControllerContent = fs.readFileSync(path.join(__dirname, '../src/controllers/appointmentController.ts'), 'utf-8');
+  const sp_authControllerContent = fs.readFileSync(path.join(__dirname, '../src/controllers/authController.ts'), 'utf-8');
+  const sp_frontendApiContent = fs.readFileSync(path.join(__dirname, '../../frontend/src/services/api.ts'), 'utf-8');
+  const sp_qrStandeeContent = fs.readFileSync(path.join(__dirname, '../../frontend/src/components/common/ClinicQrStandeeModal.tsx'), 'utf-8');
+  const sp_qrScannerContent = fs.readFileSync(path.join(__dirname, '../../frontend/src/components/common/CameraQrScannerModal.tsx'), 'utf-8');
+  const sp_liveQueueTicketContent = fs.readFileSync(path.join(__dirname, '../../frontend/src/components/queue/LiveQueueTicket.tsx'), 'utf-8');
+  const sp_consultationViewContent = fs.readFileSync(path.join(__dirname, '../../frontend/src/pages/Doctor/ConsultationView.tsx'), 'utf-8');
+  const sp_dashboardLayoutContent = fs.readFileSync(path.join(__dirname, '../../frontend/src/components/layout/DashboardLayout.tsx'), 'utf-8');
+  const sp_clinicalReportModalContent = fs.readFileSync(path.join(__dirname, '../../frontend/src/components/common/ClinicalReportModal.tsx'), 'utf-8');
+  const sp_authContextContent = fs.readFileSync(path.join(__dirname, '../../frontend/src/context/AuthContext.tsx'), 'utf-8');
+  const sp_consultationControllerContent = fs.readFileSync(path.join(__dirname, '../src/controllers/consultationController.ts'), 'utf-8');
+  const sp_emailServiceContent = fs.readFileSync(path.join(__dirname, '../src/utils/emailService.ts'), 'utf-8');
+  const sp_receptionistDashboardContent = fs.readFileSync(path.join(__dirname, '../../frontend/src/pages/Receptionist/ReceptionistDashboard.tsx'), 'utf-8');
+
+  // ARCH-002 / FUNC-005: Integer avgConsultationMinutes
+  assert(
+    sp_scheduleUtilsContent.includes('Math.round(rawAvg)') &&
+    sp_scheduleUtilsContent.includes('Math.max(1, Math.round(rawAvg))'),
+    'Sprint ARCH-002 / FUNC-005: validateDoctorNumericBounds rounds avgConsultationMinutes to integer'
+  );
+
+  // ARCH-003 / FUNC-002: QR check-in enforces checkinCode and standee includes code
+  assert(
+    sp_appointmentControllerContent.includes('const submittedCode = String(code ?? checkinCode ?? \'\').trim()') &&
+    sp_appointmentControllerContent.includes('submittedCode !== String(clinic.checkinCode).trim()') &&
+    sp_qrStandeeContent.includes('&code=${encodeURIComponent(checkinCode)}') &&
+    sp_qrScannerContent.includes("params.get('code') || params.get('checkinCode')"),
+    'Sprint ARCH-003 / FUNC-002: QR check-in enforces submitted checkinCode and standee URL contract matches scanner'
+  );
+
+  // ARCH-004 / FUNC-006: REJECTED receptionist account reuse & email verification on clinic approval
+  assert(
+    sp_clinicControllerContent.includes('isEmailVerified: true') &&
+    sp_clinicControllerContent.includes("status: 'ACTIVE'") &&
+    sp_clinicControllerContent.includes("existingRecProfile?.status !== 'REJECTED'") &&
+    sp_authControllerContent.includes("recStatus === 'REJECTED'"),
+    'Sprint ARCH-004 / FUNC-006: Rejected receptionist accounts can re-apply/re-provision and clinic approval activates verified account'
+  );
+
+  // ARCH-005 / FUNC-011: AuthContext refreshUser clears credentials on 401
+  assert(
+    sp_authContextContent.includes('error?.status === 401 || error?.response?.status === 401') &&
+    sp_authContextContent.includes("localStorage.removeItem('mediarca_token')"),
+    'Sprint ARCH-005 / FUNC-011: AuthContext clears stale credentials on 401 response'
+  );
+
+  // ARCH-006 / FUNC-009: slotId and cleanSlotName persisted across reschedules and queues
+  assert(
+    sp_doctorControllerContent.includes('slotId: matchedSlot.id') &&
+    sp_doctorControllerContent.includes("cleanSlotName(matchedSlot.name, 'Shift 1')") &&
+    sp_receptionistControllerContent.includes("cleanSlotName(slot.name, 'Shift 1')"),
+    'Sprint ARCH-006 / FUNC-009: Schedule updates and reschedules synchronize both slotId and canonical shift window'
+  );
+
+  // ARCH-007 / FUNC-015: Role-scoped OTP keys and atomic profile upsert on unverified re-registration
+  assert(
+    sp_otpSecurityContent.includes('normalizeEmail') &&
+    sp_authControllerContent.includes('patientProfile:') &&
+    sp_authControllerContent.includes('reRegPatientUpdate') &&
+    sp_authControllerContent.includes('doctorProfile:') &&
+    sp_authControllerContent.includes('reRegDoctorUpdate') &&
+    sp_authControllerContent.includes('clinicProfile:') &&
+    sp_authControllerContent.includes('reRegClinicUpdate'),
+    'Sprint ARCH-007 / FUNC-015: OTP security is role-scoped and profile re-registration updates target role data'
+  );
+
+  // ARCH-008: Cross-clinic shift overlap check in authController updateProfile
+  assert(
+    sp_authControllerContent.includes('Practitioners cannot practice at multiple clinics simultaneously') &&
+    sp_authControllerContent.includes('activeDoctorWithAffiliations'),
+    'Sprint ARCH-008: updateProfile validates cross-clinic shift conflicts'
+  );
+
+  // ARCH-012: Direct check-in state machine prevents undoing check-in during IN_CONSULTATION
+  assert(
+    sp_appointmentControllerContent.includes('Cannot remove check-in while consultation is actively in progress') &&
+    sp_liveQueueTicketContent.includes("status === 'WAITING' ? ("),
+    'Sprint FUNC-003: Neither API nor UI permits removing check-in while consultation is active'
+  );
+
+  // ARCH-013 / FUNC-012: requireActiveReceptionist enforces mustChangePassword guard
+  assert(
+    sp_authMiddlewareContent.includes('Temporary password must be changed before accessing clinical desk operations') &&
+    sp_authMiddlewareContent.includes('mustChangePassword: true'),
+    'Sprint ARCH-013 / FUNC-012: requireActiveReceptionist blocks operational desk access until password is changed'
+  );
+
+  // ARCH-014 / FUNC-018: Error cooldownSeconds attached in safeFetch handleResponse
+  assert(
+    sp_frontendApiContent.includes('error.cooldownSeconds =') &&
+    sp_frontendApiContent.includes('data?.data?.cooldownSeconds ??') &&
+    sp_clinicalReportModalContent.includes('<option value="EXPIRED">Expired</option>') &&
+    sp_clinicalReportModalContent.includes('<option value="REJECTED">Rejected</option>'),
+    'Sprint ARCH-014 / FUNC-018: handleResponse attaches error cooldown and reports provide granular visit status filters'
+  );
+
+  // ARCH-015: Normalized rate limit paths preventing bucket explosion
+  const sp_cacheMiddlewareContent = fs.readFileSync(path.join(__dirname, '../src/middleware/cacheMiddleware.ts'), 'utf-8');
+  assert(
+    sp_serverContent.includes('normalizeRateLimitPath') &&
+    sp_cacheMiddlewareContent.includes('Authorization') &&
+    sp_cacheMiddlewareContent.includes("setHeader('Vary'"),
+    'Sprint ARCH-015: Rate limiter normalizes dynamic path parameters and publicCache enforces Vary: Authorization'
+  );
+
+  // FUNC-001: Clinic & Doctor Report authorization guards
+  assert(
+    sp_doctorControllerContent.includes('isDoctorEligibleForClinicalPractice(doctor)') &&
+    sp_clinicControllerContent.includes('isClinicActive(clinic)') &&
+    sp_clinicRoutesContent.includes('requireActiveClinic, getClinicReport'),
+    'Sprint FUNC-001: Doctor and clinic report endpoints enforce eligibility guards and route middleware'
+  );
+
+  // FUNC-004: Google Auth validates role and blocks suspended accounts
+  assert(
+    sp_authControllerContent.includes("rawRole === 'DOCTOR' ? 'DOCTOR' : (rawRole === 'CLINIC' ? 'CLINIC' : 'PATIENT')") &&
+    sp_authControllerContent.includes("verificationStatus === 'SUSPENDED'") &&
+    !fs.readFileSync(path.join(__dirname, '../../frontend/src/config/auth.ts'), 'utf-8').includes('1085023951336-'),
+    'Sprint FUNC-004: Google Auth validates requested role, blocks suspended users, and eliminates hardcoded client ID fallback'
+  );
+
+  // FUNC-010: Disaffiliation cancels non-terminal appointments in transaction
+  assert(
+    sp_doctorControllerContent.includes('prisma.clinicDoctor.deleteMany') &&
+    sp_doctorControllerContent.includes("status: { in: ['PENDING_APPROVAL', 'WAITING'] }") &&
+    sp_clinicControllerContent.includes('prisma.clinicDoctor.deleteMany') &&
+    sp_clinicControllerContent.includes("status: { in: ['PENDING_APPROVAL', 'WAITING'] }"),
+    'Sprint FUNC-010: Clinic-doctor detachment cancels non-terminal appointments inside transaction'
+  );
+
+  // FUNC-014: In-app notification bell in DashboardLayout
+  assert(
+    sp_dashboardLayoutContent.includes('Notifications') &&
+    sp_dashboardLayoutContent.includes('api.getNotifications()') &&
+    sp_dashboardLayoutContent.includes('<Bell className="w-4 h-4" />'),
+    'Sprint FUNC-014: DashboardLayout renders in-app notification bell with real-time polling'
+  );
+
+  // FUNC-016: ConsultationView guards future dates
+  assert(
+    sp_consultationViewContent.includes('appointment.appointmentDate > todayStr') &&
+    sp_consultationViewContent.includes('Cannot start consultation: Appointment is scheduled for'),
+    'Sprint FUNC-016: ConsultationView blocks calling patients into cabin for future appointment dates'
+  );
+
+  // ARCH-011: ReceptionistDashboard eliminates stale closure in fetchDeskData and memoizes linkedDoctors
+  assert(
+    sp_receptionistDashboardContent.includes('selectedDoctorIdRef') &&
+    sp_receptionistDashboardContent.includes('const linkedDoctors = useMemo(') &&
+    sp_receptionistDashboardContent.includes('const currentSelected = selectedDoctorIdRef.current'),
+    'Sprint ARCH-011: ReceptionistDashboard eliminates stale closure in fetchDeskData via refs and memoizes linkedDoctors'
+  );
+
+  // ARCH-012: Transactional consultation transitions & cross-clinic checks with clinicId: null
+  assert(
+    sp_consultationControllerContent.includes('{ clinicId: { not: null } }') &&
+    sp_receptionistControllerContent.includes('{ clinicId: { not: null } }') &&
+    sp_receptionistControllerContent.includes('canTransition(current.status, status') &&
+    sp_consultationControllerContent.includes('Cannot call patient: appointment is currently'),
+    'Sprint ARCH-012: Consultation transitions are locked inside transactions, validate state machine, and handle clinicId: null'
+  );
+
+  // ARCH-016: EmailService HTML escaping, SystemConfig handling, and API URL normalization
+  assert(
+    sp_emailServiceContent.includes(".replace(/</g, '&lt;')") &&
+    sp_emailServiceContent.includes('SystemConfig') &&
+    sp_frontendApiContent.includes("rawApiUrl.endsWith('/api')"),
+    'Sprint ARCH-016: Email service safely escapes HTML greetingName, handles SystemConfig fallback, and API_BASE_URL normalizes /api'
+  );
+
+  // ARCH-004: Receptionist approval is transactional and preserves email verification requirements
+  assert(
+    sp_clinicControllerContent.includes('prisma.$transaction') &&
+    sp_clinicControllerContent.includes("status: 'ACTIVE'") &&
+    sp_receptionistControllerContent.includes('await prisma.$transaction(async (tx) => runApply(tx))'),
+    'Sprint ARCH-004: Receptionist application and approval are atomic transactions preserving email verification rules'
+  );
+
   console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);

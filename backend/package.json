@@ -42,8 +42,6 @@
     "@types/multer": "^2.2.0",
     "@types/node": "^22.20.2",
     "@types/nodemailer": "^8.0.2",
-    "prisma": "^6.4.1",
-    "ts-node-dev": "^2.0.0",
-    "typescript": "^5.9.3"
+    "ts-node-dev": "^2.0.0"
   }
 }

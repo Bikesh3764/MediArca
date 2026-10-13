@@ -450,7 +450,7 @@ export const validateDoctorNumericBounds = (data: {
         sanitized: { experienceYears, consultationFee, avgConsultationMinutes: 15, maxDailyPatients: 30 },
       };
     }
-    avgConsultationMinutes = Math.round(rawAvg * 10) / 10;
+    avgConsultationMinutes = Math.max(1, Math.round(rawAvg));
   }
 
   let maxDailyPatients = 30;

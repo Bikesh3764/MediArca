@@ -1,11 +1,15 @@
 /**
- * MediArca - OTP Security & Abuse Protection Utility (FIX-005)
+ * MediArca - OTP Security & Abuse Protection Utility (FIX-005 / ARCH-007 / FUNC-015)
  *
  * Implements:
- * 1. Account-level brute-force protection (max 5 failed attempts per account -> 15 min lockout)
- * 2. Resend abuse protection (60-second cooldown per account)
+ * 1. Account-level brute-force protection (max 5 failed attempts per (email, role) account -> 15 min lockout)
+ * 2. Resend abuse protection (60-second cooldown per (email, role) account)
  * 3. State reset on successful OTP verification
  * 4. In-memory tracking with periodic pruning (zero Prisma schema modifications)
+ *
+ * Architectural Note (ARCH-007):
+ * State is stored in process-local Maps suitable for single-instance deployment.
+ * For horizontally scaled multi-instance deployments, back these maps with Redis or a shared DB table.
  */
 
 export interface VerificationLockoutStatus {
@@ -45,21 +49,37 @@ export const OTP_RESEND_COOLDOWN_SECONDS = 60;
 const verificationAttemptMap = new Map<string, VerificationAttemptRecord>();
 const resendCooldownMap = new Map<string, ResendRecord>();
 
-const normalizeEmail = (email: string): string => {
-  return String(email || '').toLowerCase().trim();
+const normalizeEmail = (email: string, role?: string | null): string => {
+  const raw = String(email || '').trim();
+  if (!raw) return '';
+  if (raw.includes('::')) {
+    const [base, embeddedRole] = raw.split('::');
+    const cleanBase = (base || '').toLowerCase().trim();
+    const cleanEmbeddedRole = (role || embeddedRole || '').trim().toUpperCase();
+    return cleanEmbeddedRole ? `${cleanBase}::${cleanEmbeddedRole}` : cleanBase;
+  }
+  const clean = raw.toLowerCase();
+  const cleanRole = role ? String(role).trim().toUpperCase() : '';
+  return cleanRole ? `${clean}::${cleanRole}` : clean;
 };
 
 /**
  * Checks whether the given account is currently locked out due to excessive failed OTP attempts.
  * If the lockout period has expired, automatically clears the lockout and resets the attempt count.
  */
-export const getVerificationLockout = (email: string, nowMs?: number): VerificationLockoutStatus => {
-  const cleanEmail = normalizeEmail(email);
-  if (!cleanEmail) {
+export const getVerificationLockout = (
+  email: string,
+  nowMsOrRole?: number | string | null,
+  role?: string | null
+): VerificationLockoutStatus => {
+  const nowMs = typeof nowMsOrRole === 'number' ? nowMsOrRole : undefined;
+  const resolvedRole = typeof nowMsOrRole === 'string' ? nowMsOrRole : role;
+  const accountKey = normalizeEmail(email, resolvedRole);
+  if (!accountKey) {
     return { isLocked: false, remainingLockoutSeconds: 0, lockedUntil: null };
   }
 
-  const record = verificationAttemptMap.get(cleanEmail);
+  const record = verificationAttemptMap.get(accountKey);
   if (!record || !record.lockedUntil) {
     return { isLocked: false, remainingLockoutSeconds: 0, lockedUntil: null };
   }
@@ -86,19 +106,22 @@ export const getVerificationLockout = (email: string, nowMs?: number): Verificat
  */
 export const recordFailedVerificationAttempt = (
   email: string,
-  maxAttempts = MAX_OTP_VERIFY_ATTEMPTS,
+  maxAttemptsOrRole: number | string | null = MAX_OTP_VERIFY_ATTEMPTS,
   lockoutMinutes = OTP_LOCKOUT_MINUTES,
-  nowMs?: number
+  nowMs?: number,
+  role?: string | null
 ): VerificationAttemptResult => {
-  const cleanEmail = normalizeEmail(email);
+  const maxAttempts = typeof maxAttemptsOrRole === 'number' ? maxAttemptsOrRole : MAX_OTP_VERIFY_ATTEMPTS;
+  const resolvedRole = typeof maxAttemptsOrRole === 'string' ? maxAttemptsOrRole : role;
+  const accountKey = normalizeEmail(email, resolvedRole);
   const now = nowMs ?? Date.now();
 
-  if (!cleanEmail) {
+  if (!accountKey) {
     return { attempts: 0, isLocked: false, remainingAttempts: maxAttempts, lockedUntil: null, remainingLockoutSeconds: 0 };
   }
 
   // Check if already locked out
-  const currentLockout = getVerificationLockout(cleanEmail, now);
+  const currentLockout = getVerificationLockout(accountKey, now);
   if (currentLockout.isLocked) {
     return {
       attempts: maxAttempts,
@@ -109,10 +132,10 @@ export const recordFailedVerificationAttempt = (
     };
   }
 
-  let record = verificationAttemptMap.get(cleanEmail);
+  let record = verificationAttemptMap.get(accountKey);
   if (!record) {
     record = { attempts: 0, lockedUntil: null, lastAttemptAt: now };
-    verificationAttemptMap.set(cleanEmail, record);
+    verificationAttemptMap.set(accountKey, record);
   }
 
   record.attempts += 1;
@@ -144,10 +167,14 @@ export const recordFailedVerificationAttempt = (
  * Clears failed attempt counters and lockout state for the given account.
  * Must be called upon successful OTP verification.
  */
-export const clearVerificationState = (email: string): void => {
-  const cleanEmail = normalizeEmail(email);
-  if (cleanEmail) {
-    verificationAttemptMap.delete(cleanEmail);
+export const clearVerificationState = (email: string, role?: string | null): void => {
+  const accountKey = normalizeEmail(email, role);
+  if (accountKey) {
+    verificationAttemptMap.delete(accountKey);
+  }
+  const baseEmail = normalizeEmail(email);
+  if (baseEmail && !role) {
+    verificationAttemptMap.delete(baseEmail);
   }
 };
 
@@ -157,18 +184,27 @@ export const clearVerificationState = (email: string): void => {
  */
 export const checkResendCooldown = (
   email: string,
-  cooldownSeconds = OTP_RESEND_COOLDOWN_SECONDS,
-  nowMs?: number
+  cooldownSecondsOrRole: number | string | null = OTP_RESEND_COOLDOWN_SECONDS,
+  nowMsOrRole?: number | string | null,
+  role?: string | null
 ): ResendCooldownStatus => {
-  const cleanEmail = normalizeEmail(email);
+  const cooldownSeconds = typeof cooldownSecondsOrRole === 'number' ? cooldownSecondsOrRole : OTP_RESEND_COOLDOWN_SECONDS;
+  const nowMs = typeof nowMsOrRole === 'number' ? nowMsOrRole : undefined;
+  const resolvedRole =
+    typeof cooldownSecondsOrRole === 'string'
+      ? cooldownSecondsOrRole
+      : typeof nowMsOrRole === 'string'
+      ? nowMsOrRole
+      : role;
+  const accountKey = normalizeEmail(email, resolvedRole);
   const now = nowMs ?? Date.now();
 
-  if (!cleanEmail) {
+  if (!accountKey) {
     return { allowed: false, remainingSeconds: 0, isLocked: false };
   }
 
   // 1. Account lockout check
-  const lockout = getVerificationLockout(cleanEmail, now);
+  const lockout = getVerificationLockout(accountKey, now);
   if (lockout.isLocked) {
     return {
       allowed: false,
@@ -178,7 +214,7 @@ export const checkResendCooldown = (
   }
 
   // 2. Cooldown check
-  const record = resendCooldownMap.get(cleanEmail);
+  const record = resendCooldownMap.get(accountKey);
   if (!record) {
     return { allowed: true, remainingSeconds: 0, isLocked: false };
   }
@@ -199,10 +235,16 @@ export const checkResendCooldown = (
 /**
  * Records an OTP send or resend event to enforce the 60-second cooldown on subsequent requests.
  */
-export const recordResendAttempt = (email: string, nowMs?: number): void => {
-  const cleanEmail = normalizeEmail(email);
-  if (cleanEmail) {
-    resendCooldownMap.set(cleanEmail, { lastResentAt: nowMs ?? Date.now() });
+export const recordResendAttempt = (
+  email: string,
+  nowMsOrRole?: number | string | null,
+  role?: string | null
+): void => {
+  const nowMs = typeof nowMsOrRole === 'number' ? nowMsOrRole : undefined;
+  const resolvedRole = typeof nowMsOrRole === 'string' ? nowMsOrRole : role;
+  const accountKey = normalizeEmail(email, resolvedRole);
+  if (accountKey) {
+    resendCooldownMap.set(accountKey, { lastResentAt: nowMs ?? Date.now() });
   }
 };
 

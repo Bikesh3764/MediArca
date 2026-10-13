@@ -1,9 +1,26 @@
 const { execSync } = require('child_process');
+const fs = require('fs');
+const path = require('path');
 
 /**
  * Production Prisma Migration Runner with Baseline Resolution Safety
  * Ensures pending migrations are automatically deployed on Render/production release.
  */
+function getMigrationDirectories() {
+  try {
+    const migrationsDir = path.join(__dirname, '../prisma/migrations');
+    if (!fs.existsSync(migrationsDir)) return ['20261007000000_0001_baseline_production_schema'];
+    const dirs = fs
+      .readdirSync(migrationsDir, { withFileTypes: true })
+      .filter((d) => d.isDirectory())
+      .map((d) => d.name)
+      .sort();
+    return dirs.length > 0 ? dirs : ['20261007000000_0001_baseline_production_schema'];
+  } catch {
+    return ['20261007000000_0001_baseline_production_schema'];
+  }
+}
+
 function runMigrations() {
   console.log('[Prisma Migrate] Checking and applying database migrations...');
   
@@ -28,7 +45,9 @@ function runMigrations() {
     if (errorMsg.includes('P3005') || errorMsg.includes('database is not empty') || errorMsg.includes('baseline')) {
       console.log('[Prisma Migrate] Existing un-baselined database detected. Resolving baseline migration...');
       try {
-        execSync('npx prisma migrate resolve --applied 20261007000000_0001_baseline_production_schema', {
+        const migrationDirs = getMigrationDirectories();
+        const baselineDir = migrationDirs[0] || '20261007000000_0001_baseline_production_schema';
+        execSync(`npx prisma migrate resolve --applied ${baselineDir}`, {
           stdio: 'inherit',
         });
         console.log('[Prisma Migrate] Baseline marked as applied. Retrying migrate deploy...');

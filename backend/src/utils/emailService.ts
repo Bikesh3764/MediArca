@@ -19,20 +19,22 @@ export async function getTransporter(): Promise<{ transporter: Transporter | nul
   // If environment variables are not set in cloud host, query database SystemConfig table
   if (!user || !pass) {
     try {
-      const rows = await prisma.$queryRawUnsafe<Array<{ key: string; value: string }>>(
-        `SELECT "key", "value" FROM "SystemConfig" WHERE "key" IN ('SMTP_USER', 'SMTP_PASS', 'SMTP_HOST', 'SMTP_PORT', 'SMTP_SECURE', 'SMTP_FROM')`
-      );
-      if (Array.isArray(rows) && rows.length > 0) {
-        const configMap = new Map(rows.map(r => [r.key, r.value]));
-        const dbUser = configMap.get('SMTP_USER');
-        const dbPass = configMap.get('SMTP_PASS');
-        if (dbUser && dbPass) {
-          user = dbUser;
-          pass = dbPass;
-          host = configMap.get('SMTP_HOST') || host;
-          port = Number(configMap.get('SMTP_PORT')) || port;
-          secure = configMap.get('SMTP_SECURE') === 'true' || port === 465;
-          from = configMap.get('SMTP_FROM') || `MediArca <${user}>`;
+      if (typeof (prisma as any).systemConfig?.findMany === 'function') {
+        const rows = await (prisma as any).systemConfig.findMany({
+          where: { key: { in: ['SMTP_USER', 'SMTP_PASS', 'SMTP_HOST', 'SMTP_PORT', 'SMTP_SECURE', 'SMTP_FROM'] } },
+        });
+        if (Array.isArray(rows) && rows.length > 0) {
+          const configMap = new Map(rows.map((r: any) => [r.key, r.value]));
+          const dbUser = configMap.get('SMTP_USER');
+          const dbPass = configMap.get('SMTP_PASS');
+          if (dbUser && dbPass) {
+            user = dbUser;
+            pass = dbPass;
+            host = configMap.get('SMTP_HOST') || host;
+            port = Number(configMap.get('SMTP_PORT')) || port;
+            secure = configMap.get('SMTP_SECURE') === 'true' || port === 465;
+            from = configMap.get('SMTP_FROM') || `MediArca <${user}>`;
+          }
         }
       }
     } catch (dbErr: any) {

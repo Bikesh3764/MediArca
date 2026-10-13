@@ -11,6 +11,7 @@ import {
   minutesTo12Hour,
   timeToMinutes,
   getLocalDateString,
+  cleanSlotName,
 } from '../utils/scheduleUtils';
 import { isDoctorEligibleForClinicalPractice, verifyReceptionistDoctorAccess, isClinicActive } from '../utils/authGuards';
 import { parsePaginationParams, buildPaginationMetadata } from '../utils/pagination';
@@ -558,7 +559,8 @@ export const updateSchedule = async (req: AuthRequest, res: Response): Promise<v
               await tx.appointment.update({
                 where: { id: appt.id },
                 data: {
-                  checkingWindow: `${matchedSlot.startTime} – ${matchedSlot.endTime}`,
+                  slotId: matchedSlot.id,
+                  checkingWindow: cleanSlotName(matchedSlot.name, 'Shift 1'),
                 },
               });
             }
@@ -1069,6 +1071,7 @@ export const removeDoctorClinic = async (req: AuthRequest, res: Response): Promi
     });
     const recIds = clinicReceptionists.map((r) => r.id);
 
+    const todayStr = getLocalDateString();
     await prisma.$transaction([
       prisma.clinicDoctor.deleteMany({
         where: { clinicId, doctorId: doctor.id },
@@ -1079,6 +1082,23 @@ export const removeDoctorClinic = async (req: AuthRequest, res: Response): Promi
               where: {
                 doctorId: doctor.id,
                 receptionistId: { in: recIds },
+              },
+            }),
+          ]
+        : []),
+      ...(typeof (prisma.appointment as any)?.updateMany === 'function'
+        ? [
+            prisma.appointment.updateMany({
+              where: {
+                clinicId,
+                doctorId: doctor.id,
+                appointmentDate: { gte: todayStr },
+                status: { in: ['PENDING_APPROVAL', 'WAITING'] },
+              },
+              data: {
+                status: 'CANCELLED',
+                isCheckedIn: false,
+                checkedInAt: null,
               },
             }),
           ]
@@ -1189,6 +1209,24 @@ export const updateCabinStatus = async (req: AuthRequest, res: Response): Promis
       }
     } else {
       // RECEPTIONIST
+      let mustChangePassword = Boolean((req.user as any).mustChangePassword);
+      if (!mustChangePassword && typeof (prisma.user as any)?.findUnique === 'function') {
+        const recUser = await prisma.user.findUnique({
+          where: { id: req.user.id },
+          select: { mustChangePassword: true },
+        });
+        if (recUser?.mustChangePassword) {
+          mustChangePassword = true;
+        }
+      }
+      if (mustChangePassword) {
+        res.status(403).json({
+          success: false,
+          message: 'Temporary password must be changed before accessing clinical desk operations.',
+        });
+        return;
+      }
+
       if (!targetDoctorId) {
         res.status(400).json({ success: false, message: 'doctorId is required for receptionist updates' });
         return;
@@ -1354,10 +1392,11 @@ export const getDoctorReport = async (req: AuthRequest, res: Response): Promise<
       return;
     }
 
-    if (!isDoctorEligibleForClinicalPractice(doctor)) {
+    const docCheck = isDoctorEligibleForClinicalPractice(doctor);
+    if (!docCheck.eligible) {
       res.status(403).json({
         success: false,
-        message: 'Doctor account is not verified or is currently suspended.',
+        message: docCheck.reason || 'Doctor account is not verified or is currently suspended.',
       });
       return;
     }
@@ -1401,13 +1440,23 @@ export const getDoctorReport = async (req: AuthRequest, res: Response): Promise<
       ],
     });
 
-    // Clinic fee mapping
+    // Clinic fee and slot mapping
     const clinicFeeMap = new Map<string, number>();
+    const clinicSlotsMap = new Map<string, any[]>();
+    const defaultDoctorSlots = parseDoctorSlots(doctor);
     doctor.clinics.forEach((cd) => {
       const fee = typeof cd.consultationFee === 'number' && Number.isFinite(cd.consultationFee)
         ? cd.consultationFee
         : (typeof doctor.consultationFee === 'number' && Number.isFinite(doctor.consultationFee) ? doctor.consultationFee : 0);
       clinicFeeMap.set(cd.clinicId, fee);
+      let cSlots = defaultDoctorSlots;
+      if ((cd as any).slots) {
+        try {
+          const parsed = typeof (cd as any).slots === 'string' ? JSON.parse((cd as any).slots) : (cd as any).slots;
+          if (Array.isArray(parsed) && parsed.length > 0) cSlots = parsed;
+        } catch {}
+      }
+      clinicSlotsMap.set(cd.clinicId, cSlots);
     });
 
     let totalRevenue = 0;
@@ -1462,10 +1511,12 @@ export const getDoctorReport = async (req: AuthRequest, res: Response): Promise<
         clinicBreakdownMap.set(appt.clinicId, cEntry);
       }
 
-      // Shift breakdown
-      const rawShift = appt.checkingWindow || 'Shift 1';
-      const shiftNumMatch = rawShift.match(/shift\s*(\d+)/i);
-      const cleanShift = shiftNumMatch ? `Shift ${shiftNumMatch[1]}` : 'Shift 1';
+      // Shift breakdown (ARCH-009 / FUNC-009: resolve from slotId or preserve custom shift name)
+      const candidateSlots = (appt.clinicId ? clinicSlotsMap.get(appt.clinicId) : null) || defaultDoctorSlots;
+      const matchedSlotById = appt.slotId ? candidateSlots.find((s: any) => s && s.id === appt.slotId) : null;
+      const rawShift = String(matchedSlotById?.name || appt.checkingWindow || 'Shift 1').trim();
+      const shiftNumMatch = rawShift.match(/^shift\s*(\d+)\b/i);
+      const cleanShift = shiftNumMatch ? `Shift ${shiftNumMatch[1]}` : cleanSlotName(rawShift, 'Shift 1');
 
       const shiftEntry = shiftBreakdownMap.get(cleanShift) || {
         shiftName: cleanShift,
@@ -1486,7 +1537,7 @@ export const getDoctorReport = async (req: AuthRequest, res: Response): Promise<
         status: appt.status,
         paymentStatus: appt.paymentStatus,
         patientName: appt.patientName || appt.patient?.user?.fullName || 'Walk-in Patient',
-        patientPhone: appt.patient?.user?.phone || '—',
+        patientPhone: (appt as any).patientPhone || appt.patient?.user?.phone || '—',
         clinicId: appt.clinicId,
         clinicName: appt.clinic?.clinicName || 'Independent Practice',
         fee: effectiveFee,
