@@ -831,7 +831,12 @@ export const addDoctorClinic = async (req: AuthRequest, res: Response): Promise<
       clinic = await prisma.clinicProfile.findUnique({ where: { id: clinicId } });
     } else if (clinicEmail) {
       const user = await prisma.user.findUnique({
-        where: { email: clinicEmail.toLowerCase().trim() },
+        where: {
+          email_role: {
+            email: clinicEmail.toLowerCase().trim(),
+            role: 'CLINIC',
+          },
+        },
         include: { clinicProfile: true },
       });
       if (user?.clinicProfile) clinic = user.clinicProfile;

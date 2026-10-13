@@ -5,10 +5,10 @@ interface AuthContextType {
   user: User | null;
   token: string | null;
   loading: boolean;
-  login: (credentials: { email: string; password: string }) => Promise<User>;
+  login: (credentials: { email: string; password: string; role?: string }) => Promise<User>;
   loginWithGoogle: (credential: string, role?: string) => Promise<User>;
   register: (data: any) => Promise<{ user?: User; requiresVerification?: boolean; email?: string }>;
-  verifyOtp: (email: string, otp: string) => Promise<User>;
+  verifyOtp: (email: string, otp: string, role?: string) => Promise<User>;
   logout: () => void;
   refreshUser: () => Promise<void>;
   updateUser: (updatedUser: User) => void;
@@ -67,7 +67,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   }, []);
 
-  const login = async (credentials: { email: string; password: string }): Promise<User> => {
+  const login = async (credentials: { email: string; password: string; role?: string }): Promise<User> => {
     const data = await api.login(credentials);
     localStorage.setItem('mediarca_token', data.token);
     localStorage.setItem('mediarca_user', JSON.stringify(data.user));
@@ -100,8 +100,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return {};
   };
 
-  const verifyOtp = async (email: string, otp: string): Promise<User> => {
-    const data = await api.verifyEmailOtp({ email, otp });
+  const verifyOtp = async (email: string, otp: string, role?: string): Promise<User> => {
+    const data = await api.verifyEmailOtp({ email, otp, ...(role ? { role } : {}) });
     localStorage.setItem('mediarca_token', data.token);
     localStorage.setItem('mediarca_user', JSON.stringify(data.user));
     setToken(data.token);

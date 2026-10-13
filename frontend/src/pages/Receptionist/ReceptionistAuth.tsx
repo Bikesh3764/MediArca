@@ -41,7 +41,7 @@ export const ReceptionistAuth: React.FC = () => {
     setError(null);
     setSubmitting(true);
     try {
-      const loggedUser = await login({ email: email.trim(), password });
+      const loggedUser = await login({ email: email.trim(), password, role: 'RECEPTIONIST' });
       if (loggedUser.role !== 'RECEPTIONIST') {
         logout();
         setError('This account does not have receptionist desk permissions.');
@@ -105,7 +105,7 @@ export const ReceptionistAuth: React.FC = () => {
     setEmail('receptionist@mediarca.com');
     setPassword('receptionist123');
     try {
-      const loggedUser = await login({ email: 'receptionist@mediarca.com', password: 'receptionist123' });
+      const loggedUser = await login({ email: 'receptionist@mediarca.com', password: 'receptionist123', role: 'RECEPTIONIST' });
       if (loggedUser.role !== 'RECEPTIONIST') {
         logout();
         setError('This account does not have receptionist desk permissions.');

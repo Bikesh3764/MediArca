@@ -1833,21 +1833,29 @@ export const applyReceptionist = async (req: Request, res: Response): Promise<vo
       formattedPhone = formatIndianPhone(String(phone));
     }
 
+    const cleanEmail = String(email).toLowerCase().trim();
     const existingUser = await prisma.user.findUnique({
-      where: { email: String(email).toLowerCase().trim() },
+      where: {
+        email_role: {
+          email: cleanEmail,
+          role: 'RECEPTIONIST',
+        },
+      },
     });
 
     if (existingUser) {
-      res.status(409).json({ success: false, message: 'An account with this email already exists' });
+      res.status(409).json({ success: false, message: 'A receptionist account with this email already exists' });
       return;
     }
 
     if (formattedPhone) {
-      const existingByPhone = await findExistingAccountByPhone(prisma, formattedPhone);
+      const existingByPhone = await findExistingAccountByPhone(prisma, formattedPhone, {
+        role: 'RECEPTIONIST',
+      });
       if (existingByPhone) {
         res.status(409).json({
           success: false,
-          message: 'An account with this mobile number already exists.',
+          message: 'A receptionist account with this mobile number already exists.',
         });
         return;
       }

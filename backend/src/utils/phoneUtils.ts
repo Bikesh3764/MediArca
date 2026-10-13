@@ -92,13 +92,14 @@ export const getPhoneSearchVariants = (raw: string | undefined | null): string[]
 };
 
 /**
- * Checks if any real (non-synthetic walk-in) user account already holds the given mobile number.
+ * Checks if any real (non-synthetic walk-in) user account already holds the given mobile number
+ * within the specified portal role (or globally if role is omitted).
  * Excludes synthetic walk-in placeholder rows (`@mediarca.local` / `walkin.`) and optionally excludes a specific userId.
  */
 export const findExistingAccountByPhone = async (
   prismaClient: any,
   rawPhone: string | undefined | null,
-  options?: { excludeUserId?: string; includeUnverified?: boolean }
+  options?: { excludeUserId?: string; includeUnverified?: boolean; role?: string }
 ): Promise<{ id: string; email: string; role: string; phone: string | null; isEmailVerified?: boolean } | null> => {
   const variants = getPhoneSearchVariants(rawPhone);
   if (variants.length === 0 || !prismaClient?.user?.findFirst) {
@@ -112,6 +113,10 @@ export const findExistingAccountByPhone = async (
       { email: { startsWith: 'walkin.', mode: 'insensitive' } },
     ],
   };
+
+  if (options?.role) {
+    whereClause.role = options.role.toUpperCase().trim();
+  }
 
   if (!options?.includeUnverified) {
     whereClause.isEmailVerified = true;
@@ -132,4 +137,5 @@ export const findExistingAccountByPhone = async (
     },
   });
 };
+
 

@@ -7,6 +7,7 @@ import { useAuth } from '../../context/AuthContext';
 interface EmailVerificationModalProps {
   isOpen: boolean;
   email: string;
+  role?: string;
   onSuccess: (user: User) => void;
   onClose: () => void;
 }
@@ -14,6 +15,7 @@ interface EmailVerificationModalProps {
 export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
   isOpen,
   email,
+  role,
   onSuccess,
   onClose,
 }) => {
@@ -108,7 +110,7 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
     setError(null);
     setSubmitting(true);
     try {
-      const verifiedUser = await verifyOtp(email, fullOtp);
+      const verifiedUser = await verifyOtp(email, fullOtp, role);
       onSuccess(verifiedUser);
     } catch (err: any) {
       if (err.isAlreadyVerified || err.message?.toLowerCase().includes('already verified')) {
@@ -126,7 +128,7 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
     setResending(true);
     const safetyTimer = setTimeout(() => setResending(false), 6000);
     try {
-      await api.resendEmailOtp(email);
+      await api.resendEmailOtp(email, role);
       clearTimeout(safetyTimer);
       setResendSuccess(true);
       setCountdown(60);

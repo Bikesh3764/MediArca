@@ -106,7 +106,7 @@ export const ClinicAuth: React.FC = () => {
     setError(null);
     setSubmitting(true);
     try {
-      const user = await login({ email: email.trim(), password });
+      const user = await login({ email: email.trim(), password, role: 'CLINIC' });
       if (user.role !== 'CLINIC') {
         logout();
         setError('This account does not have clinic administrative permissions.');
@@ -172,7 +172,7 @@ export const ClinicAuth: React.FC = () => {
     setEmail('admin@clinic.com');
     setPassword('clinic123');
     try {
-      const loggedUser = await login({ email: 'admin@clinic.com', password: 'clinic123' });
+      const loggedUser = await login({ email: 'admin@clinic.com', password: 'clinic123', role: 'CLINIC' });
       if (loggedUser.role !== 'CLINIC') {
         setError('This account does not have clinic administrative permissions.');
         setSubmitting(false);
@@ -537,6 +537,7 @@ export const ClinicAuth: React.FC = () => {
         <EmailVerificationModal
           isOpen={Boolean(verificationPendingEmail)}
           email={verificationPendingEmail || ''}
+          role="CLINIC"
           onSuccess={() => {
             setVerificationPendingEmail(null);
             navigate('/clinic/dashboard');

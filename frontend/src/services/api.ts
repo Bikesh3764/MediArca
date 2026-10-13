@@ -1198,7 +1198,7 @@ export const api = {
     return handleResponse(res);
   },
 
-  async verifyEmailOtp(body: { email: string; otp: string }): Promise<{ user: User; token: string }> {
+  async verifyEmailOtp(body: { email: string; otp: string; role?: string }): Promise<{ user: User; token: string }> {
     const res = await safeFetch(`${API_BASE_URL}/auth/verify-otp`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1207,11 +1207,11 @@ export const api = {
     return handleResponse(res);
   },
 
-  async resendEmailOtp(email: string): Promise<{ success: boolean; message: string }> {
+  async resendEmailOtp(email: string, role?: string): Promise<{ success: boolean; message: string }> {
     const res = await safeFetch(`${API_BASE_URL}/auth/resend-otp`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email }),
+      body: JSON.stringify({ email, ...(role ? { role } : {}) }),
     });
     return handleResponse(res);
   },

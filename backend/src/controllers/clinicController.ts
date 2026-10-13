@@ -344,7 +344,12 @@ export const addDoctorToClinic = async (req: AuthRequest, res: Response): Promis
       }
     } else if (doctorEmail) {
       const user = await prisma.user.findUnique({
-        where: { email: doctorEmail.toLowerCase().trim() },
+        where: {
+          email_role: {
+            email: doctorEmail.toLowerCase().trim(),
+            role: 'DOCTOR',
+          },
+        },
         select: {
           id: true,
           fullName: true,
@@ -1016,11 +1021,16 @@ export const addClinicReceptionist = async (req: AuthRequest, res: Response): Pr
 
     const cleanEmail = email.toLowerCase().trim();
     const existingUser = await prisma.user.findUnique({
-      where: { email: cleanEmail },
+      where: {
+        email_role: {
+          email: cleanEmail,
+          role: 'RECEPTIONIST',
+        },
+      },
     });
 
     if (existingUser) {
-      res.status(409).json({ success: false, message: 'An account with this email already exists' });
+      res.status(409).json({ success: false, message: 'A receptionist account with this email already exists' });
       return;
     }
 
@@ -1040,11 +1050,13 @@ export const addClinicReceptionist = async (req: AuthRequest, res: Response): Pr
       }
       formattedPhone = formatIndianPhone(trimmedPhone);
 
-      const existingPhoneUser = await findExistingAccountByPhone(prisma, formattedPhone);
+      const existingPhoneUser = await findExistingAccountByPhone(prisma, formattedPhone, {
+        role: 'RECEPTIONIST',
+      });
       if (existingPhoneUser) {
         res.status(409).json({
           success: false,
-          message: 'An account with this mobile number already exists. Each mobile number can only be linked to a single account.',
+          message: 'A receptionist account with this mobile number already exists.',
         });
         return;
       }

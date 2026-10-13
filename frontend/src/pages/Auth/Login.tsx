@@ -65,7 +65,7 @@ export const Login: React.FC<LoginProps> = ({ portal }) => {
     setError(null);
     setSubmitting(true);
     try {
-      const loggedUser = await login({ email: email.trim(), password });
+      const loggedUser = await login({ email: email.trim(), password, role: activeRole });
       navigate(getTargetDestination(loggedUser.role), { replace: true });
     } catch (err: any) {
       if (err.requiresVerification) {
@@ -79,11 +79,11 @@ export const Login: React.FC<LoginProps> = ({ portal }) => {
     }
   };
 
-  const handleQuickLogin = async (demoEmail: string, demoPass: string, redirectPath?: string) => {
+  const handleQuickLogin = async (demoEmail: string, demoPass: string, redirectPath?: string, demoRole?: 'PATIENT' | 'DOCTOR') => {
     setError(null);
     setSubmitting(true);
     try {
-      const loggedUser = await login({ email: demoEmail, password: demoPass });
+      const loggedUser = await login({ email: demoEmail, password: demoPass, role: demoRole });
       navigate(redirectPath || getTargetDestination(loggedUser.role), { replace: true });
     } catch (err: any) {
       setError(err.message || 'Demo login failed');
@@ -286,14 +286,14 @@ export const Login: React.FC<LoginProps> = ({ portal }) => {
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
-                onClick={() => handleQuickLogin('john.doe@gmail.com', 'patient123', '/patient/appointments')}
+                onClick={() => handleQuickLogin('john.doe@gmail.com', 'patient123', '/patient/appointments', 'PATIENT')}
                 className="h-9 px-3 rounded-xl border border-[#e5e5ea] bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] text-xs font-medium transition-all text-center cursor-pointer active:scale-[0.98]"
               >
                 Demo Patient
               </button>
               <button
                 type="button"
-                onClick={() => handleQuickLogin('dr.sarah@mediarca.com', 'doctor123', '/doctor/dashboard')}
+                onClick={() => handleQuickLogin('dr.sarah@mediarca.com', 'doctor123', '/doctor/dashboard', 'DOCTOR')}
                 className="h-9 px-3 rounded-xl border border-[#e5e5ea] bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] text-xs font-medium transition-all text-center cursor-pointer active:scale-[0.98]"
               >
                 Demo Doctor
@@ -328,6 +328,7 @@ export const Login: React.FC<LoginProps> = ({ portal }) => {
         <EmailVerificationModal
           isOpen={Boolean(verificationPendingEmail)}
           email={verificationPendingEmail || ''}
+          role={activeRole}
           onSuccess={(verifiedUser) => {
             setVerificationPendingEmail(null);
             navigate(getTargetDestination(verifiedUser.role), { replace: true });

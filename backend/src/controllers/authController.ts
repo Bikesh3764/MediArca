@@ -144,14 +144,14 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     }
 
     const existingUser = await prisma.user.findUnique({
-      where: { email: cleanEmail },
+      where: { email_role: { email: cleanEmail, role: normalizedRole } },
       include: { patientProfile: true, doctorProfile: true, clinicProfile: true },
     });
 
     if (existingUser && existingUser.isEmailVerified) {
       res.status(409).json({
         success: false,
-        message: 'An account with this email already exists. Each email address can only be linked to a single account.',
+        message: `An account with this email already exists for the ${normalizedRole.toLowerCase()} portal. Each email can only have one ${normalizedRole.toLowerCase()} account.`,
       });
       return;
     }
@@ -170,16 +170,17 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       formattedPhone = formatIndianPhone(trimmedPhone);
     }
 
-    // Enforce strict mobile number uniqueness across all real accounts (Patient, Doctor, Clinic, Receptionist)
+    // Enforce mobile number uniqueness per portal role (Patient, Doctor, Clinic, Receptionist)
     const candidatePhoneToCheck = formattedPhone || existingUser?.phone || null;
     if (candidatePhoneToCheck) {
       const existingPhoneUser = await findExistingAccountByPhone(prisma, candidatePhoneToCheck, {
         excludeUserId: existingUser?.id,
+        role: normalizedRole,
       });
       if (existingPhoneUser) {
         res.status(409).json({
           success: false,
-          message: 'An account with this mobile number already exists. Each mobile number can only be linked to a single account.',
+          message: `An account with this mobile number already exists for the ${normalizedRole.toLowerCase()} portal. Each mobile number can only have one ${normalizedRole.toLowerCase()} account.`,
         });
         return;
       }
@@ -291,10 +292,12 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         success: true,
         requiresVerification: true,
         email: cleanEmail,
+        role: normalizedRole,
         message: 'Account registered! A 6-digit verification code has been sent to your email.',
         data: {
           requiresVerification: true,
           email: cleanEmail,
+          role: normalizedRole,
           user: userWithoutPassword,
           ...(process.env.NODE_ENV !== 'production' ? { devOtp: otp } : {}),
         },
@@ -474,10 +477,12 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       success: true,
       requiresVerification: true,
       email: cleanEmail,
+      role: normalizedRole,
       message: 'Account registered! A 6-digit verification code has been sent to your email.',
       data: {
         requiresVerification: true,
         email: cleanEmail,
+        role: normalizedRole,
         user: userWithoutPassword,
         ...(process.env.NODE_ENV !== 'production' ? { devOtp: otp } : {}),
       },
@@ -494,60 +499,86 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
 export const login = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { email, password } = req.body;
+    const { email, password, role } = req.body;
 
     if (!email || !password || typeof email !== 'string' || typeof password !== 'string' || !email.trim()) {
       res.status(400).json({ success: false, message: 'Email and password are required and must be valid strings.' });
       return;
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: email.toLowerCase().trim() },
-      include: {
-        patientProfile: true,
-        doctorProfile: {
-          include: {
-            clinics: { include: { clinic: true } },
-            receptionists: {
-              include: {
-                receptionist: {
-                  include: {
-                    user: { select: { id: true, fullName: true, email: true, phone: true } },
-                  },
-                },
-              },
-            },
-          },
-        },
-        clinicProfile: {
-          include: {
-            doctors: {
-              include: {
-                doctor: {
-                  include: {
-                    user: { select: { id: true, fullName: true, email: true, phone: true } },
-                  },
-                },
-              },
-            },
-          },
-        },
-        receptionistProfile: {
-          include: {
-            clinic: true,
-            doctors: {
-              include: {
-                doctor: {
-                  include: {
-                    user: { select: { id: true, fullName: true, email: true, phone: true } },
-                  },
+    const cleanLoginEmail = email.toLowerCase().trim();
+    const requestedRole = typeof role === 'string' && role.trim() ? role.toUpperCase().trim() : null;
+
+    const loginUserInclude = {
+      patientProfile: true,
+      doctorProfile: {
+        include: {
+          clinics: { include: { clinic: true } },
+          receptionists: {
+            include: {
+              receptionist: {
+                include: {
+                  user: { select: { id: true, fullName: true, email: true, phone: true } },
                 },
               },
             },
           },
         },
       },
-    });
+      clinicProfile: {
+        include: {
+          doctors: {
+            include: {
+              doctor: {
+                include: {
+                  user: { select: { id: true, fullName: true, email: true, phone: true } },
+                },
+              },
+            },
+          },
+        },
+      },
+      receptionistProfile: {
+        include: {
+          clinic: true,
+          doctors: {
+            include: {
+              doctor: {
+                include: {
+                  user: { select: { id: true, fullName: true, email: true, phone: true } },
+                },
+              },
+            },
+          },
+        },
+      },
+    };
+
+    let user: any = null;
+    if (requestedRole) {
+      user = await prisma.user.findUnique({
+        where: { email_role: { email: cleanLoginEmail, role: requestedRole } },
+        include: loginUserInclude,
+      });
+    } else {
+      const matchingUsers = await prisma.user.findMany({
+        where: { email: cleanLoginEmail },
+        include: loginUserInclude,
+      });
+      if (matchingUsers.length === 1) {
+        user = matchingUsers[0];
+      } else if (matchingUsers.length > 1) {
+        for (const candidate of matchingUsers) {
+          if (await bcrypt.compare(password, candidate.passwordHash)) {
+            user = candidate;
+            break;
+          }
+        }
+        if (!user) {
+          user = matchingUsers[0];
+        }
+      }
+    }
 
     if (!user) {
       res.status(401).json({ success: false, message: 'Invalid email or password' });
@@ -582,10 +613,12 @@ export const login = async (req: Request, res: Response): Promise<void> => {
           success: false,
           requiresVerification: true,
           email: user.email,
+          role: user.role,
           message: `Your email address is not verified yet. A verification code was recently sent. Please check your inbox or wait ${cooldown.remainingSeconds}s before requesting a new code.`,
           data: {
             requiresVerification: true,
             email: user.email,
+            role: user.role,
             cooldownSeconds: cooldown.remainingSeconds,
           },
         });
@@ -609,10 +642,12 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         success: false,
         requiresVerification: true,
         email: user.email,
+        role: user.role,
         message: 'Your email address is not verified yet. A fresh 6-digit verification code has been sent to your email.',
         data: {
           requiresVerification: true,
           email: user.email,
+          role: user.role,
         },
       });
       return;
@@ -686,7 +721,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
 export const verifyEmailOtp = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { email, otp } = req.body;
+    const { email, otp, role } = req.body;
     if (!email || !otp) {
       res.status(400).json({ success: false, message: 'Email and 6-digit verification code are required' });
       return;
@@ -694,6 +729,7 @@ export const verifyEmailOtp = async (req: Request, res: Response): Promise<void>
 
     const cleanEmail = String(email).toLowerCase().trim();
     const cleanOtp = String(otp).trim();
+    const requestedRole = typeof role === 'string' && role.trim() ? role.toUpperCase().trim() : null;
 
     // 1. Account-level brute-force lockout check (FIX-005)
     const lockout = getVerificationLockout(cleanEmail);
@@ -706,25 +742,42 @@ export const verifyEmailOtp = async (req: Request, res: Response): Promise<void>
       return;
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: cleanEmail },
-      include: {
-        patientProfile: true,
-        doctorProfile: {
-          include: {
-            clinics: { include: { clinic: true } },
-          },
-        },
-        clinicProfile: {
-          include: {
-            doctors: { include: { doctor: true } },
-          },
-        },
-        receptionistProfile: {
-          include: { clinic: true },
+    const verifyInclude = {
+      patientProfile: true,
+      doctorProfile: {
+        include: {
+          clinics: { include: { clinic: true } },
         },
       },
-    });
+      clinicProfile: {
+        include: {
+          doctors: { include: { doctor: true } },
+        },
+      },
+      receptionistProfile: {
+        include: { clinic: true },
+      },
+    };
+
+    let user: any = null;
+    if (requestedRole) {
+      user = await prisma.user.findUnique({
+        where: { email_role: { email: cleanEmail, role: requestedRole } },
+        include: verifyInclude,
+      });
+    } else {
+      user =
+        (await prisma.user.findFirst({
+          where: { email: cleanEmail, isEmailVerified: false },
+          orderBy: { updatedAt: 'desc' },
+          include: verifyInclude,
+        })) ||
+        (await prisma.user.findFirst({
+          where: { email: cleanEmail },
+          orderBy: { updatedAt: 'desc' },
+          include: verifyInclude,
+        }));
+    }
 
     if (!user) {
       res.status(404).json({ success: false, message: 'Account not found with this email' });
@@ -769,11 +822,12 @@ export const verifyEmailOtp = async (req: Request, res: Response): Promise<void>
     if (user.phone) {
       const existingVerifiedOwner = await findExistingAccountByPhone(prisma, user.phone, {
         excludeUserId: user.id,
+        role: user.role,
       });
       if (existingVerifiedOwner) {
         res.status(409).json({
           success: false,
-          message: 'An account with this mobile number already exists. Each mobile number can only be linked to a single account.',
+          message: `An account with this mobile number already exists for the ${user.role.toLowerCase()} portal. Each mobile number can only have one ${user.role.toLowerCase()} account.`,
         });
         return;
       }
@@ -783,6 +837,7 @@ export const verifyEmailOtp = async (req: Request, res: Response): Promise<void>
         await prisma.user.updateMany({
           where: {
             id: { not: user.id },
+            role: user.role,
             isEmailVerified: false,
             phone: { in: phoneVariants },
           },
@@ -800,22 +855,7 @@ export const verifyEmailOtp = async (req: Request, res: Response): Promise<void>
         emailVerificationOtp: null,
         emailVerificationOtpExpiresAt: null,
       },
-      include: {
-        patientProfile: true,
-        doctorProfile: {
-          include: {
-            clinics: { include: { clinic: true } },
-          },
-        },
-        clinicProfile: {
-          include: {
-            doctors: { include: { doctor: true } },
-          },
-        },
-        receptionistProfile: {
-          include: { clinic: true },
-        },
-      },
+      include: verifyInclude,
     });
 
     const token = jwt.sign(
@@ -852,13 +892,14 @@ export const verifyEmailOtp = async (req: Request, res: Response): Promise<void>
 
 export const resendEmailOtp = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { email } = req.body;
+    const { email, role } = req.body;
     if (!email) {
       res.status(400).json({ success: false, message: 'Email address is required' });
       return;
     }
 
     const cleanEmail = String(email).toLowerCase().trim();
+    const requestedRole = typeof role === 'string' && role.trim() ? role.toUpperCase().trim() : null;
 
     // 1. Account lockout check: reject resend if account is locked out from failed verification attempts (FIX-005)
     const lockout = getVerificationLockout(cleanEmail);
@@ -882,9 +923,22 @@ export const resendEmailOtp = async (req: Request, res: Response): Promise<void>
       return;
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: cleanEmail },
-    });
+    let user: any = null;
+    if (requestedRole) {
+      user = await prisma.user.findUnique({
+        where: { email_role: { email: cleanEmail, role: requestedRole } },
+      });
+    } else {
+      user =
+        (await prisma.user.findFirst({
+          where: { email: cleanEmail, isEmailVerified: false },
+          orderBy: { updatedAt: 'desc' },
+        })) ||
+        (await prisma.user.findFirst({
+          where: { email: cleanEmail },
+          orderBy: { updatedAt: 'desc' },
+        }));
+    }
 
     if (!user) {
       res.status(404).json({ success: false, message: 'Account not found with this email' });
@@ -1041,14 +1095,15 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
         }
         formattedPhone = formatIndianPhone(trimmedPhone);
 
-        // Enforce strict mobile number uniqueness across accounts
+        // Enforce mobile number uniqueness per portal role
         const existingPhoneUser = await findExistingAccountByPhone(prisma, formattedPhone, {
           excludeUserId: req.user.id,
+          role: req.user.role,
         });
         if (existingPhoneUser) {
           res.status(409).json({
             success: false,
-            message: 'An account with this mobile number already exists. Each mobile number can only be linked to a single account.',
+            message: `An account with this mobile number already exists for the ${req.user.role.toLowerCase()} portal. Each mobile number can only have one ${req.user.role.toLowerCase()} account.`,
           });
           return;
         }
@@ -1329,7 +1384,7 @@ export const googleAuth = async (req: Request, res: Response): Promise<void> => 
       rawRole === 'DOCTOR' ? 'DOCTOR' : (rawRole === 'CLINIC' ? 'CLINIC' : 'PATIENT');
 
     let user = await prisma.user.findUnique({
-      where: { email },
+      where: { email_role: { email, role: normalizedRole } },
       include: {
         patientProfile: true,
         doctorProfile: { include: { clinics: { include: { clinic: true } } } },

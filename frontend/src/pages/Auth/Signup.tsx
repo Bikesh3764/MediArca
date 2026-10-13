@@ -410,6 +410,7 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
         <EmailVerificationModal
           isOpen={Boolean(verificationPendingEmail)}
           email={verificationPendingEmail || ''}
+          role={role}
           onSuccess={(verifiedUser) => {
             setVerificationPendingEmail(null);
             navigate(getTargetDestination(verifiedUser.role), { replace: true });

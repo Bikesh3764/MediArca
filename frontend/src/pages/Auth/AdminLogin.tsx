@@ -28,7 +28,7 @@ export const AdminLogin: React.FC = () => {
     }
 
     try {
-      const loggedUser = await login({ email: cleanEmail, password });
+      const loggedUser = await login({ email: cleanEmail, password, role: 'ADMIN' });
       if (loggedUser.role?.toUpperCase() !== 'ADMIN') {
         logout();
         setError('Access Denied: This account does not have platform administrator credentials.');
@@ -52,7 +52,7 @@ export const AdminLogin: React.FC = () => {
     setError(null);
     setSubmitting(true);
     try {
-      const loggedUser = await login({ email: 'admin@mediarca.com', password: 'admin123' });
+      const loggedUser = await login({ email: 'admin@mediarca.com', password: 'admin123', role: 'ADMIN' });
       if (loggedUser.role?.toUpperCase() !== 'ADMIN') {
         logout();
         setError('Access Denied: This account does not have platform administrator credentials.');
