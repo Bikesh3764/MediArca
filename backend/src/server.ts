@@ -380,6 +380,19 @@ if (process.env.NODE_ENV !== 'test' && !process.env.MEDIARCA_TEST_SUITE) {
     console.log(`🚀 MediArca API running on port ${PORT}`);
     console.log(`Health: http://localhost:${PORT}/api/health`);
     console.log(`=========================================`);
+
+    // Ensure composite uniqueness indexes are applied even behind pooled connections
+    (async () => {
+      try {
+        await prisma.$executeRawUnsafe(`DROP INDEX IF EXISTS "User_email_key";`);
+        await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX IF NOT EXISTS "User_email_role_key" ON "User"("email", "role");`);
+        await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "User_email_idx" ON "User"("email");`);
+        await prisma.$executeRawUnsafe(`DROP INDEX IF EXISTS "Appointment_clinicId_doctorId_appointmentDate_queueNumber_key";`);
+        await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX IF NOT EXISTS "Appointment_clinicId_doctorId_appointmentDate_slotId_queueNumber_key" ON "Appointment"("clinicId", "doctorId", "appointmentDate", "slotId", "queueNumber");`);
+      } catch (idxErr: any) {
+        console.warn('[Startup Schema Sync] Non-fatal warning syncing composite indexes:', idxErr?.message || idxErr);
+      }
+    })();
   });
 }
 

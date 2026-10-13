@@ -12,6 +12,10 @@ function runMigrations() {
     return;
   }
 
+  if (!process.env.DIRECT_URL) {
+    process.env.DIRECT_URL = process.env.DATABASE_URL;
+  }
+
   try {
     const output = execSync('npx prisma migrate deploy', { stdio: 'pipe', encoding: 'utf8' });
     console.log(output);
@@ -32,13 +36,13 @@ function runMigrations() {
         console.log('[Prisma Migrate] Migrations deployed successfully after baseline resolution.');
       } catch (baselineErr) {
         console.error('[Prisma Migrate] Failed during baseline resolution:', baselineErr.message);
-        if (process.env.CI) {
+        if (process.env.CI || process.env.NODE_ENV === 'production') {
           process.exit(1);
         }
       }
     } else {
       console.error('[Prisma Migrate] Migration deployment warning:', err.message);
-      if (process.env.CI) {
+      if (process.env.CI || process.env.NODE_ENV === 'production') {
         process.exit(1);
       }
     }
