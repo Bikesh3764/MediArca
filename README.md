@@ -2,7 +2,7 @@
 
 MediArca is a production-grade healthcare platform built with Apple Human Interface Guidelines (`DESIGN.md`). It solves the #1 real-world clinic pain point: **patients never knowing when they will actually be seen**. 
 
-Instead of rigid, ambiguous appointment slots, MediArca introduces transparent **Doctor Checking Hours** (e.g., 09:00 AM – 01:00 PM), guaranteed sequential **Queue Tokens** (Queue #1, Queue #2, ...), an **Apple Wallet-Style Live Queue Pass** with radar tracking, and a **Doctor Queue Console** with digital prescriptions.
+Instead of rigid, ambiguous appointment slots, MediArca introduces transparent **Doctor Checking Hours** (e.g., 09:00 AM – 01:00 PM), guaranteed sequential **Queue Tokens** (Queue #1, Queue #2, ...), an **Apple Wallet-Style Live Queue Pass** with radar tracking, and a **Doctor Queue Console** with live cabin presence synchronization and atomic consultation calling.
 
 ---
 
@@ -18,7 +18,7 @@ Instead of rigid, ambiguous appointment slots, MediArca introduces transparent *
 
 MediArca is integrated with Google Identity Services (`@react-oauth/google` on the frontend and `google-auth-library` on the backend).
 
-- For a complete step-by-step tutorial on creating your Google Cloud OAuth Client ID, authorized origins, and environment variables, see **[GOOGLE_AUTH_SETUP.md](./GOOGLE_AUTH_SETUP.md)**.
+- Configured seamlessly via standard environment variables (`GOOGLE_CLIENT_ID` in `backend/.env` and `VITE_GOOGLE_CLIENT_ID` in `frontend/.env`).
 - If a Google Client ID is not yet configured, the system provides a seamless **1-Click Test Simulation Mode** so the full Google Sign-In authentication flow, profile provisioning, and dashboard navigation can be evaluated instantly.
 
 ---
@@ -26,7 +26,7 @@ MediArca is integrated with Google Identity Services (`@react-oauth/google` on t
 ## Architecture & Tech Stack
 
 - **Frontend**: React 19, Vite, TypeScript, Tailwind CSS, Lucide Icons, React Router v7, `@react-oauth/google`.
-- **Backend**: Node.js, Express, TypeScript, Multer (Document Vault), JWT, Bcrypt, `google-auth-library`.
+- **Backend**: Node.js, Express 5, TypeScript, Prisma ORM 6, JWT, Bcrypt, `google-auth-library`.
 - **Database**: Prisma ORM (PostgreSQL via Supabase).
 - **Design System**: Apple Human Interface Guidelines (`DESIGN.md`):
   - Action Blue (`#0066cc`) full pill buttons (`rounded-full`, `active:scale-95`).
@@ -39,13 +39,15 @@ MediArca is integrated with Google Identity Services (`@react-oauth/google` on t
 
 ## Demo Accounts
 
-For instant 1-click evaluation, the login screen includes quick login buttons:
+For instant 1-click evaluation, the login screens across portals include pre-configured demo credentials:
 
 | Role | Email | Password | What You Can Test |
 | :--- | :--- | :--- | :--- |
-| **Patient** | `john.doe@gmail.com` | `patient123` | Search doctors, check live queue previews, book without upfront payment, inspect Live Queue Pass with radar tracker, upload medical records, view prescriptions. |
-| **Doctor** | `dr.sarah@mediarca.com` | `doctor123` | Doctor console, view waiting queue, call next patient into cabin, record patient vitals, issue digital prescriptions, configure checking shift hours. |
-| **Admin** | `admin@mediarca.com` | `admin123` | Practitioner verification portal, approve/suspend doctors, audit platform appointments and metrics. |
+| **Patient** | `john.doe@gmail.com` | `patient123` | Search doctors/clinics, book without upfront payment, inspect Live Queue Pass with live cabin presence, call receptionist directly to coordinate UPI/desk payment, self-check-in via QR. |
+| **Doctor** | `dr.sarah@mediarca.com` | `doctor123` | Doctor console, view waiting queue, call patient into cabin (atomic concurrency), toggle cabin presence, configure weekly checking shift hours and fees. |
+| **Clinic** | `apex.health@mediarca.com` | `clinic123` | Clinic operations dashboard, invite/onboard affiliated doctors, provision front-desk receptionists with temporary credentials, download entrance QR standee. |
+| **Receptionist** | `priya.desk@mediarca.com` | `reception123` | Front-desk management, walk-in patient token creation, arrival check-in, record consultation fees as PAID, approve pending online requests into live queue. |
+| **Admin** | `admin@mediarca.com` | `admin123` | Practitioner and clinic verification queues, platform telemetry metrics, contact inquiries management. |
 
 ---
 

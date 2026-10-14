@@ -476,7 +476,7 @@ export const DoctorDetail: React.FC = () => {
             </div>
             <div className="p-3 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-[11px] text-[#86868b] leading-relaxed">
               <span className="font-semibold text-[#1d1d1f] block mb-0.5">Pay receptionist to confirm token</span>
-              Token is confirmed only after paying the fee to the receptionist. Unconfirmed requests may be claimed by another patient who confirms first.
+              Token is confirmed only after paying the fee to the receptionist (coordinate online via UPI over call, or pay at desk). Unconfirmed requests may be claimed by another patient who confirms first.
             </div>
           </div>
 

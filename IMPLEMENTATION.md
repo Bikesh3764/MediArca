@@ -7,7 +7,6 @@
 **Frontend Deployment:** GitHub Pages (`https://bikesh3764.github.io/MediArca/`)  
 **Backend API Deployment:** Render Web Service (`https://mediarca-mdwk.onrender.com`)  
 **Primary Database:** Supabase Cloud PostgreSQL (`db.gibgtnzhecexgwximtpi.supabase.co`)  
-**Media Vault:** Cloudflare R2 Cloud Object Storage  
 **Mail Gateway:** Gmail SMTP via Nodemailer  
 
 ---
@@ -36,15 +35,15 @@ MediArca is a modern, fullstack clinical queue and healthcare operations platfor
  │   • Pessimistic / Atomic Queue Allocator               │
  │   • Non-blocking Self-Healing Schema Migrations        │
  │   • Sliding-Window Memory Pruned Rate Limiter          │
- └─────────────┬──────────────────┬─────────────────┬─────┘
-               │                  │                 │
-               ▼                  ▼                 ▼
- ┌──────────────────────┐ ┌───────────────┐ ┌───────────────┐
- │ Supabase PostgreSQL  │ │ Cloudflare R2 │ │  Gmail SMTP   │
- │ • Prisma 6 ORM       │ │ Object Store  │ │ Nodemailer    │
- │ • SystemConfig Table │ │ Prescriptions │ │ 6-digit OTP   │
- │ • Atomic Trx & RLS   │ │ Clinical Data │ │ Notifications │
- └──────────────────────┘ └───────────────┘ └───────────────┘
+ └─────────────┬────────────────────────────────────┬─────┘
+               │                                    │
+               ▼                                    ▼
+ ┌──────────────────────┐            ┌───────────────┐
+ │ Supabase PostgreSQL  │            │  Gmail SMTP   │
+ │ • Prisma 6 ORM       │            │ Nodemailer    │
+ │ • SystemConfig Table │            │ 6-digit OTP   │
+ │ • Atomic Trx & RLS   │            │ Notifications │
+ └──────────────────────┘            └───────────────┘
 ```
 
 ---
@@ -53,10 +52,10 @@ MediArca is a modern, fullstack clinical queue and healthcare operations platfor
 
 | Portal | Route Base | Target Audience | Primary Responsibilities |
 | :--- | :--- | :--- | :--- |
-| **Patient Portal** | `/patient/*` | Patients & Caregivers | Doctor discovery, multi-venue booking (Myself or Family), live digital queue wallet passes, consultation history, emergency contacts. |
-| **Doctor Console** | `/doctor/*` | Practitioners | Live cabin queue, "Call Next Patient", digital consultation builder, multi-clinic schedule & fee configuration, clinic requests. |
-| **Clinic Portal** | `/clinic/*` | Clinic Administrators | Doctor onboarding / invitations, revenue isolation per practitioner, front-desk receptionist provisioning with temporary passwords. |
-| **Receptionist Desk** | `/receptionist/*` | Front Desk Staff | Rapid walk-in patient queue registration, physical queue token printing, live queue table management, desk check-ins. |
+| **Patient Portal** | `/patient/*` | Patients & Caregivers | Doctor discovery, multi-venue booking (Myself or Family), live queue ticket with receptionist contact & UPI phone coordination, arrival check-in. |
+| **Doctor Console** | `/doctor/*` | Practitioners | Live cabin queue, "Call Next Patient" (atomic transaction), consultation hold/complete, cabin presence toggling, multi-clinic schedule & fee management. |
+| **Clinic Portal** | `/clinic/*` | Clinic Administrators | Doctor onboarding / invitations, revenue isolation per practitioner, front-desk receptionist provisioning with temporary passwords, QR standee download. |
+| **Receptionist Desk** | `/receptionist/*` | Front Desk Staff | Rapid walk-in token creation, fee collection recording (cash/UPI), ticket confirmation (`PENDING_APPROVAL` → `WAITING`), desk arrival check-ins, queue oversight. |
 | **Admin Control** | `/admin/*` | Platform Superadmins | Practitioner medical license verification, clinic licensing verification, platform-wide analytics and audit controls. |
 
 ---
@@ -169,7 +168,7 @@ model User {
 ## 7. Verification & Automated Test Suite
 
 MediArca maintains an automated end-to-end verification test suite located at `backend/scripts/verify-fixes.ts`:
-- **Total Assertions:** 2,000 passing assertions across unit, integration, security, and concurrency suites (0 failures).
+- **Total Assertions:** 2,020 passing assertions across unit, integration, security, and concurrency suites (0 failures).
 
 ---
 

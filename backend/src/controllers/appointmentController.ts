@@ -1029,7 +1029,7 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
     };
 
     const responseMsg = isPendingBooking
-      ? `Appointment request submitted for ${chosenSlot.name}. Estimated Token #${estimatedQueueNumber}. Pay receptionist at desk to confirm your queue token.`
+      ? `Appointment request submitted for ${chosenSlot.name}. Estimated Token #${estimatedQueueNumber}. Call receptionist directly to coordinate online payment (UPI over call) or pay at desk to confirm your queue token.`
       : `Appointment confirmed! You are Queue #${newAppointment.queueNumber} (${chosenSlot.name})`;
 
     res.status(201).json({

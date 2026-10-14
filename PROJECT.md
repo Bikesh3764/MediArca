@@ -2,10 +2,10 @@
 
 ## Architecture
 MediArca is an Indian healthcare patient appointment and live queue management system built on:
-- **Backend**: Node.js, Express, TypeScript, Prisma ORM (PostgreSQL), JWT authentication, role-based access control.
-- **Frontend**: React 18 / 19, TypeScript, Vite, Tailwind CSS, Lucide icons, Apple Human Interface Guidelines (`DESIGN.md`).
+- **Backend**: Node.js, Express 5, TypeScript, Prisma ORM 6 (PostgreSQL), JWT authentication, role-based access control.
+- **Frontend**: React 19, TypeScript, Vite, Tailwind CSS, Lucide icons, Apple Human Interface Guidelines (`DESIGN.md`).
 - **Database**: PostgreSQL (Prisma schema with 12 models: `User`, `DoctorProfile`, `PatientProfile`, `ClinicProfile`, `ReceptionistProfile`, `ClinicDoctor`, `DoctorReceptionist`, `Appointment`, `Review`, `Notification`, `SystemConfig`, `ContactMessage`).
-- **Core Guardrails**: Zero-upfront payment (pay-at-clinic preserved), no prescription builder, demo credentials preserved, +91 Indian phone standard lock, per-portal role-scoped account uniqueness (`@@unique([email, role])`).
+- **Core Guardrails**: Zero-upfront payment (pay-to-receptionist coordination via UPI/desk), physical clinic queue focus (no telemedicine / no prescription builder / no cloud vault), demo credentials preserved, +91 Indian phone standard lock, per-portal role-scoped account uniqueness (`@@unique([email, role])`).
 
 ## Feature Inventory
 | # | Feature / Area | Description | Milestone | Source |
@@ -23,18 +23,28 @@ MediArca is an Indian healthcare patient appointment and live queue management s
 | 11 | Apple HIG Design Accent Consistency | Standardize accidental `#0088e8` cyan instances to Action Blue `#0066cc` per `DESIGN.md` | M2 | Survey Obs 1 |
 | 12 | End-to-End Automated Gates | Verify 100% pass on backend `npm run test:verify`, backend `npm run build`, frontend `npm run build`, and frontend `npm run lint` | M3 | Acceptance Criteria |
 | 13 | Forensic Integrity Verification | Perform independent forensic audit confirming genuine implementation without test cheating or mocks | M3 | Acceptance Criteria |
+| 14 | Receptionist Payment Coordination | Expose receptionist contact info on passes and booking screens; enable patients to call receptionist directly to coordinate online payment (UPI) or pay at desk | M4 | User Requirement |
+| 15 | Feature Specification Pruning | Prune bloated features from `MediArca_Feature_Specification.md` to reflect exact active 5-portal scope | M4 | User Requirement |
+| 16 | Agent Memory & Rules Architecture | Establish `AGENTS.md`, `docs/architecture.md`, ADRs 001-005, `docs/known-issues.md`, and hierarchical rules | M4 | User Requirement |
 
 ## Milestones
 | # | Name | Scope | Dependencies | Status |
 |---|------|-------|-------------|--------|
 | M1 | Backend Concurrency & Runtime Resilience | Database env, atomic transactions, process error handlers, CORS status, reschedule logic | none | DONE (2,000/2,000 tests pass, build pass) |
 | M2 | Frontend Portals, Localization & Design Compliance | Admin INR currency, live ticket state sync, API resilience, lint hygiene, Action Blue palette | none | DONE (build pass, lint pass 0 errors) |
-| M3 | Fullstack Gate Verification & Forensic Audit | Verification suite run, full builds, challenger stress test, forensic audit | M1, M2 | DONE (2,000/2,000 tests pass, builds clean, linter clean, forensic audit clean) |
+| M3 | Fullstack Gate Verification & Forensic Audit | Verification suite run, full builds, challenger stress test, forensic audit | M1, M2 | DONE (2,020/2,020 tests pass, builds clean, linter clean, forensic audit clean) |
+| M4 | Specification Alignment & Agent Memory System | Prune specs, pay-to-receptionist coordination, complete `docs/` ADRs, `AGENTS.md` hierarchy | M3 | DONE (2,020 tests pass, clean builds, 0 lint errors) |
 
 ## Interface Contracts
+### Pay-to-Receptionist Coordination Contract
+- Online booking generates status `PENDING_APPROVAL` with `estimatedQueueNumber` without upfront payment gateway charge.
+- Backend resolves `receptionistName` and `receptionistPhone` and attaches them to appointment payloads.
+- Frontend exposes direct call action (`Call Receptionist: +91...`) so patients can call the receptionist to pay via UPI or pay at the desk upon arrival.
+- Receptionist verifies payment and confirms appointment (`WAITING` + official `queueNumber`).
+
 ### Queue Concurrency Contract
 - Function: `callPatient(req, res)`
-- Guarantee: Only one appointment per doctor can have status `IN_CONSULTATION` at any given time.
+- Guarantee: Only one appointment per doctor can have status `IN_CONSULTATION` across all clinics at any given time.
 - Transaction: All resets and the target update must be executed inside a single `prisma.$transaction`.
 
 ### API Response Contract
@@ -44,25 +54,19 @@ MediArca is an Indian healthcare patient appointment and live queue management s
 ### Localization & Currency Contract
 - Symbol: Indian Rupee `₹` across all user portals (Patient, Doctor, Clinic, Receptionist, Admin).
 - Phone: `+91` 10-digit format locked.
+- Time: Asia/Kolkata (IST / UTC+05:30) calendar date evaluation.
 
-## Code Layout
-### Backend Files Owned by M1:
-- `backend/.env`
-- `backend/src/server.ts`
-- `backend/src/controllers/consultationController.ts`
-- `backend/src/controllers/receptionistController.ts`
-- `backend/scripts/verify-fixes.ts`
-
-### Frontend Files Owned by M2:
-- `frontend/src/pages/Admin/AdminDashboard.tsx`
-- `frontend/src/components/queue/LiveQueueTicket.tsx`
-- `frontend/src/services/api.ts`
-- `frontend/src/components/common/CameraQrScannerModal.tsx`
-- `frontend/src/pages/Receptionist/ReceptionistDashboard.tsx`
-- `frontend/src/components/layout/DashboardLayout.tsx`
-- `frontend/src/pages/Clinic/ClinicDashboard.tsx`
-- `frontend/src/pages/Clinic/ClinicAuth.tsx`
-- `frontend/src/components/ui/ErrorBoundary.tsx`
-
-### Verification Owned by M3:
-- Read-only verification and test executions across `backend/` and `frontend/`.
+## Documentation Index
+- Root Charter: [AGENTS.md](file:///c:/Users/Bikesh%20Ray/OneDrive/Desktop/MediArca/AGENTS.md)
+- Product Specification: [MediArca_Feature_Specification.md](file:///c:/Users/Bikesh%20Ray/OneDrive/Desktop/MediArca/MediArca_Feature_Specification.md)
+- Architecture Overview: [docs/architecture.md](file:///c:/Users/Bikesh%20Ray/OneDrive/Desktop/MediArca/docs/architecture.md)
+- Architecture Decision Records:
+  - [001-pay-to-receptionist-coordination.md](file:///c:/Users/Bikesh%20Ray/OneDrive/Desktop/MediArca/docs/decisions/001-pay-to-receptionist-coordination.md)
+  - [002-role-scoped-account-uniqueness.md](file:///c:/Users/Bikesh%20Ray/OneDrive/Desktop/MediArca/docs/decisions/002-role-scoped-account-uniqueness.md)
+  - [003-queue-atomic-transactions.md](file:///c:/Users/Bikesh%20Ray/OneDrive/Desktop/MediArca/docs/decisions/003-queue-atomic-transactions.md)
+  - [004-currency-localization-inr.md](file:///c:/Users/Bikesh%20Ray/OneDrive/Desktop/MediArca/docs/decisions/004-currency-localization-inr.md)
+  - [005-api-resilience-and-caching.md](file:///c:/Users/Bikesh%20Ray/OneDrive/Desktop/MediArca/docs/decisions/005-api-resilience-and-caching.md)
+- Defect Ledger & Anti-Patterns: [docs/known-issues.md](file:///c:/Users/Bikesh%20Ray/OneDrive/Desktop/MediArca/docs/known-issues.md)
+- Active Task & Checklist: [docs/tasks/current-task.md](file:///c:/Users/Bikesh%20Ray/OneDrive/Desktop/MediArca/docs/tasks/current-task.md)
+- Scoped Backend Rules: [backend/AGENTS.md](file:///c:/Users/Bikesh%20Ray/OneDrive/Desktop/MediArca/backend/AGENTS.md)
+- Scoped Frontend Rules: [frontend/AGENTS.md](file:///c:/Users/Bikesh%20Ray/OneDrive/Desktop/MediArca/frontend/AGENTS.md)

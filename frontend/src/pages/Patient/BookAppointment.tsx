@@ -13,7 +13,7 @@ import {
   getFileUrl,
   cleanSlotName,
 } from '../../services/api';
-import { formatDisplayPhone } from '../../utils/phoneUtils';
+import { formatDisplayPhone, toTelUri } from '../../utils/phoneUtils';
 import { useAuth } from '../../context/AuthContext';
 import { SubNav } from '../../components/layout/SubNav';
 import { AppleButton } from '../../components/ui/AppleButton';
@@ -306,8 +306,18 @@ export const BookAppointment: React.FC = () => {
 
   // Receptionist Contact Info resolved for confirmation screen
   const primaryReceptionist = attachedReceptionists[0];
-  const deskPhone = confirmedAppointment?.receptionistPhone || primaryReceptionist?.phone || null;
-  const deskName = confirmedAppointment?.receptionistName || primaryReceptionist?.name || 'Clinic Front Desk';
+  const receptionistPhone = confirmedAppointment?.receptionistPhone || primaryReceptionist?.phone || null;
+  const clinicPhone = confirmedAppointment?.clinic?.phone || selectedClinic?.clinic?.phone || null;
+  const deskPhone = receptionistPhone || clinicPhone;
+
+  const deskName =
+    confirmedAppointment?.receptionistName ||
+    primaryReceptionist?.name ||
+    (confirmedAppointment?.clinic?.clinicName
+      ? `${confirmedAppointment.clinic.clinicName} Front Desk`
+      : selectedClinic?.clinic?.clinicName
+      ? `${selectedClinic.clinic.clinicName} Front Desk`
+      : 'Front Desk Receptionist');
 
   // 1. Post-Booking Success & Receptionist Details Screen
   if (confirmedAppointment) {
@@ -368,17 +378,17 @@ export const BookAppointment: React.FC = () => {
               </div>
 
               <p className="text-xs text-[#86868b] leading-relaxed pt-2.5 border-t border-[#e5e5ea]">
-                Your token will be officially assigned by the receptionist upon payment. If another patient pays earlier, their token will be confirmed before yours.
+                Your token will be officially assigned by the receptionist upon payment. Call the receptionist directly to coordinate online payment (UPI over call) or pay at the desk upon arrival. If another patient pays earlier, their token will be confirmed before yours.
               </p>
 
               {deskPhone ? (
                 <div className="pt-1">
                   <a
-                    href={`tel:${deskPhone.replace(/\s+/g, '')}`}
+                    href={toTelUri(deskPhone)}
                     className="w-full h-11 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-sm font-medium flex items-center justify-center gap-2 active:scale-[0.98] transition-all duration-150 shadow-[0_2px_8px_rgba(0,102,204,0.2),0_1px_2px_rgba(0,0,0,0.06)] cursor-pointer select-none"
                   >
                     <Phone className="w-4 h-4" />
-                    <span>Call Receptionist: {formatDisplayPhone(deskPhone)}</span>
+                    <span>Call {deskName}: {formatDisplayPhone(deskPhone)}</span>
                   </a>
                 </div>
               ) : (
@@ -829,7 +839,7 @@ export const BookAppointment: React.FC = () => {
                 <span className="text-base font-semibold text-[#1d1d1f]">₹{activeFee}</span>
               </div>
               <p className="text-[11px] text-[#86868b] leading-relaxed">
-                Fee is paid directly to the receptionist to confirm your token. Unconfirmed requests may be claimed by other patients who confirm first.
+                Fee is paid directly to the receptionist (coordinate online via UPI over call, or pay at desk upon arrival) to confirm your token. Unconfirmed requests may be claimed by other patients who confirm first.
               </p>
             </div>
 
