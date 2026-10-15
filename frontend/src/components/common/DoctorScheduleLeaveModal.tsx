@@ -16,8 +16,8 @@ import {
 } from 'lucide-react';
 import {
   api,
+  getLocalDateString,
   ALL_WEEKDAYS,
-  WEEKDAY_NAMES,
   WEEKDAY_SHORT_NAMES,
   WeekdayCode,
   DoctorScheduleConfig,
@@ -62,13 +62,7 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
   const [savingLeave, setSavingLeave] = useState(false);
   const [cancellingLeaveId, setCancellingLeaveId] = useState<string | null>(null);
 
-  const getLocalDateString = () => {
-    try {
-      return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
-    } catch {
-      return new Date().toISOString().split('T')[0];
-    }
-  };
+  // Uses canonical IST getLocalDateString imported from services/api
 
   const todayStr = getLocalDateString();
 

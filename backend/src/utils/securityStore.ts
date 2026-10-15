@@ -89,7 +89,10 @@ class SecurityStore {
   private redis: Redis | null = null;
   private isRedisConnected = false;
   private hasLoggedFallbackNotice = false;
-  private enforceDistributed = process.env.NODE_ENV === 'production';
+  private enforceDistributed =
+    process.env.NODE_ENV === 'production' &&
+    process.env.REQUIRE_REDIS !== 'false' &&
+    process.env.STRICT_DISTRIBUTED_SECURITY !== 'false';
   private memoryLockouts = new Map<string, MemoryLockoutRecord>();
   private externalRateLimitMap: Map<string, { count: number; resetTime: number }> | null = null;
   private pruneTimer: NodeJS.Timeout | null = null;

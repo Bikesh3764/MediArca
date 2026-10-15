@@ -63,7 +63,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
         rating,
         comment: comment.trim() || undefined,
       });
-      setSubmittedReview(res?.data || { rating, comment });
+      setSubmittedReview(res?.data || res || { rating, comment });
     } catch (err: any) {
       setReviewError(err.message || 'Failed to submit review');
     } finally {

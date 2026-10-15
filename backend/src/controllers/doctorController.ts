@@ -22,6 +22,7 @@ import {
 } from '../utils/scheduleUtils';
 import { isDoctorEligibleForClinicalPractice, verifyReceptionistDoctorAccess, isClinicActive } from '../utils/authGuards';
 import { parsePaginationParams, buildPaginationMetadata } from '../utils/pagination';
+import { createNotification } from '../services/notificationService';
 
 export const formatDoctorClinics = (doc: any) => {
   return (doc.clinics || []).map((cd: any) => {
@@ -1645,7 +1646,7 @@ export const getDoctorScheduleConfig = async (req: AuthRequest, res: Response): 
     }
 
     let doctorId = req.params.doctorId ? String(req.params.doctorId) : undefined;
-    const clinicId = req.query.clinicId ? String(req.query.clinicId) : undefined;
+    let clinicId = req.query.clinicId ? String(req.query.clinicId) : undefined;
 
     if (req.user.role === 'DOCTOR') {
       const docProfile = await prisma.doctorProfile.findUnique({ where: { userId: req.user.id } });
@@ -1668,6 +1669,21 @@ export const getDoctorScheduleConfig = async (req: AuthRequest, res: Response): 
       if (!doctorId) {
         res.status(400).json({ success: false, message: 'doctorId is required' });
         return;
+      }
+      const ownClinic = await prisma.clinicProfile.findUnique({ where: { userId: req.user.id } });
+      if (!ownClinic || (clinicId && clinicId !== ownClinic.id)) {
+        res.status(403).json({ success: false, message: 'Unauthorized for another clinic facility' });
+        return;
+      }
+      const affiliation = await prisma.clinicDoctor.findUnique({
+        where: { clinicId_doctorId: { clinicId: ownClinic.id, doctorId } },
+      });
+      if (!affiliation || !['ACTIVE', 'ACCEPTED'].includes(affiliation.status)) {
+        res.status(403).json({ success: false, message: 'Doctor is not actively affiliated with your clinic' });
+        return;
+      }
+      if (!clinicId) {
+        clinicId = ownClinic.id;
       }
     } else if (req.user.role !== 'ADMIN') {
       res.status(403).json({ success: false, message: 'Access denied' });
@@ -1698,7 +1714,17 @@ export const getDoctorScheduleConfig = async (req: AuthRequest, res: Response): 
       ? parseDoctorWorkingDays(targetAffiliation.workingDays)
       : parseDoctorWorkingDays((doctor as any).workingDays);
 
-    const clinicLeaves = targetAffiliation?.leaves ? parseDoctorLeaves(targetAffiliation.leaves) : [];
+    const clinicLeaves = targetAffiliation
+      ? (targetAffiliation.leaves ? parseDoctorLeaves(targetAffiliation.leaves) : [])
+      : (doctor.clinics || []).flatMap((cd: any) =>
+          cd.leaves
+            ? parseDoctorLeaves(cd.leaves).map((l) => ({
+                ...l,
+                clinicId: l.clinicId || cd.clinicId,
+                clinicName: l.clinicName || cd.clinic?.clinicName,
+              }))
+            : []
+        );
     const globalLeaves = (doctor as any).leaves ? parseDoctorLeaves((doctor as any).leaves) : [];
     const allLeaves = [...globalLeaves, ...clinicLeaves];
 
@@ -1763,7 +1789,11 @@ export const updateDoctorWorkingDays = async (req: AuthRequest, res: Response): 
       doctorId = docProfile.id;
     } else {
       // RECEPTIONIST
-      const mustChangePassword = Boolean((req.user as any).mustChangePassword);
+      const dbRecUser = await prisma.user.findUnique({
+        where: { id: req.user.id },
+        select: { mustChangePassword: true },
+      });
+      const mustChangePassword = Boolean(dbRecUser?.mustChangePassword || (req.user as any).mustChangePassword);
       if (mustChangePassword) {
         res.status(403).json({
           success: false,
@@ -1876,7 +1906,11 @@ export const addDoctorLeave = async (req: AuthRequest, res: Response): Promise<v
       doctorId = docProfile.id;
     } else {
       // RECEPTIONIST
-      const mustChangePassword = Boolean((req.user as any).mustChangePassword);
+      const dbRecUser = await prisma.user.findUnique({
+        where: { id: req.user.id },
+        select: { mustChangePassword: true },
+      });
+      const mustChangePassword = Boolean(dbRecUser?.mustChangePassword || (req.user as any).mustChangePassword);
       if (mustChangePassword) {
         res.status(403).json({
           success: false,
@@ -1928,7 +1962,9 @@ export const addDoctorLeave = async (req: AuthRequest, res: Response): Promise<v
         res.status(404).json({ success: false, message: 'Doctor clinic affiliation not found' });
         return;
       }
-      const existing = parseDoctorLeaves((cd as any).leaves);
+      const existing = parseDoctorLeaves((cd as any).leaves).filter(
+        (l) => !(l.startDate === startDate && l.endDate === endDate && (type === 'TODAY' ? l.type === 'TODAY' : true))
+      );
       const updatedLeaves = [...existing, newLeave];
       await prisma.clinicDoctor.update({
         where: { id: cd.id },
@@ -1940,12 +1976,42 @@ export const addDoctorLeave = async (req: AuthRequest, res: Response): Promise<v
         res.status(404).json({ success: false, message: 'Doctor profile not found' });
         return;
       }
-      const existing = parseDoctorLeaves((doc as any).leaves);
+      const existing = parseDoctorLeaves((doc as any).leaves).filter(
+        (l) => !(l.startDate === startDate && l.endDate === endDate && (type === 'TODAY' ? l.type === 'TODAY' : true))
+      );
       const updatedLeaves = [...existing, newLeave];
       await prisma.doctorProfile.update({
         where: { id: doctorId },
         data: { leaves: JSON.stringify(updatedLeaves) },
       });
+    }
+
+    // Notify patients with active bookings during the scheduled leave window
+    try {
+      const affectedAppts = await prisma.appointment.findMany({
+        where: {
+          doctorId,
+          ...(targetClinicId ? { clinicId: targetClinicId } : {}),
+          appointmentDate: { gte: startDate, lte: endDate },
+          status: { in: ['PENDING_APPROVAL', 'WAITING'] },
+        },
+        include: {
+          patient: { select: { userId: true } },
+          doctor: { include: { user: { select: { fullName: true } } } },
+        },
+      });
+      for (const appt of affectedAppts) {
+        if (appt.patient?.userId) {
+          createNotification(
+            appt.patient.userId,
+            'Doctor Leave Notice',
+            `Dr. ${appt.doctor?.user?.fullName || 'Practitioner'} has recorded leave for ${appt.appointmentDate}${newLeave.reason ? ` (${newLeave.reason})` : ''}. The clinic desk will assist with rescheduling your visit.`,
+            'APPOINTMENT'
+          ).catch(() => {});
+        }
+      }
+    } catch {
+      // Non-blocking notification dispatch
     }
 
     res.json({
@@ -1982,7 +2048,11 @@ export const cancelDoctorLeave = async (req: AuthRequest, res: Response): Promis
       doctorId = docProfile.id;
     } else {
       // RECEPTIONIST
-      const mustChangePassword = Boolean((req.user as any).mustChangePassword);
+      const dbRecUser = await prisma.user.findUnique({
+        where: { id: req.user.id },
+        select: { mustChangePassword: true },
+      });
+      const mustChangePassword = Boolean(dbRecUser?.mustChangePassword || (req.user as any).mustChangePassword);
       if (mustChangePassword) {
         res.status(403).json({
           success: false,
@@ -2018,9 +2088,14 @@ export const cancelDoctorLeave = async (req: AuthRequest, res: Response): Promis
 
     let removed = false;
 
+    const todayStr = getLocalDateString();
+
     // Check DoctorProfile.leaves
     const docLeaves = parseDoctorLeaves((doctor as any).leaves);
-    const filteredDocLeaves = docLeaves.filter((l) => l.id !== leaveId);
+    const targetDocLeave = docLeaves.find((l) => l.id === leaveId);
+    const filteredDocLeaves = docLeaves.filter(
+      (l) => l.id !== leaveId && !(targetDocLeave?.type === 'TODAY' && l.type === 'TODAY' && l.startDate === todayStr)
+    );
     if (filteredDocLeaves.length !== docLeaves.length) {
       await prisma.doctorProfile.update({
         where: { id: doctorId },
@@ -2032,7 +2107,10 @@ export const cancelDoctorLeave = async (req: AuthRequest, res: Response): Promis
     // Check each clinic affiliation
     for (const cd of doctor.clinics) {
       const cdLeaves = parseDoctorLeaves((cd as any).leaves);
-      const filteredCdLeaves = cdLeaves.filter((l) => l.id !== leaveId);
+      const targetCdLeave = cdLeaves.find((l) => l.id === leaveId);
+      const filteredCdLeaves = cdLeaves.filter(
+        (l) => l.id !== leaveId && !(targetCdLeave?.type === 'TODAY' && l.type === 'TODAY' && l.startDate === todayStr)
+      );
       if (filteredCdLeaves.length !== cdLeaves.length) {
         await prisma.clinicDoctor.update({
           where: { id: cd.id },

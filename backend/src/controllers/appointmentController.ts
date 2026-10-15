@@ -1642,6 +1642,32 @@ export const cancelAppointment = async (req: AuthRequest, res: Response): Promis
         `The appointment for ${appointment.appointmentDate} (Token #${appointment.queueNumber}) was cancelled by the patient.`,
         'APPOINTMENT'
       ).catch(() => {});
+      if (appointment.clinicId) {
+        prisma.receptionistProfile
+          .findMany({
+            where: {
+              clinicId: appointment.clinicId,
+              status: 'ACTIVE',
+            },
+            include: { doctors: true },
+          })
+          .then((recs) => {
+            for (const rec of recs) {
+              const isAssigned =
+                rec.doctors.length === 0 ||
+                rec.doctors.some((d) => d.doctorId === appointment.doctorId && d.status === 'ACTIVE');
+              if (isAssigned && rec.userId) {
+                createNotification(
+                  rec.userId,
+                  'Appointment Cancelled by Patient',
+                  `Patient cancelled Token #${appointment.queueNumber} scheduled for ${appointment.appointmentDate}.`,
+                  'APPOINTMENT'
+                ).catch(() => {});
+              }
+            }
+          })
+          .catch(() => {});
+      }
     } else if (req.user?.role !== 'PATIENT' && appointment.patient?.userId) {
       createNotification(
         appointment.patient.userId,

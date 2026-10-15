@@ -116,6 +116,17 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
+      if (initialDoctorId !== undefined) {
+        setSelectedDoctorId(initialDoctorId || 'all');
+      }
+      if (initialClinicId !== undefined) {
+        setSelectedClinicId(initialClinicId || 'all');
+      }
+    }
+  }, [isOpen, initialDoctorId, initialClinicId]);
+
+  useEffect(() => {
+    if (isOpen) {
       fetchReport();
     }
   }, [isOpen, fetchReport]);
@@ -136,7 +147,7 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
   // Export as CSV
   const handleExportCsv = () => {
     if (!reportData || !reportData.appointments.length) {
-      alert('No clinical appointments found for the selected reporting period.');
+      setError('No clinical appointments found for the selected reporting period.');
       return;
     }
 
@@ -159,8 +170,11 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
 
     const escapeCsvField = (val: any): string => {
       if (val === null || val === undefined) return '""';
-      const str = String(val).replace(/"/g, '""');
-      return `"${str}"`;
+      let str = String(val);
+      if (/^[=+\-@\t\r]/.test(str)) {
+        str = `'${str}`;
+      }
+      return `"${str.replace(/"/g, '""')}"`;
     };
 
     const rows = listToExport.map((appt) => [

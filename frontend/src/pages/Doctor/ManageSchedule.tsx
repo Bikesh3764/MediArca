@@ -330,7 +330,7 @@ export const ManageSchedule: React.FC = () => {
           clinicId: selectedClinic ? selectedClinic.clinicId : undefined,
         });
         setIsOnLeaveToday(true);
-        setTodayLeave(res || null);
+        setTodayLeave((res as any)?.data || res || null);
         setSuccessMsg('You are marked on leave for today.');
       }
       await fetchAffiliations();

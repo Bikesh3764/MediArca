@@ -1542,7 +1542,7 @@ export const api = {
       headers: getHeaders(),
     });
     const parsed: any = await handleResponse(res);
-    return parsed.data;
+    return parsed?.data !== undefined ? parsed.data : parsed;
   },
 
   async updateDoctorWorkingDays(doctorId: string, workingDays: string[], clinicId?: string): Promise<{ workingDays: string[] }> {
@@ -1552,7 +1552,7 @@ export const api = {
       body: JSON.stringify({ workingDays, clinicId }),
     });
     const parsed: any = await handleResponse(res);
-    return parsed.data;
+    return parsed?.data !== undefined ? parsed.data : parsed;
   },
 
   async addDoctorLeave(
@@ -1565,7 +1565,7 @@ export const api = {
       body: JSON.stringify(data),
     });
     const parsed: any = await handleResponse(res);
-    return parsed.data;
+    return parsed?.data !== undefined ? parsed.data : parsed;
   },
 
   async cancelDoctorLeave(doctorId: string, leaveId: string): Promise<void> {

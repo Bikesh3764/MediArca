@@ -534,7 +534,7 @@ export const DoctorDashboard: React.FC = () => {
         newDate: rescheduleDate,
         newSlotId: rescheduleSlotId || undefined,
       });
-      const newQueueNum = res?.data?.queueNumber || res?.data?.appointment?.queueNumber;
+      const newQueueNum = res?.queueNumber ?? res?.data?.queueNumber ?? res?.data?.appointment?.queueNumber;
       setRescheduleSuccess(
         `Appointment for ${rescheduleTarget.patientName} shifted to ${rescheduleDate}${newQueueNum ? ` (Token #${newQueueNum})` : ''}.`
       );

@@ -835,6 +835,15 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
     if (!user.isEmailVerified) {
       const cleanEmail = `${user.email.toLowerCase().trim()}::${user.role}`;
+      const otpLockout = await getVerificationLockoutAsync(user.email, user.role);
+      if (otpLockout.isLocked) {
+        res.status(429).json({
+          success: false,
+          message: `Too many failed verification attempts. Your account is temporarily locked for ${Math.ceil(otpLockout.remainingLockoutSeconds / 60)} minutes.`,
+          retryAfterSeconds: otpLockout.remainingLockoutSeconds,
+        });
+        return;
+      }
       const cooldown = checkResendCooldown(cleanEmail, 60);
       const isExistingOtpValid = Boolean(
         user.emailVerificationOtp &&
@@ -878,10 +887,12 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         email: user.email,
         role: user.role,
         message: 'Your email address is not verified yet. A fresh 6-digit verification code has been sent to your email.',
+        ...(process.env.NODE_ENV !== 'production' ? { devOtp: otp } : {}),
         data: {
           requiresVerification: true,
           email: user.email,
           role: user.role,
+          ...(process.env.NODE_ENV !== 'production' ? { devOtp: otp } : {}),
         },
       });
       return;
@@ -1473,8 +1484,14 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
         }
         safeDoctorData.checkingEndTime = eTime;
       }
-      if (safeDoctorData.checkingStartTime && safeDoctorData.checkingEndTime) {
-        if (timeToMinutes(safeDoctorData.checkingEndTime) <= timeToMinutes(safeDoctorData.checkingStartTime)) {
+      if (safeDoctorData.checkingStartTime || safeDoctorData.checkingEndTime) {
+        const existingDocTimes = await prisma.doctorProfile.findUnique({
+          where: { userId: req.user.id },
+          select: { checkingStartTime: true, checkingEndTime: true },
+        });
+        const effStart = safeDoctorData.checkingStartTime || existingDocTimes?.checkingStartTime;
+        const effEnd = safeDoctorData.checkingEndTime || existingDocTimes?.checkingEndTime;
+        if (effStart && effEnd && timeToMinutes(effEnd) <= timeToMinutes(effStart)) {
           res.status(400).json({ success: false, message: 'checkingEndTime must be after checkingStartTime.' });
           return;
         }
@@ -1716,11 +1733,25 @@ export const googleAuth = async (req: Request, res: Response): Promise<void> => 
           });
           return;
         }
+        if (user.doctorProfile.verificationStatus === 'REJECTED') {
+          res.status(403).json({
+            success: false,
+            message: 'Your practitioner registration was declined by platform administration.',
+          });
+          return;
+        }
       } else if (user.role === 'CLINIC' && user.clinicProfile) {
         if (user.clinicProfile.verificationStatus === 'SUSPENDED') {
           res.status(403).json({
             success: false,
             message: 'Your clinic facility account has been suspended by platform administration.',
+          });
+          return;
+        }
+        if (user.clinicProfile.verificationStatus === 'REJECTED') {
+          res.status(403).json({
+            success: false,
+            message: 'Your clinic facility registration was declined by platform administration.',
           });
           return;
         }
@@ -1857,6 +1888,7 @@ export const googleAuth = async (req: Request, res: Response): Promise<void> => 
         email: user.email,
         role: user.role,
         fullName: user.fullName,
+        mustChangePassword: Boolean((user as any).mustChangePassword),
       },
       getJwtSecret(),
       { expiresIn: '7d' }

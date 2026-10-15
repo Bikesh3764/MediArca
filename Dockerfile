@@ -16,6 +16,8 @@ RUN npm run build
 # Production Runner
 FROM node:20-alpine AS runner
 
+RUN apk add --no-cache openssl ca-certificates
+
 WORKDIR /app
 
 ENV NODE_ENV=production

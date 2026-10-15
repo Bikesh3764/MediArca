@@ -1623,6 +1623,75 @@ export const approveAppointment = async (req: AuthRequest, res: Response): Promi
       return;
     }
 
+    // BUG-04 & BUG-05: Validate doctor leave, working days, and same-day shift expiration before approving
+    {
+      const targetClinicIdForCheck = appointment.clinicId || appointment.clinic?.id || null;
+      const cdForCheck =
+        (appointment.doctor as any)?.clinics?.find((c: any) => c.clinicId === targetClinicIdForCheck) ||
+        (appointment.doctor as any)?.clinics?.[0];
+
+      const hasExplicitWorkingDays = Boolean(cdForCheck?.workingDays || (appointment.doctor as any)?.workingDays);
+      const hasExplicitLeaves = Boolean(cdForCheck?.leaves || (appointment.doctor as any)?.leaves);
+
+      if (hasExplicitLeaves) {
+        const doctorLeaves = [
+          ...parseDoctorLeaves((appointment.doctor as any).leaves),
+          ...(cdForCheck?.leaves ? parseDoctorLeaves(cdForCheck.leaves) : []),
+        ];
+        const leaveCheck = isDoctorOnLeave(doctorLeaves, appointment.appointmentDate, targetClinicIdForCheck);
+        if (leaveCheck.isOnLeave) {
+          res.status(400).json({
+            success: false,
+            message: `Cannot approve: Dr. ${appointment.doctor?.user?.fullName || 'the doctor'} is marked on leave on ${appointment.appointmentDate}${leaveCheck.leave?.reason ? ` (${leaveCheck.leave.reason})` : ''}. Please reschedule the appointment instead.`,
+          });
+          return;
+        }
+      }
+
+      if (hasExplicitWorkingDays) {
+        const workingDays = cdForCheck?.workingDays
+          ? parseDoctorWorkingDays(cdForCheck.workingDays)
+          : parseDoctorWorkingDays((appointment.doctor as any).workingDays);
+        const workingCheck = isDoctorWorkingOnDate(workingDays, appointment.appointmentDate);
+        if (!workingCheck.isWorking) {
+          res.status(400).json({
+            success: false,
+            message: `Cannot approve: Dr. ${appointment.doctor?.user?.fullName || 'the doctor'} does not consult on ${workingCheck.dayName}s at this facility. Available sitting days: ${workingDays.join(', ')}.`,
+          });
+          return;
+        }
+      }
+
+      if (appointment.appointmentDate === istTodayStr && appointment.slotId) {
+        let slotsForCheck = parseDoctorSlots(appointment.doctor);
+        if (cdForCheck?.slots) {
+          try {
+            const p = typeof cdForCheck.slots === 'string' ? JSON.parse(cdForCheck.slots) : cdForCheck.slots;
+            if (Array.isArray(p) && p.length > 0) slotsForCheck = p;
+          } catch {}
+        }
+        const matchedSlot = slotsForCheck.find((s: any) => s.id === appointment.slotId);
+        if (matchedSlot?.startTime && matchedSlot?.endTime) {
+          const slotStartMins = timeToMinutes(matchedSlot.startTime);
+          let slotEndMins = timeToMinutes(matchedSlot.endTime);
+          if (slotEndMins <= slotStartMins) slotEndMins += 24 * 60;
+          if (currentMinutes >= slotEndMins) {
+            if (appointment.status === 'PENDING_APPROVAL') {
+              await prisma.appointment.update({
+                where: { id: appointment.id },
+                data: { status: 'EXPIRED' },
+              });
+            }
+            res.status(400).json({
+              success: false,
+              message: `Cannot approve appointment request: the checking shift (${matchedSlot.name}) has already ended for today (${appointment.appointmentDate}).`,
+            });
+            return;
+          }
+        }
+      }
+    }
+
     if (appointment.status !== 'PENDING_APPROVAL') {
       res.status(400).json({
         success: false,
@@ -2399,6 +2468,37 @@ export const rescheduleAppointment = async (req: AuthRequest, res: Response): Pr
           const chosenSlotId = newSlotId || appointment.slotId;
           const slot = (chosenSlotId && slots.find((s) => s.id === chosenSlotId)) || slots[0];
 
+          // BUG-06: Validate doctor leave and sitting days on target reschedule date
+          const targetClinicIdForReschedule = appointment.clinicId || cd?.clinicId || null;
+          if (cd?.leaves || (appointment.doctor as any)?.leaves) {
+            const doctorLeaves = [
+              ...parseDoctorLeaves((appointment.doctor as any)?.leaves),
+              ...(cd?.leaves ? parseDoctorLeaves(cd.leaves) : []),
+            ];
+            const leaveCheck = isDoctorOnLeave(doctorLeaves, newDate, targetClinicIdForReschedule);
+            if (leaveCheck.isOnLeave) {
+              const err: any = new Error(
+                `Dr. ${appointment.doctor?.user?.fullName || 'the doctor'} is on leave on ${newDate}${leaveCheck.leave?.reason ? `: ${leaveCheck.leave.reason}` : ''}. Please pick an alternate date.`
+              );
+              err.status = 400;
+              throw err;
+            }
+          }
+
+          if (cd?.workingDays || (appointment.doctor as any)?.workingDays) {
+            const workingDays = cd?.workingDays
+              ? parseDoctorWorkingDays(cd.workingDays)
+              : parseDoctorWorkingDays((appointment.doctor as any)?.workingDays);
+            const workingCheck = isDoctorWorkingOnDate(workingDays, newDate);
+            if (!workingCheck.isWorking) {
+              const err: any = new Error(
+                `Dr. ${appointment.doctor?.user?.fullName || 'the doctor'} does not consult on ${workingCheck.dayName}s at this clinic facility. Available sitting days: ${workingDays.join(', ')}.`
+              );
+              err.status = 400;
+              throw err;
+            }
+          }
+
           const slotFilter = slot?.id
             ? {
                 OR: [
@@ -2460,10 +2560,12 @@ export const rescheduleAppointment = async (req: AuthRequest, res: Response): Pr
                 id: true,
                 slotId: true,
                 checkingWindow: true,
+                status: true,
               },
             });
 
-            bookedInSlot = dayAppointments.filter((a) => {
+            bookedInSlot = dayAppointments.filter((a: any) => {
+              if (a.status === 'PENDING_APPROVAL') return false;
               if (a.slotId && slot.id) return a.slotId === slot.id;
               if (a.checkingWindow && slot.startTime) return a.checkingWindow.includes(slot.startTime);
               return slots.length === 1;
@@ -2509,8 +2611,8 @@ export const rescheduleAppointment = async (req: AuthRequest, res: Response): Pr
               checkingWindow,
               estimatedTime,
               status: isPending ? 'PENDING_APPROVAL' : 'WAITING',
-              isCheckedIn: false, // Reset arrival for new date
-              checkedInAt: null,
+              isCheckedIn: newDate === appointment.appointmentDate ? Boolean(appointment.isCheckedIn) : false, // Reset arrival for new date
+              checkedInAt: newDate === appointment.appointmentDate ? (appointment.checkedInAt || null) : null,
             },
             include: {
               doctor: { include: { user: { select: { fullName: true } } } },

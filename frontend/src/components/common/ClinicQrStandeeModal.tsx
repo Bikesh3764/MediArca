@@ -71,6 +71,7 @@ export const ClinicQrStandeeModal: React.FC<ClinicQrStandeeModalProps> = ({
               src={qrImageUrl}
               alt={`${clinicName} Arrival QR Code`}
               className="w-full h-full object-contain"
+              referrerPolicy="no-referrer"
             />
           </div>
 

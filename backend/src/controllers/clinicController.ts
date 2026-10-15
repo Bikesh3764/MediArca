@@ -1491,6 +1491,14 @@ export const respondToReceptionistRequest = async (req: AuthRequest, res: Respon
           where: { id: receptionist.id },
           data: { status: 'ACTIVE' },
         }),
+        prisma.user.update({
+          where: { id: receptionist.userId },
+          data: {
+            isEmailVerified: true,
+            emailVerificationOtp: null,
+            emailVerificationOtpExpiresAt: null,
+          },
+        }),
         ...(validDoctorIds.length > 0
           ? [
               prisma.doctorReceptionist.deleteMany({

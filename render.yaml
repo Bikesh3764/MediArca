@@ -22,3 +22,17 @@ services:
         value: https://bikesh3764.github.io
       - key: GOOGLE_CLIENT_ID
         sync: false # Enter your Google Cloud OAuth 2.0 Client ID
+      - key: REDIS_URL
+        sync: false # Optional on single-instance; set for multi-instance distributed rate limiting
+      - key: REQUIRE_REDIS
+        value: "false"
+      - key: R2_ACCOUNT_ID
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_BUCKET_NAME
+        sync: false
+      - key: R2_PUBLIC_URL
+        sync: false
