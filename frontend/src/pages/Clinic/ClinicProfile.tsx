@@ -154,7 +154,7 @@ export const ClinicProfile: React.FC = () => {
     setSuccessMsg(null);
 
     try {
-      const res = await api.updateClinicProfile({
+      await api.updateClinicProfile({
         clinicName: clinicName.trim(),
         fullName: clinicName.trim(),
         address: address.trim(),
@@ -163,11 +163,7 @@ export const ClinicProfile: React.FC = () => {
         phone: formattedPhone,
       });
 
-      if (res?.data?.user) {
-        updateUser(res.data.user);
-      } else {
-        await refreshUser();
-      }
+      await refreshUser();
 
       setSuccessMsg('Clinic profile and location details saved successfully.');
     } catch (err: any) {

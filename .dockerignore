@@ -12,3 +12,4 @@ dist
 *.log
 uploads
 **/uploads
+scratch/
