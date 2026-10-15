@@ -77,11 +77,6 @@ export const ClinicQrStandeeModal: React.FC<ClinicQrStandeeModalProps> = ({
           <p className="text-xs font-medium text-[#1d1d1f]">
             Scan with phone camera to check in
           </p>
-          {checkinCode && (
-            <p className="text-[11px] text-[#86868b] mt-1 font-mono tracking-wider">
-              Desk Code: <span className="font-semibold text-[#1d1d1f]">{checkinCode}</span>
-            </p>
-          )}
         </div>
 
         {/* Action Button (Hidden on Print) */}

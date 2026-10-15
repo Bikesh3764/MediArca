@@ -31,6 +31,7 @@ The following defect resolutions have been implemented and verified by 2,023+ au
 | **FIX-023** | User Resilience | Added dedicated Apple-styled NotFound page with recovery CTAs; added live offline connectivity banner. |
 | **FIX-024** | Clinic Profile | Added clinic profile settings page with logo crop & auto-compression, atomic User & ClinicProfile synchronization, Indian phone validation, and dashboard integration. |
 | **FIX-025** | Schedule & Absence | Added independent weekly sitting days (Mon-Sun) selection and leave management (Today toggle + Date Range leave) for both Doctors and Receptionists, enforced in slot availability, walk-in tokens, and patient booking. |
+| **FIX-026** | Touchless QR Arrival & Discovery Branding | Eliminated manual 6-digit code entry; streamlined CameraQrScannerModal to pure camera viewfinder; removed printed desk code from standee; dynamically mapped uploaded clinic photos (`avatarUrl`) across discovery cards and headers; purged technical database IDs from clinic settings. |
 
 ---
 
@@ -48,6 +49,7 @@ The master test suite additionally verifies:
 - `ARCH-016`: Email service safely escapes HTML greeting names to prevent email injection.
 - `ARCH-017` / `FIX-024`: Clinic profile updates synchronize both ClinicProfile and parent User atomically; rejects base64 data URLs in profile payload.
 - `ARCH-018` / `FIX-025`: Doctor working days (`workingDays`) and leave periods (`leaves`) strictly gate slot availability and booking transactions; verified receptionist access control scopes updates to linked clinic facilities.
+- `ARCH-019` / `FIX-026`: Pure camera QR arrival verification invariant; UI screens must not expose manual numeric code entry or internal facility keys. Discovery catalogs must render dynamic facility photos.
 
 ---
 

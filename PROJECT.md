@@ -28,6 +28,7 @@ MediArca is an Indian healthcare patient appointment and live queue management s
 | 16 | Agent Memory & Rules Architecture | Establish `AGENTS.md`, `docs/architecture.md`, ADRs 001-005, `docs/known-issues.md`, and hierarchical rules | M4 | User Requirement |
 | 17 | Clinic Profile & Facility Settings | Full Clinic Profile page with exterior/logo upload, frame crop, auto-compression, name/address sync, and sidebar navigation | M5 | User Requirement |
 | 18 | Doctor Practice Days & Absence Management | Independent weekly practice days (Mon-Sun) and absence/leave management for doctors and receptionists | M6 | User Requirement |
+| 19 | Pure Camera QR Arrival & Dynamic Clinic Branding | Eliminate manual 6-digit code entry; pure camera QR scanner modal; dynamic clinic photo rendering across discovery and headers; remove raw facility IDs | M7 | User Requirement |
 
 ## Milestones
 | # | Name | Scope | Dependencies | Status |
@@ -38,6 +39,7 @@ MediArca is an Indian healthcare patient appointment and live queue management s
 | M4 | Specification Alignment & Agent Memory System | Prune specs, pay-to-receptionist coordination, complete `docs/` ADRs, `AGENTS.md` hierarchy | M3 | DONE (2,020 tests pass, clean builds, 0 lint errors) |
 | M5 | Clinic Profile & Facility Branding | Dedicated clinic settings, photo/logo crop & compression, atomic address & name sync, portal navigation | M4 | DONE (2,023/2,023 tests pass, builds clean, 0 lint errors) |
 | M6 | Doctor Practice Days & Leave Management | Weekly days selector, today leave toggle, custom date-range absence modal, doctor & receptionist dashboards | M5 | DONE (2,023/2,023 tests pass, builds clean, 0 lint errors) |
+| M7 | Camera QR Scanner & Dynamic Branding Alignment | Pure camera scanner, QR standee cleanup, Home & Discovery dynamic clinic avatars, ClinicProfile credentials overhaul | M6 | DONE (2,023/2,023 tests pass, builds clean, 0 lint errors) |
 
 ## Interface Contracts
 ### Pay-to-Receptionist Coordination Contract

@@ -660,29 +660,41 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
               {/* Selected Clinic Header Card */}
               <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="min-w-0">
-                    <h2 className="text-[22px] font-semibold text-[#1d1d1f] tracking-tight leading-snug truncate mb-1.5">
-                      {selectedClinic.clinicName}
-                    </h2>
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-[#86868b]">
-                      <span className="inline-flex items-center gap-1.5 font-normal text-[#48484a]">
-                        <MapPin className="w-3.5 h-3.5 text-[#0066cc] shrink-0" />
-                        <span className="truncate max-w-xs sm:max-w-md font-normal">
-                          {getClinicLocationDisplay(selectedClinic)}
+                  <div className="flex items-center gap-4 min-w-0">
+                    <div className="w-16 h-16 rounded-2xl overflow-hidden bg-[#f5f5f7] border border-[#e5e5ea] shrink-0 shadow-xs flex items-center justify-center">
+                      <img
+                        src={selectedClinic.avatarUrl ? getFileUrl(selectedClinic.avatarUrl) : clinicLobbyBg}
+                        alt={selectedClinic.clinicName}
+                        className="w-full h-full object-cover object-center"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).src = clinicLobbyBg;
+                        }}
+                      />
+                    </div>
+                    <div className="min-w-0">
+                      <h2 className="text-[22px] font-semibold text-[#1d1d1f] tracking-tight leading-snug truncate mb-1.5">
+                        {selectedClinic.clinicName}
+                      </h2>
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-[#86868b]">
+                        <span className="inline-flex items-center gap-1.5 font-normal text-[#48484a]">
+                          <MapPin className="w-3.5 h-3.5 text-[#0066cc] shrink-0" />
+                          <span className="truncate max-w-xs sm:max-w-md font-normal">
+                            {getClinicLocationDisplay(selectedClinic)}
+                          </span>
                         </span>
-                      </span>
-                      {selectedClinic.phone && (
-                        <a
-                          href={`tel:${selectedClinic.phone}`}
-                          className="inline-flex items-center gap-1.5 font-normal text-[#48484a] hover:text-[#0066cc] transition-colors"
-                        >
-                          <Phone className="w-3.5 h-3.5 text-[#0066cc] shrink-0" />
-                          <span className="font-normal">{formatDisplayPhone(selectedClinic.phone)}</span>
-                        </a>
-                      )}
-                      <span className="inline-flex items-center text-[11px] px-2.5 py-0.5 rounded-full bg-[#f5f5f7] text-[#1d1d1f] font-medium border border-[#e5e5ea]">
-                        {clinicPracticingDoctors.length} {clinicPracticingDoctors.length === 1 ? 'Specialist' : 'Specialists'}
-                      </span>
+                        {selectedClinic.phone && (
+                          <a
+                            href={`tel:${selectedClinic.phone}`}
+                            className="inline-flex items-center gap-1.5 font-normal text-[#48484a] hover:text-[#0066cc] transition-colors"
+                          >
+                            <Phone className="w-3.5 h-3.5 text-[#0066cc] shrink-0" />
+                            <span className="font-normal">{formatDisplayPhone(selectedClinic.phone)}</span>
+                          </a>
+                        )}
+                        <span className="inline-flex items-center text-[11px] px-2.5 py-0.5 rounded-full bg-[#f5f5f7] text-[#1d1d1f] font-medium border border-[#e5e5ea]">
+                          {clinicPracticingDoctors.length} {clinicPracticingDoctors.length === 1 ? 'Specialist' : 'Specialists'}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
@@ -871,9 +883,12 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                         {/* Top Facility Photography Banner */}
                         <div className="relative w-full aspect-[16/10] bg-[#f5f5f7] border-b border-[#f0f0f2] overflow-hidden flex items-center justify-center">
                           <img
-                            src={clinicLobbyBg}
+                            src={clinic.avatarUrl ? getFileUrl(clinic.avatarUrl) : clinicLobbyBg}
                             alt={clinic.clinicName}
                             className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLImageElement).src = clinicLobbyBg;
+                            }}
                           />
                         </div>
 

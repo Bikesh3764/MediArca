@@ -46,7 +46,7 @@ Designed with an Apple Human Interface Guidelines aesthetic to provide an effort
    - **Direct Call Action**: One-tap phone button enabling the patient to call the receptionist immediately to coordinate online payment (UPI) or confirm their arrival.
    - **Real-Time Queue Tracker**: Displays currently serving token, patients ahead in line, and dynamic estimated wait time in minutes based on clinic pace.
    - **Live Cabin Presence Sync**: Real-time badge indicating if the doctor is actively consulting in the cabin, stepped out (with estimated return time), or not yet in the cabin.
-   - **Self QR Check-In**: Camera QR scanner and manual check-in button to confirm physical arrival in the waiting area upon scanning the clinic's standee QR code.
+   - **Touchless Camera QR Check-In**: Camera QR scanner to confirm physical arrival in the waiting area upon scanning the clinic's front-desk QR standee. Pure touchless scanner without manual code entry.
    - **Token Management**: Ability to withdraw or cancel an appointment prior to entering consultation.
 
 4. **Patient Profile & Medical History**:
@@ -97,11 +97,13 @@ Dedicated facility dashboard for clinic administrators and polyclinic operators.
    - Password reset and staff lifecycle management.
 
 3. **Physical Check-In Standee**:
-   - Generates and downloads high-resolution clinic QR code standees.
-   - Standee URL contract embeds `clinicId` and `checkinCode` for instantaneous patient arrival scanning.
+   - Generates and downloads high-resolution clinic QR code standees designed for front-desk counters (pure camera scan, no printed desk codes).
+   - Standee URL contract embeds `clinicId` and secure verification token for instantaneous patient arrival scanning.
 
-4. **Facility Verification & Reports**:
-   - Facility profile management (address, phone, registration license).
+4. **Facility Profile, Branding & Settings**:
+   - Dedicated clinic settings (`/clinic/profile`) with clinic logo / exterior photo upload, interactive frame crop, auto-compression, and public discovery branding.
+   - Atomic synchronization of clinic name, street address, city, state, and `+91` Indian contact phone number.
+   - Direct access to front-desk QR standee preview and high-resolution printing.
    - Live analytics on daily footfall, active OPD queues, and completed visits.
 
 ---

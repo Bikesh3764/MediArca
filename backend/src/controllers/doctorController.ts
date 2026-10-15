@@ -47,7 +47,8 @@ export const formatDoctorClinics = (doc: any) => {
     }));
 
     // Exclude raw clinic.receptionists and physical check-in security code from public clinic projection (FIX-006, SEC-001)
-    const { receptionists: _clinicRecs, checkinCode: _secretCode, ...cleanClinic } = cd.clinic || {};
+    const { receptionists: _clinicRecs, checkinCode: _secretCode, user: _clinicUser, ...cleanClinic } = cd.clinic || {};
+    const clinicAvatar = (cd.clinic as any)?.user?.avatarUrl || (cd.clinic as any)?.avatarUrl || null;
     const workingDays = cd.workingDays ? parseDoctorWorkingDays(cd.workingDays) : parseDoctorWorkingDays(doc.workingDays);
     const leaves = [
       ...parseDoctorLeaves(doc.leaves),
@@ -56,7 +57,10 @@ export const formatDoctorClinics = (doc: any) => {
 
     return {
       ...cd,
-      clinic: cleanClinic,
+      clinic: {
+        ...cleanClinic,
+        avatarUrl: clinicAvatar,
+      },
       consultationFee: cd.consultationFee ?? doc.consultationFee,
       slots: clinicSlots,
       workingDays,
@@ -176,7 +180,15 @@ export const getDoctors = async (req: Request, res: Response): Promise<void> => 
           clinics: {
             where: { clinic: { isVerified: true, verificationStatus: 'VERIFIED' }, status: { in: ['ACTIVE', 'ACCEPTED'] } },
             include: {
-              clinic: true,
+              clinic: {
+                include: {
+                  user: {
+                    select: {
+                      avatarUrl: true,
+                    },
+                  },
+                },
+              },
             },
           },
           reviews: {
@@ -239,6 +251,11 @@ export const getDoctorById = async (req: Request, res: Response): Promise<void> 
         include: {
           clinic: {
             include: {
+              user: {
+                select: {
+                  avatarUrl: true,
+                },
+              },
               receptionists: {
                 where: { status: 'ACTIVE' },
                 include: {

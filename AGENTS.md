@@ -39,6 +39,7 @@ MediArca is an Indian healthcare outpatient appointment and live queue managemen
    - Typography: `#1d1d1f` primary text, `#86868b` secondary text
    - Corner radius: `rounded-2xl` (cards), `rounded-full` (buttons & pills)
 7. **API Resilience**: Handle non-JSON responses (e.g. 502 Bad Gateway / 504 Gateway Timeout HTML pages) gracefully in `frontend/src/services/api.ts` without throwing unhandled `SyntaxError`.
+8. **Physical QR Arrival Scanner Only**: Patient arrival verification at the clinic is strictly performed by scanning the physical front-desk QR standee using the device camera. Always dynamically render uploaded facility branding (`avatarUrl`) across public discovery and headers.
 
 ### Strict DON'Ts
 1. **NO Online Payment Gateways**: NEVER introduce Stripe, Razorpay, PayPal, or automated upfront credit/debit card checkout. MediArca operates under a zero-upfront payment policy where patients coordinate payment directly with the receptionist.
@@ -48,6 +49,7 @@ MediArca is an Indian healthcare outpatient appointment and live queue managemen
 5. **NO Test Weakening**: NEVER comment out, delete, or weaken test assertions in `backend/scripts/verify-fixes.ts` to make a test pass.
 6. **NO Cross-Clinic Shift Overlaps**: Doctors cannot have conflicting shift windows across different clinics on the same day.
 7. **NO Bypassing State Machine**: Never transition appointment statuses without verifying `canTransition(currentStatus, targetStatus)`.
+8. **NO Manual Check-in Code Entry or Internal ID Exposure**: Do not present users with manual numeric 6-digit code entry options, printed desk codes on physical posters, or raw internal database IDs (`cp_demo_clinic`, internal UUIDs). Queue arrival is strictly camera-scanned.
 
 ---
 

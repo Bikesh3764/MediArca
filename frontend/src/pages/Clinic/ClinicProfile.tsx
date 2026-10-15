@@ -5,6 +5,7 @@ import { api, getFileUrl } from '../../services/api';
 import { DashboardLayout, DashboardNavItem } from '../../components/layout/DashboardLayout';
 import { UtilityCard } from '../../components/ui/UtilityCard';
 import { AvatarCropModal } from '../../components/ui/AvatarCropModal';
+import { ClinicQrStandeeModal } from '../../components/common/ClinicQrStandeeModal';
 import { optimizeAvatarImage } from '../../utils/documentOptimizer';
 import { sanitizeIndianPhone, formatIndianPhone, isValidIndianPhone } from '../../utils/phoneUtils';
 import { INDIAN_STATES, getCitiesForState } from '../../utils/indiaStates';
@@ -21,8 +22,8 @@ import {
   ShieldCheck,
   ShieldAlert,
   Clock,
-  Copy,
-  Check,
+  QrCode,
+  Printer,
   RefreshCw,
 } from 'lucide-react';
 
@@ -47,8 +48,7 @@ export const ClinicProfile: React.FC = () => {
   const [cropModalOpen, setCropModalOpen] = useState(false);
   const [tempImageSrc, setTempImageSrc] = useState<string | null>(null);
 
-  const [copiedCode, setCopiedCode] = useState(false);
-  const [copiedId, setCopiedId] = useState(false);
+  const [standeeModalOpen, setStandeeModalOpen] = useState(false);
 
   // Sync state from active user & clinic profile
   useEffect(() => {
@@ -177,16 +177,6 @@ export const ClinicProfile: React.FC = () => {
     }
   };
 
-  const handleCopy = (text: string, type: 'code' | 'id') => {
-    navigator.clipboard.writeText(text);
-    if (type === 'code') {
-      setCopiedCode(true);
-      setTimeout(() => setCopiedCode(false), 2000);
-    } else {
-      setCopiedId(true);
-      setTimeout(() => setCopiedId(false), 2000);
-    }
-  };
 
   const clinicProfile = user?.clinicProfile;
   const verificationStatus = clinicProfile?.verificationStatus || 'PENDING';
@@ -324,14 +314,14 @@ export const ClinicProfile: React.FC = () => {
 
         {/* Operational & Verification Overview Card */}
         <UtilityCard title="Verification & Facility Credentials">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] space-y-1">
-              <span className="text-xs font-medium text-[#86868b]">License Status</span>
+              <span className="text-xs font-medium text-[#86868b]">Accreditation Status</span>
               <div className="flex items-center gap-1.5 pt-0.5">
                 {isVerified ? (
                   <>
                     <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span className="text-xs font-semibold text-emerald-700">Verified Facility</span>
+                    <span className="text-xs font-semibold text-emerald-700">Verified Clinical Facility</span>
                   </>
                 ) : verificationStatus === 'SUSPENDED' ? (
                   <>
@@ -347,42 +337,25 @@ export const ClinicProfile: React.FC = () => {
               </div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-[#86868b]">QR Check-in Code</span>
-                {clinicProfile?.checkinCode && (
-                  <button
-                    type="button"
-                    onClick={() => handleCopy(clinicProfile.checkinCode || '', 'code')}
-                    className="p-1 rounded hover:bg-white text-[#86868b] hover:text-[#1d1d1f] transition-colors cursor-pointer"
-                    title="Copy Check-in Code"
-                  >
-                    {copiedCode ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                  </button>
-                )}
+            <div className="p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] flex flex-col justify-between sm:flex-row sm:items-center gap-3">
+              <div className="space-y-0.5 min-w-0">
+                <span className="text-xs font-medium text-[#86868b]">Arrival Check-In</span>
+                <p className="text-xs font-semibold text-[#1d1d1f] flex items-center gap-1.5">
+                  <QrCode className="w-3.5 h-3.5 text-[#0066cc]" />
+                  <span>Physical QR Standee (Phone Camera Only)</span>
+                </p>
+                <p className="text-[11px] text-[#86868b] leading-tight">
+                  Arriving patients scan your front-desk poster to verify physical arrival.
+                </p>
               </div>
-              <p className="font-mono text-sm font-semibold text-[#1d1d1f] tracking-wider pt-0.5">
-                {clinicProfile?.checkinCode || 'Auto-generated'}
-              </p>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-[#86868b]">Facility Identifier</span>
-                {clinicProfile?.id && (
-                  <button
-                    type="button"
-                    onClick={() => handleCopy(clinicProfile.id, 'id')}
-                    className="p-1 rounded hover:bg-white text-[#86868b] hover:text-[#1d1d1f] transition-colors cursor-pointer"
-                    title="Copy Facility ID"
-                  >
-                    {copiedId ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                  </button>
-                )}
-              </div>
-              <p className="font-mono text-xs text-[#1d1d1f] truncate pt-0.5" title={clinicProfile?.id || ''}>
-                {clinicProfile?.id ? `${clinicProfile.id.slice(0, 12)}...` : '—'}
-              </p>
+              <button
+                type="button"
+                onClick={() => setStandeeModalOpen(true)}
+                className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-full bg-white hover:bg-[#e8e8ed] text-xs font-medium text-[#0066cc] border border-[#d2d2d7] transition-all cursor-pointer shrink-0 shadow-xs active:scale-[0.98]"
+              >
+                <Printer className="w-3.5 h-3.5" />
+                <span>View Standee</span>
+              </button>
             </div>
           </div>
         </UtilityCard>
@@ -550,6 +523,19 @@ export const ClinicProfile: React.FC = () => {
             }
           }}
           onCropComplete={handleCroppedAvatarComplete}
+        />
+      )}
+
+      {/* Front-desk Printable QR Standee Modal */}
+      {clinicProfile && (
+        <ClinicQrStandeeModal
+          isOpen={standeeModalOpen}
+          onClose={() => setStandeeModalOpen(false)}
+          clinicId={clinicProfile.id}
+          clinicName={clinicName}
+          clinicAddress={address ? `${address}${city ? `, ${city}` : ''}${state ? `, ${state}` : ''}` : undefined}
+          clinicPhone={phone || undefined}
+          checkinCode={clinicProfile.checkinCode || undefined}
         />
       )}
     </DashboardLayout>

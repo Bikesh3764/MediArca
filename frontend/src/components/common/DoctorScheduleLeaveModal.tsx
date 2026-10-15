@@ -20,7 +20,6 @@ import {
   WEEKDAY_NAMES,
   WEEKDAY_SHORT_NAMES,
   WeekdayCode,
-  DoctorLeave,
   DoctorScheduleConfig,
 } from '../../services/api';
 

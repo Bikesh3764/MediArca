@@ -48,6 +48,14 @@ Reconcile MediArca feature specifications with active codebase reality, document
   - [x] Integrate schedule and leave management into Receptionist Desk (`ReceptionistDashboard` practitioner cards, walk-in warnings, queue alerts, and modal).
   - [x] Integrate schedule and leave management into Doctor Portal (`ManageSchedule` weekly practice days selector, leaves card, modal, and `DoctorDashboard` clinic cards & queue alert).
 
+- [x] **Fix 26: Touchless Camera QR Check-In & Dynamic Clinic Discovery Branding**:
+  - [x] Remove manual 6-digit code entry tab and input form from `CameraQrScannerModal.tsx`; configure as pure camera QR viewfinder.
+  - [x] Strip printed desk code from `ClinicQrStandeeModal.tsx` to maintain a clean physical counter poster without confusing numbers.
+  - [x] Remove "QR Check-in Code" and technical "Facility Identifier" database ID cards from `ClinicProfile.tsx`; add accreditation status and direct standee modal print action.
+  - [x] Dynamically render uploaded clinic logo/photo (`avatarUrl`) with `clinicLobbyBg` fallback across Home page clinic catalog (`Home.tsx`) and Doctor/Clinic Discovery (`DoctorDiscovery.tsx`).
+  - [x] Add clinic photo thumbnail to selected clinic headers on both Home and Discovery pages.
+  - [x] Update all engineering charters, specifications, architecture docs, and known-issue ledgers.
+
 - [x] **Alignment & Automated Gates**:
   - [x] Update `PROJECT.md` to reflect current state and completed milestones.
   - [x] Backend verification suite: `npm run test:verify` (2,023 / 2,023 tests PASS).

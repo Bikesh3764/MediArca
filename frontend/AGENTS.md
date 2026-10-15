@@ -40,6 +40,13 @@ The MediArca frontend is an ultra-fast, mobile-first web application built with 
    - Maintain 0 errors on `npm run lint`.
    - Avoid synchronous `setState` calls inside `useEffect` that trigger cascading renders or compiler bailouts.
    - Use React Router `<Link>` or `useNavigate()` instead of raw hash anchor tags (`<a href="#...">`).
+7. **Physical QR Scanner Only (No Manual Code Entry)**:
+   - Patient arrival verification is strictly camera-driven (`CameraQrScannerModal`).
+   - Do NOT offer manual numeric code entry or display printed desk codes on standees.
+   - Do NOT expose internal technical database IDs (e.g. `cp_demo_clinic`, raw UUIDs) in user-facing settings.
+8. **Dynamic Facility Photography & Logo Support**:
+   - Discovery cards, clinic profiles, and headers MUST dynamically render the clinic's uploaded `avatarUrl` (using `getFileUrl(clinic.avatarUrl)`) with `clinicLobbyBg` as fallback.
+   - Never hardcode stock images when facility branding is available in the profile payload.
 
 ---
 
