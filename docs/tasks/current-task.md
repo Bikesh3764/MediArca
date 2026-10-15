@@ -61,7 +61,13 @@ Reconcile MediArca feature specifications with active codebase reality, document
   - [x] Render calendar and roster weekdays as single-letter Apple circular discs (`M T W T F S S`) inside a parchment pill track, highlighting active days in solid ink `#1d1d1f` and current day with an Action Blue focus ring.
   - [x] Redesign interactive weekday selector in `DoctorScheduleLeaveModal.tsx` and `ManageSchedule.tsx` using Apple `rounded-full` pill buttons (`h-11 rounded-full`), eliminating stacked redundant text ("Mon/Monday", "Sits/Off").
   - [x] Streamline copy across Doctor and Receptionist portals to be ultra-concise: `Shifts`, `Schedule`, `Standee`, `Resume`, `Leave`, `Available`.
-  - [x] Update all engineering charters (`AGENTS.md`, `DESIGN.md`, `PROJECT.md`, `docs/`) with Apple HIG Weekday specifications and strict copy conciseness rules.
+- [x] **Fix 28: QR Check-In Instant State Synchronization & Anti-Stale Caching**:
+  - [x] Ensure `api.checkInWithQR` returns parsed JSON entity with explicit `message`, `alreadyCheckedIn`, and `data` flags.
+  - [x] Optimistically update local `appointments` state upon successful QR scan in `MyAppointments.tsx`, immediately rendering "Checked In at Clinic • Waiting Area" with zero round-trip lag.
+  - [x] Preserve targeted appointment reference across modal teardown using `selectedApptRef` in `MyAppointments.tsx`.
+  - [x] Reset `presenceOverride` in `LiveQueueTicket.tsx` whenever `appointment.id` or `appointment.isCheckedIn` props change, preventing stale override persistence.
+  - [x] Add cache-busting timestamp `_t` and `Cache-Control: no-cache, no-store, must-revalidate` headers to `api.getPatientAppointments` and `api.getAppointmentById`.
+  - [x] Add optimistic local presence toggling to `onTogglePresence` in `MyAppointments.tsx`.
 
 - [x] **Alignment & Automated Gates**:
   - [x] Update `PROJECT.md` to reflect current state and completed milestones.

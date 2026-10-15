@@ -35,7 +35,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
     queueMicrotask(() => {
       setPresenceOverride(null);
     });
-  }, [appointment.doctor?.cabinStatus]);
+  }, [appointment.id, appointment.isCheckedIn, appointment.doctor?.cabinStatus]);
 
   const localCheckedIn = presenceOverride !== null ? presenceOverride : Boolean(appointment.isCheckedIn);
 

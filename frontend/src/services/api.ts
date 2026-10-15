@@ -1720,8 +1720,12 @@ export const api = {
   },
 
   async getPatientAppointments(): Promise<Appointment[]> {
-    const res = await safeFetch(`${API_BASE_URL}/appointments/patient`, {
-      headers: getHeaders(),
+    const res = await safeFetch(`${API_BASE_URL}/appointments/patient?_t=${Date.now()}`, {
+      headers: {
+        ...getHeaders(),
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+      },
     });
     return handleResponse(res);
   },
@@ -1735,8 +1739,12 @@ export const api = {
   },
 
   async getAppointmentById(id: string): Promise<Appointment> {
-    const res = await safeFetch(`${API_BASE_URL}/appointments/${id}`, {
-      headers: getHeaders(),
+    const res = await safeFetch(`${API_BASE_URL}/appointments/${id}?_t=${Date.now()}`, {
+      headers: {
+        ...getHeaders(),
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+      },
     });
     return handleResponse(res);
   },
@@ -1747,7 +1755,26 @@ export const api = {
       headers: getHeaders(),
       body: JSON.stringify(data),
     });
-    return handleResponse(res);
+    let json: any = null;
+    const text = await res.text();
+    try {
+      json = text ? JSON.parse(text) : {};
+    } catch {
+      if (!res.ok) {
+        throw new Error(`Server returned error ${res.status}`);
+      }
+      return text;
+    }
+    if (!res.ok || json.success === false) {
+      throw new Error(json.message || json.error || 'Failed to complete clinic check-in');
+    }
+    const apptData = json.data || {};
+    return {
+      ...apptData,
+      message: json.message,
+      alreadyCheckedIn: Boolean(json.alreadyCheckedIn),
+      data: json.data,
+    };
   },
 
   async checkInAppointmentDirect(appointmentId: string, isCheckedIn?: boolean): Promise<any> {

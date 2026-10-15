@@ -51,6 +51,7 @@ The master test suite additionally verifies:
 - `ARCH-018` / `FIX-025`: Doctor working days (`workingDays`) and leave periods (`leaves`) strictly gate slot availability and booking transactions; verified receptionist access control scopes updates to linked clinic facilities.
 - `ARCH-019` / `FIX-026`: Pure camera QR arrival verification invariant; UI screens must not expose manual numeric code entry or internal facility keys. Discovery catalogs must render dynamic facility photos.
 - `ARCH-020` / `FIX-027`: Cluttered weekday badges (`[Mon] [Tue] [Wed]`) and verbose copy replaced with Apple HIG single-letter circular day discs (`WeekdayDisplay.tsx`) and concise action buttons (`Shifts`, `Schedule`, `Standee`, `Resume`, `Leave`, `Available`).
+- `ARCH-021` / `FIX-028`: QR Check-In Instant State Synchronization & Anti-Stale Caching: Patient check-in via QR standee optimistically updates ticket state to "Checked In at Clinic • Waiting Area" with zero lag; `selectedApptRef` guarantees appointment tracking across modal teardown; `LiveQueueTicket` clears `presenceOverride` upon `appointment.isCheckedIn` changes; `getPatientAppointments` enforces cache-busting timestamp `_t` and `Cache-Control: no-cache, no-store`.
 
 ---
 

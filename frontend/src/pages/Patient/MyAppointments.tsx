@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api, Appointment, getLocalDateString } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -14,6 +14,7 @@ export const MyAppointments: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
   const [scannerOpen, setScannerOpen] = useState(false);
   const [selectedApptForScan, setSelectedApptForScan] = useState<Appointment | null>(null);
+  const selectedApptRef = useRef<Appointment | null>(null);
   const [checkinMessage, setCheckinMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -70,22 +71,50 @@ export const MyAppointments: React.FC = () => {
   };
 
   const handleScanSuccess = async (data: { clinicId: string; code: string }) => {
+    const targetAppt = selectedApptForScan || selectedApptRef.current;
+    const targetApptId = targetAppt?.id;
     try {
       const res = await api.checkInWithQR({
         clinicId: data.clinicId,
         code: data.code,
-        appointmentId: selectedApptForScan?.id,
+        appointmentId: targetApptId,
       });
+
+      const updatedAppt = res?.id ? res : (res?.data || null);
+      const effectiveId = updatedAppt?.id || targetApptId;
+
+      if (effectiveId) {
+        setAppointments((prev) =>
+          prev.map((a) =>
+            a.id === effectiveId
+              ? {
+                  ...a,
+                  ...(updatedAppt || {}),
+                  isCheckedIn: true,
+                  checkedInAt: updatedAppt?.checkedInAt || new Date().toISOString(),
+                }
+              : a
+          )
+        );
+      }
+
       setCheckinMessage({
         type: 'success',
-        text: res?.message || 'Checked in successfully! You are marked as present at the clinic desk.',
+        text:
+          res?.message ||
+          (res?.alreadyCheckedIn
+            ? 'You are already checked in at the clinic desk.'
+            : 'Checked in successfully! You are marked as present at the clinic desk.'),
       });
-      fetchAppointments(true);
+
+      await fetchAppointments(true);
     } catch (err: any) {
       setCheckinMessage({
         type: 'error',
         text: err.message || 'Failed to complete clinic check-in. Please verify code or speak with reception desk.',
       });
+    } finally {
+      selectedApptRef.current = null;
     }
   };
 
@@ -228,12 +257,16 @@ export const MyAppointments: React.FC = () => {
                   appointment={appt}
                   onCancel={handleCancel}
                   onScanQr={(a) => {
+                    selectedApptRef.current = a;
                     setSelectedApptForScan(a);
                     setScannerOpen(true);
                   }}
                   onTogglePresence={async (apptId, isPresent) => {
+                    setAppointments((prev) =>
+                      prev.map((a) => (a.id === apptId ? { ...a, isCheckedIn: isPresent } : a))
+                    );
                     await api.checkInAppointmentDirect(apptId, isPresent);
-                    fetchAppointments(true);
+                    await fetchAppointments(true);
                   }}
                 />
               ))}
