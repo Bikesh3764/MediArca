@@ -31,9 +31,26 @@ Reconcile MediArca feature specifications with active codebase reality, document
   - [x] `backend/AGENTS.md` (scoped backend rules).
   - [x] `frontend/AGENTS.md` (scoped frontend rules).
 
+- [x] **Fix 24: Clinic Profile Settings & Facility Logo Management**:
+  - [x] Create dedicated Clinic Settings & Profile page (`frontend/src/pages/Clinic/ClinicProfile.tsx`) with Apple HIG design language.
+  - [x] Enable clinic photo / exterior / logo upload with interactive frame crop (`AvatarCropModal`), auto-compression (`optimizeAvatarImage`), and backend R2/disk storage.
+  - [x] Synchronize clinic facility name, address, state, city, and +91 Indian contact phone via atomic transaction (`updateClinicProfile`).
+  - [x] Expose `avatarUrl`, `email`, and `fullName` on `getMyClinic` endpoint and public clinic directories.
+  - [x] Update `DashboardLayout` user capsule card to render live avatar with initial fallback and direct profile linking.
+  - [x] Integrate Clinic Settings into `ClinicDashboard` sidebar navigation (`navItems`), dashboard header actions, and register route `/clinic/profile` in `App.tsx`.
+
+- [x] **Fix 25: Doctor Working Days Selection & Absence/Leave Management**:
+  - [x] Add `workingDays` and `leaves` to `DoctorProfile` and `ClinicDoctor` Prisma schema with migration.
+  - [x] Implement schedule and absence utilities (`scheduleUtils.ts`) with date arithmetic, IST day-of-week parsing, and leave duration evaluation.
+  - [x] Implement backend controllers & endpoints for getting schedule config, updating working days, adding leaves (Today / Date Range), and cancelling leaves with receptionist clinic-scoped access guards.
+  - [x] Gate slot availability and booking transactions (`bookAppointment`, `bookWalkin`) against doctor working days and active leaves.
+  - [x] Create reusable Apple HIG `DoctorScheduleLeaveModal` supporting Mon-Sun weekday pills, presets, today toggle, date-range form, and active leaves list.
+  - [x] Integrate schedule and leave management into Receptionist Desk (`ReceptionistDashboard` practitioner cards, walk-in warnings, queue alerts, and modal).
+  - [x] Integrate schedule and leave management into Doctor Portal (`ManageSchedule` weekly practice days selector, leaves card, modal, and `DoctorDashboard` clinic cards & queue alert).
+
 - [x] **Alignment & Automated Gates**:
   - [x] Update `PROJECT.md` to reflect current state and completed milestones.
-  - [x] Backend verification suite: `npm run test:verify` (2,020 / 2,020 tests PASS).
+  - [x] Backend verification suite: `npm run test:verify` (2,023 / 2,023 tests PASS).
   - [x] Backend compilation: `npm run build` (tsc PASS).
   - [x] Frontend lint: `npm run lint` (0 errors PASS).
   - [x] Frontend build: `npm run build` (Vite PASS).

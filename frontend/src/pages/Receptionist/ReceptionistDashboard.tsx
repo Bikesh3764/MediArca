@@ -12,6 +12,9 @@ import {
   QueuePreview,
   formatShiftOption,
   cleanSlotName,
+  ALL_WEEKDAYS,
+  WEEKDAY_NAMES,
+  WEEKDAY_SHORT_NAMES,
 } from '../../services/api';
 import { sanitizeIndianPhone, formatIndianPhone, isValidIndianPhone } from '../../utils/phoneUtils';
 import { useVisibilityPolling } from '../../utils/useVisibilityPolling';
@@ -36,9 +39,14 @@ import {
   ChevronDown,
   ChevronUp,
   FileText,
+  CalendarDays,
+  CalendarX,
+  CalendarCheck,
+  CalendarOff,
 } from 'lucide-react';
 import { ClinicQrStandeeModal } from '../../components/common/ClinicQrStandeeModal';
 import { ClinicalReportModal } from '../../components/common/ClinicalReportModal';
+import { DoctorScheduleLeaveModal } from '../../components/common/DoctorScheduleLeaveModal';
 
 export interface TokenPassData {
   queueNumber: number;
@@ -142,6 +150,7 @@ export const ReceptionistDashboard: React.FC = () => {
   // Clinic QR Standee Modal state
   const [isStandeeModalOpen, setIsStandeeModalOpen] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [scheduleModalDoctor, setScheduleModalDoctor] = useState<{ doctorId: string; doctorName: string } | null>(null);
 
   // Reschedule Appointment state
   const [rescheduleTarget, setRescheduleTarget] = useState<{
@@ -1060,6 +1069,65 @@ export const ReceptionistDashboard: React.FC = () => {
                 </div>
               </div>
 
+              {/* Doctor On Leave / Off Day Alert */}
+              {(() => {
+                const doc = linkedDoctors.find((d) => d.doctorId === queueDoctorId);
+                if (!doc) return null;
+                const isToday = queueDate === getLocalDateString();
+                if (isToday && doc.isOnLeaveToday) {
+                  return (
+                    <div className="mb-4 p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-xs text-rose-800 flex items-center justify-between gap-3 animate-fadeIn">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <CalendarX className="w-4 h-4 text-rose-600 shrink-0" />
+                        <span className="font-semibold text-rose-900">
+                          {cleanDoctorName(doc.fullName)} is marked on leave today{doc.todayLeave?.reason ? ` (${doc.todayLeave.reason})` : ''}.
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setScheduleModalDoctor({
+                            doctorId: doc.doctorId,
+                            doctorName: cleanDoctorName(doc.fullName),
+                          })
+                        }
+                        className="h-7 px-3 rounded-full bg-white hover:bg-rose-100 text-rose-800 border border-rose-300 font-semibold text-[11px] shrink-0 transition-all cursor-pointer"
+                      >
+                        Manage Schedule
+                      </button>
+                    </div>
+                  );
+                }
+                const [y, m, d] = queueDate.split('-').map(Number);
+                const dayCode = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'][new Date(y, m - 1, d).getDay()];
+                const docDays = doc.workingDays || ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+                if (!docDays.includes(dayCode)) {
+                  return (
+                    <div className="mb-4 p-3 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-800 flex items-center justify-between gap-3 animate-fadeIn">
+                      <div className="flex items-center gap-2">
+                        <CalendarOff className="w-4 h-4 text-amber-600 shrink-0" />
+                        <span>
+                          {cleanDoctorName(doc.fullName)} does not usually sit on {WEEKDAY_NAMES[dayCode as any] || dayCode}s at this clinic.
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setScheduleModalDoctor({
+                            doctorId: doc.doctorId,
+                            doctorName: cleanDoctorName(doc.fullName),
+                          })
+                        }
+                        className="h-7 px-2.5 rounded-full bg-white hover:bg-amber-100 text-amber-900 border border-amber-300 font-semibold text-[11px] shrink-0 transition-all cursor-pointer"
+                      >
+                        Adjust Days
+                      </button>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+
               {/* Queue Content */}
               {linkedDoctors.length === 0 ? (
                 <div className="py-14 text-center">
@@ -1643,7 +1711,69 @@ export const ReceptionistDashboard: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Shift Status Warnings */}
+                    {/* Shift Status & Attendance Warnings */}
+                    {activeSelectedDoctor?.isOnLeaveToday && appointmentDate === getLocalDateString() && (
+                      <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-xs text-rose-800 flex items-start justify-between gap-3 animate-fadeIn">
+                        <div className="flex items-start gap-2.5 min-w-0">
+                          <CalendarX className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                          <div>
+                            <span className="font-semibold block text-rose-900">
+                              Practitioner Marked on Leave Today
+                            </span>
+                            <span className="text-rose-700 mt-0.5 block leading-relaxed">
+                              {activeSelectedDoctor.todayLeave?.reason
+                                ? `Reason: ${activeSelectedDoctor.todayLeave.reason}`
+                                : `${cleanDoctorName(activeSelectedDoctor.fullName)} is not taking consultations today.`}
+                            </span>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setScheduleModalDoctor({
+                              doctorId: activeSelectedDoctor.doctorId,
+                              doctorName: cleanDoctorName(activeSelectedDoctor.fullName),
+                            })
+                          }
+                          className="h-7 px-3 rounded-full bg-white hover:bg-rose-100 text-rose-800 border border-rose-300 font-semibold text-[11px] shrink-0 transition-all cursor-pointer"
+                        >
+                          Manage Leave
+                        </button>
+                      </div>
+                    )}
+
+                    {(() => {
+                      if (!appointmentDate || !activeSelectedDoctor) return null;
+                      const [y, m, d] = appointmentDate.split('-').map(Number);
+                      const dayCode = (['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'][new Date(y, m - 1, d).getDay()]);
+                      const docDays = activeSelectedDoctor.workingDays || ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+                      if (!docDays.includes(dayCode)) {
+                        return (
+                          <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-800 flex items-center justify-between gap-3 animate-fadeIn">
+                            <div className="flex items-center gap-2">
+                              <CalendarOff className="w-4 h-4 text-amber-600 shrink-0" />
+                              <span>
+                                <span className="font-semibold">Practitioner Off:</span> {cleanDoctorName(activeSelectedDoctor.fullName)} does not sit on {WEEKDAY_NAMES[dayCode as any] || dayCode}s at this clinic.
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setScheduleModalDoctor({
+                                  doctorId: activeSelectedDoctor.doctorId,
+                                  doctorName: cleanDoctorName(activeSelectedDoctor.fullName),
+                                })
+                              }
+                              className="h-7 px-2.5 rounded-full bg-white hover:bg-amber-100 text-amber-900 border border-amber-300 font-semibold text-[11px] shrink-0 transition-all cursor-pointer"
+                            >
+                              Edit Days
+                            </button>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
+
                     {(!activeSelectedDoctor?.slots || activeSelectedDoctor.slots.length === 0) && (
                       <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800">
                         <span className="font-semibold">No Practice Shifts Configured:</span> The selected practitioner has no active checking shifts configured at this clinic facility. Please ask the doctor to configure their shift timings in Doctor Console.
@@ -2095,9 +2225,27 @@ export const ReceptionistDashboard: React.FC = () => {
                           )}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <h4 className="font-semibold text-base text-[#1d1d1f] tracking-tight leading-snug">
-                            {cleanDoctorName(doc.fullName)}
-                          </h4>
+                          <div className="flex items-start justify-between gap-2">
+                            <h4 className="font-semibold text-base text-[#1d1d1f] tracking-tight leading-snug truncate">
+                              {cleanDoctorName(doc.fullName)}
+                            </h4>
+                            {doc.isOnLeaveToday ? (
+                              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#fff1f0] text-[#ff3b30] border border-[#ff3b30]/20 inline-flex items-center gap-1 shrink-0">
+                                <CalendarX className="w-3 h-3" />
+                                On Leave Today
+                              </span>
+                            ) : doc.isWorkingToday === false ? (
+                              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#fffbeb] text-[#b45309] border border-[#f59e0b]/20 inline-flex items-center gap-1 shrink-0">
+                                <CalendarOff className="w-3 h-3" />
+                                Off Today
+                              </span>
+                            ) : (
+                              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#f2fbf4] text-[#34c759] border border-[#34c759]/20 inline-flex items-center gap-1 shrink-0">
+                                <CalendarCheck className="w-3 h-3" />
+                                Sitting Today
+                              </span>
+                            )}
+                          </div>
                           <div className="text-xs text-[#0066cc] font-medium mt-0.5">{doc.specialty}</div>
                           <div className="text-xs text-[#86868b] mt-1">
                             Consultation Fee: ₹{doc.consultationFee}
@@ -2105,6 +2253,7 @@ export const ReceptionistDashboard: React.FC = () => {
                         </div>
                       </div>
 
+                      {/* CABIN STATUS */}
                       <div className="pt-3 border-t border-[#f0f0f2]">
                         <CabinStatusControl
                           currentStatus={doc.cabinStatus}
@@ -2125,6 +2274,100 @@ export const ReceptionistDashboard: React.FC = () => {
                             });
                           }}
                         />
+                      </div>
+
+                      {/* SITTING DAYS & LEAVES */}
+                      <div className="pt-3 border-t border-[#f0f0f2] space-y-2.5">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-semibold text-[#1d1d1f] flex items-center gap-1.5">
+                            <CalendarDays className="w-3.5 h-3.5 text-[#0066cc]" />
+                            <span>Clinic Sitting Days</span>
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setScheduleModalDoctor({
+                                doctorId: doc.doctorId,
+                                doctorName: cleanDoctorName(doc.fullName),
+                              })
+                            }
+                            className="text-xs font-semibold text-[#0066cc] hover:underline cursor-pointer flex items-center gap-1"
+                          >
+                            <span>Manage Schedule & Leaves</span>
+                          </button>
+                        </div>
+
+                        {/* Weekday chips */}
+                        <div className="flex items-center gap-1 flex-wrap">
+                          {ALL_WEEKDAYS.map((d) => {
+                            const isSitting = (doc.workingDays || ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']).includes(d);
+                            return (
+                              <span
+                                key={d}
+                                className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                                  isSitting
+                                    ? 'bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20'
+                                    : 'bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea]'
+                                }`}
+                              >
+                                {WEEKDAY_SHORT_NAMES[d]}
+                              </span>
+                            );
+                          })}
+                        </div>
+
+                        {/* Quick leave status and toggle */}
+                        <div className="flex items-center justify-between gap-2 pt-1">
+                          <div className="text-[11px] text-[#86868b] truncate flex-1">
+                            {doc.isOnLeaveToday ? (
+                              <span className="text-[#ff3b30] font-medium flex items-center gap-1 truncate">
+                                <CalendarX className="w-3 h-3 shrink-0" />
+                                <span className="truncate">
+                                  {doc.todayLeave?.reason ? `Leave: ${doc.todayLeave.reason}` : 'Marked on leave today'}
+                                </span>
+                              </span>
+                            ) : (
+                              <span>Available for consultations today</span>
+                            )}
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              try {
+                                if (doc.isOnLeaveToday && doc.todayLeave) {
+                                  await api.cancelDoctorLeave(doc.doctorId, doc.todayLeave.id);
+                                } else {
+                                  await api.addDoctorLeave(doc.doctorId, {
+                                    type: 'TODAY',
+                                    reason: 'Marked on leave today',
+                                    clinicId: data?.clinic?.id || undefined,
+                                  });
+                                }
+                                fetchDeskData();
+                              } catch (err: any) {
+                                setError(err?.message || 'Failed to toggle doctor leave');
+                              }
+                            }}
+                            className={`h-7 px-3 rounded-full text-[11px] font-semibold transition-all active:scale-95 cursor-pointer flex items-center gap-1 shrink-0 ${
+                              doc.isOnLeaveToday
+                                ? 'bg-[#34c759] hover:bg-[#30b753] text-white shadow-sm'
+                                : 'bg-[#fff1f0] hover:bg-[#ffe2e0] text-[#ff3b30] border border-[#ff3b30]/20'
+                            }`}
+                          >
+                            {doc.isOnLeaveToday ? (
+                              <>
+                                <CalendarCheck className="w-3 h-3" />
+                                <span>Resume Today</span>
+                              </>
+                            ) : (
+                              <>
+                                <CalendarX className="w-3 h-3" />
+                                <span>Put on Leave Today</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -2628,6 +2871,24 @@ export const ReceptionistDashboard: React.FC = () => {
           specialty: doc.specialty,
         }))}
       />
+
+      {/* Practitioner Schedule & Leave Management Modal */}
+      {scheduleModalDoctor && (
+        <DoctorScheduleLeaveModal
+          isOpen={true}
+          onClose={() => setScheduleModalDoctor(null)}
+          doctorId={scheduleModalDoctor.doctorId}
+          doctorName={scheduleModalDoctor.doctorName}
+          clinicId={data?.clinic?.id}
+          clinicName={data?.clinic?.clinicName}
+          onSuccess={() => {
+            fetchDeskData();
+            if (activeTab === 'walkin') {
+              fetchWalkinPreview();
+            }
+          }}
+        />
+      )}
     </DashboardLayout>
   );
 };

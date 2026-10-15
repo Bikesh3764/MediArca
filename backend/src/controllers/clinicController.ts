@@ -22,6 +22,9 @@ export const getMyClinic = async (req: AuthRequest, res: Response): Promise<void
     const clinic = await prisma.clinicProfile.findUnique({
       where: { userId: req.user.id },
       include: {
+        user: {
+          select: { id: true, fullName: true, email: true, phone: true, avatarUrl: true },
+        },
         receptionists: {
           include: {
             user: {
@@ -82,7 +85,10 @@ export const getMyClinic = async (req: AuthRequest, res: Response): Promise<void
             address: clinic.address,
             city: clinic.city,
             state: clinic.state,
-            phone: clinic.phone,
+            phone: clinic.phone || (clinic as any).user?.phone || null,
+            email: (clinic as any).user?.email || null,
+            avatarUrl: (clinic as any).user?.avatarUrl || null,
+            fullName: (clinic as any).user?.fullName || clinic.clinicName,
             isVerified: clinic.isVerified,
             verificationStatus: clinic.verificationStatus,
             createdAt: clinic.createdAt,
@@ -217,7 +223,10 @@ export const getMyClinic = async (req: AuthRequest, res: Response): Promise<void
           address: clinic.address,
           city: clinic.city,
           state: clinic.state,
-          phone: clinic.phone,
+          phone: clinic.phone || (clinic as any).user?.phone || null,
+          email: (clinic as any).user?.email || null,
+          avatarUrl: (clinic as any).user?.avatarUrl || null,
+          fullName: (clinic as any).user?.fullName || clinic.clinicName,
           isVerified: clinic.isVerified,
           verificationStatus: clinic.verificationStatus,
           checkinCode: (clinic as any).checkinCode || null,
@@ -754,6 +763,11 @@ export const getPublicClinics = async (req: any, res: Response): Promise<void> =
           state: true,
           phone: true,
           isVerified: true,
+          user: {
+            select: {
+              avatarUrl: true,
+            },
+          },
           _count: {
             select: {
               doctors: {
@@ -820,9 +834,10 @@ export const getPublicClinics = async (req: any, res: Response): Promise<void> =
 
     const formattedClinics = clinics.map((c: any) => {
       // Exclude raw receptionist internal records from public response (FIX-006)
-      const { receptionists: _receptionists, ...cleanClinic } = c;
+      const { receptionists: _receptionists, user, ...cleanClinic } = c;
       return {
         ...cleanClinic,
+        avatarUrl: user?.avatarUrl || null,
         hasReceptionist: (c.receptionists || []).length > 0,
         doctors: (c.doctors || []).map((cd: any) => {
           const { doctor, ...cleanCd } = cd;
@@ -885,6 +900,11 @@ export const getPublicClinicById = async (req: any, res: Response): Promise<void
         state: true,
         phone: true,
         isVerified: true,
+        user: {
+          select: {
+            avatarUrl: true,
+          },
+        },
         _count: {
           select: {
             doctors: {
@@ -951,9 +971,10 @@ export const getPublicClinicById = async (req: any, res: Response): Promise<void
     }
 
     // Exclude raw receptionist internal records from public response (FIX-006)
-    const { receptionists: _receptionists, ...cleanClinic } = clinic;
+    const { receptionists: _receptionists, user, ...cleanClinic } = clinic;
     const formattedClinic = {
       ...cleanClinic,
+      avatarUrl: user?.avatarUrl || null,
       hasReceptionist: (clinic.receptionists || []).length > 0,
       doctors: (clinic.doctors || []).map((cd: any) => {
         const { doctor, ...cleanCd } = cd;
@@ -1517,7 +1538,7 @@ export const respondToReceptionistRequest = async (req: AuthRequest, res: Respon
 };
 
 /**
- * Update clinic profile (clinicName, address, city, state, phone)
+ * Update clinic profile (clinicName, address, city, state, phone, avatarUrl)
  */
 export const updateClinicProfile = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -1526,10 +1547,13 @@ export const updateClinicProfile = async (req: AuthRequest, res: Response): Prom
       return;
     }
 
-    const { clinicName, address, city, state, phone } = req.body;
+    const { clinicName, address, city, state, phone, avatarUrl, fullName } = req.body;
 
     const clinic = await prisma.clinicProfile.findUnique({
       where: { userId: req.user.id },
+      include: {
+        user: { select: { id: true, fullName: true, email: true, phone: true, avatarUrl: true } },
+      },
     });
 
     if (!clinic) {
@@ -1537,26 +1561,101 @@ export const updateClinicProfile = async (req: AuthRequest, res: Response): Prom
       return;
     }
 
-    if (phone && !isValidIndianPhone(phone)) {
-      res.status(400).json({ success: false, message: 'Please enter a valid 10-digit Indian mobile number.' });
-      return;
+    // Validate avatarUrl: Disallow base64 data URLs in profile updates to prevent Postgres database bloat (Bug 12)
+    if (avatarUrl !== undefined && avatarUrl !== null) {
+      if (typeof avatarUrl === 'string' && avatarUrl.startsWith('data:image/')) {
+        res.status(400).json({
+          success: false,
+          message: 'Base64 image data URLs are not permitted. Please upload your avatar via the official avatar upload endpoint.',
+        });
+        return;
+      }
     }
 
-    const updated = await prisma.clinicProfile.update({
-      where: { id: clinic.id },
-      data: {
-        ...(clinicName && typeof clinicName === 'string' ? { clinicName: clinicName.trim() } : {}),
-        ...(address !== undefined && typeof address === 'string' ? { address: address.trim() } : {}),
-        ...(city !== undefined ? { city: city ? String(city).trim() : null } : {}),
-        ...(state !== undefined ? { state: state ? String(state).trim() : null } : {}),
-        ...(phone !== undefined ? { phone: phone ? formatIndianPhone(phone) : null } : {}),
-      },
-    });
+    let formattedPhone: string | null | undefined = undefined;
+    if (phone !== undefined) {
+      if (phone === null || String(phone).trim() === '') {
+        formattedPhone = null;
+      } else {
+        const trimmedPhone = String(phone).trim();
+        if (!isValidIndianPhone(trimmedPhone)) {
+          res.status(400).json({ success: false, message: 'Please enter a valid 10-digit Indian mobile number.' });
+          return;
+        }
+        formattedPhone = formatIndianPhone(trimmedPhone);
+
+        // Enforce mobile number uniqueness per role if changed
+        if (formattedPhone !== clinic.user.phone) {
+          const existingPhoneUser = await findExistingAccountByPhone(prisma, formattedPhone, {
+            excludeUserId: req.user.id,
+            role: 'CLINIC',
+          });
+          if (existingPhoneUser) {
+            res.status(409).json({
+              success: false,
+              message: 'An account with this mobile number already exists for the clinic portal. Each mobile number can only have one clinic account.',
+            });
+            return;
+          }
+        }
+      }
+    }
+
+    const cleanClinicName = clinicName && typeof clinicName === 'string' ? clinicName.trim() : undefined;
+    const cleanAddress = address !== undefined && typeof address === 'string' ? address.trim() : undefined;
+    const cleanCity = city !== undefined ? (city ? String(city).trim() : null) : undefined;
+    const cleanState = state !== undefined ? (state ? String(state).trim() : null) : undefined;
+
+    const userUpdatePayload: any = {};
+    if (cleanClinicName) {
+      userUpdatePayload.fullName = cleanClinicName;
+    } else if (fullName && typeof fullName === 'string' && fullName.trim()) {
+      userUpdatePayload.fullName = fullName.trim();
+    }
+    if (formattedPhone !== undefined && formattedPhone !== null) {
+      userUpdatePayload.phone = formattedPhone;
+    }
+    if (avatarUrl !== undefined) {
+      userUpdatePayload.avatarUrl = avatarUrl;
+    }
+
+    const [updatedClinic, updatedUser] = await prisma.$transaction([
+      prisma.clinicProfile.update({
+        where: { id: clinic.id },
+        data: {
+          ...(cleanClinicName ? { clinicName: cleanClinicName } : {}),
+          ...(cleanAddress !== undefined ? { address: cleanAddress } : {}),
+          ...(cleanCity !== undefined ? { city: cleanCity } : {}),
+          ...(cleanState !== undefined ? { state: cleanState } : {}),
+          ...(formattedPhone !== undefined ? { phone: formattedPhone } : {}),
+        },
+      }),
+      ...(Object.keys(userUpdatePayload).length > 0
+        ? [
+            prisma.user.update({
+              where: { id: req.user.id },
+              data: userUpdatePayload,
+              select: { id: true, fullName: true, email: true, phone: true, avatarUrl: true, role: true },
+            }),
+          ]
+        : [
+            prisma.user.findUnique({
+              where: { id: req.user.id },
+              select: { id: true, fullName: true, email: true, phone: true, avatarUrl: true, role: true },
+            }),
+          ]),
+    ]);
 
     res.json({
       success: true,
       message: 'Clinic profile updated successfully',
-      data: updated,
+      data: {
+        ...updatedClinic,
+        phone: updatedClinic.phone || updatedUser?.phone || null,
+        email: updatedUser?.email,
+        avatarUrl: updatedUser?.avatarUrl || null,
+        user: updatedUser,
+      },
     });
   } catch (error: any) {
     console.error('updateClinicProfile error:', error);

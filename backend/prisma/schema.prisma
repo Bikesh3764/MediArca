@@ -54,6 +54,8 @@ model DoctorProfile {
   rating                Float         @default(5.0)
   totalReviews          Int           @default(0)
   slots                 String?       // JSON array of DoctorSlot[]: [{id, name, startTime, endTime, maxPatients, avgConsultationMinutes}]
+  workingDays           String?       // JSON array of day codes: e.g. ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"]
+  leaves                String?       // JSON array of DoctorLeave[]: [{ id, type, startDate, endDate, reason?, createdAt, createdByRole, createdByName? }]
   cabinStatus           String        @default("IN_CABIN") // "IN_CABIN", "STEPPED_OUT", "NOT_IN_CABIN"
   expectedReturnTime    String?       // e.g. "11:45 AM" or "in 15 mins"
   cabinStatusUpdatedAt  DateTime?     @default(now())
@@ -201,6 +203,8 @@ model ClinicDoctor {
   requestedBy     String        @default("CLINIC")  // "CLINIC" or "DOCTOR"
   consultationFee Float?
   slots           String?       // Clinic-specific doctor slots
+  workingDays     String?       // Clinic-specific working day codes: e.g. ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"]
+  leaves          String?       // Clinic-specific leaves: [{ id, type, startDate, endDate, reason?, createdAt, createdByRole, createdByName? }]
   createdAt       DateTime      @default(now())
 
   @@unique([clinicId, doctorId])

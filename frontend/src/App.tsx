@@ -1,6 +1,6 @@
 import React, { Suspense } from 'react';
 import { lazyWithRetry as lazy } from './utils/lazyWithRetry';
-import { HashRouter as Router, Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { GlobalNav } from './components/layout/GlobalNav';
 import { Footer } from './components/layout/Footer';
@@ -26,6 +26,7 @@ const AdminDashboard = lazy(() => import('./pages/Admin/AdminDashboard').then(m 
 const AdminLogin = lazy(() => import('./pages/Auth/AdminLogin').then(m => ({ default: m.AdminLogin })));
 const ClinicAuth = lazy(() => import('./pages/Clinic/ClinicAuth').then(m => ({ default: m.ClinicAuth })));
 const ClinicDashboard = lazy(() => import('./pages/Clinic/ClinicDashboard').then(m => ({ default: m.ClinicDashboard })));
+const ClinicProfile = lazy(() => import('./pages/Clinic/ClinicProfile').then(m => ({ default: m.ClinicProfile })));
 const ReceptionistAuth = lazy(() => import('./pages/Receptionist/ReceptionistAuth').then(m => ({ default: m.ReceptionistAuth })));
 const ReceptionistDashboard = lazy(() => import('./pages/Receptionist/ReceptionistDashboard').then(m => ({ default: m.ReceptionistDashboard })));
 const ClinicCheckIn = lazy(() => import('./pages/Patient/ClinicCheckIn').then(m => ({ default: m.ClinicCheckIn })));
@@ -116,6 +117,7 @@ function AppShell() {
     location.pathname.startsWith('/doctor/schedule') ||
     location.pathname.startsWith('/doctor/profile') ||
     location.pathname.startsWith('/clinic/dashboard') ||
+    location.pathname.startsWith('/clinic/profile') ||
     location.pathname.startsWith('/receptionist/dashboard') ||
     location.pathname === '/clinic-checkin' ||
     location.pathname === '/admin' ||
@@ -263,6 +265,14 @@ function AppShell() {
               element={
                 <ProtectedRoute allowedRoles={['CLINIC']}>
                   <ClinicDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/clinic/profile"
+              element={
+                <ProtectedRoute allowedRoles={['CLINIC']}>
+                  <ClinicProfile />
                 </ProtectedRoute>
               }
             />

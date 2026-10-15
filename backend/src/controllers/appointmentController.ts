@@ -13,6 +13,10 @@ import {
   getLocalDateString,
   getIndianTimeMinutes,
   isValidAppointmentDate,
+  isDoctorOnLeave,
+  isDoctorWorkingOnDate,
+  parseDoctorWorkingDays,
+  parseDoctorLeaves,
 } from '../utils/scheduleUtils';
 import crypto from 'crypto';
 import { canTransition } from '../utils/appointmentStateMachine';
@@ -206,6 +210,18 @@ export const getQueuePreview = async (req: AuthRequest, res: Response): Promise<
     const highestQueue = maxQueueAppt && maxQueueAppt.queueNumber > 0 ? maxQueueAppt.queueNumber : 0;
     const nextQueueNumber = Math.max(1, highestQueue + 1);
 
+    const targetClinicId = selectedAffiliation?.clinicId || null;
+    const workingDays = selectedAffiliation?.workingDays
+      ? parseDoctorWorkingDays(selectedAffiliation.workingDays)
+      : parseDoctorWorkingDays((doctor as any).workingDays);
+    const doctorLeaves = [
+      ...parseDoctorLeaves((doctor as any).leaves),
+      ...(selectedAffiliation?.leaves ? parseDoctorLeaves(selectedAffiliation.leaves) : []),
+    ];
+
+    const leaveCheck = isDoctorOnLeave(doctorLeaves, dateStr, targetClinicId);
+    const workingCheck = isDoctorWorkingOnDate(workingDays, dateStr);
+
     // Evaluate status for each slot using authoritative server time
     const availableSlots: SlotStatusResult[] = slots.map((slot) => {
       const bookedInSlot = dayAppointments.filter((a) => {
@@ -228,7 +244,9 @@ export const getQueuePreview = async (req: AuthRequest, res: Response): Promise<
         bookedInSlot,
         new Date(),
         undefined,
-        waitingInSlot
+        waitingInSlot,
+        leaveCheck.isOnLeave ? { isOnLeave: true, leaveReason: leaveCheck.leave?.reason } : undefined,
+        !workingCheck.isWorking ? { isDayOff: true, dayName: workingCheck.dayName } : undefined
       );
     });
 
@@ -284,6 +302,12 @@ export const getQueuePreview = async (req: AuthRequest, res: Response): Promise<
         isPassed: selectedSlotStatus.isPassed,
         isInProgress: selectedSlotStatus.isInProgress,
         statusLabel: selectedSlotStatus.statusLabel,
+        isOnLeave: leaveCheck.isOnLeave,
+        leaveReason: leaveCheck.leave?.reason || null,
+        isDayOff: !workingCheck.isWorking,
+        dayName: workingCheck.dayName,
+        workingDays,
+        leaves: doctorLeaves,
         consultationFee: effectiveConsultationFee,
         clinicId: selectedAffiliation?.clinicId || null,
         clinicName: selectedAffiliation?.clinic?.clinicName || null,
@@ -614,6 +638,33 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
         });
         return;
       }
+    }
+
+    // Verify doctor working days and leave on requested date
+    const workingDays = targetAffiliation?.workingDays
+      ? parseDoctorWorkingDays(targetAffiliation.workingDays)
+      : parseDoctorWorkingDays((doctor as any).workingDays);
+    const doctorLeaves = [
+      ...parseDoctorLeaves((doctor as any).leaves),
+      ...(targetAffiliation?.leaves ? parseDoctorLeaves(targetAffiliation.leaves) : []),
+    ];
+
+    const leaveCheck = isDoctorOnLeave(doctorLeaves, appointmentDate, targetClinicId);
+    if (leaveCheck.isOnLeave) {
+      res.status(400).json({
+        success: false,
+        message: `Dr. ${doctor.user?.fullName || 'the doctor'} is on leave on this date (${appointmentDate})${leaveCheck.leave?.reason ? `: ${leaveCheck.leave.reason}` : ''}. Please select an alternate date.`,
+      });
+      return;
+    }
+
+    const workingCheck = isDoctorWorkingOnDate(workingDays, appointmentDate);
+    if (!workingCheck.isWorking) {
+      res.status(400).json({
+        success: false,
+        message: `Dr. ${doctor.user?.fullName || 'the doctor'} does not consult on ${workingCheck.dayName}s at this clinic facility. Available consultation days: ${workingDays.join(', ')}.`,
+      });
+      return;
     }
 
     let slots = parseDoctorSlots(doctor);

@@ -162,3 +162,22 @@ MediArca replaces third-party payment gateways with a direct human-assisted paym
 - **Live Queue Polling**: The `LiveQueueTicket` component executes lightweight polling every 10 seconds during active clinic hours.
 - **Adaptive Timeout & Retry**: If the network times out or returns a non-JSON reverse proxy error (502/504), the API client records a failed cycle without cascading retries or crashing the application.
 - **Cabin Presence Sync**: The doctor's live status (`IN_CABIN`, `STEPPED_OUT`, `NOT_IN_CABIN`) is polled and synchronized directly into patient tickets, showing expected return times when the doctor steps out.
+
+---
+
+## 6. Clinic Profile, Facility Settings & Photo Architecture
+
+To support physical clinic branding and discovery:
+
+1. **Brand Identity & Auto-Compressed Logo**:
+   - Clinic accounts upload logo or facility exterior photos via `/api/auth/avatar`.
+   - The frontend passes raw images through the interactive `AvatarCropModal` (aspect ratio 1:1 or 4:3) and optimizes the cropped blob using `optimizeAvatarImage` before upload.
+   - Files are stored on Cloudflare R2 (or disk fallback under `/uploads/avatars/`), and the URL is saved to `User.avatarUrl`.
+   - Public clinic endpoints (`/api/clinics/public` and `/api/clinics/public/:id`) and authenticated dashboard (`/api/clinics/my-clinic`) expose `avatarUrl` for clinic cards and live queue headers.
+
+2. **Atomic Synchronization (`updateClinicProfile`)**:
+   - Clinic settings updates modify facility name, street address, city, state, contact phone, and avatar.
+   - Modifications to clinic name and phone number atomically synchronize both the `ClinicProfile` model and the parent `User` record inside a `prisma.$transaction`.
+   - Phone numbers are validated against the Indian standard (`+91` 10-digit mobile) and uniqueness is checked against existing accounts of the same role.
+   - Base64 image data URLs are strictly rejected to prevent database bloat.
+

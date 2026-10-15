@@ -116,7 +116,105 @@ export interface SlotStatusResult {
   patientsAhead: number;
   estimatedTime: string;
   statusLabel: string;
+  isOnLeave?: boolean;
+  leaveReason?: string;
+  isDayOff?: boolean;
 }
+
+export const ALL_WEEKDAYS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'] as const;
+export type WeekdayCode = (typeof ALL_WEEKDAYS)[number];
+
+export const WEEKDAY_NAMES: Record<string, string> = {
+  MON: 'Monday',
+  TUE: 'Tuesday',
+  WED: 'Wednesday',
+  THU: 'Thursday',
+  FRI: 'Friday',
+  SAT: 'Saturday',
+  SUN: 'Sunday',
+};
+
+export interface DoctorLeave {
+  id: string;
+  type: 'TODAY' | 'DATE_RANGE';
+  startDate: string; // YYYY-MM-DD
+  endDate: string; // YYYY-MM-DD
+  reason?: string;
+  clinicId?: string | null;
+  clinicName?: string;
+  createdAt: string;
+  createdByRole: 'DOCTOR' | 'RECEPTIONIST';
+  createdByName?: string;
+}
+
+export const getDayOfWeekCode = (dateStr: string): string => {
+  if (!dateStr || typeof dateStr !== 'string') return 'MON';
+  const match = dateStr.trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return 'MON';
+  const year = parseInt(match[1], 10);
+  const month = parseInt(match[2], 10);
+  const day = parseInt(match[3], 10);
+  const d = new Date(Date.UTC(year, month - 1, day));
+  const codes = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+  return codes[d.getUTCDay()] || 'MON';
+};
+
+export const cleanWorkingDays = (days: any): string[] => {
+  if (!Array.isArray(days)) return ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+  const valid = days
+    .map((d) => String(d).toUpperCase().trim())
+    .filter((d) => (ALL_WEEKDAYS as readonly string[]).includes(d));
+  const unique = Array.from(new Set(valid));
+  return unique.length > 0 ? unique : ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+};
+
+export const parseDoctorWorkingDays = (raw: any): string[] => {
+  if (!raw) return ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+  try {
+    const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    return cleanWorkingDays(parsed);
+  } catch {
+    return ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+  }
+};
+
+export const parseDoctorLeaves = (raw: any): DoctorLeave[] => {
+  if (!raw) return [];
+  try {
+    const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    if (Array.isArray(parsed)) {
+      return parsed.filter((l) => l && typeof l === 'object' && l.startDate && l.endDate);
+    }
+  } catch {}
+  return [];
+};
+
+export const isDoctorOnLeave = (
+  rawLeaves: any,
+  dateStr: string,
+  clinicId?: string | null
+): { isOnLeave: boolean; leave?: DoctorLeave } => {
+  const leaves = parseDoctorLeaves(rawLeaves);
+  if (!leaves.length || !dateStr) return { isOnLeave: false };
+  for (const l of leaves) {
+    if (l.clinicId && clinicId && l.clinicId !== clinicId) continue;
+    if (dateStr >= l.startDate && dateStr <= l.endDate) {
+      return { isOnLeave: true, leave: l };
+    }
+  }
+  return { isOnLeave: false };
+};
+
+export const isDoctorWorkingOnDate = (
+  rawDays: any,
+  dateStr: string
+): { isWorking: boolean; dayCode: string; dayName: string } => {
+  const workingDays = parseDoctorWorkingDays(rawDays);
+  const dayCode = getDayOfWeekCode(dateStr);
+  const dayName = WEEKDAY_NAMES[dayCode] || dayCode;
+  const isWorking = workingDays.includes(dayCode);
+  return { isWorking, dayCode, dayName };
+};
 
 export const getLocalDateString = (d: Date = new Date()): string => {
   try {
@@ -160,12 +258,47 @@ export const evaluateSlotStatus = (
   bookedCountForSlot: number,
   now = new Date(),
   overrideCurrentMinutes?: number,
-  activeWaitingCount?: number
+  activeWaitingCount?: number,
+  leaveInfo?: { isOnLeave: boolean; leaveReason?: string },
+  dayOffInfo?: { isDayOff: boolean; dayName?: string }
 ): SlotStatusResult => {
   const todayStr = getLocalDateString(now);
 
   const isToday = appointmentDate === todayStr;
   const isPastDate = appointmentDate < todayStr;
+
+  if (leaveInfo?.isOnLeave) {
+    return {
+      slot,
+      isToday,
+      isPassed: true,
+      isInProgress: false,
+      isUpcoming: false,
+      isFull: false,
+      totalBooked: bookedCountForSlot,
+      patientsAhead: 0,
+      estimatedTime: 'Doctor on Leave',
+      statusLabel: `Doctor on Leave${leaveInfo.leaveReason ? ` • ${leaveInfo.leaveReason}` : ''}`,
+      isOnLeave: true,
+      leaveReason: leaveInfo.leaveReason,
+    };
+  }
+
+  if (dayOffInfo?.isDayOff) {
+    return {
+      slot,
+      isToday,
+      isPassed: true,
+      isInProgress: false,
+      isUpcoming: false,
+      isFull: false,
+      totalBooked: bookedCountForSlot,
+      patientsAhead: 0,
+      estimatedTime: 'Doctor Off Day',
+      statusLabel: `Not Sitting on ${dayOffInfo.dayName || 'This Day'}`,
+      isDayOff: true,
+    };
+  }
 
   const currentMinutes =
     typeof overrideCurrentMinutes === 'number' && !isNaN(overrideCurrentMinutes)

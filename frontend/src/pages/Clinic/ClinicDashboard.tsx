@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { api, ClinicDashboardData, ClinicReceptionistItem, Doctor, getFileUrl, formatDoctorDegrees, cleanSlotName } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { DashboardLayout, DashboardNavItem } from '../../components/layout/DashboardLayout';
@@ -22,6 +22,7 @@ import {
   RefreshCw,
   MapPin,
   FileText,
+  Settings,
 } from 'lucide-react';
 import { ClinicalReportModal } from '../../components/common/ClinicalReportModal';
 import { INDIAN_STATES, getCitiesForState } from '../../utils/indiaStates';
@@ -408,6 +409,12 @@ export const ClinicDashboard: React.FC = () => {
       badge: data?.totalBookings || undefined,
       onClick: () => setActiveSection('appointments'),
     },
+    {
+      id: 'settings',
+      label: 'Clinic Settings',
+      icon: Settings,
+      path: '/clinic/profile',
+    },
   ];
 
   const getApptStatusBadge = (status: string) => {
@@ -461,6 +468,13 @@ export const ClinicDashboard: React.FC = () => {
       }
       headerAction={
         <div className="flex flex-wrap items-center gap-2">
+          <Link
+            to="/clinic/profile"
+            className="h-9 px-3.5 rounded-full bg-white hover:bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer shadow-xs hover:shadow"
+          >
+            <Settings className="w-3.5 h-3.5 text-[#0066cc]" />
+            <span>Profile & Settings</span>
+          </Link>
           <button
             type="button"
             onClick={() => setShowReportModal(true)}

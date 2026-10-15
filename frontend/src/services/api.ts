@@ -68,6 +68,59 @@ export interface SlotStatusResult {
   patientsAhead: number;
   estimatedTime: string;
   statusLabel: string;
+  isOnLeave?: boolean;
+  leaveReason?: string;
+  isDayOff?: boolean;
+}
+
+export const ALL_WEEKDAYS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'] as const;
+export type WeekdayCode = (typeof ALL_WEEKDAYS)[number];
+
+export const WEEKDAY_NAMES: Record<string, string> = {
+  MON: 'Monday',
+  TUE: 'Tuesday',
+  WED: 'Wednesday',
+  THU: 'Thursday',
+  FRI: 'Friday',
+  SAT: 'Saturday',
+  SUN: 'Sunday',
+};
+
+export const WEEKDAY_SHORT_NAMES: Record<string, string> = {
+  MON: 'Mon',
+  TUE: 'Tue',
+  WED: 'Wed',
+  THU: 'Thu',
+  FRI: 'Fri',
+  SAT: 'Sat',
+  SUN: 'Sun',
+};
+
+export interface DoctorLeave {
+  id: string;
+  type: 'TODAY' | 'DATE_RANGE';
+  startDate: string; // YYYY-MM-DD
+  endDate: string; // YYYY-MM-DD
+  reason?: string;
+  clinicId?: string | null;
+  clinicName?: string;
+  createdAt: string;
+  createdByRole: 'DOCTOR' | 'RECEPTIONIST';
+  createdByName?: string;
+}
+
+export interface DoctorScheduleConfig {
+  doctorId: string;
+  doctorName: string;
+  clinicId?: string | null;
+  clinicName?: string | null;
+  workingDays: string[];
+  leaves: DoctorLeave[];
+  slots: DoctorSlot[];
+  consultationFee: number;
+  isOnLeaveToday: boolean;
+  todayLeave?: DoctorLeave | null;
+  isWorkingToday: boolean;
 }
 
 // Time calculation helpers
@@ -645,6 +698,10 @@ export interface User {
     cabinStatus?: 'IN_CABIN' | 'STEPPED_OUT' | 'NOT_IN_CABIN' | string;
     expectedReturnTime?: string | null;
     cabinStatusUpdatedAt?: string | null;
+    workingDays?: string | null;
+    leaves?: string | null;
+    isOnLeaveToday?: boolean;
+    todayLeave?: DoctorLeave | null;
   };
   clinicProfile?: ClinicProfile;
   receptionistProfile?: ReceptionistProfile;
@@ -664,10 +721,13 @@ export interface PublicClinicDoctor {
 export interface ClinicProfile {
   id: string;
   clinicName: string;
+  fullName?: string;
   address: string;
   city?: string;
   state?: string;
   phone?: string;
+  email?: string;
+  avatarUrl?: string | null;
   isVerified?: boolean;
   verificationStatus?: 'PENDING' | 'VERIFIED' | 'SUSPENDED' | 'REJECTED' | string;
   checkinCode?: string | null;
@@ -854,6 +914,11 @@ export interface ReceptionistLinkedDoctor {
   cabinStatus?: 'IN_CABIN' | 'STEPPED_OUT' | 'NOT_IN_CABIN' | string;
   expectedReturnTime?: string | null;
   cabinStatusUpdatedAt?: string | null;
+  workingDays?: string[];
+  leaves?: DoctorLeave[];
+  isOnLeaveToday?: boolean;
+  todayLeave?: DoctorLeave | null;
+  isWorkingToday?: boolean;
 }
 
 export interface ReceptionistDashboardData {
@@ -903,6 +968,11 @@ export interface DoctorAffiliationClinic {
   revenue?: number;
   consultationFee?: number;
   slots?: DoctorSlot[];
+  workingDays?: string[];
+  leaves?: DoctorLeave[];
+  isOnLeaveToday?: boolean;
+  todayLeave?: DoctorLeave | null;
+  isWorkingToday?: boolean;
   status: string;
   requestedBy?: string;
   joinedAt?: string;
@@ -1466,6 +1536,46 @@ export const api = {
     return handleResponse(res);
   },
 
+  async getDoctorScheduleConfig(doctorId: string, clinicId?: string): Promise<DoctorScheduleConfig> {
+    const query = clinicId ? `?clinicId=${encodeURIComponent(clinicId)}` : '';
+    const res = await safeFetch(`${API_BASE_URL}/doctors/${doctorId}/schedule-config${query}`, {
+      headers: getHeaders(),
+    });
+    const parsed: any = await handleResponse(res);
+    return parsed.data;
+  },
+
+  async updateDoctorWorkingDays(doctorId: string, workingDays: string[], clinicId?: string): Promise<{ workingDays: string[] }> {
+    const res = await safeFetch(`${API_BASE_URL}/doctors/${doctorId}/working-days`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify({ workingDays, clinicId }),
+    });
+    const parsed: any = await handleResponse(res);
+    return parsed.data;
+  },
+
+  async addDoctorLeave(
+    doctorId: string,
+    data: { type: 'TODAY' | 'DATE_RANGE'; startDate?: string; endDate?: string; reason?: string; clinicId?: string }
+  ): Promise<DoctorLeave> {
+    const res = await safeFetch(`${API_BASE_URL}/doctors/${doctorId}/leaves`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
+    });
+    const parsed: any = await handleResponse(res);
+    return parsed.data;
+  },
+
+  async cancelDoctorLeave(doctorId: string, leaveId: string): Promise<void> {
+    const res = await safeFetch(`${API_BASE_URL}/doctors/${doctorId}/leaves/${leaveId}`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+    });
+    await handleResponse(res);
+  },
+
   async updateDoctorCabinStatus(data: {
     status: 'IN_CABIN' | 'STEPPED_OUT' | 'NOT_IN_CABIN';
     expectedReturnTime?: string | null;
@@ -1852,10 +1962,12 @@ export const api = {
 
   async updateClinicProfile(data: {
     clinicName?: string;
+    fullName?: string;
     address?: string;
     city?: string;
     state?: string;
     phone?: string;
+    avatarUrl?: string;
   }): Promise<any> {
     const res = await safeFetch(`${API_BASE_URL}/clinics/profile`, {
       method: 'PUT',

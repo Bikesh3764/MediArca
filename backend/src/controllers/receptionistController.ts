@@ -13,6 +13,11 @@ import {
   minutesTo12Hour,
   isValidAppointmentDate,
   cleanSlotName,
+  parseDoctorWorkingDays,
+  parseDoctorLeaves,
+  isDoctorOnLeave,
+  isDoctorWorkingOnDate,
+  cleanWorkingDays,
 } from '../utils/scheduleUtils';
 import { formatIndianPhone, sanitizeIndianPhone, isValidIndianPhone, findExistingAccountByPhone } from '../utils/phoneUtils';
 import { canTransition } from '../utils/appointmentStateMachine';
@@ -164,6 +169,17 @@ export const getMyReceptionist = async (req: AuthRequest, res: Response): Promis
           return { ...c, clinic: safeClinic };
         });
 
+        const cd = dr.doctor.clinics?.find((c: any) => c.clinicId === receptionist.clinicId);
+        const workingDays = cd?.workingDays
+          ? parseDoctorWorkingDays(cd.workingDays)
+          : parseDoctorWorkingDays((dr.doctor as any).workingDays);
+        const doctorLeaves = [
+          ...parseDoctorLeaves((dr.doctor as any).leaves),
+          ...(cd?.leaves ? parseDoctorLeaves(cd.leaves) : []),
+        ];
+        const todayLeaveCheck = isDoctorOnLeave(doctorLeaves, todayStr, receptionist.clinicId);
+        const todayWorkingCheck = isDoctorWorkingOnDate(workingDays, todayStr);
+
         return {
           affiliationId: dr.id || dr.doctorId,
           doctorId: dr.doctor.id,
@@ -175,6 +191,11 @@ export const getMyReceptionist = async (req: AuthRequest, res: Response): Promis
           clinicAddress: dr.doctor.clinicAddress,
           consultationFee,
           slots: activeSlots,
+          workingDays,
+          leaves: doctorLeaves,
+          isOnLeaveToday: todayLeaveCheck.isOnLeave,
+          todayLeave: todayLeaveCheck.leave || null,
+          isWorkingToday: todayWorkingCheck.isWorking,
           clinics: sanitizedDoctorClinics,
           cabinStatus: (dr.doctor as any).cabinStatus || 'IN_CABIN',
           expectedReturnTime: (dr.doctor as any).expectedReturnTime || null,
@@ -562,6 +583,36 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
 
     if (!doctor) {
       res.status(404).json({ success: false, message: 'Doctor not found' });
+      return;
+    }
+
+    // Verify doctor is sitting today and not on leave (User Feature: Doctor Working Days & Leave Management)
+    const cd = await prisma.clinicDoctor.findUnique({
+      where: { clinicId_doctorId: { clinicId: receptionist.clinicId, doctorId } },
+    });
+    const workingDays = cd?.workingDays
+      ? parseDoctorWorkingDays(cd.workingDays)
+      : parseDoctorWorkingDays((doctor as any).workingDays);
+    const doctorLeaves = [
+      ...parseDoctorLeaves((doctor as any).leaves),
+      ...(cd?.leaves ? parseDoctorLeaves(cd.leaves) : []),
+    ];
+
+    const leaveCheck = isDoctorOnLeave(doctorLeaves, appointmentDate, receptionist.clinicId);
+    if (leaveCheck.isOnLeave) {
+      res.status(400).json({
+        success: false,
+        message: `Dr. ${doctor.user?.fullName || 'the doctor'} is marked on leave on this date (${appointmentDate})${leaveCheck.leave?.reason ? `: ${leaveCheck.leave.reason}` : ''}. Walk-in queue booking cannot be initiated.`,
+      });
+      return;
+    }
+
+    const workingCheck = isDoctorWorkingOnDate(workingDays, appointmentDate);
+    if (!workingCheck.isWorking) {
+      res.status(400).json({
+        success: false,
+        message: `Dr. ${doctor.user?.fullName || 'the doctor'} does not consult on ${workingCheck.dayName}s at this clinic facility. Available sitting days: ${workingDays.join(', ')}.`,
+      });
       return;
     }
 

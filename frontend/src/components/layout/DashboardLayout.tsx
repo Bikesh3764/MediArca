@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { BrandLogo } from '../ui/BrandLogo';
-import { api, AppNotification } from '../../services/api';
+import { api, AppNotification, getFileUrl } from '../../services/api';
 import { useVisibilityPolling } from '../../utils/useVisibilityPolling';
 import {
   LogOut,
@@ -180,21 +180,55 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         </div>
 
         {/* User Capsule Card */}
-        <div className="bg-[#f5f5f7] border border-[#e5e5ea] rounded-2xl p-3 flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-[#0066cc] text-white flex items-center justify-center font-semibold text-sm flex-shrink-0">
-            {initialLetter}
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-[13px] font-semibold text-[#1d1d1f] truncate leading-tight">
-              {formattedDisplayName}
-            </p>
-            <div className="flex items-center gap-1.5 mt-0.5">
-              <span className="text-xs text-[#86868b] font-normal leading-none truncate max-w-[135px]" title={getRoleSubtitle()}>
-                {getRoleSubtitle()}
-              </span>
+        {(() => {
+          const profilePath =
+            portalType === 'CLINIC'
+              ? '/clinic/profile'
+              : portalType === 'DOCTOR'
+              ? '/doctor/profile'
+              : portalType === 'PATIENT'
+              ? '/patient/profile'
+              : undefined;
+
+          const capsuleContent = (
+            <div className={`bg-[#f5f5f7] border border-[#e5e5ea] rounded-2xl p-3 flex items-center gap-3 transition-colors ${profilePath ? 'hover:bg-[#ebebed] group cursor-pointer' : ''}`}>
+              {user?.avatarUrl ? (
+                <img
+                  src={getFileUrl(user.avatarUrl)}
+                  alt={formattedDisplayName}
+                  className="w-9 h-9 rounded-full object-cover flex-shrink-0 border border-[#e5e5ea]"
+                />
+              ) : (
+                <div className="w-9 h-9 rounded-full bg-[#0066cc] text-white flex items-center justify-center font-semibold text-sm flex-shrink-0">
+                  {initialLetter}
+                </div>
+              )}
+              <div className="min-w-0 flex-1">
+                <p className="text-[13px] font-semibold text-[#1d1d1f] truncate leading-tight group-hover:text-[#0066cc] transition-colors">
+                  {formattedDisplayName}
+                </p>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="text-xs text-[#86868b] font-normal leading-none truncate max-w-[135px]" title={getRoleSubtitle()}>
+                    {getRoleSubtitle()}
+                  </span>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
+          );
+
+          return profilePath ? (
+            <Link
+              to={profilePath}
+              onClick={() => setMobileDrawerOpen(false)}
+              className="block"
+              title="View Profile Settings"
+            >
+              {capsuleContent}
+            </Link>
+          ) : (
+            capsuleContent
+          );
+        })()}
 
         {/* Navigation Section */}
         <div>

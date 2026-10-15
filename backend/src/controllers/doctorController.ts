@@ -12,6 +12,13 @@ import {
   timeToMinutes,
   getLocalDateString,
   cleanSlotName,
+  cleanWorkingDays,
+  parseDoctorWorkingDays,
+  parseDoctorLeaves,
+  isDoctorOnLeave,
+  isDoctorWorkingOnDate,
+  DoctorLeave,
+  isValidAppointmentDate,
 } from '../utils/scheduleUtils';
 import { isDoctorEligibleForClinicalPractice, verifyReceptionistDoctorAccess, isClinicActive } from '../utils/authGuards';
 import { parsePaginationParams, buildPaginationMetadata } from '../utils/pagination';
@@ -41,12 +48,19 @@ export const formatDoctorClinics = (doc: any) => {
 
     // Exclude raw clinic.receptionists and physical check-in security code from public clinic projection (FIX-006, SEC-001)
     const { receptionists: _clinicRecs, checkinCode: _secretCode, ...cleanClinic } = cd.clinic || {};
+    const workingDays = cd.workingDays ? parseDoctorWorkingDays(cd.workingDays) : parseDoctorWorkingDays(doc.workingDays);
+    const leaves = [
+      ...parseDoctorLeaves(doc.leaves),
+      ...(cd.leaves ? parseDoctorLeaves(cd.leaves) : []),
+    ];
 
     return {
       ...cd,
       clinic: cleanClinic,
       consultationFee: cd.consultationFee ?? doc.consultationFee,
       slots: clinicSlots,
+      workingDays,
+      leaves,
       receptionists,
       hasReceptionist: receptionists.length > 0,
     };
@@ -534,6 +548,10 @@ export const updateSchedule = async (req: AuthRequest, res: Response): Promise<v
         if (consultationFee !== undefined && Number.isFinite(Number(consultationFee)) && Number(consultationFee) >= 0) {
           clinicUpdateData.consultationFee = Number(consultationFee);
         }
+        if (req.body.workingDays && Array.isArray(req.body.workingDays)) {
+          const cleanedDays = cleanWorkingDays(req.body.workingDays);
+          clinicUpdateData.workingDays = JSON.stringify(cleanedDays);
+        }
 
         await tx.clinicDoctor.update({
           where: { id: clinicAffiliation.id },
@@ -576,6 +594,7 @@ export const updateSchedule = async (req: AuthRequest, res: Response): Promise<v
           clinicName: clinicAffiliation.clinic.clinicName,
           consultationFee: clinicUpdateData.consultationFee ?? (clinicAffiliation as any).consultationFee ?? doctor.consultationFee,
           slots: formattedSlots.length > 0 ? formattedSlots : parseDoctorSlots(doctor),
+          workingDays: clinicUpdateData.workingDays ? JSON.parse(clinicUpdateData.workingDays) : parseDoctorWorkingDays((clinicAffiliation as any).workingDays),
         },
       });
       return;
@@ -600,6 +619,10 @@ export const updateSchedule = async (req: AuthRequest, res: Response): Promise<v
     if (formattedSlots.length > 0) {
       updateData.slots = JSON.stringify(formattedSlots);
     }
+    if (req.body.workingDays && Array.isArray(req.body.workingDays)) {
+      const cleanedDays = cleanWorkingDays(req.body.workingDays);
+      updateData.workingDays = JSON.stringify(cleanedDays);
+    }
 
     const updated = await prisma.doctorProfile.update({
       where: { id: doctor.id },
@@ -617,6 +640,7 @@ export const updateSchedule = async (req: AuthRequest, res: Response): Promise<v
       data: {
         ...updated,
         slots: parseDoctorSlots(updated),
+        workingDays: updated.workingDays ? JSON.parse(updated.workingDays) : ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'],
       },
     });
   } catch (error: any) {
@@ -730,6 +754,17 @@ export const getDoctorAffiliations = async (req: AuthRequest, res: Response): Pr
           } catch {}
         }
 
+        const workingDays = (cd as any).workingDays
+          ? parseDoctorWorkingDays((cd as any).workingDays)
+          : parseDoctorWorkingDays((doctor as any).workingDays);
+        const leaves = [
+          ...parseDoctorLeaves((doctor as any).leaves),
+          ...((cd as any).leaves ? parseDoctorLeaves((cd as any).leaves) : []),
+        ];
+        const todayStr = getLocalDateString();
+        const todayLeaveCheck = isDoctorOnLeave(leaves, todayStr, cd.clinic.id);
+        const todayWorkingCheck = isDoctorWorkingOnDate(workingDays, todayStr);
+
         return {
           affiliationId: cd.id,
           clinicId: cd.clinic.id,
@@ -743,6 +778,11 @@ export const getDoctorAffiliations = async (req: AuthRequest, res: Response): Pr
           revenue,
           consultationFee: clinicFee,
           slots: clinicSlots,
+          workingDays,
+          leaves,
+          isOnLeaveToday: todayLeaveCheck.isOnLeave,
+          todayLeave: todayLeaveCheck.leave || null,
+          isWorkingToday: todayWorkingCheck.isWorking,
           status: cd.status,
           requestedBy: (cd as any).requestedBy || 'CLINIC',
           joinedAt: cd.createdAt,
@@ -1576,4 +1616,428 @@ export const getDoctorReport = async (req: AuthRequest, res: Response): Promise<
     res.status(500).json({ success: false, message: 'Failed to generate doctor report' });
   }
 };
+
+/**
+ * Get comprehensive doctor schedule configuration, working days, and leave records
+ */
+export const getDoctorScheduleConfig = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Authentication required' });
+      return;
+    }
+
+    let doctorId = req.params.doctorId ? String(req.params.doctorId) : undefined;
+    const clinicId = req.query.clinicId ? String(req.query.clinicId) : undefined;
+
+    if (req.user.role === 'DOCTOR') {
+      const docProfile = await prisma.doctorProfile.findUnique({ where: { userId: req.user.id } });
+      if (!docProfile) {
+        res.status(404).json({ success: false, message: 'Doctor profile not found' });
+        return;
+      }
+      doctorId = docProfile.id;
+    } else if (req.user.role === 'RECEPTIONIST') {
+      if (!doctorId) {
+        res.status(400).json({ success: false, message: 'doctorId is required for receptionist' });
+        return;
+      }
+      const access = await verifyReceptionistDoctorAccess(req.user.id, doctorId, clinicId || null);
+      if (!access.authorized) {
+        res.status(403).json({ success: false, message: access.reason || 'Unauthorized for this practitioner' });
+        return;
+      }
+    } else if (req.user.role === 'CLINIC') {
+      if (!doctorId) {
+        res.status(400).json({ success: false, message: 'doctorId is required' });
+        return;
+      }
+    } else if (req.user.role !== 'ADMIN') {
+      res.status(403).json({ success: false, message: 'Access denied' });
+      return;
+    }
+
+    const doctor = await prisma.doctorProfile.findUnique({
+      where: { id: doctorId },
+      include: {
+        user: { select: { fullName: true, email: true, phone: true, avatarUrl: true } },
+        clinics: {
+          include: { clinic: { select: { id: true, clinicName: true, address: true, city: true } } },
+        },
+      },
+    });
+
+    if (!doctor) {
+      res.status(404).json({ success: false, message: 'Doctor profile not found' });
+      return;
+    }
+
+    let targetAffiliation: any = null;
+    if (clinicId) {
+      targetAffiliation = doctor.clinics?.find((c) => c.clinicId === clinicId);
+    }
+
+    const workingDays = targetAffiliation?.workingDays
+      ? parseDoctorWorkingDays(targetAffiliation.workingDays)
+      : parseDoctorWorkingDays((doctor as any).workingDays);
+
+    const clinicLeaves = targetAffiliation?.leaves ? parseDoctorLeaves(targetAffiliation.leaves) : [];
+    const globalLeaves = (doctor as any).leaves ? parseDoctorLeaves((doctor as any).leaves) : [];
+    const allLeaves = [...globalLeaves, ...clinicLeaves];
+
+    const todayStr = getLocalDateString();
+    const todayLeaveCheck = isDoctorOnLeave(allLeaves, todayStr, clinicId || null);
+    const todayWorkingCheck = isDoctorWorkingOnDate(workingDays, todayStr);
+
+    res.json({
+      success: true,
+      data: {
+        doctorId: doctor.id,
+        doctorName: doctor.user.fullName,
+        clinicId: clinicId || null,
+        clinicName: targetAffiliation?.clinic?.clinicName || null,
+        workingDays,
+        leaves: allLeaves,
+        slots: targetAffiliation?.slots ? parseDoctorSlots(targetAffiliation) : parseDoctorSlots(doctor),
+        consultationFee: targetAffiliation?.consultationFee ?? doctor.consultationFee,
+        isOnLeaveToday: todayLeaveCheck.isOnLeave,
+        todayLeave: todayLeaveCheck.leave || null,
+        isWorkingToday: todayWorkingCheck.isWorking,
+      },
+    });
+  } catch (error: any) {
+    console.error('getDoctorScheduleConfig error:', error);
+    res.status(500).json({ success: false, message: 'Failed to retrieve doctor schedule config' });
+  }
+};
+
+/**
+ * Update working days (e.g. ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']) for doctor or clinic affiliation
+ * Accessible by DOCTOR and RECEPTIONIST
+ */
+export const updateDoctorWorkingDays = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user || !['DOCTOR', 'RECEPTIONIST'].includes(req.user.role)) {
+      res.status(403).json({ success: false, message: 'Access denied: doctor or receptionist role required' });
+      return;
+    }
+
+    let doctorId = req.params.doctorId ? String(req.params.doctorId) : undefined;
+    let clinicId = req.body.clinicId ? String(req.body.clinicId) : undefined;
+    const rawDays = req.body.workingDays;
+
+    if (!Array.isArray(rawDays) || rawDays.length === 0) {
+      res.status(400).json({
+        success: false,
+        message: 'workingDays must be a non-empty array of days (e.g. ["MON", "TUE", "WED"])',
+      });
+      return;
+    }
+
+    const cleanedDays = cleanWorkingDays(rawDays);
+    let targetClinicId: string | null = clinicId || null;
+
+    if (req.user.role === 'DOCTOR') {
+      const docProfile = await prisma.doctorProfile.findUnique({ where: { userId: req.user.id } });
+      if (!docProfile) {
+        res.status(404).json({ success: false, message: 'Doctor profile not found' });
+        return;
+      }
+      doctorId = docProfile.id;
+    } else {
+      // RECEPTIONIST
+      const mustChangePassword = Boolean((req.user as any).mustChangePassword);
+      if (mustChangePassword) {
+        res.status(403).json({
+          success: false,
+          message: 'Temporary password must be changed before accessing clinical desk operations.',
+        });
+        return;
+      }
+      if (!doctorId) {
+        res.status(400).json({ success: false, message: 'doctorId is required' });
+        return;
+      }
+      const recProfile = await prisma.receptionistProfile.findUnique({ where: { userId: req.user.id } });
+      if (!recProfile || !recProfile.clinicId) {
+        res.status(403).json({ success: false, message: 'Receptionist is not assigned to an active clinic facility' });
+        return;
+      }
+      targetClinicId = recProfile.clinicId;
+      const access = await verifyReceptionistDoctorAccess(req.user.id, doctorId, targetClinicId);
+      if (!access.authorized) {
+        res.status(403).json({ success: false, message: access.reason || 'Unauthorized for this practitioner' });
+        return;
+      }
+    }
+
+    if (targetClinicId) {
+      const cd = await prisma.clinicDoctor.findUnique({
+        where: { clinicId_doctorId: { clinicId: targetClinicId, doctorId } },
+      });
+      if (!cd) {
+        res.status(404).json({ success: false, message: 'Doctor clinic affiliation not found' });
+        return;
+      }
+      await prisma.clinicDoctor.update({
+        where: { id: cd.id },
+        data: { workingDays: JSON.stringify(cleanedDays) },
+      });
+    } else {
+      await prisma.doctorProfile.update({
+        where: { id: doctorId },
+        data: { workingDays: JSON.stringify(cleanedDays) },
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Doctor working days updated successfully',
+      data: {
+        doctorId,
+        clinicId: targetClinicId,
+        workingDays: cleanedDays,
+      },
+    });
+  } catch (error: any) {
+    console.error('updateDoctorWorkingDays error:', error);
+    res.status(500).json({ success: false, message: 'Failed to update working days' });
+  }
+};
+
+/**
+ * Record a leave for doctor (Today or Date range)
+ * Accessible by DOCTOR and RECEPTIONIST
+ */
+export const addDoctorLeave = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user || !['DOCTOR', 'RECEPTIONIST'].includes(req.user.role)) {
+      res.status(403).json({ success: false, message: 'Access denied: doctor or receptionist role required' });
+      return;
+    }
+
+    let doctorId = req.params.doctorId ? String(req.params.doctorId) : undefined;
+    const { type = 'TODAY', reason, clinicId: reqClinicId } = req.body;
+    let { startDate, endDate } = req.body;
+
+    const todayStr = getLocalDateString();
+
+    if (type === 'TODAY') {
+      startDate = todayStr;
+      endDate = todayStr;
+    } else if (type === 'DATE_RANGE') {
+      if (!startDate || !endDate) {
+        res.status(400).json({ success: false, message: 'startDate and endDate are required for DATE_RANGE leave' });
+        return;
+      }
+      if (!isValidAppointmentDate(startDate) || !isValidAppointmentDate(endDate)) {
+        res.status(400).json({ success: false, message: 'Invalid date format (must be YYYY-MM-DD)' });
+        return;
+      }
+      if (startDate > endDate) {
+        res.status(400).json({ success: false, message: 'startDate cannot be after endDate' });
+        return;
+      }
+      if (endDate < todayStr) {
+        res.status(400).json({ success: false, message: 'Cannot schedule leave in the past' });
+        return;
+      }
+    } else {
+      res.status(400).json({ success: false, message: 'Invalid leave type. Must be TODAY or DATE_RANGE' });
+      return;
+    }
+
+    let targetClinicId: string | null = reqClinicId || null;
+    const creatorName = req.user.fullName || 'Desk Staff';
+
+    if (req.user.role === 'DOCTOR') {
+      const docProfile = await prisma.doctorProfile.findUnique({ where: { userId: req.user.id } });
+      if (!docProfile) {
+        res.status(404).json({ success: false, message: 'Doctor profile not found' });
+        return;
+      }
+      doctorId = docProfile.id;
+    } else {
+      // RECEPTIONIST
+      const mustChangePassword = Boolean((req.user as any).mustChangePassword);
+      if (mustChangePassword) {
+        res.status(403).json({
+          success: false,
+          message: 'Temporary password must be changed before accessing clinical desk operations.',
+        });
+        return;
+      }
+      if (!doctorId) {
+        res.status(400).json({ success: false, message: 'doctorId is required' });
+        return;
+      }
+      const recProfile = await prisma.receptionistProfile.findUnique({ where: { userId: req.user.id } });
+      if (!recProfile || !recProfile.clinicId) {
+        res.status(403).json({ success: false, message: 'Receptionist is not assigned to an active clinic facility' });
+        return;
+      }
+      targetClinicId = recProfile.clinicId;
+      const access = await verifyReceptionistDoctorAccess(req.user.id, doctorId, targetClinicId);
+      if (!access.authorized) {
+        res.status(403).json({ success: false, message: access.reason || 'Unauthorized for this practitioner' });
+        return;
+      }
+    }
+
+    let clinicName: string | undefined;
+    if (targetClinicId) {
+      const clinic = await prisma.clinicProfile.findUnique({ where: { id: targetClinicId }, select: { clinicName: true } });
+      clinicName = clinic?.clinicName;
+    }
+
+    const newLeave: DoctorLeave = {
+      id: `leave_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      type,
+      startDate,
+      endDate,
+      reason: reason && typeof reason === 'string' && reason.trim() ? reason.trim() : undefined,
+      clinicId: targetClinicId,
+      clinicName,
+      createdAt: new Date().toISOString(),
+      createdByRole: req.user.role as any,
+      createdByName: creatorName,
+    };
+
+    if (targetClinicId) {
+      const cd = await prisma.clinicDoctor.findUnique({
+        where: { clinicId_doctorId: { clinicId: targetClinicId, doctorId } },
+      });
+      if (!cd) {
+        res.status(404).json({ success: false, message: 'Doctor clinic affiliation not found' });
+        return;
+      }
+      const existing = parseDoctorLeaves((cd as any).leaves);
+      const updatedLeaves = [...existing, newLeave];
+      await prisma.clinicDoctor.update({
+        where: { id: cd.id },
+        data: { leaves: JSON.stringify(updatedLeaves) },
+      });
+    } else {
+      const doc = await prisma.doctorProfile.findUnique({ where: { id: doctorId } });
+      if (!doc) {
+        res.status(404).json({ success: false, message: 'Doctor profile not found' });
+        return;
+      }
+      const existing = parseDoctorLeaves((doc as any).leaves);
+      const updatedLeaves = [...existing, newLeave];
+      await prisma.doctorProfile.update({
+        where: { id: doctorId },
+        data: { leaves: JSON.stringify(updatedLeaves) },
+      });
+    }
+
+    res.json({
+      success: true,
+      message: type === 'TODAY' ? 'Doctor marked on leave for today' : `Doctor leave scheduled from ${startDate} to ${endDate}`,
+      data: newLeave,
+    });
+  } catch (error: any) {
+    console.error('addDoctorLeave error:', error);
+    res.status(500).json({ success: false, message: 'Failed to record doctor leave' });
+  }
+};
+
+/**
+ * Cancel/remove a scheduled leave for a doctor
+ * Accessible by DOCTOR and RECEPTIONIST
+ */
+export const cancelDoctorLeave = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user || !['DOCTOR', 'RECEPTIONIST'].includes(req.user.role)) {
+      res.status(403).json({ success: false, message: 'Access denied: doctor or receptionist role required' });
+      return;
+    }
+
+    let doctorId = req.params.doctorId ? String(req.params.doctorId) : undefined;
+    const leaveId = String(req.params.leaveId);
+
+    if (req.user.role === 'DOCTOR') {
+      const docProfile = await prisma.doctorProfile.findUnique({ where: { userId: req.user.id } });
+      if (!docProfile) {
+        res.status(404).json({ success: false, message: 'Doctor profile not found' });
+        return;
+      }
+      doctorId = docProfile.id;
+    } else {
+      // RECEPTIONIST
+      const mustChangePassword = Boolean((req.user as any).mustChangePassword);
+      if (mustChangePassword) {
+        res.status(403).json({
+          success: false,
+          message: 'Temporary password must be changed before accessing clinical desk operations.',
+        });
+        return;
+      }
+      if (!doctorId) {
+        res.status(400).json({ success: false, message: 'doctorId is required' });
+        return;
+      }
+      const recProfile = await prisma.receptionistProfile.findUnique({ where: { userId: req.user.id } });
+      if (!recProfile || !recProfile.clinicId) {
+        res.status(403).json({ success: false, message: 'Receptionist is not assigned to an active clinic facility' });
+        return;
+      }
+      const access = await verifyReceptionistDoctorAccess(req.user.id, doctorId, recProfile.clinicId);
+      if (!access.authorized) {
+        res.status(403).json({ success: false, message: access.reason || 'Unauthorized for this practitioner' });
+        return;
+      }
+    }
+
+    // Check both ClinicDoctor affiliations and DoctorProfile
+    const doctor = await prisma.doctorProfile.findUnique({
+      where: { id: doctorId },
+      include: { clinics: true },
+    });
+    if (!doctor) {
+      res.status(404).json({ success: false, message: 'Doctor profile not found' });
+      return;
+    }
+
+    let removed = false;
+
+    // Check DoctorProfile.leaves
+    const docLeaves = parseDoctorLeaves((doctor as any).leaves);
+    const filteredDocLeaves = docLeaves.filter((l) => l.id !== leaveId);
+    if (filteredDocLeaves.length !== docLeaves.length) {
+      await prisma.doctorProfile.update({
+        where: { id: doctorId },
+        data: { leaves: JSON.stringify(filteredDocLeaves) },
+      });
+      removed = true;
+    }
+
+    // Check each clinic affiliation
+    for (const cd of doctor.clinics) {
+      const cdLeaves = parseDoctorLeaves((cd as any).leaves);
+      const filteredCdLeaves = cdLeaves.filter((l) => l.id !== leaveId);
+      if (filteredCdLeaves.length !== cdLeaves.length) {
+        await prisma.clinicDoctor.update({
+          where: { id: cd.id },
+          data: { leaves: JSON.stringify(filteredCdLeaves) },
+        });
+        removed = true;
+      }
+    }
+
+    if (!removed) {
+      res.status(404).json({ success: false, message: 'Leave record not found' });
+      return;
+    }
+
+    res.json({
+      success: true,
+      message: 'Doctor leave cancelled successfully',
+    });
+  } catch (error: any) {
+    console.error('cancelDoctorLeave error:', error);
+    res.status(500).json({ success: false, message: 'Failed to cancel doctor leave' });
+  }
+};
+
 

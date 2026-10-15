@@ -26,6 +26,7 @@ MediArca is an Indian healthcare patient appointment and live queue management s
 | 14 | Receptionist Payment Coordination | Expose receptionist contact info on passes and booking screens; enable patients to call receptionist directly to coordinate online payment (UPI) or pay at desk | M4 | User Requirement |
 | 15 | Feature Specification Pruning | Prune bloated features from `MediArca_Feature_Specification.md` to reflect exact active 5-portal scope | M4 | User Requirement |
 | 16 | Agent Memory & Rules Architecture | Establish `AGENTS.md`, `docs/architecture.md`, ADRs 001-005, `docs/known-issues.md`, and hierarchical rules | M4 | User Requirement |
+| 17 | Clinic Profile & Facility Settings | Full Clinic Profile page with exterior/logo upload, frame crop, auto-compression, name/address sync, and sidebar navigation | M5 | User Requirement |
 
 ## Milestones
 | # | Name | Scope | Dependencies | Status |
@@ -34,6 +35,7 @@ MediArca is an Indian healthcare patient appointment and live queue management s
 | M2 | Frontend Portals, Localization & Design Compliance | Admin INR currency, live ticket state sync, API resilience, lint hygiene, Action Blue palette | none | DONE (build pass, lint pass 0 errors) |
 | M3 | Fullstack Gate Verification & Forensic Audit | Verification suite run, full builds, challenger stress test, forensic audit | M1, M2 | DONE (2,020/2,020 tests pass, builds clean, linter clean, forensic audit clean) |
 | M4 | Specification Alignment & Agent Memory System | Prune specs, pay-to-receptionist coordination, complete `docs/` ADRs, `AGENTS.md` hierarchy | M3 | DONE (2,020 tests pass, clean builds, 0 lint errors) |
+| M5 | Clinic Profile & Facility Branding | Dedicated clinic settings, photo/logo crop & compression, atomic address & name sync, portal navigation | M4 | DONE (2,023/2,023 tests pass, builds clean, 0 lint errors) |
 
 ## Interface Contracts
 ### Pay-to-Receptionist Coordination Contract

@@ -1,8 +1,8 @@
 # MediArca Known Issues, Defect Ledger & Engineering Lessons
 
-## 1. Resolved Defects Ledger (FIX-001 through FIX-023)
+## 1. Resolved Defects Ledger (FIX-001 through FIX-024)
 
-The following defect resolutions have been implemented and verified by 2,020+ automated regression tests in `backend/scripts/verify-fixes.ts`:
+The following defect resolutions have been implemented and verified by 2,023+ automated regression tests in `backend/scripts/verify-fixes.ts`:
 
 | Fix ID | Subsystem | Description & Resolution |
 |--------|-----------|--------------------------|
@@ -29,6 +29,8 @@ The following defect resolutions have been implemented and verified by 2,020+ au
 | **FIX-021** | Desk Reschedule | Fixed receptionist walk-in consultation date picker to lock past dates using `min={getLocalDateString()}` and safe calendar math. |
 | **FIX-022** | Admin Telemetry | Added affiliated clinics in doctor inspection, affiliated doctors in clinic inspection, and implemented message deletion. |
 | **FIX-023** | User Resilience | Added dedicated Apple-styled NotFound page with recovery CTAs; added live offline connectivity banner. |
+| **FIX-024** | Clinic Profile | Added clinic profile settings page with logo crop & auto-compression, atomic User & ClinicProfile synchronization, Indian phone validation, and dashboard integration. |
+| **FIX-025** | Schedule & Absence | Added independent weekly sitting days (Mon-Sun) selection and leave management (Today toggle + Date Range leave) for both Doctors and Receptionists, enforced in slot availability, walk-in tokens, and patient booking. |
 
 ---
 
@@ -44,6 +46,8 @@ The master test suite additionally verifies:
 - `ARCH-011`: Stale closures in dashboard polling intervals eliminated via React refs.
 - `ARCH-012`: Consultation transitions locked inside transactions, validate state machine, and handle `clinicId: null`.
 - `ARCH-016`: Email service safely escapes HTML greeting names to prevent email injection.
+- `ARCH-017` / `FIX-024`: Clinic profile updates synchronize both ClinicProfile and parent User atomically; rejects base64 data URLs in profile payload.
+- `ARCH-018` / `FIX-025`: Doctor working days (`workingDays`) and leave periods (`leaves`) strictly gate slot availability and booking transactions; verified receptionist access control scopes updates to linked clinic facilities.
 
 ---
 

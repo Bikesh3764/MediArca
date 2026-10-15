@@ -10,6 +10,8 @@ import {
   getTomorrowDateString,
   DoctorAffiliationsData,
   ClinicProfile,
+  ALL_WEEKDAYS,
+  WEEKDAY_SHORT_NAMES,
 } from '../../services/api';
 import { sanitizeIndianPhone, formatIndianPhone, isValidIndianPhone } from '../../utils/phoneUtils';
 import { useVisibilityPolling } from '../../utils/useVisibilityPolling';
@@ -36,6 +38,8 @@ import {
   Clock3,
   LayoutDashboard,
   Calendar,
+  CalendarDays,
+  CalendarX,
   QrCode,
   ChevronDown,
   Phone,
@@ -45,6 +49,7 @@ import {
 } from 'lucide-react';
 import { ClinicQrStandeeModal } from '../../components/common/ClinicQrStandeeModal';
 import { ClinicalReportModal } from '../../components/common/ClinicalReportModal';
+import { DoctorScheduleLeaveModal } from '../../components/common/DoctorScheduleLeaveModal';
 import { AppleFilterSelect, AppleFilterOption } from '../../components/ui/AppleFilterSelect';
 
 const getYesterdayDateString = (): string => {
@@ -156,6 +161,7 @@ export const DoctorDashboard: React.FC = () => {
   // Form and modal states for clinic affiliation
   const [isAffiliateModalOpen, setIsAffiliateModalOpen] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [scheduleLeaveModalClinic, setScheduleLeaveModalClinic] = useState<{ clinicId?: string; clinicName?: string } | null>(null);
   const [clinicSearchQuery, setClinicSearchQuery] = useState('');
   const [clinicStateFilter, setClinicStateFilter] = useState('All');
   const [clinicCityFilter, setClinicCityFilter] = useState('All');
@@ -1042,17 +1048,73 @@ export const DoctorDashboard: React.FC = () => {
                               : 'Default schedule'}
                           </span>
                         </div>
+
+                        {/* Sitting Days & Today Leave Status */}
+                        <div className="mt-3 pt-3 border-t border-[#e5e5ea] space-y-2">
+                          <div className="flex items-center justify-between text-xs px-1">
+                            <span className="font-medium text-[#86868b] flex items-center gap-1">
+                              <CalendarDays className="w-3.5 h-3.5 text-[#0066cc]" />
+                              <span>Sitting Days</span>
+                            </span>
+                            {clinic.isOnLeaveToday ? (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-200 flex items-center gap-1">
+                                <CalendarX className="w-3 h-3" />
+                                <span>On Leave Today</span>
+                              </span>
+                            ) : (() => {
+                              const todayCode = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'][new Date().getDay()];
+                              const docDays = clinic.workingDays || ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+                              const sitsToday = docDays.includes(todayCode);
+                              return (
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                                  sitsToday
+                                    ? 'bg-[#34c759]/10 text-[#34c759] border-[#34c759]/20'
+                                    : 'bg-[#f5f5f7] text-[#86868b] border-[#e5e5ea]'
+                                }`}>
+                                  {sitsToday ? 'Sitting Today' : 'Off Today'}
+                                </span>
+                              );
+                            })()}
+                          </div>
+
+                          <div className="flex items-center gap-1 flex-wrap px-1">
+                            {ALL_WEEKDAYS.map((d) => {
+                              const isSitting = (clinic.workingDays || ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']).includes(d);
+                              return (
+                                <span
+                                  key={d}
+                                  className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold ${
+                                    isSitting
+                                      ? 'bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20'
+                                      : 'bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea]'
+                                  }`}
+                                >
+                                  {WEEKDAY_SHORT_NAMES[d]}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        </div>
                       </div>
 
                       {/* Actions & Footer */}
-                      <div className="mt-4 pt-3 border-t border-[#e5e5ea] flex gap-2">
+                      <div className="mt-4 pt-3 border-t border-[#e5e5ea] flex items-center gap-2 flex-wrap">
                         <button
                           type="button"
                           onClick={() => navigate(`/doctor/schedule?clinic=${clinic.clinicId}`)}
-                          className="flex-1 h-9 px-3 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                          className="flex-1 min-w-[110px] h-9 px-3 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer"
                         >
                           <Clock className="w-3.5 h-3.5" />
                           <span>Shifts & Fee</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setScheduleLeaveModalClinic({ clinicId: clinic.clinicId, clinicName: clinic.clinicName })}
+                          className="h-9 px-3.5 rounded-full bg-white hover:bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                          title="Manage Sitting Days & Leaves"
+                        >
+                          <Calendar className="w-3.5 h-3.5 text-[#0066cc]" />
+                          <span>Leaves & Days</span>
                         </button>
                         <button
                           type="button"
@@ -1066,11 +1128,11 @@ export const DoctorDashboard: React.FC = () => {
                             });
                             setIsStandeeModalOpen(true);
                           }}
-                          className="h-9 px-3.5 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                          className="h-9 px-3 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer"
                           title="View & Print Clinic QR Standee"
                         >
                           <QrCode className="w-3.5 h-3.5 text-[#0066cc]" />
-                          <span>QR Standee</span>
+                          <span>QR</span>
                         </button>
                       </div>
                     </div>
@@ -1188,6 +1250,59 @@ export const DoctorDashboard: React.FC = () => {
                 </button>
               </div>
             )}
+
+            {/* Doctor On Leave Banner */}
+            {(() => {
+              const activeClinic = selectedClinicId !== 'all'
+                ? affiliations?.clinics.find((c) => c.clinicId === selectedClinicId)
+                : affiliations?.clinics.find((c) => c.isOnLeaveToday);
+              const isOnLeave = activeClinic ? activeClinic.isOnLeaveToday : user?.doctorProfile?.isOnLeaveToday;
+              const leaveInfo = activeClinic ? activeClinic.todayLeave : user?.doctorProfile?.todayLeave;
+              if (!isOnLeave) return null;
+              return (
+                <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-xs text-rose-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fadeIn shadow-xs">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <CalendarX className="w-5 h-5 text-rose-600 shrink-0" />
+                    <div>
+                      <h4 className="font-semibold text-[13px] text-rose-900">
+                        You are Marked on Leave Today
+                      </h4>
+                      <p className="text-rose-700 mt-0.5 leading-relaxed">
+                        {leaveInfo?.reason ? `Reason: ${leaveInfo.reason}` : 'New patient bookings and walk-in queue tokens are paused for today.'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+                    {leaveInfo?.id && (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            if (user?.doctorProfile?.id) {
+                              await api.cancelDoctorLeave(user.doctorProfile.id, leaveInfo.id);
+                              await fetchAffiliations();
+                              await fetchQueue(false);
+                            }
+                          } catch (err: any) {
+                            alert(err?.message || 'Failed to resume consultations');
+                          }
+                        }}
+                        className="h-8 px-3.5 rounded-full bg-white hover:bg-rose-100 text-rose-800 border border-rose-300 font-semibold text-xs transition-all cursor-pointer shadow-xs"
+                      >
+                        Resume Today
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setScheduleLeaveModalClinic({ clinicId: activeClinic?.clinicId, clinicName: activeClinic?.clinicName })}
+                      className="h-8 px-3.5 rounded-full bg-rose-600 hover:bg-rose-700 text-white font-medium text-xs transition-all cursor-pointer shadow-xs"
+                    >
+                      Manage Leaves
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Reschedule Success Feedback Banner */}
             {rescheduleSuccess && (
@@ -2606,6 +2721,22 @@ export const DoctorDashboard: React.FC = () => {
           city: c.city,
         }))}
       />
+
+      {/* Practitioner Schedule & Leave Management Modal */}
+      {scheduleLeaveModalClinic && (
+        <DoctorScheduleLeaveModal
+          isOpen={true}
+          onClose={() => setScheduleLeaveModalClinic(null)}
+          doctorId={user?.doctorProfile?.id || ''}
+          doctorName={user?.fullName || 'Practitioner'}
+          clinicId={scheduleLeaveModalClinic.clinicId}
+          clinicName={scheduleLeaveModalClinic.clinicName}
+          onSuccess={() => {
+            fetchAffiliations();
+            fetchQueue(false);
+          }}
+        />
+      )}
     </DashboardLayout>
   );
 };

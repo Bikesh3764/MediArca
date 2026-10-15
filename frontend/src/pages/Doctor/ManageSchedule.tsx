@@ -7,12 +7,16 @@ import {
   DoctorAffiliationClinic,
   timeToMinutes,
   cleanSlotName,
+  ALL_WEEKDAYS,
+  WEEKDAY_NAMES,
+  WEEKDAY_SHORT_NAMES,
+  DoctorLeave,
 } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { DashboardLayout, DashboardNavItem } from '../../components/layout/DashboardLayout';
 import { UtilityCard } from '../../components/ui/UtilityCard';
+import { DoctorScheduleLeaveModal } from '../../components/common/DoctorScheduleLeaveModal';
 import {
-  Clock,
   CheckCircle2,
   ChevronLeft,
   ChevronDown,
@@ -26,6 +30,9 @@ import {
   Phone,
   Settings,
   Calendar,
+  CalendarDays,
+  CalendarX,
+  CalendarCheck,
 } from 'lucide-react';
 
 const minutesToTime = (mins: number): string => {
@@ -54,6 +61,11 @@ export const ManageSchedule: React.FC = () => {
       avgConsultationMinutes: 20,
     },
   ]);
+
+  const [workingDays, setWorkingDays] = useState<string[]>(['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']);
+  const [isOnLeaveToday, setIsOnLeaveToday] = useState<boolean>(false);
+  const [todayLeave, setTodayLeave] = useState<DoctorLeave | null>(null);
+  const [isLeaveModalOpen, setIsLeaveModalOpen] = useState<boolean>(false);
 
   const [consultationFee, setConsultationFee] = useState<number>(500);
   const [saving, setSaving] = useState(false);
@@ -108,6 +120,20 @@ export const ManageSchedule: React.FC = () => {
         );
       }
       setConsultationFee(clinic.consultationFee ?? user?.doctorProfile?.consultationFee ?? 500);
+      if (clinic.workingDays && clinic.workingDays.length > 0) {
+        setWorkingDays(clinic.workingDays);
+      } else if (user?.doctorProfile?.workingDays) {
+        try {
+          const parsed = JSON.parse(user.doctorProfile.workingDays);
+          setWorkingDays(Array.isArray(parsed) && parsed.length > 0 ? parsed : ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']);
+        } catch {
+          setWorkingDays(['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']);
+        }
+      } else {
+        setWorkingDays(['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']);
+      }
+      setIsOnLeaveToday(Boolean(clinic.isOnLeaveToday));
+      setTodayLeave(clinic.todayLeave || null);
       setError(null);
       setSuccessMsg(null);
     },
@@ -143,6 +169,16 @@ export const ManageSchedule: React.FC = () => {
           }))
         );
         setConsultationFee(user.doctorProfile.consultationFee ?? 500);
+        if (user.doctorProfile.workingDays) {
+          try {
+            const parsed = JSON.parse(user.doctorProfile.workingDays);
+            setWorkingDays(Array.isArray(parsed) && parsed.length > 0 ? parsed : ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']);
+          } catch {
+            setWorkingDays(['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']);
+          }
+        }
+        setIsOnLeaveToday(Boolean(user.doctorProfile.isOnLeaveToday));
+        setTodayLeave(user.doctorProfile.todayLeave || null);
       }
     } catch (err: any) {
       console.error('Failed to load doctor clinics for schedule:', err);
@@ -249,6 +285,62 @@ export const ManageSchedule: React.FC = () => {
     });
   };
 
+  const toggleWorkingDay = (day: string) => {
+    setWorkingDays((prev) => {
+      if (prev.includes(day)) {
+        if (prev.length <= 1) {
+          setError('You must select at least one practicing day.');
+          return prev;
+        }
+        setError(null);
+        return prev.filter((d) => d !== day);
+      } else {
+        setError(null);
+        return ALL_WEEKDAYS.filter((d) => prev.includes(d) || d === day);
+      }
+    });
+  };
+
+  const handleSetWorkingDaysPreset = (preset: 'ALL' | 'WEEKDAYS' | 'MON_SAT') => {
+    setError(null);
+    if (preset === 'ALL') {
+      setWorkingDays([...ALL_WEEKDAYS]);
+    } else if (preset === 'WEEKDAYS') {
+      setWorkingDays(['MON', 'TUE', 'WED', 'THU', 'FRI']);
+    } else if (preset === 'MON_SAT') {
+      setWorkingDays(['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']);
+    }
+  };
+
+  const handleToggleTodayLeave = async () => {
+    if (!user?.doctorProfile?.id) return;
+    setSaving(true);
+    setError(null);
+    setSuccessMsg(null);
+    try {
+      if (isOnLeaveToday && todayLeave) {
+        await api.cancelDoctorLeave(user.doctorProfile.id, todayLeave.id);
+        setIsOnLeaveToday(false);
+        setTodayLeave(null);
+        setSuccessMsg('You have resumed consultations for today.');
+      } else {
+        const res = await api.addDoctorLeave(user.doctorProfile.id, {
+          type: 'TODAY',
+          reason: 'Marked on leave today',
+          clinicId: selectedClinic ? selectedClinic.clinicId : undefined,
+        });
+        setIsOnLeaveToday(true);
+        setTodayLeave(res || null);
+        setSuccessMsg('You are marked on leave for today.');
+      }
+      await fetchAffiliations();
+    } catch (err: any) {
+      setError(err?.message || 'Failed to update leave status');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const totalMaxDailyPatients = slots.reduce((sum, s) => sum + (Number(s.maxPatients) || 0), 0);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -261,6 +353,12 @@ export const ManageSchedule: React.FC = () => {
     setSaving(true);
     setError(null);
     setSuccessMsg(null);
+
+    if (workingDays.length === 0) {
+      setError('Please select at least one practicing day for this clinic facility.');
+      setSaving(false);
+      return;
+    }
 
     if (isNaN(Number(consultationFee)) || Number(consultationFee) < 0) {
       setError('Please enter a valid consultation fee in ₹ INR (must be 0 or greater).');
@@ -321,6 +419,7 @@ export const ManageSchedule: React.FC = () => {
           avgConsultationMinutes: Number(s.avgConsultationMinutes),
         })),
         consultationFee: Number(consultationFee),
+        workingDays,
       });
 
       await refreshUser();
@@ -333,7 +432,7 @@ export const ManageSchedule: React.FC = () => {
         setClinics((prev) =>
           prev.map((c) =>
             c.clinicId === selectedClinic.clinicId
-              ? { ...c, slots, consultationFee: Number(consultationFee) }
+              ? { ...c, slots, consultationFee: Number(consultationFee), workingDays }
               : c
           )
         );
@@ -451,7 +550,81 @@ export const ManageSchedule: React.FC = () => {
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Header & Capacity Summary Card */}
+                {/* 1. Weekly Practice Days Selector */}
+                <div className="p-5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#e5e5ea]">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-full bg-[#0066cc]/10 flex items-center justify-center text-[#0066cc] shrink-0">
+                        <CalendarDays className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h3 className="text-[15px] font-semibold text-[#1d1d1f] tracking-tight">
+                          Weekly Practice Days
+                        </h3>
+                        <p className="text-xs text-[#86868b] mt-0.5">
+                          Select the days you sit at {selectedClinic ? selectedClinic.clinicName : 'this facility'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Presets */}
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => handleSetWorkingDaysPreset('ALL')}
+                        className="h-7 px-2.5 rounded-full bg-white hover:bg-[#e8e8ed] text-[11px] font-medium text-[#1d1d1f] border border-[#e5e5ea] transition-all cursor-pointer"
+                      >
+                        All 7 Days
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleSetWorkingDaysPreset('MON_SAT')}
+                        className="h-7 px-2.5 rounded-full bg-white hover:bg-[#e8e8ed] text-[11px] font-medium text-[#1d1d1f] border border-[#e5e5ea] transition-all cursor-pointer"
+                      >
+                        Mon – Sat
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleSetWorkingDaysPreset('WEEKDAYS')}
+                        className="h-7 px-2.5 rounded-full bg-white hover:bg-[#e8e8ed] text-[11px] font-medium text-[#1d1d1f] border border-[#e5e5ea] transition-all cursor-pointer"
+                      >
+                        Mon – Fri
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Day Pills Grid */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
+                    {ALL_WEEKDAYS.map((day) => {
+                      const isSelected = workingDays.includes(day);
+                      return (
+                        <button
+                          key={day}
+                          type="button"
+                          onClick={() => toggleWorkingDay(day)}
+                          className={`p-3 rounded-2xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
+                            isSelected
+                              ? 'bg-[#0066cc] border-[#0066cc] text-white shadow-[0_2px_8px_rgba(0,102,204,0.25)]'
+                              : 'bg-white border-[#e5e5ea] text-[#86868b] hover:bg-[#e8e8ed] hover:text-[#1d1d1f]'
+                          }`}
+                        >
+                          <span className="text-xs font-bold tracking-wide">
+                            {WEEKDAY_SHORT_NAMES[day]}
+                          </span>
+                          <span className={`text-[10px] ${isSelected ? 'text-white/80' : 'text-[#86868b]'}`}>
+                            {WEEKDAY_NAMES[day]}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <p className="text-[11px] text-[#86868b]">
+                    Patients and clinic desk staff cannot book appointment slots or walk-in queue tokens on days you do not sit.
+                  </p>
+                </div>
+
+                {/* 2. Header & Capacity Summary Card */}
                 <div className="p-5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                   <div>
                     <span className="text-xs font-medium text-[#86868b] block mb-0.5">
@@ -475,7 +648,7 @@ export const ManageSchedule: React.FC = () => {
                   </button>
                 </div>
 
-                {/* Multiple Checking Shifts Section */}
+                {/* 3. Multiple Checking Shifts Section */}
                 <div className="space-y-4">
                   {slots.map((slot, idx) => (
                     <div
@@ -585,7 +758,7 @@ export const ManageSchedule: React.FC = () => {
                   ))}
                 </div>
 
-                {/* Consultation Fee in Indian Rupees (₹ INR) */}
+                {/* 4. Consultation Fee in Indian Rupees (₹ INR) */}
                 <div className="p-5 rounded-2xl bg-white border border-[#e5e5ea] space-y-4">
                   <div className="max-w-sm">
                     <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
@@ -609,6 +782,88 @@ export const ManageSchedule: React.FC = () => {
                   </div>
                 </div>
 
+                {/* 5. Leaves & Out-of-Office Section */}
+                <div className="p-5 rounded-2xl bg-white border border-[#e5e5ea] space-y-4 shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#f0f0f2]">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-full bg-[#ff3b30]/10 flex items-center justify-center text-[#ff3b30] shrink-0">
+                        <CalendarX className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h3 className="text-[15px] font-semibold text-[#1d1d1f] tracking-tight">
+                          Out-of-Office & Leaves
+                        </h3>
+                        <p className="text-xs text-[#86868b] mt-0.5">
+                          Put yourself on leave for today or schedule an upcoming absence window
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setIsLeaveModalOpen(true)}
+                      className="h-8 px-3.5 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-xs font-semibold text-[#0066cc] border border-[#e5e5ea] transition-all cursor-pointer flex items-center gap-1.5 self-start sm:self-auto"
+                    >
+                      <Calendar className="w-3.5 h-3.5" />
+                      <span>Manage All Leaves & Dates</span>
+                    </button>
+                  </div>
+
+                  {/* Today attendance banner & toggle */}
+                  <div className="p-4 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5">
+                      {isOnLeaveToday ? (
+                        <>
+                          <div className="w-2.5 h-2.5 rounded-full bg-[#ff3b30] shrink-0" />
+                          <div>
+                            <span className="text-xs font-semibold text-[#1d1d1f] block">
+                              Marked on Leave Today
+                            </span>
+                            <span className="text-[11px] text-[#ff3b30]">
+                              {todayLeave?.reason ? `Reason: ${todayLeave.reason}` : 'No patient consultations will be accepted today.'}
+                            </span>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="w-2.5 h-2.5 rounded-full bg-[#34c759] shrink-0" />
+                          <div>
+                            <span className="text-xs font-semibold text-[#1d1d1f] block">
+                              Available for Consultations Today
+                            </span>
+                            <span className="text-[11px] text-[#86868b]">
+                              Your queue is active and accepting patient tokens.
+                            </span>
+                          </div>
+                        </>
+                      )}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleToggleTodayLeave}
+                      disabled={saving}
+                      className={`h-8 px-4 rounded-full text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 active:scale-95 disabled:opacity-60 ${
+                        isOnLeaveToday
+                          ? 'bg-[#34c759] hover:bg-[#30b753] text-white shadow-xs'
+                          : 'bg-[#fff1f0] hover:bg-[#ffe2e0] text-[#ff3b30] border border-[#ff3b30]/20'
+                      }`}
+                    >
+                      {isOnLeaveToday ? (
+                        <>
+                          <CalendarCheck className="w-3.5 h-3.5" />
+                          <span>Resume Consultations Today</span>
+                        </>
+                      ) : (
+                        <>
+                          <CalendarX className="w-3.5 h-3.5" />
+                          <span>Put on Leave Today</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
                 {/* Save Button */}
                 <div className="pt-2 flex justify-end">
                   <button
@@ -628,6 +883,21 @@ export const ManageSchedule: React.FC = () => {
           </>
         )}
       </div>
+
+      {/* Practitioner Schedule & Leave Management Modal */}
+      {isLeaveModalOpen && (
+        <DoctorScheduleLeaveModal
+          isOpen={true}
+          onClose={() => setIsLeaveModalOpen(false)}
+          doctorId={user?.doctorProfile?.id || ''}
+          doctorName={user?.fullName || 'Practitioner'}
+          clinicId={selectedClinic ? selectedClinic.clinicId : undefined}
+          clinicName={selectedClinic ? selectedClinic.clinicName : undefined}
+          onSuccess={async () => {
+            await fetchAffiliations();
+          }}
+        />
+      )}
     </DashboardLayout>
   );
 };

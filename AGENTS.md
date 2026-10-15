@@ -54,7 +54,7 @@ MediArca is an Indian healthcare outpatient appointment and live queue managemen
 ## 3. Standard Verification & Build Commands
 
 ```bash
-# 1. Backend Verification Suite (2,020+ tests covering concurrency, state machine, auth, guards)
+# 1. Backend Verification Suite (2,023+ tests covering concurrency, state machine, auth, guards)
 cd backend && npm run test:verify
 
 # 2. Backend TypeScript Compilation
@@ -80,7 +80,7 @@ MediArca/
 │
 ├── docs/                              # Architecture and institutional memory
 │   ├── architecture.md                # System design, data flow, queue state machine
-│   ├── known-issues.md                # Fix ledger (FIX-001..FIX-023), active edge cases, anti-patterns
+│   ├── known-issues.md                # Fix ledger (FIX-001..FIX-024), active edge cases, anti-patterns
 │   ├── decisions/                     # Architecture Decision Records (ADRs)
 │   │   ├── 001-pay-to-receptionist-coordination.md
 │   │   ├── 002-role-scoped-account-uniqueness.md
@@ -101,7 +101,7 @@ MediArca/
 │   │   ├── routes/                    # API route definitions
 │   │   └── utils/                     # Queue state machine, schedule utils, phone utils, auth guards
 │   └── scripts/
-│       └── verify-fixes.ts            # Master automated verification suite (2,020+ tests)
+│       └── verify-fixes.ts            # Master automated verification suite (2,023+ tests)
 │
 └── frontend/                          # React 19 + Vite + Tailwind CSS Frontend
     ├── AGENTS.md                      # Scoped frontend engineering rules

@@ -9754,6 +9754,9 @@ Follow-up Date: 2026-10-15`;
   const sp_consultationControllerContent = fs.readFileSync(path.join(__dirname, '../src/controllers/consultationController.ts'), 'utf-8');
   const sp_emailServiceContent = fs.readFileSync(path.join(__dirname, '../src/utils/emailService.ts'), 'utf-8');
   const sp_receptionistDashboardContent = fs.readFileSync(path.join(__dirname, '../../frontend/src/pages/Receptionist/ReceptionistDashboard.tsx'), 'utf-8');
+  const sp_clinicProfileContent = fs.readFileSync(path.join(__dirname, '../../frontend/src/pages/Clinic/ClinicProfile.tsx'), 'utf-8');
+  const sp_clinicDashboardContent = fs.readFileSync(path.join(__dirname, '../../frontend/src/pages/Clinic/ClinicDashboard.tsx'), 'utf-8');
+  const sp_frontendAppContent = fs.readFileSync(path.join(__dirname, '../../frontend/src/App.tsx'), 'utf-8');
 
   // ARCH-002 / FUNC-005: Integer avgConsultationMinutes
   assert(
@@ -9911,12 +9914,35 @@ Follow-up Date: 2026-10-15`;
     'Sprint ARCH-016: Email service safely escapes HTML greetingName, handles SystemConfig fallback, and API_BASE_URL normalizes /api'
   );
 
-  // ARCH-004: Receptionist approval is transactional and preserves email verification requirements
+  // ARCH-004: Receptionist approval is transactional and preserves email verification rules
   assert(
     sp_clinicControllerContent.includes('prisma.$transaction') &&
     sp_clinicControllerContent.includes("status: 'ACTIVE'") &&
     sp_receptionistControllerContent.includes('await prisma.$transaction(async (tx) => runApply(tx))'),
     'Sprint ARCH-004: Receptionist application and approval are atomic transactions preserving email verification rules'
+  );
+
+  // Fix 24 / ARCH-017: Clinic Profile Settings, Photo/Logo Management & Dashboard Navigation
+  assert(
+    sp_clinicControllerContent.includes('avatarUrl: (clinic as any).user?.avatarUrl || null') &&
+    sp_clinicControllerContent.includes('userUpdatePayload.avatarUrl = avatarUrl') &&
+    sp_clinicControllerContent.includes('userUpdatePayload.fullName = cleanClinicName') &&
+    sp_clinicControllerContent.includes('updateClinicProfile'),
+    'Fix 24: clinicController synchronizes clinicName, address, city, state, phone, and avatarUrl within atomic transaction'
+  );
+  assert(
+    sp_clinicProfileContent.includes('AvatarCropModal') &&
+    sp_clinicProfileContent.includes('optimizeAvatarImage') &&
+    sp_clinicProfileContent.includes('api.uploadAvatar') &&
+    sp_clinicProfileContent.includes('api.updateClinicProfile'),
+    'Fix 24: ClinicProfile provides full photo upload with crop, auto-compression, and facility details form'
+  );
+  assert(
+    sp_clinicDashboardContent.includes("path: '/clinic/profile'") &&
+    sp_frontendAppContent.includes('ClinicProfile') &&
+    sp_frontendAppContent.includes('path="/clinic/profile"') &&
+    sp_dashboardLayoutContent.includes("portalType === 'CLINIC'"),
+    'Fix 24: Clinic settings are fully accessible from sidebar navigation, dashboard header action, and user capsule card'
   );
 
   console.log(`\n========================================`);

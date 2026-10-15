@@ -12,7 +12,7 @@ The MediArca frontend is an ultra-fast, mobile-first web application built with 
   - `src/components/queue/LiveQueueTicket.tsx` — Real-time queue pass, cabin presence sync, and receptionist contact card.
   - `src/pages/Patient/` — Doctor discovery, profile, and appointment booking with receptionist coordination.
   - `src/pages/Doctor/` — Doctor dashboard, queue console, consultation view, and shift schedule management.
-  - `src/pages/Clinic/` — Clinic dashboard, doctor onboarding, and receptionist provisioning.
+  - `src/pages/Clinic/` — Clinic dashboard, clinic profile & facility settings, doctor onboarding, and receptionist provisioning.
   - `src/pages/Receptionist/` — Desk dashboard, walk-in creation, check-in, and fee collection.
   - `src/pages/Admin/` — Admin verification dashboard and platform statistics.
   - `src/services/api.ts` — HTTP client with caching, error normalization, and non-JSON body resilience.

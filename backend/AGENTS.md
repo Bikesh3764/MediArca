@@ -41,7 +41,7 @@ The MediArca backend is an Express 5 REST API built with Node.js, TypeScript, an
 ## 3. Verification & Build Commands
 
 ```bash
-# Run the master automated verification suite (2,020+ regression tests)
+# Run the master automated verification suite (2,023+ regression tests)
 npm run test:verify
 
 # Compile TypeScript and generate Prisma client
