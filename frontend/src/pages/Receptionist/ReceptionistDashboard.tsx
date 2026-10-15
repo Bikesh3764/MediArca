@@ -12,9 +12,7 @@ import {
   QueuePreview,
   formatShiftOption,
   cleanSlotName,
-  ALL_WEEKDAYS,
   WEEKDAY_NAMES,
-  WEEKDAY_SHORT_NAMES,
 } from '../../services/api';
 import { sanitizeIndianPhone, formatIndianPhone, isValidIndianPhone } from '../../utils/phoneUtils';
 import { useVisibilityPolling } from '../../utils/useVisibilityPolling';
@@ -47,6 +45,7 @@ import {
 import { ClinicQrStandeeModal } from '../../components/common/ClinicQrStandeeModal';
 import { ClinicalReportModal } from '../../components/common/ClinicalReportModal';
 import { DoctorScheduleLeaveModal } from '../../components/common/DoctorScheduleLeaveModal';
+import { WeekdayDisplay } from '../../components/common/WeekdayDisplay';
 
 export interface TokenPassData {
   queueNumber: number;
@@ -2277,11 +2276,11 @@ export const ReceptionistDashboard: React.FC = () => {
                       </div>
 
                       {/* SITTING DAYS & LEAVES */}
-                      <div className="pt-3 border-t border-[#f0f0f2] space-y-2.5">
+                      <div className="pt-3 border-t border-[#f0f0f2] space-y-2">
                         <div className="flex items-center justify-between text-xs">
                           <span className="font-semibold text-[#1d1d1f] flex items-center gap-1.5">
                             <CalendarDays className="w-3.5 h-3.5 text-[#0066cc]" />
-                            <span>Clinic Sitting Days</span>
+                            <span>Schedule</span>
                           </span>
                           <button
                             type="button"
@@ -2291,45 +2290,29 @@ export const ReceptionistDashboard: React.FC = () => {
                                 doctorName: cleanDoctorName(doc.fullName),
                               })
                             }
-                            className="text-xs font-semibold text-[#0066cc] hover:underline cursor-pointer flex items-center gap-1"
+                            className="text-xs font-medium text-[#0066cc] hover:underline cursor-pointer"
                           >
-                            <span>Manage Schedule & Leaves</span>
+                            Edit
                           </button>
                         </div>
 
-                        {/* Weekday chips */}
-                        <div className="flex items-center gap-1 flex-wrap">
-                          {ALL_WEEKDAYS.map((d) => {
-                            const isSitting = (doc.workingDays || ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']).includes(d);
-                            return (
-                              <span
-                                key={d}
-                                className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
-                                  isSitting
-                                    ? 'bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20'
-                                    : 'bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea]'
-                                }`}
-                              >
-                                {WEEKDAY_SHORT_NAMES[d]}
-                              </span>
-                            );
-                          })}
-                        </div>
+                        {/* Weekday Display */}
+                        <WeekdayDisplay
+                          days={doc.workingDays || ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']}
+                          isOnLeaveToday={doc.isOnLeaveToday}
+                        />
 
-                        {/* Quick leave status and toggle */}
-                        <div className="flex items-center justify-between gap-2 pt-1">
-                          <div className="text-[11px] text-[#86868b] truncate flex-1">
+                        {/* Quick leave toggle */}
+                        <div className="flex items-center justify-between gap-2 pt-1 text-xs">
+                          <span className="text-[11px] text-[#86868b] truncate">
                             {doc.isOnLeaveToday ? (
-                              <span className="text-[#ff3b30] font-medium flex items-center gap-1 truncate">
-                                <CalendarX className="w-3 h-3 shrink-0" />
-                                <span className="truncate">
-                                  {doc.todayLeave?.reason ? `Leave: ${doc.todayLeave.reason}` : 'Marked on leave today'}
-                                </span>
+                              <span className="text-[#ff3b30] font-medium truncate">
+                                {doc.todayLeave?.reason ? `Leave: ${doc.todayLeave.reason}` : 'On leave today'}
                               </span>
                             ) : (
-                              <span>Available for consultations today</span>
+                              'Available today'
                             )}
-                          </div>
+                          </span>
 
                           <button
                             type="button"
@@ -2349,21 +2332,21 @@ export const ReceptionistDashboard: React.FC = () => {
                                 setError(err?.message || 'Failed to toggle doctor leave');
                               }
                             }}
-                            className={`h-7 px-3 rounded-full text-[11px] font-semibold transition-all active:scale-95 cursor-pointer flex items-center gap-1 shrink-0 ${
+                            className={`h-7 px-3 rounded-full text-[11px] font-medium transition-all active:scale-95 cursor-pointer flex items-center gap-1 shrink-0 ${
                               doc.isOnLeaveToday
-                                ? 'bg-[#34c759] hover:bg-[#30b753] text-white shadow-sm'
+                                ? 'bg-[#34c759] hover:bg-[#30b753] text-white'
                                 : 'bg-[#fff1f0] hover:bg-[#ffe2e0] text-[#ff3b30] border border-[#ff3b30]/20'
                             }`}
                           >
                             {doc.isOnLeaveToday ? (
                               <>
                                 <CalendarCheck className="w-3 h-3" />
-                                <span>Resume Today</span>
+                                <span>Resume</span>
                               </>
                             ) : (
                               <>
                                 <CalendarX className="w-3 h-3" />
-                                <span>Put on Leave Today</span>
+                                <span>Leave</span>
                               </>
                             )}
                           </button>

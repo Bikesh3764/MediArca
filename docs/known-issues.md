@@ -50,6 +50,7 @@ The master test suite additionally verifies:
 - `ARCH-017` / `FIX-024`: Clinic profile updates synchronize both ClinicProfile and parent User atomically; rejects base64 data URLs in profile payload.
 - `ARCH-018` / `FIX-025`: Doctor working days (`workingDays`) and leave periods (`leaves`) strictly gate slot availability and booking transactions; verified receptionist access control scopes updates to linked clinic facilities.
 - `ARCH-019` / `FIX-026`: Pure camera QR arrival verification invariant; UI screens must not expose manual numeric code entry or internal facility keys. Discovery catalogs must render dynamic facility photos.
+- `ARCH-020` / `FIX-027`: Cluttered weekday badges (`[Mon] [Tue] [Wed]`) and verbose copy replaced with Apple HIG single-letter circular day discs (`WeekdayDisplay.tsx`) and concise action buttons (`Shifts`, `Schedule`, `Standee`, `Resume`, `Leave`, `Available`).
 
 ---
 
@@ -79,3 +80,5 @@ The master test suite additionally verifies:
    - *Lesson*: In React, `setInterval` callbacks capture component state at closure creation. Use `useRef` to store latest state variables or trigger re-fetches via stable function refs.
 4. **Anti-Pattern: Blind `res.json()` on Reverse Proxy Errors**
    - *Lesson*: Cloudflare/Nginx return HTML on 502/504 errors. Always inspect `Content-Type` before parsing JSON.
+5. **Anti-Pattern: Bootstrap-Style Weekday Badges & Verbose UI Verbiage**
+   - *Lesson*: Never render 7 rectangular colored badge tags with borders or dual-verb labels like "Manage Schedule & Leaves". Always use minimalist Apple circular day pips (`M T W T F S S`), rounded-full capsule toggles, and concise 1–2 word labels.

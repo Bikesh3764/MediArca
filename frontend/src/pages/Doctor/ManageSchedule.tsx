@@ -8,7 +8,6 @@ import {
   timeToMinutes,
   cleanSlotName,
   ALL_WEEKDAYS,
-  WEEKDAY_NAMES,
   WEEKDAY_SHORT_NAMES,
   DoctorLeave,
 } from '../../services/api';
@@ -559,10 +558,10 @@ export const ManageSchedule: React.FC = () => {
                       </div>
                       <div>
                         <h3 className="text-[15px] font-semibold text-[#1d1d1f] tracking-tight">
-                          Weekly Practice Days
+                          Sitting Days
                         </h3>
                         <p className="text-xs text-[#86868b] mt-0.5">
-                          Select the days you sit at {selectedClinic ? selectedClinic.clinicName : 'this facility'}
+                          Days available at {selectedClinic ? selectedClinic.clinicName : 'this clinic'}
                         </p>
                       </div>
                     </div>
@@ -571,30 +570,30 @@ export const ManageSchedule: React.FC = () => {
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <button
                         type="button"
-                        onClick={() => handleSetWorkingDaysPreset('ALL')}
-                        className="h-7 px-2.5 rounded-full bg-white hover:bg-[#e8e8ed] text-[11px] font-medium text-[#1d1d1f] border border-[#e5e5ea] transition-all cursor-pointer"
-                      >
-                        All 7 Days
-                      </button>
-                      <button
-                        type="button"
                         onClick={() => handleSetWorkingDaysPreset('MON_SAT')}
-                        className="h-7 px-2.5 rounded-full bg-white hover:bg-[#e8e8ed] text-[11px] font-medium text-[#1d1d1f] border border-[#e5e5ea] transition-all cursor-pointer"
+                        className="h-7 px-3 rounded-full bg-white hover:bg-[#e8e8ed] text-[11px] font-medium text-[#1d1d1f] border border-[#e5e5ea] transition-all cursor-pointer active:scale-95"
                       >
                         Mon – Sat
                       </button>
                       <button
                         type="button"
                         onClick={() => handleSetWorkingDaysPreset('WEEKDAYS')}
-                        className="h-7 px-2.5 rounded-full bg-white hover:bg-[#e8e8ed] text-[11px] font-medium text-[#1d1d1f] border border-[#e5e5ea] transition-all cursor-pointer"
+                        className="h-7 px-3 rounded-full bg-white hover:bg-[#e8e8ed] text-[11px] font-medium text-[#1d1d1f] border border-[#e5e5ea] transition-all cursor-pointer active:scale-95"
                       >
                         Mon – Fri
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleSetWorkingDaysPreset('ALL')}
+                        className="h-7 px-3 rounded-full bg-white hover:bg-[#e8e8ed] text-[11px] font-medium text-[#1d1d1f] border border-[#e5e5ea] transition-all cursor-pointer active:scale-95"
+                      >
+                        All Days
                       </button>
                     </div>
                   </div>
 
                   {/* Day Pills Grid */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
+                  <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
                     {ALL_WEEKDAYS.map((day) => {
                       const isSelected = workingDays.includes(day);
                       return (
@@ -602,25 +601,20 @@ export const ManageSchedule: React.FC = () => {
                           key={day}
                           type="button"
                           onClick={() => toggleWorkingDay(day)}
-                          className={`p-3 rounded-2xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
+                          className={`h-11 rounded-full border text-center transition-all cursor-pointer flex items-center justify-center text-xs font-semibold active:scale-95 ${
                             isSelected
-                              ? 'bg-[#0066cc] border-[#0066cc] text-white shadow-[0_2px_8px_rgba(0,102,204,0.25)]'
-                              : 'bg-white border-[#e5e5ea] text-[#86868b] hover:bg-[#e8e8ed] hover:text-[#1d1d1f]'
+                              ? 'bg-[#0066cc] border-[#0066cc] text-white shadow-sm'
+                              : 'bg-white border-[#e5e5ea] text-[#1d1d1f] hover:bg-[#e8e8ed]'
                           }`}
                         >
-                          <span className="text-xs font-bold tracking-wide">
-                            {WEEKDAY_SHORT_NAMES[day]}
-                          </span>
-                          <span className={`text-[10px] ${isSelected ? 'text-white/80' : 'text-[#86868b]'}`}>
-                            {WEEKDAY_NAMES[day]}
-                          </span>
+                          {WEEKDAY_SHORT_NAMES[day]}
                         </button>
                       );
                     })}
                   </div>
 
                   <p className="text-[11px] text-[#86868b]">
-                    Patients and clinic desk staff cannot book appointment slots or walk-in queue tokens on days you do not sit.
+                    {workingDays.length} {workingDays.length === 1 ? 'day' : 'days'} selected
                   </p>
                 </div>
 

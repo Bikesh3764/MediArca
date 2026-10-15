@@ -47,6 +47,10 @@ The MediArca frontend is an ultra-fast, mobile-first web application built with 
 8. **Dynamic Facility Photography & Logo Support**:
    - Discovery cards, clinic profiles, and headers MUST dynamically render the clinic's uploaded `avatarUrl` (using `getFileUrl(clinic.avatarUrl)`) with `clinicLobbyBg` as fallback.
    - Never hardcode stock images when facility branding is available in the profile payload.
+9. **Apple HIG Weekdays & Minimalist Copy**:
+   - Render calendar and roster weekdays using single-letter Apple circular discs (`M T W T F S S`) inside a parchment pill track (`WeekdayDisplay.tsx`), with active days in solid ink `#1d1d1f` and the current day highlighted with an Action Blue ring.
+   - Use Apple `rounded-full` pill buttons (`h-11 rounded-full`) for interactive weekday selectors.
+   - Keep all UI copy, button labels, and status badges direct, simple, and minimal (e.g. `Shifts`, `Schedule`, `Standee`, `Resume`, `Leave`, `Available`). Eliminate wordy sentences, redundant explanations, and dual-verb labels.
 
 ---
 

@@ -96,6 +96,29 @@ export const WEEKDAY_SHORT_NAMES: Record<string, string> = {
   SUN: 'Sun',
 };
 
+export const WEEKDAY_SINGLE_LETTERS: Record<string, string> = {
+  MON: 'M',
+  TUE: 'T',
+  WED: 'W',
+  THU: 'T',
+  FRI: 'F',
+  SAT: 'S',
+  SUN: 'S',
+};
+
+export function formatWeekdaySummary(days: string[] = []): string {
+  if (!days || days.length === 0) return 'No days';
+  if (days.length === 7) return 'All Days';
+
+  const order = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+  const sorted = [...days].sort((a, b) => order.indexOf(a) - order.indexOf(b));
+
+  if (sorted.length === 6 && sorted[0] === 'MON' && sorted[5] === 'SAT') return 'Mon – Sat';
+  if (sorted.length === 5 && sorted[0] === 'MON' && sorted[4] === 'FRI') return 'Mon – Fri';
+
+  return sorted.map((d) => WEEKDAY_SHORT_NAMES[d] || d).join(', ');
+}
+
 export interface DoctorLeave {
   id: string;
   type: 'TODAY' | 'DATE_RANGE';

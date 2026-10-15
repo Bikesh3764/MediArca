@@ -10,9 +10,8 @@ import {
   getTomorrowDateString,
   DoctorAffiliationsData,
   ClinicProfile,
-  ALL_WEEKDAYS,
-  WEEKDAY_SHORT_NAMES,
 } from '../../services/api';
+import { WeekdayDisplay } from '../../components/common/WeekdayDisplay';
 import { sanitizeIndianPhone, formatIndianPhone, isValidIndianPhone } from '../../utils/phoneUtils';
 import { useVisibilityPolling } from '../../utils/useVisibilityPolling';
 import { useAuth } from '../../context/AuthContext';
@@ -38,7 +37,6 @@ import {
   Clock3,
   LayoutDashboard,
   Calendar,
-  CalendarDays,
   CalendarX,
   QrCode,
   ChevronDown,
@@ -1049,72 +1047,33 @@ export const DoctorDashboard: React.FC = () => {
                           </span>
                         </div>
 
-                        {/* Sitting Days & Today Leave Status */}
-                        <div className="mt-3 pt-3 border-t border-[#e5e5ea] space-y-2">
-                          <div className="flex items-center justify-between text-xs px-1">
-                            <span className="font-medium text-[#86868b] flex items-center gap-1">
-                              <CalendarDays className="w-3.5 h-3.5 text-[#0066cc]" />
-                              <span>Sitting Days</span>
-                            </span>
-                            {clinic.isOnLeaveToday ? (
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-200 flex items-center gap-1">
-                                <CalendarX className="w-3 h-3" />
-                                <span>On Leave Today</span>
-                              </span>
-                            ) : (() => {
-                              const todayCode = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'][new Date().getDay()];
-                              const docDays = clinic.workingDays || ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
-                              const sitsToday = docDays.includes(todayCode);
-                              return (
-                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                                  sitsToday
-                                    ? 'bg-[#34c759]/10 text-[#34c759] border-[#34c759]/20'
-                                    : 'bg-[#f5f5f7] text-[#86868b] border-[#e5e5ea]'
-                                }`}>
-                                  {sitsToday ? 'Sitting Today' : 'Off Today'}
-                                </span>
-                              );
-                            })()}
-                          </div>
-
-                          <div className="flex items-center gap-1 flex-wrap px-1">
-                            {ALL_WEEKDAYS.map((d) => {
-                              const isSitting = (clinic.workingDays || ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']).includes(d);
-                              return (
-                                <span
-                                  key={d}
-                                  className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold ${
-                                    isSitting
-                                      ? 'bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20'
-                                      : 'bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea]'
-                                  }`}
-                                >
-                                  {WEEKDAY_SHORT_NAMES[d]}
-                                </span>
-                              );
-                            })}
-                          </div>
+                        {/* Schedule & Weekday Display */}
+                        <div className="mt-3 pt-3 border-t border-[#e5e5ea]">
+                          <WeekdayDisplay
+                            days={clinic.workingDays || ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']}
+                            isOnLeaveToday={clinic.isOnLeaveToday}
+                          />
                         </div>
                       </div>
 
                       {/* Actions & Footer */}
-                      <div className="mt-4 pt-3 border-t border-[#e5e5ea] flex items-center gap-2 flex-wrap">
+                      <div className="mt-4 pt-3 border-t border-[#e5e5ea] flex items-center gap-2">
                         <button
                           type="button"
                           onClick={() => navigate(`/doctor/schedule?clinic=${clinic.clinicId}`)}
-                          className="flex-1 min-w-[110px] h-9 px-3 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                          className="flex-1 min-w-[80px] h-9 px-3 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-medium flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer"
                         >
                           <Clock className="w-3.5 h-3.5" />
-                          <span>Shifts & Fee</span>
+                          <span>Shifts</span>
                         </button>
                         <button
                           type="button"
                           onClick={() => setScheduleLeaveModalClinic({ clinicId: clinic.clinicId, clinicName: clinic.clinicName })}
-                          className="h-9 px-3.5 rounded-full bg-white hover:bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-                          title="Manage Sitting Days & Leaves"
+                          className="h-9 px-3.5 rounded-full bg-white hover:bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-medium flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+                          title="Doctor Schedule & Leave"
                         >
                           <Calendar className="w-3.5 h-3.5 text-[#0066cc]" />
-                          <span>Leaves & Days</span>
+                          <span>Schedule</span>
                         </button>
                         <button
                           type="button"
@@ -1128,11 +1087,11 @@ export const DoctorDashboard: React.FC = () => {
                             });
                             setIsStandeeModalOpen(true);
                           }}
-                          className="h-9 px-3 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-                          title="View & Print Clinic QR Standee"
+                          className="h-9 px-3 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-medium flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+                          title="Clinic QR Standee"
                         >
                           <QrCode className="w-3.5 h-3.5 text-[#0066cc]" />
-                          <span>QR</span>
+                          <span>Standee</span>
                         </button>
                       </div>
                     </div>

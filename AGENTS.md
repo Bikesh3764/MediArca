@@ -40,6 +40,7 @@ MediArca is an Indian healthcare outpatient appointment and live queue managemen
    - Corner radius: `rounded-2xl` (cards), `rounded-full` (buttons & pills)
 7. **API Resilience**: Handle non-JSON responses (e.g. 502 Bad Gateway / 504 Gateway Timeout HTML pages) gracefully in `frontend/src/services/api.ts` without throwing unhandled `SyntaxError`.
 8. **Physical QR Arrival Scanner Only**: Patient arrival verification at the clinic is strictly performed by scanning the physical front-desk QR standee using the device camera. Always dynamically render uploaded facility branding (`avatarUrl`) across public discovery and headers.
+9. **Apple HIG Weekdays & Ultra-Concise Copy**: Display calendar and roster weekdays using single-letter Apple circular discs (`M T W T F S S`) inside a parchment pill track (`WeekdayDisplay.tsx`). Use Apple `rounded-full` pill buttons (`h-11 rounded-full`) for interactive day selectors. Keep all UI text and button labels minimal, simple, and direct (e.g. `Shifts`, `Schedule`, `Standee`, `Resume`, `Leave`, `Available`).
 
 ### Strict DON'Ts
 1. **NO Online Payment Gateways**: NEVER introduce Stripe, Razorpay, PayPal, or automated upfront credit/debit card checkout. MediArca operates under a zero-upfront payment policy where patients coordinate payment directly with the receptionist.
@@ -50,6 +51,7 @@ MediArca is an Indian healthcare outpatient appointment and live queue managemen
 6. **NO Cross-Clinic Shift Overlaps**: Doctors cannot have conflicting shift windows across different clinics on the same day.
 7. **NO Bypassing State Machine**: Never transition appointment statuses without verifying `canTransition(currentStatus, targetStatus)`.
 8. **NO Manual Check-in Code Entry or Internal ID Exposure**: Do not present users with manual numeric 6-digit code entry options, printed desk codes on physical posters, or raw internal database IDs (`cp_demo_clinic`, internal UUIDs). Queue arrival is strictly camera-scanned.
+9. **NO Cluttered Weekday Badges or Verbose UI Copy**: Never use clunky rectangular bootstrap-like badge tags (`[Mon] [Tue] [Wed]`), stacked labels ("Mon/Monday", "Sits/Off"), or wordy dual-action descriptions and boilerplate sentences. Keep all copy clean, direct, and minimal.
 
 ---
 

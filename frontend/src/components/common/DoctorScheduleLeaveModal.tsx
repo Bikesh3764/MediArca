@@ -11,7 +11,6 @@ import {
   Trash2,
   Plus,
   Loader2,
-  ChevronDown,
   Building2,
 } from 'lucide-react';
 import {
@@ -287,27 +286,27 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
             <>
               {/* SECTION 1: TODAY'S LEAVE QUICK TOGGLE */}
               <div className="p-4 rounded-2xl bg-[#fbfbfd] border border-[#e5e5ea] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="space-y-1">
+                <div className="space-y-0.5">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-semibold uppercase tracking-wider text-[#86868b]">
-                      Today's Attendance
+                      Today
                     </span>
                     {config?.isOnLeaveToday ? (
                       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#fff1f0] text-[#ff3b30] border border-[#ff3b30]/20">
                         <CalendarX className="w-3 h-3" />
-                        On Leave Today
+                        On Leave
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#f2fbf4] text-[#34c759] border border-[#34c759]/20">
                         <CalendarCheck className="w-3 h-3" />
-                        Active & Available
+                        Available
                       </span>
                     )}
                   </div>
                   <p className="text-xs text-[#86868b]">
                     {config?.isOnLeaveToday
-                      ? `Doctor is marked on leave today${config.todayLeave?.reason ? `: ${config.todayLeave.reason}` : ''}. Walk-ins & bookings are paused.`
-                      : 'Doctor is scheduled for physical consultations today.'}
+                      ? `Doctor is marked absent today${config.todayLeave?.reason ? ` (${config.todayLeave.reason})` : ''}.`
+                      : 'Doctor is available for consultations today.'}
                   </p>
                 </div>
 
@@ -317,8 +316,8 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
                   disabled={savingLeave}
                   className={`h-9 px-4 rounded-full text-xs font-medium transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5 shrink-0 ${
                     config?.isOnLeaveToday
-                      ? 'bg-[#34c759] hover:bg-[#30b753] text-white shadow-sm'
-                      : 'bg-[#ff3b30] hover:bg-[#e0352b] text-white shadow-sm'
+                      ? 'bg-[#34c759] hover:bg-[#30b753] text-white'
+                      : 'bg-[#ff3b30] hover:bg-[#e0352b] text-white'
                   } disabled:opacity-50`}
                 >
                   {savingLeave ? (
@@ -326,12 +325,12 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
                   ) : config?.isOnLeaveToday ? (
                     <>
                       <CalendarCheck className="w-3.5 h-3.5" />
-                      <span>Resume Today</span>
+                      <span>Resume</span>
                     </>
                   ) : (
                     <>
                       <CalendarX className="w-3.5 h-3.5" />
-                      <span>Mark On Leave Today</span>
+                      <span>Set Off Today</span>
                     </>
                   )}
                 </button>
@@ -343,10 +342,10 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
                   <div>
                     <h4 className="text-sm font-semibold text-[#1d1d1f] tracking-tight flex items-center gap-2">
                       <CalendarDays className="w-4 h-4 text-[#0066cc]" />
-                      <span>Clinic Sitting Days (Weekly Schedule)</span>
+                      <span>Sitting Days</span>
                     </h4>
                     <p className="text-xs text-[#86868b] mt-0.5">
-                      Select which days of the week the doctor sits at this physical clinic.
+                      Select consultation days.
                     </p>
                   </div>
                   {/* Presets */}
@@ -354,23 +353,23 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
                     <button
                       type="button"
                       onClick={() => applyPreset('MON_SAT')}
-                      className="px-2.5 py-1 text-[11px] font-medium text-[#1d1d1f] hover:text-[#0066cc] rounded-full transition-all cursor-pointer"
+                      className="px-2.5 py-1 text-[11px] font-medium text-[#1d1d1f] hover:text-[#0066cc] rounded-full transition-all cursor-pointer active:scale-95"
                     >
                       Mon–Sat
                     </button>
                     <button
                       type="button"
                       onClick={() => applyPreset('MON_FRI')}
-                      className="px-2.5 py-1 text-[11px] font-medium text-[#1d1d1f] hover:text-[#0066cc] rounded-full transition-all cursor-pointer"
+                      className="px-2.5 py-1 text-[11px] font-medium text-[#1d1d1f] hover:text-[#0066cc] rounded-full transition-all cursor-pointer active:scale-95"
                     >
                       Mon–Fri
                     </button>
                     <button
                       type="button"
                       onClick={() => applyPreset('ALL')}
-                      className="px-2.5 py-1 text-[11px] font-medium text-[#1d1d1f] hover:text-[#0066cc] rounded-full transition-all cursor-pointer"
+                      className="px-2.5 py-1 text-[11px] font-medium text-[#1d1d1f] hover:text-[#0066cc] rounded-full transition-all cursor-pointer active:scale-95"
                     >
-                      All 7
+                      All Days
                     </button>
                   </div>
                 </div>
@@ -384,22 +383,13 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
                         key={dayCode}
                         type="button"
                         onClick={() => toggleDay(dayCode)}
-                        className={`py-3 px-1 rounded-2xl text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-1 border ${
+                        className={`h-11 rounded-full text-center transition-all cursor-pointer flex items-center justify-center border font-semibold text-xs active:scale-95 ${
                           isSelected
-                            ? 'bg-[#0066cc] border-[#0066cc] text-white shadow-sm shadow-[#0066cc]/20'
-                            : 'bg-[#f5f5f7] hover:bg-[#e5e5ea] border-[#e5e5ea] text-[#86868b]'
-                        } active:scale-95`}
+                            ? 'bg-[#0066cc] border-[#0066cc] text-white shadow-sm'
+                            : 'bg-[#f5f5f7] hover:bg-[#e8e8ed] border-[#e5e5ea] text-[#1d1d1f]'
+                        }`}
                       >
-                        <span className="text-xs font-bold leading-none">
-                          {WEEKDAY_SHORT_NAMES[dayCode]}
-                        </span>
-                        <span
-                          className={`text-[9px] font-medium ${
-                            isSelected ? 'text-white/80' : 'text-[#86868b]'
-                          }`}
-                        >
-                          {isSelected ? 'Sits' : 'Off'}
-                        </span>
+                        {WEEKDAY_SHORT_NAMES[dayCode]}
                       </button>
                     );
                   })}
@@ -407,8 +397,7 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
 
                 <div className="flex items-center justify-between pt-2">
                   <span className="text-xs text-[#86868b]">
-                    {selectedDays.length} {selectedDays.length === 1 ? 'day' : 'days'} selected: (
-                    {selectedDays.map((d) => WEEKDAY_SHORT_NAMES[d as WeekdayCode]).join(', ')})
+                    {selectedDays.length} {selectedDays.length === 1 ? 'day' : 'days'} selected
                   </span>
                   <button
                     type="button"
@@ -417,7 +406,7 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
                     className="h-8 px-4 rounded-full text-xs font-semibold bg-[#0066cc] hover:bg-[#0071e3] text-white transition-all active:scale-95 cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
                   >
                     {savingDays && <Loader2 className="w-3 h-3 animate-spin" />}
-                    <span>Save Sitting Days</span>
+                    <span>Save Days</span>
                   </button>
                 </div>
               </div>
@@ -428,10 +417,10 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
                   <div>
                     <h4 className="text-sm font-semibold text-[#1d1d1f] tracking-tight flex items-center gap-2">
                       <Clock className="w-4 h-4 text-[#ff3b30]" />
-                      <span>Leave Periods & Vacation</span>
+                      <span>Leave</span>
                     </h4>
                     <p className="text-xs text-[#86868b] mt-0.5">
-                      Put doctor on leave for multiple days or specific upcoming date ranges.
+                      Block upcoming dates.
                     </p>
                   </div>
                   {!showRangeForm && (
@@ -441,7 +430,7 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
                       className="h-8 px-3.5 rounded-full text-xs font-medium text-[#0066cc] bg-[#0066cc]/5 hover:bg-[#0066cc]/10 transition-all cursor-pointer flex items-center gap-1 active:scale-95"
                     >
                       <Plus className="w-3.5 h-3.5" />
-                      <span>Schedule Leave</span>
+                      <span>Add Leave</span>
                     </button>
                   )}
                 </div>
@@ -453,11 +442,11 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
                     className="p-4 rounded-2xl bg-[#fbfbfd] border border-[#e5e5ea] space-y-3.5 animate-fade-in"
                   >
                     <div className="flex items-center justify-between border-b border-[#f0f0f2] pb-2">
-                      <span className="text-xs font-semibold text-[#1d1d1f]">Schedule Doctor Leave</span>
+                      <span className="text-xs font-semibold text-[#1d1d1f]">New Leave</span>
                       <button
                         type="button"
                         onClick={() => setShowRangeForm(false)}
-                        className="text-xs text-[#86868b] hover:text-[#1d1d1f]"
+                        className="text-xs text-[#86868b] hover:text-[#1d1d1f] cursor-pointer"
                       >
                         Cancel
                       </button>
@@ -477,7 +466,7 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
                           }}
                           className="accent-[#0066cc]"
                         />
-                        Single Day (Today)
+                        Single Day
                       </label>
                       <label className="flex items-center gap-2 text-xs font-medium text-[#1d1d1f] cursor-pointer">
                         <input
@@ -488,7 +477,7 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
                           onChange={() => setLeaveType('DATE_RANGE')}
                           className="accent-[#0066cc]"
                         />
-                        Date Range (Custom Period)
+                        Date Range
                       </label>
                     </div>
 
@@ -496,7 +485,7 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                           <label className="block text-[11px] font-medium text-[#86868b] mb-1">
-                            From Date
+                            From
                           </label>
                           <input
                             type="date"
@@ -509,7 +498,7 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
                         </div>
                         <div>
                           <label className="block text-[11px] font-medium text-[#86868b] mb-1">
-                            To Date
+                            To
                           </label>
                           <input
                             type="date"
@@ -525,11 +514,11 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
 
                     <div>
                       <label className="block text-[11px] font-medium text-[#86868b] mb-1">
-                        Reason (Optional)
+                        Reason (optional)
                       </label>
                       <input
                         type="text"
-                        placeholder="e.g. Medical Conference, Personal Vacation, Sick Leave"
+                        placeholder="e.g. Conference, Personal, Illness"
                         value={reason}
                         onChange={(e) => setReason(e.target.value)}
                         className="w-full h-9 px-3 text-xs rounded-xl border border-[#d2d2d7] bg-white focus:outline-none focus:border-[#0066cc] focus:ring-2 focus:ring-[#0066cc]/10"
@@ -543,7 +532,7 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
                         className="h-8 px-4 rounded-full text-xs font-semibold bg-[#0066cc] hover:bg-[#0071e3] text-white transition-all active:scale-95 cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
                       >
                         {savingLeave && <Loader2 className="w-3 h-3 animate-spin" />}
-                        <span>Confirm Leave</span>
+                        <span>Save Leave</span>
                       </button>
                     </div>
                   </form>
@@ -552,11 +541,11 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
                 {/* SCHEDULED LEAVES LIST */}
                 <div className="space-y-2 pt-1">
                   <div className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">
-                    Active & Upcoming Leaves
+                    Scheduled Leaves
                   </div>
                   {(!config?.leaves || config.leaves.length === 0) ? (
                     <p className="text-xs text-[#86868b] italic py-3 text-center">
-                      No active or upcoming leaves recorded. Doctor is available per weekly sitting days.
+                      No upcoming leaves.
                     </p>
                   ) : (
                     <div className="divide-y divide-[#f0f0f2] border border-[#f0f0f2] rounded-2xl overflow-hidden">

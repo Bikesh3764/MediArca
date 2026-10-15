@@ -56,8 +56,19 @@ Reconcile MediArca feature specifications with active codebase reality, document
   - [x] Add clinic photo thumbnail to selected clinic headers on both Home and Discovery pages.
   - [x] Update all engineering charters, specifications, architecture docs, and known-issue ledgers.
 
+- [x] **Fix 27: Apple HIG Weekday Controls & Copy Minimalism Protocol**:
+  - [x] Replace cluttered rectangular bootstrap-style weekday tags (`[Mon] [Tue] [Wed]`) with reusable Apple HIG `WeekdayDisplay.tsx` component.
+  - [x] Render calendar and roster weekdays as single-letter Apple circular discs (`M T W T F S S`) inside a parchment pill track, highlighting active days in solid ink `#1d1d1f` and current day with an Action Blue focus ring.
+  - [x] Redesign interactive weekday selector in `DoctorScheduleLeaveModal.tsx` and `ManageSchedule.tsx` using Apple `rounded-full` pill buttons (`h-11 rounded-full`), eliminating stacked redundant text ("Mon/Monday", "Sits/Off").
+  - [x] Streamline copy across Doctor and Receptionist portals to be ultra-concise: `Shifts`, `Schedule`, `Standee`, `Resume`, `Leave`, `Available`.
+  - [x] Update all engineering charters (`AGENTS.md`, `DESIGN.md`, `PROJECT.md`, `docs/`) with Apple HIG Weekday specifications and strict copy conciseness rules.
+
 - [x] **Alignment & Automated Gates**:
   - [x] Update `PROJECT.md` to reflect current state and completed milestones.
+  - [x] Backend verification suite passes with 0 failures (`npm run test:verify` -> 2,023/2,023 PASS).
+  - [x] Backend compiles clean (`npm run build`).
+  - [x] Frontend linter clean with 0 errors (`npm run lint`).
+  - [x] Frontend compiles and builds production bundle (`npm run build`).
   - [x] Backend verification suite: `npm run test:verify` (2,023 / 2,023 tests PASS).
   - [x] Backend compilation: `npm run build` (tsc PASS).
   - [x] Frontend lint: `npm run lint` (0 errors PASS).

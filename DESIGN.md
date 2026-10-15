@@ -247,6 +247,21 @@ components:
     backgroundColor: "{colors.canvas}"
     textColor: "{colors.ink}"
     rounded: "{rounded.pill}"
+  weekday-indicator-strip:
+    backgroundColor: "{colors.canvas-parchment}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.md}"
+    itemSize: "28px"
+    itemActiveBg: "{colors.ink}"
+    itemActiveText: "{colors.on-dark}"
+    todayRing: "2px solid {colors.primary}"
+  weekday-selector-pill:
+    backgroundColor: "{colors.canvas-parchment}"
+    textColor: "{colors.ink}"
+    activeBackgroundColor: "{colors.primary}"
+    activeTextColor: "{colors.on-primary}"
+    rounded: "{rounded.pill}"
+    height: "44px"
   search-input:
     backgroundColor: "{colors.canvas}"
     textColor: "{colors.ink}"
@@ -471,6 +486,10 @@ Apple's whitespace is the product's pedestal. Every tile begins with at least 64
 
 **`configurator-option-chip-selected`** — Selected state. Border upgrades to 2px solid `{colors.primary-focus}`. Same shape, same content.
 
+**`weekday-indicator-strip`** — Minimalist Apple Calendar 7-day indicator strip used on clinic and doctor cards. Background `{colors.canvas-parchment}` (#f5f5f7), 1px solid `rgba(0, 0, 0, 0.06)` border, rounded `{rounded.md}` (11–12px), padding 6px. Contains 7 circular day pips (`M T W T F S S`) at 28 × 28px (`rounded-full`). Practicing days use solid `{colors.ink}` (#1d1d1f) with white text; off days use transparent background with muted text (`#86868b`). The current calendar day is marked with a 2px focus ring in `{colors.primary}` (`#0066cc`).
+
+**`weekday-selector-pill`** — Apple HIG segmented weekday toggle button used in schedule configurations. Rounded `{rounded.pill}` (full pill capsule), height 44px, text `{typography.caption-strong}`. Selected state uses solid `{colors.primary}` with white text; unselected state uses neutral `{colors.canvas-parchment}` with dark ink text. Micro-interaction `transform: scale(0.95)` on press.
+
 **`environment-quote-card`** — A photographic-canvas hero specific to the environment page. Dark photographic backdrop (mountain vista at dawn) with `{colors.surface-tile-1}` as the fallback color, centered white-text headline in `{typography.display-lg}` (40px), small green "Apple 2030" pictographic logo above the headline, single `{component.button-primary}` below. Padding `{spacing.section}` (80px).
 
 **`floating-sticky-bar`** — Floats at the bottom of the viewport on the iPhone 17 Pro buy page during scroll. Background `{colors.canvas-parchment}` at 80% opacity with `backdrop-filter: blur(N)`, height 64px, padding 12px × 32px. Left: running price total in `{typography.body}`. Right: `{component.button-primary}` ("Add to Bag").
@@ -491,6 +510,9 @@ Error and validation states were not surfaced in the analyzed pages.
 - Use `{colors.primary}` (Action Blue #0066cc) for every interactive element — links, pill CTAs, focus signals — and nothing else. The single accent is non-negotiable.
 - Set headlines in `{typography.hero-display}` or `{typography.display-lg}` with negative letter-spacing (`-0.28 → -0.374px`) to get the signature "Apple tight" cadence.
 - Run body copy at `{typography.body}` (17px / 400 / 1.47 / -0.374px) — not 16px. The extra pixel defines the brand's reading pace.
+- Keep UI copy concise, simple, and direct. Use 1–2 words for button labels (`Shifts`, `Schedule`, `Standee`, `Resume`, `Leave`, `Available`) and eliminate redundant boilerplate sentences or explanations.
+- Display calendar weekdays using single-letter circular discs (`M T W T F S S`) inside a parchment pill track, highlighting active days in solid ink and current day with a focus ring.
+- Use Apple `rounded-full` pill buttons (`h-11 rounded-full`) for interactive weekday toggles, accompanied by clean presets (`Mon – Sat`, `Mon – Fri`, `All Days`).
 - Alternate `{component.product-tile-light}` (or parchment) and `{component.product-tile-dark}` for full-bleed section rhythm. The color change IS the divider.
 - Reserve `{rounded.pill}` for the primary blue CTA and any other element that should read as an "action" (configurator chips, search input, sticky bar CTA).
 - Apply the single product-shadow (`rgba(0, 0, 0, 0.22) 3px 5px 30px`) only to product renders resting on a surface — never on cards, buttons, or text.
@@ -499,6 +521,9 @@ Error and validation states were not surfaced in the analyzed pages.
 
 ### Don't
 - Don't introduce a second accent color; every "click me" signal is `{colors.primary}` (Action Blue).
+- Don't write verbose explanations, repetitive descriptions, or dual-verb button labels (e.g. avoid "Manage Schedule & Leaves", "Sitting Days (Weekly Schedule)", "Patients cannot book..."). Keep words few, clean, and intentional.
+- Don't use rectangular, bootstrap-style colored badge chips for days of the week (`[Mon] [Tue] [Wed]`).
+- Don't stack redundant text like "Mon / Monday" or "Sits / Off" inside calendar selector buttons.
 - Don't add shadows to cards, buttons, or text — shadow is reserved for product imagery.
 - Don't use gradients as decorative backgrounds; atmosphere comes from photography.
 - Don't set body copy at weight 500 — Apple's ladder is 300 / 400 / 600 / 700, with 500 deliberately absent. Body is always 400; strong inline is 600; display is 600.
