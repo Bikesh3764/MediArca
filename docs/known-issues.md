@@ -1,6 +1,6 @@
 # MediArca Known Issues, Defect Ledger & Engineering Lessons
 
-## 1. Resolved Defects Ledger (FIX-001 through FIX-024)
+## 1. Resolved Defects Ledger (FIX-001 through FIX-028)
 
 The following defect resolutions have been implemented and verified by 2,023+ automated regression tests in `backend/scripts/verify-fixes.ts`:
 
@@ -32,6 +32,8 @@ The following defect resolutions have been implemented and verified by 2,023+ au
 | **FIX-024** | Clinic Profile | Added clinic profile settings page with logo crop & auto-compression, atomic User & ClinicProfile synchronization, Indian phone validation, and dashboard integration. |
 | **FIX-025** | Schedule & Absence | Added independent weekly sitting days (Mon-Sun) selection and leave management (Today toggle + Date Range leave) for both Doctors and Receptionists, enforced in slot availability, walk-in tokens, and patient booking. |
 | **FIX-026** | Touchless QR Arrival & Discovery Branding | Eliminated manual 6-digit code entry; streamlined CameraQrScannerModal to pure camera viewfinder; removed printed desk code from standee; dynamically mapped uploaded clinic photos (`avatarUrl`) across discovery cards and headers; purged technical database IDs from clinic settings. |
+| **FIX-027** | Apple HIG Weekdays & Copy Minimalism | Replaced cluttered rectangular weekday badges (`[Mon] [Tue] [Wed]`) with Apple HIG circular day discs (`WeekdayDisplay.tsx`) and rounded-full capsule selectors; streamlined copy across doctor and receptionist portals to direct 1–2 word actions (`Shifts`, `Schedule`, `Standee`, `Resume`, `Leave`, `Available`). |
+| **FIX-028** | QR Arrival Synchronization & Scanner Lifecycle | Synchronized instant QR arrival check-in with 0ms optimistic UI state transition to "Checked In at Clinic • Waiting Area"; preserved target appointment across modal unmount via `selectedApptRef`; reset `presenceOverride` upon prop change in `LiveQueueTicket`; added cache-busting timestamp `_t` and `Cache-Control: no-cache, no-store` to `getPatientAppointments`; auto-cleared `scannedFeedback` and old arrival banners upon scanner open and step-out. |
 
 ---
 
@@ -51,7 +53,7 @@ The master test suite additionally verifies:
 - `ARCH-018` / `FIX-025`: Doctor working days (`workingDays`) and leave periods (`leaves`) strictly gate slot availability and booking transactions; verified receptionist access control scopes updates to linked clinic facilities.
 - `ARCH-019` / `FIX-026`: Pure camera QR arrival verification invariant; UI screens must not expose manual numeric code entry or internal facility keys. Discovery catalogs must render dynamic facility photos.
 - `ARCH-020` / `FIX-027`: Cluttered weekday badges (`[Mon] [Tue] [Wed]`) and verbose copy replaced with Apple HIG single-letter circular day discs (`WeekdayDisplay.tsx`) and concise action buttons (`Shifts`, `Schedule`, `Standee`, `Resume`, `Leave`, `Available`).
-- `ARCH-021` / `FIX-028`: QR Check-In Instant State Synchronization & Anti-Stale Caching: Patient check-in via QR standee optimistically updates ticket state to "Checked In at Clinic • Waiting Area" with zero lag; `selectedApptRef` guarantees appointment tracking across modal teardown; `LiveQueueTicket` clears `presenceOverride` upon `appointment.isCheckedIn` changes; `getPatientAppointments` enforces cache-busting timestamp `_t` and `Cache-Control: no-cache, no-store`.
+- `ARCH-021` / `FIX-028`: QR Check-In Instant State Synchronization & Scanner Lifecycle: Patient check-in via QR standee optimistically updates ticket state to "Checked In at Clinic • Waiting Area" with zero lag; `selectedApptRef` guarantees appointment tracking across modal teardown; `LiveQueueTicket` clears `presenceOverride` upon `appointment.isCheckedIn` changes; `getPatientAppointments` enforces cache-busting timestamp `_t` and `Cache-Control: no-cache, no-store`; `CameraQrScannerModal` completely resets feedback states and camera frames on every modal re-open.
 
 ---
 

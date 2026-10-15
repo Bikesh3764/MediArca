@@ -141,7 +141,9 @@ export const MyAppointments: React.FC = () => {
                 variant="ghost"
                 size="sm"
                 onClick={() => {
+                  setCheckinMessage(null);
                   setSelectedApptForScan(null);
+                  selectedApptRef.current = null;
                   setScannerOpen(true);
                 }}
                 className="flex items-center gap-1.5 text-xs text-[#0066cc] hover:text-[#0071e3] hover:bg-[#0066cc]/5 border border-[#0066cc]/20"
@@ -257,11 +259,13 @@ export const MyAppointments: React.FC = () => {
                   appointment={appt}
                   onCancel={handleCancel}
                   onScanQr={(a) => {
+                    setCheckinMessage(null);
                     selectedApptRef.current = a;
                     setSelectedApptForScan(a);
                     setScannerOpen(true);
                   }}
                   onTogglePresence={async (apptId, isPresent) => {
+                    setCheckinMessage(null);
                     setAppointments((prev) =>
                       prev.map((a) => (a.id === apptId ? { ...a, isCheckedIn: isPresent } : a))
                     );

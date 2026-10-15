@@ -30,6 +30,7 @@ MediArca is an Indian healthcare patient appointment and live queue management s
 | 18 | Doctor Practice Days & Absence Management | Independent weekly practice days (Mon-Sun) and absence/leave management for doctors and receptionists | M6 | User Requirement |
 | 19 | Pure Camera QR Arrival & Dynamic Clinic Branding | Eliminate manual 6-digit code entry; pure camera QR scanner modal; dynamic clinic photo rendering across discovery and headers; remove raw facility IDs | M7 | User Requirement |
 | 20 | Apple HIG Weekday Controls & Copy Conciseness | Sleek single-letter circular day strip (`WeekdayDisplay.tsx`), `rounded-full` day selectors, ultra-concise Apple labels (`Shifts`, `Schedule`, `Standee`, `Resume`, `Leave`) | M8 | User Requirement |
+| 21 | QR Arrival Synchronization & Scanner Lifecycle | Instant 0ms optimistic QR check-in state synchronization, persistent appointment refs, automatic scanner reset on re-open, anti-cache headers | M9 | User Requirement |
 
 ## Milestones
 | # | Name | Scope | Dependencies | Status |
@@ -42,6 +43,7 @@ MediArca is an Indian healthcare patient appointment and live queue management s
 | M6 | Doctor Practice Days & Leave Management | Weekly days selector, today leave toggle, custom date-range absence modal, doctor & receptionist dashboards | M5 | DONE (2,023/2,023 tests pass, builds clean, 0 lint errors) |
 | M7 | Camera QR Scanner & Dynamic Branding Alignment | Pure camera scanner, QR standee cleanup, Home & Discovery dynamic clinic avatars, ClinicProfile credentials overhaul | M6 | DONE (2,023/2,023 tests pass, builds clean, 0 lint errors) |
 | M8 | Apple HIG Weekday Controls & Ultra-Concise Copy | Minimalist calendar day discs (`M T W T F S S`), capsule selectors, streamlined Apple labels (`Shifts`, `Schedule`, `Standee`) | M7 | DONE (2,023/2,023 tests pass, builds clean, 0 lint errors) |
+| M9 | QR Arrival Synchronization & Scanner Lifecycle | Optimistic UI arrival sync, persistent appointment ref, scanner feedback reset on re-open, cache-busting headers | M8 | DONE (2,023/2,023 tests pass, builds clean, 0 lint errors) |
 
 ## Interface Contracts
 ### Pay-to-Receptionist Coordination Contract

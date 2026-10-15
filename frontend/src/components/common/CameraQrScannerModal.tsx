@@ -67,6 +67,7 @@ export const CameraQrScannerModal: React.FC<CameraQrScannerModalProps> = ({
     setTimeout(() => {
       onScanSuccess(data);
       onClose();
+      setScannedFeedback(false);
     }, 600);
   }, [scannedFeedback, onScanSuccess, onClose]);
 
@@ -111,6 +112,14 @@ export const CameraQrScannerModal: React.FC<CameraQrScannerModalProps> = ({
       animationFrameRef.current = null;
     }
   }, []);
+
+  // Guarantee clean camera and scanner state whenever modal opens or closes
+  useEffect(() => {
+    queueMicrotask(() => {
+      setScannedFeedback(false);
+      setCameraError(null);
+    });
+  }, [isOpen]);
 
   // Frame scanning loop
   useEffect(() => {
@@ -167,7 +176,10 @@ export const CameraQrScannerModal: React.FC<CameraQrScannerModalProps> = ({
         {/* Close Button */}
         <button
           type="button"
-          onClick={onClose}
+          onClick={() => {
+            setScannedFeedback(false);
+            onClose();
+          }}
           className="absolute top-4 right-4 w-8 h-8 rounded-full bg-[#f5f5f7] hover:bg-[#e5e5ea] flex items-center justify-center text-[#86868b] hover:text-[#1d1d1f] transition-colors cursor-pointer z-10"
         >
           <X className="w-4 h-4" />

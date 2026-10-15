@@ -84,7 +84,7 @@ MediArca/
 │
 ├── docs/                              # Architecture and institutional memory
 │   ├── architecture.md                # System design, data flow, queue state machine
-│   ├── known-issues.md                # Fix ledger (FIX-001..FIX-024), active edge cases, anti-patterns
+│   ├── known-issues.md                # Fix ledger (FIX-001..FIX-028), active edge cases, anti-patterns
 │   ├── decisions/                     # Architecture Decision Records (ADRs)
 │   │   ├── 001-pay-to-receptionist-coordination.md
 │   │   ├── 002-role-scoped-account-uniqueness.md
