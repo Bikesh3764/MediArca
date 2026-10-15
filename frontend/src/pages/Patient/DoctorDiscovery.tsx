@@ -55,11 +55,14 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialSpecialty = searchParams.get('specialty') || 'All';
 
-  const initialSection = searchParams.get('tab') === 'clinics' ? 'clinics' : 'doctors';
-  const [activeSection, setActiveSection] = useState<'clinics' | 'doctors'>(initialSection);
+  const activeSection: 'clinics' | 'doctors' = searchParams.get('tab') === 'clinics' ? 'clinics' : 'doctors';
   const [clinics, setClinics] = useState<ClinicProfile[]>([]);
   const [loadingClinics, setLoadingClinics] = useState(true);
-  const [selectedClinic, setSelectedClinic] = useState<ClinicProfile | null>(null);
+  const selectedClinicId = searchParams.get('clinicId');
+  const selectedClinic = useMemo(() => {
+    if (!selectedClinicId || clinics.length === 0) return null;
+    return clinics.find((c) => c.id === selectedClinicId) || null;
+  }, [selectedClinicId, clinics]);
   const [clinicSearchQuery, setClinicSearchQuery] = useState('');
   const [clinicSelectedState, setClinicSelectedState] = useState('All');
   const [clinicSelectedCity, setClinicSelectedCity] = useState('All');
@@ -459,8 +462,6 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
   }, [searchParams, selectedSpecialty]);
 
   const handleSectionSwitch = (section: 'clinics' | 'doctors') => {
-    setActiveSection(section);
-    setSelectedClinic(null);
     const newParams = new URLSearchParams(searchParams);
     newParams.set('tab', section);
     newParams.delete('clinicId');
@@ -468,7 +469,6 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
   };
 
   const handleSelectClinic = (clinic: ClinicProfile) => {
-    setSelectedClinic(clinic);
     const newParams = new URLSearchParams(searchParams);
     newParams.set('tab', 'clinics');
     newParams.set('clinicId', clinic.id);
@@ -476,28 +476,10 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
   };
 
   const handleClearClinic = () => {
-    setSelectedClinic(null);
     const newParams = new URLSearchParams(searchParams);
     newParams.delete('clinicId');
     setSearchParams(newParams);
   };
-
-  // Synchronize URL search params (e.g., browser back button) with active section & selected clinic
-  useEffect(() => {
-    const tabParam = searchParams.get('tab');
-    if (tabParam === 'clinics' || tabParam === 'doctors') {
-      setActiveSection(tabParam);
-    }
-    const clinicId = searchParams.get('clinicId');
-    if (clinicId && clinics.length > 0) {
-      const found = clinics.find((c) => c.id === clinicId);
-      if (found) {
-        setSelectedClinic(found);
-      }
-    } else if (!clinicId) {
-      setSelectedClinic(null);
-    }
-  }, [searchParams, clinics]);
 
   const getDoctorDetailPath = (doctorId: string) => `/doctor/${doctorId}`;
 

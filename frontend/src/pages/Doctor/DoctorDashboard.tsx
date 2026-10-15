@@ -690,7 +690,7 @@ export const DoctorDashboard: React.FC = () => {
       value: clinic.clinicId,
       count: clinicWaitingCounts[clinic.clinicId] || 0,
     }));
-  }, [affiliations?.clinics, clinicWaitingCounts]);
+  }, [affiliations, clinicWaitingCounts]);
 
   const shiftFilterOptions = useMemo<AppleFilterOption[]>(() => {
     return availableShifts.map((slot: any, idx: number) => {

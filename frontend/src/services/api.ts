@@ -370,6 +370,18 @@ export const getTomorrowDateString = (d: Date = new Date()): string => {
   return getLocalDateString(tomorrow);
 };
 
+export const getDayOfWeekCode = (dateStr?: string): WeekdayCode => {
+  const targetStr = dateStr || getLocalDateString();
+  const match = targetStr.trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return 'MON';
+  const year = parseInt(match[1], 10);
+  const month = parseInt(match[2], 10);
+  const day = parseInt(match[3], 10);
+  const d = new Date(Date.UTC(year, month - 1, day));
+  const codes: WeekdayCode[] = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+  return codes[d.getUTCDay()] || 'MON';
+};
+
 export const DEFAULT_PHONE_PREFIX = '+91 ';
 
 export const ALL_SPECIALTIES: string[] = [
@@ -1108,6 +1120,12 @@ export interface QueuePreview {
   isPassed?: boolean;
   isInProgress?: boolean;
   statusLabel?: string;
+  isOnLeave?: boolean;
+  leaveReason?: string | null;
+  isDayOff?: boolean;
+  dayName?: string;
+  workingDays?: string[];
+  leaves?: any[];
   consultationFee?: number;
   clinicId?: string | null;
   clinicName?: string | null;

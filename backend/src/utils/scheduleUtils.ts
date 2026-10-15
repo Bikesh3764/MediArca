@@ -294,7 +294,7 @@ export const evaluateSlotStatus = (
       isFull: false,
       totalBooked: bookedCountForSlot,
       patientsAhead: 0,
-      estimatedTime: 'Doctor Off Day',
+      estimatedTime: 'Not Sitting on this Day',
       statusLabel: `Not Sitting on ${dayOffInfo.dayName || 'This Day'}`,
       isDayOff: true,
     };

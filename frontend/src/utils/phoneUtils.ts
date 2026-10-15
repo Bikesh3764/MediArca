@@ -112,7 +112,7 @@ export const toTelUri = (phone?: string | null): string => {
   const digits = phone.replace(/\D/g, '');
   if (digits.length === 10) return `tel:+91${digits}`;
   if (digits.length === 12 && digits.startsWith('91')) return `tel:+${digits}`;
-  const cleaned = phone.replace(/[\s()\-]/g, '');
+  const cleaned = phone.replace(/[\s()-]/g, '');
   return cleaned.startsWith('+') ? `tel:${cleaned}` : `tel:+91${cleaned}`;
 };
 

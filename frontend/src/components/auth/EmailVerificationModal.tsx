@@ -44,13 +44,15 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
       return;
     }
     if (initialCooldown !== undefined) {
-      setCountdown(initialCooldown);
+      queueMicrotask(() => {
+        setCountdown(initialCooldown);
+      });
     }
     const timer = setTimeout(() => {
       inputRefs.current[0]?.focus();
     }, 150);
     return () => clearTimeout(timer);
-  }, [isOpen]);
+  }, [isOpen, initialCooldown]);
 
   useEffect(() => {
     if (!isOpen || countdown <= 0) return;

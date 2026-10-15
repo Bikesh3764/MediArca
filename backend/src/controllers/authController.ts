@@ -8,7 +8,7 @@ import { OAuth2Client } from 'google-auth-library';
 import prisma from '../config/database';
 import { AuthRequest, getJwtSecret } from '../middleware/authMiddleware';
 import { uploadToR2, deleteFromR2, isR2Configured } from '../config/r2';
-import { isValidDobDate, validateDoctorSlots, timeToMinutes, validateDoctorNumericBounds } from '../utils/scheduleUtils';
+import { isValidDobDate, validateDoctorSlots, timeToMinutes, validateDoctorNumericBounds, cleanWorkingDays, parseDoctorWorkingDays } from '../utils/scheduleUtils';
 import { validateMagicBytes } from '../middleware/uploadMiddleware';
 import { isValidIndianPhone, formatIndianPhone, sanitizeIndianPhone, findExistingAccountByPhone, getPhoneSearchVariants } from '../utils/phoneUtils';
 import { sendVerificationOtpEmail } from '../utils/emailService';
@@ -372,7 +372,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
                           city: profileData.city || null,
                           state: profileData.state || null,
                           phone: targetPhone,
-                          checkinCode: crypto.randomInt(100000, 1000000).toString(),
+                          checkinCode: crypto.randomUUID(),
                         },
                       },
                     },
@@ -539,7 +539,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
               city: profileData.city || null,
               state: profileData.state || null,
               phone: formattedPhone,
-              checkinCode: crypto.randomInt(100000, 1000000).toString(),
+              checkinCode: crypto.randomUUID(),
             },
           },
         },
@@ -1525,6 +1525,10 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
           },
         });
         if (activeDoctorWithAffiliations?.clinics && activeDoctorWithAffiliations.clinics.length > 0) {
+          const profileWorkingDays = roleSpecificData.workingDays
+            ? parseDoctorWorkingDays(roleSpecificData.workingDays)
+            : parseDoctorWorkingDays(activeDoctorWithAffiliations?.workingDays);
+
           for (const aff of activeDoctorWithAffiliations.clinics) {
             if (!aff.slots) continue;
             let affSlots: any[] = [];
@@ -1534,12 +1538,39 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
               continue;
             }
             if (!Array.isArray(affSlots)) continue;
+
+            const affWorkingDays = parseDoctorWorkingDays(aff.workingDays);
+
             for (const sNew of validation.formatted || []) {
+              const daysA = (Array.isArray((sNew as any).days) && (sNew as any).days.length > 0)
+                ? cleanWorkingDays((sNew as any).days)
+                : (Array.isArray((sNew as any).workingDays) && (sNew as any).workingDays.length > 0)
+                ? cleanWorkingDays((sNew as any).workingDays)
+                : profileWorkingDays;
+
               const newStart = timeToMinutes(sNew.startTime);
-              const newEnd = timeToMinutes(sNew.endTime);
+              let newEnd = timeToMinutes(sNew.endTime);
+              if (newEnd <= newStart) newEnd += 24 * 60;
+
               for (const sAff of affSlots) {
+                if (!sAff?.startTime || !sAff?.endTime) continue;
+
+                const daysB = (Array.isArray(sAff.days) && sAff.days.length > 0)
+                  ? cleanWorkingDays(sAff.days)
+                  : (Array.isArray(sAff.workingDays) && sAff.workingDays.length > 0)
+                  ? cleanWorkingDays(sAff.workingDays)
+                  : affWorkingDays;
+
+                const hasCommonDays = daysA.some((d: string) => daysB.includes(d));
+                if (!hasCommonDays) {
+                  // No day intersection - doctor sits on different days
+                  continue;
+                }
+
                 const affStart = timeToMinutes(sAff.startTime);
-                const affEnd = timeToMinutes(sAff.endTime);
+                let affEnd = timeToMinutes(sAff.endTime);
+                if (affEnd <= affStart) affEnd += 24 * 60;
+
                 if (Math.max(newStart, affStart) < Math.min(newEnd, affEnd)) {
                   res.status(400).json({
                     success: false,
@@ -1608,7 +1639,7 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
             city: safeClinicData.city || null,
             state: safeClinicData.state || null,
             phone: formattedPhone || null,
-            checkinCode: crypto.randomInt(100000, 1000000).toString(),
+            checkinCode: crypto.randomUUID(),
           },
         });
       }
@@ -1816,7 +1847,7 @@ export const googleAuth = async (req: Request, res: Response): Promise<void> => 
               create: {
                 clinicName: fullName || 'New Healthcare Clinic',
                 address: '',
-                checkinCode: crypto.randomInt(100000, 1000000).toString(),
+                checkinCode: crypto.randomUUID(),
               },
             },
           },
@@ -1862,7 +1893,7 @@ export const googleAuth = async (req: Request, res: Response): Promise<void> => 
             userId: user.id,
             clinicName: user.fullName || 'New Healthcare Clinic',
             address: '',
-            checkinCode: crypto.randomInt(100000, 1000000).toString(),
+            checkinCode: crypto.randomUUID(),
           },
         });
       }

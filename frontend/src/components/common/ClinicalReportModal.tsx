@@ -81,28 +81,30 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchReport = useCallback(async () => {
+  const fetchReport = useCallback(async (docIdOverride?: string, clinicIdOverride?: string) => {
     setLoading(true);
     setError(null);
     try {
+      const activeDoctorId = typeof docIdOverride === 'string' ? docIdOverride : selectedDoctorId;
+      const activeClinicId = typeof clinicIdOverride === 'string' ? clinicIdOverride : selectedClinicId;
       let data: ClinicalReportData;
       if (role === 'CLINIC') {
         data = await api.getClinicReport({
           startDate,
           endDate,
-          doctorId: selectedDoctorId !== 'all' ? selectedDoctorId : undefined,
+          doctorId: activeDoctorId !== 'all' ? activeDoctorId : undefined,
         });
       } else if (role === 'DOCTOR') {
         data = await api.getDoctorReport({
           startDate,
           endDate,
-          clinicId: selectedClinicId !== 'all' ? selectedClinicId : undefined,
+          clinicId: activeClinicId !== 'all' ? activeClinicId : undefined,
         });
       } else {
         data = await api.getReceptionistReport({
           startDate,
           endDate,
-          doctorId: selectedDoctorId !== 'all' ? selectedDoctorId : undefined,
+          doctorId: activeDoctorId !== 'all' ? activeDoctorId : undefined,
         });
       }
       setReportData(data);
@@ -115,21 +117,31 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
   }, [role, startDate, endDate, selectedDoctorId, selectedClinicId]);
 
   useEffect(() => {
-    if (isOpen) {
-      if (initialDoctorId !== undefined) {
-        setSelectedDoctorId(initialDoctorId || 'all');
-      }
-      if (initialClinicId !== undefined) {
-        setSelectedClinicId(initialClinicId || 'all');
-      }
-    }
-  }, [isOpen, initialDoctorId, initialClinicId]);
+    queueMicrotask(() => {
+      setSelectedDoctorId(initialDoctorId || 'all');
+    });
+  }, [initialDoctorId]);
 
   useEffect(() => {
-    if (isOpen) {
-      fetchReport();
+    queueMicrotask(() => {
+      setSelectedClinicId(initialClinicId || 'all');
+    });
+  }, [initialClinicId]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      queueMicrotask(() => {
+        setReportData(null);
+        setError(null);
+        setSelectedDoctorId(initialDoctorId || 'all');
+        setSelectedClinicId(initialClinicId || 'all');
+      });
+      return;
     }
-  }, [isOpen, fetchReport]);
+    queueMicrotask(() => {
+      fetchReport(initialDoctorId || 'all', initialClinicId || 'all');
+    });
+  }, [isOpen, fetchReport, initialDoctorId, initialClinicId]);
 
   const handlePresetChange = (preset: '1_MONTH' | 'THIS_MONTH' | '7_DAYS' | 'CUSTOM') => {
     setDatePreset(preset);
@@ -209,14 +221,13 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
   };
 
   // Client-side filtering for shift and status
-  const filteredAppointments = useMemo(() => {
-    if (!reportData) return [];
-    return reportData.appointments.filter((appt) => {
-      if (shiftFilter !== 'ALL' && appt.checkingWindow !== shiftFilter) return false;
-      if (statusFilter !== 'ALL' && appt.status !== statusFilter) return false;
-      return true;
-    });
-  }, [reportData, shiftFilter, statusFilter]);
+  const filteredAppointments = !reportData
+    ? []
+    : reportData.appointments.filter((appt) => {
+        if (shiftFilter !== 'ALL' && appt.checkingWindow !== shiftFilter) return false;
+        if (statusFilter !== 'ALL' && appt.status !== statusFilter) return false;
+        return true;
+      });
 
   // Dynamic available shifts from returned appointments
   const availableShifts = useMemo(() => {
@@ -229,7 +240,7 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
   }, [reportData]);
 
   // Filtered summary calculations
-  const filteredSummary = useMemo(() => {
+  const filteredSummary = (() => {
     if (!reportData) {
       return { total: 0, completed: 0, waiting: 0, cancelled: 0, revenue: 0 };
     }
@@ -252,7 +263,7 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
       cancelled,
       revenue,
     };
-  }, [reportData, filteredAppointments]);
+  })();
 
   if (!isOpen) return null;
 
@@ -488,7 +499,7 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
             {/* Regenerate CTA */}
             <button
               type="button"
-              onClick={fetchReport}
+              onClick={() => fetchReport()}
               disabled={loading}
               className="h-8 px-3 rounded-lg bg-[#1d1d1f] hover:bg-[#333336] text-white text-xs font-medium transition-all cursor-pointer ml-auto flex items-center gap-1.5"
             >
@@ -511,7 +522,7 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
               <p className="text-sm font-semibold text-rose-600">{error}</p>
               <button
                 type="button"
-                onClick={fetchReport}
+                onClick={() => fetchReport()}
                 className="mt-3 h-8 px-4 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-xs font-medium text-[#1d1d1f] hover:bg-[#e8e8ed] cursor-pointer"
               >
                 Try Again

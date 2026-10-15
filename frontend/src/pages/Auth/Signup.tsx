@@ -6,8 +6,7 @@ import { AlertCircle, Eye, EyeOff, RefreshCw } from 'lucide-react';
 import { GoogleLogin } from '@react-oauth/google';
 import { isGoogleConfigured } from '../../config/auth';
 import { SearchableSpecialtySelect } from '../../components/ui/SearchableSpecialtySelect';
-import { DEFAULT_PHONE_PREFIX } from '../../services/api';
-import { sanitizeIndianPhone, formatIndianPhone, isValidIndianPhone } from '../../utils/phoneUtils';
+import { formatIndianPhone, isValidIndianPhone } from '../../utils/phoneUtils';
 import { EmailVerificationModal } from '../../components/auth/EmailVerificationModal';
 
 export interface SignupProps {

@@ -208,7 +208,7 @@ export const getMyReceptionist = async (req: AuthRequest, res: Response): Promis
     );
 
     if (receptionist.clinic && !(receptionist.clinic as any).checkinCode && typeof (prisma.clinicProfile as any)?.update === 'function') {
-      const generatedCode = crypto.randomInt(100000, 1000000).toString();
+      const generatedCode = crypto.randomUUID();
       await prisma.clinicProfile.update({
         where: { id: receptionist.clinic.id },
         data: { checkinCode: generatedCode },
@@ -309,7 +309,12 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
       return;
     }
 
-    const access = await verifyReceptionistDoctorAccess(req.user.id, doctorId, null);
+    const recProfile = await prisma.receptionistProfile.findUnique({
+      where: { userId: req.user.id },
+      select: { clinicId: true },
+    });
+
+    const access = await verifyReceptionistDoctorAccess(req.user.id, doctorId, recProfile?.clinicId || null);
     if (!access.authorized) {
       res.status(403).json({ success: false, message: access.reason });
       return;
@@ -568,7 +573,13 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
       return;
     }
 
-    const access = await verifyReceptionistDoctorAccess(req.user.id, doctorId, clinicId);
+    const accessRecProfile = await prisma.receptionistProfile.findUnique({
+      where: { userId: req.user.id },
+      select: { clinicId: true },
+    });
+    const effectiveClinicId = clinicId || accessRecProfile?.clinicId || null;
+
+    const access = await verifyReceptionistDoctorAccess(req.user.id, doctorId, effectiveClinicId);
     if (!access.authorized) {
       res.status(403).json({ success: false, message: access.reason });
       return;
@@ -587,9 +598,11 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
     }
 
     // Verify doctor is sitting today and not on leave (User Feature: Doctor Working Days & Leave Management)
-    const cd = await prisma.clinicDoctor.findUnique({
-      where: { clinicId_doctorId: { clinicId: receptionist.clinicId, doctorId } },
-    });
+    const cd = effectiveClinicId
+      ? await prisma.clinicDoctor.findUnique({
+          where: { clinicId_doctorId: { clinicId: effectiveClinicId, doctorId } },
+        })
+      : null;
     const workingDays = cd?.workingDays
       ? parseDoctorWorkingDays(cd.workingDays)
       : parseDoctorWorkingDays((doctor as any).workingDays);
@@ -598,7 +611,7 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
       ...(cd?.leaves ? parseDoctorLeaves(cd.leaves) : []),
     ];
 
-    const leaveCheck = isDoctorOnLeave(doctorLeaves, appointmentDate, receptionist.clinicId);
+    const leaveCheck = isDoctorOnLeave(doctorLeaves, appointmentDate, effectiveClinicId);
     if (leaveCheck.isOnLeave) {
       res.status(400).json({
         success: false,
@@ -704,7 +717,7 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
     }
 
     // Resolve clinic affiliation & custom practice shifts
-    let targetClinicId = receptionist.clinicId || clinicId;
+    let targetClinicId = effectiveClinicId || receptionist.clinicId;
     let targetAffiliation: any = null;
     if (targetClinicId) {
       targetAffiliation = await prisma.clinicDoctor.findUnique({
@@ -1035,7 +1048,6 @@ export const executeReceptionistInConsultationTransaction = async (
       const activeInOtherClinic = await tx.appointment.findFirst({
         where: {
           doctorId,
-          appointmentDate,
           status: 'IN_CONSULTATION',
           ...(clinicId
             ? { OR: [{ clinicId: { not: clinicId } }, { clinicId: null }] }
@@ -1052,11 +1064,10 @@ export const executeReceptionistInConsultationTransaction = async (
       }
     }
 
-    // Reset any other active consultations for this doctor on this date to WAITING at this facility (Finding 2)
+    // Reset any other active consultations for this doctor to WAITING at this facility (Finding 2)
     await tx.appointment.updateMany({
       where: {
         doctorId,
-        appointmentDate,
         status: 'IN_CONSULTATION',
         id: { not: appointmentId },
         ...(clinicId !== undefined ? { clinicId } : {}),
@@ -1171,7 +1182,10 @@ export const updateAppointmentStatus = async (req: AuthRequest, res: Response): 
 
     if (status === 'IN_CONSULTATION' || status === 'COMPLETED') {
       const todayIso = getLocalDateString();
-      if (targetAppointment.appointmentDate !== todayIso) {
+      const yesterdayIso = getLocalDateString(new Date(Date.now() - 24 * 60 * 60 * 1000));
+      const currentMins = getIndianTimeMinutes(new Date());
+      const isOvernightCarryover = targetAppointment.appointmentDate === yesterdayIso && currentMins < 6 * 60 && targetAppointment.isCheckedIn;
+      if (targetAppointment.appointmentDate !== todayIso && !isOvernightCarryover) {
         res.status(400).json({
           success: false,
           message: `Cannot update an appointment scheduled for ${targetAppointment.appointmentDate} to '${status}' today. Status updates are only allowed on the scheduled consultation date.`,
@@ -1515,9 +1529,9 @@ export const getPendingAppointments = async (req: AuthRequest, res: Response): P
     const unexpiredAppointments = eligibleAppointments;
 
     const enriched = unexpiredAppointments.map((appt) => {
-      const cd =
-        (appt.doctor as any)?.clinics?.find((c: any) => c.clinicId === appt.clinicId) ||
-        (appt.doctor as any)?.clinics?.[0];
+      const cd = appt.clinicId
+        ? (appt.doctor as any)?.clinics?.find((c: any) => c.clinicId === appt.clinicId)
+        : null;
       const fee = cd?.consultationFee ?? appt.doctor.consultationFee;
       return {
         ...appt,
@@ -1591,7 +1605,26 @@ export const approveAppointment = async (req: AuthRequest, res: Response): Promi
       return;
     }
 
-    const access = await verifyReceptionistDoctorAccess(req.user.id, appointment.doctorId, appointment.clinicId);
+    const recProfile = await prisma.receptionistProfile.findUnique({
+      where: { userId: req.user.id },
+      select: { id: true, clinicId: true },
+    });
+
+    let targetClinicIdForCheck = appointment.clinicId || appointment.clinic?.id || null;
+    if (!targetClinicIdForCheck && recProfile?.clinicId) {
+      const isAffiliatedWithRecClinic = (appointment.doctor as any)?.clinics?.some(
+        (c: any) => c.clinicId === recProfile.clinicId && (!c.status || c.status === 'ACTIVE' || c.status === 'ACCEPTED')
+      );
+      if (isAffiliatedWithRecClinic) {
+        targetClinicIdForCheck = recProfile.clinicId;
+      }
+    }
+    if (!targetClinicIdForCheck) {
+      const activeClinic = (appointment.doctor as any)?.clinics?.find((c: any) => !c.status || c.status === 'ACTIVE' || c.status === 'ACCEPTED');
+      targetClinicIdForCheck = activeClinic?.clinicId || null;
+    }
+
+    const access = await verifyReceptionistDoctorAccess(req.user.id, appointment.doctorId, targetClinicIdForCheck);
     if (!access.authorized) {
       res.status(403).json({ success: false, message: access.reason });
       return;
@@ -1625,10 +1658,9 @@ export const approveAppointment = async (req: AuthRequest, res: Response): Promi
 
     // BUG-04 & BUG-05: Validate doctor leave, working days, and same-day shift expiration before approving
     {
-      const targetClinicIdForCheck = appointment.clinicId || appointment.clinic?.id || null;
-      const cdForCheck =
-        (appointment.doctor as any)?.clinics?.find((c: any) => c.clinicId === targetClinicIdForCheck) ||
-        (appointment.doctor as any)?.clinics?.[0];
+      const cdForCheck = targetClinicIdForCheck
+        ? (appointment.doctor as any)?.clinics?.find((c: any) => c.clinicId === targetClinicIdForCheck)
+        : null;
 
       const hasExplicitWorkingDays = Boolean(cdForCheck?.workingDays || (appointment.doctor as any)?.workingDays);
       const hasExplicitLeaves = Boolean(cdForCheck?.leaves || (appointment.doctor as any)?.leaves);
@@ -1822,6 +1854,20 @@ export const executeApproveAppointmentTransaction = async (
 
     // Resolve clinic ID for approval
     let targetClinicId = currentAppt.clinicId || currentAppt.clinic?.id || null;
+    if (!targetClinicId && receptionistId) {
+      const rec = await tx.receptionistProfile.findUnique({
+        where: { id: receptionistId },
+        select: { clinicId: true },
+      });
+      if (rec?.clinicId) {
+        const isAffiliatedWithRecClinic = currentAppt.doctor.clinics?.some(
+          (c: any) => c.clinicId === rec.clinicId && (!c.status || c.status === 'ACTIVE' || c.status === 'ACCEPTED')
+        );
+        if (isAffiliatedWithRecClinic) {
+          targetClinicId = rec.clinicId;
+        }
+      }
+    }
     if (!targetClinicId) {
       const activeClinic = currentAppt.doctor.clinics?.find((c: any) => !c.status || c.status === 'ACTIVE' || c.status === 'ACCEPTED');
       targetClinicId = activeClinic?.clinicId || null;
@@ -1857,11 +1903,10 @@ export const executeApproveAppointmentTransaction = async (
 
     const nextToken = (maxQueueAppt?.queueNumber || 0) + 1;
 
-    // Recalculate estimated time based on newly assigned token
     let slots = parseDoctorSlots(currentAppt.doctor);
-    const cd =
-      (currentAppt.doctor as any)?.clinics?.find((c: any) => c.clinicId === currentAppt.clinicId) ||
-      (currentAppt.doctor as any)?.clinics?.[0];
+    const cd = targetClinicId
+      ? (currentAppt.doctor as any)?.clinics?.find((c: any) => c.clinicId === targetClinicId)
+      : null;
     if (cd?.slots) {
       try {
         const p = typeof cd.slots === 'string' ? JSON.parse(cd.slots) : cd.slots;
@@ -1877,7 +1922,7 @@ export const executeApproveAppointmentTransaction = async (
         appointmentDate: currentAppt.appointmentDate,
         status: { in: ['WAITING', 'IN_CONSULTATION', 'COMPLETED'] },
         ...(slot.id ? { slotId: slot.id } : {}),
-        ...(currentAppt.clinicId ? { clinicId: currentAppt.clinicId } : {}),
+        ...(targetClinicId ? { clinicId: targetClinicId } : (currentAppt.clinicId ? { clinicId: currentAppt.clinicId } : {})),
       },
     }) : 0;
 
@@ -2226,7 +2271,7 @@ export const determineRescheduleTarget = (
 
 export const rescheduleAppointment = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    if (!req.user || !['RECEPTIONIST', 'CLINIC', 'DOCTOR'].includes(req.user.role)) {
+    if (!req.user || !['RECEPTIONIST', 'CLINIC', 'DOCTOR', 'PATIENT'].includes(req.user.role)) {
       res.status(403).json({ success: false, message: 'Access denied' });
       return;
     }
@@ -2309,7 +2354,15 @@ export const rescheduleAppointment = async (req: AuthRequest, res: Response): Pr
     }
 
     // Verify authority using canonical guards (Fix #2)
-    if (req.user.role === 'DOCTOR') {
+    if (req.user.role === 'PATIENT') {
+      if (appointment.patient?.userId !== req.user.id) {
+        res.status(403).json({
+          success: false,
+          message: "You do not have permission to reschedule another patient's appointment",
+        });
+        return;
+      }
+    } else if (req.user.role === 'DOCTOR') {
       if (appointment.doctor.userId !== req.user.id) {
         res.status(403).json({ success: false, message: 'You do not have permission to reschedule another doctor\'s appointment' });
         return;
@@ -2343,6 +2396,12 @@ export const rescheduleAppointment = async (req: AuthRequest, res: Response): Pr
         res.status(403).json({ success: false, message: docCheck.reason });
         return;
       }
+    } else {
+      res.status(403).json({
+        success: false,
+        message: 'Access denied: Unauthorized role for appointment rescheduling',
+      });
+      return;
     }
 
     if (['COMPLETED', 'CANCELLED', 'REJECTED', 'EXPIRED', 'IN_CONSULTATION'].includes(appointment.status)) {
@@ -2412,9 +2471,9 @@ export const rescheduleAppointment = async (req: AuthRequest, res: Response): Pr
                 isDuplicateExpired = true;
               } else if (newDate === istTodayStr) {
                 let activeSlots = parseDoctorSlots(appointment.doctor);
-                const cd =
-                  appointment.doctor?.clinics?.find((c: any) => c.clinicId === appointment.clinicId) ||
-                  appointment.doctor?.clinics?.[0];
+                const cd = appointment.clinicId
+                  ? appointment.doctor?.clinics?.find((c: any) => c.clinicId === appointment.clinicId)
+                  : null;
                 if (cd?.slots) {
                   try {
                     const parsed = typeof cd.slots === 'string' ? JSON.parse(cd.slots) : cd.slots;
@@ -2456,9 +2515,9 @@ export const rescheduleAppointment = async (req: AuthRequest, res: Response): Pr
 
           // Resolve slot first to ensure shift-isolated queue allocation
           let slots = parseDoctorSlots(appointment.doctor);
-          const cd =
-            appointment.doctor?.clinics?.find((c: any) => c.clinicId === appointment.clinicId) ||
-            appointment.doctor?.clinics?.[0];
+          const cd = appointment.clinicId
+            ? appointment.doctor?.clinics?.find((c: any) => c.clinicId === appointment.clinicId)
+            : null;
           if (cd?.slots) {
             try {
               const p = typeof cd.slots === 'string' ? JSON.parse(cd.slots) : cd.slots;
@@ -2674,10 +2733,11 @@ export const rescheduleAppointment = async (req: AuthRequest, res: Response): Pr
 
     // Dispatch notification to patient
     if (appointment.patient?.userId) {
+      const shiftedBy = req.user.role === 'PATIENT' ? '' : ' by the reception desk';
       createNotification(
         appointment.patient.userId,
         'Appointment Rescheduled',
-        `Your visit with ${docName} has been shifted to ${newDate} by the reception desk. Your token is ${tokenDisplay}.`,
+        `Your visit with ${docName} has been shifted to ${newDate}${shiftedBy}. Your token is ${tokenDisplay}.`,
         'APPOINTMENT'
       ).catch(() => {});
     }

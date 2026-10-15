@@ -4,6 +4,7 @@ import {
   WEEKDAY_NAMES,
   WEEKDAY_SINGLE_LETTERS,
   formatWeekdaySummary,
+  getDayOfWeekCode,
 } from '../../services/api';
 
 interface WeekdayDisplayProps {
@@ -21,7 +22,7 @@ export const WeekdayDisplay: React.FC<WeekdayDisplayProps> = ({
   showTodayBadge = true,
   className = '',
 }) => {
-  const todayCode = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'][new Date().getDay()];
+  const todayCode = getDayOfWeekCode();
   const sitsToday = days.includes(todayCode);
 
   return (

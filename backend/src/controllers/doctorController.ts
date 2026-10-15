@@ -523,6 +523,10 @@ export const updateSchedule = async (req: AuthRequest, res: Response): Promise<v
         }
 
         if (formattedSlots.length > 0) {
+          const currentWorkingDays = req.body.workingDays
+            ? parseDoctorWorkingDays(req.body.workingDays)
+            : parseDoctorWorkingDays(clinicAffiliation.workingDays);
+
           const otherAffiliations = await tx.clinicDoctor.findMany({
             where: {
               doctorId: doctor.id,
@@ -541,13 +545,38 @@ export const updateSchedule = async (req: AuthRequest, res: Response): Promise<v
               if (Array.isArray(parsed)) otherSlots = parsed;
             } catch {}
 
+            const otherWorkingDays = parseDoctorWorkingDays(otherAff.workingDays);
+
             for (const newSlot of formattedSlots) {
+              const daysA = (Array.isArray((newSlot as any).days) && (newSlot as any).days.length > 0)
+                ? cleanWorkingDays((newSlot as any).days)
+                : (Array.isArray((newSlot as any).workingDays) && (newSlot as any).workingDays.length > 0)
+                ? cleanWorkingDays((newSlot as any).workingDays)
+                : currentWorkingDays;
+
               const startA = timeToMinutes(newSlot.startTime);
-              const endA = timeToMinutes(newSlot.endTime);
+              let endA = timeToMinutes(newSlot.endTime);
+              if (endA <= startA) endA += 24 * 60;
+
               for (const existingSlot of otherSlots) {
                 if (!existingSlot?.startTime || !existingSlot?.endTime) continue;
+
+                const daysB = (Array.isArray(existingSlot.days) && existingSlot.days.length > 0)
+                  ? cleanWorkingDays(existingSlot.days)
+                  : (Array.isArray(existingSlot.workingDays) && existingSlot.workingDays.length > 0)
+                  ? cleanWorkingDays(existingSlot.workingDays)
+                  : otherWorkingDays;
+
+                const hasCommonDays = daysA.some((d: string) => daysB.includes(d));
+                if (!hasCommonDays) {
+                  // No day intersection - doctor sits on different days at these clinics
+                  continue;
+                }
+
                 const startB = timeToMinutes(existingSlot.startTime);
-                const endB = timeToMinutes(existingSlot.endTime);
+                let endB = timeToMinutes(existingSlot.endTime);
+                if (endB <= startB) endB += 24 * 60;
+
                 if (startA < endB && startB < endA) {
                   const err: any = new Error(
                     `Shift '${newSlot.name}' (${newSlot.startTime}–${newSlot.endTime}) overlaps with your active shift '${existingSlot.name || 'Shift'}' (${existingSlot.startTime}–${existingSlot.endTime}) at ${otherAff.clinic?.clinicName || 'another clinic'}. A practitioner cannot have simultaneous physical shifts at two clinics.`
@@ -1290,7 +1319,12 @@ export const updateCabinStatus = async (req: AuthRequest, res: Response): Promis
         return;
       }
 
-      const access = await verifyReceptionistDoctorAccess(req.user.id, targetDoctorId, null);
+      const recProfile = await prisma.receptionistProfile.findUnique({
+        where: { userId: req.user.id },
+        select: { clinicId: true },
+      });
+
+      const access = await verifyReceptionistDoctorAccess(req.user.id, targetDoctorId, recProfile?.clinicId || null);
       if (!access.authorized) {
         res.status(403).json({ success: false, message: access.reason || 'Unauthorized for this practitioner' });
         return;
@@ -1659,6 +1693,13 @@ export const getDoctorScheduleConfig = async (req: AuthRequest, res: Response): 
       if (!doctorId) {
         res.status(400).json({ success: false, message: 'doctorId is required for receptionist' });
         return;
+      }
+      const recProfile = await prisma.receptionistProfile.findUnique({
+        where: { userId: req.user.id },
+        select: { clinicId: true },
+      });
+      if (!clinicId && recProfile?.clinicId) {
+        clinicId = recProfile.clinicId;
       }
       const access = await verifyReceptionistDoctorAccess(req.user.id, doctorId, clinicId || null);
       if (!access.authorized) {

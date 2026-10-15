@@ -52,18 +52,17 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
   const [selectedDays, setSelectedDays] = useState<string[]>(['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']);
   const [savingDays, setSavingDays] = useState(false);
 
+  // Uses canonical IST getLocalDateString imported from services/api
+  const todayStr = getLocalDateString();
+
   // Leave form state
   const [showRangeForm, setShowRangeForm] = useState(false);
   const [leaveType, setLeaveType] = useState<'TODAY' | 'DATE_RANGE'>('TODAY');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [startDate, setStartDate] = useState(todayStr);
+  const [endDate, setEndDate] = useState(todayStr);
   const [reason, setReason] = useState('');
   const [savingLeave, setSavingLeave] = useState(false);
   const [cancellingLeaveId, setCancellingLeaveId] = useState<string | null>(null);
-
-  // Uses canonical IST getLocalDateString imported from services/api
-
-  const todayStr = getLocalDateString();
 
   const loadConfig = useCallback(async () => {
     if (!doctorId) return;
@@ -84,15 +83,22 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
   }, [doctorId, clinicId]);
 
   useEffect(() => {
-    if (isOpen) {
-      loadConfig();
-      setStartDate(todayStr);
-      setEndDate(todayStr);
-      setReason('');
-      setShowRangeForm(false);
-      setSuccessMsg(null);
-      setError(null);
+    if (!isOpen) {
+      queueMicrotask(() => {
+        setConfig(null);
+        setLoading(true);
+        setStartDate(todayStr);
+        setEndDate(todayStr);
+        setReason('');
+        setShowRangeForm(false);
+        setSuccessMsg(null);
+        setError(null);
+      });
+      return;
     }
+    queueMicrotask(() => {
+      loadConfig();
+    });
   }, [isOpen, loadConfig, todayStr]);
 
   if (!isOpen) return null;

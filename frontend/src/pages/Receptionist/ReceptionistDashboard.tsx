@@ -13,6 +13,7 @@ import {
   formatShiftOption,
   cleanSlotName,
   WEEKDAY_NAMES,
+  getDayOfWeekCode,
 } from '../../services/api';
 import { sanitizeIndianPhone, formatIndianPhone, isValidIndianPhone } from '../../utils/phoneUtils';
 import { useVisibilityPolling } from '../../utils/useVisibilityPolling';
@@ -1092,13 +1093,12 @@ export const ReceptionistDashboard: React.FC = () => {
                         }
                         className="h-7 px-3 rounded-full bg-white hover:bg-rose-100 text-rose-800 border border-rose-300 font-semibold text-[11px] shrink-0 transition-all cursor-pointer"
                       >
-                        Manage Schedule
+                        Schedule
                       </button>
                     </div>
                   );
                 }
-                const [y, m, d] = queueDate.split('-').map(Number);
-                const dayCode = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'][new Date(y, m - 1, d).getDay()];
+                const dayCode = getDayOfWeekCode(queueDate);
                 const docDays = doc.workingDays || ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
                 if (!docDays.includes(dayCode)) {
                   return (
@@ -1119,7 +1119,7 @@ export const ReceptionistDashboard: React.FC = () => {
                         }
                         className="h-7 px-2.5 rounded-full bg-white hover:bg-amber-100 text-amber-900 border border-amber-300 font-semibold text-[11px] shrink-0 transition-all cursor-pointer"
                       >
-                        Adjust Days
+                        Days
                       </button>
                     </div>
                   );
