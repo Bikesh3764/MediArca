@@ -44,7 +44,7 @@ export const CabinStatusBadge: React.FC<CabinStatusBadgeProps> = ({
         } ${className}`}
       >
         <span className="w-1.5 h-1.5 rounded-full bg-[#d2d2d7] shrink-0"></span>
-        <span>Away</span>
+        <span>Not in Cabin</span>
       </span>
     );
   }
@@ -242,7 +242,7 @@ export const CabinStatusControl: React.FC<CabinStatusControlProps> = ({
                 status === 'NOT_IN_CABIN' ? 'bg-[#86868b]' : 'bg-[#d2d2d7]'
               }`}
             />
-            <span>Away</span>
+            <span>Not in Cabin</span>
           </button>
         </div>
       </div>

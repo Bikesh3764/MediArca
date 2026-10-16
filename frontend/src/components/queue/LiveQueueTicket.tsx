@@ -307,54 +307,72 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
         {/* Physical Clinic & Cabin Presence Status */}
         {isToday && (status === 'WAITING' || status === 'IN_CONSULTATION') ? (
           localCheckedIn ? (
-            <div className="mt-3.5 p-3.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-[#0066cc]"></span>
-                <span className="font-semibold text-[#1d1d1f]">
-                  Checked In at Clinic • Waiting Area
-                </span>
+            <div className="mt-3.5 p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <span className="w-2 h-2 rounded-full bg-[#0066cc] shrink-0"></span>
+                <div>
+                  <span className="font-semibold text-[#1d1d1f] block text-xs">
+                    Checked In at Clinic • Waiting Area
+                  </span>
+                  <span className="text-[11px] text-[#86868b] block mt-0.5">
+                    Present for consultation call
+                  </span>
+                </div>
               </div>
               {status === 'WAITING' ? (
                 <button
                   type="button"
                   disabled={togglingPresence}
                   onClick={() => handleTogglePresence(false)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white hover:bg-[#e8e8ed] text-[#86868b] hover:text-[#1d1d1f] border border-[#e5e5ea] text-[11px] font-medium active:scale-[0.97] transition-all duration-150 cursor-pointer select-none self-start sm:self-auto"
+                  className="inline-flex items-center gap-1.5 h-9 px-4 rounded-full bg-white hover:bg-[#e8e8ed] text-[#86868b] hover:text-[#1d1d1f] border border-[#e5e5ea] text-xs font-medium active:scale-[0.98] transition-all duration-150 cursor-pointer select-none self-start sm:self-auto shrink-0"
                 >
-                  <span>{togglingPresence ? 'Updating...' : 'Step Out (Not in Cabin)'}</span>
+                  <span>{togglingPresence ? 'Updating...' : 'Step Out (Away)'}</span>
                 </button>
               ) : (
-                <span className="text-[11px] text-[#34c759] font-medium">Inside Consultation</span>
+                <span className="text-xs text-[#0066cc] font-medium px-3 py-1 rounded-full bg-white border border-[#0066cc]/20 self-start sm:self-auto">
+                  Inside Consultation
+                </span>
               )}
             </div>
           ) : (
-            <div className="mt-3.5 p-3.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-[#86868b]"></span>
-                <span className="font-medium text-[#48484a]">
-                  Not Checked In (En Route / Outside)
-                </span>
+            <div className="mt-3.5 p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <span className="w-2 h-2 rounded-full bg-[#86868b] shrink-0"></span>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-semibold text-[#1d1d1f] text-xs">
+                      Not Checked In (Arrival Pending)
+                    </span>
+                    <CabinStatusBadge status={doctor.cabinStatus} expectedReturnTime={doctor.expectedReturnTime} size="sm" />
+                  </div>
+                  <span className="text-[11px] text-[#86868b] block mt-0.5">
+                    {doctor.cabinStatus === 'NOT_IN_CABIN'
+                      ? 'Doctor is not yet in cabin. Scan front desk QR standee upon arrival to confirm queue presence.'
+                      : doctor.cabinStatus === 'STEPPED_OUT'
+                      ? `Doctor stepped out${doctor.expectedReturnTime ? ` (expected back around ${doctor.expectedReturnTime})` : ''}. Scan QR standee to confirm presence.`
+                      : 'Scan front desk QR standee upon arrival to confirm queue presence.'}
+                  </span>
+                </div>
               </div>
-              <div className="flex items-center gap-2 self-start sm:self-auto">
+              <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
                 {onScanQr ? (
                   <button
                     type="button"
                     onClick={() => onScanQr(appointment)}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-[11px] font-semibold active:scale-[0.97] transition-all duration-150 shadow-2xs cursor-pointer select-none"
+                    className="inline-flex items-center gap-2 h-10 px-5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-sm font-medium active:scale-[0.98] transition-all duration-150 shadow-[0_2px_8px_rgba(0,102,204,0.2)] cursor-pointer select-none"
                   >
-                    <QrCode className="w-3.5 h-3.5" />
-                    <span>Scan Clinic QR to Check In</span>
+                    <QrCode className="w-4 h-4 shrink-0" />
+                    <span>Scan Clinic QR</span>
                   </button>
                 ) : (
                   <Link
                     to={`/clinic-checkin?clinicId=${appointment.clinicId || ''}`}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-[11px] font-semibold active:scale-[0.97] transition-all duration-150 shadow-2xs select-none"
+                    className="inline-flex items-center gap-2 h-10 px-5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-sm font-medium active:scale-[0.98] transition-all duration-150 shadow-[0_2px_8px_rgba(0,102,204,0.2)] select-none"
                   >
-                    <QrCode className="w-3.5 h-3.5" />
-                    <span>Scan Clinic QR to Check In</span>
+                    <QrCode className="w-4 h-4 shrink-0" />
+                    <span>Scan Clinic QR</span>
                   </Link>
                 )}
-
               </div>
             </div>
           )
@@ -421,7 +439,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
 
             {doctor.cabinStatus === 'STEPPED_OUT' && (
               <div className="mb-3.5 p-3 rounded-xl bg-white border border-[#e5e5ea] text-[#1d1d1f] text-xs flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-[#86868b] shrink-0"></span>
+                <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0"></span>
                 <span>
                   <strong>Doctor stepped out:</strong> Expected back {doctor.expectedReturnTime ? `around ${doctor.expectedReturnTime}` : 'soon'}.
                 </span>

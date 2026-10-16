@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { api, Appointment, getLocalDateString } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { LiveQueueTicket } from '../../components/queue/LiveQueueTicket';
-import { AppleButton } from '../../components/ui/AppleButton';
-import { Plus, RefreshCw, QrCode, CheckCircle2, AlertCircle, X } from 'lucide-react';
+import { CheckCircle2, AlertCircle, X } from 'lucide-react';
 import { useVisibilityPolling } from '../../utils/useVisibilityPolling';
 
 const CameraQrScannerModal = React.lazy(() =>
@@ -19,7 +18,6 @@ export const MyAppointments: React.FC = () => {
   const [selectedApptForScan, setSelectedApptForScan] = useState<Appointment | null>(null);
   const selectedApptRef = useRef<Appointment | null>(null);
   const [checkinMessage, setCheckinMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
 
   const { user, loading: loadingAuth } = useAuth();
   const navigate = useNavigate();
@@ -33,15 +31,6 @@ export const MyAppointments: React.FC = () => {
       console.error('Failed to load appointments:', err);
     } finally {
       if (!isSilent) setLoading(false);
-    }
-  };
-
-  const handleManualRefresh = async () => {
-    setRefreshing(true);
-    try {
-      await fetchAppointments(true);
-    } finally {
-      setTimeout(() => setRefreshing(false), 500);
     }
   };
 
@@ -135,45 +124,7 @@ export const MyAppointments: React.FC = () => {
       {/* Sleek Apple Header */}
       <div className="bg-white border-b border-[#e5e5ea]/80">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h1 className="text-[22px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">Appointments</h1>
-            </div>
-            <div className="flex items-center gap-2">
-              <AppleButton
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setCheckinMessage(null);
-                  setSelectedApptForScan(null);
-                  selectedApptRef.current = null;
-                  setScannerOpen(true);
-                }}
-                className="flex items-center gap-1.5 text-xs text-[#0066cc] hover:text-[#0071e3] hover:bg-[#0066cc]/5 border border-[#0066cc]/20"
-              >
-                <QrCode className="w-3.5 h-3.5" />
-                Scan Clinic QR
-              </AppleButton>
-              <AppleButton
-                variant="ghost"
-                size="sm"
-                onClick={handleManualRefresh}
-                className="flex items-center gap-1.5 text-xs"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 transition-transform duration-500 ${refreshing ? 'animate-spin text-[#0066cc]' : ''}`} />
-                <span>Refresh</span>
-              </AppleButton>
-              <AppleButton
-                variant="primary"
-                size="sm"
-                onClick={() => navigate('/doctors')}
-                className="flex items-center gap-1.5 shadow-none bg-[#0066cc] hover:bg-[#0071e3] text-xs font-medium"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                Book Doctor
-              </AppleButton>
-            </div>
-          </div>
+          <h1 className="text-[22px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">Appointments</h1>
         </div>
       </div>
 
