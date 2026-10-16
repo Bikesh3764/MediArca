@@ -1939,8 +1939,12 @@ export const api = {
     return handleResponse(res);
   },
 
-  async getAdminDoctors(): Promise<Doctor[]> {
-    const res = await safeFetch(`${API_BASE_URL}/admin/doctors`, { headers: getHeaders() });
+  async getAdminDoctors(params?: { page?: number; limit?: number }): Promise<Doctor[]> {
+    const query = new URLSearchParams();
+    if (params?.page) query.append('page', String(params.page));
+    if (params?.limit) query.append('limit', String(params.limit));
+    const qs = query.toString() ? `?${query.toString()}` : '';
+    const res = await safeFetch(`${API_BASE_URL}/admin/doctors${qs}`, { headers: getHeaders() });
     return handleResponse(res);
   },
 
@@ -1960,8 +1964,12 @@ export const api = {
     return handleResponse(res);
   },
 
-  async getAdminClinics(): Promise<any[]> {
-    const res = await safeFetch(`${API_BASE_URL}/admin/clinics`, { headers: getHeaders() });
+  async getAdminClinics(params?: { page?: number; limit?: number }): Promise<any[]> {
+    const query = new URLSearchParams();
+    if (params?.page) query.append('page', String(params.page));
+    if (params?.limit) query.append('limit', String(params.limit));
+    const qs = query.toString() ? `?${query.toString()}` : '';
+    const res = await safeFetch(`${API_BASE_URL}/admin/clinics${qs}`, { headers: getHeaders() });
     return handleResponse(res);
   },
 

@@ -3,6 +3,7 @@ import prisma from '../config/database';
 import { AuthRequest } from '../middleware/authMiddleware';
 import { getLocalDateString } from '../utils/scheduleUtils';
 import { createNotification } from '../services/notificationService';
+import { parsePaginationParams, buildPaginationMetadata } from '../utils/pagination';
 
 export const getStats = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -64,20 +65,27 @@ export const getStats = async (req: AuthRequest, res: Response): Promise<void> =
 
 export const getDoctorsList = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const doctors = await prisma.doctorProfile.findMany({
-      include: {
-        user: { select: { id: true, fullName: true, email: true, phone: true, avatarUrl: true, createdAt: true } },
-        clinics: {
-          include: {
-            clinic: {
-              select: { id: true, clinicName: true, city: true, address: true, phone: true },
+    const { page, limit, skip } = parsePaginationParams(req.query, 50, 100);
+
+    const [total, doctors] = await prisma.$transaction([
+      prisma.doctorProfile.count(),
+      prisma.doctorProfile.findMany({
+        include: {
+          user: { select: { id: true, fullName: true, email: true, phone: true, avatarUrl: true, createdAt: true } },
+          clinics: {
+            include: {
+              clinic: {
+                select: { id: true, clinicName: true, city: true, address: true, phone: true },
+              },
             },
           },
+          _count: { select: { appointments: true, reviews: true } },
         },
-        _count: { select: { appointments: true, reviews: true } },
-      },
-      orderBy: [{ isVerified: 'asc' }, { createdAt: 'desc' }],
-    });
+        orderBy: [{ isVerified: 'asc' }, { createdAt: 'desc' }],
+        skip,
+        take: limit,
+      }),
+    ]);
 
     const formattedDoctors = doctors.map((doc: any) => {
       let status = doc.verificationStatus;
@@ -90,7 +98,12 @@ export const getDoctorsList = async (req: AuthRequest, res: Response): Promise<v
       };
     });
 
-    res.json({ success: true, count: formattedDoctors.length, data: formattedDoctors });
+    res.json({
+      success: true,
+      count: formattedDoctors.length,
+      data: formattedDoctors,
+      pagination: buildPaginationMetadata(total, page, limit),
+    });
   } catch (error: any) {
     console.error('getDoctorsList error:', error);
     res.status(500).json({
@@ -271,24 +284,31 @@ export const getAllAppointments = async (_req: AuthRequest, res: Response): Prom
   }
 };
 
-export const getClinicsList = async (_req: AuthRequest, res: Response): Promise<void> => {
+export const getClinicsList = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const clinics = await prisma.clinicProfile.findMany({
-      include: {
-        user: { select: { id: true, fullName: true, email: true, phone: true, createdAt: true } },
-        doctors: {
-          include: {
-            doctor: {
-              include: {
-                user: { select: { id: true, fullName: true, email: true, phone: true, avatarUrl: true } },
+    const { page, limit, skip } = parsePaginationParams(req.query, 50, 100);
+
+    const [total, clinics] = await prisma.$transaction([
+      prisma.clinicProfile.count(),
+      prisma.clinicProfile.findMany({
+        include: {
+          user: { select: { id: true, fullName: true, email: true, phone: true, createdAt: true } },
+          doctors: {
+            include: {
+              doctor: {
+                include: {
+                  user: { select: { id: true, fullName: true, email: true, phone: true, avatarUrl: true } },
+                },
               },
             },
           },
+          _count: { select: { doctors: true, appointments: true, receptionists: true } },
         },
-        _count: { select: { doctors: true, appointments: true, receptionists: true } },
-      },
-      orderBy: [{ isVerified: 'asc' }, { createdAt: 'desc' }],
-    });
+        orderBy: [{ isVerified: 'asc' }, { createdAt: 'desc' }],
+        skip,
+        take: limit,
+      }),
+    ]);
 
     const formattedClinics = clinics.map((c: any) => {
       let status = c.verificationStatus;
@@ -304,7 +324,12 @@ export const getClinicsList = async (_req: AuthRequest, res: Response): Promise<
       };
     });
 
-    res.json({ success: true, count: formattedClinics.length, data: formattedClinics });
+    res.json({
+      success: true,
+      count: formattedClinics.length,
+      data: formattedClinics,
+      pagination: buildPaginationMetadata(total, page, limit),
+    });
   } catch (error: any) {
     console.error('getClinicsList error:', error);
     res.status(500).json({

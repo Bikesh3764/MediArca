@@ -269,13 +269,9 @@ export const normalizeRateLimitPath = (rawPath: string, baseUrl?: string): strin
 
 export const authRateLimiter = (maxRequests = 40, windowSeconds = 60, customScope?: string) => {
   return (req: Request, res: Response, next: NextFunction): void => {
-    const rawForwarded = req.headers?.['x-forwarded-for'];
-    const forwardedIp = Array.isArray(rawForwarded)
-      ? rawForwarded[0]
-      : typeof rawForwarded === 'string'
-        ? rawForwarded.split(',')[0].trim()
-        : undefined;
-    const ip = req.ip || forwardedIp || 'client';
+    // Secure client IP extraction: Rely on Express-computed req.ip which respects 'trust proxy'
+    // Avoid manual x-forwarded-for parsing that is susceptible to spoofing
+    const ip = req.ip || req.socket?.remoteAddress || 'client';
     const rawPath = req.originalUrl ? req.originalUrl.split('?')[0] : (req.baseUrl || req.path);
     const pathKey = customScope || normalizeRateLimitPath(rawPath, req.baseUrl);
     const key = `${ip}:${pathKey}`;

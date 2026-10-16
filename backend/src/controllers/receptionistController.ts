@@ -2833,14 +2833,40 @@ export const getReceptionistReport = async (req: AuthRequest, res: Response): Pr
     const allowedDoctorIds = hasExplicitSubset ? assignedDoctorIds : activeDoctorIds;
 
     const today = getLocalDateString();
-    const defaultStart = (() => {
-      const d = new Date();
-      d.setDate(d.getDate() - 30);
-      return getLocalDateString(d);
-    })();
+    let endDate = typeof req.query.endDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(req.query.endDate)
+      ? req.query.endDate
+      : today;
 
-    const startDate = (req.query.startDate as string) || defaultStart;
-    const endDate = (req.query.endDate as string) || today;
+    // Enforce maximum 3-month (90 days) date range clamp
+    const MAX_REPORT_DAYS = 90;
+
+    const clampToMaxDays = (endStr: string, days: number): string => {
+      const parts = endStr.split('-').map(Number);
+      const dt = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]));
+      if (isNaN(dt.getTime())) return today;
+      dt.setUTCDate(dt.getUTCDate() - days);
+      return dt.toISOString().slice(0, 10);
+    };
+
+    const defaultStart = clampToMaxDays(endDate, MAX_REPORT_DAYS);
+
+    let startDate = typeof req.query.startDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(req.query.startDate)
+      ? req.query.startDate
+      : defaultStart;
+
+    if (startDate > endDate) {
+      startDate = endDate;
+    }
+
+    const startParts = startDate.split('-').map(Number);
+    const endParts = endDate.split('-').map(Number);
+    const startMs = Date.UTC(startParts[0], startParts[1] - 1, startParts[2]);
+    const endMs = Date.UTC(endParts[0], endParts[1] - 1, endParts[2]);
+    const diffDays = Math.round((endMs - startMs) / (1000 * 60 * 60 * 24));
+    if (isNaN(diffDays) || diffDays > MAX_REPORT_DAYS) {
+      startDate = clampToMaxDays(endDate, MAX_REPORT_DAYS);
+    }
+
     const doctorId = req.query.doctorId as string;
 
     if (doctorId && doctorId !== 'all' && hasExplicitSubset && !allowedDoctorIds.includes(doctorId)) {
@@ -2881,6 +2907,7 @@ export const getReceptionistReport = async (req: AuthRequest, res: Response): Pr
         { appointmentDate: 'desc' },
         { queueNumber: 'asc' },
       ],
+      take: 2000,
     });
 
     // Create fee and slot maps

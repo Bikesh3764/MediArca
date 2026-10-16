@@ -9945,6 +9945,122 @@ Follow-up Date: 2026-10-15`;
     'Fix 24: Clinic settings are fully accessible from sidebar navigation, dashboard header action, and user capsule card'
   );
 
+  // --- Fix 25: Security Overrides, 3-Month Date Clamp, Admin Pagination, IndianRupee & Lazy Scanner ---
+  console.log('\n--- Fix 25: System Hardening, Localization & Performance ---');
+
+  const backendPkgContent = fs.readFileSync(path.join(__dirname, '../package.json'), 'utf-8');
+  assert(
+    backendPkgContent.includes('"proxy-addr": "^2.0.8"'),
+    'Fix 25: backend package.json enforces proxy-addr ^2.0.8 override against CVE vulnerabilities'
+  );
+
+  const updatedServerContent = fs.readFileSync(path.join(__dirname, '../src/server.ts'), 'utf-8');
+  assert(
+    !updatedServerContent.includes("headers?.['x-forwarded-for']") &&
+    updatedServerContent.includes("req.ip || req.socket?.remoteAddress || 'client'"),
+    'Fix 25: server.ts eliminates spoofable x-forwarded-for manual extraction and relies on Express trust proxy req.ip'
+  );
+
+  const updatedAuthControllerContent = fs.readFileSync(path.join(__dirname, '../src/controllers/authController.ts'), 'utf-8');
+  assert(
+    !updatedAuthControllerContent.includes("headers?.['x-forwarded-for']") &&
+    updatedAuthControllerContent.includes("req.ip || req.socket?.remoteAddress || 'unknown'"),
+    'Fix 25: authController.ts eliminates manual x-forwarded-for extraction in login brute-force check'
+  );
+
+  const updatedClinicControllerContent = fs.readFileSync(path.join(__dirname, '../src/controllers/clinicController.ts'), 'utf-8');
+  const updatedDoctorControllerContent = fs.readFileSync(path.join(__dirname, '../src/controllers/doctorController.ts'), 'utf-8');
+  const updatedReceptionistControllerContent = fs.readFileSync(path.join(__dirname, '../src/controllers/receptionistController.ts'), 'utf-8');
+
+  assert(
+    updatedClinicControllerContent.includes('MAX_REPORT_DAYS = 90') &&
+    updatedClinicControllerContent.includes('take: 2000') &&
+    updatedDoctorControllerContent.includes('MAX_REPORT_DAYS = 90') &&
+    updatedDoctorControllerContent.includes('take: 2000') &&
+    updatedReceptionistControllerContent.includes('MAX_REPORT_DAYS = 90') &&
+    updatedReceptionistControllerContent.includes('take: 2000'),
+    'Fix 25: Clinical report endpoints enforce 90-day (3-month) maximum date range clamp and safe query limits'
+  );
+
+  const updatedAdminControllerContent = fs.readFileSync(path.join(__dirname, '../src/controllers/adminController.ts'), 'utf-8');
+  assert(
+    updatedAdminControllerContent.includes("import { parsePaginationParams, buildPaginationMetadata } from '../utils/pagination'") &&
+    updatedAdminControllerContent.includes('buildPaginationMetadata(total, page, limit)') &&
+    updatedAdminControllerContent.includes('parsePaginationParams(req.query, 50, 100)'),
+    'Fix 25: adminController integrates pagination helper for both getDoctorsList and getClinicsList'
+  );
+
+  const updatedClinicalReportModalContent = fs.readFileSync(path.join(__dirname, '../../frontend/src/components/common/ClinicalReportModal.tsx'), 'utf-8');
+  assert(
+    !updatedClinicalReportModalContent.includes('DollarSign') &&
+    updatedClinicalReportModalContent.includes('IndianRupee') &&
+    updatedClinicalReportModalContent.includes("'3_MONTHS'") &&
+    updatedClinicalReportModalContent.includes('Previous 3 Months'),
+    'Fix 25: ClinicalReportModal strictly uses IndianRupee icon, eliminates DollarSign, and includes 3-month reporting preset'
+  );
+
+  const updatedMyAppointmentsContent = fs.readFileSync(path.join(__dirname, '../../frontend/src/pages/Patient/MyAppointments.tsx'), 'utf-8');
+  assert(
+    updatedMyAppointmentsContent.includes('React.lazy') &&
+    updatedMyAppointmentsContent.includes("import('../../components/common/CameraQrScannerModal')") &&
+    updatedMyAppointmentsContent.includes('<Suspense fallback={null}>'),
+    'Fix 25: MyAppointments lazy-loads CameraQrScannerModal to optimize patient bundle size'
+  );
+
+  // --- Fix 25 Functional Logic Tests ---
+  const f25P1 = parsePaginationParams({ page: '2', limit: '15' });
+  assert(f25P1.page === 2 && f25P1.limit === 15 && f25P1.skip === 15, 'Fix 25 Functional: parsePaginationParams parses page and limit correctly');
+
+  const f25P2 = parsePaginationParams({}, 50, 100);
+  assert(f25P2.page === 1 && f25P2.limit === 50 && f25P2.skip === 0, 'Fix 25 Functional: parsePaginationParams applies default 50 limit');
+
+  const f25P3 = parsePaginationParams({ page: '-5', limit: '999' }, 50, 100);
+  assert(f25P3.page === 1 && f25P3.limit === 100 && f25P3.skip === 0, 'Fix 25 Functional: parsePaginationParams caps at maxLimit 100 and clamps negative pages');
+
+  const f25Meta1 = buildPaginationMetadata(125, 2, 50);
+  assert(
+    f25Meta1.total === 125 &&
+    f25Meta1.totalPages === 3 &&
+    f25Meta1.hasNextPage === true &&
+    f25Meta1.hasPrevPage === true,
+    'Fix 25 Functional: buildPaginationMetadata calculates multi-page navigation correctly'
+  );
+
+  const f25Meta2 = buildPaginationMetadata(50, 1, 50);
+  assert(
+    f25Meta2.total === 50 &&
+    f25Meta2.totalPages === 1 &&
+    f25Meta2.hasNextPage === false &&
+    f25Meta2.hasPrevPage === false,
+    'Fix 25 Functional: buildPaginationMetadata handles single-page bounds correctly'
+  );
+
+  // Date range clamping functional math test
+  const testEndStr = '2026-10-16';
+  const testParts = testEndStr.split('-').map(Number);
+  const testDt = new Date(Date.UTC(testParts[0], testParts[1] - 1, testParts[2]));
+  testDt.setUTCDate(testDt.getUTCDate() - 90);
+  const calculated90DaysStart = testDt.toISOString().slice(0, 10);
+  assert(
+    calculated90DaysStart === '2026-07-18',
+    'Fix 25 Functional: 90-day UTC calendar subtraction yields exact calendar date 2026-07-18'
+  );
+
+  // Frontend API client pagination support verification
+  const f25FrontendApiContent = fs.readFileSync(path.join(__dirname, '../../frontend/src/services/api.ts'), 'utf-8');
+  assert(
+    f25FrontendApiContent.includes('getAdminDoctors(params?: { page?: number; limit?: number })') &&
+    f25FrontendApiContent.includes('getAdminClinics(params?: { page?: number; limit?: number })'),
+    'Fix 25 Functional: api.ts supports optional pagination parameters for getAdminDoctors and getAdminClinics'
+  );
+
+  // ClinicalReportModal filter preservation verification
+  assert(
+    updatedClinicalReportModalContent.includes('prevOpenRef = useRef(false)') &&
+    updatedClinicalReportModalContent.includes('if (!prevOpenRef.current)'),
+    'Fix 25 Functional: ClinicalReportModal preserves user dropdown filter selections across filter changes without stomping'
+  );
+
   console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);

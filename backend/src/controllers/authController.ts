@@ -618,13 +618,8 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const rawForwarded = req.headers?.['x-forwarded-for'];
-    const forwardedIp = Array.isArray(rawForwarded)
-      ? rawForwarded[0]
-      : typeof rawForwarded === 'string'
-        ? rawForwarded.split(',')[0].trim()
-        : undefined;
-    const clientIp = req.ip || forwardedIp || 'unknown';
+    // Secure client IP extraction: Rely on Express-computed req.ip which respects 'trust proxy'
+    const clientIp = req.ip || req.socket?.remoteAddress || 'unknown';
 
     const cleanLoginEmail = email.toLowerCase().trim();
     const requestedRole = typeof role === 'string' && role.trim() ? role.toUpperCase().trim() : null;

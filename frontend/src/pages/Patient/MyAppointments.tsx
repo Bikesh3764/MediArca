@@ -1,12 +1,15 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api, Appointment, getLocalDateString } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { LiveQueueTicket } from '../../components/queue/LiveQueueTicket';
 import { AppleButton } from '../../components/ui/AppleButton';
 import { Plus, RefreshCw, QrCode, CheckCircle2, AlertCircle, X } from 'lucide-react';
-import { CameraQrScannerModal } from '../../components/common/CameraQrScannerModal';
 import { useVisibilityPolling } from '../../utils/useVisibilityPolling';
+
+const CameraQrScannerModal = React.lazy(() =>
+  import('../../components/common/CameraQrScannerModal').then((m) => ({ default: m.CameraQrScannerModal }))
+);
 
 export const MyAppointments: React.FC = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -296,15 +299,19 @@ export const MyAppointments: React.FC = () => {
       </div>
 
       {/* In-App Camera QR Scanner Modal */}
-      <CameraQrScannerModal
-        isOpen={scannerOpen}
-        onClose={() => {
-          setScannerOpen(false);
-          setSelectedApptForScan(null);
-        }}
-        onScanSuccess={handleScanSuccess}
-        defaultClinicId={selectedApptForScan?.clinicId || undefined}
-      />
+      {scannerOpen && (
+        <Suspense fallback={null}>
+          <CameraQrScannerModal
+            isOpen={scannerOpen}
+            onClose={() => {
+              setScannerOpen(false);
+              setSelectedApptForScan(null);
+            }}
+            onScanSuccess={handleScanSuccess}
+            defaultClinicId={selectedApptForScan?.clinicId || undefined}
+          />
+        </Suspense>
+      )}
     </div>
   );
 };

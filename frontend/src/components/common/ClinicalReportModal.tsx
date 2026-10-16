@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   X,
   Printer,
@@ -7,7 +7,7 @@ import {
   Filter,
   Users,
   Building2,
-  DollarSign,
+  IndianRupee,
   CheckCircle2,
   Clock,
   Ban,
@@ -45,7 +45,7 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
   doctorName,
 }) => {
   // Preset date helper (using local calendar date to prevent UTC/IST timezone boundary shift)
-  const getDatesForPreset = (preset: '1_MONTH' | 'THIS_MONTH' | '7_DAYS') => {
+  const getDatesForPreset = (preset: '3_MONTHS' | '1_MONTH' | 'THIS_MONTH' | '7_DAYS') => {
     const formatLocal = (d: Date) => {
       const year = d.getFullYear();
       const month = String(d.getMonth() + 1).padStart(2, '0');
@@ -56,6 +56,10 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
     const now = new Date();
     const endStr = formatLocal(now);
 
+    if (preset === '3_MONTHS') {
+      const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 90);
+      return { start: formatLocal(start), end: endStr };
+    }
     if (preset === '1_MONTH') {
       const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 30);
       return { start: formatLocal(start), end: endStr };
@@ -69,9 +73,9 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
     return { start: formatLocal(start), end: endStr };
   };
 
-  const [datePreset, setDatePreset] = useState<'1_MONTH' | 'THIS_MONTH' | '7_DAYS' | 'CUSTOM'>('1_MONTH');
-  const [startDate, setStartDate] = useState(() => getDatesForPreset('1_MONTH').start);
-  const [endDate, setEndDate] = useState(() => getDatesForPreset('1_MONTH').end);
+  const [datePreset, setDatePreset] = useState<'3_MONTHS' | '1_MONTH' | 'THIS_MONTH' | '7_DAYS' | 'CUSTOM'>('3_MONTHS');
+  const [startDate, setStartDate] = useState(() => getDatesForPreset('3_MONTHS').start);
+  const [endDate, setEndDate] = useState(() => getDatesForPreset('3_MONTHS').end);
   const [selectedDoctorId, setSelectedDoctorId] = useState<string>(initialDoctorId || 'all');
   const [selectedClinicId, setSelectedClinicId] = useState<string>(initialClinicId || 'all');
   const [shiftFilter, setShiftFilter] = useState<string>('ALL');
@@ -116,6 +120,8 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
     }
   }, [role, startDate, endDate, selectedDoctorId, selectedClinicId]);
 
+  const prevOpenRef = useRef(false);
+
   useEffect(() => {
     queueMicrotask(() => {
       setSelectedDoctorId(initialDoctorId || 'all');
@@ -130,6 +136,7 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
 
   useEffect(() => {
     if (!isOpen) {
+      prevOpenRef.current = false;
       queueMicrotask(() => {
         setReportData(null);
         setError(null);
@@ -138,12 +145,20 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
       });
       return;
     }
-    queueMicrotask(() => {
-      fetchReport(initialDoctorId || 'all', initialClinicId || 'all');
-    });
+
+    if (!prevOpenRef.current) {
+      prevOpenRef.current = true;
+      queueMicrotask(() => {
+        fetchReport(initialDoctorId || 'all', initialClinicId || 'all');
+      });
+    } else {
+      queueMicrotask(() => {
+        fetchReport();
+      });
+    }
   }, [isOpen, fetchReport, initialDoctorId, initialClinicId]);
 
-  const handlePresetChange = (preset: '1_MONTH' | 'THIS_MONTH' | '7_DAYS' | 'CUSTOM') => {
+  const handlePresetChange = (preset: '3_MONTHS' | '1_MONTH' | 'THIS_MONTH' | '7_DAYS' | 'CUSTOM') => {
     setDatePreset(preset);
     if (preset !== 'CUSTOM') {
       const { start, end } = getDatesForPreset(preset);
@@ -336,6 +351,17 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
           <div className="flex flex-wrap items-center justify-between gap-3">
             {/* Quick Period Presets */}
             <div className="inline-flex p-1 rounded-full bg-[#e8e8ed] border border-[#e5e5ea] text-xs font-medium">
+              <button
+                type="button"
+                onClick={() => handlePresetChange('3_MONTHS')}
+                className={`px-3 py-1 rounded-full transition-all cursor-pointer ${
+                  datePreset === '3_MONTHS'
+                    ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs'
+                    : 'text-[#86868b] hover:text-[#1d1d1f]'
+                }`}
+              >
+                Previous 3 Months
+              </button>
               <button
                 type="button"
                 onClick={() => handlePresetChange('1_MONTH')}
@@ -575,7 +601,7 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
 
                 <div className="p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] print:bg-white print:border print:border-[#d2d2d7]">
                   <div className="flex items-center gap-1.5 text-xs font-medium text-[#86868b]">
-                    <DollarSign className="w-3.5 h-3.5 text-[#0066cc]" />
+                    <IndianRupee className="w-3.5 h-3.5 text-[#0066cc]" />
                     <span>Total Revenue</span>
                   </div>
                   <div className="text-2xl sm:text-3xl font-semibold text-[#0066cc] mt-1.5 tracking-tight">
