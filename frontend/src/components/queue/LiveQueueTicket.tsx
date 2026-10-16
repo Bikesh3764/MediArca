@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { api, Appointment, getLocalDateString, getFileUrl, cleanSlotName } from '../../services/api';
-import { Clock, Calendar, MapPin, CheckCircle2, Building2, Star, Phone, QrCode } from 'lucide-react';
+import { Clock, Calendar, MapPin, CheckCircle2, Building2, Phone, QrCode } from 'lucide-react';
 import { AppleButton } from '../ui/AppleButton';
 import { CabinStatusBadge } from '../ui/DoctorCabinPresence';
 import { formatDisplayPhone, toTelUri } from '../../utils/phoneUtils';
@@ -22,11 +22,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
   const { doctor, queueNumber, status, appointmentDate, checkingWindow, estimatedTime, liveQueue } =
     appointment;
 
-  const [rating, setRating] = useState<number>(5);
-  const [comment, setComment] = useState<string>('');
-  const [submittingReview, setSubmittingReview] = useState(false);
-  const [reviewError, setReviewError] = useState<string | null>(null);
-  const [submittedReview, setSubmittedReview] = useState(appointment.review);
+
   const [imgError, setImgError] = useState(false);
   const [togglingPresence, setTogglingPresence] = useState(false);
   const [presenceOverride, setPresenceOverride] = useState<boolean | null>(null);
@@ -55,21 +51,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
     }
   };
 
-  const handleSubmitReview = async () => {
-    setSubmittingReview(true);
-    setReviewError(null);
-    try {
-      const res = await api.submitAppointmentReview(appointment.id, {
-        rating,
-        comment: comment.trim() || undefined,
-      });
-      setSubmittedReview(res?.data || res || { rating, comment });
-    } catch (err: any) {
-      setReviewError(err.message || 'Failed to submit review');
-    } finally {
-      setSubmittingReview(false);
-    }
-  };
+
 
   const isToday = appointmentDate === getLocalDateString();
 
@@ -502,91 +484,17 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
           </div>
         )}
 
-        {/* Doctor Summary & Review Card for Completed Consultations */}
-        {status === 'COMPLETED' && (
+        {/* Doctor Summary for Completed Consultations */}
+        {status === 'COMPLETED' && appointment.clinicalNotes && (
           <div className="mt-4 p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] space-y-3">
-            {appointment.clinicalNotes && (
-              <div>
-                <span className="text-xs font-semibold text-[#0066cc] block mb-1 tracking-tight">
-                  Doctor's Summary
-                </span>
-                <div className="text-xs text-[#1d1d1f] whitespace-pre-wrap break-words leading-relaxed font-normal bg-white p-3.5 rounded-xl border border-[#e5e5ea]">
-                  {appointment.clinicalNotes}
-                </div>
+            <div>
+              <span className="text-xs font-semibold text-[#0066cc] block mb-1 tracking-tight">
+                Doctor's Summary
+              </span>
+              <div className="text-xs text-[#1d1d1f] whitespace-pre-wrap break-words leading-relaxed font-normal bg-white p-3.5 rounded-xl border border-[#e5e5ea]">
+                {appointment.clinicalNotes}
               </div>
-            )}
-
-            {/* Patient Review Widget */}
-            {submittedReview ? (
-              <div className="pt-2 border-t border-[#e5e5ea] text-xs">
-                <div className="flex items-center gap-1.5 mb-1">
-                  <span className="text-[#86868b] font-medium">Your Feedback:</span>
-                  <div className="flex text-[#0066cc]">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <Star
-                        key={star}
-                        className={`w-3.5 h-3.5 ${
-                          star <= (submittedReview.rating || 5)
-                            ? 'fill-[#0066cc] text-[#0066cc]'
-                            : 'text-[#d2d2d7]'
-                        }`}
-                      />
-                    ))}
-                  </div>
-                  <span className="text-xs font-semibold text-[#1d1d1f] ml-1">
-                    {submittedReview.rating}/5
-                  </span>
-                </div>
-                {submittedReview.comment && (
-                  <p className="text-[#86868b] italic">"{submittedReview.comment}"</p>
-                )}
-              </div>
-            ) : (
-              <div className="pt-2 border-t border-[#e5e5ea]">
-                <span className="text-xs font-medium text-[#1d1d1f] block mb-1.5 tracking-tight">
-                  How was your consultation experience?
-                </span>
-                <div className="flex items-center gap-1 mb-2.5">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <button
-                      key={star}
-                      type="button"
-                      onClick={() => setRating(star)}
-                      className="p-1 hover:scale-110 transition-transform cursor-pointer"
-                    >
-                      <Star
-                        className={`w-4 h-4 ${
-                          star <= rating
-                            ? 'fill-[#0066cc] text-[#0066cc]'
-                            : 'text-[#d2d2d7] hover:text-[#0066cc]/60'
-                        }`}
-                      />
-                    </button>
-                  ))}
-                  <span className="text-xs font-semibold text-[#1d1d1f] ml-1.5">{rating} / 5</span>
-                </div>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={comment}
-                    onChange={(e) => setComment(e.target.value)}
-                    placeholder="Optional feedback..."
-                    className="flex-1 h-10 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-xs text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
-                  />
-                  <button
-                    type="button"
-                    disabled={submittingReview}
-                    onClick={handleSubmitReview}
-                    className="h-10 px-5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-xs font-medium transition-all duration-150 cursor-pointer select-none disabled:opacity-60"
-                  >
-                    {submittingReview ? 'Submitting...' : 'Submit'}
-                  </button>
-                </div>
-                {reviewError && (
-                  <p className="text-[11px] text-rose-600 mt-1">{reviewError}</p>
-                )}
-              </div>
-            )}
+            </div>
           </div>
         )}
 

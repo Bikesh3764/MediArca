@@ -158,11 +158,10 @@ export const getDoctors = async (req: Request, res: Response): Promise<void> => 
       ];
     }
 
-    let orderBy: any[] = [{ rating: 'desc' }, { id: 'asc' }];
+    let orderBy: any[] = [{ experienceYears: 'desc' }, { id: 'asc' }];
     if (sortBy === 'fee_low') orderBy = [{ consultationFee: 'asc' }, { id: 'asc' }];
     if (sortBy === 'fee_high') orderBy = [{ consultationFee: 'desc' }, { id: 'asc' }];
     if (sortBy === 'experience') orderBy = [{ experienceYears: 'desc' }, { id: 'asc' }];
-    if (sortBy === 'rating') orderBy = [{ rating: 'desc' }, { id: 'asc' }];
 
     const { page, limit, skip } = parsePaginationParams(req.query, 20, 50);
 
@@ -192,13 +191,6 @@ export const getDoctors = async (req: Request, res: Response): Promise<void> => 
               },
             },
           },
-          reviews: {
-            take: 3,
-            orderBy: { createdAt: 'desc' },
-            include: {
-              patientUser: { select: { fullName: true, avatarUrl: true } },
-            },
-          },
         },
         orderBy,
         skip,
@@ -210,13 +202,6 @@ export const getDoctors = async (req: Request, res: Response): Promise<void> => 
       ...doc,
       slots: parseDoctorSlots(doc),
       clinics: formatDoctorClinics(doc),
-      reviews: (doc.reviews || []).map((r) => ({
-        ...r,
-        patientUser: {
-          fullName: maskPatientName(r.patientUser?.fullName),
-          avatarUrl: null,
-        },
-      })),
     }));
 
     res.json({
@@ -300,13 +285,6 @@ export const getDoctorById = async (req: Request, res: Response): Promise<void> 
           },
         },
       },
-      reviews: {
-        orderBy: { createdAt: 'desc' as const },
-        take: 10,
-        include: {
-          patientUser: { select: { fullName: true, avatarUrl: true } },
-        },
-      },
     };
 
     let doctor = await prisma.doctorProfile.findUnique({
@@ -359,13 +337,6 @@ export const getDoctorById = async (req: Request, res: Response): Promise<void> 
         slots: parseDoctorSlots(doctor),
         clinics: formatDoctorClinics(doctor),
         receptionists: doctorReceptionists,
-        reviews: (doctor.reviews || []).map((r) => ({
-          ...r,
-          patientUser: {
-            fullName: maskPatientName(r.patientUser?.fullName),
-            avatarUrl: null,
-          },
-        })),
       },
     });
   } catch (error: any) {
@@ -664,6 +635,67 @@ export const updateSchedule = async (req: AuthRequest, res: Response): Promise<v
     };
 
     if (formattedSlots.length > 0) {
+      const activeAffiliations = await prisma.clinicDoctor.findMany({
+        where: {
+          doctorId: doctor.id,
+          status: { in: ['ACTIVE', 'ACCEPTED'] },
+          slots: { not: null },
+        },
+        include: { clinic: true },
+      });
+
+      const profileWorkingDays = req.body.workingDays && Array.isArray(req.body.workingDays)
+        ? cleanWorkingDays(req.body.workingDays)
+        : parseDoctorWorkingDays((doctor as any).workingDays);
+
+      for (const aff of activeAffiliations) {
+        if (!isClinicActive(aff.clinic).active) continue;
+        let affSlots: any[] = [];
+        try {
+          const parsed = typeof aff.slots === 'string' ? JSON.parse(aff.slots) : aff.slots;
+          if (Array.isArray(parsed)) affSlots = parsed;
+        } catch {}
+
+        const affWorkingDays = aff.workingDays ? parseDoctorWorkingDays(aff.workingDays) : profileWorkingDays;
+
+        for (const sNew of formattedSlots) {
+          const daysA = (Array.isArray((sNew as any).days) && (sNew as any).days.length > 0)
+            ? cleanWorkingDays((sNew as any).days)
+            : (Array.isArray((sNew as any).workingDays) && (sNew as any).workingDays.length > 0)
+            ? cleanWorkingDays((sNew as any).workingDays)
+            : profileWorkingDays;
+
+          const newStart = timeToMinutes(sNew.startTime);
+          let newEnd = timeToMinutes(sNew.endTime);
+          if (newEnd <= newStart) newEnd += 24 * 60;
+
+          for (const sAff of affSlots) {
+            if (!sAff?.startTime || !sAff?.endTime) continue;
+
+            const daysB = (Array.isArray(sAff.days) && sAff.days.length > 0)
+              ? cleanWorkingDays(sAff.days)
+              : (Array.isArray(sAff.workingDays) && sAff.workingDays.length > 0)
+              ? cleanWorkingDays(sAff.workingDays)
+              : affWorkingDays;
+
+            const commonDays = daysA.filter((d: string) => daysB.includes(d));
+            if (commonDays.length === 0) continue;
+
+            const affStart = timeToMinutes(sAff.startTime);
+            let affEnd = timeToMinutes(sAff.endTime);
+            if (affEnd <= affStart) affEnd += 24 * 60;
+
+            if (newStart < affEnd && affStart < newEnd) {
+              res.status(400).json({
+                success: false,
+                message: `Configured practice hours (${sNew.startTime}–${sNew.endTime}) overlap with an active shift (${sAff.startTime}–${sAff.endTime}) at ${aff.clinic?.clinicName || 'another affiliated clinic'} on common day(s): ${commonDays.join(', ')}. Practitioners cannot practice at multiple clinics simultaneously.`,
+              });
+              return;
+            }
+          }
+        }
+      }
+
       updateData.slots = JSON.stringify(formattedSlots);
     }
     if (req.body.workingDays && Array.isArray(req.body.workingDays)) {
@@ -1374,6 +1406,87 @@ export const updateCabinStatus = async (req: AuthRequest, res: Response): Promis
       NOT_IN_CABIN: 'Doctor has not yet arrived in cabin',
     };
 
+    const statusActuallyChanged =
+      doctor.cabinStatus !== normalizedStatus ||
+      (normalizedStatus === 'STEPPED_OUT' && doctor.expectedReturnTime !== cleanReturnTime);
+
+    // Smart Notification: Notify patient about doctor cabin status ONLY if the status actually changed AND patient has an active appointment/token with that specific doctor on that day
+    if (statusActuallyChanged) {
+      try {
+        const istTodayStr = getLocalDateString(new Date());
+        const activeVisits = await prisma.appointment.findMany({
+          where: {
+            doctorId: doctor.id,
+            appointmentDate: istTodayStr,
+            status: { in: ['WAITING', 'IN_CONSULTATION'] },
+            queueNumber: { gt: 0 },
+          },
+          include: {
+            patient: {
+              select: { userId: true },
+            },
+          },
+        });
+
+        const uniquePatientUserIds = Array.from(
+          new Set(
+            activeVisits
+              .map((v) => v.patient?.userId)
+              .filter((uid): uid is string => Boolean(uid))
+          )
+        );
+
+        if (uniquePatientUserIds.length > 0) {
+          const docUser = await prisma.user.findUnique({
+            where: { id: doctor.userId },
+            select: { fullName: true },
+          });
+          const docName = docUser?.fullName
+            ? (docUser.fullName.startsWith('Dr.') ? docUser.fullName : `Dr. ${docUser.fullName}`)
+            : 'Doctor';
+
+          let notifTitle = 'Doctor Cabin Update';
+          let notifMsg = `${docName} cabin status was updated.`;
+
+          if (normalizedStatus === 'STEPPED_OUT') {
+            notifTitle = 'Doctor Stepped Out';
+            notifMsg = `${docName} has temporarily stepped out${cleanReturnTime ? ` (expected return: ${cleanReturnTime})` : ''}. Your queue spot is preserved.`;
+          } else if (normalizedStatus === 'IN_CABIN') {
+            notifTitle = 'Doctor in Cabin';
+            notifMsg = `${docName} is now in the cabin and consulting patients.`;
+          } else if (normalizedStatus === 'NOT_IN_CABIN') {
+            notifTitle = 'Doctor Cabin Update';
+            notifMsg = `${docName} has not yet arrived in the cabin.`;
+          }
+
+          const sixtySecondsAgo = new Date(Date.now() - 60 * 1000);
+          for (const pUserId of uniquePatientUserIds) {
+            try {
+              let alreadyNotified = false;
+              if (typeof (prisma.notification as any)?.findFirst === 'function') {
+                const recent = await prisma.notification.findFirst({
+                  where: {
+                    userId: pUserId,
+                    type: 'CABIN_STATUS',
+                    title: notifTitle,
+                    createdAt: { gte: sixtySecondsAgo },
+                  },
+                });
+                if (recent) alreadyNotified = true;
+              }
+              if (!alreadyNotified) {
+                await createNotification(pUserId, notifTitle, notifMsg, 'CABIN_STATUS');
+              }
+            } catch {
+              // Non-blocking notification dispatch
+            }
+          }
+        }
+      } catch (notifErr) {
+        console.error('Failed to dispatch cabin status notifications to active patients:', notifErr);
+      }
+    }
+
     res.json({
       success: true,
       message: statusLabels[normalizedStatus] || 'Cabin status updated successfully',
@@ -1384,73 +1497,6 @@ export const updateCabinStatus = async (req: AuthRequest, res: Response): Promis
     res.status(500).json({
       success: false,
       message: 'Failed to update cabin status',
-      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
-    });
-  }
-};
-
-/**
- * Get public reviews for a doctor with masked patient identity (BUG-08)
- */
-export const getDoctorReviews = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const id = String(req.params.id);
-    let doctor = await prisma.doctorProfile.findUnique({
-      where: { id },
-      select: { id: true, rating: true, totalReviews: true, isVerified: true, verificationStatus: true },
-    });
-
-    if (!doctor) {
-      doctor = await prisma.doctorProfile.findUnique({
-        where: { userId: id },
-        select: { id: true, rating: true, totalReviews: true, isVerified: true, verificationStatus: true },
-      });
-    }
-
-    if (!doctor || !doctor.isVerified || doctor.verificationStatus !== 'VERIFIED') {
-      res.status(404).json({ success: false, message: 'Doctor not found' });
-      return;
-    }
-
-    const { page, limit, skip } = parsePaginationParams(req.query, 20, 50);
-
-    const [total, reviews] = await prisma.$transaction([
-      prisma.review.count({ where: { doctorId: doctor.id } }),
-      prisma.review.findMany({
-        where: { doctorId: doctor.id },
-        orderBy: { createdAt: 'desc' },
-        take: limit,
-        skip,
-        include: {
-          patientUser: { select: { fullName: true } },
-        },
-      }),
-    ]);
-
-    const maskedReviews = reviews.map((r) => ({
-      id: r.id,
-      rating: r.rating,
-      comment: r.comment,
-      createdAt: r.createdAt,
-      patientUser: {
-        fullName: maskPatientName(r.patientUser?.fullName),
-      },
-    }));
-
-    res.json({
-      success: true,
-      data: {
-        rating: doctor.rating,
-        totalReviews: doctor.totalReviews,
-        reviews: maskedReviews,
-        pagination: buildPaginationMetadata(total, page, limit),
-      },
-    });
-  } catch (error: any) {
-    console.error('getDoctorReviews error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch doctor reviews',
       ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
     });
   }
@@ -1886,19 +1932,166 @@ export const updateDoctorWorkingDays = async (req: AuthRequest, res: Response): 
       }
     }
 
+    const doctorRec = await prisma.doctorProfile.findUnique({ where: { id: doctorId } });
+    if (!doctorRec) {
+      res.status(404).json({ success: false, message: 'Doctor profile not found' });
+      return;
+    }
+
     if (targetClinicId) {
       const cd = await prisma.clinicDoctor.findUnique({
         where: { clinicId_doctorId: { clinicId: targetClinicId, doctorId } },
+        include: { clinic: true },
       });
       if (!cd) {
         res.status(404).json({ success: false, message: 'Doctor clinic affiliation not found' });
         return;
       }
+
+      // Enforce cross-clinic shift overlap validation
+      let thisSlots = parseDoctorSlots(doctorRec);
+      if (cd.slots) {
+        try {
+          const p = typeof cd.slots === 'string' ? JSON.parse(cd.slots) : cd.slots;
+          if (Array.isArray(p) && p.length > 0) thisSlots = p;
+        } catch {}
+      }
+
+      const otherAffiliations = await prisma.clinicDoctor.findMany({
+        where: {
+          doctorId,
+          clinicId: { not: targetClinicId },
+          status: { in: ['ACTIVE', 'ACCEPTED'] },
+        },
+        include: { clinic: true },
+      });
+
+      for (const otherAff of otherAffiliations) {
+        if (!isClinicActive(otherAff.clinic).active) continue;
+        let otherSlots = parseDoctorSlots(doctorRec);
+        if (otherAff.slots) {
+          try {
+            const parsed = typeof otherAff.slots === 'string' ? JSON.parse(otherAff.slots) : otherAff.slots;
+            if (Array.isArray(parsed) && parsed.length > 0) otherSlots = parsed;
+          } catch {}
+        }
+        const otherWorkingDays = otherAff.workingDays
+          ? parseDoctorWorkingDays(otherAff.workingDays)
+          : parseDoctorWorkingDays(doctorRec.workingDays);
+
+        for (const newSlot of thisSlots) {
+          const daysA = (Array.isArray((newSlot as any).days) && (newSlot as any).days.length > 0)
+            ? cleanWorkingDays((newSlot as any).days)
+            : (Array.isArray((newSlot as any).workingDays) && (newSlot as any).workingDays.length > 0)
+            ? cleanWorkingDays((newSlot as any).workingDays)
+            : cleanedDays;
+
+          const startA = timeToMinutes(newSlot.startTime);
+          let endA = timeToMinutes(newSlot.endTime);
+          if (endA <= startA) endA += 24 * 60;
+
+          for (const existingSlot of otherSlots) {
+            if (!existingSlot?.startTime || !existingSlot?.endTime) continue;
+
+            const daysB = (Array.isArray((existingSlot as any).days) && (existingSlot as any).days.length > 0)
+              ? cleanWorkingDays((existingSlot as any).days)
+              : (Array.isArray((existingSlot as any).workingDays) && (existingSlot as any).workingDays.length > 0)
+              ? cleanWorkingDays((existingSlot as any).workingDays)
+              : otherWorkingDays;
+
+            const commonDays = daysA.filter((d: string) => daysB.includes(d));
+            if (commonDays.length === 0) continue;
+
+            const startB = timeToMinutes(existingSlot.startTime);
+            let endB = timeToMinutes(existingSlot.endTime);
+            if (endB <= startB) endB += 24 * 60;
+
+            if (startA < endB && startB < endA) {
+              res.status(400).json({
+                success: false,
+                message: `Working days update would create an overlapping shift conflict: Shift '${newSlot.name || 'Shift'}' (${newSlot.startTime}–${newSlot.endTime}) at ${cd.clinic?.clinicName || 'this clinic'} overlaps with shift '${existingSlot.name || 'Shift'}' (${existingSlot.startTime}–${existingSlot.endTime}) at ${otherAff.clinic?.clinicName || 'another clinic'} on common day(s): ${commonDays.join(', ')}. A practitioner cannot have simultaneous physical shifts across multiple clinics.`,
+              });
+              return;
+            }
+          }
+        }
+      }
+
       await prisma.clinicDoctor.update({
         where: { id: cd.id },
         data: { workingDays: JSON.stringify(cleanedDays) },
       });
     } else {
+      const doctorAffiliations = await prisma.clinicDoctor.findMany({
+        where: {
+          doctorId,
+          status: { in: ['ACTIVE', 'ACCEPTED'] },
+        },
+        include: { clinic: true },
+      });
+
+      for (let i = 0; i < doctorAffiliations.length; i++) {
+        const affA = doctorAffiliations[i];
+        if (!isClinicActive(affA.clinic).active) continue;
+        const daysA = affA.workingDays ? parseDoctorWorkingDays(affA.workingDays) : cleanedDays;
+        let slotsA = parseDoctorSlots(doctorRec);
+        if (affA.slots) {
+          try {
+            const p = typeof affA.slots === 'string' ? JSON.parse(affA.slots) : affA.slots;
+            if (Array.isArray(p) && p.length > 0) slotsA = p;
+          } catch {}
+        }
+
+        for (let j = i + 1; j < doctorAffiliations.length; j++) {
+          const affB = doctorAffiliations[j];
+          if (!isClinicActive(affB.clinic).active) continue;
+          const daysB = affB.workingDays ? parseDoctorWorkingDays(affB.workingDays) : cleanedDays;
+          let slotsB = parseDoctorSlots(doctorRec);
+          if (affB.slots) {
+            try {
+              const p = typeof affB.slots === 'string' ? JSON.parse(affB.slots) : affB.slots;
+              if (Array.isArray(p) && p.length > 0) slotsB = p;
+            } catch {}
+          }
+
+          for (const slotA of slotsA) {
+            const daysSlotA = (Array.isArray((slotA as any).days) && (slotA as any).days.length > 0)
+              ? cleanWorkingDays((slotA as any).days)
+              : (Array.isArray((slotA as any).workingDays) && (slotA as any).workingDays.length > 0)
+              ? cleanWorkingDays((slotA as any).workingDays)
+              : daysA;
+
+            const startA = timeToMinutes(slotA.startTime);
+            let endA = timeToMinutes(slotA.endTime);
+            if (endA <= startA) endA += 24 * 60;
+
+            for (const slotB of slotsB) {
+              if (!slotB?.startTime || !slotB?.endTime) continue;
+              const daysSlotB = (Array.isArray((slotB as any).days) && (slotB as any).days.length > 0)
+                ? cleanWorkingDays((slotB as any).days)
+                : (Array.isArray((slotB as any).workingDays) && (slotB as any).workingDays.length > 0)
+                ? cleanWorkingDays((slotB as any).workingDays)
+                : daysB;
+
+              const commonDays = daysSlotA.filter((d: string) => daysSlotB.includes(d));
+              if (commonDays.length === 0) continue;
+
+              const startB = timeToMinutes(slotB.startTime);
+              let endB = timeToMinutes(slotB.endTime);
+              if (endB <= startB) endB += 24 * 60;
+
+              if (startA < endB && startB < endA) {
+                res.status(400).json({
+                  success: false,
+                  message: `Working days update would create an overlapping shift conflict between ${affA.clinic?.clinicName || 'Clinic 1'} (${slotA.startTime}–${slotA.endTime}) and ${affB.clinic?.clinicName || 'Clinic 2'} (${slotB.startTime}–${slotB.endTime}) on common day(s): ${commonDays.join(', ')}.`,
+                });
+                return;
+              }
+            }
+          }
+        }
+      }
+
       await prisma.doctorProfile.update({
         where: { id: doctorId },
         data: { workingDays: JSON.stringify(cleanedDays) },

@@ -518,8 +518,6 @@ export const DEMO_DOCTORS: Doctor[] = [
     checkingEndTime: '20:00',
     avgConsultationMinutes: 2.7,
     maxDailyPatients: 110,
-    rating: 4.9,
-    totalReviews: 128,
     slots: [
       {
         id: 'slot_sarah_1',
@@ -585,8 +583,6 @@ export const DEMO_DOCTORS: Doctor[] = [
     checkingEndTime: '18:30',
     avgConsultationMinutes: 4.4,
     maxDailyPatients: 75,
-    rating: 4.8,
-    totalReviews: 94,
     slots: [
       {
         id: 'slot_arjun_1',
@@ -640,8 +636,6 @@ export const DEMO_DOCTORS: Doctor[] = [
     checkingEndTime: '18:00',
     avgConsultationMinutes: 4.5,
     maxDailyPatients: 80,
-    rating: 5.0,
-    totalReviews: 150,
     slots: [
       {
         id: 'slot_elena_1',
@@ -727,8 +721,6 @@ export interface User {
     checkingEndTime: string;
     avgConsultationMinutes: number;
     maxDailyPatients: number;
-    rating: number;
-    totalReviews: number;
     slots?: DoctorSlot[];
     cabinStatus?: 'IN_CABIN' | 'STEPPED_OUT' | 'NOT_IN_CABIN' | string;
     expectedReturnTime?: string | null;
@@ -1056,8 +1048,6 @@ export interface Doctor {
   checkingEndTime: string;
   avgConsultationMinutes: number;
   maxDailyPatients: number;
-  rating: number;
-  totalReviews: number;
   slots?: DoctorSlot[];
   cabinStatus?: 'IN_CABIN' | 'STEPPED_OUT' | 'NOT_IN_CABIN' | string;
   expectedReturnTime?: string | null;
@@ -1089,13 +1079,6 @@ export interface Doctor {
     avatarUrl?: string;
     phone?: string;
   };
-  reviews?: Array<{
-    id: string;
-    rating: number;
-    comment?: string;
-    patientUser: { fullName: string; avatarUrl?: string };
-    createdAt: string;
-  }>;
 }
 
 export interface QueuePreview {
@@ -1201,11 +1184,6 @@ export interface Appointment {
     emergencyContact?: string;
     user: { fullName: string; email: string; phone?: string; avatarUrl?: string };
   };
-  review?: {
-    id: string;
-    rating: number;
-    comment?: string;
-  };
   liveQueue?: {
     currentServingQueueNumber: number;
     patientsAway: number;
@@ -1306,6 +1284,10 @@ export interface PaginatedResult<T> {
   count: number;
   pagination: PaginationMeta;
 }
+
+let inFlightNotificationsPromise: Promise<{ notifications: any[]; unreadCount: number }> | null = null;
+let lastNotificationsFetchTime = 0;
+let cachedNotificationsData: { notifications: any[]; unreadCount: number } | null = null;
 
 export const api = {
   // Auth
@@ -1553,21 +1535,6 @@ export const api = {
     }
   },
 
-  async getDoctorReviews(doctorId: string): Promise<{
-    rating: number;
-    totalReviews: number;
-    reviews: Array<{
-      id: string;
-      rating: number;
-      comment?: string;
-      createdAt: string;
-      patientUser: { fullName: string };
-    }>;
-  }> {
-    const res = await safeFetch(`${API_BASE_URL}/doctors/${doctorId}/reviews`);
-    return await handleResponse(res);
-  },
-
   async updateDoctorSchedule(body: any): Promise<Doctor> {
     const res = await safeFetch(`${API_BASE_URL}/doctors/schedule`, {
       method: 'PUT',
@@ -1804,18 +1771,6 @@ export const api = {
     return handleResponse(res);
   },
 
-  async submitAppointmentReview(
-    appointmentId: string,
-    data: { rating: number; comment?: string }
-  ): Promise<any> {
-    const res = await safeFetch(`${API_BASE_URL}/appointments/${appointmentId}/review`, {
-      method: 'POST',
-      headers: getHeaders(),
-      body: JSON.stringify(data),
-    });
-    return handleResponse(res);
-  },
-
   // Doctor Consultation & Queue Console
   async getDoctorQueue(
     date?: string,
@@ -1902,18 +1857,6 @@ export const api = {
       body: JSON.stringify(body),
     });
     return handleResponse(res);
-  },
-
-  async completePrescription(body: {
-    appointmentId: string;
-    diagnosis?: string;
-    medicines?: any[];
-    advice?: string;
-    followUpDate?: string;
-    clinicalNotes?: string;
-    vitals?: any;
-  }): Promise<{ appointment: Appointment; prescription?: any }> {
-    return this.completeConsultation(body) as any;
   },
 
   async holdConsultation(appointmentId: string): Promise<Appointment> {
@@ -2505,13 +2448,35 @@ export const api = {
     return handleResponse(res);
   },
 
-  // Notifications (BUG-13)
+  // Notifications (BUG-13) with in-flight deduplication and caching
   async getNotifications(): Promise<{ notifications: any[]; unreadCount: number }> {
-    const res = await safeFetch(`${API_BASE_URL}/notifications`, { headers: getHeaders() });
-    return handleResponse(res);
+    const now = Date.now();
+    if (cachedNotificationsData && now - lastNotificationsFetchTime < 3000) {
+      return cachedNotificationsData;
+    }
+    if (inFlightNotificationsPromise) {
+      return inFlightNotificationsPromise;
+    }
+
+    const promise = (async (): Promise<{ notifications: any[]; unreadCount: number }> => {
+      try {
+        const res = await safeFetch(`${API_BASE_URL}/notifications`, { headers: getHeaders() });
+        const data = (await handleResponse(res)) as { notifications: any[]; unreadCount: number };
+        cachedNotificationsData = data;
+        lastNotificationsFetchTime = Date.now();
+        return data;
+      } finally {
+        inFlightNotificationsPromise = null;
+      }
+    })();
+
+    inFlightNotificationsPromise = promise;
+    return promise;
   },
 
   async markNotificationRead(id: string): Promise<any> {
+    cachedNotificationsData = null;
+    lastNotificationsFetchTime = 0;
     const res = await safeFetch(`${API_BASE_URL}/notifications/${id}/read`, {
       method: 'PATCH',
       headers: getHeaders(),
@@ -2520,6 +2485,8 @@ export const api = {
   },
 
   async markAllNotificationsRead(): Promise<any> {
+    cachedNotificationsData = null;
+    lastNotificationsFetchTime = 0;
     const res = await safeFetch(`${API_BASE_URL}/notifications/read-all`, {
       method: 'PATCH',
       headers: getHeaders(),

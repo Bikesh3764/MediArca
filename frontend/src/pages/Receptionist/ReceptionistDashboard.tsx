@@ -18,6 +18,7 @@ import {
 import { sanitizeIndianPhone, formatIndianPhone, isValidIndianPhone } from '../../utils/phoneUtils';
 import { useVisibilityPolling } from '../../utils/useVisibilityPolling';
 import { useAuth } from '../../context/AuthContext';
+import { useNotifications } from '../../context/NotificationContext';
 import { DashboardLayout, DashboardNavItem } from '../../components/layout/DashboardLayout';
 import { CabinStatusControl } from '../../components/ui/DoctorCabinPresence';
 import {
@@ -141,9 +142,14 @@ export const ReceptionistDashboard: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  // Notifications state
-  const [notifications, setNotifications] = useState<any[]>([]);
-  const [unreadNotifCount, setUnreadNotifCount] = useState(0);
+  // Notifications state from consolidated NotificationContext
+  const {
+    notifications,
+    unreadCount: unreadNotifCount,
+    markAsRead: handleMarkOneNotifRead,
+    markAllRead: handleMarkAllNotifsRead,
+    fetchNotifications,
+  } = useNotifications();
   const [expandedNotifId, setExpandedNotifId] = useState<string | null>(null);
   const [notifFilter, setNotifFilter] = useState<'ALL' | 'UNREAD'>('ALL');
 
@@ -214,39 +220,6 @@ export const ReceptionistDashboard: React.FC = () => {
     slotIdRef.current = slotId;
   }, [selectedDoctorId, queueDoctorId, slotId]);
 
-  const fetchNotifications = useCallback(async () => {
-    try {
-      const res = await api.getNotifications();
-      const list = res?.notifications || [];
-      setNotifications(list);
-      setUnreadNotifCount(res?.unreadCount ?? list.filter((n: any) => !n.isRead).length);
-    } catch (err) {
-      console.error('Failed to load receptionist notifications:', err);
-    }
-  }, []);
-
-  const handleMarkAllNotifsRead = async () => {
-    try {
-      await api.markAllNotificationsRead();
-      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
-      setUnreadNotifCount(0);
-    } catch (err: any) {
-      console.error('Failed to mark all notifications as read:', err);
-    }
-  };
-
-  const handleMarkOneNotifRead = async (id: string) => {
-    try {
-      await api.markNotificationRead(id);
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
-      );
-      setUnreadNotifCount((prev) => Math.max(0, prev - 1));
-    } catch (err) {
-      console.error('Failed to mark notification read:', err);
-    }
-  };
-
   const fetchPendingAppointments = useCallback(async () => {
     try {
       setPendingLoading(true);
@@ -289,14 +262,6 @@ export const ReceptionistDashboard: React.FC = () => {
       try {
         const pendingRes = await api.getPendingAppointments();
         setPendingAppointments(pendingRes);
-      } catch {
-        // non-blocking
-      }
-      try {
-        const notifRes = await api.getNotifications();
-        const list = notifRes?.notifications || [];
-        setNotifications(list);
-        setUnreadNotifCount(notifRes?.unreadCount ?? list.filter((n: any) => !n.isRead).length);
       } catch {
         // non-blocking
       }
@@ -367,7 +332,6 @@ export const ReceptionistDashboard: React.FC = () => {
   useVisibilityPolling(
     () => {
       if (user?.mustChangePassword) return;
-      fetchNotifications();
       fetchPendingAppointments();
       if (activeTab === 'queue' && queueDoctorId) {
         fetchQueue();

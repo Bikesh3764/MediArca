@@ -37,16 +37,6 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
     const dateStr = (req.query.date as string) || todayIso;
     const scope = (req.query.scope as string) || 'date';
 
-    // Auto-expire past unconfirmed requests for this doctor
-    await prisma.appointment.updateMany({
-      where: {
-        doctorId: doctor.id,
-        status: 'PENDING_APPROVAL',
-        appointmentDate: { lt: todayIso },
-      },
-      data: { status: 'EXPIRED' },
-    });
-
     const whereClause: any = {
       doctorId: doctor.id,
       queueNumber: { gt: 0 },
@@ -742,7 +732,7 @@ export const completeConsultation = async (req: AuthRequest, res: Response): Pro
       createNotification(
         patProfile.userId,
         'Consultation Completed',
-        `Your consultation with Dr. ${docName} has concluded. Prescribed advice and medicines are available on your pass.`,
+        `Your consultation with Dr. ${docName} has concluded. Collect your physical prescription and follow-up advice at the clinic desk.`,
         'CLINICAL'
       ).catch(() => {});
     }
@@ -761,8 +751,6 @@ export const completeConsultation = async (req: AuthRequest, res: Response): Pro
     });
   }
 };
-
-export const completeWithPrescription = completeConsultation;
 
 export const holdConsultation = async (req: AuthRequest, res: Response): Promise<void> => {
   try {

@@ -7645,7 +7645,7 @@ Follow-up Date: 2026-10-15`;
   const docRoutesContent = fs.readFileSync(path.join(__dirname, '../src/routes/doctorRoutes.ts'), 'utf-8');
   assert(docRoutesContent.includes("publicCache(60, 30), getDoctors"), 'Test A: doctorRoutes applies publicCache to GET /');
   assert(docRoutesContent.includes("publicCache(60, 30), getDoctorById"), 'Test A: doctorRoutes applies publicCache to GET /:id');
-  assert(docRoutesContent.includes("publicCache(60, 30), getDoctorReviews"), 'Test A: doctorRoutes applies publicCache to GET /:id/reviews');
+  assert(!docRoutesContent.includes("getDoctorReviews"), 'Test A: doctorRoutes completely purges GET /:id/reviews');
 
   const clinicRoutesContent = fs.readFileSync(path.join(__dirname, '../src/routes/clinicRoutes.ts'), 'utf-8');
   assert(clinicRoutesContent.includes("publicCache(60, 30), getPublicClinics"), 'Test A: clinicRoutes applies publicCache to GET /public');
@@ -9003,13 +9003,11 @@ Follow-up Date: 2026-10-15`;
     'Bug 9: appointmentController strips raw receptionists arrays from doctor and clinic responses'
   );
 
-  // Bug 10: Review rating race condition
+  // Bug 10: Reviews and ratings completely purged per system charter
   assert(
-    appointmentControllerContent.includes('await tx.review.aggregate({') &&
-    appointmentControllerContent.includes('_avg: { rating: true }') &&
-    appointmentControllerContent.includes('_count: { _all: true }') &&
-    appointmentControllerContent.includes('SELECT id FROM "DoctorProfile" WHERE id = ${appointment.doctorId} FOR UPDATE'),
-    'Bug 10: submitAppointmentReview executes atomic transaction with row locking and PostgreSQL aggregate'
+    !appointmentControllerContent.includes('submitAppointmentReview') &&
+    !appointmentControllerContent.includes('tx.review'),
+    'Bug 10: submitAppointmentReview and model Review are completely purged'
   );
 
   // Bug 11: Public reviews unbounded query
@@ -9195,11 +9193,11 @@ Follow-up Date: 2026-10-15`;
     'Issue 11: updateSchedule validates HH:mm time formatting and start < end order for legacy shifts'
   );
 
-  // Issue 12: Doctor detail bounded reviews
+  // Issue 12: Doctor detail reviews completely purged
   assert(
-    doctorControllerContent.includes("take: 10,") &&
-    doctorControllerContent.includes("orderBy: { createdAt: 'desc' }"),
-    'Issue 12: getDoctorById applies bounded pagination (take: 10) to nested reviews'
+    !doctorControllerContent.includes("reviews: (doctor.reviews") &&
+    !doctorControllerContent.includes("getDoctorReviews"),
+    'Issue 12: getDoctorById and doctorController completely exclude reviews'
   );
 
   // Issue 13: GitHub Actions Backend CI provisions real PostgreSQL service container & runs migrations
@@ -9366,11 +9364,11 @@ Follow-up Date: 2026-10-15`;
     'Fix 11: Doctor-Clinic affiliation request and acceptance endpoints enforce verified/active eligibility on both sides'
   );
 
-  // 12. Fix 12 & Fix 13: updateCabinStatus uses isDoctorEligibleForClinicalPractice & getDoctorReviews checks verificationStatus
+  // 12. Fix 12 & Fix 13: updateCabinStatus uses isDoctorEligibleForClinicalPractice & getDoctorReviews is purged
   assert(
     doctorControllerContent.includes('const docCheck = isDoctorEligibleForClinicalPractice(doctor);') &&
-    doctorControllerContent.includes("if (!doctor || !doctor.isVerified || doctor.verificationStatus !== 'VERIFIED')"),
-    'Fix 12 & 13: updateCabinStatus enforces canonical eligibility and getDoctorReviews verifies doctor status and supports userId fallback'
+    !doctorControllerContent.includes('getDoctorReviews'),
+    'Fix 12 & 13: updateCabinStatus enforces canonical eligibility and getDoctorReviews is purged'
   );
 
   // 13. Fix 14: isValidDobDate uses IST date string instead of server timezone
@@ -10059,6 +10057,117 @@ Follow-up Date: 2026-10-15`;
     updatedClinicalReportModalContent.includes('prevOpenRef = useRef(false)') &&
     updatedClinicalReportModalContent.includes('if (!prevOpenRef.current)'),
     'Fix 25 Functional: ClinicalReportModal preserves user dropdown filter selections across filter changes without stomping'
+  );
+
+  // Feature 1: Shift Capacity Auto-Expiration
+  assert(
+    receptionistControllerContent.includes('newConfirmedCount >= slot.maxPatients') &&
+    receptionistControllerContent.includes("status: 'EXPIRED'") &&
+    receptionistControllerContent.includes('newConfirmedCount >= chosenSlot.maxPatients'),
+    'Feature 1: executeApproveAppointmentTransaction and bookWalkin auto-expire remaining PENDING_APPROVAL appointments when slot capacity is reached'
+  );
+
+  // Feature 2: Cross-Clinic Shift Overlap Rejection
+  assert(
+    doctorControllerContent.includes('Working days update would create an overlapping shift conflict') &&
+    doctorControllerContent.includes('startA < endB && startB < endA') &&
+    doctorControllerContent.includes('newStart < affEnd && affStart < newEnd'),
+    'Feature 2: updateDoctorWorkingDays and updateSchedule prevent overlapping shifts across clinics on common days'
+  );
+
+  // Feature 3: Doctor Leave Reschedule by Desk Staff
+  assert(
+    receptionistControllerContent.includes('isStaffActor') &&
+    receptionistControllerContent.includes('isDifferentShiftSameDay'),
+    'Feature 3: rescheduleAppointment allows desk staff to reschedule appointments during doctor leave'
+  );
+
+  // Feature 4: Review and Rating Purge from Schema & Controllers
+  const currentSchema = fs.readFileSync(path.join(__dirname, '../prisma/schema.prisma'), 'utf-8');
+  assert(
+    !currentSchema.includes('model Review') &&
+    !currentSchema.includes('rating') &&
+    !currentSchema.includes('totalReviews'),
+    'Feature 4: model Review, rating, and totalReviews are completely purged from schema.prisma'
+  );
+
+  // --- Sprint: Write-on-Read Elimination, Dedicated Expiry & Smart Notification System ---
+  const ccContent = fs.readFileSync(path.join(__dirname, '../src/controllers/consultationController.ts'), 'utf-8');
+  const apptContent = fs.readFileSync(path.join(__dirname, '../src/controllers/appointmentController.ts'), 'utf-8');
+  const recContent = fs.readFileSync(path.join(__dirname, '../src/controllers/receptionistController.ts'), 'utf-8');
+  const docContent = fs.readFileSync(path.join(__dirname, '../src/controllers/doctorController.ts'), 'utf-8');
+  const maintContent = fs.readFileSync(path.join(__dirname, '../src/utils/maintenance.ts'), 'utf-8');
+  const notifServiceContent = fs.readFileSync(path.join(__dirname, '../src/services/notificationService.ts'), 'utf-8');
+
+  // Test 1: getPatientAppointments eliminates write-on-read
+  const patApptsSection = apptContent.slice(
+    apptContent.indexOf('export const getPatientAppointments'),
+    apptContent.indexOf('export const cancelAppointment')
+  );
+  assert(
+    !patApptsSection.includes('updateMany') &&
+    !patApptsSection.includes('.update(') &&
+    patApptsSection.includes("effectiveStatus = 'EXPIRED'"),
+    'Eliminate Write-on-Read: getPatientAppointments is purely read-only and dynamically computes expired status in-memory'
+  );
+
+  // Test 2: consultationController.getDoctorQueue eliminates write-on-read
+  const ccQueueSection = ccContent.slice(
+    ccContent.indexOf('export const getDoctorQueue'),
+    ccContent.indexOf('export const executeCallPatientTransaction')
+  );
+  assert(
+    !ccQueueSection.includes('updateMany') && !ccQueueSection.includes('.update('),
+    'Eliminate Write-on-Read: consultationController.getDoctorQueue is purely read-only without database write-on-read'
+  );
+
+  // Test 3: receptionistController getDoctorQueue & getPendingAppointments eliminate write-on-read
+  const recQueueSection = recContent.slice(
+    recContent.indexOf('export const getDoctorQueue'),
+    recContent.indexOf('export const bookWalkin')
+  );
+  assert(
+    !recQueueSection.includes('updateMany') && !recQueueSection.includes('.update('),
+    'Eliminate Write-on-Read: receptionistController.getDoctorQueue is purely read-only'
+  );
+  const recPendingSection = recContent.slice(
+    recContent.indexOf('export const getPendingAppointments'),
+    recContent.indexOf('export const approveAppointment')
+  );
+  assert(
+    !recPendingSection.includes('updateMany') && !recPendingSection.includes('.update('),
+    'Eliminate Write-on-Read: receptionistController.getPendingAppointments is purely read-only'
+  );
+
+  // Test 4: Dedicated background maintenance correctly scopes expiry to stale PENDING_APPROVAL
+  assert(
+    maintContent.includes("status: 'PENDING_APPROVAL'") &&
+    maintContent.includes("appointmentDate: { lt: istTodayStr }") &&
+    maintContent.includes("status: 'EXPIRED'"),
+    'Dedicated Expiry: expireStalePendingAppointments updates only unconfirmed appointments with appointmentDate < today'
+  );
+
+  // Test 5: Doctor cabin status notifications require statusActuallyChanged and queueNumber > 0
+  assert(
+    docContent.includes('const statusActuallyChanged =') &&
+    docContent.includes("status: { in: ['WAITING', 'IN_CONSULTATION'] }") &&
+    docContent.includes('queueNumber: { gt: 0 }') &&
+    docContent.includes("type: 'CABIN_STATUS'"),
+    'Smart Notifications: Doctor cabin status updates notify only active queue ticket holders today with deduplication'
+  );
+
+  // Test 6: English-only notification check
+  assert(
+    !ccContent.includes('Prescribed advice and medicines are available on your pass') &&
+    ccContent.includes('Collect your physical prescription and follow-up advice at the clinic desk'),
+    'Charter Alignment: Consultation completion directs patients to physical prescription collection at desk'
+  );
+
+  // Test 7: Notification Service guards
+  assert(
+    notifServiceContent.includes('if (!userId || typeof userId !==') &&
+    notifServiceContent.includes("title: String(title || '').trim()"),
+    'Smart Notifications: notificationService enforces strict userId input guards preventing database errors'
   );
 
   console.log(`\n========================================`);

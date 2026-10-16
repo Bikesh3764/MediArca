@@ -77,7 +77,7 @@ export const Home: React.FC = () => {
   const [selectedCity, setSelectedCity] = useState('All');
   const [selectedState, setSelectedState] = useState('All');
   const [maxFee, setMaxFee] = useState<number>(3000);
-  const [sortBy, setSortBy] = useState<'rating' | 'experience' | 'fee_low' | 'fee_high'>('rating');
+  const [sortBy, setSortBy] = useState<'experience' | 'fee_low' | 'fee_high'>('experience');
   const [minExperience, setMinExperience] = useState<number>(0);
   const [doctorMobileFiltersOpen, setDoctorMobileFiltersOpen] = useState(false);
 
@@ -380,8 +380,7 @@ export const Home: React.FC = () => {
       .sort((a, b) => {
         if (sortBy === 'fee_low') return a.consultationFee - b.consultationFee;
         if (sortBy === 'fee_high') return b.consultationFee - a.consultationFee;
-        if (sortBy === 'experience') return b.experienceYears - a.experienceYears;
-        return (b.rating || 5) - (a.rating || 5);
+        return b.experienceYears - a.experienceYears;
       });
   }, [doctors, selectedSpecialty, selectedState, selectedCity, maxFee, doctorSearchQuery, doctorLocationQuery, minExperience, sortBy]);
 
@@ -417,7 +416,7 @@ export const Home: React.FC = () => {
     setSelectedCity('All');
     setMaxFee(3000);
     setMinExperience(0);
-    setSortBy('rating');
+    setSortBy('experience');
   };
 
   const resetClinicFilters = () => {
@@ -1300,10 +1299,9 @@ export const Home: React.FC = () => {
                   <div className="relative inline-flex items-center">
                     <select
                       value={sortBy}
-                      onChange={(e) => setSortBy(e.target.value as 'rating' | 'experience' | 'fee_low' | 'fee_high')}
+                      onChange={(e) => setSortBy(e.target.value as 'experience' | 'fee_low' | 'fee_high')}
                       className="appearance-none h-9 pl-3.5 pr-8 rounded-full border border-[#d2d2d7] bg-white hover:bg-[#f5f5f7] text-xs font-medium text-[#1d1d1f] focus:outline-none focus:border-[#0066cc] cursor-pointer shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all"
                     >
-                      <option value="rating">Recommended</option>
                       <option value="experience">Most Experienced</option>
                       <option value="fee_low">Price: Low to High</option>
                       <option value="fee_high">Price: High to Low</option>

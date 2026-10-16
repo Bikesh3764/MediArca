@@ -10,7 +10,6 @@ import {
   addDoctorReceptionist,
   removeDoctorReceptionist,
   updateCabinStatus,
-  getDoctorReviews,
   getDoctorReport,
   getDoctorScheduleConfig,
   updateDoctorWorkingDays,
@@ -46,7 +45,6 @@ router.put('/:doctorId/working-days', authenticate, authorize('DOCTOR', 'RECEPTI
 router.post('/:doctorId/leaves', authenticate, authorize('DOCTOR', 'RECEPTIONIST'), addDoctorLeave);
 router.delete('/:doctorId/leaves/:leaveId', authenticate, authorize('DOCTOR', 'RECEPTIONIST'), cancelDoctorLeave);
 
-router.get('/:id/reviews', publicCache(60, 30), getDoctorReviews);
 router.get('/:id', optionalAuthenticate, publicCache(60, 30), getDoctorById);
 router.put('/schedule', authenticate, authorize('DOCTOR'), updateSchedule);
 

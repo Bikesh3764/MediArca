@@ -78,7 +78,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
   const [selectedState, setSelectedState] = useState('All');
   const [selectedCity, setSelectedCity] = useState('All');
   const [maxFee, setMaxFee] = useState<number>(3000);
-  const [sortBy, setSortBy] = useState('rating');
+  const [sortBy, setSortBy] = useState('experience');
   const [minExp, setMinExp] = useState<number>(0);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [doctorPage, setDoctorPage] = useState(1);
@@ -425,7 +425,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
     setSelectedCity('All');
     setMaxFee(3000);
     setMinExp(0);
-    setSortBy('rating');
+    setSortBy('experience');
     setDoctorPage(1);
     setSearchParams({});
   };
@@ -438,7 +438,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
     locationQuery.trim() ||
     maxFee < 3000 ||
     minExp > 0 ||
-    sortBy !== 'rating'
+    sortBy !== 'experience'
   );
 
   const activeFilterCount =
@@ -449,7 +449,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
     (locationQuery.trim() ? 1 : 0) +
     (maxFee < 3000 ? 1 : 0) +
     (minExp > 0 ? 1 : 0) +
-    (sortBy !== 'rating' ? 1 : 0);
+    (sortBy !== 'experience' ? 1 : 0);
 
   // Synchronize specialty filter when query param changes
   useEffect(() => {
@@ -1093,7 +1093,6 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                     onChange={(e) => setSortBy(e.target.value)}
                     className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 cursor-pointer"
                   >
-                    <option value="rating">Recommended</option>
                     <option value="experience">Most Experienced</option>
                     <option value="fee_low">Price: Low to High</option>
                     <option value="fee_high">Price: High to Low</option>
@@ -1337,7 +1336,6 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                     onChange={(e) => setSortBy(e.target.value)}
                     className="appearance-none h-9 pl-3.5 pr-8 rounded-full border border-[#d2d2d7] bg-white hover:bg-[#f5f5f7] text-xs font-medium text-[#1d1d1f] focus:outline-none focus:border-[#0066cc] cursor-pointer shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all"
                   >
-                    <option value="rating">Recommended</option>
                     <option value="experience">Most Experienced</option>
                     <option value="fee_low">Price: Low to High</option>
                     <option value="fee_high">Price: High to Low</option>

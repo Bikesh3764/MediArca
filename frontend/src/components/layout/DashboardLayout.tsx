@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { BrandLogo } from '../ui/BrandLogo';
-import { api, AppNotification, getFileUrl } from '../../services/api';
+import { getFileUrl } from '../../services/api';
 import { useVisibilityPolling } from '../../utils/useVisibilityPolling';
+import { useNotifications } from '../../context/NotificationContext';
 import {
   LogOut,
   Menu,
@@ -47,54 +48,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const location = useLocation();
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
-  const [notifications, setNotifications] = useState<AppNotification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
+  // Real-time in-app notifications sync via api.getNotifications() consolidated across portals (FUNC-014)
+  const { notifications, unreadCount, markAsRead: handleMarkAsRead, markAllRead: handleMarkAllRead, fetchNotifications } = useNotifications();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-
-  const fetchNotifications = useCallback(async () => {
-    if (!user) return;
-    try {
-      const res = await api.getNotifications();
-      if (res && Array.isArray(res.notifications)) {
-        setNotifications(res.notifications);
-        setUnreadCount(
-          typeof res.unreadCount === 'number'
-            ? res.unreadCount
-            : res.notifications.filter((n: any) => !n.isRead).length
-        );
-      }
-    } catch {
-      // background polling fails gracefully
-    }
-  }, [user]);
-
-  useEffect(() => {
-    if (user) {
-      queueMicrotask(() => fetchNotifications());
-    }
-  }, [user, fetchNotifications]);
-
   useVisibilityPolling(fetchNotifications, 30000, Boolean(user));
-
-  const handleMarkAsRead = async (id: string) => {
-    try {
-      await api.markNotificationRead(id);
-      setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
-      setUnreadCount((prev) => Math.max(0, prev - 1));
-    } catch (err) {
-      console.error('Failed to mark notification read:', err);
-    }
-  };
-
-  const handleMarkAllRead = async () => {
-    try {
-      await api.markAllNotificationsRead();
-      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
-      setUnreadCount(0);
-    } catch (err) {
-      console.error('Failed to mark all notifications read:', err);
-    }
-  };
 
   const getGreeting = () => {
     const hour = new Date().getHours();

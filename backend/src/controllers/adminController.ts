@@ -79,7 +79,7 @@ export const getDoctorsList = async (req: AuthRequest, res: Response): Promise<v
               },
             },
           },
-          _count: { select: { appointments: true, reviews: true } },
+          _count: { select: { appointments: true } },
         },
         orderBy: [{ isVerified: 'asc' }, { createdAt: 'desc' }],
         skip,

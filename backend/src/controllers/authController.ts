@@ -1430,7 +1430,7 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
       if (currentMedications !== undefined) safePatientData.currentMedications = sanitizeClinicalHistoryList(currentMedications);
       if (emergencyContact !== undefined) safePatientData.emergencyContact = emergencyContact ? String(emergencyContact).trim() : null;
     } else if (req.user.role === 'DOCTOR') {
-      // Strict allowlist: Prevent doctors from modifying isVerified, verificationStatus, rating, totalReviews, userId, id
+      // Strict allowlist: Prevent doctors from modifying isVerified, verificationStatus, userId, id
       const {
         specialty,
         qualifications,

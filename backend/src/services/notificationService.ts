@@ -6,13 +6,16 @@ export const createNotification = async (
   message: string,
   type = 'SYSTEM'
 ): Promise<any> => {
+  if (!userId || typeof userId !== 'string' || !userId.trim()) {
+    return null;
+  }
   try {
     return await prisma.notification.create({
       data: {
-        userId,
-        title,
-        message,
-        type,
+        userId: userId.trim(),
+        title: String(title || '').trim(),
+        message: String(message || '').trim(),
+        type: type || 'SYSTEM',
       },
     });
   } catch (error) {

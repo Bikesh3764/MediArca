@@ -1151,7 +1151,6 @@ export const getAppointmentById = async (req: AuthRequest, res: Response): Promi
             user: { select: { id: true, fullName: true, email: true, phone: true, avatarUrl: true } },
           },
         },
-        review: true,
       },
     });
 
@@ -1269,18 +1268,6 @@ export const getPatientAppointments = async (req: AuthRequest, res: Response): P
     const istTodayStr = getLocalDateString(now);
     const currentMinutes = getIndianTimeMinutes(now);
 
-    // Auto-expire past unconfirmed PENDING_APPROVAL requests whose consultation date has already passed
-    await prisma.appointment.updateMany({
-      where: {
-        patientId: patient.id,
-        status: 'PENDING_APPROVAL',
-        appointmentDate: { lt: istTodayStr },
-      },
-      data: {
-        status: 'EXPIRED',
-      },
-    });
-
     const appointments = await prisma.appointment.findMany({
       where: { patientId: patient.id },
       include: {
@@ -1326,7 +1313,6 @@ export const getPatientAppointments = async (req: AuthRequest, res: Response): P
             user: { select: { fullName: true, email: true, phone: true, avatarUrl: true } },
           },
         },
-        review: true,
       },
       orderBy: [{ appointmentDate: 'desc' }, { queueNumber: 'asc' }],
     });
@@ -1501,11 +1487,6 @@ export const getPatientAppointments = async (req: AuthRequest, res: Response): P
           if (appt.appointmentDate < istTodayStr || (appt.appointmentDate === istTodayStr && currentMinutes >= slotEndMins)) {
             effectiveStatus = 'EXPIRED';
             isShiftPassed = true;
-            // Update in database asynchronously
-            prisma.appointment.update({
-              where: { id: appt.id },
-              data: { status: 'EXPIRED' },
-            }).catch(() => {});
           }
         }
 
@@ -2094,6 +2075,26 @@ export const checkInAppointmentDirect = async (req: AuthRequest, res: Response):
       },
     });
 
+    if (newCheckedInState && updated.doctorId) {
+      prisma.doctorProfile
+        .findUnique({
+          where: { id: updated.doctorId },
+          select: { userId: true },
+        })
+        .then((doc) => {
+          if (doc?.userId) {
+            const patientDisplayName = updated.patientName || updated.patient?.user?.fullName || 'Patient';
+            createNotification(
+              doc.userId,
+              'Patient Arrived at Clinic Desk',
+              `Queue Token #${updated.queueNumber} (${patientDisplayName}) was checked in at the reception desk.`,
+              'QUEUE'
+            ).catch(() => {});
+          }
+        })
+        .catch(() => {});
+    }
+
     res.json({
       success: true,
       message: newCheckedInState
@@ -2111,110 +2112,4 @@ export const checkInAppointmentDirect = async (req: AuthRequest, res: Response):
   }
 };
 
-/**
- * Submit verified patient review and rating for completed consultation (BUG-08)
- */
-export const submitAppointmentReview = async (req: AuthRequest, res: Response): Promise<void> => {
-  try {
-    if (!req.user || req.user.role !== 'PATIENT') {
-      res.status(403).json({ success: false, message: 'Only patients can submit reviews' });
-      return;
-    }
-
-    const { id } = req.params;
-    const appointmentId = typeof id === 'string' ? id : Array.isArray(id) ? id[0] : '';
-    const { rating, comment } = req.body;
-
-    const rawRating = Number(rating);
-    if (!Number.isInteger(rawRating) || rawRating < 1 || rawRating > 5) {
-      res.status(400).json({ success: false, message: 'Rating must be an integer between 1 and 5 stars' });
-      return;
-    }
-    const numRating = rawRating;
-
-    const patient = await prisma.patientProfile.findUnique({
-      where: { userId: req.user.id },
-    });
-
-    if (!patient) {
-      res.status(404).json({ success: false, message: 'Patient profile not found' });
-      return;
-    }
-
-    const appointment = await prisma.appointment.findUnique({
-      where: { id: appointmentId },
-      include: { review: true, doctor: true },
-    });
-
-    if (!appointment || appointment.patientId !== patient.id) {
-      res.status(404).json({ success: false, message: 'Appointment not found or unauthorized' });
-      return;
-    }
-
-    if (appointment.status !== 'COMPLETED') {
-      res.status(400).json({ success: false, message: 'Reviews can only be submitted for completed consultations' });
-      return;
-    }
-
-    if (appointment.review) {
-      res.status(409).json({ success: false, message: 'Review has already been submitted for this consultation' });
-      return;
-    }
-
-    // Atomic review creation and rating aggregation with concurrency lock (Bug 10: Fix race condition, A-02, A-15)
-    const { review } = await prisma.$transaction(async (tx) => {
-      if (typeof (tx as any).$queryRaw === 'function') {
-        await (tx as any).$queryRaw`SELECT id FROM "DoctorProfile" WHERE id = ${appointment.doctorId} FOR UPDATE;`;
-      } else if (typeof (tx as any).$executeRaw === 'function') {
-        await (tx as any).$executeRaw`SELECT id FROM "DoctorProfile" WHERE id = ${appointment.doctorId} FOR UPDATE;`;
-      }
-
-      const createdReview = await tx.review.create({
-        data: {
-          appointmentId: appointment.id,
-          doctorId: appointment.doctorId,
-          patientId: req.user!.id,
-          rating: numRating,
-          comment: comment ? String(comment).trim() : null,
-        },
-      });
-
-      const stats = await tx.review.aggregate({
-        where: { doctorId: appointment.doctorId },
-        _avg: { rating: true },
-        _count: { _all: true },
-      });
-
-      const totalReviews = stats._count._all;
-      const avgRating = stats._avg.rating !== null ? Number(stats._avg.rating.toFixed(1)) : 5.0;
-
-      await tx.doctorProfile.update({
-        where: { id: appointment.doctorId },
-        data: {
-          rating: avgRating,
-          totalReviews,
-        },
-      });
-
-      return { review: createdReview };
-    });
-
-    // Notify doctor
-    createNotification(
-      appointment.doctor.userId,
-      'New Consultation Review',
-      `A patient rated your consultation ${numRating}/5 stars.`,
-      'CLINICAL'
-    ).catch(() => {});
-
-    res.status(201).json({
-      success: true,
-      message: 'Review submitted successfully. Thank you for your feedback!',
-      data: review,
-    });
-  } catch (error: any) {
-    console.error('submitAppointmentReview error:', error);
-    res.status(500).json({ success: false, message: 'Failed to submit review' });
-  }
-};
 

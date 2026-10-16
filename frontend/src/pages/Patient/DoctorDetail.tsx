@@ -18,7 +18,6 @@ import { UtilityCard } from '../../components/ui/UtilityCard';
 import { CabinStatusBadge } from '../../components/ui/DoctorCabinPresence';
 import {
   ShieldCheck,
-  Star,
   MapPin,
   ChevronLeft,
   AlertCircle,
@@ -261,33 +260,7 @@ export const DoctorDetail: React.FC = () => {
             </div>
           ) : null}
 
-          {/* 5. Reviews */}
-          {doctor.reviews && doctor.reviews.length > 0 && (
-            <div className="pt-6">
-              <h3 className="text-sm font-semibold text-[#1d1d1f] mb-3 tracking-tight">Reviews</h3>
-              <div className="space-y-2.5">
-                {doctor.reviews.map((rev) => (
-                  <div key={rev.id} className="p-3.5 rounded-2xl border border-[#e5e5ea] bg-[#f5f5f7]/60">
-                    <div className="flex justify-between items-center">
-                      <span className="font-semibold text-xs text-[#1d1d1f]">
-                        {rev.patientUser.fullName}
-                      </span>
-                      <div className="flex items-center gap-0.5">
-                        {[...Array(rev.rating)].map((_, i) => (
-                          <Star key={i} className="w-3 h-3 fill-[#0066cc] text-[#0066cc]" />
-                        ))}
-                      </div>
-                    </div>
-                    {rev.comment?.trim() ? (
-                      <p className="text-xs text-[#6e6e73] mt-1.5 leading-normal">
-                        "{rev.comment.trim()}"
-                      </p>
-                    ) : null}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+
         </UtilityCard>
       </div>
 

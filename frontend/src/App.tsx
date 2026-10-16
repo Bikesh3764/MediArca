@@ -2,6 +2,7 @@ import React, { Suspense } from 'react';
 import { lazyWithRetry as lazy } from './utils/lazyWithRetry';
 import { HashRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { NotificationProvider } from './context/NotificationContext';
 import { GlobalNav } from './components/layout/GlobalNav';
 import { Footer } from './components/layout/Footer';
 import { MobileTabBar } from './components/layout/MobileTabBar';
@@ -317,10 +318,12 @@ export function App() {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <Router>
-          <ScrollToTop />
-          <AppShell />
-        </Router>
+        <NotificationProvider>
+          <Router>
+            <ScrollToTop />
+            <AppShell />
+          </Router>
+        </NotificationProvider>
       </AuthProvider>
     </ErrorBoundary>
   );

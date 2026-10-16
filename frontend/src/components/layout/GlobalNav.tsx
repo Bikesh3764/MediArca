@@ -19,8 +19,9 @@ import {
   FileQuestion,
   Mail,
 } from 'lucide-react';
-import { api, getFileUrl, AppNotification } from '../../services/api';
+import { getFileUrl } from '../../services/api';
 import { useVisibilityPolling } from '../../utils/useVisibilityPolling';
+import { useNotifications } from '../../context/NotificationContext';
 
 const formatNotificationTimeAgo = (dateStr: string): string => {
   try {
@@ -41,39 +42,8 @@ export const GlobalNav: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
-  const [notifications, setNotifications] = useState<AppNotification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const { notifications, unreadCount, markAsRead: handleMarkAsRead, markAllRead: handleMarkAllRead, fetchNotifications } = useNotifications();
   const [expandedNotificationId, setExpandedNotificationId] = useState<string | null>(null);
-
-  const fetchNotifications = React.useCallback(async () => {
-    if (!user) return;
-    try {
-      const res = await api.getNotifications();
-      if (res && Array.isArray(res.notifications)) {
-        setNotifications(res.notifications);
-        setUnreadCount(
-          typeof res.unreadCount === 'number'
-            ? res.unreadCount
-            : res.notifications.filter((n) => !n.isRead).length
-        );
-      }
-    } catch {
-      // background polling fails gracefully
-    }
-  }, [user]);
-
-  useEffect(() => {
-    if (!user) {
-      queueMicrotask(() => {
-        setNotifications([]);
-        setUnreadCount(0);
-      });
-      return;
-    }
-    queueMicrotask(() => {
-      fetchNotifications();
-    });
-  }, [user, fetchNotifications]);
 
   // Periodic notifications check every 25 seconds only while tab is active/visible (FIX-012)
   useVisibilityPolling(
@@ -81,28 +51,6 @@ export const GlobalNav: React.FC = () => {
     25000,
     Boolean(user)
   );
-
-  const handleMarkAsRead = async (notificationId: string) => {
-    try {
-      await api.markNotificationRead(notificationId);
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === notificationId ? { ...n, isRead: true } : n))
-      );
-      setUnreadCount((prev) => Math.max(0, prev - 1));
-    } catch (err) {
-      console.error('Failed to mark notification read:', err);
-    }
-  };
-
-  const handleMarkAllRead = async () => {
-    try {
-      await api.markAllNotificationsRead();
-      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
-      setUnreadCount(0);
-    } catch (err) {
-      console.error('Failed to mark all notifications read:', err);
-    }
-  };
 
   useEffect(() => {
     queueMicrotask(() => {

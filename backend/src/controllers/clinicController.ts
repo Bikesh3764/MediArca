@@ -804,8 +804,6 @@ export const getPublicClinics = async (req: any, res: Response): Promise<void> =
                   checkingEndTime: true,
                   avgConsultationMinutes: true,
                   maxDailyPatients: true,
-                  rating: true,
-                  totalReviews: true,
                   slots: true,
                   user: {
                     select: {
@@ -941,8 +939,6 @@ export const getPublicClinicById = async (req: any, res: Response): Promise<void
                 checkingEndTime: true,
                 avgConsultationMinutes: true,
                 maxDailyPatients: true,
-                rating: true,
-                totalReviews: true,
                 slots: true,
                 user: {
                   select: {

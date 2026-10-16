@@ -15,7 +15,6 @@ async function main() {
   // Clear existing
   await prisma.clinicDoctor.deleteMany();
   await prisma.doctorReceptionist.deleteMany();
-  await prisma.review.deleteMany();
   await prisma.appointment.deleteMany();
   await prisma.clinicProfile.deleteMany();
   await prisma.receptionistProfile.deleteMany();
@@ -67,8 +66,6 @@ async function main() {
           checkingEndTime: '20:00',
           avgConsultationMinutes: 3,
           maxDailyPatients: 110,
-          rating: 4.9,
-          totalReviews: 128,
           slots: JSON.stringify([
             {
               id: 'slot_sarah_1',
@@ -116,8 +113,6 @@ async function main() {
           checkingEndTime: '18:30',
           avgConsultationMinutes: 4,
           maxDailyPatients: 75,
-          rating: 4.8,
-          totalReviews: 94,
           slots: JSON.stringify([
             {
               id: 'slot_arjun_1',
@@ -165,8 +160,6 @@ async function main() {
           checkingEndTime: '18:00',
           avgConsultationMinutes: 5,
           maxDailyPatients: 80,
-          rating: 5.0,
-          totalReviews: 150,
           slots: JSON.stringify([
             {
               id: 'slot_elena_1',
@@ -213,8 +206,6 @@ async function main() {
           checkingEndTime: '13:00',
           avgConsultationMinutes: 6,
           maxDailyPatients: 40,
-          rating: 5.0,
-          totalReviews: 0,
           slots: JSON.stringify([
             {
               id: 'slot_marcus_1',
@@ -420,7 +411,7 @@ async function main() {
     },
   });
 
-  // Appointment 3: Past Completed Appointment with Dr. Elena + Digital Prescription
+  // Appointment 3: Past Completed Appointment with Dr. Elena
   const pastAppt = await prisma.appointment.create({
     data: {
       patientId: patientUser.patientProfile!.id,
@@ -434,17 +425,6 @@ async function main() {
       symptoms: 'Sneezing, itchy eyes, dry cough for 4 days',
       vitals: JSON.stringify({ bp: '120/80', pulse: '72 bpm', temp: '98.6 F', weight: '73 kg' }),
       clinicalNotes: 'Clear lung sounds bilaterally. Nasal mucosa mildly erythematous. No wheezing.',
-    },
-  });
-
-  // Create Review for past appointment
-  await prisma.review.create({
-    data: {
-      appointmentId: pastAppt.id,
-      doctorId: drElenaUser.doctorProfile!.id,
-      patientId: patientUser.id,
-      rating: 5,
-      comment: 'Dr. Elena was exceptionally attentive and explained the clinical findings in detail. Recovered within 3 days!',
     },
   });
 

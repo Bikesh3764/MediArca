@@ -73,6 +73,7 @@ import { authenticate } from './middleware/authMiddleware';
 import { updateProfile } from './controllers/authController';
 import { submitContactMessage } from './controllers/adminController';
 import { securityStore } from './utils/securityStore';
+import { expireStalePendingAppointments } from './utils/maintenance';
 
 const isProduction = process.env.NODE_ENV === 'production';
 
@@ -253,6 +254,21 @@ if (rateLimitPruneTimer.unref) {
   rateLimitPruneTimer.unref();
 }
 
+// Background maintenance: Auto-expire past unconfirmed PENDING_APPROVAL appointments every 15 minutes
+export const appointmentExpiryTimer =
+  process.env.NODE_ENV !== 'test' && !process.env.MEDIARCA_TEST_SUITE
+    ? setInterval(() => {
+        expireStalePendingAppointments().catch(() => {});
+      }, 15 * 60 * 1000)
+    : null;
+if (appointmentExpiryTimer && appointmentExpiryTimer.unref) {
+  appointmentExpiryTimer.unref();
+}
+// Initial eager run on server startup
+if (process.env.NODE_ENV !== 'test' && !process.env.MEDIARCA_TEST_SUITE) {
+  expireStalePendingAppointments().catch(() => {});
+}
+
 export const normalizeRateLimitPath = (rawPath: string, baseUrl?: string): string => {
   if (baseUrl && ['/api/doctors', '/api/clinics', '/api/appointments/queue-preview'].includes(baseUrl)) {
     return baseUrl;
@@ -421,9 +437,12 @@ export const gracefulShutdown = (
   shutdownPromise = (async () => {
     console.log(`[Graceful Shutdown] Received ${signal}. Initiating graceful shutdown sequence (timeout: ${timeoutMs}ms)...`);
 
-    // 1. Clear background rate-limit pruning timer
+    // 1. Clear background pruning and maintenance timers
     if (rateLimitPruneTimer) {
       clearInterval(rateLimitPruneTimer);
+    }
+    if (appointmentExpiryTimer) {
+      clearInterval(appointmentExpiryTimer);
     }
 
     // 2. Stop accepting new HTTP requests and allow in-flight requests to complete

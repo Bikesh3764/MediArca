@@ -332,19 +332,6 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
       return;
     }
 
-    const istTodayStr = getLocalDateString();
-    if (appointmentDate < istTodayStr) {
-      await prisma.appointment.updateMany({
-        where: {
-          doctorId: doctorId,
-          appointmentDate: appointmentDate,
-          status: 'PENDING_APPROVAL',
-          ...(receptionist?.clinicId ? { clinicId: receptionist.clinicId } : {}),
-        },
-        data: { status: 'EXPIRED' },
-      });
-    }
-
     const appointments = await prisma.appointment.findMany({
       where: {
         doctorId: doctorId,
@@ -933,6 +920,44 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
 
           (created as any).patientPhone =
             normalizedPhone || cleanPhone || created.patient?.user?.phone || null;
+
+          // Auto-expire remaining PENDING_APPROVAL appointments if shift has reached maximum patient capacity
+          const newConfirmedCount = bookedInSlot + 1;
+          if (chosenSlot && chosenSlot.maxPatients && newConfirmedCount >= chosenSlot.maxPatients) {
+            const walkinSlotWhere = chosenSlot?.id
+              ? {
+                  OR: [
+                    { slotId: chosenSlot.id },
+                    ...(chosenSlot.name ? [{ checkingWindow: chosenSlot.name }] : []),
+                  ],
+                }
+              : chosenSlot?.name
+              ? { checkingWindow: chosenSlot.name }
+              : {};
+
+            const walkinClinicWhere = targetClinicId
+              ? {
+                  OR: [
+                    { clinicId: targetClinicId },
+                    { clinicId: null },
+                  ],
+                }
+              : {};
+
+            if (typeof tx.appointment?.updateMany === 'function') {
+              await tx.appointment.updateMany({
+                where: {
+                  doctorId: doctor.id,
+                  appointmentDate,
+                  status: 'PENDING_APPROVAL',
+                  ...walkinSlotWhere,
+                  ...walkinClinicWhere,
+                },
+                data: { status: 'EXPIRED' },
+              });
+            }
+          }
+
           return created;
         });
 
@@ -1465,17 +1490,6 @@ export const getPendingAppointments = async (req: AuthRequest, res: Response): P
     const istTodayStr = getLocalDateString(now);
     const currentMinutes = getIndianTimeMinutes(now);
 
-    // Auto-expire past pending requests in database
-    await prisma.appointment.updateMany({
-      where: {
-        doctorId: { in: effectiveDoctorIds },
-        ...(receptionist.clinicId ? { clinicId: receptionist.clinicId } : {}),
-        status: 'PENDING_APPROVAL',
-        appointmentDate: { lt: istTodayStr },
-      },
-      data: { status: 'EXPIRED' },
-    });
-
     const pendingAppointments = await prisma.appointment.findMany({
       where: {
         doctorId: { in: effectiveDoctorIds },
@@ -1915,14 +1929,34 @@ export const executeApproveAppointmentTransaction = async (
     }
     const slot = (currentAppt.slotId && slots.find((s: any) => s.id === currentAppt.slotId)) || slots[0];
 
+    const slotWhere = slot?.id
+      ? {
+          OR: [
+            { slotId: slot.id },
+            ...(slot.name ? [{ checkingWindow: slot.name }] : []),
+          ],
+        }
+      : slot?.name
+      ? { checkingWindow: slot.name }
+      : {};
+
+    const clinicWhere = targetClinicId
+      ? {
+          OR: [
+            { clinicId: targetClinicId },
+            { clinicId: null },
+          ],
+        }
+      : (currentAppt.clinicId ? { clinicId: currentAppt.clinicId } : {});
+
     // Check if slot has already reached capacity and count patients ahead for shift ETA (Issue 6)
     const confirmedInSlot = slot ? await tx.appointment.count({
       where: {
         doctorId: currentAppt.doctorId,
         appointmentDate: currentAppt.appointmentDate,
         status: { in: ['WAITING', 'IN_CONSULTATION', 'COMPLETED'] },
-        ...(slot.id ? { slotId: slot.id } : {}),
-        ...(targetClinicId ? { clinicId: targetClinicId } : (currentAppt.clinicId ? { clinicId: currentAppt.clinicId } : {})),
+        ...slotWhere,
+        ...clinicWhere,
       },
     }) : 0;
 
@@ -1978,6 +2012,26 @@ export const executeApproveAppointmentTransaction = async (
         patient: { include: { user: { select: { fullName: true, phone: true } } } },
       },
     });
+
+    // Auto-expire remaining PENDING_APPROVAL appointments if shift has reached maximum patient capacity
+    const newConfirmedCount = confirmedInSlot + 1;
+    if (slot && slot.maxPatients && newConfirmedCount >= slot.maxPatients) {
+      const expiredWhere: any = {
+        doctorId: currentAppt.doctorId,
+        appointmentDate: currentAppt.appointmentDate,
+        status: 'PENDING_APPROVAL',
+        ...slotWhere,
+        ...clinicWhere,
+      };
+
+      if (typeof tx.appointment?.updateMany === 'function') {
+        await tx.appointment.updateMany({
+          where: expiredWhere,
+          data: { status: 'EXPIRED' },
+        });
+      }
+    }
+
     if (updatedRecord?.clinic && (updatedRecord.clinic as any).checkinCode !== undefined) {
       delete (updatedRecord.clinic as any).checkinCode;
     }
@@ -2527,7 +2581,11 @@ export const rescheduleAppointment = async (req: AuthRequest, res: Response): Pr
           const chosenSlotId = newSlotId || appointment.slotId;
           const slot = (chosenSlotId && slots.find((s) => s.id === chosenSlotId)) || slots[0];
 
-          // BUG-06: Validate doctor leave and sitting days on target reschedule date
+          // Validate doctor leave and sitting days on target reschedule date
+          const isStaffActor = ['RECEPTIONIST', 'CLINIC', 'DOCTOR', 'ADMIN'].includes(req.user?.role || '');
+          const isDifferentShiftSameDay =
+            newDate === appointment.appointmentDate && Boolean(newSlotId && newSlotId !== appointment.slotId);
+
           const targetClinicIdForReschedule = appointment.clinicId || cd?.clinicId || null;
           if (cd?.leaves || (appointment.doctor as any)?.leaves) {
             const doctorLeaves = [
@@ -2535,7 +2593,7 @@ export const rescheduleAppointment = async (req: AuthRequest, res: Response): Pr
               ...(cd?.leaves ? parseDoctorLeaves(cd.leaves) : []),
             ];
             const leaveCheck = isDoctorOnLeave(doctorLeaves, newDate, targetClinicIdForReschedule);
-            if (leaveCheck.isOnLeave) {
+            if (leaveCheck.isOnLeave && !(isStaffActor && isDifferentShiftSameDay)) {
               const err: any = new Error(
                 `Dr. ${appointment.doctor?.user?.fullName || 'the doctor'} is on leave on ${newDate}${leaveCheck.leave?.reason ? `: ${leaveCheck.leave.reason}` : ''}. Please pick an alternate date.`
               );
@@ -2549,7 +2607,7 @@ export const rescheduleAppointment = async (req: AuthRequest, res: Response): Pr
               ? parseDoctorWorkingDays(cd.workingDays)
               : parseDoctorWorkingDays((appointment.doctor as any)?.workingDays);
             const workingCheck = isDoctorWorkingOnDate(workingDays, newDate);
-            if (!workingCheck.isWorking) {
+            if (!workingCheck.isWorking && !(isStaffActor && isDifferentShiftSameDay)) {
               const err: any = new Error(
                 `Dr. ${appointment.doctor?.user?.fullName || 'the doctor'} does not consult on ${workingCheck.dayName}s at this clinic facility. Available sitting days: ${workingDays.join(', ')}.`
               );
