@@ -1268,8 +1268,20 @@ export const getPatientAppointments = async (req: AuthRequest, res: Response): P
     const istTodayStr = getLocalDateString(now);
     const currentMinutes = getIndianTimeMinutes(now);
 
+    // Query Bounding: Scope to active visits OR recent visits within last 60 days, capped at take: 50
+    const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000);
+    const sixtyDaysAgoDateStr = getLocalDateString(sixtyDaysAgo);
+
     const appointments = await prisma.appointment.findMany({
-      where: { patientId: patient.id },
+      where: {
+        patientId: patient.id,
+        OR: [
+          { status: { in: ['WAITING', 'IN_CONSULTATION', 'PENDING_APPROVAL'] } },
+          { appointmentDate: { gte: sixtyDaysAgoDateStr } },
+          { createdAt: { gte: sixtyDaysAgo } },
+        ],
+      },
+      take: 50,
       include: {
         doctor: {
           include: {

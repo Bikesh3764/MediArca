@@ -51,7 +51,7 @@ import { canTransition } from '../src/utils/appointmentStateMachine';
 import { isDoctorEligibleForClinicalPractice, isClinicActive, verifyReceptionistDoctorAccess } from '../src/utils/authGuards';
 import { sanitizeClinicalHistoryList, checkNeedsProfileCompletion } from '../src/controllers/authController';
 import app, { registerProcessHandlers, checkCorsOrigin as checkCorsOriginServer } from '../src/server';
-import prisma from '../src/config/database';
+import prisma, { tuneDatabaseUrl } from '../src/config/database';
 import {
   executeCallPatientTransaction,
   executeCompleteConsultationAtomic,
@@ -76,6 +76,7 @@ import {
 } from '../src/utils/otpSecurity';
 import {
   authRateLimiter,
+  publicApiLimiter,
   contactRateLimiter,
   rateLimitMap,
   pruneStaleRateLimits,
@@ -10168,6 +10169,172 @@ Follow-up Date: 2026-10-15`;
     notifServiceContent.includes('if (!userId || typeof userId !==') &&
     notifServiceContent.includes("title: String(title || '').trim()"),
     'Smart Notifications: notificationService enforces strict userId input guards preventing database errors'
+  );
+
+  // --- Step 1 Optimizations: Wi-Fi Rate Limiting, Connection Pool Tuning & Query Bounding ---
+  console.log('\n--- Step 1 Optimizations: Wi-Fi Rate Limiting, Connection Pool Tuning & Query Bounding ---');
+
+  // 1. User-Scoped Rate Limiting for Clinic Wi-Fi Resilience
+  const testWifiIp = '198.51.100.99';
+  const wifiLimiter = authRateLimiter(2, 60, 'test-wifi');
+  const user1Key = `user:user_wifi_1:test-wifi`;
+  const user2Key = `user:user_wifi_2:test-wifi`;
+  rateLimitMap.delete(user1Key);
+  rateLimitMap.delete(user2Key);
+  rateLimitMap.delete(`${testWifiIp}:test-wifi`);
+
+  const mockUser1Req: any = { ip: testWifiIp, user: { id: 'user_wifi_1' }, originalUrl: '/api/appointments' };
+  const mockUser2Req: any = { ip: testWifiIp, user: { id: 'user_wifi_2' }, originalUrl: '/api/appointments' };
+  const mockResHelper = (onStatus?: (c: number) => void) => ({
+    status: (c: number) => {
+      if (onStatus) onStatus(c);
+      return { json: () => {} };
+    },
+    setHeader: () => {},
+  });
+
+  // User 1 consumes their 2 requests
+  let u1Passed = 0;
+  wifiLimiter(mockUser1Req, mockResHelper() as any, () => { u1Passed++; });
+  wifiLimiter(mockUser1Req, mockResHelper() as any, () => { u1Passed++; });
+  assert(u1Passed === 2, 'Step 1: User 1 allowed 2 requests under user-scoped rate limiter');
+
+  // User 1's 3rd request is blocked with 429
+  let u1BlockedStatus = 0;
+  wifiLimiter(mockUser1Req, mockResHelper((c) => { u1BlockedStatus = c; }) as any, () => {});
+  assert(u1BlockedStatus === 429, 'Step 1: User 1 is blocked at threshold with HTTP 429');
+
+  // User 2 on the SAME clinic Wi-Fi IP is NOT blocked
+  let u2PassedCount = 0;
+  wifiLimiter(mockUser2Req, mockResHelper() as any, () => { u2PassedCount++; });
+  assert(u2PassedCount === 1, 'Step 1: User 2 on identical clinic Wi-Fi IP is NOT blocked by User 1 rate limit');
+
+  // Public catalog endpoints rate limiter is 300
+  const serverCode = fs.readFileSync(path.join(__dirname, '../src/server.ts'), 'utf-8');
+  assert(
+    serverCode.includes('authRateLimiter(300, 60)') &&
+    serverCode.includes("['/api/doctors', '/api/appointments/queue-preview', '/api/clinics']"),
+    'Step 1: Public catalog endpoints rate limiter configured with 300 requests per 60s'
+  );
+
+  rateLimitMap.delete(user1Key);
+  rateLimitMap.delete(user2Key);
+  rateLimitMap.delete(`${testWifiIp}:test-wifi`);
+
+  // Deep Test: Bearer token extraction when req.user is NOT pre-attached (e.g. public catalog routes)
+  const secretKey = getJwtSecret();
+  const bearerTokenUserA = jwt.sign({ id: 'user_bearer_a', role: 'PATIENT' }, secretKey, { expiresIn: '1h' });
+  const bearerTokenUserB = jwt.sign({ id: 'user_bearer_b', role: 'PATIENT' }, secretKey, { expiresIn: '1h' });
+
+  const bearerLimiter = authRateLimiter(2, 60, 'test-bearer');
+  const userAKey = `user:user_bearer_a:test-bearer`;
+  const userBKey = `user:user_bearer_b:test-bearer`;
+  rateLimitMap.delete(userAKey);
+  rateLimitMap.delete(userBKey);
+  rateLimitMap.delete(`${testWifiIp}:test-bearer`);
+
+  const mockBearerReqA: any = {
+    ip: testWifiIp,
+    headers: { authorization: `Bearer ${bearerTokenUserA}` },
+    originalUrl: '/api/doctors',
+  };
+  const mockBearerReqB: any = {
+    ip: testWifiIp,
+    headers: { authorization: `Bearer ${bearerTokenUserB}` },
+    originalUrl: '/api/doctors',
+  };
+
+  // User A consumes 2 requests on catalog route using Bearer token without prior authenticate
+  let uAPassed = 0;
+  bearerLimiter(mockBearerReqA, mockResHelper() as any, () => { uAPassed++; });
+  bearerLimiter(mockBearerReqA, mockResHelper() as any, () => { uAPassed++; });
+  assert(uAPassed === 2, 'Step 1: User A with Bearer token is allowed 2 requests under user-scoped rate limiter');
+
+  // User A 3rd request is blocked
+  let uABlockedStatus = 0;
+  bearerLimiter(mockBearerReqA, mockResHelper((c) => { uABlockedStatus = c; }) as any, () => {});
+  assert(uABlockedStatus === 429, 'Step 1: User A with Bearer token is blocked at threshold with HTTP 429');
+
+  // User B on identical clinic Wi-Fi IP is NOT blocked
+  let uBPassed = 0;
+  bearerLimiter(mockBearerReqB, mockResHelper() as any, () => { uBPassed++; });
+  assert(uBPassed === 1, 'Step 1: User B on identical clinic Wi-Fi IP with Bearer token is NOT blocked by User A');
+
+  // Invalid token falls back safely to IP rate limiting without crashing
+  const mockBadTokenReq: any = {
+    ip: testWifiIp,
+    headers: { authorization: 'Bearer invalid.tampered.token' },
+    originalUrl: '/api/doctors',
+  };
+  let badTokenPassed = 0;
+  bearerLimiter(mockBadTokenReq, mockResHelper() as any, () => { badTokenPassed++; });
+  assert(badTokenPassed === 1, 'Step 1: Invalid Bearer token safely falls back to IP rate limiting without crashing');
+
+  rateLimitMap.delete(userAKey);
+  rateLimitMap.delete(userBKey);
+  rateLimitMap.delete(`${testWifiIp}:test-bearer`);
+
+  // 2. Connection Pool & Timeout Tuning
+  assert(typeof tuneDatabaseUrl === 'function', 'Step 1: tuneDatabaseUrl helper is exported');
+  assert(
+    tuneDatabaseUrl('postgresql://localhost:5432/db') === 'postgresql://localhost:5432/db?connection_limit=25&pool_timeout=30',
+    'Step 1: tuneDatabaseUrl appends both connection_limit=25 and pool_timeout=30 when neither present'
+  );
+  assert(
+    tuneDatabaseUrl('postgresql://localhost:5432/db?sslmode=require') === 'postgresql://localhost:5432/db?sslmode=require&connection_limit=25&pool_timeout=30',
+    'Step 1: tuneDatabaseUrl appends query params with & when url already has query string'
+  );
+  assert(
+    tuneDatabaseUrl('postgresql://localhost:5432/db?connection_limit=10') === 'postgresql://localhost:5432/db?connection_limit=10&pool_timeout=30',
+    'Step 1: tuneDatabaseUrl appends pool_timeout=30 when connection_limit already present'
+  );
+  assert(
+    tuneDatabaseUrl('postgresql://localhost:5432/db?pool_timeout=15') === 'postgresql://localhost:5432/db?pool_timeout=15&connection_limit=25',
+    'Step 1: tuneDatabaseUrl appends connection_limit=25 when pool_timeout already present'
+  );
+  assert(
+    tuneDatabaseUrl('postgresql://localhost:5432/db?connection_limit=50&pool_timeout=60') === 'postgresql://localhost:5432/db?connection_limit=50&pool_timeout=60',
+    'Step 1: tuneDatabaseUrl preserves explicitly configured pool parameters'
+  );
+  assert(tuneDatabaseUrl(undefined) === undefined, 'Step 1: tuneDatabaseUrl safely handles undefined');
+  assert(tuneDatabaseUrl('') === undefined, 'Step 1: tuneDatabaseUrl safely handles empty string');
+  assert(tuneDatabaseUrl('   ') === undefined, 'Step 1: tuneDatabaseUrl safely handles whitespace string');
+  assert(
+    tuneDatabaseUrl('postgresql://localhost:5432/db?') === 'postgresql://localhost:5432/db?connection_limit=25&pool_timeout=30',
+    'Step 1: tuneDatabaseUrl cleans trailing ? separator'
+  );
+  assert(
+    tuneDatabaseUrl('postgresql://localhost:5432/db?ssl=true&') === 'postgresql://localhost:5432/db?ssl=true&connection_limit=25&pool_timeout=30',
+    'Step 1: tuneDatabaseUrl cleans trailing & separator'
+  );
+  assert(
+    tuneDatabaseUrl('postgresql://localhost:5432/db#pool') === 'postgresql://localhost:5432/db?connection_limit=25&pool_timeout=30#pool',
+    'Step 1: tuneDatabaseUrl handles URL fragment (#) correctly preserving fragment at end'
+  );
+
+  const envExampleContent = fs.readFileSync(path.join(__dirname, '../.env.example'), 'utf-8');
+  assert(
+    envExampleContent.includes('connection_limit=25&pool_timeout=30'),
+    'Step 1: .env.example documents connection_limit=25 and pool_timeout=30 pool tuning'
+  );
+
+  // 3. Query Bounding in getPatientAppointments
+  const apptCtrlCode = fs.readFileSync(path.join(__dirname, '../src/controllers/appointmentController.ts'), 'utf-8');
+  const getPatientApptsBody = apptCtrlCode.slice(
+    apptCtrlCode.indexOf('export const getPatientAppointments'),
+    apptCtrlCode.indexOf('export const cancelAppointment')
+  );
+  assert(
+    getPatientApptsBody.includes('take: 50'),
+    'Step 1: getPatientAppointments specifies take: 50 limit bounding memory'
+  );
+  assert(
+    getPatientApptsBody.includes("status: { in: ['WAITING', 'IN_CONSULTATION', 'PENDING_APPROVAL'] }"),
+    'Step 1: getPatientAppointments scopes query to active visits'
+  );
+  assert(
+    getPatientApptsBody.includes('sixtyDaysAgo') && getPatientApptsBody.includes('appointmentDate: { gte:'),
+    'Step 1: getPatientAppointments scopes non-active visits to last 60 days'
   );
 
   console.log(`\n========================================`);

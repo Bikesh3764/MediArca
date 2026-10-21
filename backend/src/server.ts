@@ -4,6 +4,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import path from 'path';
 import dotenv from 'dotenv';
+import jwt from 'jsonwebtoken';
 
 dotenv.config();
 
@@ -69,7 +70,7 @@ import clinicRoutes from './routes/clinicRoutes';
 import receptionistRoutes from './routes/receptionistRoutes';
 import notificationRoutes from './routes/notificationRoutes';
 import prisma from './config/database';
-import { authenticate } from './middleware/authMiddleware';
+import { authenticate, getJwtSecret } from './middleware/authMiddleware';
 import { updateProfile } from './controllers/authController';
 import { submitContactMessage } from './controllers/adminController';
 import { securityStore } from './utils/securityStore';
@@ -288,9 +289,31 @@ export const authRateLimiter = (maxRequests = 40, windowSeconds = 60, customScop
     // Secure client IP extraction: Rely on Express-computed req.ip which respects 'trust proxy'
     // Avoid manual x-forwarded-for parsing that is susceptible to spoofing
     const ip = req.ip || req.socket?.remoteAddress || 'client';
+
+    // User-scoped client differentiation prevents false-positive 429s on shared clinic Wi-Fi.
+    // If req.user is not yet attached (e.g. public catalog routes mounted before auth),
+    // extract and verify the JWT Bearer token from the Authorization header if present.
+    let userId = (req as any).user?.id;
+    if (!userId && req.headers?.authorization && req.headers.authorization.startsWith('Bearer ')) {
+      try {
+        const token = req.headers.authorization.slice(7).trim();
+        if (token) {
+          const secret = getJwtSecret();
+          const decoded = jwt.verify(token, secret) as any;
+          if (decoded && decoded.id) {
+            userId = decoded.id;
+            (req as any).user = (req as any).user || decoded;
+          }
+        }
+      } catch {
+        // Fall back cleanly to IP on invalid, expired, or malformed tokens
+      }
+    }
+
+    const clientIdentifier = userId ? 'user:' + userId : ip;
     const rawPath = req.originalUrl ? req.originalUrl.split('?')[0] : (req.baseUrl || req.path);
     const pathKey = customScope || normalizeRateLimitPath(rawPath, req.baseUrl);
-    const key = `${ip}:${pathKey}`;
+    const key = `${clientIdentifier}:${pathKey}`;
 
     const isCriticalAuth = /^\/api\/(auth\/(login|register|google|verify-otp|resend-otp)|receptionists?\/apply)/i.test(
       req.originalUrl || req.baseUrl || req.path
@@ -383,7 +406,7 @@ app.use(['/api/auth/verify-otp'], authRateLimiter(10, 60));
 app.use(['/api/auth/resend-otp'], authRateLimiter(5, 60));
 
 // Rate Limiting for public directory & queue preview endpoints (Finding #33)
-const publicApiLimiter = authRateLimiter(120, 60);
+export const publicApiLimiter = authRateLimiter(300, 60);
 app.use(['/api/doctors', '/api/appointments/queue-preview', '/api/clinics'], publicApiLimiter);
 
 // Mount dedicated rate limiting on public contact form submissions (FIX-017)
