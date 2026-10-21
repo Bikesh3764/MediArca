@@ -1704,8 +1704,13 @@ export const api = {
     return handleResponse(res);
   },
 
-  async getPatientAppointments(): Promise<Appointment[]> {
-    const res = await safeFetch(`${API_BASE_URL}/appointments/patient?_t=${Date.now()}`, {
+  async getPatientAppointments(params?: { status?: 'active' | 'past'; page?: number; limit?: number }): Promise<Appointment[]> {
+    const query = new URLSearchParams();
+    query.append('_t', String(Date.now()));
+    if (params?.status) query.append('status', params.status);
+    if (params?.page) query.append('page', String(params.page));
+    if (params?.limit) query.append('limit', String(params.limit));
+    const res = await safeFetch(`${API_BASE_URL}/appointments/patient?${query.toString()}`, {
       headers: {
         ...getHeaders(),
         'Cache-Control': 'no-cache, no-store, must-revalidate',

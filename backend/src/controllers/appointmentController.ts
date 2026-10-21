@@ -1268,20 +1268,50 @@ export const getPatientAppointments = async (req: AuthRequest, res: Response): P
     const istTodayStr = getLocalDateString(now);
     const currentMinutes = getIndianTimeMinutes(now);
 
+    const statusQuery = String(req.query.status || '').toLowerCase();
+    const isOnlyActive = statusQuery === 'active' || req.query.activeOnly === 'true';
+    const isOnlyPast = statusQuery === 'past';
+
     // Query Bounding: Scope to active visits OR recent visits within last 60 days, capped at take: 50
     const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000);
     const sixtyDaysAgoDateStr = getLocalDateString(sixtyDaysAgo);
 
-    const appointments = await prisma.appointment.findMany({
-      where: {
+    let whereClause: any;
+    let takeLimit = 50;
+    let skipCount: number | undefined = undefined;
+
+    if (isOnlyActive) {
+      whereClause = {
+        patientId: patient.id,
+        status: { in: ['WAITING', 'IN_CONSULTATION', 'PENDING_APPROVAL'] },
+      };
+      takeLimit = 50;
+    } else if (isOnlyPast) {
+      const page = Math.max(1, parseInt(String(req.query.page || '1'), 10));
+      const limit = Math.min(Math.max(1, parseInt(String(req.query.limit || '10'), 10)), 50);
+      takeLimit = limit;
+      skipCount = (page - 1) * limit;
+
+      whereClause = {
+        patientId: patient.id,
+        status: { in: ['COMPLETED', 'CANCELLED', 'NO_SHOW', 'EXPIRED'] },
+      };
+    } else {
+      whereClause = {
         patientId: patient.id,
         OR: [
           { status: { in: ['WAITING', 'IN_CONSULTATION', 'PENDING_APPROVAL'] } },
           { appointmentDate: { gte: sixtyDaysAgoDateStr } },
           { createdAt: { gte: sixtyDaysAgo } },
         ],
-      },
-      take: 50,
+      };
+      takeLimit = 50;
+    }
+
+    const appointments = await prisma.appointment.findMany({
+      where: whereClause,
+      take: takeLimit,
+      ...(skipCount !== undefined ? { skip: skipCount } : {}),
       include: {
         doctor: {
           include: {
@@ -1526,7 +1556,12 @@ export const getPatientAppointments = async (req: AuthRequest, res: Response): P
       };
     });
 
-    res.json({ success: true, count: enrichedAppointments.length, data: enrichedAppointments });
+    res.json({
+      success: true,
+      count: enrichedAppointments.length,
+      data: enrichedAppointments,
+      hasMore: isOnlyPast ? enrichedAppointments.length === takeLimit : undefined,
+    });
   } catch (error: any) {
     console.error('getPatientAppointments error:', error);
     res.status(500).json({

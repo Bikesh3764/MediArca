@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { api, Appointment, getLocalDateString } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { LiveQueueTicket } from '../../components/queue/LiveQueueTicket';
-import { CheckCircle2, AlertCircle, X } from 'lucide-react';
+import { CheckCircle2, AlertCircle, X, ChevronDown } from 'lucide-react';
 import { useVisibilityPolling } from '../../utils/useVisibilityPolling';
 
 const CameraQrScannerModal = React.lazy(() =>
@@ -11,8 +11,15 @@ const CameraQrScannerModal = React.lazy(() =>
 );
 
 export const MyAppointments: React.FC = () => {
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [upcomingAppointments, setUpcomingAppointments] = useState<Appointment[]>([]);
+  const [pastAppointments, setPastAppointments] = useState<Appointment[]>([]);
+  const [loadingUpcoming, setLoadingUpcoming] = useState(true);
+  const [loadingPast, setLoadingPast] = useState(false);
+  const [hasLoadedPast, setHasLoadedPast] = useState(false);
+  const [pastPage, setPastPage] = useState(1);
+  const [hasMorePast, setHasMorePast] = useState(false);
+  const [loadingMorePast, setLoadingMorePast] = useState(false);
+
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
   const [scannerOpen, setScannerOpen] = useState(false);
   const [selectedApptForScan, setSelectedApptForScan] = useState<Appointment | null>(null);
@@ -22,15 +29,56 @@ export const MyAppointments: React.FC = () => {
   const { user, loading: loadingAuth } = useAuth();
   const navigate = useNavigate();
 
-  const fetchAppointments = async (isSilent = false) => {
-    if (!isSilent) setLoading(true);
+  const fetchActiveAppointments = async (isSilent = false) => {
+    if (!isSilent) setLoadingUpcoming(true);
     try {
-      const data = await api.getPatientAppointments();
-      setAppointments(data);
+      const data = await api.getPatientAppointments({ status: 'active' });
+      setUpcomingAppointments(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error('Failed to load appointments:', err);
+      console.error('Failed to load active appointments:', err);
     } finally {
-      if (!isSilent) setLoading(false);
+      if (!isSilent) setLoadingUpcoming(false);
+    }
+  };
+
+  const fetchInitialPastAppointments = async () => {
+    if (hasLoadedPast || loadingPast) return;
+    setLoadingPast(true);
+    try {
+      const data = await api.getPatientAppointments({ status: 'past', page: 1, limit: 10 });
+      const list = Array.isArray(data) ? data : [];
+      setPastAppointments(list);
+      setHasLoadedPast(true);
+      setPastPage(1);
+      setHasMorePast(list.length === 10);
+    } catch (err) {
+      console.error('Failed to load past appointments:', err);
+    } finally {
+      setLoadingPast(false);
+    }
+  };
+
+  const handleLoadMorePast = async () => {
+    if (loadingMorePast || !hasMorePast) return;
+    setLoadingMorePast(true);
+    const nextPage = pastPage + 1;
+    try {
+      const data = await api.getPatientAppointments({ status: 'past', page: nextPage, limit: 10 });
+      const list = Array.isArray(data) ? data : [];
+      setPastAppointments((prev) => [...prev, ...list]);
+      setPastPage(nextPage);
+      setHasMorePast(list.length === 10);
+    } catch (err) {
+      console.error('Failed to load more past appointments:', err);
+    } finally {
+      setLoadingMorePast(false);
+    }
+  };
+
+  const handleTabChange = (tab: 'upcoming' | 'past') => {
+    setActiveTab(tab);
+    if (tab === 'past' && !hasLoadedPast) {
+      fetchInitialPastAppointments();
     }
   };
 
@@ -41,22 +89,29 @@ export const MyAppointments: React.FC = () => {
       return;
     }
     queueMicrotask(() => {
-      fetchAppointments();
+      fetchActiveAppointments();
     });
   }, [user, loadingAuth, navigate]);
 
-  // Auto-refresh queue silently every 15 seconds only while tab is active/visible (FIX-012)
+  // Auto-refresh queue silently every 15 seconds ONLY while tab is active AND user has active visits (FIX-012)
   useVisibilityPolling(
-    () => fetchAppointments(true),
+    () => fetchActiveAppointments(true),
     15000,
-    Boolean(user) && !loadingAuth
+    Boolean(user) && !loadingAuth && upcomingAppointments.length > 0
   );
 
   const handleCancel = async (id: string) => {
     if (!window.confirm('Are you sure you want to cancel this appointment queue token?')) return;
     try {
       await api.cancelAppointment(id);
-      fetchAppointments();
+      await fetchActiveAppointments(true);
+      if (hasLoadedPast) {
+        const data = await api.getPatientAppointments({ status: 'past', page: 1, limit: 10 });
+        const list = Array.isArray(data) ? data : [];
+        setPastAppointments(list);
+        setPastPage(1);
+        setHasMorePast(list.length === 10);
+      }
     } catch (err: any) {
       alert(err.message || 'Failed to cancel');
     }
@@ -76,7 +131,7 @@ export const MyAppointments: React.FC = () => {
       const effectiveId = updatedAppt?.id || targetApptId;
 
       if (effectiveId) {
-        setAppointments((prev) =>
+        setUpcomingAppointments((prev) =>
           prev.map((a) =>
             a.id === effectiveId
               ? {
@@ -99,7 +154,7 @@ export const MyAppointments: React.FC = () => {
             : 'Checked in successfully! You are marked as present at the clinic desk.'),
       });
 
-      await fetchAppointments(true);
+      await fetchActiveAppointments(true);
     } catch (err: any) {
       setCheckinMessage({
         type: 'error',
@@ -111,13 +166,12 @@ export const MyAppointments: React.FC = () => {
   };
 
   const todayStr = getLocalDateString();
-  const upcomingList = appointments.filter((a) => {
+  const upcomingList = upcomingAppointments.filter((a) => {
     if (a.status !== 'WAITING' && a.status !== 'IN_CONSULTATION' && a.status !== 'PENDING_APPROVAL') return false;
     if (a.appointmentDate < todayStr) return false;
     if (a.status === 'PENDING_APPROVAL' && a.appointmentDate === todayStr && a.liveQueue?.isShiftPassed) return false;
     return true;
   });
-  const pastList = appointments.filter((a) => !upcomingList.includes(a));
 
   return (
     <div className="min-h-screen bg-[#f5f5f7] pb-16">
@@ -160,7 +214,7 @@ export const MyAppointments: React.FC = () => {
           <div className="p-1 bg-[#f5f5f7] border border-[#e5e5ea] rounded-full inline-flex gap-0.5 select-none">
             <button
               type="button"
-              onClick={() => setActiveTab('upcoming')}
+              onClick={() => handleTabChange('upcoming')}
               className={`h-9 px-5 rounded-full text-[13px] transition-all duration-150 cursor-pointer ${
                 activeTab === 'upcoming'
                   ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs border border-black/5'
@@ -171,20 +225,20 @@ export const MyAppointments: React.FC = () => {
             </button>
             <button
               type="button"
-              onClick={() => setActiveTab('past')}
+              onClick={() => handleTabChange('past')}
               className={`h-9 px-5 rounded-full text-[13px] transition-all duration-150 cursor-pointer ${
                 activeTab === 'past'
                   ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs border border-black/5'
                   : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
               }`}
             >
-              Past ({pastList.length})
+              Past {hasLoadedPast ? `(${pastAppointments.length}${hasMorePast ? '+' : ''})` : ''}
             </button>
           </div>
         </div>
 
         {/* List Content */}
-        {loading ? (
+        {loadingUpcoming ? (
           <div className="space-y-4">
             {[1, 2].map((i) => (
               <div key={i} className="h-64 rounded-[24px] bg-white border border-[#e5e5ea] animate-pulse"></div>
@@ -220,17 +274,23 @@ export const MyAppointments: React.FC = () => {
                   }}
                   onTogglePresence={async (apptId, isPresent) => {
                     setCheckinMessage(null);
-                    setAppointments((prev) =>
+                    setUpcomingAppointments((prev) =>
                       prev.map((a) => (a.id === apptId ? { ...a, isCheckedIn: isPresent } : a))
                     );
                     await api.checkInAppointmentDirect(apptId, isPresent);
-                    await fetchAppointments(true);
+                    await fetchActiveAppointments(true);
                   }}
                 />
               ))}
             </div>
           )
-        ) : pastList.length === 0 ? (
+        ) : loadingPast ? (
+          <div className="space-y-4">
+            {[1, 2].map((i) => (
+              <div key={i} className="h-48 rounded-[24px] bg-white border border-[#e5e5ea] animate-pulse"></div>
+            ))}
+          </div>
+        ) : pastAppointments.length === 0 ? (
           <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-10 sm:p-12 text-center max-w-md mx-auto shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
             <h3 className="text-[17px] font-semibold text-[#1d1d1f] tracking-tight">No past appointments</h3>
             <p className="text-[13px] text-[#86868b] mt-1 leading-relaxed">
@@ -239,12 +299,36 @@ export const MyAppointments: React.FC = () => {
           </div>
         ) : (
           <div className="space-y-6">
-            {pastList.map((appt) => (
+            {pastAppointments.map((appt) => (
               <LiveQueueTicket
                 key={appt.id}
                 appointment={appt}
               />
             ))}
+
+            {/* Show More Button (10 records at a time) */}
+            {hasMorePast && (
+              <div className="flex justify-center pt-2 pb-4">
+                <button
+                  type="button"
+                  onClick={handleLoadMorePast}
+                  disabled={loadingMorePast}
+                  className="h-11 px-6 rounded-full bg-white hover:bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] font-medium text-sm transition-all duration-150 active:scale-[0.98] shadow-xs inline-flex items-center justify-center gap-2 cursor-pointer select-none disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {loadingMorePast ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-[#1d1d1f] border-t-transparent rounded-full animate-spin" />
+                      <span>Loading...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Show More</span>
+                      <ChevronDown className="w-4 h-4 text-[#86868b]" />
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

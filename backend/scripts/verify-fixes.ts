@@ -10337,6 +10337,25 @@ Follow-up Date: 2026-10-15`;
     'Step 1: getPatientAppointments scopes non-active visits to last 60 days'
   );
 
+  // Lazy Past Appointments & 10-Record Pagination with Show More
+  assert(
+    getPatientApptsBody.includes("isOnlyActive = statusQuery === 'active'") &&
+    getPatientApptsBody.includes("isOnlyPast = statusQuery === 'past'") &&
+    getPatientApptsBody.includes("status: { in: ['COMPLETED', 'CANCELLED', 'NO_SHOW', 'EXPIRED'] }") &&
+    getPatientApptsBody.includes('hasMore: isOnlyPast ? enrichedAppointments.length === takeLimit : undefined'),
+    'On-Demand Past Appointments: getPatientAppointments supports status=active vs status=past with 10-record pagination and hasMore'
+  );
+
+  const myApptsCode = fs.readFileSync(path.join(__dirname, '../../frontend/src/pages/Patient/MyAppointments.tsx'), 'utf-8');
+  assert(
+    myApptsCode.includes("api.getPatientAppointments({ status: 'active' })") &&
+    myApptsCode.includes("api.getPatientAppointments({ status: 'past', page: 1, limit: 10 })") &&
+    myApptsCode.includes('handleLoadMorePast') &&
+    myApptsCode.includes('Show More') &&
+    myApptsCode.includes('upcomingAppointments.length > 0'),
+    'On-Demand Past Appointments: MyAppointments lazy-loads past visits in 10-record chunks with Show More and pauses polling when idle'
+  );
+
   console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);
