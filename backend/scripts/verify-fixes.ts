@@ -52,6 +52,7 @@ import { isDoctorEligibleForClinicalPractice, isClinicActive, verifyReceptionist
 import { sanitizeClinicalHistoryList, checkNeedsProfileCompletion } from '../src/controllers/authController';
 import app, { registerProcessHandlers, checkCorsOrigin as checkCorsOriginServer } from '../src/server';
 import prisma, { tuneDatabaseUrl } from '../src/config/database';
+import { getCachedActiveBatch, invalidateDoctorQueueCache, activeBatchCache } from '../src/utils/queueStateCache';
 import {
   executeCallPatientTransaction,
   executeCompleteConsultationAtomic,
@@ -10354,6 +10355,58 @@ Follow-up Date: 2026-10-15`;
     myApptsCode.includes('Show More') &&
     myApptsCode.includes('upcomingAppointments.length > 0'),
     'On-Demand Past Appointments: MyAppointments lazy-loads past visits in 10-record chunks with Show More and pauses polling when idle'
+  );
+
+  // --- Step 2: Adaptive Polling Backoff ---
+  assert(
+    myApptsCode.includes('adaptivePollInterval') &&
+    myApptsCode.includes('minAhead <= 1') &&
+    myApptsCode.includes('10000') &&
+    myApptsCode.includes('minAhead <= 5') &&
+    myApptsCode.includes('15000') &&
+    myApptsCode.includes('60000'),
+    'Step 2: MyAppointments implements adaptive polling backoff (10s if turn imminent, 15s if <=5 ahead, 60s if >5 ahead)'
+  );
+
+  // --- Step 3: In-Memory / Redis Queue State Cache ---
+  const docId = 'doc_test_cache_123';
+  const testDate = '2026-10-21';
+  let fetcherCalls = 0;
+  const mockFetcher = async () => {
+    fetcherCalls++;
+    return [
+      {
+        doctorId: docId,
+        appointmentDate: testDate,
+        clinicId: 'clinic_1',
+        slotId: 'slot_1',
+        checkingWindow: '09:00 - 11:00',
+        queueNumber: 1,
+        status: 'WAITING',
+      },
+    ];
+  };
+
+  // First call invokes fetcher
+  invalidateDoctorQueueCache(docId);
+  const data1 = await getCachedActiveBatch([docId], [testDate], mockFetcher);
+  assert(data1.length === 1 && fetcherCalls === 1, 'Step 3: First queue fetch populates cache from fetcher');
+
+  // Second call within 4s TTL is served from cache without invoking fetcher
+  const data2 = await getCachedActiveBatch([docId], [testDate], mockFetcher);
+  assert(data2.length === 1 && fetcherCalls === 1, 'Step 3: Second queue fetch within TTL served instantly from cache (0 DB queries)');
+
+  // Mutation invalidation forces fresh fetch
+  invalidateDoctorQueueCache(docId, testDate);
+  const data3 = await getCachedActiveBatch([docId], [testDate], mockFetcher);
+  assert(data3.length === 1 && fetcherCalls === 2, 'Step 3: Invalidation on queue mutation forces fresh fetch');
+
+  // Verify appointmentController integrates getCachedActiveBatch
+  assert(
+    apptCtrlCode.includes('getCachedActiveBatch(doctorIds, dates') &&
+    apptCtrlCode.includes('invalidateDoctorQueueCache(appointment.doctorId') &&
+    apptCtrlCode.includes('invalidateDoctorQueueCache(updated.doctorId'),
+    'Step 3: appointmentController integrates live queue cache and atomic mutation invalidation'
   );
 
   console.log(`\n========================================`);

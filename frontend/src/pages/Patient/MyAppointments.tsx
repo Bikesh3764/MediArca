@@ -93,10 +93,29 @@ export const MyAppointments: React.FC = () => {
     });
   }, [user, loadingAuth, navigate]);
 
-  // Auto-refresh queue silently every 15 seconds ONLY while tab is active AND user has active visits (FIX-012)
+  // Calculate adaptive polling interval based on how close patient is to consultation (Step 2)
+  const adaptivePollInterval = React.useMemo(() => {
+    if (upcomingAppointments.length === 0) return 60000;
+    // Find minimum patients ahead across all active bookings
+    const minAhead = Math.min(
+      ...upcomingAppointments.map((a) => a.liveQueue?.patientsAway ?? 99)
+    );
+    // 10s: Turn is imminent (in consultation, next in line, or <= 1 patient ahead)
+    if (minAhead <= 1 || upcomingAppointments.some((a) => a.status === 'IN_CONSULTATION' || a.liveQueue?.isYourTurn)) {
+      return 10000;
+    }
+    // 15s (15000ms base): Getting close (within 2-5 patients ahead, ~10-15 minutes)
+    if (minAhead <= 5) {
+      return 15000;
+    }
+    // 60s: Far back in queue (>5 patients ahead)
+    return 60000;
+  }, [upcomingAppointments]);
+
+  // Auto-refresh queue silently with adaptive interval ONLY while tab is active AND user has active visits (FIX-012)
   useVisibilityPolling(
     () => fetchActiveAppointments(true),
-    15000,
+    adaptivePollInterval,
     Boolean(user) && !loadingAuth && upcomingAppointments.length > 0
   );
 

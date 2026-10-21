@@ -27,6 +27,7 @@ import {
   isClinicActive,
 } from '../utils/authGuards';
 import { createNotification } from '../services/notificationService';
+import { invalidateDoctorQueueCache } from '../utils/queueStateCache';
 
 /**
  * Get profile and linked doctors for logged-in receptionist
@@ -994,6 +995,8 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
       ).catch(() => {});
     }
 
+    invalidateDoctorQueueCache(doctorId, appointmentDate);
+
     res.status(201).json({
       success: true,
       message: `Token #${newAppointment.queueNumber} created successfully for ${patientName}`,
@@ -1790,6 +1793,8 @@ export const approveAppointment = async (req: AuthRequest, res: Response): Promi
         'APPOINTMENT'
       ).catch(() => {});
     }
+
+    invalidateDoctorQueueCache(appointment.doctorId, appointment.appointmentDate);
 
     res.json({
       success: true,
@@ -2799,6 +2804,8 @@ export const rescheduleAppointment = async (req: AuthRequest, res: Response): Pr
         'APPOINTMENT'
       ).catch(() => {});
     }
+
+    invalidateDoctorQueueCache(appointment.doctorId);
 
     res.json({
       success: true,

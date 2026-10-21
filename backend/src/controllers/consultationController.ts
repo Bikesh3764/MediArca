@@ -5,6 +5,7 @@ import { getLocalDateString, timeToMinutes, getIndianTimeMinutes, minutesTo12Hou
 import { canTransition } from '../utils/appointmentStateMachine';
 import { isDoctorEligibleForClinicalPractice } from '../utils/authGuards';
 import { createNotification } from '../services/notificationService';
+import { invalidateDoctorQueueCache } from '../utils/queueStateCache';
 
 export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -416,6 +417,8 @@ export const callPatient = async (req: AuthRequest, res: Response): Promise<void
       targetAppointment.clinicId
     );
 
+    invalidateDoctorQueueCache(doctor.id, targetAppointment.appointmentDate);
+
     if (updated?.patient?.user) {
       const doctorName = (doctor as any)?.user?.fullName || req.user.fullName || 'Practitioner';
       createNotification(
@@ -723,6 +726,8 @@ export const completeConsultation = async (req: AuthRequest, res: Response): Pro
       return;
     }
 
+    invalidateDoctorQueueCache(doctor.id, targetAppointment.appointmentDate);
+
     const patProfile = await prisma.patientProfile.findUnique({
       where: { id: targetAppointment.patientId },
       select: { userId: true },
@@ -836,6 +841,8 @@ export const holdConsultation = async (req: AuthRequest, res: Response): Promise
       });
       return;
     }
+
+    invalidateDoctorQueueCache(doctor.id, targetAppointment.appointmentDate);
 
     res.json({
       success: true,

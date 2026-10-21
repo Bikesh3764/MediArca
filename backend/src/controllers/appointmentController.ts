@@ -23,6 +23,7 @@ import { canTransition } from '../utils/appointmentStateMachine';
 import { formatIndianPhone, sanitizeIndianPhone, isValidIndianPhone } from '../utils/phoneUtils';
 import { verifyReceptionistDoctorAccess, isDoctorEligibleForClinicalPractice, isClinicActive } from '../utils/authGuards';
 import { createNotification } from '../services/notificationService';
+import { getCachedActiveBatch, invalidateDoctorQueueCache } from '../utils/queueStateCache';
 
 // Helper to calculate estimated time given start time "09:00" and offset minutes (retained for backward compatibility)
 export const calculateEstimatedTime = (startTime24: string, offsetMinutes: number): string => {
@@ -1368,23 +1369,25 @@ export const getPatientAppointments = async (req: AuthRequest, res: Response): P
 
     const activeBatchAppointments =
       doctorIds.length > 0 && dates.length > 0
-        ? await prisma.appointment.findMany({
-            where: {
-              doctorId: { in: doctorIds },
-              appointmentDate: { in: dates },
-              status: { in: ['WAITING', 'IN_CONSULTATION'] },
-              queueNumber: { gt: 0 },
-            },
-            select: {
-              doctorId: true,
-              appointmentDate: true,
-              clinicId: true,
-              slotId: true,
-              checkingWindow: true,
-              queueNumber: true,
-              status: true,
-            },
-          })
+        ? await getCachedActiveBatch(doctorIds, dates, () =>
+            prisma.appointment.findMany({
+              where: {
+                doctorId: { in: doctorIds },
+                appointmentDate: { in: dates },
+                status: { in: ['WAITING', 'IN_CONSULTATION'] },
+                queueNumber: { gt: 0 },
+              },
+              select: {
+                doctorId: true,
+                appointmentDate: true,
+                clinicId: true,
+                slotId: true,
+                checkingWindow: true,
+                queueNumber: true,
+                status: true,
+              },
+            })
+          )
         : [];
 
     // Calculate real-time queue position for active appointments in-memory
@@ -1660,6 +1663,8 @@ export const cancelAppointment = async (req: AuthRequest, res: Response): Promis
       });
       return;
     }
+
+    invalidateDoctorQueueCache(appointment.doctorId, appointment.appointmentDate);
 
     const updated = await prisma.appointment.findUnique({ where: { id } });
 
@@ -1941,6 +1946,8 @@ export const checkInAppointmentWithQR = async (req: AuthRequest, res: Response):
       },
     });
 
+    invalidateDoctorQueueCache(updated.doctorId, updated.appointmentDate);
+
     if (updated.doctor?.user) {
       const docProfile = await prisma.doctorProfile.findUnique({
         where: { id: updated.doctorId },
@@ -2121,6 +2128,8 @@ export const checkInAppointmentDirect = async (req: AuthRequest, res: Response):
         patient: { include: { user: { select: { fullName: true } } } },
       },
     });
+
+    invalidateDoctorQueueCache(appointment.doctorId, appointment.appointmentDate);
 
     if (newCheckedInState && updated.doctorId) {
       prisma.doctorProfile
