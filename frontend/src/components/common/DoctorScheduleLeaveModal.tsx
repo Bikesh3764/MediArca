@@ -355,7 +355,7 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
                     </p>
                   </div>
                   {/* Presets */}
-                  <div className="flex items-center gap-1 self-start sm:self-auto bg-[#f5f5f7] p-0.5 rounded-full border border-[#e5e5ea]">
+                  <div className="flex items-center gap-1 self-start sm:self-auto bg-[#f5f5f7] p-0.5 rounded-full border border-[#e5e5ea] max-w-full overflow-x-auto no-scrollbar">
                     <button
                       type="button"
                       onClick={() => applyPreset('MON_SAT')}

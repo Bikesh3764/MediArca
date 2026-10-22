@@ -169,49 +169,49 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
         </div>
 
         {/* 3-Tile Apple Metadata Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-3 mt-5">
           {/* Tile 1: Date */}
-          <div className="bg-[#f5f5f7] rounded-xl p-3.5 border border-[#e5e5ea] flex flex-col justify-center">
+          <div className="bg-[#f5f5f7] rounded-xl p-3 sm:p-3.5 border border-[#e5e5ea] flex flex-col justify-center min-w-0">
             <span className="text-[11px] font-medium text-[#86868b]">Date</span>
-            <div className="text-[14px] font-semibold text-[#1d1d1f] mt-0.5 flex items-center gap-1.5">
+            <div className="text-[13px] sm:text-[14px] font-semibold text-[#1d1d1f] mt-0.5 flex items-center gap-1.5 truncate">
               <Calendar className="w-3.5 h-3.5 text-[#0066cc] shrink-0" />
-              <span>{appointmentDate} {isToday ? '(Today)' : ''}</span>
+              <span className="truncate">{appointmentDate} {isToday ? '(Today)' : ''}</span>
             </div>
           </div>
 
           {/* Tile 2: Shift */}
-          <div className="bg-[#f5f5f7] rounded-xl p-3.5 border border-[#e5e5ea] flex flex-col justify-center">
+          <div className="bg-[#f5f5f7] rounded-xl p-3 sm:p-3.5 border border-[#e5e5ea] flex flex-col justify-center min-w-0">
             <span className="text-[11px] font-medium text-[#86868b]">Shift</span>
-            <div className="text-[14px] font-semibold text-[#1d1d1f] mt-0.5 flex items-center gap-1.5 truncate">
+            <div className="text-[13px] sm:text-[14px] font-semibold text-[#1d1d1f] mt-0.5 flex items-center gap-1.5 truncate">
               <Clock className="w-3.5 h-3.5 text-[#0066cc] shrink-0" />
               <span className="truncate">{cleanShiftWindow}</span>
             </div>
           </div>
 
           {/* Tile 3: Est. Time / Status */}
-          <div className="bg-[#f5f5f7] rounded-xl p-3.5 border border-[#e5e5ea] flex flex-col justify-center">
+          <div className="col-span-2 sm:col-span-1 bg-[#f5f5f7] rounded-xl p-3 sm:p-3.5 border border-[#e5e5ea] flex flex-col justify-center min-w-0">
             <span className="text-[11px] font-medium text-[#86868b]">
               {status === 'COMPLETED' || status === 'EXPIRED' || status === 'CANCELLED' || status === 'REJECTED' ? 'Status' : 'Est. Time'}
             </span>
-            <div className="text-[14px] font-semibold mt-0.5 flex items-center gap-1.5">
+            <div className="text-[13px] sm:text-[14px] font-semibold mt-0.5 flex items-center gap-1.5 truncate">
               {status === 'IN_CONSULTATION' ? (
-                <span className="text-[#0066cc] font-semibold">In Cabin</span>
+                <span className="text-[#0066cc] font-semibold truncate">In Cabin</span>
               ) : status === 'COMPLETED' ? (
-                <span className="text-[#86868b]">Completed</span>
+                <span className="text-[#86868b] truncate">Completed</span>
               ) : status === 'EXPIRED' ? (
-                <span className="text-[#86868b]">Expired</span>
+                <span className="text-[#86868b] truncate">Expired</span>
               ) : status === 'CANCELLED' || status === 'REJECTED' ? (
-                <span className="text-rose-600">{status === 'REJECTED' ? 'Declined' : 'Cancelled'}</span>
+                <span className="text-rose-600 truncate">{status === 'REJECTED' ? 'Declined' : 'Cancelled'}</span>
               ) : isToday && liveQueue?.currentServingQueueNumber === queueNumber && queueNumber > 0 ? (
-                <span className="text-[#0066cc] font-semibold">Called</span>
+                <span className="text-[#0066cc] font-semibold truncate">Called</span>
               ) : isToday && liveQueue?.patientsAway === 0 && status === 'WAITING' ? (
-                <span className="text-[#0066cc] font-semibold">Next in Line</span>
+                <span className="text-[#0066cc] font-semibold truncate">Next in Line</span>
               ) : liveQueue?.isShiftPassed ? (
-                <span className="text-[#86868b]">Shift Ended</span>
+                <span className="text-[#86868b] truncate">Shift Ended</span>
               ) : isToday && liveQueue?.isShiftActive && liveQueue?.liveEstimatedTime ? (
-                <span className="text-[#0066cc]">~{liveQueue.liveEstimatedTime}</span>
+                <span className="text-[#0066cc] truncate">~{liveQueue.liveEstimatedTime}</span>
               ) : (
-                <span className="text-[#0066cc]">{estimatedTime || 'Per Queue Flow'}</span>
+                <span className="text-[#0066cc] truncate">{estimatedTime || 'Per Queue Flow'}</span>
               )}
             </div>
           </div>
