@@ -350,7 +350,7 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
         <div className="px-6 py-3.5 bg-[#f5f5f7]/70 border-b border-[#e5e5ea] print:hidden shrink-0 space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             {/* Quick Period Presets */}
-            <div className="inline-flex p-1 rounded-full bg-[#e8e8ed] border border-[#e5e5ea] text-xs font-medium">
+            <div className="inline-flex p-1 rounded-full bg-[#e8e8ed] border border-[#e5e5ea] text-xs font-medium max-w-full overflow-x-auto no-scrollbar">
               <button
                 type="button"
                 onClick={() => handlePresetChange('3_MONTHS')}

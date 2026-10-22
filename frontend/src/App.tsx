@@ -131,7 +131,7 @@ function AppShell() {
       {!isPortalRoute && <GlobalNav />}
       <ProfileCompletionModal />
       <main
-        className={`flex-grow animate-in fade-in duration-200 ${!isPortalRoute ? 'pb-20 md:pb-0' : ''}`}
+        className={`flex-grow animate-in fade-in duration-200 ${!isPortalRoute ? 'pb-24 md:pb-0 pb-safe' : ''}`}
         key={location.pathname}
       >
         <ErrorBoundary isInline fallbackTitle="Section Temporarily Unavailable">

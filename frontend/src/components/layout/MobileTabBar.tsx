@@ -56,19 +56,19 @@ export const MobileTabBar: React.FC = () => {
       key={to + label}
       to={to}
       onClick={() => handleTabClick(to)}
-      className={`flex-1 flex flex-col items-center justify-center py-1.5 px-1.5 rounded-xl transition-all duration-150 active:scale-95 ${
+      className={`flex-1 min-w-0 flex flex-col items-center justify-center py-1 px-1 rounded-xl transition-all duration-150 active:scale-[0.93] select-none cursor-pointer ${
         isActive ? 'text-[#0066cc]' : 'text-[#86868b] hover:text-[#1d1d1f]'
       }`}
     >
-      <div className="relative">
+      <div className="relative flex items-center justify-center">
         <Icon
           className={`w-5 h-5 transition-transform duration-150 ${
-            isActive ? 'scale-110 stroke-[2.2]' : 'stroke-[1.8]'
+            isActive ? 'scale-110 stroke-[2.3]' : 'stroke-[1.8]'
           }`}
         />
       </div>
       <span
-        className={`text-[10px] mt-1 tracking-tight truncate max-w-full font-medium ${
+        className={`text-[10px] mt-0.5 tracking-tight truncate max-w-full font-medium ${
           isActive ? 'font-semibold text-[#0066cc]' : ''
         }`}
       >

@@ -20,6 +20,7 @@ export interface AppleFilterSelectProps {
   variant?: 'bar' | 'form' | 'searchbar';
   className?: string;
   icon?: React.ReactNode;
+  align?: 'left' | 'right';
 }
 
 export const AppleFilterSelect: React.FC<AppleFilterSelectProps> = ({
@@ -35,6 +36,7 @@ export const AppleFilterSelect: React.FC<AppleFilterSelectProps> = ({
   variant = 'bar',
   className = '',
   icon,
+  align = 'left',
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -149,7 +151,11 @@ export const AppleFilterSelect: React.FC<AppleFilterSelectProps> = ({
 
       {/* Floating Popover Menu */}
       {isOpen && (
-        <div className="absolute top-full mt-2 left-0 z-50 min-w-[220px] max-w-[300px] w-auto bg-white/95 backdrop-blur-xl rounded-[20px] border border-[#e5e5ea] shadow-xl p-2 animate-fadeIn space-y-1.5">
+        <div
+          className={`absolute top-full mt-2 ${
+            align === 'right' ? 'right-0 left-auto' : 'left-0'
+          } z-50 min-w-[200px] max-w-[min(300px,calc(100vw-32px))] w-auto bg-white/95 backdrop-blur-xl rounded-[20px] border border-[#e5e5ea] shadow-xl p-2 animate-fadeIn space-y-1.5`}
+        >
           {/* Quick Search */}
           {searchable && options.length > 5 && (
             <div className="relative mb-1">
@@ -160,7 +166,7 @@ export const AppleFilterSelect: React.FC<AppleFilterSelectProps> = ({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search..."
-                className="w-full h-8 pl-8 pr-7 rounded-xl bg-[#f5f5f7] text-xs text-[#1d1d1f] placeholder-[#86868b] focus:outline-none focus:ring-1 focus:ring-[#0066cc]"
+                className="w-full h-8 pl-8 pr-7 rounded-xl bg-[#f5f5f7] text-base sm:text-xs text-[#1d1d1f] placeholder-[#86868b] focus:outline-none focus:ring-1 focus:ring-[#0066cc]"
               />
               {searchQuery && (
                 <button

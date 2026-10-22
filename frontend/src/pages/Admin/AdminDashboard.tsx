@@ -548,7 +548,7 @@ export const AdminDashboard: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f5f5f7] pb-16">
+    <div className="min-h-screen bg-[#f5f5f7] pb-24 md:pb-16 pb-safe">
       {/* Sticky Apple-styled Admin Navigation Bar */}
       <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-xl border-b border-[#e5e5ea] select-none shadow-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">

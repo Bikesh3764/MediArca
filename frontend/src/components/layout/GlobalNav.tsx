@@ -60,6 +60,17 @@ export const GlobalNav: React.FC = () => {
     });
   }, [location.pathname]);
 
+  // Lock body scroll when mobile hamburger menu is open
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      const orig = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = orig;
+      };
+    }
+  }, [mobileMenuOpen]);
+
   const handleLogout = () => {
     logout();
     setMobileMenuOpen(false);
@@ -264,7 +275,7 @@ export const GlobalNav: React.FC = () => {
                 className={getNavLinkClass(isActive('/patient/appointments'))}
               >
                 <Calendar className="w-3.5 h-3.5 text-current opacity-80" />
-                Live Queue & Passes
+                My Appointments
               </Link>
               <Link
                 to="/patient/profile"
@@ -523,7 +534,12 @@ export const GlobalNav: React.FC = () => {
 
       {/* Mobile Slide-down Navigation Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden bg-white/95 backdrop-blur-2xl border-b border-black/[0.06] rounded-b-[24px] px-5 py-5 animate-fadeIn space-y-3.5 text-sm shadow-2xl">
+        <>
+          <div
+            className="fixed inset-0 top-14 bg-black/25 backdrop-blur-xs z-40 md:hidden animate-fadeIn"
+            onClick={closeMenu}
+          />
+          <div className="relative z-50 md:hidden bg-white/95 backdrop-blur-2xl border-b border-black/[0.06] rounded-b-[24px] px-5 py-5 animate-fadeIn space-y-3.5 text-sm shadow-2xl">
           {user && (
             <div className="flex items-center gap-3 pb-3.5 border-b border-black/[0.06]">
               <div className="w-9 h-9 rounded-full bg-[#0066cc] flex items-center justify-center text-xs font-bold text-white shadow-2xs overflow-hidden flex-shrink-0">
@@ -578,7 +594,7 @@ export const GlobalNav: React.FC = () => {
                   className={getMobileNavLinkClass(isActive('/patient/appointments'))}
                 >
                   <Calendar className="w-4 h-4 text-current opacity-80" />
-                  Live Queue Passes
+                  My Appointments
                 </Link>
                 <Link
                   to="/patient/profile"
@@ -719,6 +735,7 @@ export const GlobalNav: React.FC = () => {
             )}
           </div>
         </div>
+        </>
       )}
     </header>
   );

@@ -48,6 +48,17 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const location = useLocation();
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
+  // Lock body scroll when mobile sidebar drawer is open to prevent background scrolling
+  React.useEffect(() => {
+    if (mobileDrawerOpen) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [mobileDrawerOpen]);
+
   // Real-time in-app notifications sync via api.getNotifications() consolidated across portals (FUNC-014)
   const { notifications, unreadCount, markAsRead: handleMarkAsRead, markAllRead: handleMarkAllRead, fetchNotifications } = useNotifications();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -432,7 +443,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         </div>
 
         {/* Inner Page View Content */}
-        <div className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6 pb-24 sm:pb-6">
+        <div className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6 pb-24 md:pb-8 pb-safe">
           {children}
         </div>
       </main>
