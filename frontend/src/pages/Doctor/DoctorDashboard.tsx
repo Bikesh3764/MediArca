@@ -48,7 +48,10 @@ import {
 import { ClinicQrStandeeModal } from '../../components/common/ClinicQrStandeeModal';
 import { ClinicalReportModal } from '../../components/common/ClinicalReportModal';
 import { DoctorScheduleLeaveModal } from '../../components/common/DoctorScheduleLeaveModal';
+import { useToast } from '../../context/ToastContext';
+import { useConfirm } from '../../context/ConfirmContext';
 import { AppleFilterSelect, AppleFilterOption } from '../../components/ui/AppleFilterSelect';
+import { EmptyState } from '../../components/common/EmptyState';
 
 const getYesterdayDateString = (): string => {
   const d = new Date();
@@ -129,6 +132,8 @@ export const DoctorDashboard: React.FC = () => {
   const { user, loading: loadingAuth, updateUser } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { toast } = useToast();
+  const { confirm } = useConfirm();
 
   const [isStandeeModalOpen, setIsStandeeModalOpen] = useState(false);
   const [selectedStandeeClinic, setSelectedStandeeClinic] = useState<{
@@ -371,12 +376,19 @@ export const DoctorDashboard: React.FC = () => {
   };
 
   const handleRemoveClinic = async (clinicId: string, clinicName: string) => {
-    if (!window.confirm(`Detach your profile from ${clinicName}?`)) return;
+    const ok = await confirm({
+      title: 'Detach Clinic?',
+      message: `Are you sure you want to detach your profile from ${clinicName}?`,
+      confirmText: 'Detach Clinic',
+      isDestructive: true,
+    });
+    if (!ok) return;
     setFeedbackError(null);
     setFeedbackSuccess(null);
     try {
       await api.removeDoctorClinic(clinicId);
       setFeedbackSuccess(`Detached from ${clinicName}`);
+      toast.success(`Detached from ${clinicName}`);
       if (selectedClinicId === clinicId) {
         setSelectedClinicId('all');
       }
@@ -384,6 +396,7 @@ export const DoctorDashboard: React.FC = () => {
       await fetchQueue(false);
     } catch (err: any) {
       setFeedbackError(err.message || 'Failed to detach clinic');
+      toast.error(err.message || 'Failed to detach clinic');
     }
   };
 
@@ -393,23 +406,33 @@ export const DoctorDashboard: React.FC = () => {
     try {
       const res = await api.respondToClinicAffiliation(affiliationId, action);
       setFeedbackSuccess(res.message || `Clinic request ${action.toLowerCase()}ed successfully`);
+      toast.success(res.message || `Clinic request ${action.toLowerCase()}ed`);
       await fetchAffiliations();
       await fetchQueue(false);
     } catch (err: any) {
       setFeedbackError(err.message || 'Failed to respond to affiliation request');
+      toast.error(err.message || 'Failed to respond to affiliation request');
     }
   };
 
   const handleRemoveReceptionist = async (receptionistId: string, name: string) => {
-    if (!window.confirm(`Unlink ${name} from your receptionist staff?`)) return;
+    const ok = await confirm({
+      title: 'Unlink Receptionist?',
+      message: `Are you sure you want to unlink ${name} from your receptionist staff?`,
+      confirmText: 'Unlink Staff',
+      isDestructive: true,
+    });
+    if (!ok) return;
     setFeedbackError(null);
     setFeedbackSuccess(null);
     try {
       await api.removeDoctorReceptionist(receptionistId);
       setFeedbackSuccess(`Unlinked ${name}`);
+      toast.success(`Unlinked ${name}`);
       await fetchAffiliations();
     } catch (err: any) {
       setFeedbackError(err.message || 'Failed to unlink receptionist');
+      toast.error(err.message || 'Failed to unlink receptionist');
     }
   };
 
@@ -418,9 +441,10 @@ export const DoctorDashboard: React.FC = () => {
     setHoldingId(appointmentId);
     try {
       await api.holdConsultation(appointmentId);
+      toast.info('Consultation placed on hold');
       await fetchQueue(false);
     } catch (err: any) {
-      alert(err.message || 'Failed to put consultation on hold');
+      toast.error(err.message || 'Failed to put consultation on hold');
     } finally {
       setHoldingId(null);
     }
@@ -431,7 +455,7 @@ export const DoctorDashboard: React.FC = () => {
       const awayMsg = user.doctorProfile.cabinStatus === 'STEPPED_OUT'
         ? `You are currently marked as 'Stepped Out'${user.doctorProfile.expectedReturnTime ? ` (expected return ~${user.doctorProfile.expectedReturnTime})` : ''}. Please set your presence to 'In Cabin' before calling a patient.`
         : "You are currently marked as 'Not in Cabin'. Please set your presence to 'In Cabin' before calling a patient.";
-      alert(awayMsg);
+      toast.warning(awayMsg);
       return;
     }
 
@@ -441,11 +465,11 @@ export const DoctorDashboard: React.FC = () => {
       const yesterdayStr = getYesterdayDateString();
       const isValidDate = target.appointmentDate === todayStr || (target.appointmentDate === yesterdayStr && target.isCheckedIn);
       if (!isValidDate) {
-        alert(`Cannot call patient scheduled for ${target.appointmentDate}. Only patients scheduled for today or active overnight shifts can be called into the active cabin.`);
+        toast.warning(`Cannot call patient scheduled for ${target.appointmentDate}. Only patients scheduled for today or active overnight shifts can be called into the active cabin.`);
         return;
       }
       if (!target.isCheckedIn) {
-        alert('Patient has not arrived at the clinic yet. Patient must check in / mark arrival before being called into consultation.');
+        toast.warning('Patient has not arrived at the clinic yet. Patient must check in / mark arrival before being called into consultation.');
         return;
       }
     }
@@ -455,7 +479,7 @@ export const DoctorDashboard: React.FC = () => {
       await fetchQueue();
       navigate(`/doctor/consultation/${appointmentId}`);
     } catch (err: any) {
-      alert(err.message || 'Failed to call patient');
+      toast.error(err.message || 'Failed to call patient');
     } finally {
       setCallingId(null);
     }
@@ -466,9 +490,10 @@ export const DoctorDashboard: React.FC = () => {
     setCompletingId(appointmentId);
     try {
       await api.completeConsultation({ appointmentId });
+      toast.success('Consultation completed successfully');
       await fetchQueue();
     } catch (err: any) {
-      alert(err.message || 'Failed to complete consultation');
+      toast.error(err.message || 'Failed to complete consultation');
     } finally {
       setCompletingId(null);
     }
@@ -480,9 +505,10 @@ export const DoctorDashboard: React.FC = () => {
     try {
       const nextStatus = !currentStatus;
       await api.checkInAppointmentDirect(appointmentId, nextStatus);
+      toast.success(nextStatus ? 'Patient marked arrived' : 'Arrival status removed');
       await fetchQueue();
     } catch (err: any) {
-      alert(err.message || 'Failed to update patient arrival status');
+      toast.error(err.message || 'Failed to update patient arrival status');
     } finally {
       setTogglingCheckinId(null);
     }
@@ -490,15 +516,21 @@ export const DoctorDashboard: React.FC = () => {
 
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const handleCancelAppointment = async (appointmentId: string, patientName: string) => {
-    if (!window.confirm(`Are you sure you want to cancel the queue appointment for ${patientName}? This action cannot be undone.`)) {
-      return;
-    }
+    const ok = await confirm({
+      title: 'Cancel Queue Appointment?',
+      message: `Are you sure you want to cancel the queue appointment for ${patientName}? This action cannot be undone.`,
+      confirmText: 'Yes, Cancel',
+      isDestructive: true,
+    });
+    if (!ok) return;
+
     setCancellingId(appointmentId);
     try {
       await api.cancelAppointment(appointmentId);
+      toast.success(`Appointment for ${patientName} cancelled`);
       await fetchQueue(false);
     } catch (err: any) {
-      alert(err.message || 'Failed to cancel appointment');
+      toast.error(err.message || 'Failed to cancel appointment');
     } finally {
       setCancellingId(null);
     }
@@ -518,6 +550,25 @@ export const DoctorDashboard: React.FC = () => {
   const [rescheduling, setRescheduling] = useState(false);
   const [rescheduleError, setRescheduleError] = useState<string | null>(null);
   const [rescheduleSuccess, setRescheduleSuccess] = useState<string | null>(null);
+
+  const isAnyModalOpen =
+    showAddModal ||
+    isAffiliateModalOpen ||
+    Boolean(rescheduleTarget) ||
+    isStandeeModalOpen ||
+    isReportModalOpen ||
+    Boolean(scheduleLeaveModalClinic);
+
+  useEffect(() => {
+    if (isAnyModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isAnyModalOpen]);
 
   const handleConfirmReschedule = async () => {
     if (!rescheduleTarget) return;
@@ -793,7 +844,7 @@ export const DoctorDashboard: React.FC = () => {
         </div>
       }
     >
-      <div className="space-y-6">
+      <div className="space-y-6 pb-24 md:pb-16 pb-safe">
         {activeTab === 'affiliations' ? (
           <div className="space-y-6 animate-fadeIn">
             {/* Feedback Alerts */}
@@ -1118,9 +1169,11 @@ export const DoctorDashboard: React.FC = () => {
                   ))}
                 </div>
               ) : affiliations?.receptionists.length === 0 ? (
-                <div className="p-8 text-center bg-[#f5f5f7] rounded-2xl border border-[#e5e5ea]">
-                  <h4 className="text-[15px] font-semibold text-[#1d1d1f]">No Desk Staff Assigned</h4>
-                </div>
+                <EmptyState
+                  icon={Users}
+                  title="No Desk Staff Assigned"
+                  description="Your affiliated clinics haven't assigned receptionists to your desk yet. Front-desk staff manage patient arrivals and fee collection."
+                />
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {affiliations?.receptionists.map((rec) => (
@@ -1243,7 +1296,7 @@ export const DoctorDashboard: React.FC = () => {
                               await fetchQueue(false);
                             }
                           } catch (err: any) {
-                            alert(err?.message || 'Failed to resume consultations');
+                            toast.error(err?.message || 'Failed to resume consultations');
                           }
                         }}
                         className="h-8 px-3.5 rounded-full bg-white hover:bg-rose-100 text-rose-800 border border-rose-300 font-semibold text-xs transition-all cursor-pointer shadow-xs"
@@ -1347,7 +1400,7 @@ export const DoctorDashboard: React.FC = () => {
                       setQueueScope('date');
                       setDate(e.target.value);
                     }}
-                    className="h-9 sm:h-10 px-3.5 rounded-full border border-[#e5e5ea] text-xs font-medium bg-[#f5f5f7] hover:bg-[#e8e8ed]/70 focus:bg-white text-[#1d1d1f] transition-all focus:outline-none focus:border-[#0066cc] cursor-pointer w-full sm:w-auto text-center"
+                    className="h-10 px-3.5 rounded-full border border-[#e5e5ea] text-base sm:text-xs font-medium bg-[#f5f5f7] hover:bg-[#e8e8ed]/70 focus:bg-white text-[#1d1d1f] transition-all focus:outline-none focus:border-[#0066cc] cursor-pointer w-full sm:w-auto text-center"
                     title="Choose Specific Date"
                   />
                 </div>
@@ -1720,7 +1773,7 @@ export const DoctorDashboard: React.FC = () => {
                             value={queueSearch}
                             onChange={(e) => setQueueSearch(e.target.value)}
                             placeholder="Search name, phone, token..."
-                            className="h-9 px-3.5 rounded-full border border-[#d2d2d7] text-xs bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#a1a1a6] transition-all focus:outline-none focus:border-[#0066cc] w-full sm:w-48"
+                            className="h-10 sm:h-9 px-3.5 rounded-full border border-[#d2d2d7] text-base sm:text-xs bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#a1a1a6] transition-all focus:outline-none focus:border-[#0066cc] w-full sm:w-48"
                           />
                           {!isDoctorAway && nextPresentTarget && (
                             <button
@@ -1747,7 +1800,10 @@ export const DoctorDashboard: React.FC = () => {
                       ))}
                     </div>
                   ) : displayedWaitingQueue.length === 0 ? (
-                    <div className="py-8 text-center">
+                    <div className="py-8 text-center select-none">
+                      <div className="w-10 h-10 rounded-full bg-emerald-50 border border-emerald-200/60 flex items-center justify-center mx-auto mb-2.5 text-emerald-600">
+                        <CheckCircle2 className="w-5 h-5 stroke-[2]" />
+                      </div>
                       <h4 className="text-[14px] font-semibold text-[#1d1d1f] tracking-tight">
                         Queue is Clear for {queueScope === 'all-upcoming' ? 'All Upcoming Dates' : date === getLocalDateString() ? 'Today' : date === queueData?.upcomingSummary?.tomorrowDate ? 'Tomorrow' : date}
                       </h4>
@@ -2022,8 +2078,18 @@ export const DoctorDashboard: React.FC = () => {
 
       {/* Rapid Add Walk-in Patient Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-md animate-fadeIn">
-          <div className="bg-white rounded-[28px] border border-[#e5e5ea] max-w-md w-full max-h-[92vh] overflow-y-auto p-6 sm:p-8 shadow-[0_24px_60px_rgba(0,0,0,0.16)] relative text-left">
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-md animate-fadeIn"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowAddModal(false);
+              setWalkinError(null);
+              setWalkinSuccess(null);
+            }
+          }}
+        >
+          <div className="bg-white rounded-t-[28px] sm:rounded-[28px] border border-[#e5e5ea] max-w-md w-full max-h-[92vh] overflow-y-auto p-6 sm:p-8 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-8 shadow-[0_24px_60px_rgba(0,0,0,0.16)] relative text-left">
+            <div className="sm:hidden w-10 h-1 bg-[#d2d2d7] rounded-full mx-auto mb-3" />
             <button
               type="button"
               onClick={() => {
@@ -2067,7 +2133,7 @@ export const DoctorDashboard: React.FC = () => {
                   placeholder="Enter patient's full name"
                   value={walkinName}
                   onChange={(e) => setWalkinName(e.target.value)}
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
 
@@ -2081,7 +2147,7 @@ export const DoctorDashboard: React.FC = () => {
                     placeholder="Years"
                     value={walkinAge}
                     onChange={(e) => setWalkinAge(e.target.value)}
-                    className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                    className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                   />
                 </div>
                 <div>
@@ -2092,7 +2158,7 @@ export const DoctorDashboard: React.FC = () => {
                     <select
                       value={walkinGender}
                       onChange={(e) => setWalkinGender(e.target.value)}
-                      className="w-full h-11 pl-3.5 pr-9 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 appearance-none cursor-pointer"
+                      className="w-full h-11 pl-3.5 pr-9 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 appearance-none cursor-pointer"
                     >
                       <option value="Not Specified">Not Specified</option>
                       <option value="Male">Male</option>
@@ -2119,7 +2185,7 @@ export const DoctorDashboard: React.FC = () => {
                     maxLength={10}
                     value={sanitizeIndianPhone(walkinPhone)}
                     onChange={(e) => setWalkinPhone(sanitizeIndianPhone(e.target.value))}
-                    className="w-full h-full px-3.5 bg-transparent text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:outline-none tracking-wide"
+                    className="w-full h-full px-3.5 bg-transparent text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:outline-none tracking-wide"
                   />
                 </div>
               </div>
@@ -2156,7 +2222,7 @@ export const DoctorDashboard: React.FC = () => {
                     min={getLocalDateString()}
                     value={walkinDate}
                     onChange={(e) => setWalkinDate(e.target.value)}
-                    className="flex-1 h-9 px-3 rounded-xl border border-[#d2d2d7] bg-white text-[13px] text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 cursor-pointer"
+                    className="flex-1 h-9 px-3 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-xs text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 cursor-pointer"
                   />
                 </div>
               </div>
@@ -2175,7 +2241,7 @@ export const DoctorDashboard: React.FC = () => {
                         setWalkinClinicId(e.target.value);
                         setWalkinSlotId('');
                       }}
-                      className="w-full h-11 pl-3.5 pr-9 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 appearance-none cursor-pointer"
+                      className="w-full h-11 pl-3.5 pr-9 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 appearance-none cursor-pointer"
                     >
                       <option value="">Select Clinic Venue</option>
                       {affiliations.clinics.map((c) => (
@@ -2203,7 +2269,7 @@ export const DoctorDashboard: React.FC = () => {
                   <select
                     value={walkinSlotId}
                     onChange={(e) => setWalkinSlotId(e.target.value)}
-                    className="w-full h-11 pl-3.5 pr-9 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 appearance-none cursor-pointer"
+                    className="w-full h-11 pl-3.5 pr-9 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 appearance-none cursor-pointer"
                   >
                     <option value="">Current / Default Shift</option>
                     {(
@@ -2229,7 +2295,7 @@ export const DoctorDashboard: React.FC = () => {
                   placeholder="Fever, cough, general consultation"
                   value={walkinReason}
                   onChange={(e) => setWalkinReason(e.target.value)}
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
 
@@ -2280,8 +2346,14 @@ export const DoctorDashboard: React.FC = () => {
           });
 
         return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-md animate-fadeIn">
-            <div className="relative w-full max-w-2xl bg-white rounded-[28px] border border-[#e5e5ea] shadow-[0_24px_60px_rgba(0,0,0,0.16)] overflow-hidden flex flex-col max-h-[88vh]">
+          <div
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-md animate-fadeIn"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setIsAffiliateModalOpen(false);
+            }}
+          >
+            <div className="relative w-full max-w-2xl bg-white rounded-t-[28px] sm:rounded-[28px] border border-[#e5e5ea] shadow-[0_24px_60px_rgba(0,0,0,0.16)] overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[88vh]">
+              <div className="sm:hidden w-10 h-1 bg-[#d2d2d7] rounded-full mx-auto mt-3 -mb-1" />
               {/* Modal Header */}
               <div className="p-6 border-b border-[#e5e5ea] flex items-start justify-between gap-4 bg-white">
                 <div>
@@ -2331,7 +2403,7 @@ export const DoctorDashboard: React.FC = () => {
                     value={clinicSearchQuery}
                     onChange={(e) => setClinicSearchQuery(e.target.value)}
                     placeholder="Search clinic by name, address, or area..."
-                    className="w-full h-11 pl-10 pr-9 rounded-xl bg-white border border-[#d2d2d7] text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all"
+                    className="w-full h-11 pl-10 pr-9 rounded-xl bg-white border border-[#d2d2d7] text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all"
                     autoFocus
                   />
                   {clinicSearchQuery && (
@@ -2357,7 +2429,7 @@ export const DoctorDashboard: React.FC = () => {
                             setClinicStateFilter(e.target.value);
                             setClinicCityFilter('All');
                           }}
-                          className="h-9 pl-3 pr-8 rounded-xl bg-white border border-[#d2d2d7] text-xs text-[#1d1d1f] focus:outline-none focus:border-[#0066cc] appearance-none cursor-pointer"
+                          className="h-10 sm:h-9 pl-3 pr-8 rounded-xl bg-white border border-[#d2d2d7] text-base sm:text-xs text-[#1d1d1f] focus:outline-none focus:border-[#0066cc] appearance-none cursor-pointer"
                         >
                           <option value="All">All States</option>
                           {availableStates.map((st) => (
@@ -2378,7 +2450,7 @@ export const DoctorDashboard: React.FC = () => {
                         <select
                           value={clinicCityFilter}
                           onChange={(e) => setClinicCityFilter(e.target.value)}
-                          className="h-9 pl-3 pr-8 rounded-xl bg-white border border-[#d2d2d7] text-xs text-[#1d1d1f] focus:outline-none focus:border-[#0066cc] appearance-none cursor-pointer"
+                          className="h-10 sm:h-9 pl-3 pr-8 rounded-xl bg-white border border-[#d2d2d7] text-base sm:text-xs text-[#1d1d1f] focus:outline-none focus:border-[#0066cc] appearance-none cursor-pointer"
                         >
                           <option value="All">All Cities</option>
                           {availableCities.map((city) => (
@@ -2401,27 +2473,29 @@ export const DoctorDashboard: React.FC = () => {
               {/* Clinics List */}
               <div className="p-5 sm:px-6 overflow-y-auto space-y-3 flex-1 bg-[#f5f5f7]">
                 {filteredPublicClinics.length === 0 ? (
-                  <div className="py-12 text-center">
-                    <p className="text-[14px] font-semibold text-[#1d1d1f]">No Verified Clinics Found</p>
-                    <p className="text-xs text-[#86868b] mt-1 max-w-sm mx-auto leading-relaxed">
-                      {clinicSearchQuery || clinicStateFilter !== 'All' || clinicCityFilter !== 'All'
+                  <EmptyState
+                    icon={Building2}
+                    title="No Verified Clinics Found"
+                    description={
+                      clinicSearchQuery || clinicStateFilter !== 'All' || clinicCityFilter !== 'All'
                         ? 'No clinics match your current search or location filters. Try clearing your search.'
-                        : 'No verified clinics are currently registered in the network.'}
-                    </p>
-                    {(clinicSearchQuery || clinicStateFilter !== 'All' || clinicCityFilter !== 'All') && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setClinicSearchQuery('');
-                          setClinicStateFilter('All');
-                          setClinicCityFilter('All');
-                        }}
-                        className="mt-3 h-8 px-4 rounded-full text-xs font-medium text-[#0066cc] bg-[#0066cc]/10 hover:bg-[#0066cc]/20 transition-all cursor-pointer"
-                      >
-                        Clear Filters
-                      </button>
-                    )}
-                  </div>
+                        : 'No verified clinics are currently registered in the network.'
+                    }
+                    actionText={
+                      clinicSearchQuery || clinicStateFilter !== 'All' || clinicCityFilter !== 'All'
+                        ? 'Clear Filters'
+                        : undefined
+                    }
+                    onAction={
+                      clinicSearchQuery || clinicStateFilter !== 'All' || clinicCityFilter !== 'All'
+                        ? () => {
+                            setClinicSearchQuery('');
+                            setClinicStateFilter('All');
+                            setClinicCityFilter('All');
+                          }
+                        : undefined
+                    }
+                  />
                 ) : (
                   filteredPublicClinics.map((c) => {
                     const isAffiliated = affiliations?.clinics.some((ac) => ac.clinicId === c.id);
@@ -2546,7 +2620,12 @@ export const DoctorDashboard: React.FC = () => {
 
       {/* Reschedule / Shift Modal for Doctor */}
       {rescheduleTarget && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn print:hidden">
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn print:hidden"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setRescheduleTarget(null);
+          }}
+        >
           <div className="bg-white rounded-t-[28px] sm:rounded-[28px] border border-[#e5e5ea] max-w-md w-full p-6 sm:p-7 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-7 shadow-2xl space-y-5 max-h-[92vh] overflow-y-auto">
             <div className="sm:hidden w-10 h-1 bg-[#d2d2d7] rounded-full mx-auto mb-3" />
             <div className="flex items-start justify-between pb-3 border-b border-[#f0f0f2]">
@@ -2587,7 +2666,7 @@ export const DoctorDashboard: React.FC = () => {
                 min={getLocalDateString()}
                 value={rescheduleDate}
                 onChange={(e) => setRescheduleDate(e.target.value)}
-                className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] text-[14px] bg-white text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:ring-4 focus:ring-[#0066cc]/10 focus:border-[#0066cc]"
+                className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] text-base sm:text-sm bg-white text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:ring-4 focus:ring-[#0066cc]/10 focus:border-[#0066cc]"
               />
               <div className="flex gap-2 mt-2">
                 <button
@@ -2624,7 +2703,7 @@ export const DoctorDashboard: React.FC = () => {
                   <select
                     value={rescheduleSlotId}
                     onChange={(e) => setRescheduleSlotId(e.target.value)}
-                    className="w-full h-11 pl-3.5 pr-9 rounded-xl border border-[#d2d2d7] text-[13px] bg-white text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:ring-4 focus:ring-[#0066cc]/10 focus:border-[#0066cc] appearance-none cursor-pointer"
+                    className="w-full h-11 pl-3.5 pr-9 rounded-xl border border-[#d2d2d7] text-base sm:text-sm bg-white text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:ring-4 focus:ring-[#0066cc]/10 focus:border-[#0066cc] appearance-none cursor-pointer"
                   >
                     <option value="">Standard Shift / Any</option>
                     {availableShifts.map((s: any, idx: number) => (

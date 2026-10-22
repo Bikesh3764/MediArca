@@ -6,6 +6,7 @@ import { AlertCircle, Eye, EyeOff, RefreshCw } from 'lucide-react';
 import { GoogleLogin } from '@react-oauth/google';
 import { isGoogleConfigured } from '../../config/auth';
 import { EmailVerificationModal } from '../../components/auth/EmailVerificationModal';
+import { useToast } from '../../context/ToastContext';
 
 export interface LoginProps {
   portal?: 'PATIENT' | 'DOCTOR';
@@ -15,6 +16,7 @@ export const Login: React.FC<LoginProps> = ({ portal }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { login, loginWithGoogle } = useAuth();
+  const { toast } = useToast();
 
   const isDoctorInitial =
     portal === 'DOCTOR' ||
@@ -75,7 +77,9 @@ export const Login: React.FC<LoginProps> = ({ portal }) => {
         setError(null);
         return;
       }
-      setError(err.message || 'Invalid email or password');
+      const msg = err.message || 'Invalid email or password';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setSubmitting(false);
     }
@@ -132,7 +136,7 @@ export const Login: React.FC<LoginProps> = ({ portal }) => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f5f5f7] flex flex-col justify-center py-8 sm:py-10 px-4 sm:px-6">
+    <div className="min-h-screen bg-[#f5f5f7] flex flex-col justify-center py-8 sm:py-10 px-4 sm:px-6 pb-24 sm:pb-12 pb-safe">
       <div className="sm:mx-auto sm:w-full sm:max-w-[450px]">
         <div className="bg-white rounded-[28px] border border-[#e5e5ea] shadow-[0_12px_40px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,0,0,0.03)] p-6 sm:p-7">
           {/* Brand & Header */}
@@ -235,7 +239,7 @@ export const Login: React.FC<LoginProps> = ({ portal }) => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder={activeRole === 'DOCTOR' ? 'dr.name@mediarca.com' : 'name@example.com'}
-                className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
               />
             </div>
 
@@ -250,7 +254,7 @@ export const Login: React.FC<LoginProps> = ({ portal }) => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter password"
-                  className="w-full h-11 pl-3.5 pr-10 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                  className="w-full h-11 pl-3.5 pr-10 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
                 <button
                   type="button"

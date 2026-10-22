@@ -20,6 +20,17 @@ export const ClinicQrStandeeModal: React.FC<ClinicQrStandeeModalProps> = ({
   clinicAddress,
   checkinCode,
 }) => {
+  React.useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const checkinUrl = `${window.location.origin}${window.location.pathname}#/clinic-checkin?clinicId=${clinicId}${
@@ -32,7 +43,12 @@ export const ClinicQrStandeeModal: React.FC<ClinicQrStandeeModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xl animate-fadeIn">
+    <div
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xl animate-fadeIn"
+    >
       <div className="relative w-full max-w-[420px] max-h-[92vh] overflow-y-auto bg-white rounded-[28px] border border-[#e5e5ea] shadow-[0_24px_64px_rgba(0,0,0,0.12),0_4px_16px_rgba(0,0,0,0.04)] p-6 sm:p-7 text-center print:border-none print:shadow-none print:p-0 print:max-h-none print:overflow-visible">
         {/* Close Button (Hidden on Print) */}
         <button

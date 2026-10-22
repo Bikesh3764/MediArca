@@ -3,8 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { api, Appointment, getLocalDateString } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { LiveQueueTicket } from '../../components/queue/LiveQueueTicket';
-import { CheckCircle2, AlertCircle, X, ChevronDown } from 'lucide-react';
+import { CheckCircle2, AlertCircle, X, ChevronDown, Calendar, Clock } from 'lucide-react';
 import { useVisibilityPolling } from '../../utils/useVisibilityPolling';
+import { useToast } from '../../context/ToastContext';
+import { useConfirm } from '../../context/ConfirmContext';
+import { EmptyState } from '../../components/common/EmptyState';
 
 const CameraQrScannerModal = React.lazy(() =>
   import('../../components/common/CameraQrScannerModal').then((m) => ({ default: m.CameraQrScannerModal }))
@@ -28,6 +31,8 @@ export const MyAppointments: React.FC = () => {
 
   const { user, loading: loadingAuth } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const { confirm } = useConfirm();
 
   const fetchActiveAppointments = async (isSilent = false) => {
     if (!isSilent) setLoadingUpcoming(true);
@@ -120,9 +125,17 @@ export const MyAppointments: React.FC = () => {
   );
 
   const handleCancel = async (id: string) => {
-    if (!window.confirm('Are you sure you want to cancel this appointment queue token?')) return;
+    const ok = await confirm({
+      title: 'Cancel Queue Token?',
+      message: 'Are you sure you want to cancel this appointment queue token? This action cannot be undone.',
+      confirmText: 'Yes, Cancel',
+      isDestructive: true,
+    });
+    if (!ok) return;
+
     try {
       await api.cancelAppointment(id);
+      toast.success('Appointment cancelled successfully');
       await fetchActiveAppointments(true);
       if (hasLoadedPast) {
         const data = await api.getPatientAppointments({ status: 'past', page: 1, limit: 10 });
@@ -132,7 +145,7 @@ export const MyAppointments: React.FC = () => {
         setHasMorePast(list.length === 10);
       }
     } catch (err: any) {
-      alert(err.message || 'Failed to cancel');
+      toast.error(err.message || 'Failed to cancel appointment');
     }
   };
 
@@ -193,7 +206,7 @@ export const MyAppointments: React.FC = () => {
   });
 
   return (
-    <div className="min-h-screen bg-[#f5f5f7] pb-16">
+    <div className="min-h-screen bg-[#f5f5f7] pb-24 md:pb-16 pb-safe">
       {/* Sleek Apple Header */}
       <div className="bg-white border-b border-[#e5e5ea]/80">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6">
@@ -234,7 +247,7 @@ export const MyAppointments: React.FC = () => {
             <button
               type="button"
               onClick={() => handleTabChange('upcoming')}
-              className={`h-9 px-5 rounded-full text-[13px] transition-all duration-150 cursor-pointer ${
+              className={`h-9 px-5 rounded-full text-[13px] active:scale-[0.96] transition-all duration-150 cursor-pointer ${
                 activeTab === 'upcoming'
                   ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs border border-black/5'
                   : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
@@ -245,7 +258,7 @@ export const MyAppointments: React.FC = () => {
             <button
               type="button"
               onClick={() => handleTabChange('past')}
-              className={`h-9 px-5 rounded-full text-[13px] transition-all duration-150 cursor-pointer ${
+              className={`h-9 px-5 rounded-full text-[13px] active:scale-[0.96] transition-all duration-150 cursor-pointer ${
                 activeTab === 'past'
                   ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs border border-black/5'
                   : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
@@ -265,19 +278,13 @@ export const MyAppointments: React.FC = () => {
           </div>
         ) : activeTab === 'upcoming' ? (
           upcomingList.length === 0 ? (
-            <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-10 sm:p-12 text-center max-w-md mx-auto shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
-              <h3 className="text-[17px] font-semibold text-[#1d1d1f] tracking-tight">No upcoming appointments</h3>
-              <p className="text-[13px] text-[#86868b] mt-1 leading-relaxed">
-                Your scheduled visits and queue tokens will appear here.
-              </p>
-              <button
-                type="button"
-                onClick={() => navigate('/doctors')}
-                className="mt-5 h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-medium transition-all duration-150 shadow-[0_2px_8px_rgba(0,102,204,0.2),0_1px_2px_rgba(0,0,0,0.06)] inline-flex items-center justify-center cursor-pointer select-none"
-              >
-                Book Doctor
-              </button>
-            </div>
+            <EmptyState
+              icon={Calendar}
+              title="No upcoming appointments"
+              description="Your scheduled visits and queue tokens will appear here."
+              actionText="Book Doctor"
+              onAction={() => navigate('/doctors')}
+            />
           ) : (
             <div className="space-y-6">
               {upcomingList.map((appt) => (
@@ -310,12 +317,11 @@ export const MyAppointments: React.FC = () => {
             ))}
           </div>
         ) : pastAppointments.length === 0 ? (
-          <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-10 sm:p-12 text-center max-w-md mx-auto shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
-            <h3 className="text-[17px] font-semibold text-[#1d1d1f] tracking-tight">No past appointments</h3>
-            <p className="text-[13px] text-[#86868b] mt-1 leading-relaxed">
-              Completed consultations will appear here.
-            </p>
-          </div>
+          <EmptyState
+            icon={Clock}
+            title="No past appointments"
+            description="Completed consultations and past queue visits will appear here."
+          />
         ) : (
           <div className="space-y-6">
             {pastAppointments.map((appt) => (

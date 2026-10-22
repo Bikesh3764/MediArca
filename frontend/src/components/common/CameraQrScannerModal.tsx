@@ -113,12 +113,19 @@ export const CameraQrScannerModal: React.FC<CameraQrScannerModalProps> = ({
     }
   }, []);
 
-  // Guarantee clean camera and scanner state whenever modal opens or closes
+  // Guarantee clean camera and scanner state whenever modal opens or closes, and lock background scroll
   useEffect(() => {
     queueMicrotask(() => {
       setScannedFeedback(false);
       setCameraError(null);
     });
+    if (isOpen) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
   }, [isOpen]);
 
   // Frame scanning loop
@@ -171,7 +178,15 @@ export const CameraQrScannerModal: React.FC<CameraQrScannerModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xl animate-fadeIn">
+    <div
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          setScannedFeedback(false);
+          onClose();
+        }
+      }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xl animate-fadeIn"
+    >
       <div className="relative w-full max-w-[440px] bg-white rounded-[28px] border border-[#e5e5ea] shadow-[0_24px_64px_rgba(0,0,0,0.12),0_4px_16px_rgba(0,0,0,0.04)] overflow-hidden p-6 sm:p-7 text-center">
         {/* Close Button */}
         <button

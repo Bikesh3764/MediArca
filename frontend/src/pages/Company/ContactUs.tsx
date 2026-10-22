@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { CheckCircle2, AlertCircle, ChevronDown } from 'lucide-react';
 import { api } from '../../services/api';
 import { sanitizeIndianPhone, formatIndianPhone } from '../../utils/phoneUtils';
+import { useToast } from '../../context/ToastContext';
 
 export const ContactUs: React.FC = () => {
+  const { toast } = useToast();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -26,20 +28,23 @@ export const ContactUs: React.FC = () => {
         message,
       });
       setSubmitted(true);
+      toast.success('Your message has been sent successfully. We will reply via email soon.');
       setFullName('');
       setEmail('');
       setPhone('');
       setMessage('');
     } catch (err: any) {
       console.error('Contact form submission error:', err);
-      setError(err?.message || 'Failed to send message. Please email us at contact@mediarca.in.');
+      const errMsg = err?.message || 'Failed to send message. Please email us at contact@mediarca.in.';
+      setError(errMsg);
+      toast.error(errMsg);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#f5f5f7] text-[#1d1d1f] py-10 sm:py-16 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#f5f5f7] text-[#1d1d1f] py-10 sm:py-16 px-4 sm:px-6 lg:px-8 pb-24 sm:pb-16 pb-safe">
       <div className="max-w-2xl mx-auto space-y-8">
         {/* Header */}
         <div className="text-center space-y-3">
@@ -105,7 +110,7 @@ export const ContactUs: React.FC = () => {
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder="Enter your name"
-                className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
               />
             </div>
 
@@ -118,14 +123,14 @@ export const ContactUs: React.FC = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@example.com"
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">Mobile Number (Optional)</label>
                 <div className="flex items-center w-full h-11 rounded-xl border border-[#d2d2d7] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus-within:border-[#0066cc] focus-within:ring-4 focus-within:ring-[#0066cc]/10 transition-all duration-150 overflow-hidden">
-                  <span className="h-full px-3.5 bg-[#f5f5f7] border-r border-[#d2d2d7] flex items-center justify-center select-none text-[13px] font-semibold text-[#1d1d1f]">
+                  <span className="h-full px-3.5 bg-[#f5f5f7] border-r border-[#d2d2d7] flex items-center justify-center select-none text-base sm:text-xs font-semibold text-[#1d1d1f]">
                     +91
                   </span>
                   <input
@@ -138,7 +143,7 @@ export const ContactUs: React.FC = () => {
                     }}
                     placeholder="98765 43210"
                     maxLength={10}
-                    className="w-full h-full px-3.5 bg-transparent text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:outline-none"
+                    className="w-full h-full px-3.5 bg-transparent text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:outline-none"
                   />
                 </div>
               </div>
@@ -150,7 +155,7 @@ export const ContactUs: React.FC = () => {
                 <select
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
-                  className="w-full h-11 pl-3.5 pr-9 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 appearance-none cursor-pointer"
+                  className="w-full h-11 pl-3.5 pr-9 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 appearance-none cursor-pointer"
                 >
                   <option value="General Inquiry">General Inquiry</option>
                   <option value="Appointment Issue">Appointment / Queue Issue</option>
@@ -169,7 +174,7 @@ export const ContactUs: React.FC = () => {
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder="Write your message here..."
-                className="w-full p-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 resize-none"
+                className="w-full p-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 resize-none"
               />
             </div>
 
@@ -177,7 +182,7 @@ export const ContactUs: React.FC = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-[14px] font-semibold shadow-sm transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
+                className="w-full h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-sm font-semibold shadow-sm transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
               >
                 {loading ? 'Sending...' : 'Send Message'}
               </button>

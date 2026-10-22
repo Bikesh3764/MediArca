@@ -24,11 +24,17 @@ import {
   RotateCcw,
   ChevronDown,
   Trash2,
+  MessageSquare,
 } from 'lucide-react';
+import { EmptyState } from '../../components/common/EmptyState';
+import { useToast } from '../../context/ToastContext';
+import { useConfirm } from '../../context/ConfirmContext';
 
 export const AdminDashboard: React.FC = () => {
   const { user, loading: loadingAuth, logout } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const { confirm } = useConfirm();
 
   const handleLogout = () => {
     logout();
@@ -83,6 +89,19 @@ export const AdminDashboard: React.FC = () => {
   const [bookingSearchQuery, setBookingSearchQuery] = useState<string>('');
   const [bookingViewMode, setBookingViewMode] = useState<'table' | 'by-date' | 'by-clinic'>('table');
   const [selectedAppointment, setSelectedAppointment] = useState<any | null>(null);
+
+  const isAnyAdminModalOpen = Boolean(selectedDoctor || selectedClinic || selectedAppointment);
+
+  useEffect(() => {
+    if (isAnyAdminModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isAnyAdminModalOpen]);
 
   const getTodayDateStr = () => getLocalDateString();
 
@@ -508,10 +527,11 @@ export const AdminDashboard: React.FC = () => {
     setClinicActionId(clinicId);
     try {
       await api.verifyClinic(clinicId, action);
+      toast.success('Clinic verification updated');
       await fetchData();
       return true;
     } catch (err: any) {
-      alert(err.message || 'Clinic verification update failed');
+      toast.error(err.message || 'Clinic verification update failed');
       return false;
     } finally {
       setClinicActionId(null);
@@ -525,10 +545,11 @@ export const AdminDashboard: React.FC = () => {
     setActionId(doctorId);
     try {
       await api.verifyDoctor(doctorId, action);
+      toast.success('Doctor verification updated');
       await fetchData();
       return true;
     } catch (err: any) {
-      alert(err.message || 'Verification update failed');
+      toast.error(err.message || 'Verification update failed');
       return false;
     } finally {
       setActionId(null);
@@ -536,14 +557,20 @@ export const AdminDashboard: React.FC = () => {
   };
 
   const handleDeleteContactMessage = async (id: string) => {
-    if (!window.confirm('Are you sure you want to permanently delete this contact inquiry? This cannot be undone.')) {
-      return;
-    }
+    const ok = await confirm({
+      title: 'Delete Contact Inquiry?',
+      message: 'Are you sure you want to permanently delete this contact inquiry? This cannot be undone.',
+      confirmText: 'Delete Inquiry',
+      isDestructive: true,
+    });
+    if (!ok) return;
+
     try {
       await api.deleteContactMessage(id);
+      toast.success('Inquiry deleted successfully');
       setContactMessages((prev) => prev.filter((m) => m.id !== id));
     } catch (err: any) {
-      alert(err.message || 'Failed to delete contact inquiry');
+      toast.error(err.message || 'Failed to delete contact inquiry');
     }
   };
 
@@ -769,7 +796,7 @@ export const AdminDashboard: React.FC = () => {
                       value={doctorSearchQuery}
                       onChange={(e) => setDoctorSearchQuery(e.target.value)}
                       placeholder="Search doctor by name, specialty, email..."
-                      className="w-full h-10 pl-10 pr-8 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-xs text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:outline-none focus:bg-white focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all"
+                      className="w-full h-10 pl-10 pr-8 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-base sm:text-xs text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:outline-none focus:bg-white focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all"
                     />
                     {doctorSearchQuery && (
                       <button
@@ -972,7 +999,7 @@ export const AdminDashboard: React.FC = () => {
                       value={clinicSearchQuery}
                       onChange={(e) => setClinicSearchQuery(e.target.value)}
                       placeholder="Search clinic by name, address, city, contact..."
-                      className="w-full h-10 pl-10 pr-8 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-xs text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:outline-none focus:bg-white focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all"
+                      className="w-full h-10 pl-10 pr-8 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-base sm:text-xs text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:outline-none focus:bg-white focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all"
                     />
                     {clinicSearchQuery && (
                       <button
@@ -1264,7 +1291,7 @@ export const AdminDashboard: React.FC = () => {
                           value={bookingSearchQuery}
                           onChange={(e) => setBookingSearchQuery(e.target.value)}
                           placeholder="Search patient, practitioner, clinic, token #..."
-                          className="w-full h-11 pl-10 pr-8 rounded-xl bg-white border border-[#d2d2d7] text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                          className="w-full h-11 pl-10 pr-8 rounded-xl bg-white border border-[#d2d2d7] text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                         />
                         {bookingSearchQuery && (
                           <button
@@ -1284,7 +1311,7 @@ export const AdminDashboard: React.FC = () => {
                             value={bookingClinicFilter}
                             onChange={(e) => setBookingClinicFilter(e.target.value)}
                             aria-label="Filter bookings by clinic facility"
-                            className="w-full h-11 appearance-none pl-9 pr-8 rounded-xl bg-white border border-[#d2d2d7] text-[13px] text-[#1d1d1f] font-medium shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 cursor-pointer transition-all duration-150"
+                            className="w-full h-11 appearance-none pl-9 pr-8 rounded-xl bg-white border border-[#d2d2d7] text-base sm:text-sm text-[#1d1d1f] font-medium shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 cursor-pointer transition-all duration-150"
                           >
                             <option value="ALL">All Clinics ({appointments.length})</option>
                             {clinicFilterOptions.map((c) => (
@@ -1303,7 +1330,7 @@ export const AdminDashboard: React.FC = () => {
                             value={bookingStatusFilter}
                             onChange={(e) => setBookingStatusFilter(e.target.value)}
                             aria-label="Filter bookings by consultation status"
-                            className="w-full h-11 appearance-none pl-9 pr-8 rounded-xl bg-white border border-[#d2d2d7] text-[13px] text-[#1d1d1f] font-medium shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 cursor-pointer transition-all duration-150"
+                            className="w-full h-11 appearance-none pl-9 pr-8 rounded-xl bg-white border border-[#d2d2d7] text-base sm:text-sm text-[#1d1d1f] font-medium shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 cursor-pointer transition-all duration-150"
                           >
                             <option value="ALL">All Statuses</option>
                             <option value="WAITING">Waiting</option>
@@ -1395,7 +1422,7 @@ export const AdminDashboard: React.FC = () => {
                               setBookingCustomDate(val);
                               setBookingDateFilter(val ? 'CUSTOM' : 'ALL');
                             }}
-                            className={`text-xs bg-transparent focus:outline-none cursor-pointer ${
+                            className={`text-base sm:text-xs bg-transparent focus:outline-none cursor-pointer ${
                               bookingDateFilter === 'CUSTOM'
                                 ? 'text-[#0066cc] font-semibold'
                                 : 'text-[#1d1d1f] font-medium'
@@ -1420,19 +1447,13 @@ export const AdminDashboard: React.FC = () => {
 
                   {/* Empty State */}
                   {filteredAppointments.length === 0 && (
-                    <div className="py-12 text-center">
-                      <h4 className="text-sm font-semibold text-[#1d1d1f]">No Bookings Found</h4>
-                      <p className="text-xs text-[#86868b] mt-1 max-w-sm mx-auto">
-                        No appointments match your active date ({bookingDateFilter !== 'ALL' ? bookingDateFilter : 'selected'}), clinic, or search filter.
-                      </p>
-                      <button
-                        type="button"
-                        onClick={handleResetBookingFilters}
-                        className="mt-4 h-9 px-5 rounded-full text-xs font-semibold bg-[#0066cc] hover:bg-[#0071e3] text-white transition-all cursor-pointer active:scale-[0.98]"
-                      >
-                        Clear All Filters
-                      </button>
-                    </div>
+                    <EmptyState
+                      icon={Calendar}
+                      title="No Bookings Found"
+                      description={`No appointments match your active date (${bookingDateFilter !== 'ALL' ? bookingDateFilter : 'selected'}), clinic, or search filter.`}
+                      actionText="Clear All Filters"
+                      onAction={handleResetBookingFilters}
+                    />
                   )}
 
                   {/* MODE 1: ALL RECORDS FLAT TABLE */}
@@ -1755,9 +1776,11 @@ export const AdminDashboard: React.FC = () => {
                 </div>
 
                 {contactMessages.length === 0 ? (
-                  <div className="py-12 text-center text-xs text-[#86868b]">
-                    No messages received yet. All new inquiries submitted through the website will appear here with instant email reply options.
-                  </div>
+                  <EmptyState
+                    icon={MessageSquare}
+                    title="No Messages Received Yet"
+                    description="Inquiries submitted by patients, practitioners, or clinic managers via the Contact Us form will appear here."
+                  />
                 ) : (
                   <div className="space-y-4">
                     {contactMessages.map((msg) => (
@@ -1843,7 +1866,12 @@ export const AdminDashboard: React.FC = () => {
 
       {/* Doctor Verification Credentials Inspection Modal */}
       {selectedDoctor && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setSelectedDoctor(null);
+          }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn"
+        >
           <div className="bg-white rounded-[28px] border border-[#e5e5ea] max-w-lg w-full p-6 sm:p-8 shadow-2xl space-y-5">
             <div className="flex justify-between items-start pb-4 border-b border-[#f0f0f2]">
               <div className="flex items-center gap-3">
@@ -2029,7 +2057,12 @@ export const AdminDashboard: React.FC = () => {
 
       {/* Clinic Facility Inspection & Verification Modal */}
       {selectedClinic && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setSelectedClinic(null);
+          }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn"
+        >
           <div className="bg-white rounded-[28px] border border-[#e5e5ea] max-w-lg w-full p-6 sm:p-8 shadow-2xl space-y-5">
             <div className="flex justify-between items-start pb-4 border-b border-[#f0f0f2]">
               <div>
@@ -2221,7 +2254,12 @@ export const AdminDashboard: React.FC = () => {
 
       {/* Platform Booking Inspection Modal */}
       {selectedAppointment && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setSelectedAppointment(null);
+          }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn"
+        >
           <div className="bg-white rounded-[28px] border border-[#e5e5ea] max-w-lg w-full p-6 sm:p-8 shadow-2xl space-y-5">
             <div className="flex justify-between items-start pb-4 border-b border-[#f0f0f2]">
               <div>

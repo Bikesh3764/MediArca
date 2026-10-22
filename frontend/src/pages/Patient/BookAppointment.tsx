@@ -336,7 +336,7 @@ export const BookAppointment: React.FC = () => {
   // 1. Post-Booking Success & Receptionist Details Screen
   if (confirmedAppointment) {
     return (
-      <div className="min-h-screen bg-[#f5f5f7] pb-16">
+      <div className="min-h-screen bg-[#f5f5f7] pb-24 md:pb-16 pb-safe">
         <SubNav title="Appointment Requested">
           <AppleButton
             variant="ghost"
@@ -399,10 +399,10 @@ export const BookAppointment: React.FC = () => {
                 <div className="pt-1">
                   <a
                     href={toTelUri(deskPhone)}
-                    className="w-full h-11 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-sm font-medium flex items-center justify-center gap-2 active:scale-[0.98] transition-all duration-150 shadow-[0_2px_8px_rgba(0,102,204,0.2),0_1px_2px_rgba(0,0,0,0.06)] cursor-pointer select-none"
+                    className="w-full h-11 px-4 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-sm font-medium flex items-center justify-center gap-2 active:scale-[0.98] transition-all duration-150 shadow-[0_2px_8px_rgba(0,102,204,0.2),0_1px_2px_rgba(0,0,0,0.06)] cursor-pointer select-none"
                   >
-                    <Phone className="w-4 h-4" />
-                    <span>Call {deskName}: {formatDisplayPhone(deskPhone)}</span>
+                    <Phone className="w-4 h-4 shrink-0" />
+                    <span className="truncate">Call {deskName}: {formatDisplayPhone(deskPhone)}</span>
                   </a>
                 </div>
               ) : (
@@ -437,7 +437,7 @@ export const BookAppointment: React.FC = () => {
 
   // 2. Main Booking Form (Zero receptionist details exposed before confirm)
   return (
-    <div className="min-h-screen bg-[#f5f5f7] pb-16">
+    <div className="min-h-screen bg-[#f5f5f7] pb-24 md:pb-16 pb-safe">
       <SubNav title="Book Appointment">
         <AppleButton
           variant="ghost"
@@ -635,7 +635,7 @@ export const BookAppointment: React.FC = () => {
               value={appointmentDate}
               min={getLocalDateString()}
               onChange={(e) => setAppointmentDate(e.target.value)}
-              className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+              className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
             />
           </div>
 
@@ -805,7 +805,7 @@ export const BookAppointment: React.FC = () => {
                         value={patientName}
                         onChange={(e) => setPatientName(e.target.value)}
                         placeholder="e.g. Rahul Ray"
-                        className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                        className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                       />
                     </div>
                     <div>
@@ -823,7 +823,7 @@ export const BookAppointment: React.FC = () => {
                           setPatientAge(digitsOnly);
                         }}
                         placeholder="e.g. 24"
-                        className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                        className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                       />
                     </div>
                     <div>
@@ -834,7 +834,7 @@ export const BookAppointment: React.FC = () => {
                         <select
                           value={patientGender}
                           onChange={(e) => setPatientGender(e.target.value)}
-                          className="w-full h-11 pl-3.5 pr-9 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 appearance-none cursor-pointer"
+                          className="w-full h-11 pl-3.5 pr-9 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 appearance-none cursor-pointer"
                         >
                           <option value="Male">Male</option>
                           <option value="Female">Female</option>
@@ -857,7 +857,7 @@ export const BookAppointment: React.FC = () => {
                 value={reasonForVisit}
                 onChange={(e) => setReasonForVisit(e.target.value)}
                 placeholder="e.g. Checkup, consultation, follow-up"
-                className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
               />
             </div>
 
@@ -870,7 +870,7 @@ export const BookAppointment: React.FC = () => {
                 value={symptoms}
                 onChange={(e) => setSymptoms(e.target.value)}
                 placeholder="Describe any symptoms (optional)..."
-                className="w-full p-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 resize-none"
+                className="w-full p-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 resize-none"
               ></textarea>
             </div>
 

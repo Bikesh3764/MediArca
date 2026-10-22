@@ -280,6 +280,17 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
     };
   })();
 
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const headerTitle =
@@ -292,7 +303,12 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
   const reportSubtitle = `Reporting Period: ${startDate} to ${endDate} (Generated on ${new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })})`;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/40 backdrop-blur-xl animate-fadeIn">
+    <div
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/40 backdrop-blur-xl animate-fadeIn"
+    >
       <div className="relative w-full max-w-5xl h-[94vh] flex flex-col bg-white rounded-[28px] border border-[#e5e5ea] shadow-[0_24px_64px_rgba(0,0,0,0.14),0_4px_16px_rgba(0,0,0,0.04)] overflow-hidden print:border-none print:shadow-none print:h-auto print:max-h-none print:p-0 print:m-0 print:overflow-visible">
         {/* Header Bar */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#f0f0f2] bg-white shrink-0 print:border-b-2 print:border-[#1d1d1f] print:pb-4">
@@ -421,7 +437,7 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
                   setDatePreset('CUSTOM');
                   setStartDate(e.target.value);
                 }}
-                className="h-8 px-2.5 rounded-lg border border-[#d2d2d7] bg-white text-xs text-[#1d1d1f] focus:outline-none focus:border-[#0066cc]"
+                className="h-9 sm:h-8 px-2.5 rounded-lg border border-[#d2d2d7] bg-white text-base sm:text-xs text-[#1d1d1f] focus:outline-none focus:border-[#0066cc]"
               />
               <span className="text-xs text-[#86868b]">to</span>
               <input
@@ -431,7 +447,7 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
                   setDatePreset('CUSTOM');
                   setEndDate(e.target.value);
                 }}
-                className="h-8 px-2.5 rounded-lg border border-[#d2d2d7] bg-white text-xs text-[#1d1d1f] focus:outline-none focus:border-[#0066cc]"
+                className="h-9 sm:h-8 px-2.5 rounded-lg border border-[#d2d2d7] bg-white text-base sm:text-xs text-[#1d1d1f] focus:outline-none focus:border-[#0066cc]"
               />
             </div>
           </div>
@@ -444,7 +460,7 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
                 <select
                   value={selectedDoctorId}
                   onChange={(e) => setSelectedDoctorId(e.target.value)}
-                  className="h-8 pl-3 pr-7 rounded-lg border border-[#d2d2d7] text-xs font-medium bg-white text-[#1d1d1f] appearance-none cursor-pointer focus:outline-none focus:border-[#0066cc]"
+                  className="h-9 sm:h-8 pl-3 pr-7 rounded-lg border border-[#d2d2d7] text-base sm:text-xs font-medium bg-white text-[#1d1d1f] appearance-none cursor-pointer focus:outline-none focus:border-[#0066cc]"
                 >
                   <option value="all">All Affiliated Practitioners</option>
                   {availableDoctors.map((doc, idx) => {
@@ -467,7 +483,7 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
                 <select
                   value={selectedClinicId}
                   onChange={(e) => setSelectedClinicId(e.target.value)}
-                  className="h-8 pl-3 pr-7 rounded-lg border border-[#d2d2d7] text-xs font-medium bg-white text-[#1d1d1f] appearance-none cursor-pointer focus:outline-none focus:border-[#0066cc]"
+                  className="h-9 sm:h-8 pl-3 pr-7 rounded-lg border border-[#d2d2d7] text-base sm:text-xs font-medium bg-white text-[#1d1d1f] appearance-none cursor-pointer focus:outline-none focus:border-[#0066cc]"
                 >
                   <option value="all">All Affiliated Clinics</option>
                   {availableClinics.map((c, idx) => {
@@ -490,7 +506,7 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
                 <select
                   value={shiftFilter}
                   onChange={(e) => setShiftFilter(e.target.value)}
-                  className="h-8 pl-3 pr-7 rounded-lg border border-[#d2d2d7] text-xs font-medium bg-white text-[#1d1d1f] appearance-none cursor-pointer focus:outline-none focus:border-[#0066cc]"
+                  className="h-9 sm:h-8 pl-3 pr-7 rounded-lg border border-[#d2d2d7] text-base sm:text-xs font-medium bg-white text-[#1d1d1f] appearance-none cursor-pointer focus:outline-none focus:border-[#0066cc]"
                 >
                   <option value="ALL">All Shifts</option>
                   {availableShifts.map((s) => (
@@ -508,7 +524,7 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="h-8 pl-3 pr-7 rounded-lg border border-[#d2d2d7] text-xs font-medium bg-white text-[#1d1d1f] appearance-none cursor-pointer focus:outline-none focus:border-[#0066cc]"
+                className="h-9 sm:h-8 pl-3 pr-7 rounded-lg border border-[#d2d2d7] text-base sm:text-xs font-medium bg-white text-[#1d1d1f] appearance-none cursor-pointer focus:outline-none focus:border-[#0066cc]"
               >
                 <option value="ALL">All Visit Statuses</option>
                 <option value="COMPLETED">Completed Consultations</option>

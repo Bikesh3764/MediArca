@@ -8,12 +8,14 @@ import { isGoogleConfigured } from '../../config/auth';
 import { SearchableSpecialtySelect } from '../../components/ui/SearchableSpecialtySelect';
 import { formatIndianPhone, isValidIndianPhone } from '../../utils/phoneUtils';
 import { EmailVerificationModal } from '../../components/auth/EmailVerificationModal';
+import { useToast } from '../../context/ToastContext';
 
 export interface SignupProps {
   initialRole?: 'PATIENT' | 'DOCTOR';
 }
 
 export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
+  const { toast } = useToast();
   const location = useLocation();
   const isDoctorRoute =
     initialRole === 'DOCTOR' ||
@@ -114,7 +116,9 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
         navigate(getTargetDestination(res.user.role), { replace: true });
       }
     } catch (err: any) {
-      setError(err.message || 'Registration failed');
+      const msg = err.message || 'Registration failed';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setSubmitting(false);
     }
@@ -158,7 +162,7 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f5f5f7] flex flex-col justify-center py-8 sm:py-10 px-4 sm:px-6">
+    <div className="min-h-screen bg-[#f5f5f7] flex flex-col justify-center py-8 sm:py-10 px-4 sm:px-6 pb-24 sm:pb-12 pb-safe">
       <div className="sm:mx-auto sm:w-full sm:max-w-[450px]">
         <div className="bg-white rounded-[28px] border border-[#e5e5ea] shadow-[0_12px_40px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,0,0,0.03)] p-6 sm:p-7">
           {/* Brand & Header */}
@@ -260,7 +264,7 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder={role === 'DOCTOR' ? 'Dr. First Last' : 'Your full legal name'}
-                className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
               />
             </div>
 
@@ -274,7 +278,7 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@example.com"
-                className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
               />
             </div>
 
@@ -283,7 +287,7 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
                 Mobile Number
               </label>
               <div className="flex items-center w-full h-11 rounded-xl border border-[#d2d2d7] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus-within:border-[#0066cc] focus-within:ring-4 focus-within:ring-[#0066cc]/10 transition-all duration-150 overflow-hidden">
-                <div className="h-full px-3.5 bg-[#f5f5f7] border-r border-[#d2d2d7] flex items-center justify-center select-none text-[13px] font-semibold text-[#1d1d1f]">
+                <div className="h-full px-3.5 bg-[#f5f5f7] border-r border-[#d2d2d7] flex items-center justify-center select-none text-base sm:text-xs font-semibold text-[#1d1d1f]">
                   +91
                 </div>
                 <input
@@ -297,7 +301,7 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
                     setPhone(digits);
                   }}
                   placeholder="98765 43210"
-                  className="flex-1 h-full px-3.5 bg-transparent text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:outline-none"
+                  className="flex-1 h-full px-3.5 bg-transparent text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:outline-none"
                 />
               </div>
             </div>
@@ -314,7 +318,7 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Min. 8 characters"
-                  className="w-full h-11 pl-3.5 pr-10 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                  className="w-full h-11 pl-3.5 pr-10 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
                 <button
                   type="button"
@@ -339,7 +343,7 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
                     value={qualifications}
                     onChange={(e) => setQualifications(e.target.value)}
                     placeholder="e.g. MBBS, MD"
-                    className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                    className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                   />
                 </div>
 
@@ -369,7 +373,7 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
                     value={experienceYears}
                     onChange={(e) => setExperienceYears(e.target.value)}
                     placeholder="e.g. 5"
-                    className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                    className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                   />
                 </div>
               </>

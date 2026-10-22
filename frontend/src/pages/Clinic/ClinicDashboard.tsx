@@ -23,9 +23,14 @@ import {
   MapPin,
   FileText,
   Settings,
+  Stethoscope,
+  Calendar,
 } from 'lucide-react';
+import { EmptyState } from '../../components/common/EmptyState';
 import { ClinicalReportModal } from '../../components/common/ClinicalReportModal';
 import { INDIAN_STATES, getCitiesForState } from '../../utils/indiaStates';
+import { useToast } from '../../context/ToastContext';
+import { useConfirm } from '../../context/ConfirmContext';
 
 const cleanDoctorName = (name?: string | null): string => {
   if (!name) return 'Doctor';
@@ -35,6 +40,8 @@ const cleanDoctorName = (name?: string | null): string => {
 
 export const ClinicDashboard: React.FC = () => {
   const { user } = useAuth();
+  const { toast } = useToast();
+  const { confirm } = useConfirm();
   const [data, setData] = useState<ClinicDashboardData | null>(null);
   const [allDoctors, setAllDoctors] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(true);
@@ -167,37 +174,41 @@ export const ClinicDashboard: React.FC = () => {
   };
 
   const handleDetachDoctor = async (doctorId: string, docName: string) => {
-    if (
-      !window.confirm(
-        `Are you sure you want to detach Dr. ${docName} from your clinic? Their existing records will remain preserved.`
-      )
-    ) {
-      return;
-    }
+    const ok = await confirm({
+      title: 'Detach Doctor?',
+      message: `Are you sure you want to detach Dr. ${docName} from your clinic? Their existing records will remain preserved.`,
+      confirmText: 'Detach Doctor',
+      isDestructive: true,
+    });
+    if (!ok) return;
 
     try {
       await api.removeDoctorFromClinic(doctorId);
+      toast.success(`Dr. ${docName} has been detached from your clinic`);
       setSuccessMsg(`Dr. ${docName} has been detached from your clinic.`);
       fetchClinicData();
     } catch (err: any) {
+      toast.error(err.message || 'Failed to detach doctor');
       setError(err.message || 'Failed to detach doctor');
     }
   };
 
   const handleCancelInvitation = async (doctorId: string, docName: string) => {
-    if (
-      !window.confirm(
-        `Are you sure you want to cancel the pending affiliation invitation to Dr. ${docName}?`
-      )
-    ) {
-      return;
-    }
+    const ok = await confirm({
+      title: 'Cancel Invitation?',
+      message: `Are you sure you want to cancel the pending affiliation invitation to Dr. ${docName}?`,
+      confirmText: 'Cancel Invitation',
+      isDestructive: true,
+    });
+    if (!ok) return;
 
     try {
       await api.removeDoctorFromClinic(doctorId);
+      toast.success(`Invitation to Dr. ${docName} has been cancelled`);
       setSuccessMsg(`Invitation to Dr. ${docName} has been cancelled.`);
       fetchClinicData();
     } catch (err: any) {
+      toast.error(err.message || 'Failed to cancel invitation');
       setError(err.message || 'Failed to cancel invitation');
     }
   };
@@ -299,19 +310,21 @@ export const ClinicDashboard: React.FC = () => {
   };
 
   const handleRemoveReceptionist = async (recId: string, recName: string) => {
-    if (
-      !window.confirm(
-        `Are you sure you want to remove receptionist "${recName}"? Their portal credentials will be revoked immediately.`
-      )
-    ) {
-      return;
-    }
+    const ok = await confirm({
+      title: 'Remove Receptionist?',
+      message: `Are you sure you want to remove receptionist "${recName}"? Their portal credentials will be revoked immediately.`,
+      confirmText: 'Revoke & Remove',
+      isDestructive: true,
+    });
+    if (!ok) return;
 
     try {
       await api.removeClinicReceptionist(recId);
+      toast.success(`Receptionist "${recName}" removed`);
       setSuccessMsg(`Receptionist "${recName}" removed successfully.`);
       fetchClinicData();
     } catch (err: any) {
+      toast.error(err.message || 'Failed to remove receptionist');
       setError(err.message || 'Failed to remove receptionist');
     }
   };
@@ -357,6 +370,27 @@ export const ClinicDashboard: React.FC = () => {
   const [approvingRec, setApprovingRec] = useState<{ id: string; fullName: string; email: string } | null>(null);
   const [approvalDoctorIds, setApprovalDoctorIds] = useState<string[]>([]);
   const [processingRecId, setProcessingRecId] = useState<string | null>(null);
+
+  const isAnyModalOpen =
+    showAddModal ||
+    showRecModal ||
+    Boolean(editingRec) ||
+    Boolean(createdCredentials) ||
+    Boolean(approvingRec) ||
+    showProfileModal ||
+    showPosterModal ||
+    showReportModal;
+
+  useEffect(() => {
+    if (isAnyModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isAnyModalOpen]);
 
   const handleRespondReceptionist = async (
     receptionistId: string,
@@ -503,7 +537,7 @@ export const ClinicDashboard: React.FC = () => {
         </div>
       }
     >
-      <div className="space-y-6">
+      <div className="space-y-6 pb-24 md:pb-16 pb-safe">
         {/* Profile Incompletion Alert (e.g. Google OAuth Clinics) */}
         {(!clinic?.address || !clinic?.city || !clinic?.state) && (
           <div className="p-4 sm:p-5 rounded-2xl bg-white border border-amber-300 text-[#1d1d1f] text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
@@ -764,20 +798,13 @@ export const ClinicDashboard: React.FC = () => {
           {loading ? (
             <div className="py-12 text-center text-xs text-[#86868b]">Loading roster...</div>
           ) : doctors.length === 0 ? (
-            <div className="py-12 text-center">
-              <h3 className="text-[15px] font-semibold text-[#1d1d1f]">No Doctors Affiliated Yet</h3>
-              <p className="text-xs text-[#86868b] max-w-sm mx-auto mt-1 mb-4 leading-relaxed">
-                Onboard doctors to your clinic to begin receiving facility appointments and tracking isolated clinic revenue.
-              </p>
-              <button
-                type="button"
-                onClick={() => setShowAddModal(true)}
-                className="h-9 px-4 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-semibold inline-flex items-center gap-1.5 transition-all cursor-pointer"
-              >
-                <UserPlus className="w-3.5 h-3.5" />
-                Onboard First Doctor
-              </button>
-            </div>
+            <EmptyState
+              icon={Stethoscope}
+              title="No Doctors Affiliated Yet"
+              description="Onboard doctors to your clinic to begin receiving facility appointments and tracking isolated clinic revenue."
+              actionText="Onboard First Doctor"
+              onAction={() => setShowAddModal(true)}
+            />
           ) : (
             <>
               {/* Mobile Doctor Cards (< 640px) */}
@@ -1007,17 +1034,13 @@ export const ClinicDashboard: React.FC = () => {
           )}
 
           {(!data?.receptionists || data.receptionists.length === 0) ? (
-            <div className="py-12 text-center">
-              <h3 className="text-[15px] font-semibold text-[#1d1d1f] mb-4">No Receptionists Provisioned</h3>
-              <button
-                type="button"
-                onClick={() => setShowRecModal(true)}
-                className="h-9 px-4 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-semibold inline-flex items-center gap-1.5 transition-all cursor-pointer"
-              >
-                <UserCheck className="w-3.5 h-3.5" />
-                Provision First Receptionist
-              </button>
-            </div>
+            <EmptyState
+              icon={UserCheck}
+              title="No Receptionists Provisioned"
+              description="Provision front-desk receptionists to handle patient arrivals, verify QR check-ins, and manage waiting room queues."
+              actionText="Provision First Receptionist"
+              onAction={() => setShowRecModal(true)}
+            />
           ) : (
             <>
               {/* Mobile Receptionist Cards (< 640px) */}
@@ -1157,10 +1180,11 @@ export const ClinicDashboard: React.FC = () => {
             </p>
           </div>
           {(!data?.recentAppointments || data.recentAppointments.length === 0) ? (
-            <div className="py-12 text-center text-xs text-[#86868b]">
-              <p className="font-semibold text-[14px] text-[#1d1d1f]">No Facility Consultations Recorded Yet</p>
-              <p className="mt-1">When patients book appointments with affiliated practitioners at this clinic, they will appear here.</p>
-            </div>
+            <EmptyState
+              icon={Calendar}
+              title="No Facility Consultations Recorded Yet"
+              description="When patients book appointments with affiliated practitioners at this clinic, they will appear here in real-time."
+            />
           ) : (
             <>
               {/* Mobile Recent Appointments Cards (< 640px) */}
@@ -1256,7 +1280,12 @@ export const ClinicDashboard: React.FC = () => {
 
       {/* Onboard Doctor Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-md animate-fadeIn">
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-md animate-fadeIn"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !adding) setShowAddModal(false);
+          }}
+        >
           <div className="bg-white rounded-t-[28px] sm:rounded-[28px] border border-[#e5e5ea] max-w-md w-full p-6 sm:p-8 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-8 shadow-[0_24px_60px_rgba(0,0,0,0.16)] max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 duration-300">
             {/* Apple Drag Handle Pill */}
             <div className="sm:hidden w-10 h-1 bg-[#d2d2d7] rounded-full mx-auto mb-3" />
@@ -1288,7 +1317,7 @@ export const ClinicDashboard: React.FC = () => {
                   value={doctorEmail}
                   onChange={(e) => setDoctorEmail(e.target.value)}
                   placeholder="dr.sarah@mediarca.com"
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
 
@@ -1306,7 +1335,7 @@ export const ClinicDashboard: React.FC = () => {
                     value={doctorSearchQuery}
                     onChange={(e) => setDoctorSearchQuery(e.target.value)}
                     placeholder="Filter by name, specialty, or email..."
-                    className="w-full h-10 px-3.5 rounded-xl border border-[#d2d2d7] text-xs bg-white text-[#1d1d1f] placeholder:text-[#a1a1a6] transition-all focus:outline-none focus:ring-4 focus:ring-[#0066cc]/10 focus:border-[#0066cc] mb-2.5"
+                    className="w-full h-10 px-3.5 rounded-xl border border-[#d2d2d7] text-base sm:text-xs bg-white text-[#1d1d1f] placeholder:text-[#a1a1a6] transition-all focus:outline-none focus:ring-4 focus:ring-[#0066cc]/10 focus:border-[#0066cc] mb-2.5"
                   />
                   <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
                     {allDoctors
@@ -1399,7 +1428,12 @@ export const ClinicDashboard: React.FC = () => {
 
       {/* Provision Receptionist Modal */}
       {showRecModal && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-md animate-fadeIn">
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-md animate-fadeIn"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !provisioning) setShowRecModal(false);
+          }}
+        >
           <div className="bg-white rounded-t-[28px] sm:rounded-[28px] border border-[#e5e5ea] max-w-lg w-full p-6 sm:p-8 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-8 shadow-[0_24px_60px_rgba(0,0,0,0.16)] max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 duration-300">
             {/* Apple Drag Handle Pill */}
             <div className="sm:hidden w-10 h-1 bg-[#d2d2d7] rounded-full mx-auto mb-3" />
@@ -1431,7 +1465,7 @@ export const ClinicDashboard: React.FC = () => {
                   value={recFullName}
                   onChange={(e) => setRecFullName(e.target.value)}
                   placeholder="Enter receptionist's full name"
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
 
@@ -1447,7 +1481,7 @@ export const ClinicDashboard: React.FC = () => {
                     value={recEmail}
                     onChange={(e) => setRecEmail(e.target.value)}
                     placeholder="desk@clinic.com"
-                    className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                    className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                   />
                 </div>
                 <div>
@@ -1472,7 +1506,7 @@ export const ClinicDashboard: React.FC = () => {
                     onChange={(e) => setRecPassword(e.target.value)}
                     placeholder="Min. 8 characters"
                     minLength={8}
-                    className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                    className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                   />
                 </div>
               </div>
@@ -1496,7 +1530,7 @@ export const ClinicDashboard: React.FC = () => {
                     }}
                     placeholder="10-digit mobile number"
                     maxLength={10}
-                    className="w-full h-full px-3.5 bg-transparent text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:outline-none tracking-wide"
+                    className="w-full h-full px-3.5 bg-transparent text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:outline-none tracking-wide"
                   />
                 </div>
               </div>
@@ -1580,7 +1614,12 @@ export const ClinicDashboard: React.FC = () => {
 
       {/* Edit Assigned Doctors Modal */}
       {editingRec && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-md animate-fadeIn">
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-md animate-fadeIn"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !savingAssignments) setEditingRec(null);
+          }}
+        >
           <div className="bg-white rounded-t-[28px] sm:rounded-[28px] border border-[#e5e5ea] max-w-md w-full p-6 sm:p-8 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-8 shadow-[0_24px_60px_rgba(0,0,0,0.16)] max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 duration-300">
             {/* Apple Drag Handle Pill */}
             <div className="sm:hidden w-10 h-1 bg-[#d2d2d7] rounded-full mx-auto mb-3" />
@@ -1675,7 +1714,12 @@ export const ClinicDashboard: React.FC = () => {
 
       {/* Receptionist Credentials Handover Modal */}
       {createdCredentials && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-md animate-fadeIn">
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-md animate-fadeIn"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setCreatedCredentials(null);
+          }}
+        >
           <div className="bg-white rounded-t-[28px] sm:rounded-[28px] border border-[#e5e5ea] max-w-md w-full p-6 sm:p-8 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-8 shadow-[0_24px_60px_rgba(0,0,0,0.16)] space-y-5 max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 duration-300">
             {/* Apple Drag Handle Pill */}
             <div className="sm:hidden w-10 h-1 bg-[#d2d2d7] rounded-full mx-auto mb-3" />
@@ -1773,7 +1817,12 @@ export const ClinicDashboard: React.FC = () => {
 
       {/* Review & Approve Incoming Receptionist Modal */}
       {approvingRec && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-md animate-fadeIn">
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-md animate-fadeIn"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && processingRecId === null) setApprovingRec(null);
+          }}
+        >
           <div className="bg-white rounded-t-[28px] sm:rounded-[28px] border border-[#e5e5ea] max-w-md w-full p-6 sm:p-8 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-8 shadow-[0_24px_60px_rgba(0,0,0,0.16)] max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 duration-300">
             {/* Apple Drag Handle Pill */}
             <div className="sm:hidden w-10 h-1 bg-[#d2d2d7] rounded-full mx-auto mb-3" />
@@ -1879,7 +1928,12 @@ export const ClinicDashboard: React.FC = () => {
 
       {/* Complete Clinic Profile / Address Modal */}
       {showProfileModal && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-xl animate-in fade-in duration-200">
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-xl animate-in fade-in duration-200"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowProfileModal(false);
+          }}
+        >
           <div className="relative w-full max-w-[500px] max-h-[92vh] overflow-y-auto bg-white rounded-t-[28px] sm:rounded-[28px] border border-[#e5e5ea] shadow-[0_24px_64px_rgba(0,0,0,0.12),0_4px_16px_rgba(0,0,0,0.04)] p-6 sm:p-7 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-7 text-left">
             {/* Mobile Drag Handle */}
             <div className="sm:hidden w-10 h-1 bg-[#d2d2d7] rounded-full mx-auto mb-4" />
@@ -1919,7 +1973,7 @@ export const ClinicDashboard: React.FC = () => {
                   value={profileAddress}
                   onChange={(e) => setProfileAddress(e.target.value)}
                   placeholder="e.g. Plot 42, Civil Township, Near Hanuman Mandir"
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
 
@@ -1935,7 +1989,7 @@ export const ClinicDashboard: React.FC = () => {
                       setProfileState(e.target.value);
                       setProfileCity('');
                     }}
-                    className="w-full h-11 px-3 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                    className="w-full h-11 px-3 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                   >
                     <option value="">Select State</option>
                     {INDIAN_STATES.map((s) => (
@@ -1955,7 +2009,7 @@ export const ClinicDashboard: React.FC = () => {
                       required
                       value={profileCity}
                       onChange={(e) => setProfileCity(e.target.value)}
-                      className="w-full h-11 px-3 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                      className="w-full h-11 px-3 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                     >
                       <option value="">Select City</option>
                       {getCitiesForState(profileState).map((c) => (
@@ -1972,7 +2026,7 @@ export const ClinicDashboard: React.FC = () => {
                       onChange={(e) => setProfileCity(e.target.value)}
                       placeholder={profileState ? 'Enter City' : 'Select State First'}
                       disabled={!profileState}
-                      className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 disabled:bg-[#f5f5f7] disabled:cursor-not-allowed"
+                      className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 disabled:bg-[#f5f5f7] disabled:cursor-not-allowed"
                     />
                   )}
                 </div>
@@ -1993,7 +2047,7 @@ export const ClinicDashboard: React.FC = () => {
                     value={sanitizeIndianPhone(profilePhone)}
                     onChange={(e) => setProfilePhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
                     placeholder="98765 43210"
-                    className="flex-1 h-full px-3.5 bg-transparent text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:outline-none"
+                    className="flex-1 h-full px-3.5 bg-transparent text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:outline-none"
                   />
                 </div>
               </div>

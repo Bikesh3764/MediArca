@@ -62,6 +62,17 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
     return () => clearInterval(timer);
   }, [isOpen, countdown]);
 
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const handleDigitChange = (index: number, value: string) => {
@@ -157,7 +168,12 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-xl animate-in fade-in duration-200">
+    <div
+      onClick={(e) => {
+        if (e.target === e.currentTarget && !submitting) onClose();
+      }}
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-xl animate-in fade-in duration-200"
+    >
       <div className="relative w-full max-w-[450px] bg-white/95 backdrop-blur-2xl rounded-t-[28px] sm:rounded-[28px] border border-[#e5e5ea] shadow-[0_24px_64px_rgba(0,0,0,0.12),0_4px_16px_rgba(0,0,0,0.04)] p-6 sm:p-7 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-7 text-center animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 duration-300">
         {/* Apple Sheet Drag Handle Indicator (Mobile Only) */}
         <div className="sm:hidden w-10 h-1 bg-[#d2d2d7] rounded-full mx-auto mb-4" />
@@ -228,7 +244,7 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
         ) : (
           /* OTP Input Form */
           <form onSubmit={handleSubmit}>
-            <div className="flex justify-center gap-2 mb-5 max-w-full" onPaste={handlePaste}>
+            <div className="flex justify-center gap-1.5 sm:gap-2 mb-5 max-w-full" onPaste={handlePaste}>
               {otpDigits.map((digit, idx) => (
                 <input
                   key={idx}
@@ -242,7 +258,7 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
                   value={digit}
                   onChange={(e) => handleDigitChange(idx, e.target.value)}
                   onKeyDown={(e) => handleKeyDown(idx, e)}
-                  className="w-11 h-12 text-center text-lg font-semibold rounded-xl border border-[#d2d2d7] bg-white text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                  className="w-10 sm:w-11 h-11 sm:h-12 text-center text-base sm:text-lg font-semibold rounded-xl border border-[#d2d2d7] bg-white text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               ))}
             </div>

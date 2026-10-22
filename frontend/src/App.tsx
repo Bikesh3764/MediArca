@@ -3,6 +3,8 @@ import { lazyWithRetry as lazy } from './utils/lazyWithRetry';
 import { HashRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
+import { ToastProvider } from './context/ToastContext';
+import { ConfirmProvider } from './context/ConfirmContext';
 import { GlobalNav } from './components/layout/GlobalNav';
 import { Footer } from './components/layout/Footer';
 import { MobileTabBar } from './components/layout/MobileTabBar';
@@ -319,10 +321,14 @@ export function App() {
     <ErrorBoundary>
       <AuthProvider>
         <NotificationProvider>
-          <Router>
-            <ScrollToTop />
-            <AppShell />
-          </Router>
+          <ToastProvider>
+            <ConfirmProvider>
+              <Router>
+                <ScrollToTop />
+                <AppShell />
+              </Router>
+            </ConfirmProvider>
+          </ToastProvider>
         </NotificationProvider>
       </AuthProvider>
     </ErrorBoundary>

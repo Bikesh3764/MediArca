@@ -5,6 +5,7 @@ import { Clock, Calendar, MapPin, CheckCircle2, Building2, Phone, QrCode } from 
 import { AppleButton } from '../ui/AppleButton';
 import { CabinStatusBadge } from '../ui/DoctorCabinPresence';
 import { formatDisplayPhone, toTelUri } from '../../utils/phoneUtils';
+import { useToast } from '../../context/ToastContext';
 
 interface LiveQueueTicketProps {
   appointment: Appointment;
@@ -22,7 +23,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
   const { doctor, queueNumber, status, appointmentDate, checkingWindow, estimatedTime, liveQueue } =
     appointment;
 
-
+  const { toast } = useToast();
   const [imgError, setImgError] = useState(false);
   const [togglingPresence, setTogglingPresence] = useState(false);
   const [presenceOverride, setPresenceOverride] = useState<boolean | null>(null);
@@ -44,8 +45,9 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
         await api.checkInAppointmentDirect(appointment.id, newState);
       }
       setPresenceOverride(newState);
+      toast.success(newState ? 'Marked as arrived at waiting area' : 'Marked as stepped out');
     } catch (err: any) {
-      alert(err.message || 'Failed to update presence status');
+      toast.error(err.message || 'Failed to update presence status');
     } finally {
       setTogglingPresence(false);
     }
@@ -270,13 +272,13 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
               </div>
 
               {deskPhone ? (
-                <div className="shrink-0">
+                <div className="w-full sm:w-auto shrink-0">
                   <a
                     href={toTelUri(deskPhone)}
-                    className="inline-flex items-center gap-1.5 h-9 px-4 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-medium active:scale-[0.98] transition-all duration-150 shadow-[0_2px_8px_rgba(0,102,204,0.2)] select-none cursor-pointer"
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 h-10 sm:h-9 px-4 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-medium active:scale-[0.98] transition-all duration-150 shadow-[0_2px_8px_rgba(0,102,204,0.2)] select-none cursor-pointer"
                   >
                     <Phone className="w-3.5 h-3.5 shrink-0" />
-                    <span>Call {receptionistName}: {formatDisplayPhone(deskPhone)}</span>
+                    <span className="truncate">Call {receptionistName}: {formatDisplayPhone(deskPhone)}</span>
                   </a>
                 </div>
               ) : (
@@ -324,7 +326,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
                   type="button"
                   disabled={togglingPresence}
                   onClick={() => handleTogglePresence(false)}
-                  className="inline-flex items-center gap-1.5 h-9 px-4 rounded-full bg-white hover:bg-[#e8e8ed] text-[#86868b] hover:text-[#1d1d1f] border border-[#e5e5ea] text-xs font-medium active:scale-[0.98] transition-all duration-150 cursor-pointer select-none self-start sm:self-auto shrink-0"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 h-9 px-4 rounded-full bg-white hover:bg-[#e8e8ed] text-[#86868b] hover:text-[#1d1d1f] border border-[#e5e5ea] text-xs font-medium active:scale-[0.98] transition-all duration-150 cursor-pointer select-none shrink-0"
                 >
                   <span>{togglingPresence ? 'Updating...' : 'Step Out (Away)'}</span>
                 </button>
@@ -354,12 +356,12 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
                   </span>
                 </div>
               </div>
-              <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+              <div className="w-full sm:w-auto flex items-center gap-2 self-start sm:self-auto shrink-0">
                 {onScanQr ? (
                   <button
                     type="button"
                     onClick={() => onScanQr(appointment)}
-                    className="inline-flex items-center gap-2 h-10 px-5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-sm font-medium active:scale-[0.98] transition-all duration-150 shadow-[0_2px_8px_rgba(0,102,204,0.2)] cursor-pointer select-none"
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 h-10 px-5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-sm font-medium active:scale-[0.98] transition-all duration-150 shadow-[0_2px_8px_rgba(0,102,204,0.2)] cursor-pointer select-none"
                   >
                     <QrCode className="w-4 h-4 shrink-0" />
                     <span>Scan Clinic QR</span>
@@ -367,7 +369,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
                 ) : (
                   <Link
                     to={`/clinic-checkin?clinicId=${appointment.clinicId || ''}`}
-                    className="inline-flex items-center gap-2 h-10 px-5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-sm font-medium active:scale-[0.98] transition-all duration-150 shadow-[0_2px_8px_rgba(0,102,204,0.2)] select-none"
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 h-10 px-5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-sm font-medium active:scale-[0.98] transition-all duration-150 shadow-[0_2px_8px_rgba(0,102,204,0.2)] select-none"
                   >
                     <QrCode className="w-4 h-4 shrink-0" />
                     <span>Scan Clinic QR</span>
@@ -389,7 +391,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
             </div>
             <a
               href={toTelUri(deskPhone)}
-              className="inline-flex items-center gap-1.5 h-7 px-3 rounded-full bg-white hover:bg-[#e8e8ed] text-[#0066cc] border border-[#e5e5ea] text-[11px] font-medium active:scale-[0.97] transition-all duration-150 select-none cursor-pointer self-start sm:self-auto"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 h-8 sm:h-7 px-3.5 rounded-full bg-white hover:bg-[#e8e8ed] text-[#0066cc] border border-[#e5e5ea] text-xs sm:text-[11px] font-medium active:scale-[0.97] transition-all duration-150 select-none cursor-pointer"
             >
               <span>Call Receptionist ({formatDisplayPhone(deskPhone)})</span>
             </a>
@@ -410,10 +412,10 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
                 </p>
               </div>
               {deskPhone && (
-                <div className="shrink-0">
+                <div className="w-full sm:w-auto shrink-0">
                   <a
-                    href={`tel:${deskPhone.replace(/\s+/g, '')}`}
-                    className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-medium active:scale-[0.97] transition-all duration-150 select-none cursor-pointer"
+                    href={toTelUri(deskPhone)}
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 h-9 sm:h-8 px-4 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-medium active:scale-[0.97] transition-all duration-150 select-none cursor-pointer"
                   >
                     <Phone className="w-3 h-3 shrink-0" />
                     <span>Contact Desk: {formatDisplayPhone(deskPhone)}</span>

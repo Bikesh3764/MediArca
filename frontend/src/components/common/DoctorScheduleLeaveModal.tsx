@@ -101,6 +101,17 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
     });
   }, [isOpen, loadConfig, todayStr]);
 
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const toggleDay = (day: WeekdayCode) => {
@@ -499,7 +510,7 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
                             value={startDate}
                             onChange={(e) => setStartDate(e.target.value)}
                             required
-                            className="w-full h-9 px-3 text-xs rounded-xl border border-[#d2d2d7] bg-white focus:outline-none focus:border-[#0066cc] focus:ring-2 focus:ring-[#0066cc]/10"
+                            className="w-full h-9 px-3 text-base sm:text-xs rounded-xl border border-[#d2d2d7] bg-white focus:outline-none focus:border-[#0066cc] focus:ring-2 focus:ring-[#0066cc]/10"
                           />
                         </div>
                         <div>
@@ -512,7 +523,7 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
                             value={endDate}
                             onChange={(e) => setEndDate(e.target.value)}
                             required
-                            className="w-full h-9 px-3 text-xs rounded-xl border border-[#d2d2d7] bg-white focus:outline-none focus:border-[#0066cc] focus:ring-2 focus:ring-[#0066cc]/10"
+                            className="w-full h-9 px-3 text-base sm:text-xs rounded-xl border border-[#d2d2d7] bg-white focus:outline-none focus:border-[#0066cc] focus:ring-2 focus:ring-[#0066cc]/10"
                           />
                         </div>
                       </div>
@@ -527,7 +538,7 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
                         placeholder="e.g. Conference, Personal, Illness"
                         value={reason}
                         onChange={(e) => setReason(e.target.value)}
-                        className="w-full h-9 px-3 text-xs rounded-xl border border-[#d2d2d7] bg-white focus:outline-none focus:border-[#0066cc] focus:ring-2 focus:ring-[#0066cc]/10"
+                        className="w-full h-9 px-3 text-base sm:text-xs rounded-xl border border-[#d2d2d7] bg-white focus:outline-none focus:border-[#0066cc] focus:ring-2 focus:ring-[#0066cc]/10"
                       />
                     </div>
 

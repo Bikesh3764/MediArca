@@ -4,7 +4,7 @@ import { ArrowRight } from 'lucide-react';
 
 export const AboutUs: React.FC = () => {
   return (
-    <div className="min-h-screen bg-[#f5f5f7] text-[#1d1d1f] py-10 sm:py-16 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#f5f5f7] text-[#1d1d1f] py-10 sm:py-16 px-4 sm:px-6 lg:px-8 pb-24 sm:pb-16 pb-safe">
       <div className="max-w-4xl mx-auto space-y-10">
         {/* Header (Pure Typography, No pill badge) */}
         <div className="text-center space-y-3 max-w-2xl mx-auto">

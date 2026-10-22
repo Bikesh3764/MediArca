@@ -8,9 +8,11 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import { sanitizeIndianPhone, formatIndianPhone, isValidIndianPhone } from '../../utils/phoneUtils';
+import { useToast } from '../../context/ToastContext';
 
 export const PatientProfile: React.FC = () => {
   const { user, updateUser } = useAuth();
+  const { toast } = useToast();
 
   const [fullName, setFullName] = useState(user?.fullName || '');
   const [phone, setPhone] = useState(user?.phone || '');
@@ -77,15 +79,18 @@ export const PatientProfile: React.FC = () => {
 
       updateUser(updated);
       setSuccessMsg('Profile updated.');
+      toast.success('Profile details saved successfully');
     } catch (err: any) {
-      setErrorMsg(err.message || 'Failed to update profile.');
+      const msg = err.message || 'Failed to update profile.';
+      setErrorMsg(msg);
+      toast.error(msg);
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#f5f5f7] pb-16">
+    <div className="min-h-screen bg-[#f5f5f7] pb-24 md:pb-16 pb-safe">
       {/* Sleek Apple Header */}
       <div className="bg-white border-b border-[#e5e5ea]/80">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6">
@@ -122,7 +127,7 @@ export const PatientProfile: React.FC = () => {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="Full Name"
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
 
@@ -131,7 +136,7 @@ export const PatientProfile: React.FC = () => {
                   Mobile Number
                 </label>
                 <div className="flex items-center w-full h-11 rounded-xl border border-[#d2d2d7] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus-within:border-[#0066cc] focus-within:ring-4 focus-within:ring-[#0066cc]/10 transition-all duration-150 overflow-hidden">
-                  <div className="h-full px-3.5 bg-[#f5f5f7] border-r border-[#d2d2d7] flex items-center justify-center select-none text-[13px] font-semibold text-[#1d1d1f]">
+                  <div className="h-full px-3.5 bg-[#f5f5f7] border-r border-[#d2d2d7] flex items-center justify-center select-none text-base sm:text-xs font-semibold text-[#1d1d1f]">
                     +91
                   </div>
                   <input
@@ -142,7 +147,7 @@ export const PatientProfile: React.FC = () => {
                     onChange={handlePhoneInputChange}
                     placeholder="98765 43210"
                     maxLength={10}
-                    className="w-full h-full px-3.5 text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] bg-transparent focus:outline-none font-medium tracking-wide"
+                    className="w-full h-full px-3.5 text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] bg-transparent focus:outline-none font-medium tracking-wide"
                   />
                 </div>
               </div>
@@ -155,7 +160,7 @@ export const PatientProfile: React.FC = () => {
                   type="email"
                   disabled
                   value={user?.email || ''}
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-[14px] bg-[#f5f5f7] text-[#86868b] cursor-not-allowed select-none"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] text-base sm:text-sm bg-[#f5f5f7] text-[#86868b] cursor-not-allowed select-none"
                 />
               </div>
 
@@ -168,7 +173,7 @@ export const PatientProfile: React.FC = () => {
                   value={emergencyContact}
                   onChange={(e) => setEmergencyContact(e.target.value)}
                   placeholder="Optional contact name & number"
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
             </div>
@@ -186,7 +191,7 @@ export const PatientProfile: React.FC = () => {
                   max={getLocalDateString()}
                   value={dateOfBirth}
                   onChange={(e) => setDateOfBirth(e.target.value)}
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
 
@@ -223,7 +228,7 @@ export const PatientProfile: React.FC = () => {
                   <select
                     value={bloodGroup}
                     onChange={(e) => setBloodGroup(e.target.value)}
-                    className={`w-full h-11 pl-3.5 pr-9 rounded-xl border border-[#d2d2d7] bg-white text-[14px] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 appearance-none cursor-pointer ${
+                    className={`w-full h-11 pl-3.5 pr-9 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 appearance-none cursor-pointer ${
                       bloodGroup ? 'text-[#1d1d1f] font-medium' : 'text-[#a1a1a6]'
                     }`}
                   >

@@ -210,6 +210,17 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
     }
   }, [boxHeight, boxWidth, imageSrc, imgDimensions, offset, onCropComplete, selectedRatio, zoom]);
 
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
   if (!isOpen || !imageSrc) return null;
 
   // Calculate rendered width and height in the on-screen container
@@ -220,7 +231,12 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
   const currentRenderedH = imgDimensions.height * fitScale * zoom;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xl animate-fadeIn">
+    <div
+      onClick={(e) => {
+        if (e.target === e.currentTarget && !processing) onClose();
+      }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xl animate-fadeIn"
+    >
       <div className="relative w-full max-w-[460px] bg-white rounded-[28px] border border-[#e5e5ea] shadow-[0_24px_64px_rgba(0,0,0,0.12),0_4px_16px_rgba(0,0,0,0.04)] overflow-hidden flex flex-col max-h-[94vh] p-6 sm:p-7">
         {/* Header */}
         <div className="flex items-center justify-between mb-5">

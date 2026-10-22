@@ -364,7 +364,7 @@ export const DoctorDetail: React.FC = () => {
                   value={selectedDate}
                   min={getLocalDateString()}
                   onChange={(e) => setSelectedDate(e.target.value)}
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
 
@@ -494,7 +494,7 @@ export const DoctorDetail: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-[#f5f5f7] pb-16">
+    <div className="min-h-screen bg-[#f5f5f7] pb-24 md:pb-16 pb-safe">
       <SubNav title={doctor.user?.fullName || 'Doctor'} subtitle={doctor.specialty}>
         <AppleButton
           variant="ghost"

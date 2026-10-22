@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { DashboardLayout, DashboardNavItem } from '../../components/layout/DashboardLayout';
 import { UtilityCard } from '../../components/ui/UtilityCard';
 import { formatDisplayPhone } from '../../utils/phoneUtils';
+import { useToast } from '../../context/ToastContext';
 import {
   ChevronLeft,
   AlertCircle,
@@ -23,6 +24,7 @@ export const ConsultationView: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user, loading: loadingAuth } = useAuth();
+  const { toast } = useToast();
 
   const [appointment, setAppointment] = useState<Appointment | null>(null);
   const [loading, setLoading] = useState(true);
@@ -138,9 +140,11 @@ export const ConsultationView: React.FC = () => {
         vitals: currentVitals,
       });
       setSuccessMsg('Consultation notes saved.');
+      toast.success('Consultation notes saved');
       setTimeout(() => setSuccessMsg(null), 3000);
     } catch (err: any) {
       setError(err.message || 'Failed to save notes');
+      toast.error(err.message || 'Failed to save notes');
     } finally {
       setSavingNotes(false);
     }
@@ -152,7 +156,9 @@ export const ConsultationView: React.FC = () => {
     if (!appointment) return;
     const todayStr = getLocalDateString();
     if (appointment.appointmentDate > todayStr) {
-      setError(`Cannot start consultation: Appointment is scheduled for ${appointment.appointmentDate}, which is in the future.`);
+      const msg = `Cannot start consultation: Appointment is scheduled for ${appointment.appointmentDate}, which is in the future.`;
+      setError(msg);
+      toast.warning(msg);
       return;
     }
     setCallingPatient(true);
@@ -161,9 +167,11 @@ export const ConsultationView: React.FC = () => {
       const updated = await api.callPatient(appointment.id);
       setAppointment(updated);
       setSuccessMsg(`Token #${updated.queueNumber} called into cabin.`);
+      toast.success(`Token #${updated.queueNumber} called into cabin`);
       setTimeout(() => setSuccessMsg(null), 3000);
     } catch (err: any) {
       setError(err.message || 'Failed to call patient into cabin');
+      toast.error(err.message || 'Failed to call patient into cabin');
     } finally {
       setCallingPatient(false);
     }
@@ -177,9 +185,11 @@ export const ConsultationView: React.FC = () => {
       await api.checkInAppointmentDirect(appointment.id, true);
       setAppointment((prev) => (prev ? { ...prev, isCheckedIn: true, checkedInAt: new Date().toISOString() } : null));
       setSuccessMsg('Patient marked as arrived at clinic.');
+      toast.success('Patient marked as arrived at clinic');
       setTimeout(() => setSuccessMsg(null), 3000);
     } catch (err: any) {
       setError(err.message || 'Failed to mark patient arrived');
+      toast.error(err.message || 'Failed to mark patient arrived');
     } finally {
       setTogglingCheckin(false);
     }
@@ -193,9 +203,11 @@ export const ConsultationView: React.FC = () => {
       const updated = await api.holdConsultation(appointment.id);
       setAppointment(updated);
       setSuccessMsg(`Token #${updated.queueNumber} placed on hold and returned to waiting queue.`);
+      toast.info(`Token #${updated.queueNumber} placed on hold`);
       setTimeout(() => setSuccessMsg(null), 3000);
     } catch (err: any) {
       setError(err.message || 'Failed to place consultation on hold');
+      toast.error(err.message || 'Failed to place consultation on hold');
     } finally {
       setHoldingPatient(false);
     }
@@ -223,9 +235,11 @@ export const ConsultationView: React.FC = () => {
         clinicalNotes: clinicalNotes.trim(),
         vitals: currentVitals,
       });
+      toast.success(`Consultation completed for Token #${appointment.queueNumber}`);
       navigate('/doctor/dashboard');
     } catch (err: any) {
       setError(err.message || 'Failed to complete consultation');
+      toast.error(err.message || 'Failed to complete consultation');
       setSubmitting(false);
     }
   };
@@ -285,7 +299,7 @@ export const ConsultationView: React.FC = () => {
         </button>
       }
     >
-      <div className="max-w-3xl space-y-6">
+      <div className="max-w-3xl space-y-6 pb-24 md:pb-16 pb-safe">
         {/* Status Alerts */}
         {error && (
           <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200/80 text-rose-700 text-xs font-medium flex items-center gap-2">
@@ -551,7 +565,7 @@ export const ConsultationView: React.FC = () => {
                     placeholder="e.g. 120/80"
                     value={vitalsBP}
                     onChange={(e) => setVitalsBP(e.target.value)}
-                    className="w-full h-10 px-3 rounded-xl border border-[#d2d2d7] bg-white text-[13px] text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all"
+                    className="w-full h-10 px-3 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-xs text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all"
                   />
                 </div>
                 <div>
@@ -561,7 +575,7 @@ export const ConsultationView: React.FC = () => {
                     placeholder="e.g. 72"
                     value={vitalsPulse}
                     onChange={(e) => setVitalsPulse(e.target.value)}
-                    className="w-full h-10 px-3 rounded-xl border border-[#d2d2d7] bg-white text-[13px] text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all"
+                    className="w-full h-10 px-3 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-xs text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all"
                   />
                 </div>
                 <div>
@@ -571,7 +585,7 @@ export const ConsultationView: React.FC = () => {
                     placeholder="e.g. 98.6 °F"
                     value={vitalsTemp}
                     onChange={(e) => setVitalsTemp(e.target.value)}
-                    className="w-full h-10 px-3 rounded-xl border border-[#d2d2d7] bg-white text-[13px] text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all"
+                    className="w-full h-10 px-3 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-xs text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all"
                   />
                 </div>
                 <div>
@@ -581,7 +595,7 @@ export const ConsultationView: React.FC = () => {
                     placeholder="e.g. 68 kg"
                     value={vitalsWeight}
                     onChange={(e) => setVitalsWeight(e.target.value)}
-                    className="w-full h-10 px-3 rounded-xl border border-[#d2d2d7] bg-white text-[13px] text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all"
+                    className="w-full h-10 px-3 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-xs text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all"
                   />
                 </div>
               </div>
@@ -606,7 +620,7 @@ export const ConsultationView: React.FC = () => {
                 onChange={(e) => setClinicalNotes(e.target.value)}
                 rows={4}
                 placeholder="Add clinical observations, findings, or follow-up notes..."
-                className="w-full rounded-xl border border-[#d2d2d7] bg-white p-3.5 text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 resize-y"
+                className="w-full rounded-xl border border-[#d2d2d7] bg-white p-3.5 text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 resize-y"
               />
 
               <div className="mt-5 pt-4 border-t border-[#e5e5ea] flex flex-col sm:flex-row items-center justify-between gap-2.5">

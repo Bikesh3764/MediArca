@@ -28,7 +28,10 @@ import {
   Phone,
   RotateCcw,
   ChevronDown,
+  Building2,
+  Stethoscope,
 } from 'lucide-react';
+import { EmptyState } from '../components/common/EmptyState';
 
 const getClinicLocationDisplay = (clinic?: { address?: string; city?: string | null; state?: string | null } | null): string => {
   if (!clinic) return 'Clinical Facility';
@@ -466,7 +469,7 @@ export const Home: React.FC = () => {
                 onChange={(e) => setHeroSearchQuery(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleHeroSearch()}
                 placeholder="Search doctor, clinic or specialty..."
-                className="w-full bg-transparent text-sm text-[#1d1d1f] placeholder-[#86868b] focus:outline-none"
+                className="w-full bg-transparent text-base sm:text-sm text-[#1d1d1f] placeholder-[#86868b] focus:outline-none"
               />
               {heroSearchQuery && (
                 <button
@@ -480,6 +483,7 @@ export const Home: React.FC = () => {
             </div>
 
             <div className="hidden sm:block w-px h-6 bg-[#e0e0e0]" />
+            <div className="block sm:hidden w-full h-px bg-[#f0f0f2]" />
 
             <div className="flex items-center gap-2.5 w-full sm:w-52 px-3.5 py-1">
               <MapPin className="w-4 h-4 text-[#86868b] shrink-0" />
@@ -489,7 +493,7 @@ export const Home: React.FC = () => {
                 onChange={(e) => setHeroLocationQuery(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleHeroSearch()}
                 placeholder="City or location..."
-                className="w-full bg-transparent text-sm text-[#1d1d1f] placeholder-[#86868b] focus:outline-none"
+                className="w-full bg-transparent text-base sm:text-sm text-[#1d1d1f] placeholder-[#86868b] focus:outline-none"
               />
               {heroLocationQuery && (
                 <button
@@ -505,7 +509,7 @@ export const Home: React.FC = () => {
             <button
               type="button"
               onClick={handleHeroSearch}
-              className="w-full sm:w-auto h-10 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-sm font-medium transition-all duration-150 active:scale-[0.97] inline-flex items-center justify-center gap-2 cursor-pointer select-none shrink-0 shadow-[0_1px_2px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,102,204,0.15)]"
+              className="w-full sm:w-auto h-11 sm:h-10 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-sm font-medium transition-all duration-150 active:scale-[0.97] inline-flex items-center justify-center gap-2 cursor-pointer select-none shrink-0 shadow-[0_1px_2px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,102,204,0.15)]"
             >
               <Search className="w-4 h-4" />
               <span>Search</span>
@@ -582,6 +586,7 @@ export const Home: React.FC = () => {
                     allCount={clinics.length}
                     variant="bar"
                     searchable={true}
+                    align="right"
                   />
                 </div>
 
@@ -605,6 +610,7 @@ export const Home: React.FC = () => {
                     disabled={clinicSelectedState === 'All'}
                     variant="bar"
                     searchable={clinicCityOptions.length > 5}
+                    align="right"
                   />
                 </div>
 
@@ -834,7 +840,7 @@ export const Home: React.FC = () => {
                       </AppleButton>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 md:[grid-template-columns:repeat(auto-fill,minmax(330px,1fr))] gap-5 sm:gap-6 w-full">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:[grid-template-columns:repeat(auto-fill,minmax(320px,1fr))] gap-4 sm:gap-6 w-full">
                       {clinicPracticingDoctors.map((docItem) => {
                         const doctor = docItem.doctor;
                         const slots = parseDoctorSlots({
@@ -962,7 +968,7 @@ export const Home: React.FC = () => {
               <div className="space-y-6">
                 {/* Clinics Cards Grid */}
                 {loadingClinics ? (
-                  <div className="grid grid-cols-1 md:[grid-template-columns:repeat(auto-fill,minmax(330px,1fr))] gap-5 sm:gap-6 w-full">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:[grid-template-columns:repeat(auto-fill,minmax(320px,1fr))] gap-4 sm:gap-6 w-full">
                     {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
                       <div
                         key={i}
@@ -971,19 +977,15 @@ export const Home: React.FC = () => {
                     ))}
                   </div>
                 ) : filteredClinics.length === 0 ? (
-                  <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-12 text-center max-w-md mx-auto shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
-                    <h3 className="text-base font-semibold text-[#1d1d1f] mb-1">
-                      No clinics found
-                    </h3>
-                    <p className="text-xs text-[#86868b] mb-5">
-                      Try searching with a different name or location.
-                    </p>
-                    <AppleButton variant="secondary" size="sm" onClick={resetClinicFilters}>
-                      Reset
-                    </AppleButton>
-                  </div>
+                  <EmptyState
+                    icon={Building2}
+                    title="No clinics found"
+                    description="No clinical facilities matched your search or location filters."
+                    actionText="Reset Filters"
+                    onAction={resetClinicFilters}
+                  />
                 ) : (
-                  <div className="grid grid-cols-1 md:[grid-template-columns:repeat(auto-fill,minmax(330px,1fr))] gap-5 sm:gap-6 w-full">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:[grid-template-columns:repeat(auto-fill,minmax(320px,1fr))] gap-4 sm:gap-6 w-full">
                     {filteredClinics.map((clinic) => {
                       const docCount = (clinic.doctors && Array.isArray(clinic.doctors))
                         ? clinic.doctors.length
@@ -1313,7 +1315,7 @@ export const Home: React.FC = () => {
 
               {/* Doctor Cards Grid */}
               {loadingDoctors ? (
-                <div className="grid grid-cols-1 md:[grid-template-columns:repeat(auto-fill,minmax(330px,1fr))] gap-5 sm:gap-6 w-full">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:[grid-template-columns:repeat(auto-fill,minmax(320px,1fr))] gap-4 sm:gap-6 w-full">
                   {[1, 2, 3, 4, 5, 6].map((i) => (
                     <div
                       key={i}
@@ -1322,19 +1324,15 @@ export const Home: React.FC = () => {
                   ))}
                 </div>
               ) : filteredDoctors.length === 0 ? (
-                <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-12 text-center max-w-md mx-auto shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
-                  <h3 className="text-base font-semibold text-[#1d1d1f] mb-1">
-                    No doctors found
-                  </h3>
-                  <p className="text-xs text-[#86868b] mb-5">
-                    Try searching with different terms or reset filters.
-                  </p>
-                  <AppleButton variant="secondary" size="sm" onClick={resetDoctorFilters}>
-                    Reset
-                  </AppleButton>
-                </div>
+                <EmptyState
+                  icon={Stethoscope}
+                  title="No doctors found"
+                  description="No doctors matched your specialty, fee, or location criteria."
+                  actionText="Reset All Filters"
+                  onAction={resetDoctorFilters}
+                />
               ) : (
-                <div className="grid grid-cols-1 md:[grid-template-columns:repeat(auto-fill,minmax(330px,1fr))] gap-5 sm:gap-6 w-full">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:[grid-template-columns:repeat(auto-fill,minmax(320px,1fr))] gap-4 sm:gap-6 w-full">
                   {filteredDoctors.map((doctor) => {
                     const slots = parseDoctorSlots(doctor);
                     // Strictly sanitize doctor degrees to legitimate medical degrees only (NO FACC!)

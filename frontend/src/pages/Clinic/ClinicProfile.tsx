@@ -9,6 +9,7 @@ import { ClinicQrStandeeModal } from '../../components/common/ClinicQrStandeeMod
 import { optimizeAvatarImage } from '../../utils/documentOptimizer';
 import { sanitizeIndianPhone, formatIndianPhone, isValidIndianPhone } from '../../utils/phoneUtils';
 import { INDIAN_STATES, getCitiesForState } from '../../utils/indiaStates';
+import { useToast } from '../../context/ToastContext';
 import {
   Users,
   UserCheck,
@@ -29,6 +30,7 @@ import {
 
 export const ClinicProfile: React.FC = () => {
   const { user, updateUser, refreshUser } = useAuth();
+  const { toast } = useToast();
 
   const [clinicName, setClinicName] = useState(
     user?.clinicProfile?.clinicName || user?.fullName || ''
@@ -166,8 +168,11 @@ export const ClinicProfile: React.FC = () => {
       await refreshUser();
 
       setSuccessMsg('Clinic profile and location details saved successfully.');
+      toast.success('Clinic profile details saved successfully');
     } catch (err: any) {
-      setErrorMsg(err.message || 'Failed to update clinic profile.');
+      const msg = err.message || 'Failed to update clinic profile.';
+      setErrorMsg(msg);
+      toast.error(msg);
     } finally {
       setSaving(false);
     }
@@ -226,7 +231,7 @@ export const ClinicProfile: React.FC = () => {
         </div>
       }
     >
-      <div className="max-w-4xl space-y-6">
+      <div className="max-w-4xl space-y-6 pb-24 md:pb-16 pb-safe">
         {successMsg && (
           <div className="p-3.5 rounded-xl bg-white border border-[#e5e5ea] text-[#1d1d1f] text-xs font-medium flex items-center gap-2.5 shadow-[0_1px_2px_rgba(0,0,0,0.03)] animate-in fade-in duration-150">
             <CheckCircle2 className="w-4 h-4 text-[#0066cc] shrink-0" />
@@ -370,7 +375,7 @@ export const ClinicProfile: React.FC = () => {
                   value={clinicName}
                   onChange={(e) => setClinicName(e.target.value)}
                   placeholder="e.g. Metropolis Polyclinic & Diagnostic Centre"
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
 
@@ -389,7 +394,7 @@ export const ClinicProfile: React.FC = () => {
                     value={phone.replace(/^\+91\s*/, '')}
                     onChange={handlePhoneInputChange}
                     placeholder="98765 43210"
-                    className="flex-1 h-full px-3.5 bg-transparent text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:outline-none"
+                    className="flex-1 h-full px-3.5 bg-transparent text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:outline-none"
                   />
                 </div>
               </div>
@@ -402,7 +407,7 @@ export const ClinicProfile: React.FC = () => {
                   type="email"
                   disabled
                   value={user?.email || ''}
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] bg-[#f5f5f7] text-[14px] text-[#86868b] cursor-not-allowed select-none"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#e5e5ea] bg-[#f5f5f7] text-base sm:text-sm text-[#86868b] cursor-not-allowed select-none"
                 />
               </div>
             </div>
@@ -420,7 +425,7 @@ export const ClinicProfile: React.FC = () => {
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
                   placeholder="e.g. Floor 3, 100 Hill Road, Bandra West, Near St. Andrews Church"
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
 
@@ -436,7 +441,7 @@ export const ClinicProfile: React.FC = () => {
                       setState(e.target.value);
                       setCity('');
                     }}
-                    className="w-full h-11 px-3 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                    className="w-full h-11 px-3 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                   >
                     <option value="">Select State</option>
                     {INDIAN_STATES.map((s) => (
@@ -456,7 +461,7 @@ export const ClinicProfile: React.FC = () => {
                       required
                       value={city}
                       onChange={(e) => setCity(e.target.value)}
-                      className="w-full h-11 px-3 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                      className="w-full h-11 px-3 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                     >
                       <option value="">Select City</option>
                       {getCitiesForState(state).map((c) => (
@@ -473,7 +478,7 @@ export const ClinicProfile: React.FC = () => {
                       onChange={(e) => setCity(e.target.value)}
                       placeholder={state ? 'Enter City' : 'Select State First'}
                       disabled={!state}
-                      className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 disabled:bg-[#f5f5f7] disabled:cursor-not-allowed"
+                      className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 disabled:bg-[#f5f5f7] disabled:cursor-not-allowed"
                     />
                   )}
                 </div>

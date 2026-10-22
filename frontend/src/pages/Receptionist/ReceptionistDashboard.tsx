@@ -43,11 +43,15 @@ import {
   CalendarX,
   CalendarCheck,
   CalendarOff,
+  Users,
 } from 'lucide-react';
+import { EmptyState } from '../../components/common/EmptyState';
 import { ClinicQrStandeeModal } from '../../components/common/ClinicQrStandeeModal';
 import { ClinicalReportModal } from '../../components/common/ClinicalReportModal';
 import { DoctorScheduleLeaveModal } from '../../components/common/DoctorScheduleLeaveModal';
 import { WeekdayDisplay } from '../../components/common/WeekdayDisplay';
+import { useToast } from '../../context/ToastContext';
+import { useConfirm } from '../../context/ConfirmContext';
 
 export interface TokenPassData {
   queueNumber: number;
@@ -116,6 +120,8 @@ const cleanShiftDisplayName = (shiftStr?: string | null): string => {
 export const ReceptionistDashboard: React.FC = () => {
   const { user, refreshUser, updateUser, logout } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const { confirm } = useConfirm();
 
   // Mandatory password change state for provisioned receptionists
   const [currentPassword, setCurrentPassword] = useState('');
@@ -219,6 +225,25 @@ export const ReceptionistDashboard: React.FC = () => {
     queueDoctorIdRef.current = queueDoctorId;
     slotIdRef.current = slotId;
   }, [selectedDoctorId, queueDoctorId, slotId]);
+
+  const isAnyModalOpen =
+    Boolean(bookedPass) ||
+    Boolean(rescheduleTarget) ||
+    isStandeeModalOpen ||
+    isReportModalOpen ||
+    Boolean(scheduleModalDoctor) ||
+    Boolean(user?.mustChangePassword);
+
+  useEffect(() => {
+    if (isAnyModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isAnyModalOpen]);
 
   const fetchPendingAppointments = useCallback(async () => {
     try {
@@ -414,17 +439,24 @@ export const ReceptionistDashboard: React.FC = () => {
   };
 
   const handleRejectPendingAppointment = async (apptId: string) => {
-    if (!window.confirm('Are you sure you want to decline this booking request?')) {
-      return;
-    }
+    const ok = await confirm({
+      title: 'Decline Booking Request?',
+      message: 'Are you sure you want to decline this booking request? The patient will be notified.',
+      confirmText: 'Decline Request',
+      isDestructive: true,
+    });
+    if (!ok) return;
+
     try {
       setRejectingId(apptId);
       setError(null);
       const res = await api.rejectAppointment(apptId, 'Booking request declined by reception desk.');
+      toast.success(res.message || 'Booking request declined');
       setSuccessMsg(res.message || 'Booking request declined.');
       await fetchPendingAppointments();
       fetchDeskData();
     } catch (err: any) {
+      toast.error(err.message || 'Failed to decline appointment');
       setError(err.message || 'Failed to decline appointment');
     } finally {
       setRejectingId(null);
@@ -671,9 +703,16 @@ export const ReceptionistDashboard: React.FC = () => {
 
     if (status === 'CANCELLED') {
       const patientName = targetAppt?.patientName || 'this patient';
-      if (!window.confirm(`Are you sure you want to cancel the queue appointment for ${patientName}? This action cannot be undone.`)) {
-        return;
-      }
+      const promptMsg = `Are you sure you want to cancel the queue appointment for ${patientName}?`;
+      const ok = confirm
+        ? await confirm({
+            title: 'Cancel Queue Appointment?',
+            message: `${promptMsg} This action cannot be undone.`,
+            confirmText: 'Yes, Cancel',
+            isDestructive: true,
+          })
+        : window.confirm(promptMsg);
+      if (!ok) return;
     }
 
     if (status === 'IN_CONSULTATION') {
@@ -681,7 +720,7 @@ export const ReceptionistDashboard: React.FC = () => {
         const awayMsg = targetDoctor.cabinStatus === 'STEPPED_OUT'
           ? `${cleanDoctorName(targetDoctor.fullName)} has stepped out${targetDoctor.expectedReturnTime ? ` (expected return ~${targetDoctor.expectedReturnTime})` : ''}. Doctor must be In Cabin before calling patients.`
           : `${cleanDoctorName(targetDoctor.fullName)} is currently Not in Cabin. Doctor must be In Cabin before calling patients.`;
-        alert(awayMsg);
+        toast.warning(awayMsg);
         return;
       }
     }
@@ -690,11 +729,11 @@ export const ReceptionistDashboard: React.FC = () => {
       if (targetAppt) {
         const targetDate = targetAppt.appointmentDate || queueDate;
         if (targetDate !== getLocalDateString()) {
-          alert(`Cannot update an appointment scheduled for ${targetDate} to '${status}'. Only today's appointments can be updated.`);
+          toast.warning(`Cannot update an appointment scheduled for ${targetDate} to '${status}'. Only today's appointments can be updated.`);
           return;
         }
         if (!targetAppt.isCheckedIn) {
-          alert('Patient has not checked in at the clinic yet. Please mark arrival first.');
+          toast.warning('Patient has not checked in at the clinic yet. Please mark arrival first.');
           return;
         }
       }
@@ -702,10 +741,11 @@ export const ReceptionistDashboard: React.FC = () => {
 
     try {
       await api.updateAppointmentStatus(appointmentId, status);
+      toast.success(`Status updated to ${status.replace('_', ' ')}`);
       fetchQueue();
       fetchDeskData();
     } catch (err: any) {
-      alert(err.message || 'Failed to update status');
+      toast.error(err.message || 'Failed to update status');
     }
   };
 
@@ -716,6 +756,7 @@ export const ReceptionistDashboard: React.FC = () => {
       const nextStatus = !currentStatus;
       const res = await api.checkInAppointmentDirect(appointmentId, nextStatus);
       if (res && (res.id || res.success)) {
+        toast.success(nextStatus ? 'Patient marked arrived at clinic' : 'Arrival mark removed');
         setQueueAppointments((prev) =>
           prev.map((item) =>
             item.id === appointmentId
@@ -729,7 +770,7 @@ export const ReceptionistDashboard: React.FC = () => {
         );
       }
     } catch (err: any) {
-      alert(err.message || 'Failed to update clinic arrival status');
+      toast.error(err.message || 'Failed to update clinic arrival status');
     } finally {
       setTogglingCheckinId(null);
     }
@@ -841,7 +882,7 @@ export const ReceptionistDashboard: React.FC = () => {
         </div>
       }
     >
-      <div className="space-y-6 print:hidden">
+      <div className="space-y-6 print:hidden pb-24 md:pb-16 pb-safe">
         {/* Feedback Banners */}
         {successMsg && (
           <div className="p-3.5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] text-xs flex items-center justify-between">
@@ -892,7 +933,7 @@ export const ReceptionistDashboard: React.FC = () => {
                           setQueueDoctorId(e.target.value);
                           setQueueShiftFilter('ALL');
                         }}
-                        className="h-10 pl-3.5 pr-8 rounded-xl border border-[#d2d2d7] text-xs font-medium bg-white text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all focus:outline-none focus:ring-4 focus:ring-[#0066cc]/10 focus:border-[#0066cc] appearance-none cursor-pointer w-full sm:w-auto"
+                        className="h-10 pl-3.5 pr-8 rounded-xl border border-[#d2d2d7] text-base sm:text-xs font-medium bg-white text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all focus:outline-none focus:ring-4 focus:ring-[#0066cc]/10 focus:border-[#0066cc] appearance-none cursor-pointer w-full sm:w-auto"
                       >
                         {linkedDoctors.map((doc) => (
                           <option key={doc.doctorId} value={doc.doctorId}>
@@ -909,7 +950,7 @@ export const ReceptionistDashboard: React.FC = () => {
                     <select
                       value={queueShiftFilter}
                       onChange={(e) => setQueueShiftFilter(e.target.value)}
-                      className="h-10 pl-3.5 pr-8 rounded-xl border border-[#d2d2d7] text-xs font-medium bg-white text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all focus:outline-none focus:ring-4 focus:ring-[#0066cc]/10 focus:border-[#0066cc] appearance-none cursor-pointer w-full sm:w-auto"
+                      className="h-10 pl-3.5 pr-8 rounded-xl border border-[#d2d2d7] text-base sm:text-xs font-medium bg-white text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all focus:outline-none focus:ring-4 focus:ring-[#0066cc]/10 focus:border-[#0066cc] appearance-none cursor-pointer w-full sm:w-auto"
                       title="Filter queue by clinical shift"
                     >
                       <option value="ALL">All Shifts</option>
@@ -927,7 +968,7 @@ export const ReceptionistDashboard: React.FC = () => {
                       type="date"
                       value={queueDate}
                       onChange={(e) => setQueueDate(e.target.value)}
-                      className="h-10 px-3.5 rounded-xl border border-[#d2d2d7] text-xs font-medium bg-white text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all focus:outline-none focus:ring-4 focus:ring-[#0066cc]/10 focus:border-[#0066cc] flex-1 sm:flex-initial"
+                      className="h-10 px-3.5 rounded-xl border border-[#d2d2d7] text-base sm:text-xs font-medium bg-white text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all focus:outline-none focus:ring-4 focus:ring-[#0066cc]/10 focus:border-[#0066cc] flex-1 sm:flex-initial"
                     />
                     {queueDate !== getLocalDateString() && (
                       <button
@@ -1019,7 +1060,7 @@ export const ReceptionistDashboard: React.FC = () => {
                     value={queueSearch}
                     onChange={(e) => setQueueSearch(e.target.value)}
                     placeholder="Search patient, phone, token..."
-                    className="w-full h-10 pl-9 pr-8 rounded-full border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
+                    className="w-full h-10 pl-9 pr-8 rounded-full border border-[#e5e5ea] text-base sm:text-xs bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
                   />
                   {queueSearch && (
                     <button
@@ -1093,28 +1134,21 @@ export const ReceptionistDashboard: React.FC = () => {
 
               {/* Queue Content */}
               {linkedDoctors.length === 0 ? (
-                <div className="py-14 text-center">
-                  <p className="text-sm font-semibold text-[#1d1d1f]">No Doctors Assigned</p>
-                  <p className="text-xs text-[#86868b] mt-1 max-w-sm mx-auto">
-                    Ask your clinic administrator to assign practitioners to your reception desk.
-                  </p>
-                </div>
+                <EmptyState
+                  icon={Users}
+                  title="No Doctors Assigned"
+                  description="Ask your clinic administrator to assign practitioners to your reception desk."
+                />
               ) : queueLoading ? (
                 <div className="py-14 text-center text-xs text-[#86868b]">Loading live queue...</div>
               ) : queueAppointments.length === 0 ? (
-                <div className="py-14 text-center">
-                  <p className="text-sm font-semibold text-[#1d1d1f]">No Patients in Queue</p>
-                  <p className="text-xs text-[#86868b] mt-1 mb-4">
-                    No appointments scheduled for {queueDate}.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('walkin')}
-                    className="h-9 px-4 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-medium transition-all active:scale-[0.98] cursor-pointer"
-                  >
-                    Issue Walk-in Token
-                  </button>
-                </div>
+                <EmptyState
+                  icon={Clock}
+                  title="No Patients in Queue"
+                  description={`No appointments scheduled for ${queueDate}.`}
+                  actionText="Issue Walk-in Token"
+                  onAction={() => setActiveTab('walkin')}
+                />
               ) : (() => {
                 const filteredAppointments = queueAppointments.filter((appt) => {
                   if (statusFilter !== 'ALL' && appt.status !== statusFilter) return false;
@@ -1485,12 +1519,7 @@ export const ReceptionistDashboard: React.FC = () => {
                               {appt.status === 'WAITING' && (
                                 <button
                                   type="button"
-                                  onClick={() => {
-                                    if (!window.confirm(`Are you sure you want to cancel the queue appointment for ${appt.patientName}? This action cannot be undone.`)) {
-                                      return;
-                                    }
-                                    handleStatusChange(appt.id, 'CANCELLED');
-                                  }}
+                                  onClick={() => handleStatusChange(appt.id, 'CANCELLED')}
                                   className="h-8 px-3 rounded-full text-[#86868b] hover:text-rose-600 hover:bg-rose-50 text-xs font-medium border border-[#e5e5ea] transition-all cursor-pointer"
                                 >
                                   Cancel
@@ -1629,7 +1658,7 @@ export const ReceptionistDashboard: React.FC = () => {
                           min={getLocalDateString()}
                           value={appointmentDate}
                           onChange={(e) => setAppointmentDate(e.target.value)}
-                          className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all"
+                          className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all"
                         />
                       </div>
 
@@ -1642,7 +1671,7 @@ export const ReceptionistDashboard: React.FC = () => {
                             value={slotId}
                             onChange={(e) => setSlotId(e.target.value)}
                             disabled={!activeSelectedDoctor?.slots || activeSelectedDoctor.slots.length === 0}
-                            className="w-full h-11 pl-3.5 pr-8 rounded-xl border border-[#d2d2d7] bg-white text-[13px] text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all appearance-none cursor-pointer disabled:bg-[#f5f5f7] disabled:text-[#86868b] disabled:cursor-not-allowed"
+                            className="w-full h-11 pl-3.5 pr-8 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all appearance-none cursor-pointer disabled:bg-[#f5f5f7] disabled:text-[#86868b] disabled:cursor-not-allowed"
                           >
                             {!activeSelectedDoctor?.slots || activeSelectedDoctor.slots.length === 0 ? (
                               <option value="">No shifts configured</option>
@@ -1798,7 +1827,7 @@ export const ReceptionistDashboard: React.FC = () => {
                             value={patientName}
                             onChange={(e) => setPatientName(e.target.value)}
                             placeholder="e.g. Rahul Ray"
-                            className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all"
+                            className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all"
                           />
                         </div>
 
@@ -1818,7 +1847,7 @@ export const ReceptionistDashboard: React.FC = () => {
                               onChange={(e) => setPatientPhone(sanitizeIndianPhone(e.target.value))}
                               placeholder="98765 43210"
                               maxLength={10}
-                              className="flex-1 h-full px-3.5 text-[14px] bg-transparent focus:outline-none text-[#1d1d1f] placeholder:text-[#a1a1a6]"
+                              className="flex-1 h-full px-3.5 text-base sm:text-sm bg-transparent focus:outline-none text-[#1d1d1f] placeholder:text-[#a1a1a6]"
                             />
                           </div>
                         </div>
@@ -1834,7 +1863,7 @@ export const ReceptionistDashboard: React.FC = () => {
                             value={patientAge}
                             onChange={(e) => setPatientAge(e.target.value)}
                             placeholder="e.g. 28"
-                            className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all"
+                            className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all"
                           />
                         </div>
 
@@ -1846,7 +1875,7 @@ export const ReceptionistDashboard: React.FC = () => {
                             <select
                               value={gender}
                               onChange={(e) => setGender(e.target.value)}
-                              className="w-full h-11 pl-3 pr-8 rounded-xl border border-[#d2d2d7] bg-white text-[13px] text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all appearance-none cursor-pointer"
+                              className="w-full h-11 pl-3 pr-8 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all appearance-none cursor-pointer"
                             >
                               <option value="Not Specified">Select</option>
                               <option value="Male">Male</option>
@@ -1866,7 +1895,7 @@ export const ReceptionistDashboard: React.FC = () => {
                             value={reasonForVisit}
                             onChange={(e) => setReasonForVisit(e.target.value)}
                             placeholder="e.g. Fever, general checkup"
-                            className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all"
+                            className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all"
                           />
                         </div>
                       </div>
@@ -1980,7 +2009,7 @@ export const ReceptionistDashboard: React.FC = () => {
                       value={pendingSearch}
                       onChange={(e) => setPendingSearch(e.target.value)}
                       placeholder="Search patient, phone, doctor..."
-                      className="w-full h-9 pl-9 pr-8 rounded-full border border-[#e5e5ea] text-xs bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
+                      className="w-full h-10 sm:h-9 pl-9 pr-8 rounded-full border border-[#e5e5ea] text-base sm:text-xs bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
                     />
                     {pendingSearch && (
                       <button
@@ -2000,12 +2029,11 @@ export const ReceptionistDashboard: React.FC = () => {
                   Loading pending online bookings...
                 </div>
               ) : pendingAppointments.length === 0 ? (
-                <div className="py-14 text-center">
-                  <p className="font-semibold text-sm text-[#1d1d1f]">All Bookings Processed</p>
-                  <p className="mt-1 text-xs text-[#86868b]">
-                    No online bookings are awaiting reception confirmation.
-                  </p>
-                </div>
+                <EmptyState
+                  icon={CheckCircle2}
+                  title="All Bookings Processed"
+                  description="No online bookings are awaiting reception confirmation. New patient booking requests will appear here instantly."
+                />
               ) : (() => {
                 const filteredPending = pendingAppointments.filter((appt) => {
                   if (!pendingSearch.trim()) return true;
@@ -2164,12 +2192,11 @@ export const ReceptionistDashboard: React.FC = () => {
               </div>
 
               {linkedDoctors.length === 0 ? (
-                <div className="py-14 text-center">
-                  <p className="font-semibold text-sm text-[#1d1d1f]">No Doctors Assigned Yet</p>
-                  <p className="mt-1 text-xs text-[#86868b]">
-                    Please ask your Clinic Administrator to assign practitioners to your desk.
-                  </p>
-                </div>
+                <EmptyState
+                  icon={Users}
+                  title="No Doctors Assigned Yet"
+                  description="Please ask your Clinic Administrator to assign practitioners to your reception desk."
+                />
               ) : (
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
                   {linkedDoctors.map((doc) => (
@@ -2447,7 +2474,12 @@ export const ReceptionistDashboard: React.FC = () => {
 
       {/* 3. Guaranteed Queue Token Pass Modal */}
       {bookedPass && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn print:hidden">
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn print:hidden"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setBookedPass(null);
+          }}
+        >
           <div className="bg-white rounded-t-[28px] sm:rounded-[28px] border border-[#e5e5ea] max-w-md w-full p-6 sm:p-7 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-7 shadow-[0_12px_40px_rgba(0,0,0,0.08)] max-h-[92vh] overflow-y-auto">
             <div className="sm:hidden w-10 h-1 bg-[#d2d2d7] rounded-full mx-auto mb-3" />
             <div className="flex items-start justify-between pb-4 border-b border-[#f0f0f2]">
@@ -2615,7 +2647,7 @@ export const ReceptionistDashboard: React.FC = () => {
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
                   placeholder="Enter temporary password"
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all"
                 />
               </div>
 
@@ -2630,7 +2662,7 @@ export const ReceptionistDashboard: React.FC = () => {
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   placeholder="Min. 8 characters"
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all"
                 />
               </div>
 
@@ -2644,7 +2676,7 @@ export const ReceptionistDashboard: React.FC = () => {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="Re-enter new password"
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all"
                 />
               </div>
 
@@ -2675,7 +2707,12 @@ export const ReceptionistDashboard: React.FC = () => {
 
       {/* Reschedule Appointment Modal */}
       {rescheduleTarget && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn print:hidden">
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn print:hidden"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setRescheduleTarget(null);
+          }}
+        >
           <div className="bg-white rounded-t-[28px] sm:rounded-[28px] border border-[#e5e5ea] max-w-md w-full p-6 sm:p-7 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-7 shadow-2xl space-y-5 max-h-[92vh] overflow-y-auto">
             <div className="sm:hidden w-10 h-1 bg-[#d2d2d7] rounded-full mx-auto mb-3" />
             <div className="flex items-start justify-between pb-3 border-b border-[#f0f0f2]">
@@ -2721,7 +2758,7 @@ export const ReceptionistDashboard: React.FC = () => {
                 min={getLocalDateString()}
                 value={rescheduleDate}
                 onChange={(e) => setRescheduleDate(e.target.value)}
-                className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] text-[14px] bg-white text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:ring-4 focus:ring-[#0066cc]/10 focus:border-[#0066cc]"
+                className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] text-base sm:text-sm bg-white text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:ring-4 focus:ring-[#0066cc]/10 focus:border-[#0066cc]"
               />
               <div className="flex gap-2 mt-2">
                 <button
@@ -2761,7 +2798,7 @@ export const ReceptionistDashboard: React.FC = () => {
                     <select
                       value={rescheduleSlotId}
                       onChange={(e) => setRescheduleSlotId(e.target.value)}
-                      className="w-full h-11 pl-3.5 pr-9 rounded-xl border border-[#d2d2d7] text-[13px] bg-white text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:ring-4 focus:ring-[#0066cc]/10 focus:border-[#0066cc] appearance-none cursor-pointer"
+                      className="w-full h-11 pl-3.5 pr-9 rounded-xl border border-[#d2d2d7] text-base sm:text-sm bg-white text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:ring-4 focus:ring-[#0066cc]/10 focus:border-[#0066cc] appearance-none cursor-pointer"
                     >
                       <option value="">Standard Hours / Any Shift</option>
                       {doc.slots.map((s) => (

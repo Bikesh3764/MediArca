@@ -95,7 +95,7 @@ export const SearchableSpecialtySelect: React.FC<SearchableSpecialtySelectProps>
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
-          className={`h-8 px-3 rounded-full border text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer select-none ${
+          className={`h-8 px-3 rounded-full border text-xs font-medium transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer select-none ${
             value && value !== 'All'
               ? 'bg-[#0066cc]/10 border-[#0066cc]/30 text-[#0066cc] font-semibold'
               : 'border-[#e5e5ea] bg-[#f5f5f7] text-[#48484a] hover:bg-[#ebebee]'
@@ -127,7 +127,7 @@ export const SearchableSpecialtySelect: React.FC<SearchableSpecialtySelectProps>
           <button
             type="button"
             onClick={() => setIsOpen(!isOpen)}
-            className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:border-[#0066cc]/60 focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 flex items-center justify-between text-left cursor-pointer"
+            className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:border-[#0066cc]/60 focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 flex items-center justify-between text-left cursor-pointer select-none"
           >
             <span className="truncate">{displayLabel}</span>
             <ChevronDown
@@ -149,7 +149,7 @@ export const SearchableSpecialtySelect: React.FC<SearchableSpecialtySelectProps>
                 value={customValue}
                 onChange={(e) => onCustomChange?.(e.target.value)}
                 placeholder="e.g. Trichology, Diabetology, Pediatric Cardiology"
-                className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
               />
             </div>
           )}
@@ -173,7 +173,7 @@ export const SearchableSpecialtySelect: React.FC<SearchableSpecialtySelectProps>
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search 30+ specialties..."
-                className="w-full h-8 pl-8 pr-7 bg-white text-xs text-[#1d1d1f] placeholder-[#86868b] rounded-lg border border-[#e5e5ea] focus:outline-none focus:border-[#0066cc] focus:ring-1 focus:ring-[#0066cc] transition-all"
+                className="w-full h-8 pl-8 pr-7 bg-white text-base sm:text-xs text-[#1d1d1f] placeholder-[#86868b] rounded-lg border border-[#e5e5ea] focus:outline-none focus:border-[#0066cc] focus:ring-1 focus:ring-[#0066cc] transition-all"
               />
               {searchQuery && (
                 <button

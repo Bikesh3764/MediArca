@@ -18,9 +18,11 @@ import {
   Calendar,
 } from 'lucide-react';
 import { AvatarCropModal } from '../../components/ui/AvatarCropModal';
+import { useToast } from '../../context/ToastContext';
 
 export const DoctorProfile: React.FC = () => {
   const { user, updateUser, refreshUser } = useAuth();
+  const { toast } = useToast();
 
   const [fullName, setFullName] = useState(user?.fullName || '');
   const [phone, setPhone] = useState(user?.phone || '');
@@ -158,8 +160,11 @@ export const DoctorProfile: React.FC = () => {
       updateUser(updatedUser);
       await refreshUser();
       setSuccessMsg('Doctor profile saved.');
+      toast.success('Doctor profile saved successfully');
     } catch (err: any) {
-      setErrorMsg(err.message || 'Failed to update doctor profile. Please try again.');
+      const errMsg = err.message || 'Failed to update doctor profile. Please try again.';
+      setErrorMsg(errMsg);
+      toast.error(errMsg);
     } finally {
       setSaving(false);
     }
@@ -199,7 +204,7 @@ export const DoctorProfile: React.FC = () => {
       navItems={navItems}
       title="Profile & Settings"
     >
-      <div className="max-w-4xl space-y-6">
+      <div className="max-w-4xl space-y-6 pb-24 md:pb-16 pb-safe">
         {successMsg && (
           <div className="p-3.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] text-xs flex items-center gap-2.5">
             <CheckCircle2 className="w-4 h-4 text-[#0066cc] flex-shrink-0" />
@@ -284,7 +289,7 @@ export const DoctorProfile: React.FC = () => {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="Dr. Rajesh Verma"
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
 
@@ -307,7 +312,7 @@ export const DoctorProfile: React.FC = () => {
                     }}
                     placeholder="98765 43210"
                     maxLength={10}
-                    className="w-full h-full px-3.5 bg-transparent text-[14px] font-medium text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:outline-none"
+                    className="w-full h-full px-3.5 bg-transparent text-base sm:text-sm font-medium text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:outline-none"
                   />
                 </div>
               </div>
@@ -336,7 +341,7 @@ export const DoctorProfile: React.FC = () => {
                   value={qualifications}
                   onChange={(e) => setQualifications(e.target.value)}
                   placeholder="MBBS, MD"
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
 
@@ -350,7 +355,7 @@ export const DoctorProfile: React.FC = () => {
                   max={80}
                   value={experienceYears}
                   onChange={(e) => setExperienceYears(Number(e.target.value))}
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
             </div>
@@ -364,7 +369,7 @@ export const DoctorProfile: React.FC = () => {
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
                 placeholder="Clinical background and focus areas"
-                className="w-full p-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                className="w-full p-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
               />
             </div>
           </UtilityCard>

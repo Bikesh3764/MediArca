@@ -6,8 +6,10 @@ import { AlertCircle, Eye, EyeOff, ChevronDown, RefreshCw, CheckCircle2 } from '
 import { api, ClinicProfile } from '../../services/api';
 import { sanitizeIndianPhone, formatIndianPhone, isValidIndianPhone } from '../../utils/phoneUtils';
 import { EmailVerificationModal } from '../../components/auth/EmailVerificationModal';
+import { useToast } from '../../context/ToastContext';
 
 export const ReceptionistAuth: React.FC = () => {
+  const { toast } = useToast();
   const [authMode, setAuthMode] = useState<'login' | 'apply'>('login');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -65,7 +67,9 @@ export const ReceptionistAuth: React.FC = () => {
         setError(null);
         return;
       }
-      setError(err.message || 'Invalid receptionist credentials');
+      const msg = err.message || 'Invalid receptionist credentials';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setSubmitting(false);
     }
@@ -100,9 +104,12 @@ export const ReceptionistAuth: React.FC = () => {
         const currentUser = await api.getMe();
         updateUser({ ...currentUser, mustChangePassword: false });
       }
+      toast.success('Password updated successfully');
       navigate('/receptionist/dashboard');
     } catch (err: any) {
-      setError(err.message || 'Failed to update permanent password');
+      const msg = err.message || 'Failed to update permanent password';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setChangingPassword(false);
     }
@@ -190,12 +197,15 @@ export const ReceptionistAuth: React.FC = () => {
       });
 
       setApplySuccessClinic(selectedClinic?.clinicName || 'the clinic');
+      toast.success('Receptionist application submitted for clinic review');
       setApplyFullName('');
       setApplyEmail('');
       setApplyPhone('');
       setApplyPassword('');
     } catch (err: any) {
-      setError(err.message || 'Failed to submit receptionist application.');
+      const msg = err.message || 'Failed to submit receptionist application.';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setSubmitting(false);
     }
@@ -203,7 +213,7 @@ export const ReceptionistAuth: React.FC = () => {
 
   if (mustChangePasswordState) {
     return (
-      <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center py-8 sm:py-12 px-4 sm:px-6">
+      <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center py-8 sm:py-12 px-4 sm:px-6 pb-24 sm:pb-12 pb-safe">
         <div className="max-w-[450px] w-full">
           <div className="bg-white rounded-[28px] border border-[#e5e5ea] shadow-[0_12px_40px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,0,0,0.03)] p-6 sm:p-7">
             <div className="flex flex-col items-center text-center mb-6">
@@ -233,7 +243,7 @@ export const ReceptionistAuth: React.FC = () => {
                   value={tempPassword}
                   onChange={(e) => setTempPassword(e.target.value)}
                   placeholder="Enter temporary password"
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
 
@@ -248,7 +258,7 @@ export const ReceptionistAuth: React.FC = () => {
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   placeholder="Min. 8 characters"
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
 
@@ -263,7 +273,7 @@ export const ReceptionistAuth: React.FC = () => {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="Confirm new password"
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
 
@@ -327,7 +337,7 @@ export const ReceptionistAuth: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center py-8 sm:py-12 px-4 sm:px-6">
+    <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center py-8 sm:py-12 px-4 sm:px-6 pb-24 sm:pb-12 pb-safe">
       <div className="max-w-[450px] w-full">
         <div className="bg-white rounded-[28px] border border-[#e5e5ea] shadow-[0_12px_40px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,0,0,0.03)] p-6 sm:p-7">
           {/* Brand & Header */}
@@ -413,7 +423,7 @@ export const ReceptionistAuth: React.FC = () => {
                   value={applyFullName}
                   onChange={(e) => setApplyFullName(e.target.value)}
                   placeholder="Your full legal name"
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
 
@@ -427,7 +437,7 @@ export const ReceptionistAuth: React.FC = () => {
                   value={applyEmail}
                   onChange={(e) => setApplyEmail(e.target.value)}
                   placeholder="name@domain.com"
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
 
@@ -447,7 +457,7 @@ export const ReceptionistAuth: React.FC = () => {
                     onChange={(e) => setApplyPhone(sanitizeIndianPhone(e.target.value))}
                     placeholder="98765 43210"
                     maxLength={10}
-                    className="flex-1 h-full px-3.5 bg-transparent text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:outline-none"
+                    className="flex-1 h-full px-3.5 bg-transparent text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:outline-none"
                   />
                 </div>
               </div>
@@ -462,7 +472,7 @@ export const ReceptionistAuth: React.FC = () => {
                     required
                     value={applyClinicId}
                     onChange={(e) => setApplyClinicId(e.target.value)}
-                    className="w-full h-11 pl-3.5 pr-8 rounded-xl border border-[#d2d2d7] bg-white text-[13px] text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 appearance-none cursor-pointer"
+                    className="w-full h-11 pl-3.5 pr-8 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 appearance-none cursor-pointer"
                   >
                     {clinics.length === 0 ? (
                       <option value="">No verified clinics available</option>
@@ -489,7 +499,7 @@ export const ReceptionistAuth: React.FC = () => {
                   value={applyPassword}
                   onChange={(e) => setApplyPassword(e.target.value)}
                   placeholder="Min. 8 characters"
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
 
@@ -522,7 +532,7 @@ export const ReceptionistAuth: React.FC = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="receptionist@domain.com"
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
 
@@ -537,7 +547,7 @@ export const ReceptionistAuth: React.FC = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter password"
-                    className="w-full h-11 pl-3.5 pr-10 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                    className="w-full h-11 pl-3.5 pr-10 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                   />
                   <button
                     type="button"

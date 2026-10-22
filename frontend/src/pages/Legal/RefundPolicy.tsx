@@ -3,7 +3,7 @@ import { CheckCircle2 } from 'lucide-react';
 
 export const RefundPolicy: React.FC = () => {
   return (
-    <div className="min-h-screen bg-[#f5f5f7] text-[#1d1d1f] py-10 sm:py-16 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#f5f5f7] text-[#1d1d1f] py-10 sm:py-16 px-4 sm:px-6 lg:px-8 pb-24 sm:pb-16 pb-safe">
       <div className="max-w-3xl mx-auto space-y-8">
         {/* Header (No pill badge) */}
         <div className="space-y-2">

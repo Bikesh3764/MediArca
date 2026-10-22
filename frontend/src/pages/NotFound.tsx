@@ -7,7 +7,7 @@ export const NotFound: React.FC = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-[82vh] bg-[#f5f5f7] flex items-center justify-center p-4 sm:p-6 lg:p-8 select-none">
+    <div className="min-h-[82vh] bg-[#f5f5f7] flex items-center justify-center p-4 sm:p-6 lg:p-8 pb-24 sm:pb-8 pb-safe select-none">
       <div className="max-w-[520px] w-full bg-white rounded-[28px] border border-[#e5e5ea] shadow-[0_20px_50px_rgba(0,0,0,0.06),0_2px_10px_rgba(0,0,0,0.02)] p-7 sm:p-10 text-center space-y-6">
         
         {/* Subtle Apple 404 Badge */}

@@ -20,7 +20,7 @@ export const AppleButton: React.FC<AppleButtonProps> = ({
   ...props
 }) => {
   let baseClass =
-    'inline-flex items-center justify-center font-normal transition-all duration-200 active:scale-95 disabled:opacity-40 disabled:pointer-events-none cursor-pointer';
+    'inline-flex items-center justify-center font-normal transition-all duration-150 ease-out active:scale-[0.97] disabled:opacity-40 disabled:pointer-events-none cursor-pointer select-none';
 
   let variantClass = '';
   switch (variant) {

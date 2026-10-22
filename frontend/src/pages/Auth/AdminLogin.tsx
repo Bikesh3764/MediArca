@@ -3,8 +3,10 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { BrandLogo } from '../../components/ui/BrandLogo';
 import { Eye, EyeOff, AlertCircle, ArrowLeft, CheckCircle2, RefreshCw } from 'lucide-react';
+import { useToast } from '../../context/ToastContext';
 
 export const AdminLogin: React.FC = () => {
+  const { toast } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -36,11 +38,14 @@ export const AdminLogin: React.FC = () => {
       }
 
       setAuthenticated(true);
+      toast.success('Administrator authenticated');
       setTimeout(() => {
         navigate('/admin', { replace: true });
       }, 500);
     } catch (err: any) {
-      setError(err.message || 'Invalid administrative credentials or account not found');
+      const msg = err.message || 'Invalid administrative credentials or account not found';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setSubmitting(false);
     }
@@ -70,7 +75,7 @@ export const AdminLogin: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f5f5f7] flex flex-col justify-center py-8 sm:py-12 px-4 sm:px-6">
+    <div className="min-h-screen bg-[#f5f5f7] flex flex-col justify-center py-8 sm:py-12 px-4 sm:px-6 pb-24 sm:pb-12 pb-safe">
       <div className="sm:mx-auto sm:w-full sm:max-w-[440px]">
         <div className="bg-white rounded-[28px] border border-[#e5e5ea] shadow-[0_12px_40px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,0,0,0.03)] p-6 sm:p-7">
           {/* Brand & Header */}
@@ -108,7 +113,7 @@ export const AdminLogin: React.FC = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter Administrator ID"
-                className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 disabled={submitting || authenticated}
               />
             </div>
@@ -124,7 +129,7 @@ export const AdminLogin: React.FC = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter password"
-                  className="w-full h-11 pl-3.5 pr-10 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                  className="w-full h-11 pl-3.5 pr-10 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                   disabled={submitting || authenticated}
                 />
                 <button

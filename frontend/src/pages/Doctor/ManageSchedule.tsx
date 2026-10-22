@@ -15,6 +15,7 @@ import { useAuth } from '../../context/AuthContext';
 import { DashboardLayout, DashboardNavItem } from '../../components/layout/DashboardLayout';
 import { UtilityCard } from '../../components/ui/UtilityCard';
 import { DoctorScheduleLeaveModal } from '../../components/common/DoctorScheduleLeaveModal';
+import { useToast } from '../../context/ToastContext';
 import {
   CheckCircle2,
   ChevronLeft,
@@ -44,6 +45,7 @@ const minutesToTime = (mins: number): string => {
 export const ManageSchedule: React.FC = () => {
   const { user, loading: loadingAuth, refreshUser } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [clinics, setClinics] = useState<DoctorAffiliationClinic[]>([]);
@@ -422,11 +424,11 @@ export const ManageSchedule: React.FC = () => {
       });
 
       await refreshUser();
-      setSuccessMsg(
-        selectedClinic
-          ? `Practice schedule & consultation fee for ${selectedClinic.clinicName} updated successfully!`
-          : 'Independent practice schedule & consultation fee updated successfully!'
-      );
+      const msg = selectedClinic
+        ? `Practice schedule & consultation fee for ${selectedClinic.clinicName} updated successfully!`
+        : 'Independent practice schedule & consultation fee updated successfully!';
+      setSuccessMsg(msg);
+      toast.success(msg);
       if (selectedClinic) {
         setClinics((prev) =>
           prev.map((c) =>
@@ -437,7 +439,9 @@ export const ManageSchedule: React.FC = () => {
         );
       }
     } catch (err: any) {
-      setError(err.message || 'Failed to update schedule');
+      const errMsg = err.message || 'Failed to update schedule';
+      setError(errMsg);
+      toast.error(errMsg);
     } finally {
       setSaving(false);
     }
@@ -460,7 +464,7 @@ export const ManageSchedule: React.FC = () => {
         </button>
       }
     >
-      <div className="max-w-4xl space-y-6">
+      <div className="max-w-4xl space-y-6 pb-24 md:pb-16 pb-safe">
         {loadingClinics ? (
           <div className="h-64 rounded-[24px] bg-white border border-[#e5e5ea] animate-pulse p-8" />
         ) : (
@@ -513,7 +517,7 @@ export const ManageSchedule: React.FC = () => {
                       <select
                         value={selectedClinicId}
                         onChange={(e) => handleClinicChange(e.target.value)}
-                        className="h-11 pl-3.5 pr-9 rounded-xl border border-[#d2d2d7] text-[14px] font-medium text-[#1d1d1f] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 appearance-none cursor-pointer transition-all"
+                        className="h-11 pl-3.5 pr-9 rounded-xl border border-[#d2d2d7] text-base sm:text-sm font-medium text-[#1d1d1f] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 appearance-none cursor-pointer transition-all"
                       >
                         {clinics.map((c) => (
                           <option key={c.clinicId} value={c.clinicId}>
@@ -660,7 +664,7 @@ export const ManageSchedule: React.FC = () => {
                             value={slot.name}
                             onChange={(e) => handleSlotChange(idx, 'name', e.target.value)}
                             placeholder={`Shift ${idx + 1}`}
-                            className="text-[15px] font-semibold text-[#1d1d1f] bg-transparent border-b border-transparent hover:border-[#d2d2d7] focus:border-[#0066cc] focus:outline-none px-1 py-0.5 transition-all truncate"
+                            className="text-base sm:text-sm font-semibold text-[#1d1d1f] bg-transparent border-b border-transparent hover:border-[#d2d2d7] focus:border-[#0066cc] focus:outline-none px-1 py-0.5 transition-all truncate"
                           />
                         </div>
 
@@ -687,7 +691,7 @@ export const ManageSchedule: React.FC = () => {
                             required
                             value={slot.startTime}
                             onChange={(e) => handleSlotChange(idx, 'startTime', e.target.value)}
-                            className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                            className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                           />
                         </div>
 
@@ -700,7 +704,7 @@ export const ManageSchedule: React.FC = () => {
                             required
                             value={slot.endTime}
                             onChange={(e) => handleSlotChange(idx, 'endTime', e.target.value)}
-                            className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                            className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                           />
                         </div>
 
@@ -722,7 +726,7 @@ export const ManageSchedule: React.FC = () => {
                               )
                             }
                             placeholder="20"
-                            className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                            className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                           />
                         </div>
 
@@ -744,7 +748,7 @@ export const ManageSchedule: React.FC = () => {
                               )
                             }
                             placeholder="25"
-                            className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-[14px] text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                            className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                           />
                         </div>
                       </div>
@@ -770,7 +774,7 @@ export const ManageSchedule: React.FC = () => {
                         value={consultationFee}
                         onChange={(e) => setConsultationFee(Number(e.target.value))}
                         placeholder="500"
-                        className="w-full h-full px-3.5 bg-transparent text-[14px] font-medium text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:outline-none"
+                        className="w-full h-full px-3.5 bg-transparent text-base sm:text-sm font-medium text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:outline-none"
                       />
                     </div>
                   </div>

@@ -97,7 +97,7 @@ export const ClinicCheckIn: React.FC = () => {
   const hasQueryParams = Boolean(clinicId);
 
   return (
-    <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center p-4 sm:p-6">
+    <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center p-4 sm:p-6 pb-24 sm:pb-6 pb-safe">
       <div className="max-w-md w-full">
         <div className="bg-white rounded-[28px] border border-[#e5e5ea] shadow-[0_24px_60px_rgba(0,0,0,0.08),0_2px_10px_rgba(0,0,0,0.03)] p-6 sm:p-8">
           <div className="mb-6">
