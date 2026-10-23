@@ -24,7 +24,6 @@ import {
   ShieldAlert,
   Clock,
   QrCode,
-  Printer,
   RefreshCw,
 } from 'lucide-react';
 
@@ -223,7 +222,7 @@ export const ClinicProfile: React.FC = () => {
         <div className="flex items-center gap-2">
           <Link
             to="/clinic/dashboard"
-            className="h-9 px-3.5 rounded-full bg-white hover:bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-medium flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+            className="h-9 px-4 rounded-full bg-white hover:bg-[#f5f5f7] active:scale-[0.98] text-[#1d1d1f] border border-[#d2d2d7] text-xs font-medium flex items-center gap-2 shadow-[0_1px_2px_rgba(0,0,0,0.03)] transition-all cursor-pointer"
           >
             <Building2 className="w-3.5 h-3.5 text-[#0066cc]" />
             <span>Return to Dashboard</span>
@@ -286,9 +285,6 @@ export const ClinicProfile: React.FC = () => {
                 <h4 className="text-[15px] font-semibold text-[#1d1d1f] tracking-tight">
                   {clinicName || 'Clinic Facility Logo'}
                 </h4>
-                <p className="text-xs text-[#86868b] mt-0.5 leading-relaxed">
-                  Upload a high-resolution logo or clinic exterior photo. Visible to patients during discovery and on digital booking passes.
-                </p>
               </div>
 
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-1">
@@ -296,10 +292,10 @@ export const ClinicProfile: React.FC = () => {
                   type="button"
                   disabled={avatarLoading}
                   onClick={() => avatarInputRef.current?.click()}
-                  className="h-9 px-4 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                  className="h-9 px-4 rounded-full bg-white hover:bg-[#f5f5f7] active:scale-[0.98] text-[#1d1d1f] border border-[#d2d2d7] text-xs font-medium flex items-center gap-2 shadow-[0_1px_2px_rgba(0,0,0,0.03)] transition-all cursor-pointer disabled:opacity-50"
                 >
                   <Camera className="w-3.5 h-3.5 text-[#86868b]" />
-                  <span>{avatarLoading ? 'Uploading Photo...' : 'Upload New Photo'}</span>
+                  <span>{avatarLoading ? 'Uploading...' : 'Upload Photo'}</span>
                 </button>
               </div>
 
@@ -341,21 +337,18 @@ export const ClinicProfile: React.FC = () => {
             <div className="p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] flex flex-col justify-between sm:flex-row sm:items-center gap-3">
               <div className="space-y-0.5 min-w-0">
                 <span className="text-xs font-medium text-[#86868b]">Arrival Check-In</span>
-                <p className="text-xs font-semibold text-[#1d1d1f] flex items-center gap-1.5">
-                  <QrCode className="w-3.5 h-3.5 text-[#0066cc]" />
-                  <span>Physical QR Standee (Phone Camera Only)</span>
-                </p>
-                <p className="text-[11px] text-[#86868b] leading-tight">
-                  Arriving patients scan your front-desk poster to verify physical arrival.
-                </p>
+                <div className="flex items-center gap-1.5 pt-0.5">
+                  <QrCode className="w-4 h-4 text-[#0066cc] shrink-0" />
+                  <span className="text-xs font-semibold text-[#1d1d1f]">Front-Desk QR Code</span>
+                </div>
               </div>
               <button
                 type="button"
                 onClick={() => setStandeeModalOpen(true)}
-                className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-full bg-white hover:bg-[#e8e8ed] text-xs font-medium text-[#0066cc] border border-[#d2d2d7] transition-all cursor-pointer shrink-0 shadow-xs active:scale-[0.98]"
+                className="inline-flex items-center justify-center gap-1.5 h-9 px-4 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-xs font-medium shadow-[0_1px_2px_rgba(0,102,204,0.25)] transition-all cursor-pointer shrink-0"
               >
-                <Printer className="w-3.5 h-3.5" />
-                <span>View Standee</span>
+                <QrCode className="w-3.5 h-3.5" />
+                <span>View QR Code</span>
               </button>
             </div>
           </div>
@@ -367,21 +360,21 @@ export const ClinicProfile: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="sm:col-span-2">
                 <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
-                  Clinic / Hospital / Facility Name <span className="text-rose-500">*</span>
+                  Clinic Name <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
                   required
                   value={clinicName}
                   onChange={(e) => setClinicName(e.target.value)}
-                  placeholder="e.g. Metropolis Polyclinic & Diagnostic Centre"
+                  placeholder="e.g. Metropolis Polyclinic"
                   className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
-                  Facility Mobile / Contact Phone
+                  Contact Phone
                 </label>
                 <div className="flex items-center w-full h-11 rounded-xl border border-[#d2d2d7] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus-within:border-[#0066cc] focus-within:ring-4 focus-within:ring-[#0066cc]/10 transition-all duration-150 overflow-hidden">
                   <span className="h-full px-3.5 bg-[#f5f5f7] border-r border-[#d2d2d7] flex items-center justify-center select-none text-[13px] font-semibold text-[#1d1d1f]">
@@ -401,7 +394,7 @@ export const ClinicProfile: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
-                  Account Login Email (Read Only)
+                  Login Email
                 </label>
                 <input
                   type="email"
@@ -417,14 +410,14 @@ export const ClinicProfile: React.FC = () => {
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
-                  Street Address & Building Details <span className="text-rose-500">*</span>
+                  Street Address <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
                   required
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
-                  placeholder="e.g. Floor 3, 100 Hill Road, Bandra West, Near St. Andrews Church"
+                  placeholder="e.g. Floor 3, 100 Hill Road, Bandra West"
                   className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
@@ -489,22 +482,22 @@ export const ClinicProfile: React.FC = () => {
           <div className="flex items-center justify-end gap-3 pt-2">
             <Link
               to="/clinic/dashboard"
-              className="h-10 px-5 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-semibold transition-all cursor-pointer flex items-center justify-center"
+              className="h-10 px-6 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-black/[0.08] text-xs font-medium transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center"
             >
               Cancel
             </Link>
             <button
               type="submit"
               disabled={saving}
-              className="h-10 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-semibold shadow-sm transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50 flex items-center gap-2"
+              className="h-10 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-medium shadow-[0_1px_2px_rgba(0,102,204,0.25)] transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50 flex items-center gap-2"
             >
               {saving ? (
                 <>
                   <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                  <span>Saving Changes...</span>
+                  <span>Saving...</span>
                 </>
               ) : (
-                'Save Clinic Settings'
+                'Save Changes'
               )}
             </button>
           </div>

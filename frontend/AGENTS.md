@@ -33,7 +33,7 @@ The MediArca frontend is an ultra-fast, mobile-first web application built with 
 3. **Currency Invariant**:
    - Always display fees in Indian Rupee (`₹`). Never use `$`.
 4. **Phone Formatting**:
-   - Render static `+91` country code badges for mobile number inputs. Validate for exactly 10 Indian digits.
+   - Render static `+91` country code badges for mobile number inputs. Validate for exactly 10 Indian digits starting with 6-9. Phone numbers are required on signup, but OTP verification is strictly via Email (`EmailVerificationModal`). No phone OTP or phone uniqueness checks are imposed.
 5. **API Response Resilience**:
    - `frontend/src/services/api.ts` must inspect `Content-Type` before calling `.json()` to gracefully handle reverse proxy HTML errors (502 Bad Gateway / 504 Gateway Timeout) without throwing unhandled `SyntaxError`.
 6. **Linter & Build Hygiene**:

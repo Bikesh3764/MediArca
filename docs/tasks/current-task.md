@@ -26,7 +26,7 @@ Reconcile MediArca feature specifications with active codebase reality, document
     - [x] `003-queue-atomic-transactions.md`
     - [x] `004-currency-localization-inr.md`
     - [x] `005-api-resilience-and-caching.md`
-  - [x] `docs/known-issues.md` (FIX-001..FIX-023 ledger, ARCH/FUNC audit invariants, edge cases, anti-patterns).
+  - [x] `docs/known-issues.md` (FIX-001..FIX-029 ledger, ARCH/FUNC audit invariants, edge cases, anti-patterns).
   - [x] `docs/tasks/current-task.md` (this file).
   - [x] `backend/AGENTS.md` (scoped backend rules).
   - [x] `frontend/AGENTS.md` (scoped frontend rules).
@@ -61,6 +61,7 @@ Reconcile MediArca feature specifications with active codebase reality, document
   - [x] Render calendar and roster weekdays as single-letter Apple circular discs (`M T W T F S S`) inside a parchment pill track, highlighting active days in solid ink `#1d1d1f` and current day with an Action Blue focus ring.
   - [x] Redesign interactive weekday selector in `DoctorScheduleLeaveModal.tsx` and `ManageSchedule.tsx` using Apple `rounded-full` pill buttons (`h-11 rounded-full`), eliminating stacked redundant text ("Mon/Monday", "Sits/Off").
   - [x] Streamline copy across Doctor and Receptionist portals to be ultra-concise: `Shifts`, `Schedule`, `Standee`, `Resume`, `Leave`, `Available`.
+
 - [x] **Fix 28: QR Check-In Instant State Synchronization & Anti-Stale Caching**:
   - [x] Ensure `api.checkInWithQR` returns parsed JSON entity with explicit `message`, `alreadyCheckedIn`, and `data` flags.
   - [x] Optimistically update local `appointments` state upon successful QR scan in `MyAppointments.tsx`, immediately rendering "Checked In at Clinic • Waiting Area" with zero round-trip lag.
@@ -69,13 +70,18 @@ Reconcile MediArca feature specifications with active codebase reality, document
   - [x] Add cache-busting timestamp `_t` and `Cache-Control: no-cache, no-store, must-revalidate` headers to `api.getPatientAppointments` and `api.getAppointmentById`.
   - [x] Add optimistic local presence toggling to `onTogglePresence` in `MyAppointments.tsx`.
 
+- [x] **Fix 29: Silent Polling Updates, QR Code Refinement & Apple Design System**:
+  - [x] Eliminate periodic background polling loading flickers across `ReceptionistDashboard`, `DoctorDashboard`, `ClinicDashboard`, and `MyAppointments`.
+  - [x] Implement silent in-place reactive updates for live queues and online booking approvals via `hasLoadedInitialQueueRef` and silent background polling flags.
+  - [x] Change all user-facing `View Standee` and `QR Standee` labels to `View QR Code` and `QR Code`.
+  - [x] Remove the `Auto-generate` temporary password button and sparkle clutter from receptionist provisioning modal.
+  - [x] Prune verbose explanatory subtitles and boilerplate sentences from Clinic Profile, Receptionist modal, and Dashboard headers.
+  - [x] Embed authentic Apple SF Pro webfont (`SF Pro Text` & `SF Pro Display`) with Google Fonts Inter fallback for crisp typography on Windows and all platforms.
+  - [x] Standardize Apple HIG pill button grammar (`rounded-full`, `#0066cc`, `active:scale-[0.98]`, subtle `#d2d2d7` hairline borders).
+
 - [x] **Alignment & Automated Gates**:
   - [x] Update `PROJECT.md` to reflect current state and completed milestones.
-  - [x] Backend verification suite passes with 0 failures (`npm run test:verify` -> 2,023/2,023 PASS).
+  - [x] Backend verification suite passes with 0 failures (`npm run test:verify` -> 2,081/2,081 PASS).
   - [x] Backend compiles clean (`npm run build`).
   - [x] Frontend linter clean with 0 errors (`npm run lint`).
   - [x] Frontend compiles and builds production bundle (`npm run build`).
-  - [x] Backend verification suite: `npm run test:verify` (2,023 / 2,023 tests PASS).
-  - [x] Backend compilation: `npm run build` (tsc PASS).
-  - [x] Frontend lint: `npm run lint` (0 errors PASS).
-  - [x] Frontend build: `npm run build` (Vite PASS).

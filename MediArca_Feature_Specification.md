@@ -9,7 +9,7 @@ The platform eliminates crowded clinic waiting rooms and chaotic physical queues
 ### Core Architecture Philosophy
 - **Physical Clinic Focus**: MediArca is built strictly for physical outpatient departments (OPD) and clinics. Telemedicine, video consultations, and digital prescription builders are explicitly excluded to keep the software fast, intuitive, and laser-focused on queue efficiency.
 - **Zero-Upfront Payment Policy**: Patients book appointments without paying upfront via automated credit/debit card payment gateways. Instead, online bookings generate an estimated queue token. The patient coordinates payment directly with the clinic receptionist (either over the phone via UPI, or in-person at the front desk upon arrival). The receptionist confirms payment and assigns the official live queue number.
-- **Role-Scoped Access Control**: Distinct, secure portals for Patients, Doctors, Clinics, Receptionists, and System Administrators, allowing multi-role access with one email via `@@unique([email, role])`.
+- **Role-Scoped Access Control**: Distinct, secure portals for Patients, Doctors, Clinics, Receptionists, and System Administrators, allowing multi-role access with one email via `@@unique([email, role])`. Account uniqueness is strictly enforced on `(email, role)`; mobile number uniqueness is not required or enforced, permitting shared family contact numbers. OTP verification is handled strictly via email.
 - **Atomic Queue Concurrency**: Hard database transactions prevent race conditions, ensuring only one patient per doctor can be inside a consultation cabin at any single instant.
 - **Localization**: Strictly formatted for Indian phone numbers (`+91`), Indian Rupee (`₹`), and Indian Standard Time (IST / Asia/Kolkata).
 
@@ -50,7 +50,7 @@ Designed with an Apple Human Interface Guidelines aesthetic to provide an effort
    - **Token Management**: Ability to withdraw or cancel an appointment prior to entering consultation.
 
 4. **Patient Profile & Medical History**:
-   - Profile management including name, verified phone number (`+91`), email, date of birth, blood group, allergies, existing chronic conditions, and emergency contact.
+   - Profile management including name, contact phone number (`+91` 10-digit), email, date of birth, blood group, allergies, existing chronic conditions, and emergency contact (phone numbers are collected and formatted for clinic communication, without phone OTP verification).
 
 ---
 

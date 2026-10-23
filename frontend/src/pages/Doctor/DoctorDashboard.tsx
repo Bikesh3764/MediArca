@@ -1138,11 +1138,11 @@ export const DoctorDashboard: React.FC = () => {
                             });
                             setIsStandeeModalOpen(true);
                           }}
-                          className="h-9 px-3 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-medium flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer"
-                          title="Clinic QR Standee"
+                          className="h-9 px-3.5 rounded-full bg-white hover:bg-[#f5f5f7] text-[#1d1d1f] border border-[#d2d2d7] text-xs font-medium flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] shadow-2xs cursor-pointer"
+                          title="Clinic QR Code"
                         >
                           <QrCode className="w-3.5 h-3.5 text-[#0066cc]" />
-                          <span>Standee</span>
+                          <span>QR Code</span>
                         </button>
                       </div>
                     </div>
@@ -1793,7 +1793,7 @@ export const DoctorDashboard: React.FC = () => {
                     })()}
                   </div>
 
-                  {loading ? (
+                  {loading && !queueData ? (
                     <div className="space-y-3">
                       {[1, 2, 3].map((i) => (
                         <div key={i} className="h-20 rounded-2xl bg-[#f5f5f7] animate-pulse"></div>

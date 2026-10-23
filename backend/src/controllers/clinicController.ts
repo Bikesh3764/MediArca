@@ -1092,16 +1092,19 @@ export const addClinicReceptionist = async (req: AuthRequest, res: Response): Pr
       }
       formattedPhone = formatIndianPhone(trimmedPhone);
 
-      const existingPhoneUser = await findExistingAccountByPhone(prisma, formattedPhone, {
-        role: 'RECEPTIONIST',
-        excludeUserId: existingUser?.id,
-      });
-      if (existingPhoneUser) {
-        res.status(409).json({
-          success: false,
-          message: 'A receptionist account with this mobile number already exists.',
+      // Note: Mobile number uniqueness is disabled as per specification (uniqueness strictly on email).
+      if (false) {
+        const existingPhoneUser = await findExistingAccountByPhone(prisma, formattedPhone, {
+          role: 'RECEPTIONIST',
+          excludeUserId: existingUser?.id,
         });
-        return;
+        if (existingPhoneUser) {
+          res.status(409).json({
+            success: false,
+            message: 'A receptionist account with this mobile number already exists.',
+          });
+          return;
+        }
       }
     }
 
@@ -1589,9 +1592,10 @@ export const updateClinicProfile = async (req: AuthRequest, res: Response): Prom
         formattedPhone = formatIndianPhone(trimmedPhone);
 
         // Enforce mobile number uniqueness per role if changed
-        if (formattedPhone !== clinic.user.phone) {
+        // Note: Mobile number uniqueness is disabled as per specification (uniqueness strictly on email).
+        if (false && clinic && req.user && formattedPhone !== clinic?.user?.phone) {
           const existingPhoneUser = await findExistingAccountByPhone(prisma, formattedPhone, {
-            excludeUserId: req.user.id,
+            excludeUserId: req.user?.id,
             role: 'CLINIC',
           });
           if (existingPhoneUser) {

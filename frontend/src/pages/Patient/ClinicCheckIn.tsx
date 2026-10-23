@@ -129,7 +129,7 @@ export const ClinicCheckIn: React.FC = () => {
                     2
                   </div>
                   <div>
-                    <p className="text-xs font-semibold text-[#1d1d1f]">Scan QR Standee</p>
+                    <p className="text-xs font-semibold text-[#1d1d1f]">Scan QR Code</p>
                     <p className="text-[11px] text-[#86868b] mt-0.5">Open your phone camera to scan the reception desk display.</p>
                   </div>
                 </div>

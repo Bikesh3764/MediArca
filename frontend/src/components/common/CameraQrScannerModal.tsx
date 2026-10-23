@@ -203,10 +203,10 @@ export const CameraQrScannerModal: React.FC<CameraQrScannerModalProps> = ({
         {/* Header */}
         <div className="mb-5">
           <h2 className="text-[22px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">
-            Scan Clinic QR Standee
+            Scan Clinic QR Code
           </h2>
           <p className="text-xs text-[#86868b] mt-1 leading-relaxed">
-            Point your device camera at the reception desk QR code to confirm physical arrival.
+            Point your device camera at the front desk QR code to confirm arrival.
           </p>
         </div>
 
@@ -220,7 +220,7 @@ export const CameraQrScannerModal: React.FC<CameraQrScannerModalProps> = ({
             </div>
             <div className="p-3 bg-white rounded-xl border border-[#e5e5ea] text-left">
               <p className="text-[11px] text-[#48484a] leading-relaxed">
-                Please allow camera access in your browser settings to scan the standee, or notify the reception desk staff in person to mark your arrival.
+                Please allow camera access in your browser settings to scan the QR code, or notify the front desk to confirm arrival.
               </p>
             </div>
           </div>

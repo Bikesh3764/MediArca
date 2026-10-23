@@ -219,6 +219,7 @@ export const ReceptionistDashboard: React.FC = () => {
   const selectedDoctorIdRef = useRef(selectedDoctorId);
   const queueDoctorIdRef = useRef(queueDoctorId);
   const slotIdRef = useRef(slotId);
+  const [hasLoadedInitialQueue, setHasLoadedInitialQueue] = useState(false);
 
   useEffect(() => {
     selectedDoctorIdRef.current = selectedDoctorId;
@@ -245,9 +246,11 @@ export const ReceptionistDashboard: React.FC = () => {
     };
   }, [isAnyModalOpen]);
 
-  const fetchPendingAppointments = useCallback(async () => {
+  const fetchPendingAppointments = useCallback(async (isSilent = false) => {
     try {
-      setPendingLoading(true);
+      if (!isSilent && pendingAppointments.length === 0) {
+        setPendingLoading(true);
+      }
       const res = await api.getPendingAppointments();
       setPendingAppointments(res);
     } catch (err: any) {
@@ -255,7 +258,7 @@ export const ReceptionistDashboard: React.FC = () => {
     } finally {
       setPendingLoading(false);
     }
-  }, []);
+  }, [pendingAppointments.length]);
 
   const fetchDeskData = useCallback(async () => {
     try {
@@ -314,15 +317,19 @@ export const ReceptionistDashboard: React.FC = () => {
   }, [fetchDeskData]);
 
   // Fetch queue when queueDoctorId or queueDate changes
-  const fetchQueue = useCallback(async (docId?: string, dateStr?: string) => {
+  const fetchQueue = useCallback(async (docId?: string, dateStr?: string, isSilent = false) => {
     const targetDoc = docId || queueDoctorId;
     if (!targetDoc) return;
     const targetDate = dateStr || queueDate;
 
-    setQueueLoading(true);
+    // Never show disruptive loading screen if silent (polling)
+    if (!isSilent) {
+      setQueueLoading(true);
+    }
     try {
       const res = await api.getReceptionistDoctorQueue(targetDoc, targetDate);
       setQueueAppointments(res.appointments);
+      setHasLoadedInitialQueue(true);
       if (res.doctor && res.doctor.cabinStatus) {
         setData((prev) => {
           if (!prev) return prev;
@@ -353,13 +360,13 @@ export const ReceptionistDashboard: React.FC = () => {
     }
   }, [queueDoctorId, queueDate, logout, navigate]);
 
-  // Periodic real-time sync while tab is visible
+  // Periodic real-time sync while tab is visible (silent background updates without loading screen)
   useVisibilityPolling(
     () => {
       if (user?.mustChangePassword) return;
-      fetchPendingAppointments();
+      fetchPendingAppointments(true);
       if (activeTab === 'queue' && queueDoctorId) {
-        fetchQueue();
+        fetchQueue(undefined, undefined, true);
       }
     },
     15000,
@@ -860,10 +867,10 @@ export const ReceptionistDashboard: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsStandeeModalOpen(true)}
-              className="h-9 px-3.5 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-medium inline-flex items-center gap-1.5 transition-all active:scale-[0.98] cursor-pointer"
+              className="h-9 px-4 rounded-full bg-white hover:bg-[#f5f5f7] text-[#1d1d1f] border border-[#d2d2d7] text-xs font-medium inline-flex items-center gap-2 transition-all active:scale-[0.98] shadow-2xs cursor-pointer"
             >
               <QrCode className="w-3.5 h-3.5 text-[#0066cc]" />
-              <span>QR Standee</span>
+              <span>QR Code</span>
             </button>
           )}
           <button
@@ -1139,7 +1146,7 @@ export const ReceptionistDashboard: React.FC = () => {
                   title="No Doctors Assigned"
                   description="Ask your clinic administrator to assign practitioners to your reception desk."
                 />
-              ) : queueLoading ? (
+              ) : queueLoading && !hasLoadedInitialQueue ? (
                 <div className="py-14 text-center text-xs text-[#86868b]">Loading live queue...</div>
               ) : queueAppointments.length === 0 ? (
                 <EmptyState
@@ -2024,7 +2031,7 @@ export const ReceptionistDashboard: React.FC = () => {
                 )}
               </div>
 
-              {pendingLoading ? (
+              {pendingLoading && pendingAppointments.length === 0 ? (
                 <div className="py-14 text-center text-xs text-[#86868b]">
                   Loading pending online bookings...
                 </div>

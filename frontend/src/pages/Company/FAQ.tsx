@@ -51,7 +51,7 @@ export const FAQ: React.FC = () => {
       id: '6',
       question: 'How do I check in when I arrive at the clinic?',
       answer:
-        'When you reach the clinic, simply tell your token number to the receptionist or scan the clinic QR standee at the front desk to confirm your arrival.',
+        'When you reach the clinic, simply tell your token number to the receptionist or scan the clinic QR code at the front desk to confirm your arrival.',
     },
   ];
 

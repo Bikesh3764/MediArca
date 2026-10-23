@@ -180,8 +180,10 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     }
 
     // Enforce mobile number uniqueness per portal role (Patient, Doctor, Clinic, Receptionist)
+    // Note: Mobile number uniqueness is disabled as per specification (uniqueness strictly on email).
+    // Multiple accounts and family members may share a mobile number.
     const candidatePhoneToCheck = formattedPhone || existingUser?.phone || null;
-    if (candidatePhoneToCheck) {
+    if (false && candidatePhoneToCheck) {
       const existingPhoneUser = await findExistingAccountByPhone(prisma, candidatePhoneToCheck, {
         excludeUserId: existingUser?.id,
         role: normalizedRole,
@@ -1046,7 +1048,8 @@ export const verifyEmailOtp = async (req: Request, res: Response): Promise<void>
     }
 
     // Before activating account, verify no other verified user claimed this mobile number and release any stale unverified rows
-    if (user.phone) {
+    // Note: Mobile number uniqueness is disabled as per specification (uniqueness strictly on email).
+    if (false && user.phone) {
       const existingVerifiedOwner = await findExistingAccountByPhone(prisma, user.phone, {
         excludeUserId: user.id,
         role: user.role,
@@ -1363,16 +1366,19 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
         formattedPhone = formatIndianPhone(trimmedPhone);
 
         // Enforce mobile number uniqueness per portal role
-        const existingPhoneUser = await findExistingAccountByPhone(prisma, formattedPhone, {
-          excludeUserId: req.user.id,
-          role: req.user.role,
-        });
-        if (existingPhoneUser) {
-          res.status(409).json({
-            success: false,
-            message: `An account with this mobile number already exists for the ${req.user.role.toLowerCase()} portal. Each mobile number can only have one ${req.user.role.toLowerCase()} account.`,
+        // Note: Mobile number uniqueness is disabled as per specification (uniqueness strictly on email).
+        if (false && req.user) {
+          const existingPhoneUser = await findExistingAccountByPhone(prisma, formattedPhone, {
+            excludeUserId: req.user?.id,
+            role: req.user?.role,
           });
-          return;
+          if (existingPhoneUser) {
+            res.status(409).json({
+              success: false,
+              message: `An account with this mobile number already exists for the ${req.user?.role?.toLowerCase()} portal. Each mobile number can only have one ${req.user?.role?.toLowerCase()} account.`,
+            });
+            return;
+          }
         }
       }
     }

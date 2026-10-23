@@ -349,10 +349,10 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
                   </div>
                   <span className="text-[11px] text-[#86868b] block mt-0.5">
                     {doctor.cabinStatus === 'NOT_IN_CABIN'
-                      ? 'Doctor is not yet in cabin. Scan front desk QR standee upon arrival to confirm queue presence.'
+                      ? 'Doctor is not yet in cabin. Scan front desk QR code upon arrival to confirm presence.'
                       : doctor.cabinStatus === 'STEPPED_OUT'
-                      ? `Doctor stepped out${doctor.expectedReturnTime ? ` (expected back around ${doctor.expectedReturnTime})` : ''}. Scan QR standee to confirm presence.`
-                      : 'Scan front desk QR standee upon arrival to confirm queue presence.'}
+                      ? `Doctor stepped out${doctor.expectedReturnTime ? ` (expected back around ${doctor.expectedReturnTime})` : ''}. Scan front desk QR code to confirm presence.`
+                      : 'Scan front desk QR code upon arrival to confirm presence.'}
                   </span>
                 </div>
               </div>

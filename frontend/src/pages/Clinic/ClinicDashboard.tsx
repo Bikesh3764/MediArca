@@ -17,7 +17,6 @@ import {
   Check,
   ShieldAlert,
   Clock3,
-  Sparkles,
   QrCode,
   RefreshCw,
   MapPin,
@@ -211,15 +210,6 @@ export const ClinicDashboard: React.FC = () => {
       toast.error(err.message || 'Failed to cancel invitation');
       setError(err.message || 'Failed to cancel invitation');
     }
-  };
-
-  const handleGenerateRandomPassword = () => {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%';
-    let pwd = '';
-    for (let i = 0; i < 10; i++) {
-      pwd += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    setRecPassword(pwd);
   };
 
   const handleRespondDoctorAffiliation = async (affiliationId: string, action: 'ACCEPT' | 'REJECT') => {
@@ -504,7 +494,7 @@ export const ClinicDashboard: React.FC = () => {
         <div className="flex flex-wrap items-center gap-2">
           <Link
             to="/clinic/profile"
-            className="h-9 px-3.5 rounded-full bg-white hover:bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer shadow-xs hover:shadow"
+            className="h-9 px-4 rounded-full bg-white hover:bg-[#f5f5f7] active:scale-[0.98] text-[#1d1d1f] border border-[#d2d2d7] text-xs font-medium flex items-center gap-2 transition-all cursor-pointer shadow-[0_1px_2px_rgba(0,0,0,0.03)]"
           >
             <Settings className="w-3.5 h-3.5 text-[#0066cc]" />
             <span>Profile & Settings</span>
@@ -512,7 +502,7 @@ export const ClinicDashboard: React.FC = () => {
           <button
             type="button"
             onClick={() => setShowReportModal(true)}
-            className="h-9 px-3.5 rounded-full bg-white hover:bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer shadow-xs hover:shadow"
+            className="h-9 px-4 rounded-full bg-white hover:bg-[#f5f5f7] active:scale-[0.98] text-[#1d1d1f] border border-[#d2d2d7] text-xs font-medium flex items-center gap-2 transition-all cursor-pointer shadow-[0_1px_2px_rgba(0,0,0,0.03)]"
           >
             <FileText className="w-3.5 h-3.5 text-[#0066cc]" />
             <span>Reports & PDF</span>
@@ -520,16 +510,16 @@ export const ClinicDashboard: React.FC = () => {
           <button
             type="button"
             onClick={() => setShowPosterModal(true)}
-            className="h-9 px-3.5 rounded-full bg-white hover:bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer"
+            className="h-9 px-4 rounded-full bg-white hover:bg-[#f5f5f7] active:scale-[0.98] text-[#1d1d1f] border border-[#d2d2d7] text-xs font-medium flex items-center gap-2 transition-all cursor-pointer shadow-[0_1px_2px_rgba(0,0,0,0.03)]"
           >
             <QrCode className="w-3.5 h-3.5 text-[#0066cc]" />
-            <span>QR Standee</span>
+            <span>QR Code</span>
           </button>
           <button
             type="button"
             onClick={() => fetchClinicData(true)}
             disabled={loading}
-            className="h-9 px-3.5 rounded-full bg-white hover:bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+            className="h-9 px-4 rounded-full bg-white hover:bg-[#f5f5f7] active:scale-[0.98] text-[#1d1d1f] border border-[#d2d2d7] text-xs font-medium flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50 shadow-[0_1px_2px_rgba(0,0,0,0.03)]"
           >
             <RefreshCw className={`w-3.5 h-3.5 text-[#86868b] ${loading ? 'animate-spin' : ''}`} />
             <span>Refresh</span>
@@ -689,21 +679,16 @@ export const ClinicDashboard: React.FC = () => {
         {activeSection === 'doctors' && (
         <div id="practitioners-section" className="bg-white rounded-[24px] border border-[#e5e5ea] p-6 sm:p-8 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-[#f0f0f2] mb-6">
-            <div>
-              <h2 className="text-[18px] font-semibold text-[#1d1d1f] tracking-tight">
-                Affiliated Doctors
-              </h2>
-              <p className="text-[13px] text-[#86868b] mt-0.5">
-                Doctors and revenue generated at {clinic?.clinicName || 'this clinic'}.
-              </p>
-            </div>
+            <h2 className="text-[18px] font-semibold text-[#1d1d1f] tracking-tight">
+              Affiliated Doctors
+            </h2>
             <button
               type="button"
               onClick={() => setShowAddModal(true)}
-              className="h-9 px-4 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-semibold flex items-center gap-1.5 self-start sm:self-auto transition-all cursor-pointer"
+              className="h-9 px-4 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-xs font-medium flex items-center gap-1.5 self-start sm:self-auto shadow-[0_1px_2px_rgba(0,102,204,0.2)] transition-all cursor-pointer"
             >
               <UserPlus className="w-3.5 h-3.5" />
-              Invite Doctor
+              <span>Invite Doctor</span>
             </button>
           </div>
 
@@ -795,7 +780,7 @@ export const ClinicDashboard: React.FC = () => {
             </div>
           )}
 
-          {loading ? (
+          {loading && !data ? (
             <div className="py-12 text-center text-xs text-[#86868b]">Loading roster...</div>
           ) : doctors.length === 0 ? (
             <EmptyState
@@ -954,18 +939,16 @@ export const ClinicDashboard: React.FC = () => {
         {activeSection === 'receptionists' && (
         <div id="receptionists-section" className="bg-white rounded-[24px] border border-[#e5e5ea] p-6 sm:p-8 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-[#f0f0f2] mb-6">
-            <div>
-              <h2 className="text-[18px] font-semibold text-[#1d1d1f] tracking-tight">
-                Desk Receptionists & Front Staff
-              </h2>
-            </div>
+            <h2 className="text-[18px] font-semibold text-[#1d1d1f] tracking-tight">
+              Front Desk Staff
+            </h2>
             <button
               type="button"
               onClick={() => setShowRecModal(true)}
-              className="h-9 px-4 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-semibold flex items-center gap-1.5 self-start sm:self-auto transition-all cursor-pointer"
+              className="h-9 px-4 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-xs font-medium flex items-center gap-1.5 self-start sm:self-auto shadow-[0_1px_2px_rgba(0,102,204,0.2)] transition-all cursor-pointer"
             >
               <UserCheck className="w-3.5 h-3.5" />
-              Provision Receptionist
+              <span>Add Receptionist</span>
             </button>
           </div>
 
@@ -1290,16 +1273,11 @@ export const ClinicDashboard: React.FC = () => {
             {/* Apple Drag Handle Pill */}
             <div className="sm:hidden w-10 h-1 bg-[#d2d2d7] rounded-full mx-auto mb-3" />
             <div className="flex justify-between items-start pb-4 border-b border-[#f0f0f2]">
-              <div>
-                <h3 className="text-[20px] font-semibold text-[#1d1d1f] tracking-tight">Onboard Doctor</h3>
-                <p className="text-[13px] text-[#86868b] mt-0.5">
-                  Link a verified practitioner to {clinic?.clinicName || 'your clinic'}
-                </p>
-              </div>
+              <h3 className="text-[20px] font-semibold text-[#1d1d1f] tracking-tight">Invite Doctor</h3>
               <button
                 disabled={adding}
                 onClick={() => setShowAddModal(false)}
-                className="p-2 rounded-full hover:bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f] transition-colors cursor-pointer"
+                className="p-2 rounded-full hover:bg-[#f5f5f7] active:scale-[0.98] text-[#86868b] hover:text-[#1d1d1f] transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1409,16 +1387,16 @@ export const ClinicDashboard: React.FC = () => {
                   type="button"
                   disabled={adding}
                   onClick={() => setShowAddModal(false)}
-                  className="h-10 px-4 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-medium transition-all cursor-pointer"
+                  className="h-10 px-5 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] active:scale-[0.98] text-[#1d1d1f] border border-black/[0.08] text-xs font-medium transition-all cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={adding}
-                  className="h-10 px-5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-semibold transition-all cursor-pointer disabled:opacity-50"
+                  className="h-10 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-xs font-medium shadow-[0_1px_2px_rgba(0,102,204,0.25)] transition-all cursor-pointer disabled:opacity-50"
                 >
-                  {adding ? 'Onboarding...' : 'Onboard Doctor'}
+                  {adding ? 'Inviting...' : 'Invite Doctor'}
                 </button>
               </div>
             </form>
@@ -1438,16 +1416,11 @@ export const ClinicDashboard: React.FC = () => {
             {/* Apple Drag Handle Pill */}
             <div className="sm:hidden w-10 h-1 bg-[#d2d2d7] rounded-full mx-auto mb-3" />
             <div className="flex justify-between items-start pb-4 border-b border-[#f0f0f2]">
-              <div>
-                <h3 className="text-[20px] font-semibold text-[#1d1d1f] tracking-tight">Provision Desk Receptionist</h3>
-                <p className="text-[13px] text-[#86868b] mt-0.5">
-                  Create portal login credentials and assign practitioner permissions.
-                </p>
-              </div>
+              <h3 className="text-[20px] font-semibold text-[#1d1d1f] tracking-tight">Add Receptionist</h3>
               <button
                 disabled={provisioning}
                 onClick={() => setShowRecModal(false)}
-                className="p-2 rounded-full hover:bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f] transition-colors cursor-pointer"
+                className="p-2 rounded-full hover:bg-[#f5f5f7] active:scale-[0.98] text-[#86868b] hover:text-[#1d1d1f] transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1464,7 +1437,7 @@ export const ClinicDashboard: React.FC = () => {
                   disabled={provisioning}
                   value={recFullName}
                   onChange={(e) => setRecFullName(e.target.value)}
-                  placeholder="Enter receptionist's full name"
+                  placeholder="Full name"
                   className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
@@ -1485,19 +1458,9 @@ export const ClinicDashboard: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="block text-xs font-medium text-[#1d1d1f] tracking-tight">
-                      Temporary Password
-                    </label>
-                    <button
-                      type="button"
-                      onClick={handleGenerateRandomPassword}
-                      className="text-xs text-[#0066cc] hover:underline font-medium inline-flex items-center gap-1 cursor-pointer"
-                    >
-                      <Sparkles className="w-3 h-3" />
-                      Auto-generate
-                    </button>
-                  </div>
+                  <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                    Temporary Password
+                  </label>
                   <input
                     type="text"
                     required
@@ -1537,15 +1500,12 @@ export const ClinicDashboard: React.FC = () => {
 
               {/* Doctor Assignments */}
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1 tracking-tight">
-                  Assign Doctors to this Receptionist Desk
+                <label className="block text-xs font-medium text-[#1d1d1f] mb-2 tracking-tight">
+                  Assign Doctors
                 </label>
-                <p className="text-xs text-[#86868b] mb-2.5">
-                  Select which affiliated doctors this receptionist is authorized to manage queues and appointments for.
-                </p>
                 {doctors.length === 0 ? (
                   <div className="p-3.5 bg-[#f5f5f7] border border-[#e5e5ea] rounded-xl text-xs text-[#86868b] text-center">
-                    No affiliated doctors in this clinic yet. You can assign doctors later.
+                    No affiliated doctors yet.
                   </div>
                 ) : (
                   <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
@@ -1561,7 +1521,7 @@ export const ClinicDashboard: React.FC = () => {
                               setRecDoctorIds([...recDoctorIds, doc.doctorId]);
                             }
                           }}
-                          className={`p-3 rounded-xl border cursor-pointer transition-colors flex items-center justify-between text-xs ${
+                          className={`p-3 rounded-2xl border cursor-pointer transition-all duration-150 flex items-center justify-between text-xs select-none ${
                             isSelected
                               ? 'bg-[#0066cc]/5 border-[#0066cc]/40 text-[#0066cc]'
                               : 'bg-white border-[#e5e5ea] text-[#1d1d1f] hover:bg-[#f5f5f7]'
@@ -1569,9 +1529,9 @@ export const ClinicDashboard: React.FC = () => {
                         >
                           <div className="flex items-center gap-2.5">
                             <div
-                              className={`w-4 h-4 rounded flex items-center justify-center border transition-colors ${
+                              className={`w-5 h-5 rounded-full flex items-center justify-center border transition-all duration-150 ${
                                 isSelected
-                                  ? 'bg-[#0066cc] border-transparent text-white'
+                                  ? 'bg-[#0066cc] border-[#0066cc] text-white shadow-xs'
                                   : 'border-[#d2d2d7] bg-white'
                               }`}
                             >
@@ -1582,7 +1542,7 @@ export const ClinicDashboard: React.FC = () => {
                               <div className="text-[11px] text-[#86868b]">{doc.specialty}</div>
                             </div>
                           </div>
-                          <span className="text-xs text-[#86868b]">₹{doc.consultationFee}</span>
+                          <span className="text-xs text-[#86868b] font-medium">₹{doc.consultationFee}</span>
                         </div>
                       );
                     })}
@@ -1595,16 +1555,16 @@ export const ClinicDashboard: React.FC = () => {
                   type="button"
                   disabled={provisioning}
                   onClick={() => setShowRecModal(false)}
-                  className="h-10 px-4 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-medium transition-all cursor-pointer"
+                  className="h-10 px-5 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] active:scale-[0.98] text-[#1d1d1f] border border-black/[0.08] text-xs font-medium transition-all cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={provisioning}
-                  className="h-10 px-5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-semibold transition-all cursor-pointer disabled:opacity-50"
+                  className="h-10 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-xs font-medium shadow-[0_1px_2px_rgba(0,102,204,0.25)] transition-all cursor-pointer disabled:opacity-50"
                 >
-                  {provisioning ? 'Provisioning...' : 'Provision Receptionist'}
+                  {provisioning ? 'Adding...' : 'Add Receptionist'}
                 </button>
               </div>
             </form>

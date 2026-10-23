@@ -5,7 +5,7 @@ MediArca is an Indian healthcare patient appointment and live queue management s
 - **Backend**: Node.js, Express 5, TypeScript, Prisma ORM 6 (PostgreSQL), JWT authentication, role-based access control.
 - **Frontend**: React 19, TypeScript, Vite, Tailwind CSS, Lucide icons, Apple Human Interface Guidelines (`DESIGN.md`).
 - **Database**: PostgreSQL (Prisma schema with 12 models: `User`, `DoctorProfile`, `PatientProfile`, `ClinicProfile`, `ReceptionistProfile`, `ClinicDoctor`, `DoctorReceptionist`, `Appointment`, `Review`, `Notification`, `SystemConfig`, `ContactMessage`).
-- **Core Guardrails**: Zero-upfront payment (pay-to-receptionist coordination via UPI/desk), physical clinic queue focus (no telemedicine / no prescription builder / no cloud vault), demo credentials preserved, +91 Indian phone standard lock, per-portal role-scoped account uniqueness (`@@unique([email, role])`).
+- **Core Guardrails**: Zero-upfront payment (pay-to-receptionist coordination via UPI/desk), physical clinic queue focus (no telemedicine / no prescription builder / no cloud vault), demo credentials preserved, +91 Indian phone standard lock, per-portal role-scoped account uniqueness (`@@unique([email, role])`), email-only OTP verification (no phone OTP / no mobile uniqueness constraint).
 
 ## Feature Inventory
 | # | Feature / Area | Description | Milestone | Source |
@@ -31,6 +31,7 @@ MediArca is an Indian healthcare patient appointment and live queue management s
 | 19 | Pure Camera QR Arrival & Dynamic Clinic Branding | Eliminate manual 6-digit code entry; pure camera QR scanner modal; dynamic clinic photo rendering across discovery and headers; remove raw facility IDs | M7 | User Requirement |
 | 20 | Apple HIG Weekday Controls & Copy Conciseness | Sleek single-letter circular day strip (`WeekdayDisplay.tsx`), `rounded-full` day selectors, ultra-concise Apple labels (`Shifts`, `Schedule`, `Standee`, `Resume`, `Leave`) | M8 | User Requirement |
 | 21 | QR Arrival Synchronization & Scanner Lifecycle | Instant 0ms optimistic QR check-in state synchronization, persistent appointment refs, automatic scanner reset on re-open, anti-cache headers | M9 | User Requirement |
+| 22 | Silent Polling Updates & Apple Design System | Background polling updates directly in-place without flashing loading screens/skeletons; embed authentic Apple SF Pro fonts; Apple pill buttons; prune verbose copy; replace "View Standee" with "View QR Code" | M10 | User Requirement |
 
 ## Milestones
 | # | Name | Scope | Dependencies | Status |
@@ -44,6 +45,7 @@ MediArca is an Indian healthcare patient appointment and live queue management s
 | M7 | Camera QR Scanner & Dynamic Branding Alignment | Pure camera scanner, QR standee cleanup, Home & Discovery dynamic clinic avatars, ClinicProfile credentials overhaul | M6 | DONE (2,023/2,023 tests pass, builds clean, 0 lint errors) |
 | M8 | Apple HIG Weekday Controls & Ultra-Concise Copy | Minimalist calendar day discs (`M T W T F S S`), capsule selectors, streamlined Apple labels (`Shifts`, `Schedule`, `Standee`) | M7 | DONE (2,023/2,023 tests pass, builds clean, 0 lint errors) |
 | M9 | QR Arrival Synchronization & Scanner Lifecycle | Optimistic UI arrival sync, persistent appointment ref, scanner feedback reset on re-open, cache-busting headers | M8 | DONE (2,023/2,023 tests pass, builds clean, 0 lint errors) |
+| M10 | Silent Polling Updates & Apple Design System | Polling loading flicker eliminated across portals, authentic SF Pro typography, Apple pill buttons, concise UI copy, QR code terminology | M9 | DONE (2,081/2,081 tests pass, builds clean, 0 lint errors) |
 
 ## Interface Contracts
 ### Pay-to-Receptionist Coordination Contract
@@ -65,6 +67,10 @@ MediArca is an Indian healthcare patient appointment and live queue management s
 - Symbol: Indian Rupee `₹` across all user portals (Patient, Doctor, Clinic, Receptionist, Admin).
 - Phone: `+91` 10-digit format locked.
 - Time: Asia/Kolkata (IST / UTC+05:30) calendar date evaluation.
+
+### Account Uniqueness & Verification Contract
+- Uniqueness: Strictly enforced on `(email, role)` via `@@unique([email, role])`. Each email can hold at most one account per portal. Mobile number uniqueness is NOT required or enforced; shared family numbers are permitted.
+- Verification: OTP verification is performed exclusively via Email (6-digit numeric OTP sent via nodemailer). Phone numbers are collected and validated for the Indian mobile standard (`+91` 10-digit), but require no phone OTP or verification.
 
 ## Documentation Index
 - Root Charter: [AGENTS.md](file:///c:/Users/Bikesh%20Ray/OneDrive/Desktop/MediArca/AGENTS.md)

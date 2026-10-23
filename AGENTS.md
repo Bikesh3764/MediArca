@@ -11,7 +11,7 @@ MediArca is an Indian healthcare outpatient appointment and live queue managemen
 - **Portals**:
   1. `PATIENT` — Doctor/clinic discovery, booking with estimated token, live queue pass with receptionist contact, QR check-in.
   2. `DOCTOR` — Real-time queue console, atomic patient calling, cabin presence toggles, shift management.
-  3. `CLINIC` — Doctor onboarding, receptionist provisioning, QR standee download, operational metrics.
+  3. `CLINIC` — Doctor onboarding, receptionist provisioning, QR code download, operational metrics.
   4. `RECEPTIONIST` — Walk-in creation, arrival check-in, fee collection & token confirmation, queue oversight.
   5. `ADMIN` — Verification queue for doctors and clinics, platform telemetry, support messages.
 
@@ -39,8 +39,10 @@ MediArca is an Indian healthcare outpatient appointment and live queue managemen
    - Typography: `#1d1d1f` primary text, `#86868b` secondary text
    - Corner radius: `rounded-2xl` (cards), `rounded-full` (buttons & pills)
 7. **API Resilience**: Handle non-JSON responses (e.g. 502 Bad Gateway / 504 Gateway Timeout HTML pages) gracefully in `frontend/src/services/api.ts` without throwing unhandled `SyntaxError`.
-8. **Physical QR Arrival Scanner Only**: Patient arrival verification at the clinic is strictly performed by scanning the physical front-desk QR standee using the device camera. Always dynamically render uploaded facility branding (`avatarUrl`) across public discovery and headers.
-9. **Apple HIG Weekdays & Ultra-Concise Copy**: Display calendar and roster weekdays using single-letter Apple circular discs (`M T W T F S S`) inside a parchment pill track (`WeekdayDisplay.tsx`). Use Apple `rounded-full` pill buttons (`h-11 rounded-full`) for interactive day selectors. Keep all UI text and button labels minimal, simple, and direct (e.g. `Shifts`, `Schedule`, `Standee`, `Resume`, `Leave`, `Available`).
+8. **Physical QR Arrival Scanner Only**: Patient arrival verification at the clinic is strictly performed by scanning the physical front-desk QR code using the device camera. Always dynamically render uploaded facility branding (`avatarUrl`) across public discovery and headers.
+9. **Apple HIG Weekdays & Ultra-Concise Copy**: Display calendar and roster weekdays using single-letter Apple circular discs (`M T W T F S S`) inside a parchment pill track (`WeekdayDisplay.tsx`). Use Apple `rounded-full` pill buttons (`h-11 rounded-full`) for interactive day selectors. Keep all UI text and button labels minimal, simple, and direct (e.g. `Shifts`, `Schedule`, `QR Code`, `Resume`, `Leave`, `Available`).
+10. **Email-Only Account Uniqueness & Verification**: Account uniqueness is strictly enforced on `(email, role)` via `@@unique([email, role])`. Mobile number uniqueness is NOT required or enforced, permitting shared phone numbers for family members and dependents. OTP verification is performed exclusively via Email (Gmail SMTP with 6-digit numeric OTP). Phone numbers are collected and validated for the Indian standard (`+91` 10-digit mobile), but require no phone OTP or phone verification.
+11. **Silent Background Updates & Zero Disruptive Polling Screens**: Background real-time polling (`useVisibilityPolling`) MUST update state silently in-place without triggering full-screen loading spinners, clearing table rosters, or flashing "Loading live queue..." banners. Loading screens are reserved strictly for the initial empty mount.
 
 ### Strict DON'Ts
 1. **NO Online Payment Gateways**: NEVER introduce Stripe, Razorpay, PayPal, or automated upfront credit/debit card checkout. MediArca operates under a zero-upfront payment policy where patients coordinate payment directly with the receptionist.
@@ -52,6 +54,8 @@ MediArca is an Indian healthcare outpatient appointment and live queue managemen
 7. **NO Bypassing State Machine**: Never transition appointment statuses without verifying `canTransition(currentStatus, targetStatus)`.
 8. **NO Manual Check-in Code Entry or Internal ID Exposure**: Do not present users with manual numeric 6-digit code entry options, printed desk codes on physical posters, or raw internal database IDs (`cp_demo_clinic`, internal UUIDs). Queue arrival is strictly camera-scanned.
 9. **NO Cluttered Weekday Badges or Verbose UI Copy**: Never use clunky rectangular bootstrap-like badge tags (`[Mon] [Tue] [Wed]`), stacked labels ("Mon/Monday", "Sits/Off"), or wordy dual-action descriptions and boilerplate sentences. Keep all copy clean, direct, and minimal.
+10. **NO Mobile Uniqueness or Phone OTP Verification**: Never block accounts from registering or updating due to existing phone numbers, and never introduce phone/SMS OTP verification. Uniqueness is strictly email-based (`@@unique([email, role])`) and OTP verification is strictly on email.
+11. **NO Polling Loading Flickers**: Never unmount or replace existing active queues, appointments, or dashboard tables with full loading placeholders or pulsing skeleton blocks during periodic background polling.
 
 ---
 
@@ -84,7 +88,7 @@ MediArca/
 │
 ├── docs/                              # Architecture and institutional memory
 │   ├── architecture.md                # System design, data flow, queue state machine
-│   ├── known-issues.md                # Fix ledger (FIX-001..FIX-028), active edge cases, anti-patterns
+│   ├── known-issues.md                # Fix ledger (FIX-001..FIX-029), active edge cases, anti-patterns
 │   ├── decisions/                     # Architecture Decision Records (ADRs)
 │   │   ├── 001-pay-to-receptionist-coordination.md
 │   │   ├── 002-role-scoped-account-uniqueness.md

@@ -2199,7 +2199,8 @@ export const applyReceptionist = async (req: Request, res: Response): Promise<vo
       return;
     }
 
-    if (formattedPhone) {
+    // Note: Mobile number uniqueness is disabled as per specification (uniqueness strictly on email).
+    if (false && formattedPhone) {
       const existingByPhone = await findExistingAccountByPhone(prisma, formattedPhone, {
         role: 'RECEPTIONIST',
         excludeUserId: existingUser?.id,

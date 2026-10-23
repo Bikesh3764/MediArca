@@ -56,7 +56,7 @@ model User {
   @@unique([email, role])
 }
 ```
-This enables a user (e.g., a doctor or receptionist) to test or use the platform as a patient using their primary email address without collision.
+This enables a user (e.g., a doctor or receptionist) to test or use the platform as a patient using their primary email address without collision. Uniqueness is strictly email-based per portal role; mobile number uniqueness is not required or enforced, permitting shared family contact numbers. OTP verification is strictly on email.
 
 ### 2.2 Security Lifecycle
 - **JWT Tokens**: Signed with HMAC-SHA256 containing `id`, `email`, and `role`. Verified via `authenticate` and `optionalAuthenticate` middlewares.
@@ -178,7 +178,7 @@ To support physical clinic branding and discovery:
 2. **Atomic Synchronization (`updateClinicProfile`)**:
    - Clinic settings updates modify facility name, street address, city, state, contact phone, and avatar.
    - Modifications to clinic name and phone number atomically synchronize both the `ClinicProfile` model and the parent `User` record inside a `prisma.$transaction`.
-   - Phone numbers are validated against the Indian standard (`+91` 10-digit mobile) and uniqueness is checked against existing accounts of the same role.
+   - Phone numbers are validated against the Indian standard (`+91` 10-digit mobile). Mobile number uniqueness is not required or enforced; account uniqueness is strictly email-scoped.
    - Base64 image data URLs are strictly rejected to prevent database bloat.
 
 ---

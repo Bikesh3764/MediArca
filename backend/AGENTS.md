@@ -28,9 +28,9 @@ The MediArca backend is an Express 5 REST API built with Node.js, TypeScript, an
 4. **Zero-Upfront Payment Policy**:
    Never introduce online payment gateway endpoints (e.g. Stripe, Razorpay). Appointments are created as `PENDING_APPROVAL` with estimated tokens. Receptionists confirm tickets to `WAITING` after payment coordination.
 5. **Role-Scoped Multi-Tenancy**:
-   Users are identified uniquely by `(email, role)` via `@@unique([email, role])`. Queries must include `role` alongside `email`.
+   Users are identified uniquely by `(email, role)` via `@@unique([email, role])`. Queries must include `role` alongside `email`. Mobile number uniqueness is NOT enforced; multiple accounts or family members may share a mobile number.
 6. **Phone Number Standardization**:
-   All mobile numbers must be validated with `isValidIndianPhone` and stored in canonical E.164 format `+91XXXXXXXXXX`.
+   All mobile numbers must be validated with `isValidIndianPhone` and stored in canonical E.164 format `+91XXXXXXXXXX`. However, phone numbers do NOT undergo OTP verification or uniqueness checks; OTP verification is strictly performed on email.
 7. **Receptionist Security Guard**:
    Enforce `requireActiveReceptionist` on all desk mutation endpoints to verify `mustChangePassword === false`.
 8. **IST Timezone Discipline**:

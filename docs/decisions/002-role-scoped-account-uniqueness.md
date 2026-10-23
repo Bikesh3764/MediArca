@@ -12,17 +12,17 @@ In a healthcare ecosystem, users frequently operate across multiple roles. For e
 Initially, a global unique constraint on `User.email` (`@unique`) caused `409 Conflict` errors whenever an existing doctor or receptionist attempted to sign up or log into the patient portal with their email. Furthermore, abandoned or unverified accounts locked phone numbers, preventing legitimate users from verifying them.
 
 ## Decision
-1. **Prisma Composite Constraint**:
-   We transitioned from global `email` uniqueness to composite role-scoped uniqueness:
+1. **Prisma Composite Constraint & Email-Only Uniqueness**:
+   We transitioned from global `email` uniqueness to composite role-scoped uniqueness. Account uniqueness is strictly scoped to `(email, role)`; mobile number uniqueness is NOT required or enforced, permitting shared phone numbers for family members. OTP verification is strictly on email:
    ```prisma
    @@unique([email, role])
    ```
 2. **Role-Scoped Authentication & Registration**:
    - The login and signup endpoints require `role` as part of their payload (or infer it strictly from portal context: `/patient/login`, `/doctor/login`, `/clinic/login`, `/receptionist/login`, `/admin/login`).
    - Authentication queries `findFirst({ where: { email, role } })`.
-3. **Unverified Account Phone Release**:
-   - Unverified accounts (`isEmailVerified: false`) do not permanently claim phone numbers.
-   - When a verified user registers with a phone number previously entered by an unverified stale account, `verifyEmailOtp` releases the unverified account's phone rather than throwing a duplicate phone collision.
+3. **Email-Only OTP Verification & Phone Validation**:
+   - OTP verification is conducted exclusively via Email (6-digit numeric OTP sent via nodemailer).
+   - Phone numbers are collected during registration and profile update and validated for the Indian standard (`+91` 10-digit mobile), but require no phone OTP or verification. Multiple accounts or family members may share a phone number.
 4. **Strict Phone Number Normalization**:
    - All phone numbers are sanitized and formatted to the canonical Indian E.164 standard: `+91XXXXXXXXXX` (10 digits after +91 prefix).
 

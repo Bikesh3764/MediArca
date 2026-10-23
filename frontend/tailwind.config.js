@@ -40,17 +40,23 @@ export default {
       fontFamily: {
         sans: [
           'SF Pro Text',
+          'SF Pro Display',
           '-apple-system',
           'BlinkMacSystemFont',
+          'SF Pro',
           'Inter',
+          'Segoe UI',
           'system-ui',
           'sans-serif',
         ],
         display: [
           'SF Pro Display',
+          'SF Pro Text',
           '-apple-system',
           'BlinkMacSystemFont',
+          'SF Pro',
           'Inter',
+          'Segoe UI',
           'system-ui',
           'sans-serif',
         ],
