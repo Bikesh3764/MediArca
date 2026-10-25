@@ -49,3 +49,6 @@ backend/uploads/
 
 # AI agent skill bundles (installed locally, not part of the app)
 .agents/
+
+# Local preview launcher (points at a throwaway local database)
+.claude/launch.json

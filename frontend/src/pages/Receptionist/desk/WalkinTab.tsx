@@ -1,0 +1,462 @@
+import React from 'react';
+import { getLocalDateString, getFileUrl, formatShiftOption, WEEKDAY_NAMES } from '../../../services/api';
+import { sanitizeIndianPhone } from '../../../utils/phoneUtils';
+import { ChevronDown, CalendarX, CalendarOff } from 'lucide-react';
+import { cleanDoctorName } from './helpers';
+import { useReceptionistDashboard } from './state';
+export const WalkinTab: React.FC = () => {
+  const {
+    data,
+    setActiveTab,
+    setScheduleModalDoctor,
+    selectedDoctorId,
+    setSelectedDoctorId,
+    appointmentDate,
+    setAppointmentDate,
+    slotId,
+    setSlotId,
+    bookingFor,
+    setBookingFor,
+    patientName,
+    setPatientName,
+    patientAge,
+    setPatientAge,
+    patientPhone,
+    setPatientPhone,
+    gender,
+    setGender,
+    reasonForVisit,
+    setReasonForVisit,
+    bookingLoading,
+    walkinPreview,
+    previewLoading,
+    linkedDoctors,
+    activeSelectedDoctor,
+    isSelectedShiftEnded,
+    isSelectedShiftFull,
+    handleWalkinSubmit,
+  } = useReceptionistDashboard();
+  return (
+<div>
+              <div className="flex items-center justify-between gap-4 mb-6 pb-4 border-b border-[#f0f0f2]">
+                <div>
+                  <h3 className="text-base sm:text-lg font-semibold text-[#1d1d1f] tracking-tight">
+                    Walk-in Patient Booking
+                  </h3>
+                  <p className="text-xs text-[#86868b] mt-0.5">
+                    Issue an immediate queue token for patients arriving at the desk.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('queue')}
+                  className="h-8 px-3.5 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-xs font-medium text-[#1d1d1f] border border-[#e5e5ea] transition-all cursor-pointer shrink-0"
+                >
+                  View Queue
+                </button>
+              </div>
+
+              {linkedDoctors.length === 0 ? (
+                <div className="py-14 text-center">
+                  <p className="text-sm font-semibold text-[#1d1d1f]">No Doctors Assigned</p>
+                  <p className="text-xs text-[#86868b] mt-1 max-w-xs mx-auto">
+                    Ask your clinic administrator to assign doctors to your reception desk before issuing walk-in tokens.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                  {/* Left Column (7 cols): Walk-in Registration Form */}
+                  <form onSubmit={handleWalkinSubmit} className="lg:col-span-7 space-y-5">
+                    {/* 1. Practitioner Selection */}
+                    <div>
+                      <label className="block text-xs font-medium text-[#1d1d1f] mb-2 tracking-tight">
+                        Select Practitioner
+                      </label>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        {linkedDoctors.map((doc) => {
+                          const isSelected = selectedDoctorId === doc.doctorId;
+                          return (
+                            <div
+                              key={doc.doctorId}
+                              onClick={() => {
+                                setSelectedDoctorId(doc.doctorId);
+                                setSlotId(doc.slots[0]?.id || '');
+                              }}
+                              className={`p-3.5 rounded-2xl border cursor-pointer transition-all flex items-center gap-3 ${
+                                isSelected
+                                  ? 'bg-[#0066cc]/[0.04] border-[#0066cc] ring-2 ring-[#0066cc]/10'
+                                  : 'bg-white border-[#e5e5ea] hover:border-[#d2d2d7]'
+                              }`}
+                            >
+                              <div className="w-10 h-10 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] overflow-hidden shrink-0">
+                                {doc.avatarUrl ? (
+                                  <img
+                                    src={getFileUrl(doc.avatarUrl)}
+                                    alt={doc.fullName}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center font-semibold text-xs text-[#0066cc]">
+                                    {doc.fullName[0]}
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="font-semibold text-xs text-[#1d1d1f] leading-snug">
+                                  {cleanDoctorName(doc.fullName)}
+                                </div>
+                                <div className="text-[11px] text-[#0066cc] font-medium mt-0.5">
+                                  {doc.specialty}
+                                </div>
+                                <div className="text-[11px] text-[#86868b] mt-0.5">
+                                  Consultation Fee: ₹{doc.consultationFee.toFixed(0)}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* 2. Date & Checking Shift */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                      <div>
+                        <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                          Consultation Date
+                        </label>
+                        <input
+                          type="date"
+                          required
+                          min={getLocalDateString()}
+                          value={appointmentDate}
+                          onChange={(e) => setAppointmentDate(e.target.value)}
+                          className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                          Checking Shift
+                        </label>
+                        <div className="relative">
+                          <select
+                            value={slotId}
+                            onChange={(e) => setSlotId(e.target.value)}
+                            disabled={!activeSelectedDoctor?.slots || activeSelectedDoctor.slots.length === 0}
+                            className="w-full h-11 pl-3.5 pr-8 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all appearance-none cursor-pointer disabled:bg-[#f5f5f7] disabled:text-[#86868b] disabled:cursor-not-allowed"
+                          >
+                            {!activeSelectedDoctor?.slots || activeSelectedDoctor.slots.length === 0 ? (
+                              <option value="">No shifts configured</option>
+                            ) : (
+                              activeSelectedDoctor.slots.map((s) => {
+                                const sStatus = walkinPreview?.availableSlots?.find((as) => as.slot.id === s.id);
+                                const isEnded = sStatus?.isPassed;
+                                return (
+                                  <option key={s.id} value={s.id}>
+                                    {formatShiftOption(s, isEnded)}
+                                  </option>
+                                );
+                              })
+                            )}
+                          </select>
+                          <ChevronDown className="w-4 h-4 text-[#86868b] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Fixed Reception Desk Clinic Facility (DEF-06) */}
+                    <div>
+                      <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                        Clinic Facility
+                      </label>
+                      <div className="h-11 px-3.5 rounded-xl border border-[#e5e5ea] bg-[#f5f5f7] flex items-center justify-between text-[13px] text-[#1d1d1f]">
+                        <span className="font-medium truncate">{data?.clinic?.clinicName || 'Clinic Desk'}</span>
+                        <span className="text-xs text-[#86868b] truncate ml-2">{data?.clinic?.address || ''}</span>
+                      </div>
+                    </div>
+
+                    {/* Shift Status & Attendance Warnings */}
+                    {activeSelectedDoctor?.isOnLeaveToday && appointmentDate === getLocalDateString() && (
+                      <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-xs text-rose-800 flex items-start justify-between gap-3 animate-fadeIn">
+                        <div className="flex items-start gap-2.5 min-w-0">
+                          <CalendarX className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                          <div>
+                            <span className="font-semibold block text-rose-900">
+                              Practitioner Marked on Leave Today
+                            </span>
+                            <span className="text-rose-700 mt-0.5 block leading-relaxed">
+                              {activeSelectedDoctor.todayLeave?.reason
+                                ? `Reason: ${activeSelectedDoctor.todayLeave.reason}`
+                                : `${cleanDoctorName(activeSelectedDoctor.fullName)} is not taking consultations today.`}
+                            </span>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setScheduleModalDoctor({
+                              doctorId: activeSelectedDoctor.doctorId,
+                              doctorName: cleanDoctorName(activeSelectedDoctor.fullName),
+                            })
+                          }
+                          className="h-7 px-3 rounded-full bg-white hover:bg-rose-100 text-rose-800 border border-rose-300 font-semibold text-[11px] shrink-0 transition-all cursor-pointer"
+                        >
+                          Manage Leave
+                        </button>
+                      </div>
+                    )}
+
+                    {(() => {
+                      if (!appointmentDate || !activeSelectedDoctor) return null;
+                      const [y, m, d] = appointmentDate.split('-').map(Number);
+                      const dayCode = (['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'][new Date(y, m - 1, d).getDay()]);
+                      const docDays = activeSelectedDoctor.workingDays || ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+                      if (!docDays.includes(dayCode)) {
+                        return (
+                          <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-800 flex items-center justify-between gap-3 animate-fadeIn">
+                            <div className="flex items-center gap-2">
+                              <CalendarOff className="w-4 h-4 text-amber-600 shrink-0" />
+                              <span>
+                                <span className="font-semibold">Practitioner Off:</span> {cleanDoctorName(activeSelectedDoctor.fullName)} does not sit on {WEEKDAY_NAMES[dayCode as any] || dayCode}s at this clinic.
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setScheduleModalDoctor({
+                                  doctorId: activeSelectedDoctor.doctorId,
+                                  doctorName: cleanDoctorName(activeSelectedDoctor.fullName),
+                                })
+                              }
+                              className="h-7 px-2.5 rounded-full bg-white hover:bg-amber-100 text-amber-900 border border-amber-300 font-semibold text-[11px] shrink-0 transition-all cursor-pointer"
+                            >
+                              Edit Days
+                            </button>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
+
+                    {(!activeSelectedDoctor?.slots || activeSelectedDoctor.slots.length === 0) && (
+                      <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800">
+                        <span className="font-semibold">No Practice Shifts Configured:</span> The selected practitioner has no active checking shifts configured at this clinic facility. Please ask the doctor to configure their shift timings in Doctor Console.
+                      </div>
+                    )}
+
+                    {isSelectedShiftEnded && (
+                      <div className="p-3.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-xs text-[#1d1d1f]">
+                        <span className="font-semibold">Shift Ended for Today:</span> Please choose an upcoming shift or select tomorrow's date.
+                      </div>
+                    )}
+
+                    {!isSelectedShiftEnded && isSelectedShiftFull && (
+                      <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-800">
+                        <span className="font-semibold">Shift Capacity Reached:</span> This shift is full. Please select another shift or date.
+                      </div>
+                    )}
+
+                    {/* 3. Patient Information */}
+                    <div className="pt-2 border-t border-[#f0f0f2] space-y-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <label className="text-xs font-medium text-[#1d1d1f] tracking-tight">
+                          Patient Details
+                        </label>
+                        <div className="p-1 bg-[#f5f5f7] border border-[#e5e5ea] rounded-full flex gap-0.5 w-full sm:w-64 select-none">
+                          <button
+                            type="button"
+                            onClick={() => setBookingFor('self')}
+                            className={`flex-1 h-8 text-xs rounded-full transition-all cursor-pointer ${
+                              bookingFor === 'self'
+                                ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs border border-black/5'
+                                : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
+                            }`}
+                          >
+                            Self
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setBookingFor('other')}
+                            className={`flex-1 h-8 text-xs rounded-full transition-all cursor-pointer ${
+                              bookingFor === 'other'
+                                ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs border border-black/5'
+                                : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
+                            }`}
+                          >
+                            Family / Other
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                        <div>
+                          <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                            Patient Full Name *
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            value={patientName}
+                            onChange={(e) => setPatientName(e.target.value)}
+                            placeholder="e.g. Rahul Ray"
+                            className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                            Mobile Number *
+                          </label>
+                          <div className="flex items-center w-full h-11 rounded-xl border border-[#d2d2d7] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus-within:border-[#0066cc] focus-within:ring-4 focus-within:ring-[#0066cc]/10 transition-all overflow-hidden">
+                            <div className="h-full px-3.5 bg-[#f5f5f7] border-r border-[#d2d2d7] flex items-center justify-center select-none text-[13px] font-semibold text-[#1d1d1f]">
+                              +91
+                            </div>
+                            <input
+                              type="tel"
+                              inputMode="numeric"
+                              required
+                              value={sanitizeIndianPhone(patientPhone)}
+                              onChange={(e) => setPatientPhone(sanitizeIndianPhone(e.target.value))}
+                              placeholder="98765 43210"
+                              maxLength={10}
+                              className="flex-1 h-full px-3.5 text-base sm:text-sm bg-transparent focus:outline-none text-[#1d1d1f] placeholder:text-[#a1a1a6]"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+                        <div>
+                          <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                            Age {bookingFor === 'other' ? '*' : ''}
+                          </label>
+                          <input
+                            type="text"
+                            value={patientAge}
+                            onChange={(e) => setPatientAge(e.target.value)}
+                            placeholder="e.g. 28"
+                            className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                            Gender
+                          </label>
+                          <div className="relative">
+                            <select
+                              value={gender}
+                              onChange={(e) => setGender(e.target.value)}
+                              className="w-full h-11 pl-3 pr-8 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all appearance-none cursor-pointer"
+                            >
+                              <option value="Not Specified">Select</option>
+                              <option value="Male">Male</option>
+                              <option value="Female">Female</option>
+                              <option value="Other">Other</option>
+                            </select>
+                            <ChevronDown className="w-4 h-4 text-[#86868b] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                          </div>
+                        </div>
+
+                        <div className="col-span-2">
+                          <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                            Chief Complaint (Optional)
+                          </label>
+                          <input
+                            type="text"
+                            value={reasonForVisit}
+                            onChange={(e) => setReasonForVisit(e.target.value)}
+                            placeholder="e.g. Fever, general checkup"
+                            className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="pt-2">
+                      <button
+                        type="submit"
+                        disabled={bookingLoading || isSelectedShiftEnded || isSelectedShiftFull || !activeSelectedDoctor?.slots || activeSelectedDoctor.slots.length === 0}
+                        className={`w-full h-11 px-6 rounded-full text-sm font-medium transition-all flex items-center justify-center ${
+                          isSelectedShiftEnded || isSelectedShiftFull || !activeSelectedDoctor?.slots || activeSelectedDoctor.slots.length === 0
+                            ? 'bg-[#e5e5ea] text-[#86868b] cursor-not-allowed'
+                            : 'bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white shadow-[0_2px_8px_rgba(0,102,204,0.2)] cursor-pointer'
+                        }`}
+                      >
+                        {bookingLoading
+                          ? 'Issuing Token...'
+                          : !activeSelectedDoctor?.slots || activeSelectedDoctor.slots.length === 0
+                          ? 'No Shifts Configured'
+                          : isSelectedShiftEnded
+                          ? 'Shift Ended — Select Another Slot'
+                          : isSelectedShiftFull
+                          ? 'Shift Full — Maximum Capacity Reached'
+                          : `Issue Walk-in Token (#${walkinPreview?.nextQueueNumber || 1})`}
+                      </button>
+                    </div>
+                  </form>
+
+                  {/* Right Column (5 cols): Live Token Allocation Summary Card */}
+                  <div className="lg:col-span-5 bg-[#f5f5f7] rounded-[20px] border border-[#e5e5ea] p-5 sm:p-6 space-y-5">
+                    <div className="flex items-center justify-between border-b border-[#e5e5ea] pb-4">
+                      <div>
+                        <span className="text-xs font-medium text-[#86868b] block">
+                          Next Queue Token
+                        </span>
+                        <span className="text-xs text-[#1d1d1f] font-medium mt-0.5 block">
+                          {appointmentDate}
+                        </span>
+                      </div>
+                      <span
+                        className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${
+                          isSelectedShiftEnded || isSelectedShiftFull
+                            ? 'bg-white text-[#86868b] border-[#e5e5ea]'
+                            : 'bg-[#0066cc]/10 text-[#0066cc] border-[#0066cc]/20'
+                        }`}
+                      >
+                        {isSelectedShiftEnded
+                          ? 'Shift Ended'
+                          : isSelectedShiftFull
+                          ? 'Shift Full'
+                          : 'Available'}
+                      </span>
+                    </div>
+
+                    <div className="py-3 text-center bg-white rounded-2xl border border-[#e5e5ea]">
+                      <span className="text-[11px] font-medium text-[#86868b] uppercase tracking-wider block">
+                        Token Number
+                      </span>
+                      <div className="text-4xl font-bold text-[#0066cc] tracking-tight my-1">
+                        #{walkinPreview?.nextQueueNumber || 1}
+                      </div>
+                      <span className="text-xs text-[#86868b]">
+                        {previewLoading ? 'Calculating...' : `Est. Time: ${walkinPreview?.estimatedTime || 'Immediate'}`}
+                      </span>
+                    </div>
+
+                    <div className="space-y-2.5 text-xs">
+                      <div className="flex items-center justify-between py-1.5 border-b border-[#e5e5ea]">
+                        <span className="text-[#86868b]">Practitioner</span>
+                        <span className="font-semibold text-[#1d1d1f]">
+                          {cleanDoctorName(activeSelectedDoctor?.fullName)}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between py-1.5 border-b border-[#e5e5ea]">
+                        <span className="text-[#86868b]">Patients Ahead</span>
+                        <span className="font-semibold text-[#1d1d1f]">
+                          {previewLoading ? '...' : `${walkinPreview?.patientsAhead ?? 0} waiting`}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between py-1.5">
+                        <span className="text-[#86868b]">Consultation Fee</span>
+                        <span className="text-sm font-semibold text-[#1d1d1f]">
+                          ₹{activeSelectedDoctor?.consultationFee?.toFixed(0) || 0}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+  );
+};

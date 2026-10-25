@@ -58,6 +58,42 @@ import {
   executeCompleteConsultationAtomic,
 } from '../src/controllers/consultationController';
 import { formatDoctorClinics } from '../src/controllers/doctorController';
+
+// Large files were split into folders and the original file kept as a re-export entry point
+// (e.g. controllers/receptionistController.ts -> controllers/receptionist/*.ts). Source-text checks
+// below read the original path; this makes that read return the whole family so every check still
+// looks at the same code. No assertion is changed.
+const SPLIT_SOURCE_FAMILIES: Array<{ file: string; dir: string }> = [
+  { file: 'src/controllers/receptionistController.ts', dir: 'src/controllers/receptionist' },
+  { file: 'src/controllers/doctorController.ts', dir: 'src/controllers/doctor' },
+  { file: 'src/controllers/appointmentController.ts', dir: 'src/controllers/appointment' },
+  { file: 'src/controllers/clinicController.ts', dir: 'src/controllers/clinic' },
+  { file: 'src/controllers/authController.ts', dir: 'src/controllers/auth' },
+  { file: 'frontend/src/services/api.ts', dir: 'frontend/src/services/api' },
+  { file: 'frontend/src/pages/Receptionist/ReceptionistDashboard.tsx', dir: 'frontend/src/pages/Receptionist/desk' },
+  { file: 'frontend/src/pages/Doctor/DoctorDashboard.tsx', dir: 'frontend/src/pages/Doctor/dashboard' },
+  { file: 'frontend/src/pages/Clinic/ClinicDashboard.tsx', dir: 'frontend/src/pages/Clinic/dashboard' },
+  { file: 'frontend/src/pages/Admin/AdminDashboard.tsx', dir: 'frontend/src/pages/Admin/dashboard' },
+  { file: 'frontend/src/pages/Home.tsx', dir: 'frontend/src/pages/home' },
+];
+const originalReadFileSync = fs.readFileSync.bind(fs);
+(fs as any).readFileSync = (target: any, ...rest: any[]) => {
+  const content = originalReadFileSync(target, ...rest);
+  if (typeof target !== 'string' || typeof content !== 'string') return content;
+  const normalized = path.resolve(target).split(path.sep).join('/');
+  const family = SPLIT_SOURCE_FAMILIES.find((f) => normalized.endsWith('/' + f.file) || normalized.endsWith('/backend/' + f.file) || normalized.endsWith(f.file));
+  if (!family) return content;
+  const base = normalized.slice(0, normalized.length - family.file.length);
+  const dir = path.join(base, family.dir);
+  if (!fs.existsSync(dir)) return content;
+  // Same order as the entry file's `export * from './dir/name'` lines (the original code order)
+  const order = Array.from(String(content).matchAll(/from '\.\/[^/]+\/([^']+)'/g)).map((m: RegExpMatchArray) => m[1]);
+  const parts = order
+    .map((n) => [n + '.ts', n + '.tsx'].map((f) => path.join(dir, f)).find((f) => fs.existsSync(f)))
+    .filter((f): f is string => Boolean(f))
+    .map((f) => originalReadFileSync(f, 'utf8'));
+  return [content, ...parts].join(String.fromCharCode(10));
+};
 import {
   executeReceptionistInConsultationTransaction,
   determineRescheduleTarget,
