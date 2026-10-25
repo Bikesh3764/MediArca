@@ -51,7 +51,7 @@ export const ClinicQrStandeeModal: React.FC<ClinicQrStandeeModalProps> = ({
     >
       <div className="relative w-full max-w-[420px] max-h-[92vh] overflow-y-auto bg-white rounded-[28px] border border-[#e5e5ea] shadow-[0_24px_64px_rgba(0,0,0,0.12),0_4px_16px_rgba(0,0,0,0.04)] p-6 sm:p-7 text-center print:border-none print:shadow-none print:p-0 print:max-h-none print:overflow-visible">
         {/* Close Button (Hidden on Print) */}
-        <button
+        <button aria-label="Close"
           type="button"
           onClick={onClose}
           className="absolute top-4 right-4 w-8 h-8 rounded-full bg-[#f5f5f7] hover:bg-[#e5e5ea] flex items-center justify-center text-[#86868b] hover:text-[#1d1d1f] transition-colors print:hidden cursor-pointer"

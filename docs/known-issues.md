@@ -1,6 +1,6 @@
 # MediArca Known Issues, Defect Ledger & Engineering Lessons
 
-## 1. Resolved Defects Ledger (FIX-001 through FIX-028)
+## 1. Resolved Defects Ledger (FIX-001 through FIX-037)
 
 The following defect resolutions have been implemented and verified by 2,023+ automated regression tests in `backend/scripts/verify-fixes.ts`:
 
@@ -35,6 +35,15 @@ The following defect resolutions have been implemented and verified by 2,023+ au
 | **FIX-027** | Apple HIG Weekdays & Copy Minimalism | Replaced cluttered rectangular weekday badges (`[Mon] [Tue] [Wed]`) with Apple HIG circular day discs (`WeekdayDisplay.tsx`) and rounded-full capsule selectors; streamlined copy across doctor and receptionist portals to direct 1–2 word actions (`Shifts`, `Schedule`, `Standee`, `Resume`, `Leave`, `Available`). |
 | **FIX-028** | QR Arrival Synchronization & Scanner Lifecycle | Synchronized instant QR arrival check-in with 0ms optimistic UI state transition to "Checked In at Clinic • Waiting Area"; preserved target appointment across modal unmount via `selectedApptRef`; reset `presenceOverride` upon prop change in `LiveQueueTicket`; added cache-busting timestamp `_t` and `Cache-Control: no-cache, no-store` to `getPatientAppointments`; auto-cleared `scannedFeedback` and old arrival banners upon scanner open and step-out. |
 | **FIX-029** | Silent Polling Updates & Apple Design System | Eliminated periodic background polling loading flickers across all portals (Receptionist live queue, Doctor queue, Clinic roster, Patient visits); implemented silent in-place reactive updates; refined all user-facing "Standee" text to "QR Code" / "View QR Code"; removed "Auto-generate" password and wordy boilerplate helper copy; embedded authentic Apple SF Pro webfont and tactile Apple pill buttons. |
+| **FIX-030** | Database Exposure | Supabase's public REST API (PostgREST) could read every table: RLS was off and the `anon` role had SELECT on `User`. Migration `20261025120000_lock_down_public_api_access` enables RLS on all `public` tables and revokes `anon`/`authenticated` access. The backend connects as the table owner (BYPASSRLS), so app behaviour is unchanged. Applied live on 2026-10-25. |
+| **FIX-031** | Demo Accounts | Demo logins stay visible on purpose. In production, `blockDemoAccountChanges` (`utils/demoAccounts.ts`) blocks renaming, phone/photo edits, password changes and staff/doctor removal for the public demo accounts so visitors can't deface or lock out the demo. |
+| **FIX-032** | Session Security | Password changes now record `User.passwordChangedAt`; `authenticate` rejects tokens issued before it (`utils/sessionRevocation.ts`, zero extra queries, reloaded on startup). |
+| **FIX-033** | Google Sign-In | Removed the fake "Continue with Google" button that sent an unsigned token when `VITE_GOOGLE_CLIENT_ID` was missing (it always failed). The Google section is hidden until configured. |
+| **FIX-034** | API Latency | Prisma `relationJoins` loads relations in one SQL query; signed-out discovery lists are cached in memory for 15s and cleared on any successful write (`middleware/publicResponseCache.ts`); public rate limiting no longer waits on Redis. Third-party SF Pro web fonts removed (licence + render blocking). |
+| **FIX-035** | Live Updates | Added a Server-Sent Events stream (`GET /api/events`). Every successful queue write pushes a `queue` event and clears the 4s queue snapshot (several call/complete paths never invalidated it). Patient, doctor and receptionist screens refresh instantly; polling remains as backup. Patients get a "You're next" / "Your turn" alert. |
+| **FIX-036** | Data Integrity | Migration `20261025122000_data_integrity_rules`: phones normalised to `+91 XXXXXXXXXX`; CHECK constraints on appointment status, payment status, user role and non-negative fees; queue-number uniqueness now `NULLS NOT DISTINCT` (walk-ins without clinic/shift could share a token). Raw fee writes rounded to the paisa. |
+| **FIX-037** | Tests & Monitoring | New `scripts/flow-tests.ts` (`npm run test:flow`) drives the real API end to end on PostgreSQL; frontend unit tests (`npm test`, Vitest); frontend CI workflow. Failed/slow requests and browser crashes are logged (`[HTTP]`, `[ClientError]`). |
+| **FIX-038** | Hosting Region | API moved from Render Oregon (USA) to Render Singapore (`mediarca-api-sg`) and database from Supabase Seoul to Supabase Singapore (`MediArca-SG`), with a dedicated `prisma` database login. All data copied and checksum-verified. |
 
 ---
 
@@ -88,3 +97,14 @@ The master test suite additionally verifies:
    - *Lesson*: Never render 7 rectangular colored badge tags with borders or dual-verb labels like "Manage Schedule & Leaves". Always use minimalist Apple circular day pips (`M T W T F S S`), rounded-full capsule toggles, and concise 1–2 word labels.
 6. **Anti-Pattern: Enforcing Uniqueness on Mobile Numbers or Forcing Phone OTP**
    - *Lesson*: In Indian physical outpatient clinics, family members (parents booking for children) or multi-role users frequently share a common mobile phone number. Do not enforce uniqueness constraints on mobile numbers; uniqueness is strictly on `(email, role)`. Moreover, OTP verification is strictly via Email; phone numbers are collected and validated for clinic contact without requiring phone OTP verification.
+7. **Anti-Pattern: Leaving Supabase's Public API Open**
+   - *Lesson*: Every new table in `public` is reachable through Supabase's REST API unless RLS is on. Any migration that creates a table must also `ENABLE ROW LEVEL SECURITY` on it.
+8. **Anti-Pattern: Tests That Only Grep Source Code**
+   - *Lesson*: An assertion like `content.includes('prisma.$transaction')` passes even when the feature is broken. New behaviour must be covered in `scripts/flow-tests.ts` by calling the real API.
+
+## 5. Open Items (need an owner decision)
+- ~~Database region~~ **Done 2026-10-26**: API and database both moved to Singapore (the old API was actually in Oregon, USA). See `docs/operations/database-region-move.md`.
+- **Render free plan** sleeps after 15 minutes idle; first request after sleep takes ~15–30s. The GitHub keep-alive cron is best-effort.
+- ~~Leftover tables~~ **Done**: `Prescription`, `MedicalRecord` and `staging_test` were not carried into the new Singapore database. They remain only in the old Seoul backup project.
+- **Email OTP** is sent from a personal Gmail account (500/day limit, spam risk).
+

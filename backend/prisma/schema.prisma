@@ -1,5 +1,7 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  // Load related tables in one SQL query instead of one query per relation (fewer DB round trips)
+  previewFeatures = ["relationJoins"]
 }
 
 datasource db {
@@ -17,6 +19,7 @@ model User {
   role          String         @default("PATIENT") // "PATIENT", "DOCTOR", "RECEPTIONIST", "CLINIC", "ADMIN"
   avatarUrl     String?
   mustChangePassword Boolean   @default(false)
+  passwordChangedAt  DateTime? // Tokens issued before this are rejected
   isEmailVerified    Boolean   @default(true)
   emailVerificationOtp String?
   emailVerificationOtpExpiresAt DateTime?

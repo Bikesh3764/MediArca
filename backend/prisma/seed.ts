@@ -96,7 +96,7 @@ async function main() {
       email: 'dr.arjun@mediarca.com',
       passwordHash: doctorPassword,
       fullName: 'Dr. Arjun Patel',
-      phone: '+91 98450 11223',
+      phone: '+91 9845011223',
       role: 'DOCTOR',
       avatarUrl: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&w=256&q=80',
       doctorProfile: {
@@ -380,7 +380,7 @@ async function main() {
       email: 'emily.clark@gmail.com',
       passwordHash: patientPassword,
       fullName: 'Emily Clark',
-      phone: '+91 98765 43212',
+      phone: '+91 9876543212',
       role: 'PATIENT',
       avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=256&q=80',
       patientProfile: {

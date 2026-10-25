@@ -189,7 +189,7 @@ export const CameraQrScannerModal: React.FC<CameraQrScannerModalProps> = ({
     >
       <div className="relative w-full max-w-[440px] bg-white rounded-[28px] border border-[#e5e5ea] shadow-[0_24px_64px_rgba(0,0,0,0.12),0_4px_16px_rgba(0,0,0,0.04)] overflow-hidden p-6 sm:p-7 text-center">
         {/* Close Button */}
-        <button
+        <button aria-label="Close"
           type="button"
           onClick={() => {
             setScannedFeedback(false);

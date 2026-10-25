@@ -30,11 +30,20 @@ The MediArca backend is an Express 5 REST API built with Node.js, TypeScript, an
 5. **Role-Scoped Multi-Tenancy**:
    Users are identified uniquely by `(email, role)` via `@@unique([email, role])`. Queries must include `role` alongside `email`. Mobile number uniqueness is NOT enforced; multiple accounts or family members may share a mobile number.
 6. **Phone Number Standardization**:
-   All mobile numbers must be validated with `isValidIndianPhone` and stored in canonical E.164 format `+91XXXXXXXXXX`. However, phone numbers do NOT undergo OTP verification or uniqueness checks; OTP verification is strictly performed on email.
+   All mobile numbers must be validated with `isValidIndianPhone` and stored in the canonical format `+91 XXXXXXXXXX` produced by `formatIndianPhone` (a database migration normalised existing rows). However, phone numbers do NOT undergo OTP verification or uniqueness checks; OTP verification is strictly performed on email.
 7. **Receptionist Security Guard**:
    Enforce `requireActiveReceptionist` on all desk mutation endpoints to verify `mustChangePassword === false`.
 8. **IST Timezone Discipline**:
    Always compute calendar dates using `getLocalDateString()` based on Asia/Kolkata (`UTC+05:30`).
+
+9. **Lock Down Every New Table**:
+   Supabase exposes `public` tables through its REST API. Any migration that creates a table must also run `ALTER TABLE ... ENABLE ROW LEVEL SECURITY`.
+10. **Live Updates Come For Free on Queue Routes**:
+   `publishOnQueueWrite` pushes a live `queue` event and clears the queue snapshot after any successful write under `/api/appointments|consultations|receptionist(s)|doctors|clinic(s)`. Include `doctorId` in the JSON response of new queue endpoints so patients of other doctors can ignore the event.
+11. **Demo Accounts Stay Usable**:
+   New endpoints that rename users, change credentials or delete records must add `blockDemoAccountChanges`.
+12. **Behaviour Tests Over Source Greps**:
+   Cover new flows in `scripts/flow-tests.ts` (real HTTP + PostgreSQL), not by asserting that source files contain strings.
 
 ---
 
@@ -43,6 +52,9 @@ The MediArca backend is an Express 5 REST API built with Node.js, TypeScript, an
 ```bash
 # Run the master automated verification suite (2,023+ regression tests)
 npm run test:verify
+
+# End-to-end visit flow on a real PostgreSQL database (CI runs this)
+npm run test:flow
 
 # Compile TypeScript and generate Prisma client
 npm run build

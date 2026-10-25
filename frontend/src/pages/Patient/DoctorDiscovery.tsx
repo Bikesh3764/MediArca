@@ -531,7 +531,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                   className="w-full h-full bg-transparent text-xs sm:text-sm text-[#1d1d1f] placeholder-[#86868b] focus:outline-none truncate"
                 />
                 {clinicSearchQuery && (
-                  <button
+                  <button aria-label="Close"
                     type="button"
                     onClick={() => setClinicSearchQuery('')}
                     className="text-[#86868b] hover:text-[#1d1d1f] cursor-pointer shrink-0"
@@ -979,7 +979,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                 className="w-full bg-transparent text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:outline-none"
               />
               {search && (
-                <button type="button" onClick={() => setSearch('')} className="text-[#86868b] hover:text-[#1d1d1f]">
+                <button aria-label="Close" type="button" onClick={() => setSearch('')} className="text-[#86868b] hover:text-[#1d1d1f]">
                   <X className="w-3.5 h-3.5" />
                 </button>
               )}
@@ -1153,7 +1153,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                   className="w-full bg-transparent text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:outline-none"
                 />
                 {search && (
-                  <button type="button" onClick={() => setSearch('')} className="text-[#86868b] hover:text-[#1d1d1f]">
+                  <button aria-label="Close" type="button" onClick={() => setSearch('')} className="text-[#86868b] hover:text-[#1d1d1f]">
                     <X className="w-3.5 h-3.5" />
                   </button>
                 )}
@@ -1289,7 +1289,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                   {selectedState !== 'All' && (
                     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white text-[#1d1d1f] text-xs font-medium border border-[#e5e5ea] shadow-2xs">
                       {selectedState}
-                      <button
+                      <button aria-label="Close"
                         type="button"
                         onClick={() => handleStateChange('All')}
                         className="hover:opacity-75 cursor-pointer"
@@ -1301,7 +1301,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                   {selectedCity !== 'All' && (
                     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white text-[#1d1d1f] text-xs font-medium border border-[#e5e5ea] shadow-2xs">
                       {selectedCity}
-                      <button
+                      <button aria-label="Close"
                         type="button"
                         onClick={() => setSelectedCity('All')}
                         className="hover:opacity-75 cursor-pointer"
@@ -1313,7 +1313,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                   {maxFee < 3000 && (
                     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white text-[#1d1d1f] text-xs font-medium border border-[#e5e5ea] shadow-2xs">
                       ≤ ₹{maxFee}
-                      <button type="button" onClick={() => setMaxFee(3000)} className="hover:opacity-75 cursor-pointer">
+                      <button aria-label="Close" type="button" onClick={() => setMaxFee(3000)} className="hover:opacity-75 cursor-pointer">
                         <X className="w-3 h-3 text-[#86868b]" />
                       </button>
                     </span>
@@ -1321,7 +1321,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                   {minExp > 0 && (
                     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white text-[#1d1d1f] text-xs font-medium border border-[#e5e5ea] shadow-2xs">
                       {minExp}+ Yrs
-                      <button type="button" onClick={() => setMinExp(0)} className="hover:opacity-75 cursor-pointer">
+                      <button aria-label="Close" type="button" onClick={() => setMinExp(0)} className="hover:opacity-75 cursor-pointer">
                         <X className="w-3 h-3 text-[#86868b]" />
                       </button>
                     </span>

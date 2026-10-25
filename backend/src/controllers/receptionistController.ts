@@ -17,8 +17,7 @@ import {
   parseDoctorLeaves,
   isDoctorOnLeave,
   isDoctorWorkingOnDate,
-  cleanWorkingDays,
-} from '../utils/scheduleUtils';
+  cleanWorkingDays, parseAffiliationSlots } from '../utils/scheduleUtils';
 import { formatIndianPhone, sanitizeIndianPhone, isValidIndianPhone, findExistingAccountByPhone } from '../utils/phoneUtils';
 import { canTransition } from '../utils/appointmentStateMachine';
 import {
@@ -28,6 +27,7 @@ import {
 } from '../utils/authGuards';
 import { createNotification } from '../services/notificationService';
 import { invalidateDoctorQueueCache } from '../utils/queueStateCache';
+import { markPasswordChanged } from '../utils/sessionRevocation';
 
 /**
  * Get profile and linked doctors for logged-in receptionist
@@ -1366,14 +1366,18 @@ export const changeReceptionistPassword = async (req: AuthRequest, res: Response
     const salt = await bcrypt.genSalt(10);
     const newHash = await bcrypt.hash(newPassword, salt);
 
+    const passwordChangedAt = new Date();
     const updatedUser = await prisma.user.update({
       where: { id: user.id },
       data: {
         passwordHash: newHash,
         mustChangePassword: false,
+        passwordChangedAt,
       },
       include: { receptionistProfile: true },
     });
+    // Sign out every older session that used the previous password
+    markPasswordChanged(updatedUser.id, passwordChangedAt);
 
     const { passwordHash: _, ...safeUser } = updatedUser;
 
@@ -2237,8 +2241,10 @@ export const applyReceptionist = async (req: Request, res: Response): Promise<vo
             phone: formattedPhone,
             isEmailVerified: false,
             mustChangePassword: false,
+            passwordChangedAt: new Date(),
           },
         });
+        markPasswordChanged(updatedUser.id);
         const updatedRec = existingRecProfile
           ? await db.receptionistProfile.update({
               where: { id: existingRecProfile.id },
@@ -2535,10 +2541,7 @@ export const rescheduleAppointment = async (req: AuthRequest, res: Response): Pr
                   ? appointment.doctor?.clinics?.find((c: any) => c.clinicId === appointment.clinicId)
                   : null;
                 if (cd?.slots) {
-                  try {
-                    const parsed = typeof cd.slots === 'string' ? JSON.parse(cd.slots) : cd.slots;
-                    if (Array.isArray(parsed) && parsed.length > 0) activeSlots = parsed;
-                  } catch {}
+                  activeSlots = parseAffiliationSlots(cd.slots) ?? activeSlots;
                 }
                 const prevSlot = (duplicate.slotId && activeSlots.find((s) => s.id === duplicate.slotId)) || activeSlots[0];
                 if (prevSlot) {
@@ -2987,10 +2990,7 @@ export const getReceptionistReport = async (req: AuthRequest, res: Response): Pr
 
       let cSlots = parseDoctorSlots(cd.doctor);
       if ((cd as any).slots) {
-        try {
-          const parsed = typeof (cd as any).slots === 'string' ? JSON.parse((cd as any).slots) : (cd as any).slots;
-          if (Array.isArray(parsed) && parsed.length > 0) cSlots = parsed;
-        } catch {}
+        cSlots = parseAffiliationSlots((cd as any).slots) ?? cSlots;
       }
       doctorSlotsMap.set(cd.doctorId, cSlots);
     });

@@ -75,6 +75,11 @@ import { updateProfile } from './controllers/authController';
 import { submitContactMessage } from './controllers/adminController';
 import { securityStore } from './utils/securityStore';
 import { expireStalePendingAppointments } from './utils/maintenance';
+import { blockDemoAccountChanges } from './utils/demoAccounts';
+import { loadRecentPasswordChanges } from './utils/sessionRevocation';
+import { publicResponseCache, invalidatePublicCacheOnWrite } from './middleware/publicResponseCache';
+import { streamLiveEvents, publishOnQueueWrite, closeAllLiveStreams } from './utils/liveEvents';
+import { requestLogger, receiveClientError } from './middleware/requestLogger';
 
 const isProduction = process.env.NODE_ENV === 'production';
 
@@ -161,6 +166,9 @@ app.use(
   })
 );
 
+// Log failed and slow requests (visible in Render logs)
+app.use(requestLogger);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -218,7 +226,8 @@ app.get(['/healthz', '/api/health', '/'], async (_req: Request, res: Response) =
       return;
     }
     res.json({
-      status: redisActive ? 'ok' : 'degraded',
+      // Redis is optional on a single instance; only report degraded when it's required but down
+      status: redisActive || !isRedisRequired ? 'ok' : 'degraded',
       database: dbStatus,
       redis: redisStatus,
     });
@@ -286,7 +295,16 @@ export const normalizeRateLimitPath = (rawPath: string, baseUrl?: string): strin
     .replace(/\/\d+(?=\/|$)/g, '/:id');
 };
 
-export const authRateLimiter = (maxRequests = 40, windowSeconds = 60, customScope?: string) => {
+// High-volume public reads: counting them in Redis added a network round trip to every
+// discovery request, so they are limited per process instead (single Render instance).
+const PUBLIC_CATALOG_LIMIT_KEYS = new Set(['/api/doctors', '/api/clinics', '/api/appointments/queue-preview']);
+
+export const authRateLimiter = (
+  maxRequests = 40,
+  windowSeconds = 60,
+  customScope?: string,
+  options: { localOnly?: boolean } = {}
+) => {
   return (req: Request, res: Response, next: NextFunction): void => {
     // Secure client IP extraction: Rely on Express-computed req.ip which respects 'trust proxy'
     // Avoid manual x-forwarded-for parsing that is susceptible to spoofing
@@ -316,6 +334,19 @@ export const authRateLimiter = (maxRequests = 40, windowSeconds = 60, customScop
     const rawPath = req.originalUrl ? req.originalUrl.split('?')[0] : (req.baseUrl || req.path);
     const pathKey = customScope || normalizeRateLimitPath(rawPath, req.baseUrl);
     const key = `${clientIdentifier}:${pathKey}`;
+
+    if (options.localOnly || PUBLIC_CATALOG_LIMIT_KEYS.has(pathKey)) {
+      const localOnlyResult = securityStore.incrementRateLimitSync(String(key), maxRequests, windowSeconds);
+      if (!localOnlyResult.allowed) {
+        res.status(429).json({
+          success: false,
+          message: 'Too many requests. Please wait a moment before trying again.',
+        });
+        return;
+      }
+      next();
+      return;
+    }
 
     const isCriticalAuth = /^\/api\/(auth\/(login|register|google|verify-otp|resend-otp)|receptionists?\/apply)/i.test(
       req.originalUrl || req.baseUrl || req.path
@@ -408,17 +439,30 @@ app.use(['/api/auth/verify-otp'], authRateLimiter(10, 60));
 app.use(['/api/auth/resend-otp'], authRateLimiter(5, 60));
 
 // Rate Limiting for public directory & queue preview endpoints (Finding #33)
+// Public catalog paths use the in-process counter (no Redis round trip): see PUBLIC_CATALOG_LIMIT_KEYS
 export const publicApiLimiter = authRateLimiter(300, 60);
 app.use(['/api/doctors', '/api/appointments/queue-preview', '/api/clinics'], publicApiLimiter);
+
+// Any successful write clears the public discovery cache below
+app.use('/api', invalidatePublicCacheOnWrite);
+// Push a live "queue changed" event to open screens after queue writes
+app.use('/api', publishOnQueueWrite);
+// Signed-out discovery lists are served from memory for 15s (each miss costs several DB round trips)
+app.use(['/api/doctors', '/api/clinics/public', '/api/clinic/public'], publicResponseCache(15000));
 
 // Mount dedicated rate limiting on public contact form submissions (FIX-017)
 // 5 submissions per 10 minutes (600 seconds) per IP/client scope
 export const contactRateLimiter = authRateLimiter(5, 600, 'contact');
 
+// Browser crash reports (logged as [ClientError]); 20 per minute per visitor
+app.post('/api/client-errors', authRateLimiter(20, 60, 'client-errors'), receiveClientError);
+
+// Live updates stream (Server-Sent Events)
+app.get('/api/events', authenticate, streamLiveEvents);
 app.use('/api/auth', authRoutes);
 app.post(['/api/contact', '/api/contact-us'], contactRateLimiter, submitContactMessage);
-app.put(['/api/users/profile', '/api/user/profile'], authenticate, updateProfile);
-app.put(['/api/doctors/profile', '/api/doctor/profile'], authenticate, updateProfile);
+app.put(['/api/users/profile', '/api/user/profile'], authenticate, blockDemoAccountChanges, updateProfile);
+app.put(['/api/doctors/profile', '/api/doctor/profile'], authenticate, blockDemoAccountChanges, updateProfile);
 app.use('/api/doctors', doctorRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/consultations', consultationRoutes);
@@ -470,7 +514,8 @@ export const gracefulShutdown = (
       clearInterval(appointmentExpiryTimer);
     }
 
-    // 2. Stop accepting new HTTP requests and allow in-flight requests to complete
+    // 2. End live update streams, then stop accepting new HTTP requests and let in-flight ones finish
+    closeAllLiveStreams();
     await new Promise<void>((resolve) => {
       let closed = false;
       const timer = setTimeout(() => {
@@ -532,6 +577,8 @@ export const gracefulShutdown = (
 registerProcessHandlers();
 
 if (process.env.NODE_ENV !== 'test' && !process.env.MEDIARCA_TEST_SUITE) {
+  // Re-apply "signed out after password change" rules that were set before this restart
+  loadRecentPasswordChanges().catch(() => {});
   server = app.listen(PORT, () => {
     console.log(`=========================================`);
     console.log(`🚀 MediArca API running on port ${PORT}`);

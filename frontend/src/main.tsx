@@ -5,6 +5,10 @@ import './index.css';
 import App from './App.tsx';
 
 import { GOOGLE_CLIENT_ID } from './config/auth';
+import { installGlobalErrorReporting } from './utils/errorReporter';
+
+// Send uncaught browser errors to the backend log
+installGlobalErrorReporting();
 
 // Seamlessly recover when Vite dynamic chunk imports fail due to a fresh deployment
 if (typeof window !== 'undefined') {

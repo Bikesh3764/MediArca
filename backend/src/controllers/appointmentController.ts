@@ -16,8 +16,7 @@ import {
   isDoctorOnLeave,
   isDoctorWorkingOnDate,
   parseDoctorWorkingDays,
-  parseDoctorLeaves,
-} from '../utils/scheduleUtils';
+  parseDoctorLeaves, parseAffiliationSlots } from '../utils/scheduleUtils';
 import crypto from 'crypto';
 import { canTransition } from '../utils/appointmentStateMachine';
 import { formatIndianPhone, sanitizeIndianPhone, isValidIndianPhone } from '../utils/phoneUtils';
@@ -724,10 +723,7 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
           } else if (appointmentDate === istTodayStr) {
             let activeSlots = parseDoctorSlots(doctor);
             if (targetAffiliation?.slots) {
-              try {
-                const parsed = typeof targetAffiliation.slots === 'string' ? JSON.parse(targetAffiliation.slots) : targetAffiliation.slots;
-                if (Array.isArray(parsed) && parsed.length > 0) activeSlots = parsed;
-              } catch {}
+              activeSlots = parseAffiliationSlots(targetAffiliation.slots) ?? activeSlots;
             }
             const prevSlot = (existingPatientBooking.slotId && activeSlots.find((s) => s.id === existingPatientBooking.slotId)) || activeSlots[0];
             if (prevSlot) {
@@ -804,10 +800,7 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
                 } else if (appointmentDate === istTodayStr) {
                   let activeSlots = parseDoctorSlots(doctor);
                   if (targetAffiliation?.slots) {
-                    try {
-                      const parsed = typeof targetAffiliation.slots === 'string' ? JSON.parse(targetAffiliation.slots) : targetAffiliation.slots;
-                      if (Array.isArray(parsed) && parsed.length > 0) activeSlots = parsed;
-                    } catch {}
+                    activeSlots = parseAffiliationSlots(targetAffiliation.slots) ?? activeSlots;
                   }
                   const prevSlot = (duplicateInTx.slotId && activeSlots.find((s) => s.id === duplicateInTx.slotId)) || activeSlots[0];
                   if (prevSlot) {
@@ -1424,10 +1417,7 @@ export const getPatientAppointments = async (req: AuthRequest, res: Response): P
       if (appt.status === 'WAITING' || appt.status === 'IN_CONSULTATION') {
         let slots = parseDoctorSlots(appt.doctor);
         if (targetClinicAffiliation?.slots) {
-          try {
-            const parsed = typeof targetClinicAffiliation.slots === 'string' ? JSON.parse(targetClinicAffiliation.slots) : targetClinicAffiliation.slots;
-            if (Array.isArray(parsed) && parsed.length > 0) slots = parsed;
-          } catch {}
+          slots = parseAffiliationSlots(targetClinicAffiliation.slots) ?? slots;
         }
         const slot = (appt.slotId && slots.find((s) => s.id === appt.slotId)) || slots[0];
         const pace = slot?.avgConsultationMinutes || 3.0;
@@ -1505,10 +1495,7 @@ export const getPatientAppointments = async (req: AuthRequest, res: Response): P
       if (appt.status === 'PENDING_APPROVAL') {
         let slots = parseDoctorSlots(appt.doctor);
         if (targetClinicAffiliation?.slots) {
-          try {
-            const parsed = typeof targetClinicAffiliation.slots === 'string' ? JSON.parse(targetClinicAffiliation.slots) : targetClinicAffiliation.slots;
-            if (Array.isArray(parsed) && parsed.length > 0) slots = parsed;
-          } catch {}
+          slots = parseAffiliationSlots(targetClinicAffiliation.slots) ?? slots;
         }
         const slot = (appt.slotId && slots.find((s) => s.id === appt.slotId)) || slots[0];
         let isShiftPassed = false;

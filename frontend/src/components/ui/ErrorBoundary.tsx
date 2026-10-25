@@ -1,4 +1,5 @@
 import { Component, ErrorInfo, ReactNode } from 'react';
+import { reportClientError } from '../../utils/errorReporter';
 import { RefreshCw, Home, AlertTriangle } from 'lucide-react';
 import { AppleButton } from './AppleButton';
 
@@ -40,6 +41,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('Uncaught MediArca runtime error:', error, errorInfo);
+    if (!isChunkLoadError(error)) reportClientError(error);
     if (isChunkLoadError(error)) {
       const lastReload = window.sessionStorage.getItem('mediarca_boundary_chunk_reload');
       const now = Date.now();

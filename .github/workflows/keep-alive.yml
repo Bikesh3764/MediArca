@@ -12,7 +12,7 @@ jobs:
       - name: Ping MediArca Live Backend & Supabase Database
         run: |
           echo "Pinging MediArca Healthz..."
-          curl -fsSL https://mediarca-mdwk.onrender.com/healthz || true
+          curl -fsSL https://mediarca-api-sg.onrender.com/healthz || true
           echo "Pinging MediArca Doctors API..."
-          curl -fsSL https://mediarca-mdwk.onrender.com/api/doctors || true
+          curl -fsSL https://mediarca-api-sg.onrender.com/api/doctors || true
 

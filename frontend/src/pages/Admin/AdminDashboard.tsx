@@ -799,7 +799,7 @@ export const AdminDashboard: React.FC = () => {
                       className="w-full h-10 pl-10 pr-8 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-base sm:text-xs text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:outline-none focus:bg-white focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all"
                     />
                     {doctorSearchQuery && (
-                      <button
+                      <button aria-label="Close"
                         type="button"
                         onClick={() => setDoctorSearchQuery('')}
                         className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#86868b] hover:text-[#1d1d1f]"
@@ -1002,7 +1002,7 @@ export const AdminDashboard: React.FC = () => {
                       className="w-full h-10 pl-10 pr-8 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-base sm:text-xs text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:outline-none focus:bg-white focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all"
                     />
                     {clinicSearchQuery && (
-                      <button
+                      <button aria-label="Close"
                         type="button"
                         onClick={() => setClinicSearchQuery('')}
                         className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#86868b] hover:text-[#1d1d1f]"
@@ -1294,7 +1294,7 @@ export const AdminDashboard: React.FC = () => {
                           className="w-full h-11 pl-10 pr-8 rounded-xl bg-white border border-[#d2d2d7] text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                         />
                         {bookingSearchQuery && (
-                          <button
+                          <button aria-label="Close"
                             type="button"
                             onClick={() => setBookingSearchQuery('')}
                             className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#86868b] hover:text-[#1d1d1f]"
@@ -1890,7 +1890,7 @@ export const AdminDashboard: React.FC = () => {
                   </div>
                 </div>
               </div>
-              <button
+              <button aria-label="Close"
                 onClick={() => setSelectedDoctor(null)}
                 className="p-1.5 rounded-full hover:bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f] active:scale-95 transition-all cursor-pointer"
               >
@@ -2072,7 +2072,7 @@ export const AdminDashboard: React.FC = () => {
                   {renderStatusBadge(getPractitionerStatus(selectedClinic))}
                 </div>
               </div>
-              <button
+              <button aria-label="Close"
                 onClick={() => setSelectedClinic(null)}
                 className="p-1.5 rounded-full hover:bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f] active:scale-95 transition-all cursor-pointer"
               >
@@ -2271,7 +2271,7 @@ export const AdminDashboard: React.FC = () => {
                   {formatDisplayDate(selectedAppointment.appointmentDate)} • {selectedAppointment.estimatedTime || 'Estimated Time N/A'}
                 </p>
               </div>
-              <button
+              <button aria-label="Close"
                 type="button"
                 onClick={() => setSelectedAppointment(null)}
                 className="p-1.5 rounded-full hover:bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f] active:scale-95 transition-all cursor-pointer"

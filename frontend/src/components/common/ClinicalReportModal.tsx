@@ -352,7 +352,7 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
               <span>Print / Save PDF</span>
             </button>
 
-            <button
+            <button aria-label="Close"
               type="button"
               onClick={onClose}
               className="w-9 h-9 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#86868b] hover:text-[#1d1d1f] flex items-center justify-center transition-all cursor-pointer ml-1"

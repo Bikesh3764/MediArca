@@ -1,6 +1,8 @@
+# Reference blueprint. The live service `mediarca-api-sg` (Singapore) builds backend/Dockerfile,
+# whose CMD is the same `npm start` (migrations, then server). See docs/operations/database-region-move.md.
 services:
   - type: web
-    name: mediarca-api
+    name: mediarca-api-sg
     env: node
     plan: free
     region: singapore
@@ -19,7 +21,7 @@ services:
       - key: DIRECT_URL
         sync: false # Enter your Supabase direct connection URL
       - key: FRONTEND_URL
-        value: https://bikesh3764.github.io
+        value: https://mediarca.in
       - key: GOOGLE_CLIENT_ID
         sync: false # Enter your Google Cloud OAuth 2.0 Client ID
       - key: REDIS_URL

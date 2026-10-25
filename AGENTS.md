@@ -25,6 +25,7 @@ MediArca is an Indian healthcare outpatient appointment and live queue managemen
    - Backend TypeScript build: `npm run build` (in `backend/`)
    - Frontend TypeScript & Vite build: `npm run build` (in `frontend/`)
    - Frontend Biome/ESLint linter: `npm run lint` (in `frontend/`)
+   - Plus, when a PostgreSQL database is available: `npm run test:flow` (in `backend/`) and `npm test` (in `frontend/`)
 2. **Always Use Atomic Transactions**: Any queue status mutation (`callPatient`, `holdConsultation`, `completeConsultation`, `approveAppointment`, `rescheduleAppointment`) MUST be wrapped in a `prisma.$transaction` to prevent race conditions.
 3. **Single Active Consultation Invariant**: A doctor can have at most ONE appointment in `IN_CONSULTATION` status across all clinics at any given time.
 4. **Receptionist Contact & Coordination**: Always expose receptionist contact information (name and phone number) on booking confirmation and live queue tickets so patients can call directly to coordinate payment (UPI over call) or pay in-person.
@@ -43,6 +44,7 @@ MediArca is an Indian healthcare outpatient appointment and live queue managemen
 9. **Apple HIG Weekdays & Ultra-Concise Copy**: Display calendar and roster weekdays using single-letter Apple circular discs (`M T W T F S S`) inside a parchment pill track (`WeekdayDisplay.tsx`). Use Apple `rounded-full` pill buttons (`h-11 rounded-full`) for interactive day selectors. Keep all UI text and button labels minimal, simple, and direct (e.g. `Shifts`, `Schedule`, `QR Code`, `Resume`, `Leave`, `Available`).
 10. **Email-Only Account Uniqueness & Verification**: Account uniqueness is strictly enforced on `(email, role)` via `@@unique([email, role])`. Mobile number uniqueness is NOT required or enforced, permitting shared phone numbers for family members and dependents. OTP verification is performed exclusively via Email (Gmail SMTP with 6-digit numeric OTP). Phone numbers are collected and validated for the Indian standard (`+91` 10-digit mobile), but require no phone OTP or phone verification.
 11. **Silent Background Updates & Zero Disruptive Polling Screens**: Background real-time polling (`useVisibilityPolling`) MUST update state silently in-place without triggering full-screen loading spinners, clearing table rosters, or flashing "Loading live queue..." banners. Loading screens are reserved strictly for the initial empty mount.
+12. **Supabase Public API Stays Closed**: Row-level security is on for every table; new tables must enable it in their migration (see FIX-030).
 
 ### Strict DON'Ts
 1. **NO Online Payment Gateways**: NEVER introduce Stripe, Razorpay, PayPal, or automated upfront credit/debit card checkout. MediArca operates under a zero-upfront payment policy where patients coordinate payment directly with the receptionist.

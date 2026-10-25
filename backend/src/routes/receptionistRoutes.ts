@@ -17,6 +17,7 @@ import {
 import { updateCabinStatus } from '../controllers/doctorController';
 import { checkInAppointmentDirect } from '../controllers/appointmentController';
 import { authenticate, authorize, requireActiveReceptionist } from '../middleware/authMiddleware';
+import { blockDemoAccountChanges } from '../utils/demoAccounts';
 
 const router = Router();
 
@@ -26,7 +27,7 @@ router.post('/apply', applyReceptionist);
 // Authenticated receptionist account management (FIX-008)
 // Must NOT be blocked by requireActiveReceptionist: receptionists must be able to change
 // their temporary/initial password even if their affiliated clinic is pending admin verification.
-router.put('/change-password', authenticate, authorize('RECEPTIONIST'), changeReceptionistPassword);
+router.put('/change-password', authenticate, authorize('RECEPTIONIST'), blockDemoAccountChanges, changeReceptionistPassword);
 
 // Authenticated & Active receptionist operations
 router.use(authenticate, authorize('RECEPTIONIST'), requireActiveReceptionist);

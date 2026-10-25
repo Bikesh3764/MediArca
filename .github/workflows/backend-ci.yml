@@ -89,3 +89,7 @@ jobs:
       - name: Execute Automated Verification Test Suite
         working-directory: backend
         run: npm run test:verify
+
+      - name: Run End-to-End Visit Flow Tests (real PostgreSQL)
+        working-directory: backend
+        run: npm run test:flow

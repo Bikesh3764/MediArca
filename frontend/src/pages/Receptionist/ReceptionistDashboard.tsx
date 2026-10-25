@@ -17,6 +17,7 @@ import {
 } from '../../services/api';
 import { sanitizeIndianPhone, formatIndianPhone, isValidIndianPhone } from '../../utils/phoneUtils';
 import { useVisibilityPolling } from '../../utils/useVisibilityPolling';
+import { useLiveEvent } from '../../utils/liveEvents';
 import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationContext';
 import { DashboardLayout, DashboardNavItem } from '../../components/layout/DashboardLayout';
@@ -370,6 +371,18 @@ export const ReceptionistDashboard: React.FC = () => {
       }
     },
     15000,
+    Boolean(user) && user?.role?.toUpperCase() === 'RECEPTIONIST' && !user?.mustChangePassword
+  );
+
+  // Instant refresh when a queue changes (new online booking, doctor calls a patient, etc.)
+  useLiveEvent(
+    'queue',
+    (evt) => {
+      fetchPendingAppointments(true);
+      if (activeTab === 'queue' && queueDoctorId && (!evt.doctorId || evt.doctorId === queueDoctorId)) {
+        fetchQueue(undefined, undefined, true);
+      }
+    },
     Boolean(user) && user?.role?.toUpperCase() === 'RECEPTIONIST' && !user?.mustChangePassword
   );
 
@@ -897,7 +910,7 @@ export const ReceptionistDashboard: React.FC = () => {
               <CheckCircle2 className="w-4 h-4 text-[#0066cc] flex-shrink-0" />
               <span className="font-medium">{successMsg}</span>
             </div>
-            <button onClick={() => setSuccessMsg(null)} className="text-[#86868b] hover:text-[#1d1d1f] p-1">
+            <button aria-label="Close" onClick={() => setSuccessMsg(null)} className="text-[#86868b] hover:text-[#1d1d1f] p-1">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -909,7 +922,7 @@ export const ReceptionistDashboard: React.FC = () => {
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
               <span className="font-medium">{error}</span>
             </div>
-            <button onClick={() => setError(null)} className="text-rose-700 hover:text-rose-900 p-1">
+            <button aria-label="Close" onClick={() => setError(null)} className="text-rose-700 hover:text-rose-900 p-1">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -1070,7 +1083,7 @@ export const ReceptionistDashboard: React.FC = () => {
                     className="w-full h-10 pl-9 pr-8 rounded-full border border-[#e5e5ea] text-base sm:text-xs bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
                   />
                   {queueSearch && (
-                    <button
+                    <button aria-label="Close"
                       type="button"
                       onClick={() => setQueueSearch('')}
                       className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#86868b] hover:text-[#1d1d1f] p-0.5 cursor-pointer"
@@ -2019,7 +2032,7 @@ export const ReceptionistDashboard: React.FC = () => {
                       className="w-full h-10 sm:h-9 pl-9 pr-8 rounded-full border border-[#e5e5ea] text-base sm:text-xs bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
                     />
                     {pendingSearch && (
-                      <button
+                      <button aria-label="Close"
                         type="button"
                         onClick={() => setPendingSearch('')}
                         className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#86868b] hover:text-[#1d1d1f] p-0.5 cursor-pointer"
@@ -2496,7 +2509,7 @@ export const ReceptionistDashboard: React.FC = () => {
                 </h3>
                 <p className="text-xs text-[#86868b] mt-0.5">Live consultation queue pass</p>
               </div>
-              <button
+              <button aria-label="Close"
                 type="button"
                 onClick={() => setBookedPass(null)}
                 className="p-1.5 rounded-full text-[#86868b] hover:text-[#1d1d1f] hover:bg-[#f5f5f7] cursor-pointer"
@@ -2729,7 +2742,7 @@ export const ReceptionistDashboard: React.FC = () => {
                 </h3>
                 <p className="text-xs text-[#86868b] mt-0.5">Shift patient visit to another date or shift</p>
               </div>
-              <button
+              <button aria-label="Close"
                 type="button"
                 onClick={() => setRescheduleTarget(null)}
                 className="text-[#86868b] hover:text-[#1d1d1f] p-1.5 rounded-full hover:bg-[#f5f5f7] cursor-pointer"

@@ -1,0 +1,14 @@
+{
+  "name": "MediArca",
+  "short_name": "MediArca",
+  "description": "Book clinic visits and track your live queue token.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f5f5f7",
+  "theme_color": "#ffffff",
+  "icons": [
+    { "src": "brand/mediarca-icon.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "favicon.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

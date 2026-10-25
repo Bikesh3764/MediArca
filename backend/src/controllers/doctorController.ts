@@ -18,8 +18,7 @@ import {
   isDoctorOnLeave,
   isDoctorWorkingOnDate,
   DoctorLeave,
-  isValidAppointmentDate,
-} from '../utils/scheduleUtils';
+  isValidAppointmentDate, parseAffiliationSlots } from '../utils/scheduleUtils';
 import { isDoctorEligibleForClinicalPractice, verifyReceptionistDoctorAccess, isClinicActive } from '../utils/authGuards';
 import { parsePaginationParams, buildPaginationMetadata } from '../utils/pagination';
 import { createNotification } from '../services/notificationService';
@@ -564,7 +563,7 @@ export const updateSchedule = async (req: AuthRequest, res: Response): Promise<v
           clinicUpdateData.slots = JSON.stringify(formattedSlots);
         }
         if (consultationFee !== undefined && Number.isFinite(Number(consultationFee)) && Number(consultationFee) >= 0) {
-          clinicUpdateData.consultationFee = Number(consultationFee);
+          clinicUpdateData.consultationFee = Math.round(Number(consultationFee) * 100) / 100; // ₹ to the paisa
         }
         if (req.body.workingDays && Array.isArray(req.body.workingDays)) {
           const cleanedDays = cleanWorkingDays(req.body.workingDays);
@@ -628,7 +627,7 @@ export const updateSchedule = async (req: AuthRequest, res: Response): Promise<v
         maxDailyPatients: Math.max(1, Number(derivedMaxPatients)),
       }),
       ...(consultationFee !== undefined && Number.isFinite(Number(consultationFee)) && Number(consultationFee) >= 0 && {
-        consultationFee: Number(consultationFee),
+        consultationFee: Math.round(Number(consultationFee) * 100) / 100,
       }),
       ...(clinicAddress !== undefined && { clinicAddress }),
       ...(bio !== undefined && { bio }),
@@ -1616,10 +1615,7 @@ export const getDoctorReport = async (req: AuthRequest, res: Response): Promise<
       clinicFeeMap.set(cd.clinicId, fee);
       let cSlots = defaultDoctorSlots;
       if ((cd as any).slots) {
-        try {
-          const parsed = typeof (cd as any).slots === 'string' ? JSON.parse((cd as any).slots) : (cd as any).slots;
-          if (Array.isArray(parsed) && parsed.length > 0) cSlots = parsed;
-        } catch {}
+        cSlots = parseAffiliationSlots((cd as any).slots) ?? cSlots;
       }
       clinicSlotsMap.set(cd.clinicId, cSlots);
     });
@@ -1970,10 +1966,7 @@ export const updateDoctorWorkingDays = async (req: AuthRequest, res: Response): 
         if (!isClinicActive(otherAff.clinic).active) continue;
         let otherSlots = parseDoctorSlots(doctorRec);
         if (otherAff.slots) {
-          try {
-            const parsed = typeof otherAff.slots === 'string' ? JSON.parse(otherAff.slots) : otherAff.slots;
-            if (Array.isArray(parsed) && parsed.length > 0) otherSlots = parsed;
-          } catch {}
+          otherSlots = parseAffiliationSlots(otherAff.slots) ?? otherSlots;
         }
         const otherWorkingDays = otherAff.workingDays
           ? parseDoctorWorkingDays(otherAff.workingDays)

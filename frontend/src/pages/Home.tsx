@@ -472,7 +472,7 @@ export const Home: React.FC = () => {
                 className="w-full bg-transparent text-base sm:text-sm text-[#1d1d1f] placeholder-[#86868b] focus:outline-none"
               />
               {heroSearchQuery && (
-                <button
+                <button aria-label="Close"
                   type="button"
                   onClick={() => setHeroSearchQuery('')}
                   className="text-[#86868b] hover:text-[#1d1d1f] cursor-pointer"
@@ -496,7 +496,7 @@ export const Home: React.FC = () => {
                 className="w-full bg-transparent text-base sm:text-sm text-[#1d1d1f] placeholder-[#86868b] focus:outline-none"
               />
               {heroLocationQuery && (
-                <button
+                <button aria-label="Close"
                   type="button"
                   onClick={() => setHeroLocationQuery('')}
                   className="text-[#86868b] hover:text-[#1d1d1f] cursor-pointer"
@@ -561,7 +561,7 @@ export const Home: React.FC = () => {
                     className="w-full h-full bg-transparent text-xs sm:text-sm text-[#1d1d1f] placeholder-[#86868b] focus:outline-none truncate"
                   />
                   {clinicSearchQuery && (
-                    <button
+                    <button aria-label="Close"
                       type="button"
                       onClick={() => setClinicSearchQuery('')}
                       className="text-[#86868b] hover:text-[#1d1d1f] cursor-pointer shrink-0"
@@ -706,7 +706,7 @@ export const Home: React.FC = () => {
                   className="w-full h-full bg-transparent text-xs sm:text-sm text-[#1d1d1f] placeholder-[#86868b] focus:outline-none truncate"
                 />
                 {doctorSearchQuery && (
-                  <button
+                  <button aria-label="Close"
                     type="button"
                     onClick={() => setDoctorSearchQuery('')}
                     className="text-[#86868b] hover:text-[#1d1d1f] cursor-pointer shrink-0"
@@ -728,7 +728,7 @@ export const Home: React.FC = () => {
                   className="w-full h-full bg-transparent text-xs sm:text-sm text-[#1d1d1f] placeholder-[#86868b] focus:outline-none truncate"
                 />
                 {doctorLocationQuery && (
-                  <button
+                  <button aria-label="Close"
                     type="button"
                     onClick={() => setDoctorLocationQuery('')}
                     className="text-[#86868b] hover:text-[#1d1d1f] cursor-pointer shrink-0"

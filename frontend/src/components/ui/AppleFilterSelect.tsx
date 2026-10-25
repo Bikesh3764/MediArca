@@ -169,7 +169,7 @@ export const AppleFilterSelect: React.FC<AppleFilterSelectProps> = ({
                 className="w-full h-8 pl-8 pr-7 rounded-xl bg-[#f5f5f7] text-base sm:text-xs text-[#1d1d1f] placeholder-[#86868b] focus:outline-none focus:ring-1 focus:ring-[#0066cc]"
               />
               {searchQuery && (
-                <button
+                <button aria-label="Close"
                   type="button"
                   onClick={() => setSearchQuery('')}
                   className="absolute right-2 top-1/2 -translate-y-1/2 text-[#86868b] hover:text-[#1d1d1f]"

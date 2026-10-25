@@ -46,3 +46,6 @@ Thumbs.db
 # Scratch & local upload directories
 scratch/
 backend/uploads/
+
+# AI agent skill bundles (installed locally, not part of the app)
+.agents/

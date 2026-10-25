@@ -52,6 +52,11 @@ The MediArca frontend is an ultra-fast, mobile-first web application built with 
    - Use Apple `rounded-full` pill buttons (`h-11 rounded-full`) for interactive weekday selectors.
    - Keep all UI copy, button labels, and status badges direct, simple, and minimal (e.g. `Shifts`, `Schedule`, `Standee`, `Resume`, `Leave`, `Available`). Eliminate wordy sentences, redundant explanations, and dual-verb labels.
 
+10. **Live Refresh, Not Faster Polling**:
+   To react to queue changes use `useLiveEvent('queue', handler)` from `utils/liveEvents.ts` alongside the existing `useVisibilityPolling` backup. Never shorten polling intervals to get "real-time" behaviour.
+11. **Typography**:
+   Do not load SF Pro from third-party CDNs (licence + render blocking). Apple devices get SF Pro via `-apple-system`; others use Inter.
+
 ---
 
 ## 3. Verification & Build Commands
@@ -59,6 +64,9 @@ The MediArca frontend is an ultra-fast, mobile-first web application built with 
 ```bash
 # Run Biome / ESLint quality checks (must pass with 0 errors)
 npm run lint
+
+# Unit tests (Vitest)
+npm test
 
 # Compile TypeScript and create production bundle with Vite
 npm run build

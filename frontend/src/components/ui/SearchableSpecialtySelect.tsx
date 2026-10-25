@@ -176,7 +176,7 @@ export const SearchableSpecialtySelect: React.FC<SearchableSpecialtySelectProps>
                 className="w-full h-8 pl-8 pr-7 bg-white text-base sm:text-xs text-[#1d1d1f] placeholder-[#86868b] rounded-lg border border-[#e5e5ea] focus:outline-none focus:border-[#0066cc] focus:ring-1 focus:ring-[#0066cc] transition-all"
               />
               {searchQuery && (
-                <button
+                <button aria-label="Close"
                   type="button"
                   onClick={() => setSearchQuery('')}
                   className="absolute right-2 text-[#86868b] hover:text-[#1d1d1f] p-0.5 cursor-pointer"

@@ -3,7 +3,7 @@ export const API_BASE_URL = rawApiUrl
   ? (rawApiUrl.endsWith('/api') ? rawApiUrl : `${rawApiUrl.replace(/\/+$/, '')}/api`)
   : (typeof window !== 'undefined' && window.location.hostname === 'localhost'
     ? 'http://localhost:5000/api'
-    : 'https://mediarca-mdwk.onrender.com/api');
+    : 'https://mediarca-api-sg.onrender.com/api');
 
 export const getBackendBaseUrl = (): string => {
   return API_BASE_URL.replace(/\/api\/?$/, '');
@@ -1224,7 +1224,7 @@ const getHeaders = (isMultipart = false) => {
   return headers;
 };
 
-async function handleResponse<T>(res: Response): Promise<T> {
+export async function handleResponse<T>(res: Response): Promise<T> {
   let data: any = null;
   const text = await res.text();
   try {

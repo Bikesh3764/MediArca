@@ -1,0 +1,2 @@
+-- Track password changes so older login sessions can be rejected
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "passwordChangedAt" TIMESTAMP(3);

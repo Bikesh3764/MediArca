@@ -599,7 +599,7 @@ export const ClinicDashboard: React.FC = () => {
               <CheckCircle2 className="w-4 h-4 text-[#0066cc] flex-shrink-0" />
               <span className="font-medium">{successMsg}</span>
             </div>
-            <button
+            <button aria-label="Close"
               onClick={() => setSuccessMsg(null)}
               className="text-[#86868b] hover:text-[#1d1d1f]"
             >
@@ -614,7 +614,7 @@ export const ClinicDashboard: React.FC = () => {
               <AlertCircle className="w-4 h-4 flex-shrink-0 text-rose-600" />
               <span>{error}</span>
             </div>
-            <button onClick={() => setError(null)} className="text-rose-700 hover:text-rose-900">
+            <button aria-label="Close" onClick={() => setError(null)} className="text-rose-700 hover:text-rose-900">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -1274,7 +1274,7 @@ export const ClinicDashboard: React.FC = () => {
             <div className="sm:hidden w-10 h-1 bg-[#d2d2d7] rounded-full mx-auto mb-3" />
             <div className="flex justify-between items-start pb-4 border-b border-[#f0f0f2]">
               <h3 className="text-[20px] font-semibold text-[#1d1d1f] tracking-tight">Invite Doctor</h3>
-              <button
+              <button aria-label="Close"
                 disabled={adding}
                 onClick={() => setShowAddModal(false)}
                 className="p-2 rounded-full hover:bg-[#f5f5f7] active:scale-[0.98] text-[#86868b] hover:text-[#1d1d1f] transition-colors cursor-pointer"
@@ -1417,7 +1417,7 @@ export const ClinicDashboard: React.FC = () => {
             <div className="sm:hidden w-10 h-1 bg-[#d2d2d7] rounded-full mx-auto mb-3" />
             <div className="flex justify-between items-start pb-4 border-b border-[#f0f0f2]">
               <h3 className="text-[20px] font-semibold text-[#1d1d1f] tracking-tight">Add Receptionist</h3>
-              <button
+              <button aria-label="Close"
                 disabled={provisioning}
                 onClick={() => setShowRecModal(false)}
                 className="p-2 rounded-full hover:bg-[#f5f5f7] active:scale-[0.98] text-[#86868b] hover:text-[#1d1d1f] transition-colors cursor-pointer"
@@ -1590,7 +1590,7 @@ export const ClinicDashboard: React.FC = () => {
                   {editingRec.fullName}
                 </p>
               </div>
-              <button
+              <button aria-label="Close"
                 disabled={savingAssignments}
                 onClick={() => setEditingRec(null)}
                 className="p-2 rounded-full hover:bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f] transition-colors cursor-pointer"
@@ -1688,7 +1688,7 @@ export const ClinicDashboard: React.FC = () => {
                 <h3 className="text-[20px] font-semibold text-[#1d1d1f] tracking-tight">Desk Credentials Ready</h3>
                 <p className="text-[13px] text-[#86868b] mt-0.5">Provide these credentials to your front desk staff</p>
               </div>
-              <button
+              <button aria-label="Close"
                 onClick={() => setCreatedCredentials(null)}
                 className="p-2 rounded-full text-[#86868b] hover:bg-[#f5f5f7] hover:text-[#1d1d1f] transition-colors cursor-pointer"
               >
@@ -1793,7 +1793,7 @@ export const ClinicDashboard: React.FC = () => {
                   Assign practitioners to {approvingRec.fullName}
                 </p>
               </div>
-              <button
+              <button aria-label="Close"
                 disabled={processingRecId !== null}
                 onClick={() => setApprovingRec(null)}
                 className="p-2 rounded-full hover:bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f] transition-colors cursor-pointer"
@@ -1897,7 +1897,7 @@ export const ClinicDashboard: React.FC = () => {
           <div className="relative w-full max-w-[500px] max-h-[92vh] overflow-y-auto bg-white rounded-t-[28px] sm:rounded-[28px] border border-[#e5e5ea] shadow-[0_24px_64px_rgba(0,0,0,0.12),0_4px_16px_rgba(0,0,0,0.04)] p-6 sm:p-7 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-7 text-left">
             {/* Mobile Drag Handle */}
             <div className="sm:hidden w-10 h-1 bg-[#d2d2d7] rounded-full mx-auto mb-4" />
-            <button
+            <button aria-label="Close"
               type="button"
               onClick={() => setShowProfileModal(false)}
               className="absolute top-5 right-5 p-2 rounded-full hover:bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f] transition-colors cursor-pointer"

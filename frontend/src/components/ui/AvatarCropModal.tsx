@@ -243,7 +243,7 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
           <h3 className="text-[20px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">
             Adjust Profile Photo
           </h3>
-          <button
+          <button aria-label="Close"
             type="button"
             onClick={onClose}
             disabled={processing}

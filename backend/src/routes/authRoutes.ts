@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { register, login, getMe, updateProfile, googleAuth, uploadAvatar, verifyEmailOtp, resendEmailOtp } from '../controllers/authController';
 import { authenticate } from '../middleware/authMiddleware';
 import { upload } from '../middleware/uploadMiddleware';
+import { blockDemoAccountChanges } from '../utils/demoAccounts';
 
 const router = Router();
 
@@ -11,12 +12,13 @@ router.post('/verify-otp', verifyEmailOtp);
 router.post('/resend-otp', resendEmailOtp);
 router.post('/google', googleAuth);
 router.get('/me', authenticate, getMe);
-router.put('/profile', authenticate, updateProfile);
+router.put('/profile', authenticate, blockDemoAccountChanges, updateProfile);
 
 // Avatar upload with auto-compression support & 1 MB limit
 router.post(
   '/avatar',
   authenticate,
+  blockDemoAccountChanges,
   (req, res, next) => {
     upload.single('avatar')(req, res, (err: any) => {
       if (err) {

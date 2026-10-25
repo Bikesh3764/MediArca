@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import prisma from '../config/database';
 import { isClinicActive } from '../utils/authGuards';
+import { isTokenRevoked } from '../utils/sessionRevocation';
 
 export interface AuthenticatedUser {
   id: string;
@@ -57,7 +58,11 @@ export const authenticate = (req: AuthRequest, res: Response, next: NextFunction
 
   try {
     const secret = getJwtSecret();
-    const decoded = jwt.verify(token, secret) as AuthenticatedUser;
+    const decoded = jwt.verify(token, secret) as AuthenticatedUser & { iat?: number };
+    if (isTokenRevoked(decoded.id, decoded.iat)) {
+      res.status(401).json({ success: false, message: 'Your password was changed. Please sign in again.' });
+      return;
+    }
     req.user = decoded;
     next();
   } catch (error) {
@@ -80,8 +85,10 @@ export const optionalAuthenticate = (req: AuthRequest, _res: Response, next: Nex
   if (token) {
     try {
       const secret = getJwtSecret();
-      const decoded = jwt.verify(token, secret) as AuthenticatedUser;
-      req.user = decoded;
+      const decoded = jwt.verify(token, secret) as AuthenticatedUser & { iat?: number };
+      if (!isTokenRevoked(decoded.id, decoded.iat)) {
+        req.user = decoded;
+      }
     } catch {
       // Ignored for optional authentication
     }

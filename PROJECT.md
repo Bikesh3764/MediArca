@@ -4,7 +4,7 @@
 MediArca is an Indian healthcare patient appointment and live queue management system built on:
 - **Backend**: Node.js, Express 5, TypeScript, Prisma ORM 6 (PostgreSQL), JWT authentication, role-based access control.
 - **Frontend**: React 19, TypeScript, Vite, Tailwind CSS, Lucide icons, Apple Human Interface Guidelines (`DESIGN.md`).
-- **Database**: PostgreSQL (Prisma schema with 12 models: `User`, `DoctorProfile`, `PatientProfile`, `ClinicProfile`, `ReceptionistProfile`, `ClinicDoctor`, `DoctorReceptionist`, `Appointment`, `Review`, `Notification`, `SystemConfig`, `ContactMessage`).
+- **Database**: PostgreSQL (Prisma schema with 11 models: `User`, `DoctorProfile`, `PatientProfile`, `ClinicProfile`, `ReceptionistProfile`, `ClinicDoctor`, `DoctorReceptionist`, `Appointment`, `Notification`, `SystemConfig`, `ContactMessage`; reviews were purged in migration `20261016140000_purge_reviews`).
 - **Core Guardrails**: Zero-upfront payment (pay-to-receptionist coordination via UPI/desk), physical clinic queue focus (no telemedicine / no prescription builder / no cloud vault), demo credentials preserved, +91 Indian phone standard lock, per-portal role-scoped account uniqueness (`@@unique([email, role])`), email-only OTP verification (no phone OTP / no mobile uniqueness constraint).
 
 ## Feature Inventory
@@ -32,6 +32,7 @@ MediArca is an Indian healthcare patient appointment and live queue management s
 | 20 | Apple HIG Weekday Controls & Copy Conciseness | Sleek single-letter circular day strip (`WeekdayDisplay.tsx`), `rounded-full` day selectors, ultra-concise Apple labels (`Shifts`, `Schedule`, `Standee`, `Resume`, `Leave`) | M8 | User Requirement |
 | 21 | QR Arrival Synchronization & Scanner Lifecycle | Instant 0ms optimistic QR check-in state synchronization, persistent appointment refs, automatic scanner reset on re-open, anti-cache headers | M9 | User Requirement |
 | 22 | Silent Polling Updates & Apple Design System | Background polling updates directly in-place without flashing loading screens/skeletons; embed authentic Apple SF Pro fonts; Apple pill buttons; prune verbose copy; replace "View Standee" with "View QR Code" | M10 | User Requirement |
+| 23 | Platform Hardening & Live Updates | Supabase RLS lockdown, demo-account lock, sign-out on password change, Prisma joins + discovery cache, SSE live queue updates + turn alerts, DB integrity constraints, end-to-end flow tests, frontend tests & CI, monitoring | M11 | Audit 2026-10-25 |
 
 ## Milestones
 | # | Name | Scope | Dependencies | Status |
@@ -46,6 +47,7 @@ MediArca is an Indian healthcare patient appointment and live queue management s
 | M8 | Apple HIG Weekday Controls & Ultra-Concise Copy | Minimalist calendar day discs (`M T W T F S S`), capsule selectors, streamlined Apple labels (`Shifts`, `Schedule`, `Standee`) | M7 | DONE (2,023/2,023 tests pass, builds clean, 0 lint errors) |
 | M9 | QR Arrival Synchronization & Scanner Lifecycle | Optimistic UI arrival sync, persistent appointment ref, scanner feedback reset on re-open, cache-busting headers | M8 | DONE (2,023/2,023 tests pass, builds clean, 0 lint errors) |
 | M10 | Silent Polling Updates & Apple Design System | Polling loading flicker eliminated across portals, authentic SF Pro typography, Apple pill buttons, concise UI copy, QR code terminology | M9 | DONE (2,081/2,081 tests pass, builds clean, 0 lint errors) |
+| M11 | Platform Hardening & Live Updates | FIX-030..FIX-037 (see `docs/known-issues.md`) | M10 | DONE (all gates + 24 end-to-end flow tests pass) |
 
 ## Interface Contracts
 ### Pay-to-Receptionist Coordination Contract

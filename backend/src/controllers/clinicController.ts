@@ -7,7 +7,7 @@ import { isValidIndianPhone, formatIndianPhone, sanitizeIndianPhone, findExistin
 import { isDoctorEligibleForClinicalPractice, isClinicActive } from '../utils/authGuards';
 import { createNotification } from '../services/notificationService';
 import { parsePaginationParams, buildPaginationMetadata } from '../utils/pagination';
-import { getLocalDateString, cleanSlotName, parseDoctorSlots } from '../utils/scheduleUtils';
+import { getLocalDateString, cleanSlotName, parseDoctorSlots, parseAffiliationSlots } from '../utils/scheduleUtils';
 
 /**
  * Get profile and statistics for currently authenticated clinic
@@ -1796,10 +1796,7 @@ export const getClinicReport = async (req: AuthRequest, res: Response): Promise<
 
       let cSlots = parseDoctorSlots(cd.doctor);
       if ((cd as any).slots) {
-        try {
-          const parsed = typeof (cd as any).slots === 'string' ? JSON.parse((cd as any).slots) : (cd as any).slots;
-          if (Array.isArray(parsed) && parsed.length > 0) cSlots = parsed;
-        } catch {}
+        cSlots = parseAffiliationSlots((cd as any).slots) ?? cSlots;
       }
       doctorSlotsMap.set(cd.doctorId, cSlots);
     });

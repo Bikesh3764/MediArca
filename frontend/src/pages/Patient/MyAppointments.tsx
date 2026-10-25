@@ -5,6 +5,8 @@ import { useAuth } from '../../context/AuthContext';
 import { LiveQueueTicket } from '../../components/queue/LiveQueueTicket';
 import { CheckCircle2, AlertCircle, X, ChevronDown, Calendar, Clock } from 'lucide-react';
 import { useVisibilityPolling } from '../../utils/useVisibilityPolling';
+import { useLiveEvent } from '../../utils/liveEvents';
+import { requestTurnAlertPermission, useTurnAlerts } from '../../utils/turnAlerts';
 import { useToast } from '../../context/ToastContext';
 import { useConfirm } from '../../context/ConfirmContext';
 import { EmptyState } from '../../components/common/EmptyState';
@@ -124,6 +126,20 @@ export const MyAppointments: React.FC = () => {
     Boolean(user) && !loadingAuth && upcomingAppointments.length > 0
   );
 
+  // Instant refresh when this patient's doctor's queue moves (polling above stays as backup)
+  useLiveEvent(
+    'queue',
+    (evt) => {
+      if (!evt.doctorId || upcomingAppointments.some((a) => a.doctorId === evt.doctorId)) {
+        fetchActiveAppointments(true);
+      }
+    },
+    Boolean(user) && !loadingAuth && upcomingAppointments.length > 0
+  );
+
+  // "You're next" / "Go in now" alert (toast, vibration, and a system notification if allowed)
+  useTurnAlerts(upcomingAppointments, (title, message) => toast.info(message, title, 8000));
+
   const handleCancel = async (id: string) => {
     const ok = await confirm({
       title: 'Cancel Queue Token?',
@@ -232,7 +248,7 @@ export const MyAppointments: React.FC = () => {
               )}
               <span className="font-medium">{checkinMessage.text}</span>
             </div>
-            <button
+            <button aria-label="Close"
               onClick={() => setCheckinMessage(null)}
               className="text-[#86868b] hover:text-[#1d1d1f] p-1 cursor-pointer"
             >
@@ -293,6 +309,7 @@ export const MyAppointments: React.FC = () => {
                   appointment={appt}
                   onCancel={handleCancel}
                   onScanQr={(a) => {
+                    requestTurnAlertPermission();
                     setCheckinMessage(null);
                     selectedApptRef.current = a;
                     setSelectedApptForScan(a);

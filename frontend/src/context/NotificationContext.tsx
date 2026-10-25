@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { api, AppNotification } from '../services/api';
 import { useAuth } from './AuthContext';
+import { useLiveEvent } from '../utils/liveEvents';
 
 interface NotificationContextType {
   notifications: AppNotification[];
@@ -51,6 +52,11 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       fetchNotifications();
     });
   }, [user, fetchNotifications]);
+
+  // New notifications arrive instantly over the live stream
+  useLiveEvent('notification', () => {
+    fetchNotifications();
+  }, Boolean(user));
 
   const markAsRead = async (id: string) => {
     try {

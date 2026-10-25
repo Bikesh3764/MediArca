@@ -348,7 +348,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           />
           <div className="relative w-4/5 max-w-xs bg-white h-full shadow-2xl flex flex-col z-10 animate-fadeIn">
             <div className="absolute top-4 right-4 z-20">
-              <button
+              <button aria-label="Close"
                 onClick={() => setMobileDrawerOpen(false)}
                 className="p-1.5 rounded-full text-[#86868b] hover:text-[#1d1d1f] hover:bg-[#f5f5f7]"
               >

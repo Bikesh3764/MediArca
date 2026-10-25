@@ -34,7 +34,7 @@ MediArca is designed as a decoupled, multi-portal architecture serving 5 distinc
                                     │
 ┌───────────────────────────────────▼────────────────────────────────────┐
 │                     Data Persistence Layer (Prisma 6)                  │
-│   - PostgreSQL Database (12 relational models)                         │
+│   - PostgreSQL Database (11 relational models, RLS on all tables)      │
 │   - Composite Key Indexing (`@@unique([email, role])`)                 │
 │   - Relational Junctions (`ClinicDoctor`, `DoctorReceptionist`)        │
 └────────────────────────────────────────────────────────────────────────┘
@@ -159,6 +159,9 @@ MediArca replaces third-party payment gateways with a direct human-assisted paym
 
 ## 5. Frontend Polling & State Synchronization
 
+- **Live Push (Server-Sent Events)**: Screens open one `GET /api/events` stream per tab (fetch-based, Bearer token in the header, closed while the tab is hidden). After any successful queue write the backend pushes `event: queue` with the `doctorId` when known, and the screen re-fetches silently. New notifications push `event: notification`. Polling below stays on as a fallback. In-process only: add Redis pub/sub before running more than one backend instance.
+- **Turn Alerts**: `MyAppointments` raises a toast, vibration and (if allowed) a system notification when a patient becomes next in line or is called in.
+
 - **Live Queue Polling**: The `LiveQueueTicket` component executes lightweight polling every 10 seconds during active clinic hours.
 - **Adaptive Timeout & Retry**: If the network times out or returns a non-JSON reverse proxy error (502/504), the API client records a failed cycle without cascading retries or crashing the application.
 - **Cabin Presence Sync**: The doctor's live status (`IN_CABIN`, `STEPPED_OUT`, `NOT_IN_CABIN`) is polled and synchronized directly into patient tickets, showing expected return times when the doctor steps out.
@@ -211,4 +214,23 @@ To support physical clinic branding and discovery:
 3. **Copywriting Minimalism**:
    - Interfaces strictly use simple, direct 1–2 word labels: `Shifts`, `Schedule`, `Standee`, `Resume`, `Leave`, `Available`.
    - Boilerplate explanations and redundant descriptive paragraphs are removed to keep UI hierarchy crisp and clean.
+
+---
+
+## 9. Performance & Caching Layers
+
+| Layer | What it does | Where |
+|-------|--------------|-------|
+| Prisma `relationJoins` | Loads included relations in one SQL query instead of one per relation | `prisma/schema.prisma` |
+| Public response cache | Signed-out `GET /api/doctors*` and `/api/clinic(s)/public*` served from memory for 15s; cleared by any successful write | `middleware/publicResponseCache.ts` |
+| Queue snapshot | 4s cache of active queue rows for polling patients; cleared after every queue write | `utils/queueStateCache.ts`, `utils/liveEvents.ts` |
+| Browser cache | `Cache-Control: public, max-age=60` on public catalogs | `middleware/cacheMiddleware.ts` |
+
+API (Render) and database (Supabase) both run in Singapore since 2026-10-26; see `docs/operations/database-region-move.md` for the full infrastructure map.
+
+## 10. Security Layers
+- **Supabase public API closed**: RLS enabled and `anon`/`authenticated` privileges revoked on every table.
+- **Demo account lock** (production): demo accounts can run the queue but can't rename, change passwords or delete staff.
+- **Sign-out on password change**: tokens issued before `User.passwordChangedAt` are rejected.
+- **Monitoring**: `[HTTP] ERROR|SLOW` lines for failed or slow (>1.5s) requests and `[ClientError]` lines for browser crashes in Render logs.
 

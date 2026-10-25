@@ -1,4 +1,5 @@
 import prisma from '../config/database';
+import { publishNotification } from '../utils/liveEvents';
 
 export const createNotification = async (
   userId: string,
@@ -10,7 +11,7 @@ export const createNotification = async (
     return null;
   }
   try {
-    return await prisma.notification.create({
+    const created = await prisma.notification.create({
       data: {
         userId: userId.trim(),
         title: String(title || '').trim(),
@@ -18,6 +19,8 @@ export const createNotification = async (
         type: type || 'SYSTEM',
       },
     });
+    publishNotification(userId.trim());
+    return created;
   } catch (error) {
     console.error('Failed to create notification:', error);
     return null;

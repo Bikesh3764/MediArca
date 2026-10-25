@@ -9,8 +9,9 @@ Instead of rigid, ambiguous appointment slots, MediArca introduces transparent *
 ## 🌐 Live Production Deployments
 
 - **Frontend (GitHub Pages)**: [https://bikesh3764.github.io/MediArca/](https://bikesh3764.github.io/MediArca/)
-- **Backend API (Render Web Service)**: [https://mediarca-mdwk.onrender.com](https://mediarca-mdwk.onrender.com)
-- **Backend Health Check**: [https://mediarca-mdwk.onrender.com/healthz](https://mediarca-mdwk.onrender.com/healthz)
+- **Backend API (Render Web Service)**: [https://mediarca-api-sg.onrender.com](https://mediarca-api-sg.onrender.com)
+- **Region**: API and database run in Singapore (see `docs/operations/database-region-move.md`).
+- **Backend Health Check**: [https://mediarca-api-sg.onrender.com/healthz](https://mediarca-api-sg.onrender.com/healthz)
 
 ---
 
@@ -19,7 +20,7 @@ Instead of rigid, ambiguous appointment slots, MediArca introduces transparent *
 MediArca is integrated with Google Identity Services (`@react-oauth/google` on the frontend and `google-auth-library` on the backend).
 
 - Configured seamlessly via standard environment variables (`GOOGLE_CLIENT_ID` in `backend/.env` and `VITE_GOOGLE_CLIENT_ID` in `frontend/.env`).
-- If a Google Client ID is not yet configured, the system provides a seamless **1-Click Test Simulation Mode** so the full Google Sign-In authentication flow, profile provisioning, and dashboard navigation can be evaluated instantly.
+- If a Google Client ID is not configured, the Google button is hidden and email sign-in is used.
 
 ---
 
@@ -50,6 +51,8 @@ For instant 1-click evaluation, the login screens across portals include pre-con
 | **Admin** | `admin@mediarca.com` | `admin123` | Practitioner and clinic verification queues, platform telemetry metrics, contact inquiries management. |
 
 ---
+
+> On the live site, demo accounts can run the full queue flow but can't be renamed, change passwords or delete staff, so the demo keeps working for everyone. The Admin demo account exists only in locally seeded databases.
 
 ## Quick Start (Running Locally)
 

@@ -1,4 +1,6 @@
-@import url('https://fonts.cdnfonts.com/css/sf-pro-display');
+/* Typography: Apple devices use their built-in SF Pro (via local() and -apple-system);
+   everyone else falls back to Inter. SF Pro is not downloaded: Apple's licence doesn't
+   allow web embedding, and the extra font files slowed the first paint. */
 
 @tailwind base;
 @tailwind components;
@@ -7,36 +9,41 @@
 @font-face {
   font-family: 'SF Pro Text';
   font-style: normal;
+  font-display: swap;
   font-weight: 300;
-  src: local('SF Pro Text Light'), local('SF Pro Display Light'), url('https://fonts.cdnfonts.com/s/59278/SFPRODISPLAYLIGHT.woff') format('woff');
+  src: local('SF Pro Text Light'), local('SF Pro Display Light');
 }
 
 @font-face {
   font-family: 'SF Pro Text';
   font-style: normal;
+  font-display: swap;
   font-weight: 400;
-  src: local('SF Pro Text Regular'), local('SF Pro Text'), local('SF Pro Display Regular'), local('SF Pro Display'), url('https://fonts.cdnfonts.com/s/59278/SFPRODISPLAYREGULAR.woff') format('woff');
+  src: local('SF Pro Text Regular'), local('SF Pro Text'), local('SF Pro Display Regular'), local('SF Pro Display');
 }
 
 @font-face {
   font-family: 'SF Pro Text';
   font-style: normal;
+  font-display: swap;
   font-weight: 500;
-  src: local('SF Pro Text Medium'), local('SF Pro Display Medium'), url('https://fonts.cdnfonts.com/s/59278/SFPRODISPLAYMEDIUM.woff') format('woff');
+  src: local('SF Pro Text Medium'), local('SF Pro Display Medium');
 }
 
 @font-face {
   font-family: 'SF Pro Text';
   font-style: normal;
+  font-display: swap;
   font-weight: 600;
-  src: local('SF Pro Text Semibold'), local('SF Pro Display Bold'), url('https://fonts.cdnfonts.com/s/59278/SFPRODISPLAYBOLD.woff') format('woff');
+  src: local('SF Pro Text Semibold'), local('SF Pro Display Bold');
 }
 
 @font-face {
   font-family: 'SF Pro Text';
   font-style: normal;
+  font-display: swap;
   font-weight: 700;
-  src: local('SF Pro Text Bold'), local('SF Pro Display Heavy'), url('https://fonts.cdnfonts.com/s/59278/SFPRODISPLAYHEAVY.woff') format('woff');
+  src: local('SF Pro Text Bold'), local('SF Pro Display Heavy');
 }
 
 @layer base {

@@ -605,3 +605,16 @@ export const validateDoctorNumericBounds = (data: {
   };
 };
 
+/**
+ * Clinic-specific shifts (stored as JSON text on ClinicDoctor.slots) override the
+ * doctor's default shifts when present. Returns null when missing, empty or malformed.
+ */
+export const parseAffiliationSlots = (rawSlots: unknown): DoctorSlot[] | null => {
+  if (!rawSlots) return null;
+  try {
+    const parsed = typeof rawSlots === 'string' ? JSON.parse(rawSlots) : rawSlots;
+    return Array.isArray(parsed) && parsed.length > 0 ? (parsed as DoctorSlot[]) : null;
+  } catch {
+    return null;
+  }
+};

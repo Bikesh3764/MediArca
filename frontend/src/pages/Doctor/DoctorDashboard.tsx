@@ -14,6 +14,7 @@ import {
 import { WeekdayDisplay } from '../../components/common/WeekdayDisplay';
 import { sanitizeIndianPhone, formatIndianPhone, isValidIndianPhone } from '../../utils/phoneUtils';
 import { useVisibilityPolling } from '../../utils/useVisibilityPolling';
+import { useLiveEvent } from '../../utils/liveEvents';
 import { useAuth } from '../../context/AuthContext';
 import { DashboardLayout, DashboardNavItem } from '../../components/layout/DashboardLayout';
 import { CabinStatusControl } from '../../components/ui/DoctorCabinPresence';
@@ -262,6 +263,9 @@ export const DoctorDashboard: React.FC = () => {
     10000,
     Boolean(user) && user?.role?.toUpperCase() === 'DOCTOR' && !loadingAuth
   );
+
+  // Instant refresh when any queue changes (e.g. receptionist approves or checks in a patient)
+  useLiveEvent('queue', () => fetchQueue(false), Boolean(user) && user?.role?.toUpperCase() === 'DOCTOR' && !loadingAuth);
 
   useEffect(() => {
     let mounted = true;
@@ -854,7 +858,7 @@ export const DoctorDashboard: React.FC = () => {
                   <CheckCircle2 className="w-4 h-4 text-[#0066cc] flex-shrink-0" />
                   <span className="font-medium">{feedbackSuccess}</span>
                 </div>
-                <button
+                <button aria-label="Close"
                   onClick={() => setFeedbackSuccess(null)}
                   className="text-[#86868b] hover:text-[#1d1d1f] cursor-pointer"
                 >
@@ -869,7 +873,7 @@ export const DoctorDashboard: React.FC = () => {
                   <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
                   <span className="font-medium">{feedbackError}</span>
                 </div>
-                <button
+                <button aria-label="Close"
                   onClick={() => setFeedbackError(null)}
                   className="text-rose-700 hover:text-rose-900 cursor-pointer"
                 >
@@ -2090,7 +2094,7 @@ export const DoctorDashboard: React.FC = () => {
         >
           <div className="bg-white rounded-t-[28px] sm:rounded-[28px] border border-[#e5e5ea] max-w-md w-full max-h-[92vh] overflow-y-auto p-6 sm:p-8 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-8 shadow-[0_24px_60px_rgba(0,0,0,0.16)] relative text-left">
             <div className="sm:hidden w-10 h-1 bg-[#d2d2d7] rounded-full mx-auto mb-3" />
-            <button
+            <button aria-label="Close"
               type="button"
               onClick={() => {
                 setShowAddModal(false);
@@ -2361,7 +2365,7 @@ export const DoctorDashboard: React.FC = () => {
                     Affiliate Clinic or Hospital
                   </h3>
                 </div>
-                <button
+                <button aria-label="Close"
                   type="button"
                   onClick={() => setIsAffiliateModalOpen(false)}
                   className="p-2 rounded-full text-[#86868b] hover:text-[#1d1d1f] hover:bg-[#f5f5f7] transition-colors cursor-pointer"
@@ -2377,7 +2381,7 @@ export const DoctorDashboard: React.FC = () => {
                     <CheckCircle2 className="w-4 h-4 text-[#0066cc] shrink-0" />
                     <span>{feedbackSuccess}</span>
                   </div>
-                  <button onClick={() => setFeedbackSuccess(null)} className="text-[#86868b] hover:text-[#1d1d1f]">
+                  <button aria-label="Close" onClick={() => setFeedbackSuccess(null)} className="text-[#86868b] hover:text-[#1d1d1f]">
                     <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -2388,7 +2392,7 @@ export const DoctorDashboard: React.FC = () => {
                     <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
                     <span>{feedbackError}</span>
                   </div>
-                  <button onClick={() => setFeedbackError(null)} className="text-rose-700 hover:text-rose-900">
+                  <button aria-label="Close" onClick={() => setFeedbackError(null)} className="text-rose-700 hover:text-rose-900">
                     <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -2407,7 +2411,7 @@ export const DoctorDashboard: React.FC = () => {
                     autoFocus
                   />
                   {clinicSearchQuery && (
-                    <button
+                    <button aria-label="Close"
                       type="button"
                       onClick={() => setClinicSearchQuery('')}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-[#86868b] hover:text-[#1d1d1f] p-1 cursor-pointer"
@@ -2634,7 +2638,7 @@ export const DoctorDashboard: React.FC = () => {
                   Shift Appointment
                 </h3>
               </div>
-              <button
+              <button aria-label="Close"
                 type="button"
                 onClick={() => setRescheduleTarget(null)}
                 className="text-[#86868b] hover:text-[#1d1d1f] p-1.5 rounded-full hover:bg-[#f5f5f7] cursor-pointer"

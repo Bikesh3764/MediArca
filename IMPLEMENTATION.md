@@ -1,11 +1,11 @@
 # MediArca — Technical Implementation Blueprint (IMPLEMENTATION.md)
 
 **Document Version:** 2.4.0  
-**Last Updated:** October 2, 2026  
+**Last Updated:** October 2, 2026 (historical; for current design see `docs/architecture.md` and `docs/known-issues.md`)  
 **Status:** Production Ready  
 **Repository:** [Bikesh3764/MediArca](https://github.com/Bikesh3764/MediArca)  
 **Frontend Deployment:** GitHub Pages (`https://bikesh3764.github.io/MediArca/`)  
-**Backend API Deployment:** Render Web Service (`https://mediarca-mdwk.onrender.com`)  
+**Backend API Deployment:** Render Web Service (`https://mediarca-api-sg.onrender.com`)  
 **Primary Database:** Supabase Cloud PostgreSQL (`db.gibgtnzhecexgwximtpi.supabase.co`)  
 **Mail Gateway:** Gmail SMTP via Nodemailer  
 
